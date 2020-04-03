@@ -20,7 +20,7 @@ Clone or download the amazon-braket-default-simulator-python repo to your local 
 Use the following command to clone the repo.
 
 ```bash
-git clone https://github.com/aws/amazon-braket-default-simulator-python.git
+git clone https://github.com/aws/amazon-braket-default-simulator-python.git --branch stable/latest
 ```
 
 Note that you must have a valid SSH key created in your local environment that has been added to your GitHub account to clone the repo.
@@ -45,7 +45,7 @@ from braket.devices import LocalSimulator
 device = LocalSimulator("default")
 
 bell = Circuit().h(0).cnot(0, 1)
-print(device.run(bell, shots=100).result.measurement_counts)
+print(device.run(bell, shots=100).result().measurement_counts)
 ```
 
 ## Documentation

@@ -387,8 +387,8 @@ def _swap(instruction) -> Swap:
     return Swap(instruction.targets)
 
 
-class ZZ(GateOperation):
-    """Ising ZZ gate"""
+class XX(GateOperation):
+    """Ising XX gate"""
 
     def __init__(self, targets, angle):
         self._targets = targets
@@ -396,25 +396,25 @@ class ZZ(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        positive_phase = np.exp(1j * self._angle / 2)
-        negative_phase = np.exp(-1j * self._angle / 2)
+        positive_phase = np.exp(1j * self._angle)
+        negative_phase = np.exp(-1j * self._angle)
         return np.array(
             [
-                [positive_phase, 0, 0, 0],
-                [0, negative_phase, 0, 0],
-                [0, 0, negative_phase, 0],
-                [0, 0, 0, positive_phase],
+                [1, 0, 0, -1j * positive_phase],
+                [0, 1, -1j, 0],
+                [0, -1j, 1, 0],
+                [-1j * negative_phase, 0, 0, 1],
             ]
-        )
+        ) / np.sqrt(2)
 
     @property
     def targets(self) -> List[int]:
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.ZZ)
-def _zz(instruction) -> ZZ:
-    return ZZ(instruction.targets, instruction.angle)
+@from_braket_instruction.register(braket_instruction.XX)
+def _xx(instruction) -> XX:
+    return XX(instruction.targets, instruction.angle)
 
 
 class YY(GateOperation):
@@ -447,8 +447,8 @@ def _yy(instruction) -> YY:
     return YY(instruction.targets, instruction.angle)
 
 
-class XX(GateOperation):
-    """Ising XX gate"""
+class ZZ(GateOperation):
+    """Ising ZZ gate"""
 
     def __init__(self, targets, angle):
         self._targets = targets
@@ -456,25 +456,25 @@ class XX(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        positive_phase = np.exp(1j * self._angle)
-        negative_phase = np.exp(-1j * self._angle)
+        positive_phase = np.exp(1j * self._angle / 2)
+        negative_phase = np.exp(-1j * self._angle / 2)
         return np.array(
             [
-                [1, 0, 0, -1j * positive_phase],
-                [0, 1, -1j, 0],
-                [0, -1j, 1, 0],
-                [-1j * negative_phase, 0, 0, 1],
+                [positive_phase, 0, 0, 0],
+                [0, negative_phase, 0, 0],
+                [0, 0, negative_phase, 0],
+                [0, 0, 0, positive_phase],
             ]
-        ) / np.sqrt(2)
+        )
 
     @property
     def targets(self) -> List[int]:
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.XX)
-def _xx(instruction) -> XX:
-    return XX(instruction.targets, instruction.angle)
+@from_braket_instruction.register(braket_instruction.ZZ)
+def _zz(instruction) -> ZZ:
+    return ZZ(instruction.targets, instruction.angle)
 
 
 class Unitary(GateOperation):
