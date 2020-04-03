@@ -20,7 +20,7 @@ from braket.ir.jaqcd import Program
 
 class DefaultSimulator:
     def run(self, circuit_ir: Program, qubit_count: int, shots: int) -> Dict[str, Any]:
-        """Executes the circuit specified by the supplied `ir` on the simulator.
+        """Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
         Args:
             circuit_ir (Program): ir representation of a braket circuit specifying the
