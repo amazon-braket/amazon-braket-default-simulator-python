@@ -1,9 +1,9 @@
-**This prerelease documentation is confidential and is provided under the terms of your nondisclosure agreement with Amazon Web Services (AWS) or other agreement governing your receipt of AWS confidential information.**
+**This prerelease documentation is confidential and is provided under the terms of your nondisclosure agreement with 
+Amazon Web Services (AWS) or other agreement governing your receipt of AWS confidential information.**
 
-Amazon Braket Default Simulator Python is an open source library that provides an implementation of a quantum simulator 
-which you can execute locally. This implementation can be used to test small instances of quantum tasks constructed 
-using the [Amazon Braket SDK](https://github.com/aws/braket-python-sdk), before you submit them to the Amazon Braket 
-service for execution. 
+The Amazon Braket Default Simulator is a Python open source library that provides an implementation of a quantum simulator 
+that you can run locally. You can use the simulator to test quantum tasks that you construct for the [Amazon Braket SDK](https://github.com/aws/braket-python-sdk)
+before you submit them to the Amazon Braket service for execution.
 
 ## Prerequisites
 
@@ -12,11 +12,10 @@ Download and install Python 3.7.2 or greater from [Python.org](https://www.pytho
 If you are using Windows, choose **Add Python to environment variables** before you begin the installation.
 
 ### Amazon Braket SDK
-Download and install the Amazon Braket SDK. Follow the instructions in the [README](https://github.com/aws/braket-python-sdk/blob/stable/latest/README.md).
+Download and install the Amazon Braket SDK. Follow the instructions in the [README](https://github.com/aws/braket-python-sdk/blob/stable/latest/README.md).	
 
 ## Setting up Amazon Braket Default Simulator Python
-After you install the Amazon Braket SDK, either clone or download the amazon-braket-default-simulator-python repo to your local environment. 
-You must clone or download the repo into a folder in the same virtual environment where you are using the Amazon Braket SDK.
+Clone or download the amazon-braket-default-simulator-python repo to your local environment. 
 
 Use the following command to clone the repo.
 
@@ -35,8 +34,8 @@ pip install -e amazon-braket-default-simulator-python
 ```
 
 ## Usage
-The quantum simulator implementation DefaultSimulator plugs into the `LocalSimulator` interface in 
-the [Amazon Braket SDK](https://github.com/aws/braket-python-sdk) using the `backend` value as `"default"`.
+The quantum simulator implementation `DefaultSimulator` plugs into the `LocalSimulator` interface in 
+[Amazon Braket SDK](https://github.com/aws/braket-python-sdk) using the `backend` value as `"default"`. 
 
 **Executing a circuit using the DefaultSimulator**
 ```python
@@ -46,32 +45,30 @@ from braket.devices import LocalSimulator
 device = LocalSimulator("default")
 
 bell = Circuit().h(0).cnot(0, 1)
-print(device.run(bell, shots=1000).result.measurement_counts)
+print(device.run(bell, shots=100).result.measurement_counts)
 ```
 
 ## Documentation
 
-First `cd` into the `doc` directory and run:
-```bash
-make html
-```
-
-You can generate the documentation for the plugin.
-
-First, you must have tox installed.
+To generate the docs locally, you must have tox installed.
 ```bash
 pip install tox
 ```
-
+First `cd` into the `doc` directory and run:
+ ```bash
+ make html
+ ```
 Then, you can run the following command with tox to generate the documentation:
 ```bash
 tox -e docs
 ```
-To view the generated documentation, open the following file in a browser: `BRAKET_DEFAULT_SIMULATOR_ROOT/build/documentation/html/index.html`
+This generates the documentation in a `/build` subfolder. To view the generated documentation, 
+open the following file in a browser: `../build/documentation/html/index.html`
 
 ## Testing
 
-Make sure to install test dependencies first:
+If you want to contribute to the project, be sure to run unit tests and get a successful result 
+before you submit a pull request. To run the unit tests, first install the test dependencies using the following command:
 ```bash
 pip install -e "amazon-braket-default-simulator-python[test]"
 ```
