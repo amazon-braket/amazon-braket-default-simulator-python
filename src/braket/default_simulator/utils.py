@@ -11,26 +11,20 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from __future__ import annotations
-
-from abc import ABC, abstractmethod
-from typing import List
+from functools import lru_cache
 
 import numpy as np
 
 
-class GateOperation(ABC):
-    """
-    The class `GateOperation` encapsulates the unitary quantum gate operation acting
-    on a set of target qubits.
-    """
+@lru_cache()
+def pauli_eigenvalues(n: int) -> np.ndarray:
+    """ The eigenvalues of Pauli operators and their tensor products.
 
-    @property
-    @abstractmethod
-    def matrix(self) -> np.ndarray:
-        """np.ndarray: The matrix representation of the operation"""
-
-    @property
-    @abstractmethod
-    def targets(self) -> List[int]:
-        """List[int]: The qubit indices targeted by the gate operation"""
+    Args:
+        n (int): the number of qubits the operator acts on
+    Returns:
+        np.ndarray: the eigenvalues of a Pauli product operator of the given size
+    """
+    if n == 1:
+        return np.array([1, -1])
+    return np.concatenate([pauli_eigenvalues(n - 1), -pauli_eigenvalues(n - 1)])
