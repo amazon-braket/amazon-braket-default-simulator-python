@@ -33,7 +33,7 @@ class StateVectorSimulation:
         """
         initial_state = np.zeros(2 ** qubit_count, dtype=complex)
         initial_state[0] = 1
-        self._state_vector = np.reshape(initial_state, [2] * qubit_count)
+        self._state_vector = initial_state
         self._qubit_count = qubit_count
         self._post_observables = None
 
@@ -46,10 +46,10 @@ class StateVectorSimulation:
             operations (List[GateOperation]): Gate operations to apply for
                 evolving the state of the simulation.
         """
-        self._state_vector = np.reshape(self._state_vector, [2] * self._qubit_count)
+        np.reshape(self._state_vector, [2] * self.qubit_count)
         for operation in operations:
             self._apply_operation(operation)
-        self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
+        np.reshape(self._state_vector, 2 ** self.qubit_count)
 
     def _apply_operation(self, operation: GateOperation) -> None:
         """ Updates the current state of the simulation by multiplying the state with
