@@ -14,11 +14,12 @@
 from __future__ import annotations
 
 from functools import singledispatch
-from typing import List
+from typing import List, Optional
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
-from braket.default_simulator.gate_operation import GateOperation
+from braket.default_simulator.operation import GateOperation, Observable
+from braket.default_simulator.utils import pauli_eigenvalues
 
 
 @singledispatch
@@ -38,7 +39,39 @@ def from_braket_instruction(instruction) -> GateOperation:
     raise ValueError(f"Instruction {instruction} not recognized")
 
 
-class Hadamard(GateOperation):
+class Identity(GateOperation, Observable):
+    """Identity gate"""
+
+    def __init__(self, targets):
+        self._targets = targets
+
+    @property
+    def matrix(self) -> np.ndarray:
+        return np.eye(2)
+
+    @property
+    def targets(self) -> List[int]:
+        return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return False
+
+    @property
+    def eigenvalues(self) -> np.ndarray:
+        return np.array([1, 1])
+
+    @property
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        return None
+
+
+@from_braket_instruction.register(braket_instruction.I)
+def _i(instruction) -> Identity:
+    return Identity([instruction.target])
+
+
+class Hadamard(GateOperation, Observable):
     """Hadamard gate"""
 
     def __init__(self, targets):
@@ -52,13 +85,29 @@ class Hadamard(GateOperation):
     def targets(self) -> List[int]:
         return self._targets
 
+    @property
+    def is_standard(self) -> bool:
+        return True
+
+    @property
+    def eigenvalues(self) -> np.ndarray:
+        return pauli_eigenvalues(1)
+
+    @property
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        # RY(-\pi / 4)
+        angle = -np.pi / 4
+        cos_component = np.cos(angle / 2)
+        sin_component = np.sin(angle / 2)
+        return np.array([[cos_component, -sin_component], [sin_component, cos_component]])
+
 
 @from_braket_instruction.register(braket_instruction.H)
 def _hadamard(instruction) -> Hadamard:
     return Hadamard([instruction.target])
 
 
-class PauliX(GateOperation):
+class PauliX(GateOperation, Observable):
     """Pauli-X gate"""
 
     def __init__(self, targets):
@@ -72,13 +121,26 @@ class PauliX(GateOperation):
     def targets(self) -> List[int]:
         return self._targets
 
+    @property
+    def is_standard(self) -> bool:
+        return True
+
+    @property
+    def eigenvalues(self) -> np.ndarray:
+        return pauli_eigenvalues(1)
+
+    @property
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        # H
+        return np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+
 
 @from_braket_instruction.register(braket_instruction.X)
 def _pauli_x(instruction) -> PauliX:
     return PauliX([instruction.target])
 
 
-class PauliY(GateOperation):
+class PauliY(GateOperation, Observable):
     """Pauli-Y gate"""
 
     def __init__(self, targets):
@@ -92,13 +154,26 @@ class PauliY(GateOperation):
     def targets(self) -> List[int]:
         return self._targets
 
+    @property
+    def is_standard(self) -> bool:
+        return True
+
+    @property
+    def eigenvalues(self) -> np.ndarray:
+        return pauli_eigenvalues(1)
+
+    @property
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        # HS^{\dagger}
+        return np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
+
 
 @from_braket_instruction.register(braket_instruction.Y)
 def _pauli_y(instruction) -> PauliY:
     return PauliY([instruction.target])
 
 
-class PauliZ(GateOperation):
+class PauliZ(GateOperation, Observable):
     """Pauli-Z gate"""
 
     def __init__(self, targets):
@@ -111,6 +186,18 @@ class PauliZ(GateOperation):
     @property
     def targets(self) -> List[int]:
         return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return True
+
+    @property
+    def eigenvalues(self) -> np.ndarray:
+        return pauli_eigenvalues(1)
+
+    @property
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        return None
 
 
 @from_braket_instruction.register(braket_instruction.Z)
@@ -276,26 +363,6 @@ class CPhaseShift(GateOperation):
 @from_braket_instruction.register(braket_instruction.CPhaseShift)
 def _c_phase_shift(instruction) -> CPhaseShift:
     return CPhaseShift([instruction.control, instruction.target], instruction.angle)
-
-
-class Identity(GateOperation):
-    """Identity gate"""
-
-    def __init__(self, targets):
-        self._targets = targets
-
-    @property
-    def matrix(self) -> np.ndarray:
-        return np.eye(2)
-
-    @property
-    def targets(self) -> List[int]:
-        return self._targets
-
-
-@from_braket_instruction.register(braket_instruction.I)
-def _i(instruction) -> Identity:
-    return Identity([instruction.target])
 
 
 class RotX(GateOperation):
@@ -499,3 +566,46 @@ def _unitary(instruction) -> Unitary:
         return np.array([[complex(element[0], element[1]) for element in row] for row in matrix])
 
     return Unitary(instruction.targets, _from_ir_representation(instruction.matrix))
+
+
+class Hermitian(Observable):
+    """Arbitrary Hermitian observable"""
+
+    # Cache of eigenpairs for each used Hermitian matrix
+    _eigenpairs = {}
+
+    def __init__(self, targets, matrix):
+        self._targets = targets
+        self._matrix = matrix
+
+    @property
+    def matrix(self) -> np.ndarray:
+        return np.array(self._matrix)
+
+    @property
+    def targets(self) -> List[int]:
+        return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return False
+
+    @property
+    def eigenvalues(self) -> np.ndarray:
+        return self._eigendecomposition["eigenvalues"]
+
+    @property
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        return self._eigendecomposition["eigenvectors"].conj().T
+
+    @property
+    def _eigendecomposition(self):
+        mat_key = tuple(self._matrix.flatten().tolist())
+        if mat_key not in Hermitian._eigenpairs:
+            eigenvalues, eigenvectors = np.linalg.eigh(self.matrix)
+            Hermitian._eigenpairs[mat_key] = {
+                "eigenvectors": eigenvectors,
+                "eigenvalues": eigenvalues,
+            }
+
+        return Hermitian._eigenpairs[mat_key]

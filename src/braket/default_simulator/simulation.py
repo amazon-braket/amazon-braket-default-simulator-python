@@ -14,7 +14,8 @@
 from typing import List
 
 import numpy as np
-from braket.default_simulator.gate_operation import GateOperation
+from braket.default_simulator import GateOperation, Observable
+from opt_einsum import contract
 
 
 class StateVectorSimulation:
@@ -30,11 +31,13 @@ class StateVectorSimulation:
             qubit_count (int): The number of qubits being simulated.
                 All the qubits start in the `|0>` computational basis state.
         """
-        self._state_vector = np.zeros(2 ** qubit_count, dtype=complex)
-        self._state_vector[0] = 1
+        initial_state = np.zeros(2 ** qubit_count, dtype=complex)
+        initial_state[0] = 1
+        self._state_vector = np.reshape(initial_state, [2] * qubit_count)
         self._qubit_count = qubit_count
+        self._post_observables = None
 
-    def evolve(self, operations: List[GateOperation]):
+    def evolve(self, operations: List[GateOperation]) -> None:
         """Evolves the state of the simulation under the action of
         the specified gate operations.
         Note: This method mutates the state of the simulation.
@@ -43,12 +46,10 @@ class StateVectorSimulation:
             operations (List[GateOperation]): Gate operations to apply for
                 evolving the state of the simulation.
         """
-        self._state_vector = np.reshape(self._state_vector, [2] * self._qubit_count)
         for operation in operations:
             self._apply_operation(operation)
-        self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
 
-    def _apply_operation(self, operation: GateOperation):
+    def _apply_operation(self, operation: GateOperation) -> None:
         """Updates the current state of the simulation by multiplying the state with
         the unitary matrix corresponding to the operation.
 
@@ -70,6 +71,55 @@ class StateVectorSimulation:
         inverse_permutation = np.argsort(permutation)
         self._state_vector = np.transpose(dot_product, inverse_permutation)
 
+    def apply_observables(self, observables: List[Observable]) -> None:
+        """ Returns the diagonalizing matrices of the given observables
+        to the state of the simulation.
+
+        This method can only be called once.
+
+        Args:
+            observables (List[Observable]): The observables to apply
+
+        Raises:
+            RuntimeError: If this method is called after the first call
+        """
+        if self._post_observables is not None:
+            raise RuntimeError("Observables have already been applied.")
+        self._post_observables = contract(*self._build_contraction_parameters(observables))
+
+    def _build_contraction_parameters(self, observables: List[Observable]) -> list:
+        contraction_parameters = [self._state_vector, list(range(self.qubit_count))]
+        index_substitutions = {}
+        next_index = self.qubit_count
+        for observable in observables:
+            diagonalizing_matrix = observable.diagonalizing_matrix
+
+            # Only add to contraction parameters if the observable
+            # has a nontrivial diagonalizing matrix
+            if diagonalizing_matrix is not None:
+                # lower indices, which will be traced out
+                covariant = observable.targets
+
+                # upper indices, which will replace the contracted indices in the state vector
+                contravariant = list(range(next_index, next_index + len(covariant)))
+                indices = contravariant + covariant
+                # matrix as type-(len(contravariant), len(covariant)) tensor
+                matrix_as_tensor = observable.diagonalizing_matrix.reshape([2] * len(indices))
+
+                contraction_parameters += [matrix_as_tensor, indices]
+                next_index += len(covariant)
+
+                index_substitutions.update(
+                    {covariant[i]: contravariant[i] for i in range(len(covariant))}
+                )
+        # Ensure state is in correct order
+        new_indices = [
+            index_substitutions[i] if i in index_substitutions else i
+            for i in range(self.qubit_count)
+        ]
+        contraction_parameters.append(new_indices)
+        return contraction_parameters
+
     def retrieve_samples(self, num_samples: int) -> List[int]:
         """Retrieves `num_samples` samples of states from the state vector of the simulation,
         based on the probability amplitudes.
@@ -83,13 +133,32 @@ class StateVectorSimulation:
                 corresponding computational basis state.
         """
         return np.random.choice(
-            len(self._state_vector), p=self.probability_amplitudes, size=num_samples
+            len(self.state_vector), p=self.probability_amplitudes, size=num_samples
         )
 
     @property
     def state_vector(self) -> np.ndarray:
-        """np.ndarray: The state vector specifying the current state of the simulation."""
-        return self._state_vector
+        """ The current state vector of the simulation
+
+        Returns:
+            np.ndarray: The state vector specifying the current state of the simulation.
+        """
+        return np.reshape(self._state_vector, 2 ** self._qubit_count)
+
+    @property
+    def state_with_observables(self) -> np.ndarray:
+        """ The final state vector of the simulation after application of observables.
+
+        Returns:
+            np.ndarray: The state vector specifying the final state of the simulation
+                after applying observables.
+
+        Raises:
+            RuntimeError: If observables have not been applied
+        """
+        if self._post_observables is None:
+            raise RuntimeError("No observables applied")
+        return self._post_observables.reshape(2 ** self._qubit_count)
 
     @property
     def qubit_count(self) -> int:
@@ -99,6 +168,6 @@ class StateVectorSimulation:
     @property
     def probability_amplitudes(self) -> np.ndarray:
         """np.ndarray: The probability amplitudes corresponding to each basis state."""
-        amplitudes = np.abs(self._state_vector)
+        amplitudes = np.abs(self.state_vector)
         amplitudes **= 2
         return amplitudes

@@ -13,12 +13,12 @@
 
 from collections import Counter
 
-import braket.default_simulator.gate_operations as operation
+import braket.default_simulator.operations as operation
 import numpy as np
 import pytest
 from braket.default_simulator.simulation import StateVectorSimulation
 
-testdata = [
+evolve_testdata = [
     ([operation.Hadamard([0])], 1, [0.70710678, 0.70710678], [0.5, 0.5]),
     ([operation.PauliX([0])], 1, [0, 1], [0, 1]),
     ([operation.PauliY([0])], 1, [0, 1j], [0, 1]),
@@ -71,6 +71,15 @@ testdata = [
     ),
 ]
 
+apply_observables_testdata = [
+    ([operation.PauliX([0])], [operation.Hadamard([0])], 1),
+    (
+        [operation.PauliX([0]), operation.PauliZ([3]), operation.Hadamard([2])],
+        [operation.Hadamard([0]), operation.Identity([3]), operation.RotY([2], -np.pi / 4)],
+        5,
+    ),
+]
+
 
 @pytest.fixture
 def qft_circuit_operations():
@@ -88,7 +97,7 @@ def qft_circuit_operations():
 
 
 @pytest.mark.parametrize(
-    "instructions, qubit_count, state_vector, probability_amplitudes", testdata
+    "instructions, qubit_count, state_vector, probability_amplitudes", evolve_testdata
 )
 def test_simulation_simple_circuits(
     instructions, qubit_count, state_vector, probability_amplitudes
@@ -97,6 +106,28 @@ def test_simulation_simple_circuits(
     simulation.evolve(instructions)
     assert np.allclose(state_vector, simulation.state_vector)
     assert np.allclose(probability_amplitudes, simulation.probability_amplitudes)
+
+
+@pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
+def test_apply_observables(observables, equivalent_gates, qubit_count):
+    sim_observables = StateVectorSimulation(qubit_count)
+    sim_observables.apply_observables(observables)
+    sim_gates = StateVectorSimulation(qubit_count)
+    sim_gates.evolve(equivalent_gates)
+    assert np.allclose(sim_observables.state_with_observables, sim_gates.state_vector)
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_apply_observables_fails_second_call():
+    simulation = StateVectorSimulation(4)
+    simulation.apply_observables([operation.PauliX([0])])
+    simulation.apply_observables([operation.PauliX([0])])
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_state_with_observables_fails_before_applying():
+    simulation = StateVectorSimulation(4)
+    simulation.state_with_observables
 
 
 def test_simulation_qft_circuit(qft_circuit_operations):
