@@ -30,11 +30,7 @@ class Operation(ABC):
     @property
     @abstractmethod
     def targets(self) -> List[int]:
-        """ The target qubits of the operation.
-
-        Returns:
-            List[int]: The qubit indices targeted by the operation
-        """
+        """List[int]: The target qubit indices of the operation."""
 
 
 class GateOperation(Operation, ABC):
@@ -46,11 +42,7 @@ class GateOperation(Operation, ABC):
     @property
     @abstractmethod
     def matrix(self) -> np.ndarray:
-        """ The matrix representation of the operation.
-
-        Returns:
-            np.ndarray: The matrix representation of the operation
-        """
+        """np.ndarray: The matrix representation of the operation."""
 
 
 class Observable(Operation, ABC):
@@ -61,33 +53,25 @@ class Observable(Operation, ABC):
     @property
     @abstractmethod
     def is_standard(self) -> bool:
-        """ Whether the observable is one of the four standard observables.
+        """bool: Whether the observable is one of the four standard observables.
 
         Namely, X, Y, Z or H; these observables are guaranteed to have eigenvalues
         of +/-1
-
-        Returns:
-            bool: Whether the observable is one of the four standard observables
         """
 
     @property
     @abstractmethod
     def eigenvalues(self) -> np.ndarray:
-        """ The eigenvalues of the observable.
-
-        Returns:
-            np.ndarray: The eigenvalues of the observable, ordered by
+        """
+        np.ndarray: The eigenvalues of the observable ordered by computational basis state.
         """
 
     @property
     @abstractmethod
     def diagonalizing_matrix(self) -> Optional[np.ndarray]:
-        """ The matrix that diagonalizes the observable in the computational basis.
-
-        Returns:
-            Optional[np.ndarray]: The matrix that diagonalizes the observable
-                in the computational basis if it is not already in the
-                computational basis.
+        """
+        Optional[np.ndarray]: The matrix that diagonalizes the observable
+        in the computational basis if it is not already in the computational basis.
         """
 
 

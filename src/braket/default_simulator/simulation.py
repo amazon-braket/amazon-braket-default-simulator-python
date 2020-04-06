@@ -81,7 +81,7 @@ class StateVectorSimulation:
             observables (List[Observable]): The observables to apply
 
         Raises:
-            RuntimeError: If this method is called after the first call
+            RuntimeError: If this method is called more than once
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
@@ -138,20 +138,15 @@ class StateVectorSimulation:
 
     @property
     def state_vector(self) -> np.ndarray:
-        """ The current state vector of the simulation
-
-        Returns:
-            np.ndarray: The state vector specifying the current state of the simulation.
+        """
+        np.ndarray: The state vector specifying the current state of the simulation.
         """
         return np.reshape(self._state_vector, 2 ** self._qubit_count)
 
     @property
     def state_with_observables(self) -> np.ndarray:
-        """ The final state vector of the simulation after application of observables.
-
-        Returns:
-            np.ndarray: The state vector specifying the final state of the simulation
-                after applying observables.
+        """
+        np.ndarray: The final state vector of the simulation after application of observables.
 
         Raises:
             RuntimeError: If observables have not been applied
