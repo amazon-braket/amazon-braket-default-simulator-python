@@ -36,7 +36,7 @@ def check_matrix_dimensions(matrix: np.ndarray, targets: List[int]) -> None:
 
     Args:
         matrix (np.ndarray): The matrix to check
-        targets (List[int]: The target qubits the matrix is acting o
+        targets (List[int]): The target qubits the matrix is acting on
 
     Raises:
         ValueError: If the matrix is not a square matrix or operates on a space
