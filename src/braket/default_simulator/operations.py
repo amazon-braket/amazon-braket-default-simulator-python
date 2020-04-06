@@ -29,7 +29,7 @@ from braket.default_simulator.operation_helpers import (
 
 @singledispatch
 def from_braket_instruction(instruction) -> GateOperation:
-    """Instantiates the concrete `GateOperation` object from the specified braket instruction.
+    """ Instantiates the concrete `GateOperation` object from the specified braket instruction.
 
     Args:
         instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
@@ -619,9 +619,9 @@ class Hermitian(Observable):
 
         Returns:
             Dict[str, np.ndarray]: The keys are "eigenvectors", mapping to a matrix whose
-                columns are the eigenvectors of the matrix, and "eigenvalues", a list of
-                associated eigenvalues in the order their corresponding eigenvectors in
-                the "eigenvectors" matrix
+            columns are the eigenvectors of the matrix, and "eigenvalues", a list of
+            associated eigenvalues in the order their corresponding eigenvectors in the
+            "eigenvectors" matrix
         """
         mat_key = tuple(self._matrix.flatten().tolist())
         if mat_key not in Hermitian._eigenpairs:

@@ -38,7 +38,7 @@ class StateVectorSimulation:
         self._post_observables = None
 
     def evolve(self, operations: List[GateOperation]) -> None:
-        """Evolves the state of the simulation under the action of
+        """ Evolves the state of the simulation under the action of
         the specified gate operations.
         Note: This method mutates the state of the simulation.
 
@@ -52,7 +52,7 @@ class StateVectorSimulation:
         self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
 
     def _apply_operation(self, operation: GateOperation) -> None:
-        """Updates the current state of the simulation by multiplying the state with
+        """ Updates the current state of the simulation by multiplying the state with
         the unitary matrix corresponding to the operation.
 
         Args:
@@ -125,7 +125,7 @@ class StateVectorSimulation:
         return contraction_parameters
 
     def retrieve_samples(self, num_samples: int) -> List[int]:
-        """Retrieves `num_samples` samples of states from the state vector of the simulation,
+        """ Retrieves `num_samples` samples of states from the state vector of the simulation,
         based on the probability amplitudes.
 
         Args:
