@@ -15,7 +15,7 @@ import braket.ir.jaqcd as instruction
 import numpy as np
 import pytest
 from braket.default_simulator import operations
-from braket.default_simulator.utils import pauli_eigenvalues
+from braket.default_simulator.operation_helpers import check_unitary, pauli_eigenvalues
 
 gate_testdata = [
     (instruction.H(target=13), [13], operations.Hadamard),
@@ -61,7 +61,7 @@ observable_testdata = [
 
 @pytest.mark.parametrize("instruction, targets, operation_type", gate_testdata)
 def test_gate_operation_matrix_is_unitary(instruction, targets, operation_type):
-    assert _is_unitary(operations.from_braket_instruction(instruction).matrix)
+    check_unitary(operations.from_braket_instruction(instruction).matrix)
 
 
 @pytest.mark.parametrize("instruction, targets, operation_type", gate_testdata)
@@ -79,7 +79,7 @@ def test_from_braket_instruction_unsupported_instruction():
 @pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", observable_testdata)
 def test_observable_diagonalizing_matrix_unitary(observable, targets, eigenvalues, is_standard):
     if observable.diagonalizing_matrix is not None:
-        assert _is_unitary(observable.diagonalizing_matrix)
+        check_unitary(observable.diagonalizing_matrix)
 
 
 @pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", observable_testdata)
@@ -97,5 +97,12 @@ def test_observable_is_standard(observable, targets, eigenvalues, is_standard):
     assert observable.is_standard == is_standard
 
 
-def _is_unitary(matrix):
-    return np.allclose(np.eye(len(matrix)), matrix.dot(matrix.T.conj()))
+def test_observable_known_diagonalization():
+    assert np.allclose(
+        operations.Hadamard([0]).diagonalizing_matrix, operations.RotY([0], -np.pi / 4).matrix
+    )
+    assert np.allclose(operations.PauliX([0]).diagonalizing_matrix, operations.Hadamard([0]).matrix)
+    y_diag_expected = np.linalg.multi_dot(
+        [operations.Hadamard([0]).matrix, operations.S([0]).matrix, operations.PauliZ([0]).matrix]
+    )
+    assert np.allclose(operations.PauliY([0]).diagonalizing_matrix, y_diag_expected)

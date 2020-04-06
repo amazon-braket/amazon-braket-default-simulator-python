@@ -46,8 +46,10 @@ class StateVectorSimulation:
             operations (List[GateOperation]): Gate operations to apply for
                 evolving the state of the simulation.
         """
+        self._state_vector = np.reshape(self._state_vector, [2] * self._qubit_count)
         for operation in operations:
             self._apply_operation(operation)
+        self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
 
     def _apply_operation(self, operation: GateOperation) -> None:
         """Updates the current state of the simulation by multiplying the state with
@@ -85,10 +87,12 @@ class StateVectorSimulation:
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
-        self._post_observables = contract(*self._build_contraction_parameters(observables))
+        contracted = contract(*self._build_contraction_parameters(observables))
+        self._post_observables = contracted.reshape(2 ** self._qubit_count)
 
     def _build_contraction_parameters(self, observables: List[Observable]) -> list:
-        contraction_parameters = [self._state_vector, list(range(self.qubit_count))]
+        state = np.reshape(self._state_vector, [2] * self._qubit_count)
+        contraction_parameters = [state, list(range(self.qubit_count))]
         index_substitutions = {}
         next_index = self.qubit_count
         for observable in observables:
@@ -141,7 +145,7 @@ class StateVectorSimulation:
         """
         np.ndarray: The state vector specifying the current state of the simulation.
         """
-        return np.reshape(self._state_vector, 2 ** self._qubit_count)
+        return self._state_vector
 
     @property
     def state_with_observables(self) -> np.ndarray:
@@ -153,7 +157,7 @@ class StateVectorSimulation:
         """
         if self._post_observables is None:
             raise RuntimeError("No observables applied")
-        return self._post_observables.reshape(2 ** self._qubit_count)
+        return self._post_observables
 
     @property
     def qubit_count(self) -> int:

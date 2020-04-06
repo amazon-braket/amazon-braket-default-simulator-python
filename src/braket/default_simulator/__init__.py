@@ -16,7 +16,6 @@ import braket.default_simulator.operations as operations  # noqa: F401
 from braket.default_simulator.operation import (  # noqa: F401
     GateOperation,
     Observable,
-    Operation,
     TensorProduct,
 )
 from braket.default_simulator.simulation import StateVectorSimulation  # noqa: F401

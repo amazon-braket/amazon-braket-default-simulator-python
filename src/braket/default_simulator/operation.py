@@ -19,21 +19,10 @@ from functools import reduce
 from typing import List, Optional
 
 import numpy as np
-from braket.default_simulator.utils import pauli_eigenvalues
+from braket.default_simulator.operation_helpers import pauli_eigenvalues
 
 
-class Operation(ABC):
-    """
-    Encapsulates an operation acting on a set of target qubits.
-    """
-
-    @property
-    @abstractmethod
-    def targets(self) -> List[int]:
-        """List[int]: The target qubit indices of the operation."""
-
-
-class GateOperation(Operation, ABC):
+class GateOperation(ABC):
     """
     Encapsulates a unitary quantum gate operation acting on
     a set of target qubits.
@@ -41,14 +30,24 @@ class GateOperation(Operation, ABC):
 
     @property
     @abstractmethod
+    def targets(self) -> List[int]:
+        """List[int]: The target qubit indices of the operation."""
+
+    @property
+    @abstractmethod
     def matrix(self) -> np.ndarray:
         """np.ndarray: The matrix representation of the operation."""
 
 
-class Observable(Operation, ABC):
+class Observable(ABC):
     """
     Encapsulates an observable to be measured in the computational basis.
     """
+
+    @property
+    @abstractmethod
+    def targets(self) -> List[int]:
+        """List[int]: The target qubit indices of the operation."""
 
     @property
     @abstractmethod
