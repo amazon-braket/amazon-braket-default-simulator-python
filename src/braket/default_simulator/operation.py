@@ -82,7 +82,7 @@ class Observable(Operation, ABC):
     @property
     @abstractmethod
     def diagonalizing_matrix(self) -> Optional[np.ndarray]:
-        """ The matrix that diagonalizes the observable in the computation basis.
+        """ The matrix that diagonalizes the observable in the computational basis.
 
         Returns:
             Optional[np.ndarray]: The matrix that diagonalizes the observable
