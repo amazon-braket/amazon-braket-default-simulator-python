@@ -137,7 +137,7 @@ class StateVectorSimulation:
                 corresponding computational basis state.
         """
         return np.random.choice(
-            len(self.state_vector), p=self.probability_amplitudes, size=num_samples
+            len(self._state_vector), p=self.probability_amplitudes, size=num_samples
         )
 
     @property
@@ -167,6 +167,6 @@ class StateVectorSimulation:
     @property
     def probability_amplitudes(self) -> np.ndarray:
         """np.ndarray: The probability amplitudes corresponding to each basis state."""
-        amplitudes = np.abs(self.state_vector)
+        amplitudes = np.abs(self._state_vector)
         amplitudes **= 2
         return amplitudes
