@@ -13,7 +13,7 @@
 
 import numpy as np
 from braket.default_simulator import TensorProduct, operations
-from braket.default_simulator.utils import pauli_eigenvalues
+from braket.default_simulator.operation_helpers import pauli_eigenvalues
 
 angle = -np.pi / 4
 cos_component = np.cos(angle / 2)

@@ -14,12 +14,17 @@
 from __future__ import annotations
 
 from functools import singledispatch
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
 from braket.default_simulator.operation import GateOperation, Observable
-from braket.default_simulator.utils import pauli_eigenvalues
+from braket.default_simulator.operation_helpers import (
+    check_hermitian,
+    check_matrix_dimensions,
+    check_unitary,
+    pauli_eigenvalues,
+)
 
 
 @singledispatch
@@ -549,7 +554,10 @@ class Unitary(GateOperation):
 
     def __init__(self, targets, matrix):
         self._targets = targets
-        self._matrix = matrix
+        clone = np.array(matrix, dtype=complex)
+        check_matrix_dimensions(clone, targets)
+        check_unitary(clone)
+        self._matrix = clone
 
     @property
     def matrix(self) -> np.ndarray:
@@ -576,10 +584,14 @@ class Hermitian(Observable):
 
     def __init__(self, targets, matrix):
         self._targets = targets
-        self._matrix = matrix
+        clone = np.array(matrix, dtype=complex)
+        check_matrix_dimensions(clone, targets)
+        check_hermitian(clone)
+        self._matrix = clone
 
     @property
     def matrix(self) -> np.ndarray:
+        """np.ndarray: The Hermitian matrix defining the observable."""
         return np.array(self._matrix)
 
     @property
@@ -592,14 +604,25 @@ class Hermitian(Observable):
 
     @property
     def eigenvalues(self) -> np.ndarray:
-        return self._eigendecomposition["eigenvalues"]
+        return self._eigendecomposition()["eigenvalues"]
 
     @property
     def diagonalizing_matrix(self) -> Optional[np.ndarray]:
-        return self._eigendecomposition["eigenvectors"].conj().T
+        return self._eigendecomposition()["eigenvectors"].conj().T
 
-    @property
-    def _eigendecomposition(self):
+    def _eigendecomposition(self) -> Dict[str, np.ndarray]:
+        """ Decomposes the Hermitian matrix into its eigenvectors and associated eigenvalues.
+
+        The eigendecomposition is cached so that if another Hermitian observable
+        is created with the same matrix, the eigendecomposition doesn't have to
+        be recalculated.
+
+        Returns:
+            Dict[str, np.ndarray]: The keys are "eigenvectors", mapping to a matrix whose
+                columns are the eigenvectors of the matrix, and "eigenvalues", a list of
+                associated eigenvalues in the order their corresponding eigenvectors in
+                the "eigenvectors" matrix
+        """
         mat_key = tuple(self._matrix.flatten().tolist())
         if mat_key not in Hermitian._eigenpairs:
             eigenvalues, eigenvectors = np.linalg.eigh(self.matrix)
@@ -607,5 +630,4 @@ class Hermitian(Observable):
                 "eigenvectors": eigenvectors,
                 "eigenvalues": eigenvalues,
             }
-
         return Hermitian._eigenpairs[mat_key]
