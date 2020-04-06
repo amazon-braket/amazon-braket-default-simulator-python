@@ -133,8 +133,8 @@ class StateVectorSimulation:
 
         Returns:
             List[int]: List of states sampled according to their probability amplitudes
-                in the state vector. Each integer represents the decimal encoding of the
-                corresponding computational basis state.
+            in the state vector. Each integer represents the decimal encoding of the
+            corresponding computational basis state.
         """
         return np.random.choice(
             len(self._state_vector), p=self.probability_amplitudes, size=num_samples

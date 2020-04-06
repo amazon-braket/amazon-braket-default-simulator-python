@@ -30,9 +30,9 @@ class DefaultSimulator:
 
         Returns:
             Dict[str, Any]: dictionary containing the state vector (keyed by `StateVector`,
-                value type `Dict[str, complex]`), measurements (keyed by `Measurements`,
-                value type `List[List[str]]`, and task metadata, if any (keyed by `TaskMetadata`,
-                value type `Dict[str, Any]`)).
+            value type `Dict[str, complex]`), measurements (keyed by `Measurements`,
+            value type `List[List[str]]`, and task metadata, if any (keyed by `TaskMetadata`,
+            value type `Dict[str, Any]`)).
 
         Examples:
             >>> circuit_ir = Circuit().h(0).to_ir()
