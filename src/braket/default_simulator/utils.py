@@ -17,14 +17,14 @@ import numpy as np
 
 
 @lru_cache()
-def pauli_eigenvalues(n: int) -> np.ndarray:
+def pauli_eigenvalues(num_qubits: int) -> np.ndarray:
     """ The eigenvalues of Pauli operators and their tensor products.
 
     Args:
-        n (int): the number of qubits the operator acts on
+        num_qubits (int): the number of qubits the operator acts on
     Returns:
         np.ndarray: the eigenvalues of a Pauli product operator of the given size
     """
-    if n == 1:
+    if num_qubits == 1:
         return np.array([1, -1])
-    return np.concatenate([pauli_eigenvalues(n - 1), -pauli_eigenvalues(n - 1)])
+    return np.concatenate([pauli_eigenvalues(num_qubits - 1), -pauli_eigenvalues(num_qubits - 1)])
