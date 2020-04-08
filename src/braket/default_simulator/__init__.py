@@ -12,11 +12,8 @@
 # language governing permissions and limitations under the License.
 
 # Execute initialization code in the gate_operations module
-import braket.default_simulator.operations as operations  # noqa: F401
-from braket.default_simulator.operation import (  # noqa: F401
-    GateOperation,
-    Observable,
-    TensorProduct,
-)
+from braket.default_simulator import gate_operations, observables  # noqa: F401
+from braket.default_simulator.observables import TensorProduct  # noqa: F401
+from braket.default_simulator.operation import GateOperation, Observable  # noqa: F401
 from braket.default_simulator.simulation import StateVectorSimulation  # noqa: F401
 from braket.default_simulator.simulator import DefaultSimulator  # noqa: F401

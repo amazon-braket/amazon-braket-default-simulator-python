@@ -13,7 +13,7 @@
 
 from typing import Any, Dict, List
 
-from braket.default_simulator.operations import from_braket_instruction
+from braket.default_simulator.gate_operations import from_braket_instruction
 from braket.default_simulator.simulation import StateVectorSimulation
 from braket.ir.jaqcd import Program
 

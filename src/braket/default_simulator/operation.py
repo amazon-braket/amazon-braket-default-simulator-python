@@ -13,16 +13,24 @@
 
 from __future__ import annotations
 
-import itertools
 from abc import ABC, abstractmethod
-from functools import reduce
 from typing import List, Optional
 
 import numpy as np
-from braket.default_simulator.operation_helpers import pauli_eigenvalues
 
 
-class GateOperation(ABC):
+class Operation(ABC):
+    """
+    Encapsulates an operation acting on a set of target qubits.
+    """
+
+    @property
+    @abstractmethod
+    def targets(self) -> List[int]:
+        """List[int]: The target qubit indices of the operation."""
+
+
+class GateOperation(Operation, ABC):
     """
     Encapsulates a unitary quantum gate operation acting on
     a set of target qubits.
@@ -30,24 +38,14 @@ class GateOperation(ABC):
 
     @property
     @abstractmethod
-    def targets(self) -> List[int]:
-        """List[int]: The target qubit indices of the operation."""
-
-    @property
-    @abstractmethod
     def matrix(self) -> np.ndarray:
         """np.ndarray: The matrix representation of the operation."""
 
 
-class Observable(ABC):
+class Observable(Operation, ABC):
     """
     Encapsulates an observable to be measured in the computational basis.
     """
-
-    @property
-    @abstractmethod
-    def targets(self) -> List[int]:
-        """List[int]: The target qubit indices of the operation."""
 
     @property
     @abstractmethod
@@ -72,66 +70,3 @@ class Observable(ABC):
         Optional[np.ndarray]: The matrix that diagonalizes the observable
         in the computational basis if it is not already in the computational basis.
         """
-
-
-class TensorProduct(Observable):
-    """
-    Tensor product of multiple observables.
-    """
-
-    def __init__(self, constituents: List[Observable]):
-        """
-        Args:
-            constituents (List[Observable]): The observables being combined together
-                via tensor product
-        """
-        self._constituents = constituents
-        self._targets = [target for observable in constituents for target in observable.targets]
-        self._eigenvalues = None
-
-    @property
-    def targets(self) -> List[int]:
-        return self._targets
-
-    @property
-    def is_standard(self) -> bool:
-        return False
-
-    @property
-    def eigenvalues(self) -> np.ndarray:
-        if self._eigenvalues is not None:
-            return self._eigenvalues
-
-        # check if there are any non-standard observables, such as Hermitian
-        if False in {observable.is_standard for observable in self._constituents}:
-            obs_sorted = sorted(self._constituents, key=lambda x: x.targets)
-
-            # Tensor product of observables contains a mixture
-            # of standard and non-standard observables
-            self._eigenvalues = np.array([1])
-            for k, g in itertools.groupby(obs_sorted, lambda x: x.is_standard):
-                if k:
-                    # Subgroup g contains only standard observables.
-                    self._eigenvalues = np.kron(self._eigenvalues, pauli_eigenvalues(len(list(g))))
-                else:
-                    # Subgroup g contains only non-standard observables.
-                    for nonstandard in g:
-                        # loop through all non-standard observables
-                        self._eigenvalues = np.kron(self._eigenvalues, nonstandard.eigenvalues)
-        else:
-            self._eigenvalues = pauli_eigenvalues(len(self.targets))
-
-        return self._eigenvalues
-
-    @property
-    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
-        return reduce(
-            # (A \otimes I)(I \otimes B) == A \otimes B
-            lambda a, b: np.kron(a, b),
-            [
-                observable.diagonalizing_matrix
-                for observable in self._constituents
-                # Ignore observables with trivial diagonalizing matrices
-                if observable.diagonalizing_matrix is not None
-            ],
-        )
