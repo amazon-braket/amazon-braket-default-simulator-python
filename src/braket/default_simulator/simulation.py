@@ -14,7 +14,7 @@
 from typing import List
 
 import numpy as np
-from braket.default_simulator.gate_operation import GateOperation
+from braket.default_simulator import GateOperation, Observable
 
 
 class StateVectorSimulation:
@@ -30,12 +30,14 @@ class StateVectorSimulation:
             qubit_count (int): The number of qubits being simulated.
                 All the qubits start in the `|0>` computational basis state.
         """
-        self._state_vector = np.zeros(2 ** qubit_count, dtype=complex)
-        self._state_vector[0] = 1
+        initial_state = np.zeros(2 ** qubit_count, dtype=complex)
+        initial_state[0] = 1
+        self._state_vector = initial_state
         self._qubit_count = qubit_count
+        self._post_observables = None
 
-    def evolve(self, operations: List[GateOperation]):
-        """Evolves the state of the simulation under the action of
+    def evolve(self, operations: List[GateOperation]) -> None:
+        """ Evolves the state of the simulation under the action of
         the specified gate operations.
         Note: This method mutates the state of the simulation.
 
@@ -45,33 +47,66 @@ class StateVectorSimulation:
         """
         self._state_vector = np.reshape(self._state_vector, [2] * self._qubit_count)
         for operation in operations:
-            self._apply_operation(operation)
+            self._state_vector = StateVectorSimulation._apply_operation(
+                self._state_vector, self._qubit_count, operation.matrix, operation.targets
+            )
         self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
 
-    def _apply_operation(self, operation: GateOperation):
-        """Updates the current state of the simulation by multiplying the state with
-        the unitary matrix corresponding to the operation.
+    def apply_observables(self, observables: List[Observable]) -> None:
+        """ Returns the diagonalizing matrices of the given observables
+        to the state of the simulation.
+
+        This method can only be called once.
 
         Args:
-            operation (GateOperation): Unitary gate to apply to evolve the current state
-                of the simulation.
+            observables (List[Observable]): The observables to apply
+
+        Raises:
+            RuntimeError: If this method is called more than once
         """
-        gate_matrix = np.reshape(operation.matrix, [2] * len(operation.targets) * 2)
+        if self._post_observables is not None:
+            raise RuntimeError("Observables have already been applied.")
+
+        state = np.reshape(self._state_vector, [2] * self._qubit_count)
+        for observable in observables:
+            # Only add to contraction parameters if the observable
+            # has a nontrivial diagonalizing matrix
+            if observable.diagonalizing_matrix is not None:
+                state = StateVectorSimulation._apply_operation(
+                    state, self._qubit_count, observable.diagonalizing_matrix, observable.targets
+                )
+        self._post_observables = state.reshape(2 ** self._qubit_count)
+
+    @staticmethod
+    def _apply_operation(state, qubit_count, matrix, targets) -> np.ndarray:
+        """ Updates the given state vector by multiplying the it with
+        the given unitary matrix acting on the given targets.
+
+        Args:
+            state: The state vector to update
+            qubit_count: The number of qubits in the state
+            matrix: The matrix to apply
+            targets: The targets the matrix will act on
+
+        Returns:
+            np.ndarray: The updated state vector
+        """
+        gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
         axes = (
-            np.arange(len(operation.targets), 2 * len(operation.targets)),
-            operation.targets,
+            np.arange(len(targets), 2 * len(targets)),
+            targets,
         )
-        dot_product = np.tensordot(gate_matrix, self._state_vector, axes=axes)
+        dot_product = np.tensordot(gate_matrix, state, axes=axes)
 
         # Axes given in `operation.targets` are in the first positions.
-        unused_idxs = [idx for idx in range(self._qubit_count) if idx not in operation.targets]
-        permutation = operation.targets + unused_idxs
+        unused_idxs = [idx for idx in range(qubit_count) if idx not in targets]
+        permutation = targets + unused_idxs
         # Invert the permutation to put the indices in the correct place
         inverse_permutation = np.argsort(permutation)
-        self._state_vector = np.transpose(dot_product, inverse_permutation)
+        return np.transpose(dot_product, inverse_permutation)
 
     def retrieve_samples(self, num_samples: int) -> List[int]:
-        """Retrieves `num_samples` samples of states from the state vector of the simulation,
+        """ Retrieves `num_samples` samples of states from the state vector of the simulation,
         based on the probability amplitudes.
 
         Args:
@@ -79,8 +114,8 @@ class StateVectorSimulation:
 
         Returns:
             List[int]: List of states sampled according to their probability amplitudes
-                in the state vector. Each integer represents the decimal encoding of the
-                corresponding computational basis state.
+            in the state vector. Each integer represents the decimal encoding of the
+            corresponding computational basis state.
         """
         return np.random.choice(
             len(self._state_vector), p=self.probability_amplitudes, size=num_samples
@@ -88,8 +123,22 @@ class StateVectorSimulation:
 
     @property
     def state_vector(self) -> np.ndarray:
-        """np.ndarray: The state vector specifying the current state of the simulation."""
+        """
+        np.ndarray: The state vector specifying the current state of the simulation.
+        """
         return self._state_vector
+
+    @property
+    def state_with_observables(self) -> np.ndarray:
+        """
+        np.ndarray: The final state vector of the simulation after application of observables.
+
+        Raises:
+            RuntimeError: If observables have not been applied
+        """
+        if self._post_observables is None:
+            raise RuntimeError("No observables applied")
+        return self._post_observables
 
     @property
     def qubit_count(self) -> int:

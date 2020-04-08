@@ -11,12 +11,14 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import braket.default_simulator.gate_operations as gate_operations
+import braket.default_simulator.observables
 import braket.ir.jaqcd as instruction
 import numpy as np
 import pytest
+from braket.default_simulator import gate_operations
+from braket.default_simulator.operation_helpers import check_unitary, pauli_eigenvalues
 
-testdata = [
+gate_testdata = [
     (instruction.H(target=13), [13], gate_operations.Hadamard),
     (instruction.X(target=11), [11], gate_operations.PauliX),
     (instruction.Y(target=10), [10], gate_operations.PauliY),
@@ -47,16 +49,27 @@ testdata = [
     ),
 ]
 
+observable_testdata = [
+    (gate_operations.Hadamard([13]), [13], pauli_eigenvalues(1), True),
+    (gate_operations.PauliX([11]), [11], pauli_eigenvalues(1), True),
+    (gate_operations.PauliY([10]), [10], pauli_eigenvalues(1), True),
+    (gate_operations.PauliZ([9]), [9], pauli_eigenvalues(1), True),
+    (gate_operations.Identity([7]), [7], np.array([1, 1]), False),
+    (
+        braket.default_simulator.observables.Hermitian([4], np.array([[1, 1 - 1j], [1 + 1j, -1]])),
+        [4],
+        [-np.sqrt(3), np.sqrt(3)],
+        False,
+    ),
+]
 
-@pytest.mark.parametrize("instruction, targets, operation_type", testdata)
+
+@pytest.mark.parametrize("instruction, targets, operation_type", gate_testdata)
 def test_gate_operation_matrix_is_unitary(instruction, targets, operation_type):
-    def _is_unitary(matrix):
-        return np.allclose(np.eye(len(matrix)), matrix.dot(matrix.T.conj()))
-
-    assert _is_unitary(gate_operations.from_braket_instruction(instruction).matrix)
+    check_unitary(gate_operations.from_braket_instruction(instruction).matrix)
 
 
-@pytest.mark.parametrize("instruction, targets, operation_type", testdata)
+@pytest.mark.parametrize("instruction, targets, operation_type", gate_testdata)
 def test_from_braket_instruction(instruction, targets, operation_type):
     operation_instance = gate_operations.from_braket_instruction(instruction)
     assert isinstance(operation_instance, operation_type)

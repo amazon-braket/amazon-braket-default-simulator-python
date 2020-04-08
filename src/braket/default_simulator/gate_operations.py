@@ -18,12 +18,13 @@ from typing import List
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
-from braket.default_simulator.gate_operation import GateOperation
+from braket.default_simulator.operation import GateOperation
+from braket.default_simulator.operation_helpers import check_matrix_dimensions, check_unitary
 
 
 @singledispatch
 def from_braket_instruction(instruction) -> GateOperation:
-    """Instantiates the concrete `GateOperation` object from the specified braket instruction.
+    """ Instantiates the concrete `GateOperation` object from the specified braket instruction.
 
     Args:
         instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
@@ -36,6 +37,26 @@ def from_braket_instruction(instruction) -> GateOperation:
             for the instruction type.
     """
     raise ValueError(f"Instruction {instruction} not recognized")
+
+
+class Identity(GateOperation):
+    """Identity gate"""
+
+    def __init__(self, targets):
+        self._targets = targets
+
+    @property
+    def matrix(self) -> np.ndarray:
+        return np.eye(2)
+
+    @property
+    def targets(self) -> List[int]:
+        return self._targets
+
+
+@from_braket_instruction.register(braket_instruction.I)
+def _i(instruction) -> Identity:
+    return Identity([instruction.target])
 
 
 class Hadamard(GateOperation):
@@ -278,26 +299,6 @@ def _c_phase_shift(instruction) -> CPhaseShift:
     return CPhaseShift([instruction.control, instruction.target], instruction.angle)
 
 
-class Identity(GateOperation):
-    """Identity gate"""
-
-    def __init__(self, targets):
-        self._targets = targets
-
-    @property
-    def matrix(self) -> np.ndarray:
-        return np.eye(2)
-
-    @property
-    def targets(self) -> List[int]:
-        return self._targets
-
-
-@from_braket_instruction.register(braket_instruction.I)
-def _i(instruction) -> Identity:
-    return Identity([instruction.target])
-
-
 class RotX(GateOperation):
     """X-axis rotation gate"""
 
@@ -482,7 +483,10 @@ class Unitary(GateOperation):
 
     def __init__(self, targets, matrix):
         self._targets = targets
-        self._matrix = matrix
+        clone = np.array(matrix, dtype=complex)
+        check_matrix_dimensions(clone, targets)
+        check_unitary(clone)
+        self._matrix = clone
 
     @property
     def matrix(self) -> np.ndarray:
