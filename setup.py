@@ -20,11 +20,7 @@ setup(
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
-    install_requires=[
-        "braket-ir @ git+https://github.com/aws/braket-python-ir.git",
-        "numpy",
-        "opt_einsum",
-    ],
+    install_requires=["braket-ir @ git+https://github.com/aws/braket-python-ir.git", "numpy"],
     entry_points={"braket.simulators": ["default = braket.default_simulator:DefaultSimulator"]},
     extras_require={
         "test": [
