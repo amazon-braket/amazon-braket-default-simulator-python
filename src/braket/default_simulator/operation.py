@@ -126,11 +126,12 @@ class TensorProduct(Observable):
     @property
     def diagonalizing_matrix(self) -> Optional[np.ndarray]:
         return reduce(
-            lambda a, b: np.tensordot(a, b, 0),
-            # Ignore observables with trivial diagonalizing matrices
+            # (A \otimes I)(I \otimes B) == A \otimes B
+            lambda a, b: np.kron(a, b),
             [
                 observable.diagonalizing_matrix
                 for observable in self._constituents
+                # Ignore observables with trivial diagonalizing matrices
                 if observable.diagonalizing_matrix is not None
             ],
         )

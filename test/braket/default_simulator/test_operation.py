@@ -37,9 +37,7 @@ def test_tensor_product_standard():
     assert (tensor.eigenvalues == pauli_eigenvalues(4)).all()
 
     # Z ignored
-    assert (
-        tensor.diagonalizing_matrix == np.tensordot(np.tensordot(h_diag, x_diag, 0), y_diag, 0)
-    ).all()
+    assert (tensor.diagonalizing_matrix == np.kron(np.kron(h_diag, x_diag), y_diag)).all()
 
 
 def test_tensor_product_nonstandard():
@@ -96,6 +94,4 @@ def test_tensor_product_nonstandard():
     assert (tensor.eigenvalues == eigenvalues).all()
 
     # Both Identity and Z ignored
-    assert (
-        tensor.diagonalizing_matrix == np.tensordot(np.tensordot(h_diag, x_diag, 0), y_diag, 0)
-    ).all()
+    assert (tensor.diagonalizing_matrix == np.kron(np.kron(h_diag, x_diag), y_diag)).all()
