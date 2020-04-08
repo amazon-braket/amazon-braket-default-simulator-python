@@ -46,10 +46,10 @@ class StateVectorSimulation:
             operations (List[GateOperation]): Gate operations to apply for
                 evolving the state of the simulation.
         """
-        np.reshape(self._state_vector, [2] * self.qubit_count)
+        self._state_vector = np.reshape(self._state_vector, [2] * self.qubit_count)
         for operation in operations:
             self._apply_operation(operation)
-        np.reshape(self._state_vector, 2 ** self.qubit_count)
+        self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
 
     def _apply_operation(self, operation: GateOperation) -> None:
         """ Updates the current state of the simulation by multiplying the state with
