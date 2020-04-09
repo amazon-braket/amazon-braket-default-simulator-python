@@ -148,6 +148,4 @@ class StateVectorSimulation:
     @property
     def probability_amplitudes(self) -> np.ndarray:
         """np.ndarray: The probability amplitudes corresponding to each basis state."""
-        amplitudes = np.abs(self._state_vector)
-        amplitudes **= 2
-        return amplitudes
+        return np.abs(self._state_vector) ** 2

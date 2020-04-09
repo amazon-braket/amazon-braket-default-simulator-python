@@ -28,3 +28,17 @@ html_theme = "sphinx_rtd_theme"
 htmlhelp_basename = "{}doc".format(project)
 
 napoleon_use_rtype = False
+
+
+# -- Options for MathJax output -------------------------------------------
+
+mathjax_config = {
+    "TeX": {
+        "Macros": {
+            "bra": [r"{\langle #1 |}", 1],
+            "ket": [r"{| #1 \rangle}", 1],
+            "expectation": [r"{\langle #1 \rangle_#2}", 2],
+            "variance": [r"{\mathrm{Var}_#2 \left( #1 \right)}", 2],
+        }
+    }
+}
