@@ -204,7 +204,7 @@ class Sample(ObservableResultType):
         """ Takes samples from measuring :math:`O`.
 
         Measurements are taken in the eigenbasis of the observable,
-        so they are the eigenvalues observable.
+        so they are the eigenvalues of the observable.
 
         Args:
             state (np.ndarray): The state vector to sample from
@@ -229,7 +229,7 @@ def _marginal_probability(state, targets=None) -> np.ndarray:
     num_qubits = int(np.log2(state.size))
     probabilities = np.abs(state) ** 2
 
-    if targets == list(range(num_qubits)):
+    if targets is None or targets == list(range(num_qubits)):
         # All qubits targeted, no need to marginalize
         return probabilities
 

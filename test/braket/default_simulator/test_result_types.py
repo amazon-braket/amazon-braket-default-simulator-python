@@ -89,5 +89,4 @@ def test_sample(state_vector, observable):
     assert len(sample) == shots
 
     # sample contains only 1 and -1 as entries
-    as_binary = (sample + 1) / 2
-    assert np.array_equal(as_binary, as_binary.astype(bool))
+    assert all([x in {-1, 1} for x in sample])
