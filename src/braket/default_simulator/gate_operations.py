@@ -280,7 +280,7 @@ def _ti(instruction) -> Ti:
 
 
 class V(GateOperation):
-    """Square of the X (not) gate"""
+    """Square root of the X (not) gate"""
 
     def __init__(self, targets):
         self._targets = targets
@@ -300,7 +300,7 @@ def _v(instruction) -> V:
 
 
 class Vi(GateOperation):
-    r"""The adjoint :math:`V^{\dagger}` of the square of the X (not) gate"""
+    r"""The adjoint :math:`V^{\dagger}` of the square root of the X (not) gate"""
 
     def __init__(self, targets):
         self._targets = targets
