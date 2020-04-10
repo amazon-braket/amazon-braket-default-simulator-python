@@ -16,7 +16,7 @@ import pytest
 from braket.default_simulator import TensorProduct, gate_operations, observables
 from braket.default_simulator.operation_helpers import check_unitary, pauli_eigenvalues
 
-observable_testdata = [
+testdata = [
     (observables.Hadamard([13]), [13], pauli_eigenvalues(1), True),
     (observables.PauliX([11]), [11], pauli_eigenvalues(1), True),
     (observables.PauliY([10]), [10], pauli_eigenvalues(1), True),
@@ -38,23 +38,23 @@ x_diag = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 y_diag = np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
 
 
-@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", observable_testdata)
+@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
 def test_observable_diagonalizing_matrix_unitary(observable, targets, eigenvalues, is_standard):
     if observable.diagonalizing_matrix is not None:
         check_unitary(observable.diagonalizing_matrix)
 
 
-@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", observable_testdata)
+@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
 def test_observable_targets(observable, targets, eigenvalues, is_standard):
     assert observable.targets == targets
 
 
-@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", observable_testdata)
+@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
 def test_observable_eigenvalues(observable, targets, eigenvalues, is_standard):
     assert np.allclose(observable.eigenvalues, eigenvalues)
 
 
-@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", observable_testdata)
+@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
 def test_observable_is_standard(observable, targets, eigenvalues, is_standard):
     assert observable.is_standard == is_standard
 
