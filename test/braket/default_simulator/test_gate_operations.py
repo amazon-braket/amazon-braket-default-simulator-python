@@ -17,7 +17,7 @@ from braket.default_simulator import gate_operations
 from braket.default_simulator.operation_helpers import check_unitary
 from braket.ir.jaqcd import shared_models
 
-gate_testdata = [
+testdata = [
     (instruction.H(target=13), [13], gate_operations.Hadamard),
     (instruction.X(target=11), [11], gate_operations.PauliX),
     (instruction.Y(target=10), [10], gate_operations.PauliY),
@@ -73,12 +73,12 @@ gate_testdata = [
 ]
 
 
-@pytest.mark.parametrize("instruction, targets, operation_type", gate_testdata)
+@pytest.mark.parametrize("instruction, targets, operation_type", testdata)
 def test_gate_operation_matrix_is_unitary(instruction, targets, operation_type):
     check_unitary(gate_operations.from_braket_instruction(instruction).matrix)
 
 
-@pytest.mark.parametrize("instruction, targets, operation_type", gate_testdata)
+@pytest.mark.parametrize("instruction, targets, operation_type", testdata)
 def test_from_braket_instruction(instruction, targets, operation_type):
     operation_instance = gate_operations.from_braket_instruction(instruction)
     assert isinstance(operation_instance, operation_type)
