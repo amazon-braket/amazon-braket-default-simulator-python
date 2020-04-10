@@ -220,7 +220,7 @@ def _s(instruction) -> S:
 
 
 class Si(GateOperation):
-    r"""The adjoint S^{\dagger} of the S gate"""
+    r"""The adjoint :math:`S^{\dagger}` of the S gate"""
 
     def __init__(self, targets):
         self._targets = targets
@@ -260,7 +260,7 @@ def _t(instruction) -> T:
 
 
 class Ti(GateOperation):
-    r"""The adjoint T^{\dagger} of the T gate"""
+    r"""The adjoint :math:`T^{\dagger}` of the T gate"""
 
     def __init__(self, targets):
         self._targets = targets
@@ -300,7 +300,7 @@ def _v(instruction) -> V:
 
 
 class Vi(GateOperation):
-    r"""The adjoint V^{\dagger} of the square of the X (not) gate"""
+    r"""The adjoint :math:`V^{\dagger}` of the square of the X (not) gate"""
 
     def __init__(self, targets):
         self._targets = targets
