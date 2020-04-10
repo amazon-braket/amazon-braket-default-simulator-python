@@ -107,19 +107,17 @@ class StateVectorSimulation:
 
     def retrieve_samples(self, num_samples: int) -> List[int]:
         """ Retrieves `num_samples` samples of states from the state vector of the simulation,
-        based on the probability amplitudes.
+        based on the probabilities.
 
         Args:
             num_samples (int): Number of samples to retrieve from the state vector.
 
         Returns:
-            List[int]: List of states sampled according to their probability amplitudes
+            List[int]: List of states sampled according to their probabilities
             in the state vector. Each integer represents the decimal encoding of the
             corresponding computational basis state.
         """
-        return np.random.choice(
-            len(self._state_vector), p=self.probability_amplitudes, size=num_samples
-        )
+        return np.random.choice(len(self._state_vector), p=self.probabilities, size=num_samples)
 
     @property
     def state_vector(self) -> np.ndarray:
@@ -146,8 +144,6 @@ class StateVectorSimulation:
         return self._qubit_count
 
     @property
-    def probability_amplitudes(self) -> np.ndarray:
-        """np.ndarray: The probability amplitudes corresponding to each basis state."""
-        amplitudes = np.abs(self._state_vector)
-        amplitudes **= 2
-        return amplitudes
+    def probabilities(self) -> np.ndarray:
+        """np.ndarray: The probabilities of each computational basis state."""
+        return np.abs(self._state_vector) ** 2

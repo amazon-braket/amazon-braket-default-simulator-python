@@ -114,7 +114,7 @@ def test_simulation_simple_circuits(
     simulation = StateVectorSimulation(qubit_count)
     simulation.evolve(instructions)
     assert np.allclose(state_vector, simulation.state_vector)
-    assert np.allclose(probability_amplitudes, simulation.probability_amplitudes)
+    assert np.allclose(probability_amplitudes, simulation.probabilities)
 
 
 @pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
@@ -144,9 +144,7 @@ def test_simulation_qft_circuit(qft_circuit_operations):
     simulation = StateVectorSimulation(qubit_count)
     operations = qft_circuit_operations(qubit_count)
     simulation.evolve(operations)
-    assert np.allclose(
-        simulation.probability_amplitudes, [1 / (2 ** qubit_count)] * (2 ** qubit_count)
-    )
+    assert np.allclose(simulation.probabilities, [1 / (2 ** qubit_count)] * (2 ** qubit_count))
 
 
 def test_simulation_retrieve_samples():
