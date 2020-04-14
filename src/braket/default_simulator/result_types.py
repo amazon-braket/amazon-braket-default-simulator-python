@@ -387,7 +387,7 @@ def _from_braket_observable(
     else:
         return TensorProduct(
             [
-                _from_single_observable(constituent, constituent=True)
+                _from_single_observable(constituent, is_constituent=True)
                 for constituent in ir_observable
             ],
             ir_targets,
@@ -397,21 +397,22 @@ def _from_braket_observable(
 def _from_single_observable(
     observable: Union[str, List[List[List[float]]]],
     targets: Optional[List[int]] = None,
-    constituent: bool = False,
+    # Tensor product observables are decoupled from targets
+    is_constituent: bool = False,
 ) -> Observable:
     if observable == "i":
-        return Identity(targets, constituent)
+        return Identity(targets, is_constituent)
     elif observable == "h":
-        return Hadamard(targets, constituent)
+        return Hadamard(targets, is_constituent)
     elif observable == "x":
-        return PauliX(targets, constituent)
+        return PauliX(targets, is_constituent)
     elif observable == "y":
-        return PauliY(targets, constituent)
+        return PauliY(targets, is_constituent)
     elif observable == "z":
-        return PauliZ(targets, constituent)
+        return PauliZ(targets, is_constituent)
     else:
         try:
-            return Hermitian(ir_matrix_to_ndarray(observable), targets, constituent)
+            return Hermitian(ir_matrix_to_ndarray(observable), targets, is_constituent)
         except Exception:
             raise ValueError(f"Invalid observable specified: {observable}")
 
