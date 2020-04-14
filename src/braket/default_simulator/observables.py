@@ -23,7 +23,7 @@ from braket.default_simulator.operation_helpers import (
     pauli_eigenvalues,
 )
 
-STANDARD_OBSERVABLES = {"h", "x", "y", "x"}
+STANDARD_OBSERVABLES = {"h", "x", "y", "z"}
 
 
 class Identity(Observable):
