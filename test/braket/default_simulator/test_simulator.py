@@ -43,6 +43,24 @@ def bell_ir():
     )
 
 
+@pytest.fixture
+def bell_ir_with_result():
+    return Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "results": [
+                    {"type": "amplitude", "states": ["11"]},
+                    {"type": "expectation", "observable": ["x"], "targets": [1]},
+                ],
+            }
+        )
+    )
+
+
 def test_simulator_run_grcs_16(grcs_16_qubit):
     simulator = DefaultSimulator()
     result = simulator.run(grcs_16_qubit.circuit_ir, qubit_count=16, shots=100)
@@ -72,3 +90,68 @@ def test_simulator_run_bell_pair(bell_ir):
     assert counter.keys() == {"00", "11"}
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
+
+
+def test_simulator_bell_pair_result_types(bell_ir_with_result):
+    simulator = DefaultSimulator()
+    shots_count = 10000
+    result = simulator.run(bell_ir_with_result, qubit_count=2, shots=shots_count)
+    assert len(result["RequestedResults"]) == 2
+    assert result["RequestedResults"] == [
+        {"Type": {"type": "amplitude", "states": ["11"]}, "Value": {"11": 1 / 2 ** 0.5}},
+        {"Type": {"type": "expectation", "operator": "x", "targets": [1]}, "Value": 0},
+    ]
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_fails_samples_0_shots():
+    simulator = DefaultSimulator()
+    prog = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [{"type": "h", "target": 0}],
+                "results": [{"type": "sample", "observable": ["x"], "targets": [0]}],
+            }
+        )
+    )
+    simulator.run(prog, qubit_count=1, shots=0)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_fails_2_obs_no_targets():
+    simulator = DefaultSimulator()
+    prog = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "results": [
+                    {"type": "expectation", "observable": ["x"]},
+                    {"type": "expectation", "observable": ["x"], "targets": [1]},
+                ],
+            }
+        )
+    )
+    simulator.run(prog, qubit_count=2, shots=100)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_fails_overlapping_targets():
+    simulator = DefaultSimulator()
+    prog = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "results": [
+                    {"type": "expectation", "observable": ["x"], "targets": [1]},
+                    {"type": "expectation", "observable": ["x"], "targets": [1]},
+                ],
+            }
+        )
+    )
+    simulator.run(prog, qubit_count=2, shots=100)

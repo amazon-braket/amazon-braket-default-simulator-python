@@ -153,6 +153,7 @@ apply_observables_testdata = [
         [gate_operations.Hadamard([0]), gate_operations.RotY([2], -np.pi / 4)],
         5,
     ),
+    ([observables.PauliX()], [gate_operations.Hadamard([0]), gate_operations.Hadamard([1])], 2),
 ]
 
 
@@ -214,9 +215,9 @@ def test_simulation_qft_circuit(qft_circuit_operations):
 
 
 def test_simulation_retrieve_samples():
-    simulation = StateVectorSimulation(2)
+    simulation = StateVectorSimulation(2, 10000)
     simulation.evolve([gate_operations.Hadamard([0]), gate_operations.CX([0, 1])])
-    counter = Counter(simulation.retrieve_samples(10000))
+    counter = Counter(simulation.retrieve_samples())
     assert simulation.qubit_count == 2
     assert counter.keys() == {0, 3}
     assert 0.4 < counter[0] / (counter[0] + counter[3]) < 0.6

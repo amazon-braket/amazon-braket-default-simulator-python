@@ -11,9 +11,15 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from braket.default_simulator.gate_operations import from_braket_instruction
+from braket.default_simulator.result_types import (
+    ObservableResultType,
+    ResultType,
+    Sample,
+    from_braket_result_type,
+)
 from braket.default_simulator.simulation import StateVectorSimulation
 from braket.ir.jaqcd import Program
 
@@ -41,14 +47,69 @@ class DefaultSimulator:
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
         ]
-        simulation = StateVectorSimulation(qubit_count)
+        no_observables, with_observables = (
+            DefaultSimulator._validate_result_types(circuit_ir, shots)
+            if circuit_ir.results
+            else ([], [])
+        )
+
+        simulation = StateVectorSimulation(qubit_count, shots)
         simulation.evolve(operations)
 
+        results = [
+            {"Type": result_type.result_info, "Value": result_type.calculate(simulation)}
+            for result_type in no_observables
+        ]
+
+        if with_observables:
+            observables = [result_type.observable for result_type in with_observables]
+            simulation.apply_observables(observables)
+            results += [
+                {"Type": result_type.result_info, "Value": result_type.calculate(simulation)}
+                for result_type in with_observables
+            ]
+
         return {
+            # TODO: Remove state vector from return dict
             "StateVector": DefaultSimulator._formatted_state_vector(simulation),
-            "Measurements": DefaultSimulator._formatted_measurements(simulation, shots),
+            "Measurements": DefaultSimulator._formatted_measurements(simulation),
+            "RequestedResults": results,
             "TaskMetadata": None,
         }
+
+    @staticmethod
+    def _validate_result_types(
+        circuit_ir: Program, shots: int
+    ) -> Tuple[List[ResultType], List[ObservableResultType]]:
+        no_observables = []
+        with_observables = []
+        for ir_result_type in circuit_ir.results:
+            result_type = from_braket_result_type(ir_result_type)
+            if isinstance(result_type, ObservableResultType):
+                with_observables.append(result_type)
+            else:
+                no_observables.append(result_type)
+
+        if [
+            result_type for result_type in with_observables if isinstance(result_type, Sample)
+        ] and not shots:
+            raise ValueError("No shots specified for sample measurement")
+
+        # Validate that if no target is specified for an observable
+        # (and so the observable acts on all qubits), then it is the
+        # only observable.
+        observable_targets = [result_type.observable.targets for result_type in with_observables]
+        if None in observable_targets and len(with_observables) > 1:
+            raise ValueError(
+                "Multiple observables found when one observable already acts on all qubits"
+            )
+
+        # Validate that there are no overlapping observable targets
+        flattened = [qubit for target in observable_targets for qubit in target]
+        if len(flattened) != len(set(flattened)):
+            raise ValueError("Overlapping targets among observables")
+
+        return no_observables, with_observables
 
     @staticmethod
     def _formatted_state_vector(simulation: StateVectorSimulation,) -> Dict[str, complex]:
@@ -67,12 +128,11 @@ class DefaultSimulator:
         }
 
     @staticmethod
-    def _formatted_measurements(simulation: StateVectorSimulation, shots: int) -> List[List[str]]:
-        """ Retrieves `shots` number of formatted measurements obtained from the specified simulation.
+    def _formatted_measurements(simulation: StateVectorSimulation) -> List[List[str]]:
+        """ Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (StateVectorSimulation): Simulation to use for obtaining the measurements.
-                shots (int): Number of measurements to be performed.
 
         Returns:
             List[List[str]]: List containing the measurements, where each measurement consists
@@ -80,5 +140,5 @@ class DefaultSimulator:
         """
         return [
             list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
-            for sample in simulation.retrieve_samples(shots)
+            for sample in simulation.retrieve_samples()
         ]
