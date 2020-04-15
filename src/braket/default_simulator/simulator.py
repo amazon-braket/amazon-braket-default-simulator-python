@@ -52,22 +52,32 @@ class DefaultSimulator:
             non_observable_result_types,
             observable_result_types,
         ) = DefaultSimulator._translate_result_types(circuit_ir)
-        DefaultSimulator._validate_observable_result_types(observable_result_types, shots)
+        DefaultSimulator._validate_observable_result_types(
+            list(observable_result_types.values()), shots
+        )
 
         simulation = StateVectorSimulation(qubit_count, shots)
         simulation.evolve(operations)
 
         results = [
-            {"Type": result_type.properties_json, "Value": result_type.calculate(simulation)}
-            for result_type in non_observable_result_types
+            {
+                "Type": vars(circuit_ir.results[index]),
+                "Value": non_observable_result_types[index].calculate(simulation),
+            }
+            for index in non_observable_result_types
         ]
 
         if observable_result_types:
-            observables = [result_type.observable for result_type in observable_result_types]
+            observables = [
+                observable_result_types[index].observable for index in observable_result_types
+            ]
             simulation.apply_observables(observables)
             results += [
-                {"Type": result_type.properties_json, "Value": result_type.calculate(simulation)}
-                for result_type in observable_result_types
+                {
+                    "Type": vars(circuit_ir.results[index]),
+                    "Value": observable_result_types[index].calculate(simulation),
+                }
+                for index in observable_result_types
             ]
 
         return_dict = {"TaskMetadata": None}
@@ -81,17 +91,17 @@ class DefaultSimulator:
     @staticmethod
     def _translate_result_types(
         circuit_ir: Program,
-    ) -> Tuple[List[ResultType], List[ObservableResultType]]:
+    ) -> Tuple[Dict[int, ResultType], Dict[int, ObservableResultType]]:
         if not circuit_ir.results:
-            return [], []
-        non_observable_result_types = []
-        observable_result_types = []
-        for ir_result_type in circuit_ir.results:
-            result_type = from_braket_result_type(ir_result_type)
+            return {}, {}
+        non_observable_result_types = {}
+        observable_result_types = {}
+        for i in range(len(circuit_ir.results)):
+            result_type = from_braket_result_type(circuit_ir.results[i])
             if isinstance(result_type, ObservableResultType):
-                observable_result_types.append(result_type)
+                observable_result_types[i] = result_type
             else:
-                non_observable_result_types.append(result_type)
+                non_observable_result_types[i] = result_type
         return non_observable_result_types, observable_result_types
 
     @staticmethod

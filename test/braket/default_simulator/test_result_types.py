@@ -32,49 +32,16 @@ from braket.ir.jaqcd import shared_models
 NUM_SAMPLES = 1000
 
 observable_type_testdata = [
+    (jaqcd.Expectation(targets=[1], observable=["x"]), Expectation),
+    (jaqcd.Variance(targets=[1], observable=["y"]), Variance),
+    (jaqcd.Sample(targets=[1], observable=["z"]), Sample),
+    (jaqcd.Expectation(observable=["h"]), Expectation),
+    (jaqcd.Variance(targets=[0], observable=[[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]), Variance),
+    (jaqcd.Sample(observable=[[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]), Sample),
+    (jaqcd.Expectation(targets=[0, 1], observable=["h", "i"]), Expectation),
     (
-        jaqcd.Expectation(targets=[1], observable=["x"]),
-        {"type": "expectation", "operator": "PauliX", "targets": [1]},
-    ),
-    (
-        jaqcd.Variance(targets=[1], observable=["y"]),
-        {"type": "variance", "operator": "PauliY", "targets": [1]},
-    ),
-    (
-        jaqcd.Sample(targets=[1], observable=["z"]),
-        {"type": "sample", "operator": "PauliZ", "targets": [1]},
-    ),
-    (
-        jaqcd.Expectation(observable=["h"]),
-        {"type": "expectation", "operator": "Hadamard", "targets": None},
-    ),
-    (
-        jaqcd.Variance(targets=[0], observable=[[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]),
-        {
-            "type": "variance",
-            "operator": "Hermitian([[0.+0.j,1.+0.j],[1.+0.j,0.+0.j]])",
-            "targets": [0],
-        },
-    ),
-    (
-        jaqcd.Sample(observable=[[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]),
-        {
-            "type": "sample",
-            "operator": "Hermitian([[0.+0.j,1.+0.j],[1.+0.j,0.+0.j]])",
-            "targets": None,
-        },
-    ),
-    (
-        jaqcd.Variance(targets=[0, 1], observable=["h", "i"]),
-        {"type": "variance", "operator": "TensorProduct(Hadamard,Identity)", "targets": [0, 1]},
-    ),
-    (
-        jaqcd.Sample(targets=[0, 1], observable=["h", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]),
-        {
-            "type": "sample",
-            "operator": "TensorProduct(Hadamard,Hermitian([[0.+0.j,1.+0.j],[1.+0.j,0.+0.j]]))",
-            "targets": [0, 1],
-        },
+        jaqcd.Variance(targets=[0, 1], observable=["h", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]),
+        Variance,
     ),
 ]
 
@@ -114,7 +81,6 @@ def observable():
 def test_state_vector(simulation, state_vector):
     result_type = StateVector()
     assert np.allclose(result_type.calculate(simulation), state_vector)
-    assert result_type.properties_json == {"type": "state_vector"}
 
 
 def test_amplitude(simulation, state_vector):
@@ -123,14 +89,11 @@ def test_amplitude(simulation, state_vector):
     assert cmath.isclose(amplitudes["0010"], state_vector[2])
     assert cmath.isclose(amplitudes["0101"], state_vector[5])
     assert cmath.isclose(amplitudes["1110"], state_vector[14])
-    assert result_type.properties_json == {"type": "amplitude", "states": ["0010", "0101", "1110"]}
 
 
 def test_probability(simulation, state_vector, marginal_12):
-    result_type = Probability([1, 2])
     probability_12 = Probability([1, 2]).calculate(simulation)
     assert np.allclose(probability_12, marginal_12)
-    assert result_type.properties_json == {"type": "probability", "targets": [1, 2]}
 
     state_vector_probabilities = np.abs(state_vector) ** 2
 
@@ -203,9 +166,9 @@ def test_from_braket_result_type_probability():
     assert translated._targets == [0, 1]
 
 
-@pytest.mark.parametrize("braket_result_type, result_info", observable_type_testdata)
-def test_from_braket_result_type_observable(braket_result_type, result_info):
-    assert from_braket_result_type(braket_result_type).properties_json == result_info
+@pytest.mark.parametrize("braket_result_type, result_type", observable_type_testdata)
+def test_from_braket_result_type_observable(braket_result_type, result_type):
+    assert isinstance(from_braket_result_type(braket_result_type), result_type)
 
 
 @pytest.mark.xfail(raises=ValueError)

@@ -70,11 +70,6 @@ class ResultType(ABC):
             Any: The result of the calculation
         """
 
-    @property
-    @abstractmethod
-    def properties_json(self) -> Dict[str, Any]:
-        """ Dict[str, Any]: A map holding properties of the result type."""
-
 
 class ObservableResultType(ResultType, ABC):
     """
@@ -110,10 +105,6 @@ class StateVector(ResultType):
         """
         return simulation.state_vector
 
-    @property
-    def properties_json(self) -> Dict[str, Any]:
-        return {"type": "state_vector"}
-
 
 @from_braket_result_type.register
 def _(statevector: jaqcd.StateVector):
@@ -146,10 +137,6 @@ class Amplitude(ResultType):
         """
         state = simulation.state_vector
         return {basis_state: state[int(basis_state, 2)] for basis_state in self._states}
-
-    @property
-    def properties_json(self) -> Dict[str, Any]:
-        return {"type": "amplitude", "states": self._states}
 
 
 @from_braket_result_type.register
@@ -186,10 +173,6 @@ class Probability(ResultType):
 
         """
         return _marginal_probability(simulation.state_vector, simulation.qubit_count, self._targets)
-
-    @property
-    def properties_json(self) -> Dict[str, Any]:
-        return {"type": "probability", "targets": self._targets}
 
 
 @from_braket_result_type.register
@@ -246,14 +229,6 @@ class Expectation(ObservableResultType):
         prob = _marginal_probability(state, qubit_count, targets)
         return (prob @ eigenvalues).real
 
-    @property
-    def properties_json(self) -> Dict[str, Any]:
-        return {
-            "type": "expectation",
-            "operator": self._observable.name,
-            "targets": self._observable.targets,
-        }
-
 
 @from_braket_result_type.register
 def _(expectation: jaqcd.Expectation):
@@ -306,14 +281,6 @@ class Variance(ObservableResultType):
         prob = _marginal_probability(state, qubit_count, targets)
         return prob @ (eigenvalues ** 2) - (prob @ eigenvalues).real ** 2
 
-    @property
-    def properties_json(self) -> Dict[str, Any]:
-        return {
-            "type": "variance",
-            "operator": self._observable.name,
-            "targets": self._observable.targets,
-        }
-
 
 @from_braket_result_type.register
 def _(variance: jaqcd.Variance):
@@ -364,14 +331,6 @@ class Sample(ObservableResultType):
     def _sample(state, qubit_count, eigenvalues, targets, num_samples):
         prob = _marginal_probability(state, qubit_count, targets)
         return np.random.choice(eigenvalues, p=prob, size=num_samples)
-
-    @property
-    def properties_json(self) -> Dict[str, Any]:
-        return {
-            "type": "sample",
-            "operator": self._observable.name,
-            "targets": self._observable.targets,
-        }
 
 
 @from_braket_result_type.register

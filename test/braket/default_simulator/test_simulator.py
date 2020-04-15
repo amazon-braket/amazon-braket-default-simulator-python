@@ -87,7 +87,7 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result):
     assert len(result["ResultTypes"]) == 2
     assert result["ResultTypes"] == [
         {"Type": {"type": "amplitude", "states": ["11"]}, "Value": {"11": 1 / 2 ** 0.5}},
-        {"Type": {"type": "expectation", "operator": "PauliX", "targets": [1]}, "Value": 0},
+        {"Type": {"type": "expectation", "observable": ["x"], "targets": [1]}, "Value": 0},
     ]
 
 

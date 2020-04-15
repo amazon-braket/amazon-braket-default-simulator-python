@@ -205,14 +205,8 @@ class Hermitian(Observable):
                 "Matrix must have shape (2, 2) if target is empty, " f"but has shape {clone.shape}"
             )
         check_hermitian(clone)
-        matrix_str = np.array2string(clone, separator=",").replace("\n", "").replace(" ", "")
         self._matrix = clone
-        self._name = f"{type(self).__name__}({matrix_str})"
         self._targets = targets
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def is_standard(self) -> bool:
@@ -271,16 +265,9 @@ class TensorProduct(Observable):
         """
         if len(constituents) < 2:
             raise ValueError("A tensor product should have at least 2 constituent observables")
-        self._name = (
-            f"{type(self).__name__}({','.join([constituent.name for constituent in constituents])})"
-        )
         self._targets = [target for observable in constituents for target in observable.targets]
         self._diagonalizing_matrix = TensorProduct._construct_matrix(constituents)
         self._eigenvalues = TensorProduct._compute_eigenvalues(constituents, self._targets)
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def is_standard(self) -> bool:

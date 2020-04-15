@@ -17,23 +17,21 @@ from braket.default_simulator import gate_operations, observables
 from braket.default_simulator.operation_helpers import check_unitary, pauli_eigenvalues
 
 testdata = [
-    (observables.Hadamard([13]), [13], pauli_eigenvalues(1), "Hadamard", True),
-    (observables.PauliX([11]), [11], pauli_eigenvalues(1), "PauliX", True),
-    (observables.PauliY([10]), [10], pauli_eigenvalues(1), "PauliY", True),
-    (observables.PauliZ([9]), [9], pauli_eigenvalues(1), "PauliZ", True),
-    (observables.Identity([7]), [7], np.array([1, 1]), "Identity", False),
+    (observables.Hadamard([13]), [13], pauli_eigenvalues(1), True),
+    (observables.PauliX([11]), [11], pauli_eigenvalues(1), True),
+    (observables.PauliY([10]), [10], pauli_eigenvalues(1), True),
+    (observables.PauliZ([9]), [9], pauli_eigenvalues(1), True),
+    (observables.Identity([7]), [7], np.array([1, 1]), False),
     (
         observables.Hermitian(np.array([[1, 1 - 1j], [1 + 1j, -1]]), [4]),
         [4],
         [-np.sqrt(3), np.sqrt(3)],
-        "Hermitian([[1.+0.j,1.-1.j],[1.+1.j,-1.+0.j]])",
         False,
     ),
     (
         observables.Hermitian(np.array([[1, 1 - 1j], [1 + 1j, -1]])),
         None,
         [-np.sqrt(3), np.sqrt(3)],
-        "Hermitian([[1.+0.j,1.-1.j],[1.+1.j,-1.+0.j]])",
         False,
     ),
 ]
@@ -54,13 +52,12 @@ x_diag = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 y_diag = np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
 
 
-@pytest.mark.parametrize("observable, targets, eigenvalues, name, is_standard", testdata)
-def test_observable_properties(observable, targets, eigenvalues, name, is_standard):
+@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
+def test_observable_properties(observable, targets, eigenvalues, is_standard):
     if observable.diagonalizing_matrix is not None:
         check_unitary(observable.diagonalizing_matrix)
     assert observable.targets == targets
     assert np.allclose(observable.eigenvalues, eigenvalues)
-    assert observable.name == name
     assert observable.is_standard == is_standard
 
 
@@ -102,7 +99,6 @@ def test_tensor_product_standard():
         ]
     )
     assert tensor.targets == [1, 3, 7, 4]
-    assert tensor.name == "TensorProduct(Hadamard,PauliX,PauliZ,PauliY)"
     assert (tensor.eigenvalues == pauli_eigenvalues(4)).all()
     assert not tensor.is_standard
 

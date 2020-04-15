@@ -48,11 +48,6 @@ class Observable(Operation, ABC):
     """
 
     @property
-    def name(self) -> str:
-        """ str: The name of the observable"""
-        return type(self).__name__
-
-    @property
     @abstractmethod
     def is_standard(self) -> bool:
         """ bool: Whether the observable is one of the four standard observables X, Y, Z and H.
