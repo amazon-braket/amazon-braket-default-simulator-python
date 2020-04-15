@@ -43,28 +43,35 @@ def bell_ir():
     )
 
 
+@pytest.fixture
+def bell_ir_with_result():
+    return Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "results": [
+                    {"type": "amplitude", "states": ["11"]},
+                    {"type": "expectation", "observable": ["x"], "targets": [1]},
+                ],
+            }
+        )
+    )
+
+
 def test_simulator_run_grcs_16(grcs_16_qubit):
     simulator = DefaultSimulator()
     result = simulator.run(grcs_16_qubit.circuit_ir, qubit_count=16, shots=100)
-    state_vector = result["StateVector"]
-    zero_state = "0" * 16
-    assert cmath.isclose(
-        abs(state_vector[zero_state]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7
-    )
+    state_vector = result["ResultTypes"][0]["Value"]
+    assert cmath.isclose(abs(state_vector[0]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7)
 
 
 def test_simulator_run_bell_pair(bell_ir):
     simulator = DefaultSimulator()
     shots_count = 10000
     result = simulator.run(bell_ir, qubit_count=2, shots=shots_count)
-    expected_state_vector = {"00": 0.70710678, "01": 0, "10": 0, "11": 0.70710678}
-    assert result["StateVector"].keys() == expected_state_vector.keys()
-    assert all(
-        [
-            cmath.isclose(result["StateVector"][k], expected_state_vector[k], abs_tol=1e-7)
-            for k in expected_state_vector.keys()
-        ]
-    )
 
     assert all([len(measurement) == 2] for measurement in result["Measurements"])
     assert len(result["Measurements"]) == shots_count
@@ -72,3 +79,73 @@ def test_simulator_run_bell_pair(bell_ir):
     assert counter.keys() == {"00", "11"}
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
+    assert result["TaskMetadata"] == {"Ir": bell_ir.json(), "IrType": "jaqcd", "Shots": shots_count}
+
+
+def test_simulator_bell_pair_result_types(bell_ir_with_result):
+    simulator = DefaultSimulator()
+    result = simulator.run(bell_ir_with_result, qubit_count=2, shots=0)
+    assert len(result["ResultTypes"]) == 2
+    assert result["ResultTypes"] == [
+        {"Type": {"type": "amplitude", "states": ["11"]}, "Value": {"11": 1 / 2 ** 0.5}},
+        {"Type": {"type": "expectation", "observable": ["x"], "targets": [1]}, "Value": 0},
+    ]
+    assert result["TaskMetadata"] == {
+        "Ir": bell_ir_with_result.json(),
+        "IrType": "jaqcd",
+        "Shots": 0,
+    }
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_fails_samples_0_shots():
+    simulator = DefaultSimulator()
+    prog = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [{"type": "h", "target": 0}],
+                "results": [{"type": "sample", "observable": ["x"], "targets": [0]}],
+            }
+        )
+    )
+    simulator.run(prog, qubit_count=1, shots=0)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_fails_2_obs_no_targets():
+    simulator = DefaultSimulator()
+    prog = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "results": [
+                    {"type": "expectation", "observable": ["x"]},
+                    {"type": "expectation", "observable": ["x"], "targets": [1]},
+                ],
+            }
+        )
+    )
+    simulator.run(prog, qubit_count=2, shots=100)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_fails_overlapping_targets():
+    simulator = DefaultSimulator()
+    prog = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "results": [
+                    {"type": "expectation", "observable": ["x"], "targets": [1]},
+                    {"type": "expectation", "observable": ["x"], "targets": [1]},
+                ],
+            }
+        )
+    )
+    simulator.run(prog, qubit_count=2, shots=100)

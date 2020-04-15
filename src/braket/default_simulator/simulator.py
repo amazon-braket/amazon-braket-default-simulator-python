@@ -10,10 +10,16 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
-
-from typing import Any, Dict, List
+import itertools
+from typing import Any, Dict, List, Tuple
 
 from braket.default_simulator.gate_operations import from_braket_instruction
+from braket.default_simulator.result_types import (
+    ObservableResultType,
+    ResultType,
+    Sample,
+    from_braket_result_type,
+)
 from braket.default_simulator.simulation import StateVectorSimulation
 from braket.ir.jaqcd import Program
 
@@ -41,38 +47,94 @@ class DefaultSimulator:
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
         ]
-        simulation = StateVectorSimulation(qubit_count)
+
+        (
+            non_observable_result_types,
+            observable_result_types,
+        ) = DefaultSimulator._translate_result_types(circuit_ir)
+        DefaultSimulator._validate_observable_result_types(
+            list(observable_result_types.values()), shots
+        )
+
+        simulation = StateVectorSimulation(qubit_count, shots)
         simulation.evolve(operations)
 
-        return {
-            "StateVector": DefaultSimulator._formatted_state_vector(simulation),
-            "Measurements": DefaultSimulator._formatted_measurements(simulation, shots),
-            "TaskMetadata": None,
-        }
+        results = [
+            {
+                "Type": vars(circuit_ir.results[index]),
+                "Value": non_observable_result_types[index].calculate(simulation),
+            }
+            for index in non_observable_result_types
+        ]
+
+        if observable_result_types:
+            observables = [
+                observable_result_types[index].observable for index in observable_result_types
+            ]
+            simulation.apply_observables(observables)
+            results += [
+                {
+                    "Type": vars(circuit_ir.results[index]),
+                    "Value": observable_result_types[index].calculate(simulation),
+                }
+                for index in observable_result_types
+            ]
+
+        return DefaultSimulator._create_results_dict(results, circuit_ir, simulation)
 
     @staticmethod
-    def _formatted_state_vector(simulation: StateVectorSimulation,) -> Dict[str, complex]:
-        """ Retrieves the formatted state vector for the specified simulation.
-
-        Args:
-            simulation (StateVectorSimulation): Simulation to be used for constructing the
-                formatted state vector result.
-        Returns:
-            Dict[str, complex]: Dictionary with key as the state represented in the big endian
-            format and the value as the probability amplitude.
-        """
-        return {
-            "{number:0{width}b}".format(number=idx, width=simulation.qubit_count): coefficient
-            for idx, coefficient in enumerate(simulation.state_vector)
-        }
+    def _translate_result_types(
+        circuit_ir: Program,
+    ) -> Tuple[Dict[int, ResultType], Dict[int, ObservableResultType]]:
+        if not circuit_ir.results:
+            return {}, {}
+        non_observable_result_types = {}
+        observable_result_types = {}
+        for i in range(len(circuit_ir.results)):
+            result_type = from_braket_result_type(circuit_ir.results[i])
+            if isinstance(result_type, ObservableResultType):
+                observable_result_types[i] = result_type
+            else:
+                non_observable_result_types[i] = result_type
+        return non_observable_result_types, observable_result_types
 
     @staticmethod
-    def _formatted_measurements(simulation: StateVectorSimulation, shots: int) -> List[List[str]]:
-        """ Retrieves `shots` number of formatted measurements obtained from the specified simulation.
+    def _validate_observable_result_types(
+        observable_result_types: List[ObservableResultType], shots: int
+    ) -> None:
+        if [
+            result_type
+            for result_type in observable_result_types
+            if isinstance(result_type, Sample)
+        ] and not shots:
+            raise ValueError("No shots specified for sample measurement")
+
+        # Validate that if no target is specified for an observable
+        # (and so the observable acts on all qubits), then it is the
+        # only observable.
+        observable_targets = [
+            result_type.observable.targets for result_type in observable_result_types
+        ]
+        if None in observable_targets and len(observable_result_types) > 1:
+            raise ValueError(
+                "Only one observable is allowed when one acts on all targets, but "
+                f"{len(observable_result_types)} observables were found"
+            )
+
+        # Validate that there are no overlapping observable targets
+        flattened = list(itertools.chain(*observable_targets))
+        if len(flattened) != len(set(flattened)):
+            raise ValueError(
+                "Overlapping targets among observables; qubits with more than one observable: "
+                f"{set([qubit for qubit in flattened if flattened.count(qubit) > 1])}"
+            )
+
+    @staticmethod
+    def _formatted_measurements(simulation: StateVectorSimulation) -> List[List[str]]:
+        """ Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (StateVectorSimulation): Simulation to use for obtaining the measurements.
-                shots (int): Number of measurements to be performed.
 
         Returns:
             List[List[str]]: List containing the measurements, where each measurement consists
@@ -80,5 +142,19 @@ class DefaultSimulator:
         """
         return [
             list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
-            for sample in simulation.retrieve_samples(shots)
+            for sample in simulation.retrieve_samples()
         ]
+
+    @staticmethod
+    def _create_results_dict(
+        results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation
+    ) -> Dict[str, Any]:
+        return_dict = {
+            "TaskMetadata": {"Ir": circuit_ir.json(), "IrType": "jaqcd", "Shots": simulation.shots}
+        }
+        if results:
+            return_dict["ResultTypes"] = results
+        if simulation.shots:
+            return_dict["Measurements"] = DefaultSimulator._formatted_measurements(simulation)
+
+        return return_dict

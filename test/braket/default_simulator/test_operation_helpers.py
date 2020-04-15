@@ -21,6 +21,7 @@ from braket.default_simulator.operation_helpers import (
     check_hermitian,
     check_matrix_dimensions,
     check_unitary,
+    ir_matrix_to_ndarray,
 )
 
 x_matrix = np.array([[0, 1], [1, 0]])
@@ -69,6 +70,11 @@ def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(pauli_product
         operation_helpers.pauli_eigenvalues(3),
         np.diag(np.kron(z_matrix, np.kron(z_matrix, z_matrix))),
     )
+
+
+def test_ir_matrix_to_ndarray():
+    matrix = [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]
+    assert np.allclose(ir_matrix_to_ndarray(matrix), np.array([[0, 1], [1, 0]]))
 
 
 @pytest.mark.parametrize("depth", list(range(1, 6)))

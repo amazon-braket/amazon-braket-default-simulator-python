@@ -31,6 +31,18 @@ def pauli_eigenvalues(num_qubits: int) -> np.ndarray:
     return np.concatenate([pauli_eigenvalues(num_qubits - 1), -pauli_eigenvalues(num_qubits - 1)])
 
 
+def ir_matrix_to_ndarray(matrix: List[List[List[float]]]) -> np.ndarray:
+    """ Converts a JAQCD matrix into a numpy array.
+
+    Args:
+        matrix (List[List[List[float]]]: The IR representation of a matrix
+
+    Returns:
+        np.ndarray: The numpy ndarray representation of the matrix
+    """
+    return np.array([[complex(element[0], element[1]) for element in row] for row in matrix])
+
+
 def check_matrix_dimensions(matrix: np.ndarray, targets: List[int]) -> None:
     """ Checks that the matrix is of the correct shape to act on the targets.
 

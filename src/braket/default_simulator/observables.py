@@ -34,8 +34,8 @@ class Identity(Observable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets):
-        self._targets = targets
+    def __init__(self, targets: Optional[List[int]] = None):
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -64,8 +64,8 @@ class Hadamard(Observable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets):
-        self._targets = targets
+    def __init__(self, targets: Optional[List[int]] = None):
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -98,8 +98,8 @@ class PauliX(Observable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets):
-        self._targets = targets
+    def __init__(self, targets: Optional[List[int]] = None):
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -129,8 +129,8 @@ class PauliY(Observable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets):
-        self._targets = targets
+    def __init__(self, targets: Optional[List[int]] = None):
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -160,8 +160,8 @@ class PauliZ(Observable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets):
-        self._targets = targets
+    def __init__(self, targets: Optional[List[int]] = None):
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -186,12 +186,17 @@ class Hermitian(Observable):
     # Cache of eigenpairs for each used Hermitian matrix
     _eigenpairs = {}
 
-    def __init__(self, targets, matrix):
-        self._targets = targets
+    def __init__(self, matrix: np.ndarray, targets: Optional[List[int]] = None):
         clone = np.array(matrix, dtype=complex)
-        check_matrix_dimensions(clone, targets)
+        if targets:
+            check_matrix_dimensions(clone, targets)
+        elif clone.shape != (2, 2):
+            raise ValueError(
+                f"Matrix must have shape (2, 2) if target is empty, but has shape {clone.shape}"
+            )
         check_hermitian(clone)
         self._matrix = clone
+        self._targets = list(targets) if targets else None
 
     @property
     def matrix(self) -> np.ndarray:
@@ -248,9 +253,11 @@ class TensorProduct(Observable):
             constituents (List[Observable]): The observables being combined together
                 via tensor product
         """
-        self._constituents = constituents
+        if len(constituents) < 2:
+            raise ValueError("A tensor product should have at least 2 constituent observables")
         self._targets = [target for observable in constituents for target in observable.targets]
-        self._eigenvalues = None
+        self._diagonalizing_matrix = TensorProduct._construct_matrix(constituents)
+        self._eigenvalues = TensorProduct._compute_eigenvalues(constituents, self._targets)
 
     @property
     def targets(self) -> List[int]:
@@ -262,39 +269,52 @@ class TensorProduct(Observable):
 
     @property
     def eigenvalues(self) -> np.ndarray:
-        if self._eigenvalues is not None:
-            return self._eigenvalues
-
-        # check if there are any non-standard observables, such as Hermitian
-        if False in {observable.is_standard for observable in self._constituents}:
-            obs_sorted = sorted(self._constituents, key=lambda x: x.targets)
-
-            # Tensor product of observables contains a mixture
-            # of standard and non-standard observables
-            self._eigenvalues = np.array([1])
-            for k, g in itertools.groupby(obs_sorted, lambda x: x.is_standard):
-                if k:
-                    # Subgroup g contains only standard observables.
-                    self._eigenvalues = np.kron(self._eigenvalues, pauli_eigenvalues(len(list(g))))
-                else:
-                    # Subgroup g contains only non-standard observables.
-                    for nonstandard in g:
-                        # loop through all non-standard observables
-                        self._eigenvalues = np.kron(self._eigenvalues, nonstandard.eigenvalues)
-        else:
-            self._eigenvalues = pauli_eigenvalues(len(self.targets))
-
         return self._eigenvalues
 
     @property
     def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        return self._diagonalizing_matrix
+
+    @staticmethod
+    def _construct_matrix(constituents: List[Observable]) -> np.ndarray:
         return reduce(
             # (A \otimes I)(I \otimes B) == A \otimes B
             lambda a, b: np.kron(a, b),
             [
                 observable.diagonalizing_matrix
-                for observable in self._constituents
+                for observable in constituents
                 # Ignore observables with trivial diagonalizing matrices
                 if observable.diagonalizing_matrix is not None
             ],
         )
+
+    @staticmethod
+    def _compute_eigenvalues(constituents: List[Observable], targets: List[int]) -> np.ndarray:
+        # check if there are any non-standard observables, such as Hermitian
+        if False in {observable.is_standard for observable in constituents}:
+            obs_sorted = sorted(constituents, key=lambda x: x.targets)
+
+            # Tensor product of observables contains a mixture
+            # of standard and non-standard observables
+            eigenvalues = np.array([1])
+            for k, g in itertools.groupby(obs_sorted, lambda x: x.is_standard):
+                if k:
+                    # Subgroup g contains only standard observables.
+                    eigenvalues = np.kron(eigenvalues, pauli_eigenvalues(len(list(g))))
+                else:
+                    # Subgroup g contains only non-standard observables.
+                    for nonstandard in g:
+                        # loop through all non-standard observables
+                        eigenvalues = np.kron(eigenvalues, nonstandard.eigenvalues)
+        else:
+            eigenvalues = pauli_eigenvalues(len(targets))
+
+        return eigenvalues
+
+
+def _validate_and_clone_single_qubit_target(targets: Optional[List[int]]) -> Optional[List[int]]:
+    if not targets:
+        return None
+    elif len(targets) > 1:
+        raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
+    return list(targets)
