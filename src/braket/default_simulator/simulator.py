@@ -147,16 +147,10 @@ class DefaultSimulator:
 
     @staticmethod
     def _create_results_dict(
-            results: List[Dict[str, Any]],
-            circuit_ir: Program,
-            simulation: StateVectorSimulation
+        results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation
     ) -> Dict[str, Any]:
         return_dict = {
-            "TaskMetadata": {
-                "ir": circuit_ir.json(),
-                "irType": "JAQCD",
-                "shots": simulation.shots
-            }
+            "TaskMetadata": {"Ir": circuit_ir.json(), "IrType": "jaqcd", "Shots": simulation.shots}
         }
         if results:
             return_dict["ResultTypes"] = results
