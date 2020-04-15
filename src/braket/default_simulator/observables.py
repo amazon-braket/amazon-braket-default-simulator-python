@@ -202,7 +202,7 @@ class Hermitian(Observable):
             check_matrix_dimensions(clone, targets)
         elif clone.shape != (2, 2):
             raise ValueError(
-                "Matrix must have shape (2, 2) if target is empty, " f"but has shape {clone.shape}"
+                f"Matrix must have shape (2, 2) if target is empty, but has shape {clone.shape}"
             )
         check_hermitian(clone)
         self._matrix = clone
