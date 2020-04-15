@@ -79,6 +79,11 @@ def test_simulator_run_bell_pair(bell_ir):
     assert counter.keys() == {"00", "11"}
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
+    assert result["TaskMetadata"] == {
+        "ir": bell_ir.json(),
+        "irType": "JAQCD",
+        "shots": shots_count
+    }
 
 
 def test_simulator_bell_pair_result_types(bell_ir_with_result):
@@ -89,6 +94,11 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result):
         {"Type": {"type": "amplitude", "states": ["11"]}, "Value": {"11": 1 / 2 ** 0.5}},
         {"Type": {"type": "expectation", "observable": ["x"], "targets": [1]}, "Value": 0},
     ]
+    assert result["TaskMetadata"] == {
+        "ir": bell_ir_with_result.json(),
+        "irType": "JAQCD",
+        "shots": 0
+    }
 
 
 @pytest.mark.xfail(raises=ValueError)

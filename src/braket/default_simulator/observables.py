@@ -35,9 +35,7 @@ class Identity(Observable):
     """
 
     def __init__(self, targets: Optional[List[int]] = None):
-        if targets and len(targets) > 1:
-            raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
-        self._targets = targets
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -67,9 +65,7 @@ class Hadamard(Observable):
     """
 
     def __init__(self, targets: Optional[List[int]] = None):
-        if targets and len(targets) > 1:
-            raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
-        self._targets = targets
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -103,9 +99,7 @@ class PauliX(Observable):
     """
 
     def __init__(self, targets: Optional[List[int]] = None):
-        if targets and len(targets) > 1:
-            raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
-        self._targets = targets
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -136,9 +130,7 @@ class PauliY(Observable):
     """
 
     def __init__(self, targets: Optional[List[int]] = None):
-        if targets and len(targets) > 1:
-            raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
-        self._targets = targets
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -169,9 +161,7 @@ class PauliZ(Observable):
     """
 
     def __init__(self, targets: Optional[List[int]] = None):
-        if targets and len(targets) > 1:
-            raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
-        self._targets = targets
+        self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
     def targets(self) -> List[int]:
@@ -206,7 +196,7 @@ class Hermitian(Observable):
             )
         check_hermitian(clone)
         self._matrix = clone
-        self._targets = targets
+        self._targets = list(targets) if targets else None
 
     @property
     def matrix(self) -> np.ndarray:
@@ -320,3 +310,11 @@ class TensorProduct(Observable):
             eigenvalues = pauli_eigenvalues(len(targets))
 
         return eigenvalues
+
+
+def _validate_and_clone_single_qubit_target(targets: Optional[List[int]]) -> Optional[List[int]]:
+    if not targets:
+        return None
+    elif len(targets) > 1:
+        raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
+    return list(targets)

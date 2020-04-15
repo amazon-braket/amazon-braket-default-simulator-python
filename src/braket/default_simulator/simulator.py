@@ -80,13 +80,7 @@ class DefaultSimulator:
                 for index in observable_result_types
             ]
 
-        return_dict = {"TaskMetadata": None}
-        if results:
-            return_dict["ResultTypes"] = results
-        if shots:
-            return_dict["Measurements"] = DefaultSimulator._formatted_measurements(simulation)
-
-        return return_dict
+        return DefaultSimulator._create_results_dict(results, circuit_ir, simulation)
 
     @staticmethod
     def _translate_result_types(
@@ -150,3 +144,23 @@ class DefaultSimulator:
             list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
             for sample in simulation.retrieve_samples()
         ]
+
+    @staticmethod
+    def _create_results_dict(
+            results: List[Dict[str, Any]],
+            circuit_ir: Program,
+            simulation: StateVectorSimulation
+    ) -> Dict[str, Any]:
+        return_dict = {
+            "TaskMetadata": {
+                "ir": circuit_ir.json(),
+                "irType": "JAQCD",
+                "shots": simulation.shots
+            }
+        }
+        if results:
+            return_dict["ResultTypes"] = results
+        if simulation.shots:
+            return_dict["Measurements"] = DefaultSimulator._formatted_measurements(simulation)
+
+        return return_dict

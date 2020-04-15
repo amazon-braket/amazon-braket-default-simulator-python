@@ -30,8 +30,8 @@ class StateVectorSimulation:
             qubit_count (int): The number of qubits being simulated.
                 All the qubits start in the :math:`\ket{\mathbf{0}}` computational basis state.
             shots (int): The number of samples to take from the simulation.
-                Defaults to 0, which means only analytic results will be generated;
-                there will be no results that require sampling
+                Defaults to 0, which means only results that do not require sampling,
+                such as state vector or expectation, will be generated.
         """
         initial_state = np.zeros(2 ** qubit_count, dtype=complex)
         initial_state[0] = 1
