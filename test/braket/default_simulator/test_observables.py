@@ -13,7 +13,7 @@
 
 import numpy as np
 import pytest
-from braket.default_simulator import TensorProduct, gate_operations, observables
+from braket.default_simulator import gate_operations, observables
 from braket.default_simulator.operation_helpers import check_unitary, pauli_eigenvalues
 
 testdata = [
@@ -23,11 +23,25 @@ testdata = [
     (observables.PauliZ([9]), [9], pauli_eigenvalues(1), True),
     (observables.Identity([7]), [7], np.array([1, 1]), False),
     (
-        observables.Hermitian([4], np.array([[1, 1 - 1j], [1 + 1j, -1]])),
+        observables.Hermitian(np.array([[1, 1 - 1j], [1 + 1j, -1]]), [4]),
         [4],
         [-np.sqrt(3), np.sqrt(3)],
         False,
     ),
+    (
+        observables.Hermitian(np.array([[1, 1 - 1j], [1 + 1j, -1]])),
+        None,
+        [-np.sqrt(3), np.sqrt(3)],
+        False,
+    ),
+]
+
+predefined_observables_invalid_targets = [
+    (observables.Hadamard, [0, 1]),
+    (observables.PauliX, [0, 1]),
+    (observables.PauliY, [0, 1]),
+    (observables.PauliZ, [0, 1]),
+    (observables.Identity, [0, 1]),
 ]
 
 angle = -np.pi / 4
@@ -39,24 +53,23 @@ y_diag = np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
 
 
 @pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
-def test_observable_diagonalizing_matrix_unitary(observable, targets, eigenvalues, is_standard):
+def test_observable_properties(observable, targets, eigenvalues, is_standard):
     if observable.diagonalizing_matrix is not None:
         check_unitary(observable.diagonalizing_matrix)
-
-
-@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
-def test_observable_targets(observable, targets, eigenvalues, is_standard):
     assert observable.targets == targets
-
-
-@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
-def test_observable_eigenvalues(observable, targets, eigenvalues, is_standard):
     assert np.allclose(observable.eigenvalues, eigenvalues)
-
-
-@pytest.mark.parametrize("observable, targets, eigenvalues, is_standard", testdata)
-def test_observable_is_standard(observable, targets, eigenvalues, is_standard):
     assert observable.is_standard == is_standard
+
+
+@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.parametrize("observable, targets", predefined_observables_invalid_targets)
+def test_observable_predefined_invalid_targets(observable, targets):
+    observable(targets)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_hermitian_invalid_none_target():
+    observables.Hermitian(np.eye(4), None)
 
 
 def test_observable_known_diagonalization():
@@ -77,7 +90,7 @@ def test_observable_known_diagonalization():
 
 
 def test_tensor_product_standard():
-    tensor = TensorProduct(
+    tensor = observables.TensorProduct(
         [
             observables.Hadamard([1]),
             observables.PauliX([3]),
@@ -86,15 +99,15 @@ def test_tensor_product_standard():
         ]
     )
     assert tensor.targets == [1, 3, 7, 4]
-    assert not tensor.is_standard
     assert (tensor.eigenvalues == pauli_eigenvalues(4)).all()
+    assert not tensor.is_standard
 
     # Z ignored
     assert (tensor.diagonalizing_matrix == np.kron(np.kron(h_diag, x_diag), y_diag)).all()
 
 
 def test_tensor_product_nonstandard():
-    tensor = TensorProduct(
+    tensor = observables.TensorProduct(
         [
             observables.Hadamard([1]),
             observables.Identity([5]),
@@ -148,3 +161,8 @@ def test_tensor_product_nonstandard():
 
     # Both Identity and Z ignored
     assert (tensor.diagonalizing_matrix == np.kron(np.kron(h_diag, x_diag), y_diag)).all()
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_tensor_product_one_component():
+    observables.TensorProduct([observables.Hadamard([2])])

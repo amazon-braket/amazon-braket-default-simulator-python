@@ -116,6 +116,9 @@
       {"type": "h", "target": 13},
       {"type": "h", "target": 14},
       {"type": "h", "target": 15}
+    ],
+    "results": [
+      {"type": "statevector"}
     ]
   },
   "probability_zero": 0.0000062

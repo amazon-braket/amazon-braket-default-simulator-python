@@ -19,7 +19,11 @@ from typing import List
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
 from braket.default_simulator.operation import GateOperation
-from braket.default_simulator.operation_helpers import check_matrix_dimensions, check_unitary
+from braket.default_simulator.operation_helpers import (
+    check_matrix_dimensions,
+    check_unitary,
+    ir_matrix_to_ndarray,
+)
 
 
 @singledispatch
@@ -30,7 +34,7 @@ def from_braket_instruction(instruction) -> GateOperation:
         instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
     Returns:
         GateOperation: instance of the concrete GateOperation class corresponding to
-            the specified instruction.
+        the specified instruction.
 
     Raises:
         ValueError: If no concrete `GateOperation` class has been registered
@@ -776,7 +780,4 @@ class Unitary(GateOperation):
 
 @from_braket_instruction.register(braket_instruction.Unitary)
 def _unitary(instruction) -> Unitary:
-    def _from_ir_representation(matrix) -> np.ndarray:
-        return np.array([[complex(element[0], element[1]) for element in row] for row in matrix])
-
-    return Unitary(instruction.targets, _from_ir_representation(instruction.matrix))
+    return Unitary(instruction.targets, ir_matrix_to_ndarray(instruction.matrix))

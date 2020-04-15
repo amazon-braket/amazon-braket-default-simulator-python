@@ -13,7 +13,6 @@
 
 # Execute initialization code in the gate_operations module
 from braket.default_simulator import gate_operations, observables, result_types  # noqa: F401
-from braket.default_simulator.observables import TensorProduct  # noqa: F401
 from braket.default_simulator.operation import GateOperation, Observable  # noqa: F401
 from braket.default_simulator.simulation import StateVectorSimulation  # noqa: F401
 from braket.default_simulator.simulator import DefaultSimulator  # noqa: F401

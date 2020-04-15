@@ -50,10 +50,9 @@ class Observable(Operation, ABC):
     @property
     @abstractmethod
     def is_standard(self) -> bool:
-        """ bool: Whether the observable is one of the four standard observables.
+        """ bool: Whether the observable is one of the four standard observables X, Y, Z and H.
 
-        Namely, X, Y, Z or H; these observables are guaranteed to have eigenvalues
-        of +/-1
+        These observables are guaranteed to have eigenvalues of +/-1
         """
 
     @property

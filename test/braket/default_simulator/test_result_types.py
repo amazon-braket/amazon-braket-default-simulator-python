@@ -15,6 +15,7 @@ import cmath
 
 import numpy as np
 import pytest
+from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.observables import Hadamard, PauliX, TensorProduct
 from braket.default_simulator.result_types import (
     Amplitude,
@@ -23,13 +24,40 @@ from braket.default_simulator.result_types import (
     Sample,
     StateVector,
     Variance,
+    from_braket_result_type,
 )
+from braket.ir import jaqcd
+from braket.ir.jaqcd import shared_models
+
+NUM_SAMPLES = 1000
+
+observable_type_testdata = [
+    (jaqcd.Expectation(targets=[1], observable=["x"]), Expectation),
+    (jaqcd.Variance(targets=[1], observable=["y"]), Variance),
+    (jaqcd.Sample(targets=[1], observable=["z"]), Sample),
+    (jaqcd.Expectation(observable=["h"]), Expectation),
+    (jaqcd.Variance(targets=[0], observable=[[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]), Variance),
+    (jaqcd.Sample(observable=[[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]), Sample),
+    (jaqcd.Expectation(targets=[0, 1], observable=["h", "i"]), Expectation),
+    (
+        jaqcd.Variance(targets=[0, 1], observable=["h", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]),
+        Variance,
+    ),
+]
 
 
 @pytest.fixture
 def state_vector():
     multiplier = np.concatenate([np.ones(8), np.ones(8) * 1j])
     return ((np.arange(16) / 120) ** (1 / 2)) * multiplier
+
+
+@pytest.fixture
+def simulation(state_vector):
+    sim = StateVectorSimulation(4, NUM_SAMPLES)
+    sim._state_vector = state_vector
+    sim._post_observables = state_vector  # Same for simplicity
+    return sim
 
 
 @pytest.fixture
@@ -50,32 +78,46 @@ def observable():
     return TensorProduct([PauliX([1]), Hadamard([2])])
 
 
-def test_state_vector(state_vector):
-    assert np.allclose(StateVector().calculate(state_vector), state_vector)
+def test_state_vector(simulation, state_vector):
+    result_type = StateVector()
+    assert np.allclose(result_type.calculate(simulation), state_vector)
 
 
-def test_amplitude(state_vector):
-    amplitudes = Amplitude(["0010", "0101", "1110"]).calculate(state_vector)
+def test_amplitude(simulation, state_vector):
+    result_type = Amplitude(["0010", "0101", "1110"])
+    amplitudes = result_type.calculate(simulation)
     assert cmath.isclose(amplitudes["0010"], state_vector[2])
     assert cmath.isclose(amplitudes["0101"], state_vector[5])
     assert cmath.isclose(amplitudes["1110"], state_vector[14])
 
 
-def test_probability(state_vector, marginal_12):
-    probability_12 = Probability([1, 2]).calculate(state_vector)
+def test_probability(simulation, state_vector, marginal_12):
+    probability_12 = Probability([1, 2]).calculate(simulation)
     assert np.allclose(probability_12, marginal_12)
 
-    probability_all = Probability([0, 1, 2, 3]).calculate(state_vector)
-    assert np.allclose(probability_all, np.abs(state_vector) ** 2)
+    state_vector_probabilities = np.abs(state_vector) ** 2
+
+    probability_no_targets = Probability().calculate(simulation)
+    assert np.allclose(probability_no_targets, state_vector_probabilities)
+
+    probability_all_qubits = Probability([0, 1, 2, 3]).calculate(simulation)
+    assert np.allclose(probability_all_qubits, state_vector_probabilities)
 
 
-def test_expectation(state_vector, observable, marginal_12):
-    expectation = Expectation(observable).calculate(state_vector)
+def test_expectation(simulation, observable, marginal_12):
+    expectation = Expectation(observable).calculate(simulation)
     assert np.allclose(expectation, marginal_12 @ np.array([1, -1, -1, 1]))
 
 
-def test_variance(state_vector, observable, marginal_12):
-    variance = Variance(observable).calculate(state_vector)
+def test_expectation_no_targets():
+    simulation = StateVectorSimulation(2)
+    simulation._post_observables = np.array([1, 1, 0, 0]) / np.sqrt(2)
+    expectation = Expectation(PauliX()).calculate(simulation)
+    assert np.allclose(expectation, [1, 0])
+
+
+def test_variance(simulation, observable, marginal_12):
+    variance = Variance(observable).calculate(simulation)
     expected_eigenvalues = np.array([1, -1, -1, 1])
     expected_variance = (
         marginal_12 @ (expected_eigenvalues ** 2) - (marginal_12 @ expected_eigenvalues).real ** 2
@@ -83,10 +125,69 @@ def test_variance(state_vector, observable, marginal_12):
     assert np.allclose(variance, expected_variance)
 
 
-def test_sample(state_vector, observable):
-    shots = 1000
-    sample = Sample(observable, shots).calculate(state_vector)
-    assert len(sample) == shots
+def test_variance_no_targets():
+    simulation = StateVectorSimulation(2)
+    simulation._post_observables = np.array([1, 0, 0, 1]) / np.sqrt(2)
+    variance = Variance(PauliX()).calculate(simulation)
+    assert np.allclose(variance, [1, 1])
+
+
+def test_sample(simulation, observable):
+    sample = Sample(observable).calculate(simulation)
+    assert len(sample) == NUM_SAMPLES
 
     # sample contains only 1 and -1 as entries
     assert all([x in {-1, 1} for x in sample])
+
+
+def test_sample_no_targets():
+    simulation = StateVectorSimulation(2, NUM_SAMPLES)
+    simulation._post_observables = np.array([1, 0, 0, 1]) / np.sqrt(2)
+    sample = Sample(PauliX()).calculate(simulation)
+    assert len(sample) == 2
+    for qubit_sample in sample:
+        assert len(qubit_sample) == NUM_SAMPLES
+        assert all([x in {-1, 1} for x in qubit_sample])
+
+
+def test_from_braket_result_type_statevector():
+    assert isinstance(from_braket_result_type(jaqcd.StateVector()), StateVector)
+
+
+def test_from_braket_result_type_amplitude():
+    translated = from_braket_result_type(jaqcd.Amplitude(states=["01", "10"]))
+    assert isinstance(translated, Amplitude)
+    assert translated._states == ["01", "10"]
+
+
+def test_from_braket_result_type_probability():
+    translated = from_braket_result_type(jaqcd.Probability(targets=[0, 1]))
+    assert isinstance(translated, Probability)
+    assert translated._targets == [0, 1]
+
+
+@pytest.mark.parametrize("braket_result_type, result_type", observable_type_testdata)
+def test_from_braket_result_type_observable(braket_result_type, result_type):
+    assert isinstance(from_braket_result_type(braket_result_type), result_type)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_from_braket_result_type_tensor_product_extra():
+    from_braket_result_type(jaqcd.Expectation(targets=[0, 1, 2], observable=["h", "i"]))
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_from_braket_result_type_tensor_product_insufficient():
+    from_braket_result_type(jaqcd.Variance(targets=[0], observable=["h", "i"]))
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_from_braket_result_type_unknown_observable():
+    from_braket_result_type(
+        jaqcd.Sample(targets=[0], observable=[[[[0, 0], [1, 0], [3, 2]], [[1, 0], [0, 0]]]])
+    )
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_from_braket_result_type_unsupported_type():
+    from_braket_result_type(shared_models.OptionalMultiTarget(targets=[4, 3]))

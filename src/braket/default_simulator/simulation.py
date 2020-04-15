@@ -14,7 +14,7 @@
 from typing import List
 
 import numpy as np
-from braket.default_simulator import GateOperation, Observable
+from braket.default_simulator.operation import GateOperation, Observable
 
 
 class StateVectorSimulation:
@@ -24,16 +24,20 @@ class StateVectorSimulation:
     through `GateOperation`s using the `evolve()` method.
     """
 
-    def __init__(self, qubit_count: int):
-        """
+    def __init__(self, qubit_count: int, shots: int = 0):
+        r"""
         Args:
             qubit_count (int): The number of qubits being simulated.
-                All the qubits start in the `|0>` computational basis state.
+                All the qubits start in the :math:`\ket{\mathbf{0}}` computational basis state.
+            shots (int): The number of samples to take from the simulation.
+                Defaults to 0, which means only results that do not require sampling,
+                such as state vector or expectation, will be generated.
         """
         initial_state = np.zeros(2 ** qubit_count, dtype=complex)
         initial_state[0] = 1
         self._state_vector = initial_state
         self._qubit_count = qubit_count
+        self._shots = shots
         self._post_observables = None
 
     def evolve(self, operations: List[GateOperation]) -> None:
@@ -72,9 +76,19 @@ class StateVectorSimulation:
             # Only add to contraction parameters if the observable
             # has a nontrivial diagonalizing matrix
             if observable.diagonalizing_matrix is not None:
-                state = StateVectorSimulation._apply_operation(
-                    state, self._qubit_count, observable.diagonalizing_matrix, observable.targets
-                )
+                if observable.targets:
+                    state = StateVectorSimulation._apply_operation(
+                        state,
+                        self._qubit_count,
+                        observable.diagonalizing_matrix,
+                        observable.targets,
+                    )
+                else:
+                    # There is only one element in `observables`
+                    for qubit in range(self._qubit_count):
+                        state = StateVectorSimulation._apply_operation(
+                            state, self._qubit_count, observable.diagonalizing_matrix, [qubit]
+                        )
         self._post_observables = state.reshape(2 ** self._qubit_count)
 
     @staticmethod
@@ -105,19 +119,16 @@ class StateVectorSimulation:
         inverse_permutation = np.argsort(permutation)
         return np.transpose(dot_product, inverse_permutation)
 
-    def retrieve_samples(self, num_samples: int) -> List[int]:
-        """ Retrieves `num_samples` samples of states from the state vector of the simulation,
+    def retrieve_samples(self) -> List[int]:
+        """ Retrieves samples of states from the state vector of the simulation,
         based on the probabilities.
-
-        Args:
-            num_samples (int): Number of samples to retrieve from the state vector.
 
         Returns:
             List[int]: List of states sampled according to their probabilities
             in the state vector. Each integer represents the decimal encoding of the
             corresponding computational basis state.
         """
-        return np.random.choice(len(self._state_vector), p=self.probabilities, size=num_samples)
+        return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
 
     @property
     def state_vector(self) -> np.ndarray:
@@ -142,6 +153,16 @@ class StateVectorSimulation:
     def qubit_count(self) -> int:
         """int: The number of qubits being simulated by the simulation."""
         return self._qubit_count
+
+    @property
+    def shots(self) -> int:
+        """
+        int: The number of samples to take from the simulation.
+
+        0 means no samples are taken, and results that require sampling
+        to calculate cannot be returned.
+        """
+        return self._shots
 
     @property
     def probabilities(self) -> np.ndarray:
