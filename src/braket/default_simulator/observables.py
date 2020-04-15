@@ -40,12 +40,12 @@ class Identity(Observable):
         self._targets = targets
 
     @property
-    def is_standard(self) -> bool:
-        return False
-
-    @property
     def targets(self) -> List[int]:
         return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return False
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -72,12 +72,12 @@ class Hadamard(Observable):
         self._targets = targets
 
     @property
-    def is_standard(self) -> bool:
-        return True
-
-    @property
     def targets(self) -> List[int]:
         return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return True
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -108,12 +108,12 @@ class PauliX(Observable):
         self._targets = targets
 
     @property
-    def is_standard(self) -> bool:
-        return True
-
-    @property
     def targets(self) -> List[int]:
         return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return True
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -141,12 +141,12 @@ class PauliY(Observable):
         self._targets = targets
 
     @property
-    def is_standard(self) -> bool:
-        return True
-
-    @property
     def targets(self) -> List[int]:
         return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return True
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -174,12 +174,12 @@ class PauliZ(Observable):
         self._targets = targets
 
     @property
-    def is_standard(self) -> bool:
-        return True
-
-    @property
     def targets(self) -> List[int]:
         return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return True
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -209,10 +209,6 @@ class Hermitian(Observable):
         self._targets = targets
 
     @property
-    def is_standard(self) -> bool:
-        return False
-
-    @property
     def matrix(self) -> np.ndarray:
         """np.ndarray: The Hermitian matrix defining the observable."""
         return np.array(self._matrix)
@@ -220,6 +216,10 @@ class Hermitian(Observable):
     @property
     def targets(self) -> List[int]:
         return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return False
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -270,12 +270,12 @@ class TensorProduct(Observable):
         self._eigenvalues = TensorProduct._compute_eigenvalues(constituents, self._targets)
 
     @property
-    def is_standard(self) -> bool:
-        return False
-
-    @property
     def targets(self) -> List[int]:
         return self._targets
+
+    @property
+    def is_standard(self) -> bool:
+        return False
 
     @property
     def eigenvalues(self) -> np.ndarray:
