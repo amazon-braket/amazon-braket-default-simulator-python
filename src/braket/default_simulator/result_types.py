@@ -72,8 +72,8 @@ class ResultType(ABC):
 
     @property
     @abstractmethod
-    def result_info(self) -> Dict[str, Any]:
-        """ Dict[str, Any]: A map of information about the result"""
+    def properties_json(self) -> Dict[str, Any]:
+        """ Dict[str, Any]: A map holding properties of the result type."""
 
 
 class ObservableResultType(ResultType, ABC):
@@ -111,7 +111,7 @@ class StateVector(ResultType):
         return simulation.state_vector
 
     @property
-    def result_info(self) -> Dict[str, Any]:
+    def properties_json(self) -> Dict[str, Any]:
         return {"type": "state_vector"}
 
 
@@ -148,7 +148,7 @@ class Amplitude(ResultType):
         return {basis_state: state[int(basis_state, 2)] for basis_state in self._states}
 
     @property
-    def result_info(self) -> Dict[str, Any]:
+    def properties_json(self) -> Dict[str, Any]:
         return {"type": "amplitude", "states": self._states}
 
 
@@ -188,7 +188,7 @@ class Probability(ResultType):
         return _marginal_probability(simulation.state_vector, simulation.qubit_count, self._targets)
 
     @property
-    def result_info(self) -> Dict[str, Any]:
+    def properties_json(self) -> Dict[str, Any]:
         return {"type": "probability", "targets": self._targets}
 
 
@@ -247,7 +247,7 @@ class Expectation(ObservableResultType):
         return (prob @ eigenvalues).real
 
     @property
-    def result_info(self) -> Dict[str, Any]:
+    def properties_json(self) -> Dict[str, Any]:
         return {
             "type": "expectation",
             "operator": self._observable.name,
@@ -307,7 +307,7 @@ class Variance(ObservableResultType):
         return prob @ (eigenvalues ** 2) - (prob @ eigenvalues).real ** 2
 
     @property
-    def result_info(self) -> Dict[str, Any]:
+    def properties_json(self) -> Dict[str, Any]:
         return {
             "type": "variance",
             "operator": self._observable.name,
@@ -352,11 +352,11 @@ class Sample(ObservableResultType):
         eigenvalues = self._observable.eigenvalues
         if self._observable.targets:
             return Sample._sample(
-                state, qubit_count, eigenvalues, self._observable.targets, simulation.num_samples
+                state, qubit_count, eigenvalues, self._observable.targets, simulation.shots
             )
         else:
             return [
-                Sample._sample(state, qubit_count, eigenvalues, [i], simulation.num_samples)
+                Sample._sample(state, qubit_count, eigenvalues, [i], simulation.shots)
                 for i in range(qubit_count)
             ]
 
@@ -366,7 +366,7 @@ class Sample(ObservableResultType):
         return np.random.choice(eigenvalues, p=prob, size=num_samples)
 
     @property
-    def result_info(self) -> Dict[str, Any]:
+    def properties_json(self) -> Dict[str, Any]:
         return {
             "type": "sample",
             "operator": self._observable.name,
@@ -382,16 +382,21 @@ def _(sample: jaqcd.Sample):
 def _from_braket_observable(
     ir_observable: List[Union[str, List[List[List[float]]]]], ir_targets: Optional[List[int]] = None
 ) -> Observable:
+    targets = list(ir_targets) if ir_targets else None
     if len(ir_observable) == 1:
-        return _from_single_observable(ir_observable[0], ir_targets)
+        return _from_single_observable(ir_observable[0], targets)
     else:
-        return TensorProduct(
+        observable = TensorProduct(
             [
-                _from_single_observable(constituent, is_constituent=True)
+                _from_single_observable(constituent, targets, is_constituent=True)
                 for constituent in ir_observable
-            ],
-            ir_targets,
+            ]
         )
+        if targets:
+            raise ValueError(
+                f"Found {len(targets)} more target qubits than the tensor product acts on"
+            )
+        return observable
 
 
 def _from_single_observable(
@@ -401,20 +406,34 @@ def _from_single_observable(
     is_constituent: bool = False,
 ) -> Observable:
     if observable == "i":
-        return Identity(targets, is_constituent)
+        return Identity(_actual_targets(targets, 1, is_constituent))
     elif observable == "h":
-        return Hadamard(targets, is_constituent)
+        return Hadamard(_actual_targets(targets, 1, is_constituent))
     elif observable == "x":
-        return PauliX(targets, is_constituent)
+        return PauliX(_actual_targets(targets, 1, is_constituent))
     elif observable == "y":
-        return PauliY(targets, is_constituent)
+        return PauliY(_actual_targets(targets, 1, is_constituent))
     elif observable == "z":
-        return PauliZ(targets, is_constituent)
+        return PauliZ(_actual_targets(targets, 1, is_constituent))
     else:
         try:
-            return Hermitian(ir_matrix_to_ndarray(observable), targets, is_constituent)
+            matrix = ir_matrix_to_ndarray(observable)
+            if is_constituent:
+                num_qubits = int(np.log2(len(matrix)))
+                return Hermitian(matrix, _actual_targets(targets, num_qubits, True))
+            else:
+                return Hermitian(matrix, targets)
         except Exception:
             raise ValueError(f"Invalid observable specified: {observable}")
+
+
+def _actual_targets(targets: List[int], num_qubits: int, is_constituent: bool):
+    if not is_constituent:
+        return targets
+    try:
+        return [targets.pop(0) for _ in range(num_qubits)]
+    except Exception:
+        raise ValueError("Insufficient qubits for tensor product")
 
 
 def _marginal_probability(

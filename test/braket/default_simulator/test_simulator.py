@@ -64,25 +64,14 @@ def bell_ir_with_result():
 def test_simulator_run_grcs_16(grcs_16_qubit):
     simulator = DefaultSimulator()
     result = simulator.run(grcs_16_qubit.circuit_ir, qubit_count=16, shots=100)
-    state_vector = result["StateVector"]
-    zero_state = "0" * 16
-    assert cmath.isclose(
-        abs(state_vector[zero_state]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7
-    )
+    state_vector = result["ResultTypes"][0]["Value"]
+    assert cmath.isclose(abs(state_vector[0]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7)
 
 
 def test_simulator_run_bell_pair(bell_ir):
     simulator = DefaultSimulator()
     shots_count = 10000
     result = simulator.run(bell_ir, qubit_count=2, shots=shots_count)
-    expected_state_vector = {"00": 0.70710678, "01": 0, "10": 0, "11": 0.70710678}
-    assert result["StateVector"].keys() == expected_state_vector.keys()
-    assert all(
-        [
-            cmath.isclose(result["StateVector"][k], expected_state_vector[k], abs_tol=1e-7)
-            for k in expected_state_vector.keys()
-        ]
-    )
 
     assert all([len(measurement) == 2] for measurement in result["Measurements"])
     assert len(result["Measurements"]) == shots_count
@@ -94,12 +83,11 @@ def test_simulator_run_bell_pair(bell_ir):
 
 def test_simulator_bell_pair_result_types(bell_ir_with_result):
     simulator = DefaultSimulator()
-    shots_count = 10000
-    result = simulator.run(bell_ir_with_result, qubit_count=2, shots=shots_count)
-    assert len(result["RequestedResults"]) == 2
-    assert result["RequestedResults"] == [
+    result = simulator.run(bell_ir_with_result, qubit_count=2, shots=0)
+    assert len(result["ResultTypes"]) == 2
+    assert result["ResultTypes"] == [
         {"Type": {"type": "amplitude", "states": ["11"]}, "Value": {"11": 1 / 2 ** 0.5}},
-        {"Type": {"type": "expectation", "operator": "x", "targets": [1]}, "Value": 0},
+        {"Type": {"type": "expectation", "operator": "PauliX", "targets": [1]}, "Value": 0},
     ]
 
 

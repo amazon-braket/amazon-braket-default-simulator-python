@@ -48,14 +48,17 @@ class Observable(Operation, ABC):
     """
 
     @property
-    @abstractmethod
     def name(self) -> str:
         """ str: The name of the observable"""
+        return type(self).__name__
 
     @property
     @abstractmethod
-    def num_qubits(self) -> int:
-        """ int: The number of qubits the observable acts on"""
+    def is_standard(self) -> bool:
+        """ bool: Whether the observable is one of the four standard observables X, Y, Z and H.
+
+        These observables are guaranteed to have eigenvalues of +/-1
+        """
 
     @property
     @abstractmethod

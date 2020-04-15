@@ -24,19 +24,20 @@ class StateVectorSimulation:
     through `GateOperation`s using the `evolve()` method.
     """
 
-    def __init__(self, qubit_count: int, num_samples: int = 0):
+    def __init__(self, qubit_count: int, shots: int = 0):
         r"""
         Args:
             qubit_count (int): The number of qubits being simulated.
                 All the qubits start in the :math:`\ket{\mathbf{0}}` computational basis state.
-            num_samples (int): The number of samples to take from the simulation.
-                Defaults to 0, which means results are analytic only
+            shots (int): The number of samples to take from the simulation.
+                Defaults to 0, which means only analytic results will be generated;
+                there will be no results that require sampling
         """
         initial_state = np.zeros(2 ** qubit_count, dtype=complex)
         initial_state[0] = 1
         self._state_vector = initial_state
         self._qubit_count = qubit_count
-        self._num_samples = num_samples
+        self._shots = shots
         self._post_observables = None
 
     def evolve(self, operations: List[GateOperation]) -> None:
@@ -127,9 +128,7 @@ class StateVectorSimulation:
             in the state vector. Each integer represents the decimal encoding of the
             corresponding computational basis state.
         """
-        return np.random.choice(
-            len(self._state_vector), p=self.probabilities, size=self._num_samples
-        )
+        return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
 
     @property
     def state_vector(self) -> np.ndarray:
@@ -156,13 +155,14 @@ class StateVectorSimulation:
         return self._qubit_count
 
     @property
-    def num_samples(self) -> int:
+    def shots(self) -> int:
         """
         int: The number of samples to take from the simulation.
 
-        0 means no samples are taken, and all results are analytic.
+        0 means no samples are taken, and results that require sampling
+        to calculate cannot be returned.
         """
-        return self._num_samples
+        return self._shots
 
     @property
     def probabilities(self) -> np.ndarray:
