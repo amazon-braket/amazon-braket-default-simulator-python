@@ -26,7 +26,9 @@ from braket.ir.jaqcd import Program
 
 
 class DefaultSimulator:
-    def run(self, circuit_ir: Program, qubit_count: int, shots: int) -> Dict[str, Any]:
+    def run(
+        self, circuit_ir: Program, qubit_count: int, shots: int, partition_size: int = 30
+    ) -> Dict[str, Any]:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
         Args:
@@ -34,6 +36,10 @@ class DefaultSimulator:
                 instructions to execute.
             qubit_count (int): The number of qubits to simulate.
             shots (int): The number of times to run the circuit.
+            partition_size (int): The size of the circuit partitions to contract;
+                see `StateVectorSimulation.evolve`.
+                Defaults to 30; this number was experimentally chosen based on time
+                and memory usage.
 
         Returns:
             Dict[str, Any]: dictionary containing the state vector (keyed by `StateVector`,
@@ -58,7 +64,7 @@ class DefaultSimulator:
         )
 
         simulation = StateVectorSimulation(qubit_count, shots)
-        simulation.evolve(operations)
+        simulation.evolve(operations, partition_size)
 
         results = [
             {
