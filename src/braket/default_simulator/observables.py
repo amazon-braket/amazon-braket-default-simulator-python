@@ -315,8 +315,7 @@ class TensorProduct(Observable):
 
 
 def _validate_and_clone_single_qubit_target(targets: Optional[List[int]]) -> Optional[Tuple[int]]:
-    if not targets:
-        return None
-    elif len(targets) > 1:
-        raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
-    return tuple(targets)
+    clone = tuple(targets) if targets else None
+    if clone and len(clone) > 1:
+        raise ValueError(f"Observable only acts on one qubit, but found {len(clone)}")
+    return clone
