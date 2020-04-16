@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -26,8 +26,8 @@ class Operation(ABC):
 
     @property
     @abstractmethod
-    def targets(self) -> List[int]:
-        """List[int]: The target qubit indices of the operation."""
+    def targets(self) -> Tuple[int]:
+        """Tuple[int]: The target qubit indices of the operation."""
 
 
 class GateOperation(Operation, ABC):

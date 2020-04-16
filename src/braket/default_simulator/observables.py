@@ -13,7 +13,7 @@
 
 import itertools
 from functools import reduce
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from braket.default_simulator.operation import Observable
@@ -38,7 +38,7 @@ class Identity(Observable):
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> List[int]:
+    def targets(self) -> Tuple[int]:
         return self._targets
 
     @property
@@ -68,7 +68,7 @@ class Hadamard(Observable):
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> List[int]:
+    def targets(self) -> Tuple[int]:
         return self._targets
 
     @property
@@ -102,7 +102,7 @@ class PauliX(Observable):
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> List[int]:
+    def targets(self) -> Tuple[int]:
         return self._targets
 
     @property
@@ -133,7 +133,7 @@ class PauliY(Observable):
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> List[int]:
+    def targets(self) -> Tuple[int]:
         return self._targets
 
     @property
@@ -164,7 +164,7 @@ class PauliZ(Observable):
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> List[int]:
+    def targets(self) -> Tuple[int]:
         return self._targets
 
     @property
@@ -188,15 +188,15 @@ class Hermitian(Observable):
 
     def __init__(self, matrix: np.ndarray, targets: Optional[List[int]] = None):
         clone = np.array(matrix, dtype=complex)
+        self._targets = tuple(targets) if targets else None
         if targets:
-            check_matrix_dimensions(clone, targets)
+            check_matrix_dimensions(clone, self._targets)
         elif clone.shape != (2, 2):
             raise ValueError(
                 f"Matrix must have shape (2, 2) if target is empty, but has shape {clone.shape}"
             )
         check_hermitian(clone)
         self._matrix = clone
-        self._targets = list(targets) if targets else None
 
     @property
     def matrix(self) -> np.ndarray:
@@ -204,7 +204,7 @@ class Hermitian(Observable):
         return np.array(self._matrix)
 
     @property
-    def targets(self) -> List[int]:
+    def targets(self) -> Tuple[int]:
         return self._targets
 
     @property
@@ -255,12 +255,14 @@ class TensorProduct(Observable):
         """
         if len(constituents) < 2:
             raise ValueError("A tensor product should have at least 2 constituent observables")
-        self._targets = [target for observable in constituents for target in observable.targets]
+        self._targets = tuple(
+            target for observable in constituents for target in observable.targets
+        )
         self._diagonalizing_matrix = TensorProduct._construct_matrix(constituents)
         self._eigenvalues = TensorProduct._compute_eigenvalues(constituents, self._targets)
 
     @property
-    def targets(self) -> List[int]:
+    def targets(self) -> Tuple[int]:
         return self._targets
 
     @property
@@ -289,7 +291,7 @@ class TensorProduct(Observable):
         )
 
     @staticmethod
-    def _compute_eigenvalues(constituents: List[Observable], targets: List[int]) -> np.ndarray:
+    def _compute_eigenvalues(constituents: List[Observable], targets: Tuple[int]) -> np.ndarray:
         # check if there are any non-standard observables, such as Hermitian
         if False in {observable.is_standard for observable in constituents}:
             obs_sorted = sorted(constituents, key=lambda x: x.targets)
@@ -312,9 +314,8 @@ class TensorProduct(Observable):
         return eigenvalues
 
 
-def _validate_and_clone_single_qubit_target(targets: Optional[List[int]]) -> Optional[List[int]]:
-    if not targets:
-        return None
-    elif len(targets) > 1:
-        raise ValueError(f"Observable only acts on one qubit, but found {len(targets)}")
-    return list(targets)
+def _validate_and_clone_single_qubit_target(targets: Optional[List[int]]) -> Optional[Tuple[int]]:
+    clone = tuple(targets) if targets else None
+    if clone and len(clone) > 1:
+        raise ValueError(f"Observable only acts on one qubit, but found {len(clone)}")
+    return clone
