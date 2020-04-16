@@ -114,7 +114,7 @@ class StateVectorSimulation:
 
         # Axes given in `operation.targets` are in the first positions.
         unused_idxs = [idx for idx in range(qubit_count) if idx not in targets]
-        permutation = targets + unused_idxs
+        permutation = list(targets) + unused_idxs
         # Invert the permutation to put the indices in the correct place
         inverse_permutation = np.argsort(permutation)
         return np.transpose(dot_product, inverse_permutation)

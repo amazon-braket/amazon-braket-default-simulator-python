@@ -91,7 +91,7 @@ def test_cache_usage(depth):
 @pytest.mark.xfail(raises=ValueError)
 @pytest.mark.parametrize("matrix", invalid_dimension_matrices)
 def test_check_matrix_dimensions_invalid_matrix(matrix):
-    check_matrix_dimensions(matrix, [0])
+    check_matrix_dimensions(matrix, (0,))
 
 
 @pytest.mark.xfail(raises=ValueError)

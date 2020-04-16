@@ -17,14 +17,14 @@ from braket.default_simulator import gate_operations, observables
 from braket.default_simulator.operation_helpers import check_unitary, pauli_eigenvalues
 
 testdata = [
-    (observables.Hadamard([13]), [13], pauli_eigenvalues(1), True),
-    (observables.PauliX([11]), [11], pauli_eigenvalues(1), True),
-    (observables.PauliY([10]), [10], pauli_eigenvalues(1), True),
-    (observables.PauliZ([9]), [9], pauli_eigenvalues(1), True),
-    (observables.Identity([7]), [7], np.array([1, 1]), False),
+    (observables.Hadamard([13]), (13,), pauli_eigenvalues(1), True),
+    (observables.PauliX([11]), (11,), pauli_eigenvalues(1), True),
+    (observables.PauliY([10]), (10,), pauli_eigenvalues(1), True),
+    (observables.PauliZ([9]), (9,), pauli_eigenvalues(1), True),
+    (observables.Identity([7]), (7,), np.array([1, 1]), False),
     (
         observables.Hermitian(np.array([[1, 1 - 1j], [1 + 1j, -1]]), [4]),
-        [4],
+        (4,),
         [-np.sqrt(3), np.sqrt(3)],
         False,
     ),
@@ -98,7 +98,7 @@ def test_tensor_product_standard():
             observables.PauliY([4]),
         ]
     )
-    assert tensor.targets == [1, 3, 7, 4]
+    assert tensor.targets == (1, 3, 7, 4)
     assert (tensor.eigenvalues == pauli_eigenvalues(4)).all()
     assert not tensor.is_standard
 
@@ -116,7 +116,7 @@ def test_tensor_product_nonstandard():
             observables.PauliY([4]),
         ]
     )
-    assert tensor.targets == [1, 5, 3, 7, 4]
+    assert tensor.targets == (1, 5, 3, 7, 4)
 
     eigenvalues = np.array(
         [
