@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from functools import lru_cache
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -43,12 +43,12 @@ def ir_matrix_to_ndarray(matrix: List[List[List[float]]]) -> np.ndarray:
     return np.array([[complex(element[0], element[1]) for element in row] for row in matrix])
 
 
-def check_matrix_dimensions(matrix: np.ndarray, targets: List[int]) -> None:
+def check_matrix_dimensions(matrix: np.ndarray, targets: Tuple[int]) -> None:
     """ Checks that the matrix is of the correct shape to act on the targets.
 
     Args:
         matrix (np.ndarray): The matrix to check
-        targets (List[int]): The target qubits the matrix is acting on
+        targets (Tuple[int]): The target qubits the matrix is acting on
 
     Raises:
         ValueError: If the matrix is not a square matrix or operates on a space
