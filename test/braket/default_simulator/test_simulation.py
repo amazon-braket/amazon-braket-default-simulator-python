@@ -178,10 +178,13 @@ def qft_circuit_operations():
 def test_simulation_simple_circuits(
     instructions, qubit_count, state_vector, probability_amplitudes
 ):
-    simulation = StateVectorSimulation(qubit_count)
-    simulation.evolve(instructions)
-    assert np.allclose(state_vector, simulation.state_vector)
-    assert np.allclose(probability_amplitudes, simulation.probabilities)
+    # +2 to ensure evolve doesn't fail for partition size greater than
+    # or equal to the number of instructions
+    for partition_size in range(len(instructions) + 2):
+        simulation = StateVectorSimulation(qubit_count)
+        simulation.evolve(instructions, partition_size)
+        assert np.allclose(state_vector, simulation.state_vector)
+        assert np.allclose(probability_amplitudes, simulation.probabilities)
 
 
 @pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
@@ -189,7 +192,7 @@ def test_apply_observables(observables, equivalent_gates, qubit_count):
     sim_observables = StateVectorSimulation(qubit_count)
     sim_observables.apply_observables(observables)
     sim_gates = StateVectorSimulation(qubit_count)
-    sim_gates.evolve(equivalent_gates)
+    sim_gates.evolve(equivalent_gates, 0)
     assert np.allclose(sim_observables.state_with_observables, sim_gates.state_vector)
 
 
@@ -206,17 +209,23 @@ def test_state_with_observables_fails_before_applying():
     simulation.state_with_observables
 
 
+@pytest.mark.xfail(raises=ValueError)
+def test_build_contraction_fails_unrecognised_operation():
+    simulation = StateVectorSimulation(4)
+    simulation.evolve([gate_operations.PauliX([0]), "foo"], 0)
+
+
 def test_simulation_qft_circuit(qft_circuit_operations):
     qubit_count = 16
     simulation = StateVectorSimulation(qubit_count)
     operations = qft_circuit_operations(qubit_count)
-    simulation.evolve(operations)
+    simulation.evolve(operations, 0)
     assert np.allclose(simulation.probabilities, [1 / (2 ** qubit_count)] * (2 ** qubit_count))
 
 
 def test_simulation_retrieve_samples():
     simulation = StateVectorSimulation(2, 10000)
-    simulation.evolve([gate_operations.Hadamard([0]), gate_operations.CX([0, 1])])
+    simulation.evolve([gate_operations.Hadamard([0]), gate_operations.CX([0, 1])], 0)
     counter = Counter(simulation.retrieve_samples())
     assert simulation.qubit_count == 2
     assert counter.keys() == {0, 3}
