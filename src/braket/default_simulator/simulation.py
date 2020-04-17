@@ -70,10 +70,8 @@ class StateVectorSimulation:
         )
 
         for partition in partitions:
-            self._state_vector = opt_einsum.contract(
-                *StateVectorSimulation._build_contraction_parameters(
-                    self._state_vector, self._qubit_count, partition
-                )
+            self._state_vector = StateVectorSimulation._contract_operations(
+                self._state_vector, self._qubit_count, partition
             )
 
         self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
@@ -92,16 +90,16 @@ class StateVectorSimulation:
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
-        contracted = opt_einsum.contract(
-            *StateVectorSimulation._build_contraction_parameters(
-                self._state_vector, self._qubit_count, observables
-            )
+        state = np.reshape(self._state_vector, [2] * self._qubit_count)
+        contracted = StateVectorSimulation._contract_operations(
+            state, self._qubit_count, observables
         )
         self._post_observables = contracted.reshape(2 ** self._qubit_count)
 
     @staticmethod
-    def _build_contraction_parameters(state, qubit_count, operations: List[Operation]) -> list:
-        state = np.reshape(state, [2] * qubit_count)
+    def _contract_operations(
+        state: np.ndarray, qubit_count: int, operations: List[Operation]
+    ) -> np.ndarray:
         contraction_parameters = [state, list(range(qubit_count))]
         index_substitutions = {i: i for i in range(qubit_count)}
         next_index = qubit_count
@@ -141,7 +139,7 @@ class StateVectorSimulation:
             index_substitutions[i] if i in index_substitutions else i for i in range(qubit_count)
         ]
         contraction_parameters.append(new_indices)
-        return contraction_parameters
+        return opt_einsum.contract(*contraction_parameters)
 
     def retrieve_samples(self) -> List[int]:
         """ Retrieves samples of states from the state vector of the simulation,
