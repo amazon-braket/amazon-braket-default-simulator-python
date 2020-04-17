@@ -49,7 +49,7 @@ class StateVectorSimulation:
         The gates and state vector are treated as tensors, and the evolution contracts
         them in the order of the gates. The gate operation list can be split into contiguous
         partitions of a given length (with remainder), with each partition being contracted
-        sequentially. Smaller partitions may run longer, but can save memory.
+        sequentially. Larger partitions can be much faster, but will use more memory.
 
         Args:
             operations (List[GateOperation]): Gate operations to apply for
@@ -61,7 +61,7 @@ class StateVectorSimulation:
             This method mutates the state of the simulation.
         """
         # TODO: Write algorithm to determine partition size based on qubit count
-        self._state_vector = np.reshape(self._state_vector, [2] * self._qubit_count)
+        state = np.reshape(self._state_vector, [2] * self._qubit_count)
 
         partitions = (
             [operations[i : i + partition_size] for i in range(0, len(operations), partition_size)]
@@ -70,14 +70,12 @@ class StateVectorSimulation:
         )
 
         for partition in partitions:
-            self._state_vector = StateVectorSimulation._contract_operations(
-                self._state_vector, self._qubit_count, partition
-            )
+            state = StateVectorSimulation._contract_operations(state, self._qubit_count, partition)
 
-        self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
+        self._state_vector = np.reshape(state, 2 ** self._qubit_count)
 
     def apply_observables(self, observables: List[Observable]) -> None:
-        """ Returns the diagonalizing matrices of the given observables
+        """ Applies the diagonalizing matrices of the given observables
         to the state of the simulation.
 
         This method can only be called once.
@@ -94,7 +92,7 @@ class StateVectorSimulation:
         contracted = StateVectorSimulation._contract_operations(
             state, self._qubit_count, observables
         )
-        self._post_observables = contracted.reshape(2 ** self._qubit_count)
+        self._post_observables = np.reshape(contracted, 2 ** self._qubit_count)
 
     @staticmethod
     def _contract_operations(
@@ -107,37 +105,36 @@ class StateVectorSimulation:
             matrix = _get_matrix(operation)
             targets = operation.targets
 
-            # Only add to contraction parameters if the observable
-            # has a nontrivial diagonalizing matrix
-            if matrix is not None and targets:
-                # lower indices, which will be traced out
-                targets = operation.targets
-                covariant = [index_substitutions[i] for i in targets]
+            # `operation` is not added tp the contraction parameters if
+            # it is an observable with a trivial diagonalizing matrix
+            if matrix is not None:
+                if targets:
+                    # lower indices, which will be traced out
+                    covariant = [index_substitutions[i] for i in targets]
 
-                # upper indices, which will replace the contracted indices in the state vector
-                contravariant = list(range(next_index, next_index + len(covariant)))
-                indices = contravariant + covariant
-                # matrix as type-(len(contravariant), len(covariant)) tensor
-                matrix_as_tensor = matrix.reshape([2] * len(indices))
+                    # upper indices, which will replace the contracted indices in the state vector
+                    contravariant = list(range(next_index, next_index + len(covariant)))
 
-                contraction_parameters += [matrix_as_tensor, indices]
-                next_index += len(covariant)
+                    indices = contravariant + covariant
+                    # matrix as type-(len(contravariant), len(covariant)) tensor
+                    matrix_as_tensor = np.reshape(matrix, [2] * len(indices))
 
-                index_substitutions.update(
-                    {targets[i]: contravariant[i] for i in range(len(targets))}
-                )
-            elif not targets:
-                # `operation` is an observable, and the only element in `operations`
-                for qubit in range(qubit_count):
-                    # Since observables don't overlap, there's no need to track index replacements
-                    contraction_parameters += [matrix, [next_index, qubit]]
-                    index_substitutions[qubit] = next_index
-                    next_index += 1
+                    contraction_parameters += [matrix_as_tensor, indices]
+                    next_index += len(covariant)
+                    index_substitutions.update(
+                        {targets[i]: contravariant[i] for i in range(len(targets))}
+                    )
+                else:
+                    # `operation` is an observable, and the only element in `operations`
+                    for qubit in range(qubit_count):
+                        # Since observables don't overlap,
+                        # there's no need to track index replacements
+                        contraction_parameters += [matrix, [next_index, qubit]]
+                        index_substitutions[qubit] = next_index
+                        next_index += 1
 
         # Ensure state is in correct order
-        new_indices = [
-            index_substitutions[i] if i in index_substitutions else i for i in range(qubit_count)
-        ]
+        new_indices = [index_substitutions[i] for i in range(qubit_count)]
         contraction_parameters.append(new_indices)
         return opt_einsum.contract(*contraction_parameters)
 
