@@ -26,7 +26,7 @@ from braket.ir.jaqcd import Program
 
 class DefaultSimulator:
     def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int, *, partition_size: int = 30
+        self, circuit_ir: Program, qubit_count: int, shots: int, *, partition_size: int = 10
     ) -> Dict[str, Any]:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
@@ -37,7 +37,7 @@ class DefaultSimulator:
             shots (int): The number of times to run the circuit.
             partition_size (int): The size of the circuit partitions to contract;
                 see `StateVectorSimulation.evolve`.
-                Defaults to 30; this number was experimentally chosen based on time
+                Defaults to 10; this number was experimentally chosen based on time
                 and memory usage.
 
         Returns:
