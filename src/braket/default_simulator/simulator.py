@@ -27,7 +27,7 @@ from braket.ir.jaqcd import Program
 
 class DefaultSimulator:
     def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int, partition_size: int = 30
+        self, circuit_ir: Program, qubit_count: int, shots: int, *, partition_size: int = 30
     ) -> Dict[str, Any]:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
