@@ -17,7 +17,7 @@ import pytest
 from braket.default_simulator.simulator import DefaultSimulator
 from braket.ir.jaqcd import CNot, H, Program, X
 
-# TODO: Pass these in as pytest options
+# TODO: Pass these in as pytest options in conftest
 N_QUBITS = range(17, 19)
 N_LAYERS = range(25, 28)
 
@@ -39,8 +39,8 @@ def generate_circuit():
 
 
 @pytest.mark.parametrize("nqubits,nlayers", itertools.product(N_QUBITS, N_LAYERS))
-def test_braket_performance(benchmark, generate_circuit, nqubits, nlayers):
+def test_braket_performance(benchmark, generate_circuit, nqubits, nlayers, partition_size):
     benchmark.group = "braket"
     circuit = generate_circuit(nqubits, nlayers)
     device = DefaultSimulator()
-    benchmark(device.run, circuit, nqubits, shots=1, partition_size=30)
+    benchmark(device.run, circuit, nqubits, shots=1, partition_size=partition_size)
