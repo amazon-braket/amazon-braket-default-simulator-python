@@ -64,17 +64,21 @@ def bell_ir_with_result():
     return _bell_ir_with_result
 
 
-def test_simulator_run_grcs_16(grcs_16_qubit):
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
+def test_simulator_run_grcs_16(grcs_16_qubit, partition_size):
     simulator = DefaultSimulator()
-    result = simulator.run(grcs_16_qubit.circuit_ir, qubit_count=16, shots=100)
+    result = simulator.run(
+        grcs_16_qubit.circuit_ir, qubit_count=16, shots=100, partition_size=partition_size
+    )
     state_vector = result["ResultTypes"][0]["Value"]
     assert cmath.isclose(abs(state_vector[0]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7)
 
 
-def test_simulator_run_bell_pair(bell_ir):
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
+def test_simulator_run_bell_pair(bell_ir, partition_size):
     simulator = DefaultSimulator()
     shots_count = 10000
-    result = simulator.run(bell_ir, qubit_count=2, shots=shots_count)
+    result = simulator.run(bell_ir, qubit_count=2, shots=shots_count, partition_size=partition_size)
 
     assert all([len(measurement) == 2] for measurement in result["Measurements"])
     assert len(result["Measurements"]) == shots_count
@@ -85,10 +89,13 @@ def test_simulator_run_bell_pair(bell_ir):
     assert result["TaskMetadata"] == {"Ir": bell_ir.json(), "IrType": "jaqcd", "Shots": shots_count}
 
 
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
 @pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
-def test_simulator_bell_pair_result_types(bell_ir_with_result, targets):
+def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, partition_size):
     simulator = DefaultSimulator()
-    result = simulator.run(bell_ir_with_result(targets), qubit_count=2, shots=0)
+    result = simulator.run(
+        bell_ir_with_result(targets), qubit_count=2, shots=0, partition_size=partition_size
+    )
     assert len(result["ResultTypes"]) == 2
     assert result["ResultTypes"] == [
         {"Type": {"type": "amplitude", "states": ["11"]}, "Value": {"11": 1 / 2 ** 0.5}},
