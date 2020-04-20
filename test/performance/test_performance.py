@@ -14,33 +14,54 @@
 import itertools
 
 import pytest
-from braket.default_simulator.simulator import DefaultSimulator
-from braket.ir.jaqcd import CNot, H, Program, X
+from braket.circuits import Circuit, ResultType
+from braket.devices import LocalSimulator
+
+import numpy as np
 
 # TODO: Pass these in as pytest options in conftest
-N_QUBITS = range(17, 19)
-N_LAYERS = range(25, 28)
+N_QUBITS = range(18, 21, 2)
+N_LAYERS = range(20, 60, 20)
 
 
 @pytest.fixture
 def generate_circuit():
     def _generate_circuit(num_qubits: int, num_layers: int):
-        instructions = []
+        circuit = Circuit()
         for layer in range(num_layers):
-            instructions.extend([H(target=0), X(target=0)])
-            for qubit in range(1, num_qubits):
-                instructions.extend(
-                    [H(target=qubit), X(target=qubit), CNot(control=0, target=qubit)]
-                )
+            circuit = circuit.add(hayden_preskill_generator(num_qubits, 3 * num_qubits))
 
-        return Program(instructions=instructions)
+        circuit = circuit.add_result_type(ResultType.StateVector())
+        return circuit
 
     return _generate_circuit
 
 
-@pytest.mark.parametrize("nqubits,nlayers", itertools.product(N_QUBITS, N_LAYERS))
+def hayden_preskill_generator(qubits: int, numgates: int):
+    """Yields the circuit elements for the scrambling unitary.
+    Generates a circuit with numgates gates by laying down a
+    random gate at each time step.  Gates are chosen from single
+    qubit unitary rotations by a random angle, Hadamard, or a
+    controlled-Z between a random pair of qubits."""
+    circ = Circuit()
+    for i in range(numgates):
+        circ.add(np.random.choice(
+            [
+                Circuit().rx(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
+                Circuit().ry(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
+                Circuit().rz(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
+                Circuit().h(np.random.choice(qubits, 1, replace=True)),
+                Circuit().cz(*np.random.choice(qubits, 2, replace=False))
+            ],
+            1,
+            replace=True,
+            p=[1/8, 1/8, 1/8, 1/8, 1/2])[0])
+    return circ
+
+
+@pytest.mark.parametrize('nqubits,nlayers', itertools.product(N_QUBITS, N_LAYERS))
 def test_braket_performance(benchmark, generate_circuit, nqubits, nlayers, partition_size):
     benchmark.group = "braket"
     circuit = generate_circuit(nqubits, nlayers)
-    device = DefaultSimulator()
-    benchmark(device.run, circuit, nqubits, shots=1, partition_size=partition_size)
+    device = LocalSimulator()
+    benchmark(device.run, circuit, shots=1, partition_size=partition_size)
