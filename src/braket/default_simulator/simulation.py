@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from functools import singledispatch
-from typing import List
+from typing import List, Optional, Tuple
 
 import numpy as np
 import opt_einsum
@@ -21,58 +21,53 @@ from braket.default_simulator.operation import GateOperation, Observable, Operat
 
 class StateVectorSimulation:
     """
-    The class `StateVectorSimulation` encapsulates a simulation of a quantum system of
-    `qubit_count` qubits. The evolution of the state of the quantum system is achieved
-    through `GateOperation`s using the `evolve()` method.
+    This class encapsulates a simulation of a quantum system of `qubit_count` qubits.
+    The evolution of the state of the quantum system is achieved through `GateOperation`s
+    using the `evolve()` method.
+
+    The simulation defaults to applying gates one at a time, but can also be configured
+    to apply multiple gates at once by supplying the `partition_size` keyword argument.
+
+    When `partition_size` is supplied, the operation list is split into contiguous partitions
+    of length `partition_size` (with remainder) to contract. Within each partition, contraction
+    order is optimized among the gates, and the partitions themselves are contracted in the order
+    they appear. Larger partitions can be significantly faster, but will use more memory.
     """
 
-    def __init__(self, qubit_count: int, shots: int = 0):
+    def __init__(self, qubit_count: int, shots: int, partition_size: Optional[int]):
         r"""
         Args:
             qubit_count (int): The number of qubits being simulated.
                 All the qubits start in the :math:`\ket{\mathbf{0}}` computational basis state.
             shots (int): The number of samples to take from the simulation.
-                Defaults to 0, which means only results that do not require sampling,
-                such as state vector or expectation, will be generated.
+                If set to 0, only results that do not require sampling, such as state vector
+                or expectation, will be generated.
+            partition_size (Optional[int]): If specified, the size of the partitions to contract
+                with If `None`, the gates are applied one at a time, without any optimization of
+                contraction order. If set to 0, the entire circuit is contracted.
         """
         initial_state = np.zeros(2 ** qubit_count, dtype=complex)
         initial_state[0] = 1
         self._state_vector = initial_state
         self._qubit_count = qubit_count
         self._shots = shots
+        self._partition_size = partition_size
         self._post_observables = None
 
-    def evolve(self, operations: List[GateOperation], partition_size: int) -> None:
+    def evolve(self, operations: List[GateOperation]) -> None:
         """ Evolves the state of the simulation under the action of
         the specified gate operations.
-
-        The gates and state vector are treated as tensors, and the evolution contracts
-        them in the order of the gates. The gate operation list can be split into contiguous
-        partitions of a given length (with remainder), with each partition being contracted
-        sequentially. Larger partitions can be much faster, but will use more memory.
 
         Args:
             operations (List[GateOperation]): Gate operations to apply for
                 evolving the state of the simulation.
-            partition_size (int): The size of the partitions to contract.
-                If set to 0, the entire circuit is contracted.
 
         Note:
             This method mutates the state of the simulation.
         """
-        # TODO: Write algorithm to determine partition size based on qubit count
-        state = np.reshape(self._state_vector, [2] * self._qubit_count)
-
-        partitions = (
-            [operations[i : i + partition_size] for i in range(0, len(operations), partition_size)]
-            if partition_size
-            else [operations]
+        self._state_vector = StateVectorSimulation._apply_operations(
+            self._state_vector, self._qubit_count, operations, self._partition_size
         )
-
-        for partition in partitions:
-            state = StateVectorSimulation._contract_operations(state, self._qubit_count, partition)
-
-        self._state_vector = np.reshape(state, 2 ** self._qubit_count)
 
     def apply_observables(self, observables: List[Observable]) -> None:
         """ Applies the diagonalizing matrices of the given observables
@@ -88,11 +83,81 @@ class StateVectorSimulation:
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
-        state = np.reshape(self._state_vector, [2] * self._qubit_count)
-        contracted = StateVectorSimulation._contract_operations(
-            state, self._qubit_count, observables
+        self._post_observables = StateVectorSimulation._apply_operations(
+            self._state_vector, self._qubit_count, observables, self._partition_size
         )
-        self._post_observables = np.reshape(contracted, 2 ** self._qubit_count)
+
+    @staticmethod
+    def _apply_operations(
+        state: np.ndarray, qubit_count: int, operations: List[Operation], partition_size: int
+    ) -> np.ndarray:
+        return (
+            StateVectorSimulation._apply_individual_operations(state, qubit_count, operations)
+            if partition_size is None
+            else StateVectorSimulation._partition_and_contract(
+                state, qubit_count, operations, partition_size
+            )
+        )
+
+    @staticmethod
+    def _apply_individual_operations(
+        state: np.ndarray, qubit_count: int, operations: List[Operation]
+    ) -> np.ndarray:
+        state_tensor = np.reshape(state, [2] * qubit_count)
+        for operation in operations:
+            matrix = _get_matrix(operation)
+            targets = operation.targets
+            # `operation` is ignored if it is an observable with a trivial diagonalizing matrix
+            if matrix is not None:
+                if operation.targets:
+                    state_tensor = StateVectorSimulation._apply_operation(
+                        state_tensor, qubit_count, matrix, targets
+                    )
+                else:
+                    # `operation` is an observable, and the only element in `operations`
+                    for qubit in range(qubit_count):
+                        state_tensor = StateVectorSimulation._apply_operation(
+                            state_tensor, qubit_count, matrix, (qubit,)
+                        )
+        return np.reshape(state_tensor, 2 ** qubit_count)
+
+    @staticmethod
+    def _apply_operation(
+        state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int]
+    ) -> np.ndarray:
+        gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
+        axes = (
+            np.arange(len(targets), 2 * len(targets)),
+            targets,
+        )
+        dot_product = np.tensordot(gate_matrix, state, axes=axes)
+
+        # Axes given in `operation.targets` are in the first positions.
+        unused_idxs = [idx for idx in range(qubit_count) if idx not in targets]
+        permutation = list(targets) + unused_idxs
+        # Invert the permutation to put the indices in the correct place
+        inverse_permutation = np.argsort(permutation)
+        return np.transpose(dot_product, inverse_permutation)
+
+    @staticmethod
+    def _partition_and_contract(
+        state: np.ndarray, qubit_count: int, operations: List[Operation], partition_size: int
+    ) -> np.ndarray:
+        # TODO: Write algorithm to determine partition size based on operations and qubit count
+        state_tensor = np.reshape(state, [2] * qubit_count)
+
+        partitions = (
+            [operations[i : i + partition_size] for i in range(0, len(operations), partition_size)]
+            if partition_size
+            else [operations]
+        )
+
+        for partition in partitions:
+            state_tensor = StateVectorSimulation._contract_operations(
+                state_tensor, qubit_count, partition
+            )
+
+        return np.reshape(state_tensor, 2 ** qubit_count)
 
     @staticmethod
     def _contract_operations(

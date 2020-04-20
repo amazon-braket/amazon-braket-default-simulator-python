@@ -13,11 +13,10 @@
 
 import itertools
 
+import numpy as np
 import pytest
 from braket.circuits import Circuit, ResultType
 from braket.devices import LocalSimulator
-
-import numpy as np
 
 # TODO: Pass these in as pytest options in conftest
 N_QUBITS = range(18, 21, 2)
@@ -45,21 +44,24 @@ def hayden_preskill_generator(qubits: int, numgates: int):
     controlled-Z between a random pair of qubits."""
     circ = Circuit()
     for i in range(numgates):
-        circ.add(np.random.choice(
-            [
-                Circuit().rx(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
-                Circuit().ry(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
-                Circuit().rz(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
-                Circuit().h(np.random.choice(qubits, 1, replace=True)),
-                Circuit().cz(*np.random.choice(qubits, 2, replace=False))
-            ],
-            1,
-            replace=True,
-            p=[1/8, 1/8, 1/8, 1/8, 1/2])[0])
+        circ.add(
+            np.random.choice(
+                [
+                    Circuit().rx(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
+                    Circuit().ry(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
+                    Circuit().rz(np.random.choice(qubits, 1, replace=True), np.random.ranf()),
+                    Circuit().h(np.random.choice(qubits, 1, replace=True)),
+                    Circuit().cz(*np.random.choice(qubits, 2, replace=False)),
+                ],
+                1,
+                replace=True,
+                p=[1 / 8, 1 / 8, 1 / 8, 1 / 8, 1 / 2],
+            )[0]
+        )
     return circ
 
 
-@pytest.mark.parametrize('nqubits,nlayers', itertools.product(N_QUBITS, N_LAYERS))
+@pytest.mark.parametrize("nqubits,nlayers", itertools.product(N_QUBITS, N_LAYERS))
 def test_braket_performance(benchmark, generate_circuit, nqubits, nlayers, partition_size):
     benchmark.group = "braket"
     circuit = generate_circuit(nqubits, nlayers)

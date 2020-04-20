@@ -178,54 +178,62 @@ def qft_circuit_operations():
 def test_simulation_simple_circuits(
     instructions, qubit_count, state_vector, probability_amplitudes
 ):
+    partition_sizes = list(range(len(instructions) + 2))
+    partition_sizes.append(None)
     # +2 to ensure evolve doesn't fail for partition size greater than
     # or equal to the number of instructions
-    for partition_size in range(len(instructions) + 2):
-        simulation = StateVectorSimulation(qubit_count)
-        simulation.evolve(instructions, partition_size)
+    for partition_size in partition_sizes:
+        simulation = StateVectorSimulation(qubit_count, 0, partition_size)
+        simulation.evolve(instructions)
         assert np.allclose(state_vector, simulation.state_vector)
         assert np.allclose(probability_amplitudes, simulation.probabilities)
 
 
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
 @pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
-def test_apply_observables(observables, equivalent_gates, qubit_count):
-    sim_observables = StateVectorSimulation(qubit_count)
+def test_apply_observables(observables, equivalent_gates, qubit_count, partition_size):
+    sim_observables = StateVectorSimulation(qubit_count, 0, partition_size)
     sim_observables.apply_observables(observables)
-    sim_gates = StateVectorSimulation(qubit_count)
-    sim_gates.evolve(equivalent_gates, 0)
+    sim_gates = StateVectorSimulation(qubit_count, 0, partition_size)
+    sim_gates.evolve(equivalent_gates)
     assert np.allclose(sim_observables.state_with_observables, sim_gates.state_vector)
 
 
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
 @pytest.mark.xfail(raises=RuntimeError)
-def test_apply_observables_fails_second_call():
-    simulation = StateVectorSimulation(4)
+def test_apply_observables_fails_second_call(partition_size):
+    simulation = StateVectorSimulation(4, 0, partition_size)
     simulation.apply_observables([observables.PauliX([0])])
     simulation.apply_observables([observables.PauliX([0])])
 
 
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
 @pytest.mark.xfail(raises=RuntimeError)
-def test_state_with_observables_fails_before_applying():
-    simulation = StateVectorSimulation(4)
+def test_state_with_observables_fails_before_applying(partition_size):
+    simulation = StateVectorSimulation(4, 0, partition_size)
     simulation.state_with_observables
 
 
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
 @pytest.mark.xfail(raises=ValueError)
-def test_build_contraction_fails_unrecognised_operation():
-    simulation = StateVectorSimulation(4)
-    simulation.evolve([gate_operations.PauliX([0]), "foo"], 0)
+def test_build_contraction_fails_unrecognised_operation(partition_size):
+    simulation = StateVectorSimulation(4, 0, partition_size)
+    simulation.evolve([gate_operations.PauliX([0]), "foo"])
 
 
-def test_simulation_qft_circuit(qft_circuit_operations):
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
+def test_simulation_qft_circuit(qft_circuit_operations, partition_size):
     qubit_count = 16
-    simulation = StateVectorSimulation(qubit_count)
+    simulation = StateVectorSimulation(qubit_count, 0, partition_size)
     operations = qft_circuit_operations(qubit_count)
-    simulation.evolve(operations, 0)
+    simulation.evolve(operations)
     assert np.allclose(simulation.probabilities, [1 / (2 ** qubit_count)] * (2 ** qubit_count))
 
 
-def test_simulation_retrieve_samples():
-    simulation = StateVectorSimulation(2, 10000)
-    simulation.evolve([gate_operations.Hadamard([0]), gate_operations.CX([0, 1])], 0)
+@pytest.mark.parametrize("partition_size", [None, 0, 10])
+def test_simulation_retrieve_samples(partition_size):
+    simulation = StateVectorSimulation(2, 10000, partition_size)
+    simulation.evolve([gate_operations.Hadamard([0]), gate_operations.CX([0, 1])])
     counter = Counter(simulation.retrieve_samples())
     assert simulation.qubit_count == 2
     assert counter.keys() == {0, 3}
