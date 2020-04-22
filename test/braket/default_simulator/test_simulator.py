@@ -45,20 +45,23 @@ def bell_ir():
 
 @pytest.fixture
 def bell_ir_with_result():
-    return Program.parse_raw(
-        json.dumps(
-            {
-                "instructions": [
-                    {"type": "h", "target": 0},
-                    {"type": "cnot", "target": 1, "control": 0},
-                ],
-                "results": [
-                    {"type": "amplitude", "states": ["11"]},
-                    {"type": "expectation", "observable": ["x"], "targets": [1]},
-                ],
-            }
+    def _bell_ir_with_result(targets=None):
+        return Program.parse_raw(
+            json.dumps(
+                {
+                    "instructions": [
+                        {"type": "h", "target": 0},
+                        {"type": "cnot", "target": 1, "control": 0},
+                    ],
+                    "results": [
+                        {"type": "amplitude", "states": ["11"]},
+                        {"type": "expectation", "observable": ["x"], "targets": targets},
+                    ],
+                }
+            )
         )
-    )
+
+    return _bell_ir_with_result
 
 
 def test_simulator_run_grcs_16(grcs_16_qubit):
@@ -82,16 +85,20 @@ def test_simulator_run_bell_pair(bell_ir):
     assert result["TaskMetadata"] == {"Ir": bell_ir.json(), "IrType": "jaqcd", "Shots": shots_count}
 
 
-def test_simulator_bell_pair_result_types(bell_ir_with_result):
+@pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
+def test_simulator_bell_pair_result_types(bell_ir_with_result, targets):
     simulator = DefaultSimulator()
-    result = simulator.run(bell_ir_with_result, qubit_count=2, shots=0)
+    result = simulator.run(bell_ir_with_result(targets), qubit_count=2, shots=0)
     assert len(result["ResultTypes"]) == 2
     assert result["ResultTypes"] == [
         {"Type": {"type": "amplitude", "states": ["11"]}, "Value": {"11": 1 / 2 ** 0.5}},
-        {"Type": {"type": "expectation", "observable": ["x"], "targets": [1]}, "Value": 0},
+        {
+            "Type": {"type": "expectation", "observable": ["x"], "targets": targets},
+            "Value": 0 if targets else [0, 0],
+        },
     ]
     assert result["TaskMetadata"] == {
-        "Ir": bell_ir_with_result.json(),
+        "Ir": bell_ir_with_result(targets).json(),
         "IrType": "jaqcd",
         "Shots": 0,
     }
