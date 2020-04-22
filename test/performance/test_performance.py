@@ -13,39 +13,33 @@
 
 import itertools
 
+import json
+import random
 import pytest
 import numpy as np
 from braket.default_simulator.simulator import DefaultSimulator
 import braket.ir.jaqcd as jaqcd
 
 
-N_QUBITS = list(range(4, 6))
-N_LAYERS = range(8, 9)
-
-
-@pytest.fixture
-def generate_layered_discrete_gates_circuit():
-    def _generate_circuit(num_qubits, num_layers):
-        instructions = []
-        for layer in range(num_layers):
-            for qubit in range(num_qubits):
-                instructions.extend([jaqcd.H(target=qubit), jaqcd.X(target=qubit)])
-                if qubit > 0:
-                    instructions.extend([jaqcd.CNot(control=0, target=qubit)])
-        return jaqcd.Program(instructions=instructions)
-    return _generate_circuit
-
+results_data = [
+    ([jaqcd.StateVector(), jaqcd.Expectation(observable=["x"])]),
+    ([jaqcd.Probability()]),
+    ([jaqcd.Probability(targets=[0, 1])]),
+    ([jaqcd.Sample(observable=["y"])]),
+    ([jaqcd.Variance(observable=["x"])]),
+    ([jaqcd.Variance(observable=["z"], targets=[0]), jaqcd.Sample(observable=["y"], targets=[1])]),
+]
 
 @pytest.fixture
-def generate_layered_continuous_gates_circuit():
-    def _generate_circuit(num_qubits, num_layers):
+def generate_continuous_gates_circuit():
+    def _generate_circuit(num_qubits, num_layers, results):
         instructions = []
         for layer in range(num_layers):
             for qubit in range(num_qubits):
                 instructions.extend([jaqcd.Rx(target=qubit, angle=0.15), jaqcd.Ry(target=qubit, angle=0.16), jaqcd.Rz(target=qubit, angle=0.17)])
                 if qubit > 0:
                     instructions.extend([jaqcd.CZ(control=0, target=qubit)])
-        return jaqcd.Program(instructions=instructions)
+        return jaqcd.Program(instructions=instructions, results=results)
     return _generate_circuit
 
 
@@ -59,13 +53,40 @@ def generate_qft_circuit():
             for control_qubit in range(target_qubit + 1, qubit_count):
                 qft_ops.append(jaqcd.CPhaseShift(control=control_qubit, target=target_qubit, angle=angle))
                 angle /= 2
-        return jaqcd.Program(instructions=qft_ops, results=[jaqcd.StateVector()])
+
+        amplitudes = ["".join(str(random.randint(0, 1))) for _ in range(2 ** 8) for _ in range(16)]
+        return jaqcd.Program(instructions=qft_ops, results=[jaqcd.StateVector(), jaqcd.Amplitude(states=amplitudes)])
     return _qft_operations
 
 
-#@pytest.mark.parametrize("nqubits,nlayers", itertools.product(N_QUBITS, N_LAYERS))
-@pytest.mark.parametrize("nqubits", N_QUBITS)
-def test_braket_performance(benchmark, generate_qft_circuit, nqubits):
+@pytest.fixture
+def grcs_circuit_16():
+    with open("resources/grcs_16.json") as circuit_file:
+        data = json.load(circuit_file)
+        return jaqcd.Program.parse_raw(json.dumps(data["ir"]))
+
+
+def test_grcs_simulation(benchmark, grcs_circuit_16):
+    device = DefaultSimulator()
+    benchmark(device.run, grcs_circuit_16, 16, shots=0)
+
+
+@pytest.mark.parametrize("nqubits", range(4, 22, 4))
+def test_qft_performance(benchmark, generate_qft_circuit, nqubits):
     circuit = generate_qft_circuit(nqubits)
     device = DefaultSimulator()
     benchmark(device.run, circuit, nqubits, shots=0)
+
+
+# @pytest.mark.parametrize("nqubits,nlayers", itertools.product(range(4, 22, 8), range(4, 22, 8)))
+# def test_layered_continuous_gates_circuit_analytic(benchmark, generate_continuous_gates_circuit, nqubits, nlayers):
+#     circuit = generate_continuous_gates_circuit(nqubits, nlayers, [jaqcd.StateVector()])
+#     device = DefaultSimulator()
+#     benchmark(device.run, circuit, nqubits, shots=0)
+
+    
+@pytest.mark.parametrize("nqubits,nlayers,results", itertools.product(range(4, 14, 4), range(10, 11), results_data))
+def test_layered_continuous_gates_circuit_result_types(benchmark, generate_continuous_gates_circuit, nqubits, nlayers, results):
+    circuit = generate_continuous_gates_circuit(nqubits, nlayers, results)
+    device = DefaultSimulator()
+    benchmark(device.run, circuit, nqubits, shots=1000)
