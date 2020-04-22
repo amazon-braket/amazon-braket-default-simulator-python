@@ -30,6 +30,7 @@ setup(
             "pre-commit",
             "pylint",
             "pytest",
+            "pytest-benchmark",
             "pytest-cov",
             "pytest-rerunfailures",
             "pytest-xdist",
