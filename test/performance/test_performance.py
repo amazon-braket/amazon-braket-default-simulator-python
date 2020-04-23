@@ -22,10 +22,8 @@ from braket.default_simulator.simulator import DefaultSimulator
 
 results_data = [
     ([jaqcd.StateVector(), jaqcd.Expectation(observable=["x"])]),
-    ([jaqcd.Probability()]),
-    ([jaqcd.Probability(targets=[0, 1])]),
-    ([jaqcd.Sample(observable=["y"])]),
-    ([jaqcd.Variance(observable=["x"])]),
+    ([jaqcd.Probability(targets=[0, 1]), jaqcd.Sample(observable=["y"])]),
+    ([jaqcd.Probability(), jaqcd.Variance(observable=["x"])]),
     ([jaqcd.Variance(observable=["z"], targets=[0]), jaqcd.Sample(observable=["y"], targets=[1])]),
 ]
 
@@ -91,17 +89,28 @@ def test_grcs_simulation(benchmark, grcs_circuit_16):
     benchmark(device.run, grcs_circuit_16, 16, shots=0)
 
 
-@pytest.mark.parametrize("nqubits", range(4, 22, 4))
+@pytest.mark.parametrize("nqubits", range(4, 20, 4))
 def test_qft(benchmark, generate_qft_circuit, nqubits):
     circuit = generate_qft_circuit(nqubits)
     device = DefaultSimulator()
     benchmark(device.run, circuit, nqubits, shots=0)
 
 
-@pytest.mark.parametrize("nqubits,nlayers", itertools.product(range(4, 22, 8), range(4, 22, 8)))
-def test_layered_continuous_gates_circuit_analytic(
+@pytest.mark.parametrize("nqubits,nlayers", itertools.product(range(2, 20, 4), range(4, 22, 8)))
+def test_layered_continuous_gates_circuit(
     benchmark, generate_continuous_gates_circuit, nqubits, nlayers
 ):
     circuit = generate_continuous_gates_circuit(nqubits, nlayers, [jaqcd.StateVector()])
     device = DefaultSimulator()
     benchmark(device.run, circuit, nqubits, shots=0)
+
+
+@pytest.mark.parametrize("results", results_data)
+def test_layered_continuous_gates_circuit_result_types(
+    benchmark, generate_continuous_gates_circuit, results
+):
+    nqubits = 12
+    nlayers = 15
+    circuit = generate_continuous_gates_circuit(nqubits, nlayers, results)
+    device = DefaultSimulator()
+    benchmark(device.run, circuit, nqubits, shots=1000)
