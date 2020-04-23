@@ -11,7 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import itertools
 from typing import Any, Dict, List, Tuple
 
 from braket.default_simulator.gate_operations import from_braket_instruction
@@ -103,27 +102,29 @@ class DefaultSimulator:
     def _validate_observable_result_types(
         observable_result_types: List[ObservableResultType], shots: int
     ) -> None:
-        if [
-            result_type
-            for result_type in observable_result_types
-            if isinstance(result_type, Sample)
-        ] and not shots:
+        if (
+            any([isinstance(result_type, Sample) for result_type in observable_result_types])
+            and not shots
+        ):
             raise ValueError("No shots specified for sample measurement")
 
         # Validate that if no target is specified for an observable
         # (and so the observable acts on all qubits), then it is the
         # only observable.
-        observable_targets = [
-            result_type.observable.targets for result_type in observable_result_types
-        ]
-        if None in observable_targets and len(observable_result_types) > 1:
-            raise ValueError(
-                "Only one observable is allowed when one acts on all targets, but "
-                f"{len(observable_result_types)} observables were found"
-            )
+        flattened = []
+        for result_type in observable_result_types:
+            if result_type.observable.targets is None:
+                if len(observable_result_types) > 1:
+                    raise ValueError(
+                        "Only one observable is allowed when one acts on all targets, but "
+                        f"{len(observable_result_types)} observables were found"
+                    )
+                else:
+                    flattened.append(None)
+            else:
+                flattened.extend(result_type.observable.targets)
 
         # Validate that there are no overlapping observable targets
-        flattened = list(itertools.chain(*observable_targets))
         if len(flattened) != len(set(flattened)):
             raise ValueError(
                 "Overlapping targets among observables; qubits with more than one observable: "
