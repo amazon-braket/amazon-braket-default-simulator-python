@@ -12,14 +12,13 @@
 # language governing permissions and limitations under the License.
 
 import itertools
-
 import json
 import random
-import pytest
-import numpy as np
-from braket.default_simulator.simulator import DefaultSimulator
-import braket.ir.jaqcd as jaqcd
 
+import braket.ir.jaqcd as jaqcd
+import numpy as np
+import pytest
+from braket.default_simulator.simulator import DefaultSimulator
 
 results_data = [
     ([jaqcd.StateVector(), jaqcd.Expectation(observable=["x"])]),
@@ -30,16 +29,24 @@ results_data = [
     ([jaqcd.Variance(observable=["z"], targets=[0]), jaqcd.Sample(observable=["y"], targets=[1])]),
 ]
 
+
 @pytest.fixture
 def generate_continuous_gates_circuit():
     def _generate_circuit(num_qubits, num_layers, results):
         instructions = []
         for layer in range(num_layers):
             for qubit in range(num_qubits):
-                instructions.extend([jaqcd.Rx(target=qubit, angle=0.15), jaqcd.Ry(target=qubit, angle=0.16), jaqcd.Rz(target=qubit, angle=0.17)])
+                instructions.extend(
+                    [
+                        jaqcd.Rx(target=qubit, angle=0.15),
+                        jaqcd.Ry(target=qubit, angle=0.16),
+                        jaqcd.Rz(target=qubit, angle=0.17),
+                    ]
+                )
                 if qubit > 0:
                     instructions.extend([jaqcd.CZ(control=0, target=qubit)])
         return jaqcd.Program(instructions=instructions, results=results)
+
     return _generate_circuit
 
 
@@ -51,11 +58,24 @@ def generate_qft_circuit():
             angle = np.pi / 2
             qft_ops.append(jaqcd.H(target=target_qubit))
             for control_qubit in range(target_qubit + 1, qubit_count):
-                qft_ops.append(jaqcd.CPhaseShift(control=control_qubit, target=target_qubit, angle=angle))
+                qft_ops.append(
+                    jaqcd.CPhaseShift(control=control_qubit, target=target_qubit, angle=angle)
+                )
                 angle /= 2
 
-        amplitudes = ["".join(str(random.randint(0, 1))) for _ in range(2 ** 8) for _ in range(16)]
-        return jaqcd.Program(instructions=qft_ops, results=[jaqcd.StateVector(), jaqcd.Amplitude(states=amplitudes)])
+        amplitudes = [
+            "".join([str(random.randint(0, 1)) for _ in range(qubit_count)])
+            for _ in range(2 ** (qubit_count // 2))
+        ]
+        return jaqcd.Program(
+            instructions=qft_ops,
+            results=[
+                jaqcd.StateVector(),
+                jaqcd.Amplitude(states=amplitudes),
+                jaqcd.Expectation(observable=["x"]),
+            ],
+        )
+
     return _qft_operations
 
 
@@ -72,21 +92,27 @@ def test_grcs_simulation(benchmark, grcs_circuit_16):
 
 
 @pytest.mark.parametrize("nqubits", range(4, 22, 4))
-def test_qft_performance(benchmark, generate_qft_circuit, nqubits):
+def test_qft(benchmark, generate_qft_circuit, nqubits):
     circuit = generate_qft_circuit(nqubits)
     device = DefaultSimulator()
     benchmark(device.run, circuit, nqubits, shots=0)
 
 
-# @pytest.mark.parametrize("nqubits,nlayers", itertools.product(range(4, 22, 8), range(4, 22, 8)))
-# def test_layered_continuous_gates_circuit_analytic(benchmark, generate_continuous_gates_circuit, nqubits, nlayers):
-#     circuit = generate_continuous_gates_circuit(nqubits, nlayers, [jaqcd.StateVector()])
-#     device = DefaultSimulator()
-#     benchmark(device.run, circuit, nqubits, shots=0)
+@pytest.mark.parametrize("nqubits,nlayers", itertools.product(range(4, 22, 8), range(4, 22, 8)))
+def test_layered_continuous_gates_circuit_analytic(
+    benchmark, generate_continuous_gates_circuit, nqubits, nlayers
+):
+    circuit = generate_continuous_gates_circuit(nqubits, nlayers, [jaqcd.StateVector()])
+    device = DefaultSimulator()
+    benchmark(device.run, circuit, nqubits, shots=0)
 
-    
-@pytest.mark.parametrize("nqubits,nlayers,results", itertools.product(range(4, 14, 4), range(10, 11), results_data))
-def test_layered_continuous_gates_circuit_result_types(benchmark, generate_continuous_gates_circuit, nqubits, nlayers, results):
+
+@pytest.mark.parametrize(
+    "nqubits,nlayers,results", itertools.product(range(4, 14, 4), range(10, 11), results_data)
+)
+def test_layered_continuous_gates_circuit_result_types(
+    benchmark, generate_continuous_gates_circuit, nqubits, nlayers, results
+):
     circuit = generate_continuous_gates_circuit(nqubits, nlayers, results)
     device = DefaultSimulator()
     benchmark(device.run, circuit, nqubits, shots=1000)
