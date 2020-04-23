@@ -105,14 +105,3 @@ def test_layered_continuous_gates_circuit_analytic(
     circuit = generate_continuous_gates_circuit(nqubits, nlayers, [jaqcd.StateVector()])
     device = DefaultSimulator()
     benchmark(device.run, circuit, nqubits, shots=0)
-
-
-@pytest.mark.parametrize(
-    "nqubits,nlayers,results", itertools.product(range(4, 14, 4), range(10, 11), results_data)
-)
-def test_layered_continuous_gates_circuit_result_types(
-    benchmark, generate_continuous_gates_circuit, nqubits, nlayers, results
-):
-    circuit = generate_continuous_gates_circuit(nqubits, nlayers, results)
-    device = DefaultSimulator()
-    benchmark(device.run, circuit, nqubits, shots=1000)
