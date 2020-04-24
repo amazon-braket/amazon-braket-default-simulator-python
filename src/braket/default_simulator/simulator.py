@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import uuid
 from typing import Any, Dict, List, Tuple
 
 from braket.default_simulator.gate_operations import from_braket_instruction
@@ -47,6 +48,10 @@ class DefaultSimulator:
             value type `List[List[str]]`, and task metadata, if any (keyed by `TaskMetadata`,
             value type `Dict[str, Any]`)).
 
+        Raises:
+            ValueError: If result types are not specified in the IR when shots=0 or
+                if statevector and amplitude result types are requested when shots>0
+
         Examples:
             >>> circuit_ir = Circuit().h(0).to_ir()
             >>> DefaultSimulator().run(circuit_ir, qubit_count=1, shots=100)
@@ -54,41 +59,51 @@ class DefaultSimulator:
             >>> circuit_ir = Circuit().h(0).to_ir()
             >>> DefaultSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
         """
+        if not shots and not circuit_ir.results:
+            raise ValueError("Result types must be specified in the IR when shots=0")
+        elif shots and circuit_ir.results:
+            for rt in circuit_ir.results:
+                if rt.type in ["statevector", "amplitude"]:
+                    raise ValueError(
+                        "statevector and amplitude result types not available when shots>0"
+                    )
+
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
         ]
 
-        (
-            non_observable_result_types,
-            observable_result_types,
-        ) = DefaultSimulator._translate_result_types(circuit_ir)
-        DefaultSimulator._validate_observable_result_types(
-            list(observable_result_types.values()), shots
-        )
-
         simulation = StateVectorSimulation(qubit_count, shots, batch_size=batch_size)
         simulation.evolve(operations)
 
-        results = [
-            {
-                "Type": vars(circuit_ir.results[index]),
-                "Value": non_observable_result_types[index].calculate(simulation),
-            }
-            for index in non_observable_result_types
-        ]
+        results = []
 
-        if observable_result_types:
-            observables = [
-                observable_result_types[index].observable for index in observable_result_types
-            ]
-            simulation.apply_observables(observables)
-            results += [
-                {
+        if not shots and circuit_ir.results:
+            (
+                non_observable_result_types,
+                observable_result_types,
+            ) = DefaultSimulator._translate_result_types(circuit_ir)
+            DefaultSimulator._validate_observable_result_types(
+                list(observable_result_types.values()), shots
+            )
+
+            results = [0] * len(circuit_ir.results)
+
+            for index in non_observable_result_types:
+                results[index] = {
                     "Type": vars(circuit_ir.results[index]),
-                    "Value": observable_result_types[index].calculate(simulation),
+                    "Value": non_observable_result_types[index].calculate(simulation),
                 }
-                for index in observable_result_types
-            ]
+
+            if observable_result_types:
+                observables = [
+                    observable_result_types[index].observable for index in observable_result_types
+                ]
+                simulation.apply_observables(observables)
+                for index in observable_result_types:
+                    results[index] = {
+                        "Type": vars(circuit_ir.results[index]),
+                        "Value": observable_result_types[index].calculate(simulation),
+                    }
 
         return DefaultSimulator._create_results_dict(results, circuit_ir, simulation)
 
@@ -96,8 +111,6 @@ class DefaultSimulator:
     def _translate_result_types(
         circuit_ir: Program,
     ) -> Tuple[Dict[int, ResultType], Dict[int, ObservableResultType]]:
-        if not circuit_ir.results:
-            return {}, {}
         non_observable_result_types = {}
         observable_result_types = {}
         for i in range(len(circuit_ir.results)):
@@ -162,7 +175,12 @@ class DefaultSimulator:
         results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation
     ) -> Dict[str, Any]:
         return_dict = {
-            "TaskMetadata": {"Ir": circuit_ir.json(), "IrType": "jaqcd", "Shots": simulation.shots}
+            "TaskMetadata": {
+                "Id": str(uuid.uuid4()),
+                "Ir": circuit_ir.json(),
+                "IrType": "jaqcd",
+                "Shots": simulation.shots,
+            }
         }
         if results:
             return_dict["ResultTypes"] = results
