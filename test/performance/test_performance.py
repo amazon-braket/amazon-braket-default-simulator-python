@@ -21,7 +21,7 @@ import pytest
 from braket.default_simulator.simulator import DefaultSimulator
 
 results_data = [
-    ([jaqcd.StateVector(), jaqcd.Expectation(observable=["x"])]),
+    ([jaqcd.Expectation(observable=["x"])]),
     ([jaqcd.Probability(targets=[0, 1]), jaqcd.Sample(observable=["y"])]),
     ([jaqcd.Probability(), jaqcd.Variance(observable=["x"])]),
     ([jaqcd.Variance(observable=["z"], targets=[0]), jaqcd.Sample(observable=["y"], targets=[1])]),
