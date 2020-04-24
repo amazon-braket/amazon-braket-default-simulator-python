@@ -13,5 +13,5 @@ pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_tim
 git stash -u && git checkout $WORKING_BRANCH
 if [[ $HAS_UNCOMMITTED_CHANGES ]]; then git stash pop; fi
 git stash pop
-pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_time' --benchmark-compare --benchmark-compare-fail=mean:5% performance
+pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_time' --benchmark-compare --benchmark-compare-fail=min:5% performance
 rm -rf "$REPOSITORY_ROOT/test/.benchmarks"
