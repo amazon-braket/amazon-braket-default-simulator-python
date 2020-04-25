@@ -22,9 +22,10 @@ from braket.default_simulator.simulator import DefaultSimulator
 
 results_data = [
     ([jaqcd.Expectation(observable=["x"])]),
-    ([jaqcd.Probability(targets=[0, 1]), jaqcd.Sample(observable=["y"])]),
+    ([jaqcd.Probability(targets=[0, 1])]),
     ([jaqcd.Probability(), jaqcd.Variance(observable=["x"])]),
-    ([jaqcd.Variance(observable=["z"], targets=[0]), jaqcd.Sample(observable=["y"], targets=[1])]),
+    ([jaqcd.Variance(observable=["z"], targets=[0])]),
+    ([jaqcd.Sample(observable=["y"])])
 ]
 
 
@@ -111,6 +112,7 @@ def test_layered_continuous_gates_circuit_result_types(
 ):
     nqubits = 12
     nlayers = 15
+    shots = 1000 if any(isinstance(result, jaqcd.Sample) for result in results) else 0
     circuit = generate_continuous_gates_circuit(nqubits, nlayers, results)
     device = DefaultSimulator()
-    benchmark(device.run, circuit, nqubits, shots=1000)
+    benchmark(device.run, circuit, nqubits, shots=shots)
