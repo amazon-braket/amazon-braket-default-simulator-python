@@ -11,7 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
@@ -20,11 +20,11 @@ WORKING_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 HAS_UNCOMMITTED_CHANGES="$(git status --porcelain)"
 
 rm -rf "$REPOSITORY_ROOT/test/.benchmarks"
-if [[ $HAS_UNCOMMITTED_CHANGES ]]; then git stash -u; fi
+if [ -n "$HAS_UNCOMMITTED_CHANGES" ]; then git stash -u; fi
 git checkout master
-pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_time' performance
+pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_time' --benchmark-warmup='on' --benchmark-warmup-iterations=100 performance
 git stash -u && git checkout $WORKING_BRANCH
-if [[ $HAS_UNCOMMITTED_CHANGES ]]; then git stash pop; fi
+if [ -n "$HAS_UNCOMMITTED_CHANGES" ]; then git stash pop; fi
 git stash pop
-pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_time' --benchmark-compare --benchmark-compare-fail=min:5% performance
+pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_time' --benchmark-warmup='on' --benchmark-warmup-iterations=100 --benchmark-compare --benchmark-compare-fail=min:5% performance
 rm -rf "$REPOSITORY_ROOT/test/.benchmarks"
