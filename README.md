@@ -58,7 +58,7 @@ To run the performance tests:
 ```bash
 tox -e performance-tests
 ```
-*Note*: The execution times for the performance tests are affected by the other processes running in the system.
+*Note*: The execution times for the performance tests are affected by the other processes running on the system.
 In order to get stable results, stop other applications when running these tests.
 
 To run an individual test:
