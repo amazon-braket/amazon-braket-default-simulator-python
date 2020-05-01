@@ -24,19 +24,19 @@ from braket.default_simulator.simulation_strategies import (
 class StateVectorSimulation:
     """
     This class tracks the evolution of a quantum system with `qubit_count` qubits.
-    The state of the evolves by application of `GateOperation`s using the `evolve()` method.
+    The state of system the evolves by application of `GateOperation`s using the `evolve()` method.
 
-    The way gates are applied is determined by the `batch_size` argument in `__init__`;
-    When set to 1, operations are applied one at a time.
+    How operations are applied is determined by the `batch_size` argument in `__init__`.
 
-    If `batch_size` is greater than 1, the operation list is partitioned into a sequence of
-    contiguous batches of length `batch_size` (if the total number of operations is indivisible by
-    `batch_size`, the final few operations are still grouped together). The order of the operations
-    in the batches are the same as the original order of the operations. The calculation of the
-    result from applying all of the operations is optimized witihin each batch; in most cases, tasks
-    complete faster when run on a larger batch, but require more memory.
+    If `batch_size` is set to 1, operations are applied one at a time.
 
-    For more details, see the module `batch_operation_strategy`.
+    If `batch_size` is greater than 1, the operation list is first partitioned into a sequence of
+    contiguous batches, each of size `batch_size`. If the number of operations is not evenly
+    divisible by `batch_size`, then the number of operations in the last batch will just be the
+    remainder. The operations in each batch are then applied (contracted) together. The order of the
+    operations in the batches are the same as the original order of the operations. In most cases,
+    tasks complete faster when run on a larger batch, but require more memory. For more details, see
+    the module `batch_operation_strategy`.
     """
 
     def __init__(self, qubit_count: int, shots: int, batch_size: int):

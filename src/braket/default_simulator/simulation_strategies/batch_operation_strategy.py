@@ -35,9 +35,11 @@ def apply_operations(
     :math:`G2` that act on qubits 0 and 1 and 1 and 3, respectively, then the state vector after
     applying the batch is :math:`S^{mokp} = S^{ijkl} G1^{mn}_{ij} G2^{op}_{nl}`.
 
-    Depending on the batch size, number of qubits and the number and types of gates, the speed can
+    Depending on the batch size, number of qubits, and the number and types of gates, the speed can
     be more than twice that of applying operations one at a time. Empirically, noticeable
-    performance improvements were observed with batch sizes from 10 to 50 on 16 GB of memory.
+    performance improvements were observed starting with a batch size of 10, with increasing
+    performance gains up to a batch size of 50. We tested this with 16 GB of memory. For batch sizes
+    greater than 50, consider using an environment with more than 16 GB of memory.
 
     Args:
         state (np.ndarray): The state vector to apply :math:`operations` to, as a type
