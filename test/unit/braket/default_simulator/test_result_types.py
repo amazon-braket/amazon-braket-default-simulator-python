@@ -21,7 +21,6 @@ from braket.default_simulator.result_types import (
     Amplitude,
     Expectation,
     Probability,
-    Sample,
     StateVector,
     Variance,
     from_braket_result_type,
@@ -34,10 +33,9 @@ NUM_SAMPLES = 1000
 observable_type_testdata = [
     (jaqcd.Expectation(targets=[1], observable=["x"]), Expectation),
     (jaqcd.Variance(targets=[1], observable=["y"]), Variance),
-    (jaqcd.Sample(targets=[1], observable=["z"]), Sample),
+    (jaqcd.Variance(targets=[1], observable=["z"]), Variance),
     (jaqcd.Expectation(observable=["h"]), Expectation),
     (jaqcd.Variance(targets=[0], observable=[[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]), Variance),
-    (jaqcd.Sample(observable=[[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]), Sample),
     (jaqcd.Expectation(targets=[0, 1], observable=["h", "i"]), Expectation),
     (
         jaqcd.Variance(targets=[0, 1], observable=["h", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]]),
@@ -132,24 +130,6 @@ def test_variance_no_targets():
     assert np.allclose(variance, [1, 1])
 
 
-def test_sample(simulation, observable):
-    sample = Sample(observable).calculate(simulation)
-    assert len(sample) == NUM_SAMPLES
-
-    # sample contains only 1 and -1 as entries
-    assert all([x in {-1, 1} for x in sample])
-
-
-def test_sample_no_targets():
-    simulation = StateVectorSimulation(2, NUM_SAMPLES, 1)
-    simulation._post_observables = np.array([1, 0, 0, 1]) / np.sqrt(2)
-    sample = Sample(PauliX()).calculate(simulation)
-    assert len(sample) == 2
-    for qubit_sample in sample:
-        assert len(qubit_sample) == NUM_SAMPLES
-        assert all([x in {-1, 1} for x in qubit_sample])
-
-
 def test_from_braket_result_type_statevector():
     assert isinstance(from_braket_result_type(jaqcd.StateVector()), StateVector)
 
@@ -184,7 +164,7 @@ def test_from_braket_result_type_tensor_product_insufficient():
 @pytest.mark.xfail(raises=ValueError)
 def test_from_braket_result_type_unknown_observable():
     from_braket_result_type(
-        jaqcd.Sample(targets=[0], observable=[[[[0, 0], [1, 0], [3, 2]], [[1, 0], [0, 0]]]])
+        jaqcd.Expectation(targets=[0], observable=[[[[0, 0], [1, 0], [3, 2]], [[1, 0], [0, 0]]]])
     )
 
 

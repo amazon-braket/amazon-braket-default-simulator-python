@@ -18,7 +18,6 @@ from braket.default_simulator.gate_operations import from_braket_instruction
 from braket.default_simulator.result_types import (
     ObservableResultType,
     ResultType,
-    Sample,
     from_braket_result_type,
 )
 from braket.default_simulator.simulation import StateVectorSimulation
@@ -49,8 +48,10 @@ class DefaultSimulator:
             value type `Dict[str, Any]`)).
 
         Raises:
-            ValueError: If result types are not specified in the IR when shots=0 or
-                if statevector and amplitude result types are requested when shots>0
+            ValueError: If result types are not specified in the IR or sample is specified
+                as a result type when shots=0. Or, if statevector and amplitude result types
+                are requested when shots>0.
+
 
         Examples:
             >>> circuit_ir = Circuit().h(0).to_ir()
@@ -90,8 +91,12 @@ class DefaultSimulator:
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program):
-        if not shots and not circuit_ir.results:
-            raise ValueError("Result types must be specified in the IR when shots=0")
+        if not shots:
+            if not circuit_ir.results:
+                raise ValueError("Result types must be specified in the IR when shots=0")
+            for rt in circuit_ir.results:
+                if rt.type in ["sample"]:
+                    raise ValueError("sample can only be specified when shots>0")
         elif shots and circuit_ir.results:
             for rt in circuit_ir.results:
                 if rt.type in ["statevector", "amplitude"]:
@@ -121,12 +126,6 @@ class DefaultSimulator:
     def _validate_observable_result_types(
         observable_result_types: List[ObservableResultType], shots: int
     ) -> None:
-        if (
-            any([isinstance(result_type, Sample) for result_type in observable_result_types])
-            and not shots
-        ):
-            raise ValueError("No shots specified for sample measurement")
-
         # Validate that if no target is specified for an observable
         # (and so the observable acts on all qubits), then it is the
         # only observable.
