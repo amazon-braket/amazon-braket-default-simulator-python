@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import itertools
+import math
 from functools import reduce
 from typing import Dict, List, Optional, Tuple
 
@@ -82,9 +83,9 @@ class Hadamard(Observable):
     @property
     def diagonalizing_matrix(self) -> Optional[np.ndarray]:
         # RY(-\pi / 4)
-        angle = -np.pi / 4
-        cos_component = np.cos(angle / 2)
-        sin_component = np.sin(angle / 2)
+        angle = -math.pi / 4
+        cos_component = math.cos(angle / 2)
+        sin_component = math.sin(angle / 2)
         return np.array([[cos_component, -sin_component], [sin_component, cos_component]])
 
 
@@ -116,7 +117,7 @@ class PauliX(Observable):
     @property
     def diagonalizing_matrix(self) -> Optional[np.ndarray]:
         # H
-        return np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        return np.array([[1, 1], [1, -1]]) / math.sqrt(2)
 
 
 class PauliY(Observable):
@@ -147,7 +148,7 @@ class PauliY(Observable):
     @property
     def diagonalizing_matrix(self) -> Optional[np.ndarray]:
         # HS^{\dagger}
-        return np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
+        return np.array([[1, -1j], [1, 1j]]) / math.sqrt(2)
 
 
 class PauliZ(Observable):
