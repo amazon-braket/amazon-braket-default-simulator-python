@@ -13,6 +13,8 @@
 
 from __future__ import annotations
 
+import cmath
+import math
 from functools import singledispatch
 from typing import Tuple
 
@@ -71,7 +73,7 @@ class Hadamard(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        return np.array([[1, 1], [1, -1]]) / math.sqrt(2)
 
     @property
     def targets(self) -> Tuple[int]:
@@ -251,7 +253,7 @@ class T(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]], dtype=complex)
+        return np.array([[1, 0], [0, cmath.exp(1j * math.pi / 4)]], dtype=complex)
 
     @property
     def targets(self) -> Tuple[int]:
@@ -271,7 +273,7 @@ class Ti(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.array([[1, 0], [0, np.exp(-1j * np.pi / 4)]], dtype=complex)
+        return np.array([[1, 0], [0, cmath.exp(-1j * math.pi / 4)]], dtype=complex)
 
     @property
     def targets(self) -> Tuple[int]:
@@ -332,7 +334,7 @@ class PhaseShift(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.array([[1, 0], [0, np.exp(1j * self._angle)]])
+        return np.array([[1, 0], [0, cmath.exp(1j * self._angle)]])
 
     @property
     def targets(self) -> Tuple[int]:
@@ -353,7 +355,7 @@ class CPhaseShift(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.diag([1.0, 1.0, 1.0, np.exp(1j * self._angle)])
+        return np.diag([1.0, 1.0, 1.0, cmath.exp(1j * self._angle)])
 
     @property
     def targets(self) -> Tuple[int]:
@@ -374,7 +376,7 @@ class CPhaseShift00(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.diag([np.exp(1j * self._angle), 1.0, 1.0, 1.0])
+        return np.diag([cmath.exp(1j * self._angle), 1.0, 1.0, 1.0])
 
     @property
     def targets(self) -> Tuple[int]:
@@ -395,7 +397,7 @@ class CPhaseShift01(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.diag([1.0, np.exp(1j * self._angle), 1.0, 1.0])
+        return np.diag([1.0, cmath.exp(1j * self._angle), 1.0, 1.0])
 
     @property
     def targets(self) -> Tuple[int]:
@@ -416,7 +418,7 @@ class CPhaseShift10(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.diag([1.0, 1.0, np.exp(1j * self._angle), 1.0])
+        return np.diag([1.0, 1.0, cmath.exp(1j * self._angle), 1.0])
 
     @property
     def targets(self) -> Tuple[int]:
@@ -437,8 +439,8 @@ class RotX(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        cos_half_angle = np.cos(self._angle / 2)
-        i_sin_half_angle = 1j * np.sin(self._angle / 2)
+        cos_half_angle = math.cos(self._angle / 2)
+        i_sin_half_angle = 1j * math.sin(self._angle / 2)
         return np.array([[cos_half_angle, -i_sin_half_angle], [-i_sin_half_angle, cos_half_angle]])
 
     @property
@@ -460,8 +462,8 @@ class RotY(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        cos_half_angle = np.cos(self._angle / 2)
-        sin_half_angle = np.sin(self._angle / 2)
+        cos_half_angle = math.cos(self._angle / 2)
+        sin_half_angle = math.sin(self._angle / 2)
         return np.array([[cos_half_angle, -sin_half_angle], [sin_half_angle, cos_half_angle]])
 
     @property
@@ -483,8 +485,8 @@ class RotZ(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        positive_phase = np.exp(1j * self._angle / 2)
-        negative_phase = np.exp(-1j * self._angle / 2)
+        positive_phase = cmath.exp(1j * self._angle / 2)
+        negative_phase = cmath.exp(-1j * self._angle / 2)
         return np.array([[negative_phase, 0], [0, positive_phase]])
 
     @property
@@ -557,8 +559,8 @@ class PSwap(GateOperation):
         return np.array(
             [
                 [1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, np.exp(1j * self._angle), 0.0],
-                [0.0, np.exp(1j * self._angle), 0.0, 0.0],
+                [0.0, 0.0, cmath.exp(1j * self._angle), 0.0],
+                [0.0, cmath.exp(1j * self._angle), 0.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0],
             ],
             dtype=complex,
@@ -583,8 +585,8 @@ class XY(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        cos = np.cos(self._angle / 2)
-        sin = np.sin(self._angle / 2)
+        cos = math.cos(self._angle / 2)
+        sin = math.sin(self._angle / 2)
         return np.array(
             [
                 [1.0, 0.0, 0.0, 0.0],
@@ -614,8 +616,8 @@ class XX(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        positive_phase = np.exp(1j * self._angle)
-        negative_phase = np.exp(-1j * self._angle)
+        positive_phase = cmath.exp(1j * self._angle)
+        negative_phase = cmath.exp(-1j * self._angle)
         return np.array(
             [
                 [1, 0, 0, -1j * positive_phase],
@@ -623,7 +625,7 @@ class XX(GateOperation):
                 [0, -1j, 1, 0],
                 [-1j * negative_phase, 0, 0, 1],
             ]
-        ) / np.sqrt(2)
+        ) / math.sqrt(2)
 
     @property
     def targets(self) -> Tuple[int]:
@@ -644,8 +646,8 @@ class YY(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        cos_angle = np.cos(self._angle)
-        i_sin_angle = 1j * np.sin(self._angle)
+        cos_angle = math.cos(self._angle)
+        i_sin_angle = 1j * math.sin(self._angle)
         return np.array(
             [
                 [cos_angle, 0, 0, i_sin_angle],
@@ -674,8 +676,8 @@ class ZZ(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        positive_phase = np.exp(1j * self._angle / 2)
-        negative_phase = np.exp(-1j * self._angle / 2)
+        positive_phase = cmath.exp(1j * self._angle / 2)
+        negative_phase = cmath.exp(-1j * self._angle / 2)
         return np.array(
             [
                 [positive_phase, 0, 0, 0],
