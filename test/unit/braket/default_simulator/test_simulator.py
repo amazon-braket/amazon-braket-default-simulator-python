@@ -67,9 +67,7 @@ def bell_ir_with_result():
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 def test_simulator_run_grcs_16(grcs_16_qubit, batch_size):
     simulator = DefaultSimulator()
-    result = simulator.run(
-        grcs_16_qubit.circuit_ir, qubit_count=16, shots=100, batch_size=batch_size
-    )
+    result = simulator.run(grcs_16_qubit.circuit_ir, qubit_count=16, shots=0, batch_size=batch_size)
     state_vector = result["ResultTypes"][0]["Value"]
     assert cmath.isclose(abs(state_vector[0]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7)
 
@@ -86,7 +84,105 @@ def test_simulator_run_bell_pair(bell_ir, batch_size):
     assert counter.keys() == {"00", "11"}
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
-    assert result["TaskMetadata"] == {"Ir": bell_ir.json(), "IrType": "jaqcd", "Shots": shots_count}
+    assert result["TaskMetadata"] == {
+        "Id": result["TaskMetadata"]["Id"],
+        "Ir": bell_ir.json(),
+        "IrType": "jaqcd",
+        "Shots": shots_count,
+    }
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_run_no_results_no_shots(bell_ir):
+    simulator = DefaultSimulator()
+    simulator.run(bell_ir, qubit_count=2, shots=0)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_run_amplitude_shots():
+    simulator = DefaultSimulator()
+    ir = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [{"type": "h", "target": 0}],
+                "results": [{"type": "amplitude", "states": ["0"]}],
+            }
+        )
+    )
+    simulator.run(ir, qubit_count=2, shots=100)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_run_statevector_shots():
+    simulator = DefaultSimulator()
+    ir = Program.parse_raw(
+        json.dumps(
+            {"instructions": [{"type": "h", "target": 0}], "results": [{"type": "statevector"}]}
+        )
+    )
+    simulator.run(ir, qubit_count=2, shots=100)
+
+
+def test_simulator_run_result_types_shots():
+    simulator = DefaultSimulator()
+    ir = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "results": [{"type": "expectation", "observable": ["z"], "targets": [1]}],
+            }
+        )
+    )
+    shots_count = 100
+    result = simulator.run(ir, qubit_count=2, shots=shots_count)
+    assert all([len(measurement) == 2] for measurement in result["Measurements"])
+    assert len(result["Measurements"]) == shots_count
+    assert result["MeasuredQubits"] == [0, 1]
+    assert "ResultTypes" not in result
+
+
+def test_simulator_run_result_types_shots_basis_rotation_gates():
+    simulator = DefaultSimulator()
+    ir = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "basis_rotation_instructions": [{"type": "h", "target": 1}],
+                "results": [{"type": "expectation", "observable": ["x"], "targets": [1]}],
+            }
+        )
+    )
+    shots_count = 1000
+    result = simulator.run(ir, qubit_count=2, shots=shots_count)
+    assert all([len(measurement) == 2] for measurement in result["Measurements"])
+    assert len(result["Measurements"]) == shots_count
+    assert "ResultTypes" not in result
+    assert result["MeasuredQubits"] == [0, 1]
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
+    simulator = DefaultSimulator()
+    ir = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "basis_rotation_instructions": [{"type": "foo", "target": 1}],
+                "results": [{"type": "expectation", "observable": ["x"], "targets": [1]}],
+            }
+        )
+    )
+    shots_count = 1000
+    simulator.run(ir, qubit_count=2, shots=shots_count)
 
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
@@ -105,6 +201,7 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_si
         },
     ]
     assert result["TaskMetadata"] == {
+        "Id": result["TaskMetadata"]["Id"],
         "Ir": bell_ir_with_result(targets).json(),
         "IrType": "jaqcd",
         "Shots": 0,
@@ -142,7 +239,7 @@ def test_simulator_fails_2_obs_no_targets():
             }
         )
     )
-    simulator.run(prog, qubit_count=2, shots=100)
+    simulator.run(prog, qubit_count=2, shots=0)
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -162,4 +259,4 @@ def test_simulator_fails_overlapping_targets():
             }
         )
     )
-    simulator.run(prog, qubit_count=2, shots=100)
+    simulator.run(prog, qubit_count=2, shots=0)

@@ -287,57 +287,6 @@ def _(variance: jaqcd.Variance):
     return Variance(_from_braket_observable(variance.observable, variance.targets))
 
 
-class Sample(ObservableResultType):
-    """
-    Holds an observable :math:`O` to take samples from measuring it.
-    """
-
-    def __init__(self, observable: Observable):
-        """
-        Args:
-            observable (Observable): The observable to take sample measurements with
-        """
-        super().__init__(observable)
-
-    def calculate(self, simulation: StateVectorSimulation) -> Union[np.ndarray, List[np.ndarray]]:
-        """ Takes samples from measuring :math:`O`.
-
-        Measurements are taken in the eigenbasis of the observable,
-        so they are the eigenvalues of the observable.
-
-        Args:
-            simulation (StateVectorSimulation): The simulation with the state vector
-                to sample from
-
-        Returns:
-            Union[np.ndarray, List[np.ndarray]]:: A list of measurements of the observable of length
-            equal to the number of samples; if the observable has no target, samples are taken for
-            each qubit, and a list of arrays is returned
-        """
-        state = simulation.state_with_observables
-        qubit_count = simulation.qubit_count
-        eigenvalues = self._observable.eigenvalues
-        if self._observable.targets:
-            return Sample._sample(
-                state, qubit_count, eigenvalues, self._observable.targets, simulation.shots
-            )
-        else:
-            return [
-                Sample._sample(state, qubit_count, eigenvalues, [i], simulation.shots)
-                for i in range(qubit_count)
-            ]
-
-    @staticmethod
-    def _sample(state, qubit_count, eigenvalues, targets, num_samples):
-        prob = _marginal_probability(state, qubit_count, targets)
-        return np.random.choice(eigenvalues, p=prob, size=num_samples)
-
-
-@from_braket_result_type.register
-def _(sample: jaqcd.Sample):
-    return Sample(_from_braket_observable(sample.observable, sample.targets))
-
-
 def _from_braket_observable(
     ir_observable: List[Union[str, List[List[List[float]]]]], ir_targets: Optional[List[int]] = None
 ) -> Observable:
