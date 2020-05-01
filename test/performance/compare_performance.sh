@@ -19,12 +19,21 @@ REPOSITORY_ROOT="$(git rev-parse --show-toplevel)"
 WORKING_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 HAS_UNCOMMITTED_CHANGES="$(git status --porcelain)"
 
+# Remove any old data from previous executions
 rm -rf "$REPOSITORY_ROOT/test/.benchmarks"
+# Stash uncommitted changes (if any)
 if [ -n "$HAS_UNCOMMITTED_CHANGES" ]; then git stash -u; fi
 git checkout master
+# Execute performance tests against the latest commit on the master branch
 pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_time' --benchmark-warmup='on' --benchmark-warmup-iterations=100 performance
+# Stash the performance test execution results and switch back to the working branch
 git stash -u && git checkout $WORKING_BRANCH
-if [ -n "$HAS_UNCOMMITTED_CHANGES" ]; then git stash pop; fi
+# Retrieve the stashed performance test execution results for the master branch (to compare against)
 git stash pop
+# Retrieve the uncommitted changes which had been stashed (if any)
+if [ -n "$HAS_UNCOMMITTED_CHANGES" ]; then git stash pop; fi
+# Execute the performance tests and compare the results against the master branch.
+# Fails if there >= 5% increase in the minimum execution time of any test
 pytest --benchmark-autosave --benchmark-only --benchmark-timer='time.process_time' --benchmark-warmup='on' --benchmark-warmup-iterations=100 --benchmark-compare --benchmark-compare-fail=min:5% performance
+# Cleanup benchmark metadata
 rm -rf "$REPOSITORY_ROOT/test/.benchmarks"

@@ -25,7 +25,7 @@ results_data = [
     ([jaqcd.Probability(targets=[0, 1])]),
     ([jaqcd.Probability(), jaqcd.Variance(observable=["x"])]),
     ([jaqcd.Variance(observable=["z"], targets=[0])]),
-    ([jaqcd.Sample(observable=["y"])])
+    ([jaqcd.Sample(observable=["y"])]),
 ]
 
 
