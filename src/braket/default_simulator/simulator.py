@@ -59,18 +59,15 @@ class DefaultSimulator:
             >>> circuit_ir = Circuit().h(0).to_ir()
             >>> DefaultSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
         """
-        if not shots and not circuit_ir.results:
-            raise ValueError("Result types must be specified in the IR when shots=0")
-        elif shots and circuit_ir.results:
-            for rt in circuit_ir.results:
-                if rt.type in ["statevector", "amplitude"]:
-                    raise ValueError(
-                        "statevector and amplitude result types not available when shots>0"
-                    )
+        DefaultSimulator._validate_shots_and_ir_results(shots, circuit_ir)
 
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
         ]
+
+        if shots > 0 and circuit_ir.basis_rotation_instructions:
+            for instruction in circuit_ir.basis_rotation_instructions:
+                operations.append(from_braket_instruction(instruction))
 
         simulation = StateVectorSimulation(qubit_count, shots, batch_size=batch_size)
         simulation.evolve(operations)
@@ -85,27 +82,26 @@ class DefaultSimulator:
             DefaultSimulator._validate_observable_result_types(
                 list(observable_result_types.values()), shots
             )
+            results = DefaultSimulator._generate_results(
+                circuit_ir, non_observable_result_types, observable_result_types, simulation
+            )
 
-            results = [0] * len(circuit_ir.results)
+        return DefaultSimulator._create_results_dict(results, circuit_ir, simulation, qubit_count)
 
-            for index in non_observable_result_types:
-                results[index] = {
-                    "Type": vars(circuit_ir.results[index]),
-                    "Value": non_observable_result_types[index].calculate(simulation),
-                }
+    @staticmethod
+    def _validate_shots_and_ir_results(shots: int, circuit_ir: Program):
+        if not shots and not circuit_ir.results:
+            raise ValueError("Result types must be specified in the IR when shots=0")
+        elif shots and circuit_ir.results:
+            for rt in circuit_ir.results:
+                if rt.type in ["statevector", "amplitude"]:
+                    raise ValueError(
+                        "statevector and amplitude result types not available when shots>0"
+                    )
 
-            if observable_result_types:
-                observables = [
-                    observable_result_types[index].observable for index in observable_result_types
-                ]
-                simulation.apply_observables(observables)
-                for index in observable_result_types:
-                    results[index] = {
-                        "Type": vars(circuit_ir.results[index]),
-                        "Value": observable_result_types[index].calculate(simulation),
-                    }
-
-        return DefaultSimulator._create_results_dict(results, circuit_ir, simulation)
+    @staticmethod
+    def _get_measured_qubits(qubit_count: int) -> List[int]:
+        return list(range(qubit_count))
 
     @staticmethod
     def _translate_result_types(
@@ -155,12 +151,40 @@ class DefaultSimulator:
             )
 
     @staticmethod
+    def _generate_results(
+        circuit_ir: Program,
+        non_observable_result_types: Dict[int, ResultType],
+        observable_result_types: Dict[int, ObservableResultType],
+        simulation,
+    ) -> List[Dict[str, Any]]:
+
+        results = [0] * len(circuit_ir.results)
+
+        for index in non_observable_result_types:
+            results[index] = {
+                "Type": vars(circuit_ir.results[index]),
+                "Value": non_observable_result_types[index].calculate(simulation),
+            }
+
+        if observable_result_types:
+            observables = [
+                observable_result_types[index].observable for index in observable_result_types
+            ]
+            simulation.apply_observables(observables)
+            for index in observable_result_types:
+                results[index] = {
+                    "Type": vars(circuit_ir.results[index]),
+                    "Value": observable_result_types[index].calculate(simulation),
+                }
+        return results
+
+    @staticmethod
     def _formatted_measurements(simulation: StateVectorSimulation) -> List[List[str]]:
         """ Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (StateVectorSimulation): Simulation to use for obtaining the measurements.
-
+            measured_qubits (List[int]): qubits to return
         Returns:
             List[List[str]]: List containing the measurements, where each measurement consists
             of a list of measured values of qubits.
@@ -172,7 +196,10 @@ class DefaultSimulator:
 
     @staticmethod
     def _create_results_dict(
-        results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation
+        results: List[Dict[str, Any]],
+        circuit_ir: Program,
+        simulation: StateVectorSimulation,
+        qubit_count: int,
     ) -> Dict[str, Any]:
         return_dict = {
             "TaskMetadata": {
@@ -186,5 +213,6 @@ class DefaultSimulator:
             return_dict["ResultTypes"] = results
         if simulation.shots:
             return_dict["Measurements"] = DefaultSimulator._formatted_measurements(simulation)
+            return_dict["MeasuredQubits"] = DefaultSimulator._get_measured_qubits(qubit_count)
 
         return return_dict
