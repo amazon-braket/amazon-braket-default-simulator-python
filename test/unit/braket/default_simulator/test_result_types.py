@@ -54,7 +54,7 @@ def state_vector():
 
 @pytest.fixture
 def simulation(state_vector):
-    sim = StateVectorSimulation(4, NUM_SAMPLES)
+    sim = StateVectorSimulation(4, NUM_SAMPLES, 1)
     sim._state_vector = state_vector
     sim._post_observables = state_vector  # Same for simplicity
     return sim
@@ -110,7 +110,7 @@ def test_expectation(simulation, observable, marginal_12):
 
 
 def test_expectation_no_targets():
-    simulation = StateVectorSimulation(2)
+    simulation = StateVectorSimulation(2, 0, 1)
     simulation._post_observables = np.array([1, 1, 0, 0]) / np.sqrt(2)
     expectation = Expectation(PauliX()).calculate(simulation)
     assert np.allclose(expectation, [1, 0])
@@ -126,7 +126,7 @@ def test_variance(simulation, observable, marginal_12):
 
 
 def test_variance_no_targets():
-    simulation = StateVectorSimulation(2)
+    simulation = StateVectorSimulation(2, 0, 1)
     simulation._post_observables = np.array([1, 0, 0, 1]) / np.sqrt(2)
     variance = Variance(PauliX()).calculate(simulation)
     assert np.allclose(variance, [1, 1])
@@ -141,7 +141,7 @@ def test_sample(simulation, observable):
 
 
 def test_sample_no_targets():
-    simulation = StateVectorSimulation(2, NUM_SAMPLES)
+    simulation = StateVectorSimulation(2, NUM_SAMPLES, 1)
     simulation._post_observables = np.array([1, 0, 0, 1]) / np.sqrt(2)
     sample = Sample(PauliX()).calculate(simulation)
     assert len(sample) == 2

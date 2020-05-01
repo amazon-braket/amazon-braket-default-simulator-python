@@ -25,7 +25,9 @@ from braket.ir.jaqcd import Program
 
 
 class DefaultSimulator:
-    def run(self, circuit_ir: Program, qubit_count: int, shots: int) -> Dict[str, Any]:
+    def run(
+        self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
+    ) -> Dict[str, Any]:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
         Args:
@@ -33,6 +35,11 @@ class DefaultSimulator:
                 instructions to execute.
             qubit_count (int): The number of qubits to simulate.
             shots (int): The number of times to run the circuit.
+            batch_size (int): The size of the circuit partitions to contract,
+                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
+                Must be a positive integer.
+                Defaults to 1, which means gates are applied one at a time without any
+                optmized contraction.
 
         Returns:
             Dict[str, Any]: dictionary containing the state vector (keyed by `StateVector`,
@@ -43,6 +50,9 @@ class DefaultSimulator:
         Examples:
             >>> circuit_ir = Circuit().h(0).to_ir()
             >>> DefaultSimulator().run(circuit_ir, qubit_count=1, shots=100)
+
+            >>> circuit_ir = Circuit().h(0).to_ir()
+            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
         """
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
@@ -56,7 +66,7 @@ class DefaultSimulator:
             list(observable_result_types.values()), shots
         )
 
-        simulation = StateVectorSimulation(qubit_count, shots)
+        simulation = StateVectorSimulation(qubit_count, shots, batch_size=batch_size)
         simulation.evolve(operations)
 
         results = [

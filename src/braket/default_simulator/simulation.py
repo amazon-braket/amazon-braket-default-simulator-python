@@ -14,50 +14,73 @@
 from typing import List
 
 import numpy as np
-from braket.default_simulator.operation import GateOperation, Observable
+from braket.default_simulator.operation import GateOperation, Observable, Operation
+from braket.default_simulator.simulation_strategies import (
+    batch_operation_strategy,
+    single_operation_strategy,
+)
 
 
 class StateVectorSimulation:
     """
-    The class `StateVectorSimulation` encapsulates a simulation of a quantum system of
-    `qubit_count` qubits. The evolution of the state of the quantum system is achieved
-    through `GateOperation`s using the `evolve()` method.
+    This class tracks the evolution of a quantum system with `qubit_count` qubits.
+    The state of system the evolves by application of `GateOperation`s using the `evolve()` method.
+
+    How operations are applied is determined by the `batch_size` argument in `__init__`.
+
+    If `batch_size` is set to 1, operations are applied one at a time.
+
+    If `batch_size` is greater than 1, the operation list is first partitioned into a sequence of
+    contiguous batches, each of size `batch_size`. If the number of operations is not evenly
+    divisible by `batch_size`, then the number of operations in the last batch will just be the
+    remainder. The operations in each batch are then applied (contracted) together. The order of the
+    operations in the batches are the same as the original order of the operations. In most cases,
+    tasks complete faster when run on a larger batch, but require more memory. For more details, see
+    the module `batch_operation_strategy`.
     """
 
-    def __init__(self, qubit_count: int, shots: int = 0):
+    def __init__(self, qubit_count: int, shots: int, batch_size: int):
         r"""
         Args:
             qubit_count (int): The number of qubits being simulated.
                 All the qubits start in the :math:`\ket{\mathbf{0}}` computational basis state.
             shots (int): The number of samples to take from the simulation.
-                Defaults to 0, which means only results that do not require sampling,
-                such as state vector or expectation, will be generated.
+                If set to 0, only results that do not require sampling, such as state vector
+                or expectation, are generated.
+            batch_size (int): The size of the partitions to contract; if set to 1,
+                the gates are applied one at a time, without any optimization of
+                contraction order. Must be a positive integer.
         """
+        if not isinstance(batch_size, int):
+            raise TypeError(f"batch_size must be of type `int`, but {type(batch_size)} provided")
+        if batch_size < 1:
+            raise ValueError(f"batch_size must be a positive integer, but {batch_size} provided")
+
         initial_state = np.zeros(2 ** qubit_count, dtype=complex)
         initial_state[0] = 1
         self._state_vector = initial_state
         self._qubit_count = qubit_count
         self._shots = shots
+        self._batch_size = batch_size
         self._post_observables = None
 
     def evolve(self, operations: List[GateOperation]) -> None:
         """ Evolves the state of the simulation under the action of
         the specified gate operations.
-        Note: This method mutates the state of the simulation.
 
         Args:
             operations (List[GateOperation]): Gate operations to apply for
                 evolving the state of the simulation.
+
+        Note:
+            This method mutates the state of the simulation.
         """
-        self._state_vector = np.reshape(self._state_vector, [2] * self._qubit_count)
-        for operation in operations:
-            self._state_vector = StateVectorSimulation._apply_operation(
-                self._state_vector, self._qubit_count, operation.matrix, operation.targets
-            )
-        self._state_vector = np.reshape(self._state_vector, 2 ** self._qubit_count)
+        self._state_vector = StateVectorSimulation._apply_operations(
+            self._state_vector, self._qubit_count, operations, self._batch_size
+        )
 
     def apply_observables(self, observables: List[Observable]) -> None:
-        """ Returns the diagonalizing matrices of the given observables
+        """ Applies the diagonalizing matrices of the given observables
         to the state of the simulation.
 
         This method can only be called once.
@@ -70,54 +93,23 @@ class StateVectorSimulation:
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
-
-        state = np.reshape(self._state_vector, [2] * self._qubit_count)
-        for observable in observables:
-            # Only add to contraction parameters if the observable
-            # has a nontrivial diagonalizing matrix
-            if observable.diagonalizing_matrix is not None:
-                if observable.targets:
-                    state = StateVectorSimulation._apply_operation(
-                        state,
-                        self._qubit_count,
-                        observable.diagonalizing_matrix,
-                        observable.targets,
-                    )
-                else:
-                    # There is only one element in `observables`
-                    for qubit in range(self._qubit_count):
-                        state = StateVectorSimulation._apply_operation(
-                            state, self._qubit_count, observable.diagonalizing_matrix, [qubit]
-                        )
-        self._post_observables = state.reshape(2 ** self._qubit_count)
+        self._post_observables = StateVectorSimulation._apply_operations(
+            self._state_vector, self._qubit_count, observables, self._batch_size
+        )
 
     @staticmethod
-    def _apply_operation(state, qubit_count, matrix, targets) -> np.ndarray:
-        """ Updates the given state vector by multiplying the it with
-        the given unitary matrix acting on the given targets.
-
-        Args:
-            state: The state vector to update
-            qubit_count: The number of qubits in the state
-            matrix: The matrix to apply
-            targets: The targets the matrix will act on
-
-        Returns:
-            np.ndarray: The updated state vector
-        """
-        gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
-        axes = (
-            np.arange(len(targets), 2 * len(targets)),
-            targets,
+    def _apply_operations(
+        state: np.ndarray, qubit_count: int, operations: List[Operation], batch_size: int
+    ) -> np.ndarray:
+        state_tensor = np.reshape(state, [2] * qubit_count)
+        final = (
+            single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
+            if batch_size == 1
+            else batch_operation_strategy.apply_operations(
+                state_tensor, qubit_count, operations, batch_size
+            )
         )
-        dot_product = np.tensordot(gate_matrix, state, axes=axes)
-
-        # Axes given in `operation.targets` are in the first positions.
-        unused_idxs = [idx for idx in range(qubit_count) if idx not in targets]
-        permutation = list(targets) + unused_idxs
-        # Invert the permutation to put the indices in the correct place
-        inverse_permutation = np.argsort(permutation)
-        return np.transpose(dot_product, inverse_permutation)
+        return np.reshape(final, 2 ** qubit_count)
 
     def retrieve_samples(self) -> List[int]:
         """ Retrieves samples of states from the state vector of the simulation,
