@@ -15,7 +15,7 @@ from typing import List, Tuple
 
 import numpy as np
 from braket.default_simulator.operation import Operation
-from braket.default_simulator.simulation_strategies.simulation_helpers import get_matrix
+from braket.default_simulator.operation_helpers import get_matrix
 
 
 def apply_operations(

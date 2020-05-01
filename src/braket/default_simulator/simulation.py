@@ -16,25 +16,29 @@ from typing import List
 import numpy as np
 from braket.default_simulator.operation import GateOperation, Observable, Operation
 from braket.default_simulator.simulation_strategies import (
-    operation_batch_strategy,
+    batch_operation_strategy,
     single_operation_strategy,
 )
 
 
 class StateVectorSimulation:
     """
-    This class encapsulates a simulation of a quantum system of `qubit_count` qubits.
-    The evolution of the state of the quantum system is achieved through `GateOperation`s
-    using the `evolve()` method.
+    This class tracks the evolution of a quantum system with `qubit_count` qubits.
+    The state of the evolves by application of `GateOperation`s using the `evolve()` method.
 
-    The simulation defaults to applying gates one at a time, but can also be configured
-    to apply multiple gates at once by supplying the `batch_size` keyword argument.
+    The way gates are applied is determined by the `batch_size` argument in `__init__`;
+    When set to 1, operations are applied one at a time.
 
-    When `batch_size` is supplied, the operation list is split into contiguous partitions
-    of length `batch_size` (with remainder) to contract. Within each partition, contraction
-    order is optimized among the gates, and the partitions themselves are contracted in the order
-    they appear. Larger partitions can be significantly faster, although this is not guaranteed,
-    but will use more memory.
+    If `batch_size` is greater than 1, the operation list is partitioned into a sequence of
+    contiguous batches of length `batch_size` (if the total number of operations is indivisible by
+    `batch_size`, the final few operations are still grouped together). The order of the operations
+    in the batches are the same as the original order of the operations. The calculation of the
+    result from applying all of the operations is optimized witihin each batch; in most cases, tasks
+    complete faster when run on a larger batch, but require more memory.
+
+    Depending on the batch size, number of qubits and the number and types of gates, the speed can
+    be more than twice that of applying operations one at a time. Empirically, noticeable
+    performance improvements were observed with batch sizes from 10 to 50 on 16 GB of memory.
     """
 
     def __init__(self, qubit_count: int, shots: int, batch_size: int):
@@ -44,7 +48,7 @@ class StateVectorSimulation:
                 All the qubits start in the :math:`\ket{\mathbf{0}}` computational basis state.
             shots (int): The number of samples to take from the simulation.
                 If set to 0, only results that do not require sampling, such as state vector
-                or expectation, will be generated.
+                or expectation, are generated.
             batch_size (int): The size of the partitions to contract; if set to 1,
                 the gates are applied one at a time, without any optimization of
                 contraction order. Must be a positive integer.
@@ -103,7 +107,7 @@ class StateVectorSimulation:
         final = (
             single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
             if batch_size == 1
-            else operation_batch_strategy.apply_operations(
+            else batch_operation_strategy.apply_operations(
                 state_tensor, qubit_count, operations, batch_size
             )
         )

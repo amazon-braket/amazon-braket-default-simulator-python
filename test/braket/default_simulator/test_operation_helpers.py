@@ -13,14 +13,16 @@
 
 import functools
 import itertools
+import math
 
 import numpy as np
 import pytest
-from braket.default_simulator import operation_helpers
+from braket.default_simulator import gate_operations, observables, operation_helpers
 from braket.default_simulator.operation_helpers import (
     check_hermitian,
     check_matrix_dimensions,
     check_unitary,
+    get_matrix,
     ir_matrix_to_ndarray,
 )
 
@@ -47,6 +49,50 @@ invalid_dimension_matrices = [
 invalid_unitary_matrices = [(np.array([[0, 1], [1, 1]])), (np.array([[1, 2], [3, 4]]))]
 
 invalid_hermitian_matrices = [(np.array([[1, 0], [0, 1j]])), (np.array([[1, 2], [3, 4]]))]
+
+gate_testdata = [
+    gate_operations.Identity([0]),
+    gate_operations.Hadamard([0]),
+    gate_operations.PauliX([0]),
+    gate_operations.PauliY([0]),
+    gate_operations.PauliZ([0]),
+    gate_operations.CX([0, 1]),
+    gate_operations.CY([0, 1]),
+    gate_operations.CZ([0, 1]),
+    gate_operations.S([0]),
+    gate_operations.Si([0]),
+    gate_operations.T([0]),
+    gate_operations.Ti([0]),
+    gate_operations.V([0]),
+    gate_operations.Vi([0]),
+    gate_operations.PhaseShift([0], math.pi),
+    gate_operations.CPhaseShift([0, 1], math.pi),
+    gate_operations.CPhaseShift00([0, 1], math.pi),
+    gate_operations.CPhaseShift01([0, 1], math.pi),
+    gate_operations.CPhaseShift10([0, 1], math.pi),
+    gate_operations.RotX([0], math.pi),
+    gate_operations.RotY([0], math.pi),
+    gate_operations.RotZ([0], math.pi),
+    gate_operations.Swap([0, 1]),
+    gate_operations.ISwap([0, 1]),
+    gate_operations.PSwap([0, 1], math.pi),
+    gate_operations.XY([0, 1], math.pi),
+    gate_operations.XX([0, 1], math.pi),
+    gate_operations.YY([0, 1], math.pi),
+    gate_operations.ZZ([0, 1], math.pi),
+    gate_operations.CCNot([0, 1, 2]),
+    gate_operations.CSwap([0, 1, 2]),
+    gate_operations.Unitary([0], [[0, 1j], [1j, 0]]),
+]
+
+observable_testdata = [
+    observables.Identity([0]),
+    observables.PauliX([0]),
+    observables.PauliY([0]),
+    observables.PauliZ([0]),
+    observables.Hadamard([0]),
+    observables.Hermitian(np.array([[1, 1 - 1j], [1 + 1j, -1]])),
+]
 
 
 @pytest.mark.parametrize("pauli", standard_observables)
@@ -104,3 +150,17 @@ def test_check_unitary_invalid_matrix(matrix):
 @pytest.mark.parametrize("matrix", invalid_hermitian_matrices)
 def test_check_hermitian_invalid_matrix(matrix):
     check_hermitian(matrix)
+
+
+@pytest.mark.parametrize("operation", gate_testdata)
+def test_get_matrix_gate_operation(operation):
+    assert np.allclose(get_matrix(operation), operation.matrix)
+
+
+@pytest.mark.parametrize("operation", observable_testdata)
+def test_get_matrix_observable(operation):
+    matrix = get_matrix(operation)
+    if matrix is not None:
+        assert np.allclose(matrix, operation.diagonalizing_matrix)
+    else:
+        assert operation.diagonalizing_matrix is None

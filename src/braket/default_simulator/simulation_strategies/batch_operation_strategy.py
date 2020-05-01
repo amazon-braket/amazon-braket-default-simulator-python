@@ -16,22 +16,28 @@ from typing import List
 import numpy as np
 import opt_einsum
 from braket.default_simulator.operation import Operation
-from braket.default_simulator.simulation_strategies.simulation_helpers import get_matrix
+from braket.default_simulator.operation_helpers import get_matrix
 
 
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: List[Operation], batch_size: int
 ) -> np.ndarray:
-    """ Applies operations to a state vector in batches of size `batch_size`.
+    r""" Applies operations to a state vector in batches of size :math:`batch\_size`.
 
-    The operation list is split into contiguous partitions of length `batch_size` (with remainder);
-    within each partition, contraction order is optimized among the gates, and the partitions
-    themselves are contracted in the order they appear. Larger partitions can be significantly
-    faster, although this is not guaranteed, but will use more memory.
+    :math:`operations` is partitioned into contiguous batches of length :math:`batch\_size` (with
+    remainder). The state vector is treated as a type :math:`(qubit\_count, 0)` tensor, and each
+    operation is treated as a type :math:`(target\_length, target\_length)` tensor (where
+    :math:`target\_length` is the number of targets the operation acts on), and each batch is
+    contracted in an order optimized among the operations in the batch. Larger batches can be
+    significantly faster (although this is not guaranteed), but will use more memory.
+
+    For example, if a state :math:`S` has 4 qubits and the two gates :math:`G1` and :math:`G2` in a
+    batch act on qubits 0 and 1 and 1 and 3, respectively, then the state vector after applying the
+    batch is :math:`S^{mokp} = S^{ijkl} G1^{mn}_{ij} G2^{op}_{nl}`.
 
     Args:
         state (np.ndarray): The state vector to apply the given operations to, as a type
-            (num_qubits, 0) tensor
+            :math:`(qubit\_count, 0)` tensor
         qubit_count (int): The number of qubits in the state
         operations (List[Operation]): The operations to apply to the state vector
         batch_size: The size of the partition of operations to contract
