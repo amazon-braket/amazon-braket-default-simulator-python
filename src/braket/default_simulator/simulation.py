@@ -15,7 +15,10 @@ from typing import List
 
 import numpy as np
 from braket.default_simulator.operation import GateOperation, Observable, Operation
-from braket.default_simulator.simulation_strategies import operation_batch_strategy, single_operation_strategy
+from braket.default_simulator.simulation_strategies import (
+    operation_batch_strategy,
+    single_operation_strategy,
+)
 
 
 class StateVectorSimulation:
