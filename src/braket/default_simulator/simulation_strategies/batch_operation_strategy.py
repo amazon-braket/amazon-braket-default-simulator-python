@@ -24,23 +24,27 @@ def apply_operations(
 ) -> np.ndarray:
     r""" Applies operations to a state vector in batches of size :math:`batch\_size`.
 
-    :math:`operations` is partitioned into contiguous batches of length :math:`batch\_size` (with
+    :math:`operations` is partitioned into contiguous batches of size :math:`batch\_size` (with
     remainder). The state vector is treated as a type :math:`(qubit\_count, 0)` tensor, and each
     operation is treated as a type :math:`(target\_length, target\_length)` tensor (where
     :math:`target\_length` is the number of targets the operation acts on), and each batch is
     contracted in an order optimized among the operations in the batch. Larger batches can be
     significantly faster (although this is not guaranteed), but will use more memory.
 
-    For example, if a state :math:`S` has 4 qubits and the two gates :math:`G1` and :math:`G2` in a
-    batch act on qubits 0 and 1 and 1 and 3, respectively, then the state vector after applying the
-    batch is :math:`S^{mokp} = S^{ijkl} G1^{mn}_{ij} G2^{op}_{nl}`.
+    For example, if we have a 4-qubit state :math:`S` and a batch with two gates :math:`G1` and
+    :math:`G2` that act on qubits 0 and 1 and 1 and 3, respectively, then the state vector after
+    applying the batch is :math:`S^{mokp} = S^{ijkl} G1^{mn}_{ij} G2^{op}_{nl}`.
+
+    Depending on the batch size, number of qubits and the number and types of gates, the speed can
+    be more than twice that of applying operations one at a time. Empirically, noticeable
+    performance improvements were observed with batch sizes from 10 to 50 on 16 GB of memory.
 
     Args:
-        state (np.ndarray): The state vector to apply the given operations to, as a type
+        state (np.ndarray): The state vector to apply :math:`operations` to, as a type
             :math:`(qubit\_count, 0)` tensor
         qubit_count (int): The number of qubits in the state
         operations (List[Operation]): The operations to apply to the state vector
-        batch_size: The size of the partition of operations to contract
+        batch_size: The number of operations to contract in each batch
 
     Returns:
         np.ndarray: The state vector after applying the given operations, as a type

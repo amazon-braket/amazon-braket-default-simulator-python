@@ -36,9 +36,7 @@ class StateVectorSimulation:
     result from applying all of the operations is optimized witihin each batch; in most cases, tasks
     complete faster when run on a larger batch, but require more memory.
 
-    Depending on the batch size, number of qubits and the number and types of gates, the speed can
-    be more than twice that of applying operations one at a time. Empirically, noticeable
-    performance improvements were observed with batch sizes from 10 to 50 on 16 GB of memory.
+    For more details, see the module `batch_operation_strategy`.
     """
 
     def __init__(self, qubit_count: int, shots: int, batch_size: int):
