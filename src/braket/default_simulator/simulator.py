@@ -87,7 +87,7 @@ class DefaultSimulator:
                 circuit_ir, non_observable_result_types, observable_result_types, simulation
             )
 
-        return DefaultSimulator._create_results_dict(results, circuit_ir, simulation, qubit_count)
+        return DefaultSimulator._create_results_dict(results, circuit_ir, simulation)
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program):
@@ -195,10 +195,7 @@ class DefaultSimulator:
 
     @staticmethod
     def _create_results_dict(
-        results: List[Dict[str, Any]],
-        circuit_ir: Program,
-        simulation: StateVectorSimulation,
-        qubit_count: int,
+        results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation,
     ) -> Dict[str, Any]:
         return_dict = {
             "TaskMetadata": {
@@ -212,6 +209,8 @@ class DefaultSimulator:
             return_dict["ResultTypes"] = results
         if simulation.shots:
             return_dict["Measurements"] = DefaultSimulator._formatted_measurements(simulation)
-            return_dict["MeasuredQubits"] = DefaultSimulator._get_measured_qubits(qubit_count)
+            return_dict["MeasuredQubits"] = DefaultSimulator._get_measured_qubits(
+                simulation.qubit_count
+            )
 
         return return_dict
