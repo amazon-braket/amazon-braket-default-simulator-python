@@ -58,6 +58,7 @@ To run the performance tests:
 ```bash
 tox -e performance-tests
 ```
+These tests will compare the performance of a series of simulator executions for your changes against the latest commit on the master branch.   
 *Note*: The execution times for the performance tests are affected by the other processes running on the system.
 In order to get stable results, stop other applications when running these tests.
 
