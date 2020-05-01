@@ -184,7 +184,7 @@ class DefaultSimulator:
 
         Args:
             simulation (StateVectorSimulation): Simulation to use for obtaining the measurements.
-            measured_qubits (List[int]): qubits to return
+
         Returns:
             List[List[str]]: List containing the measurements, where each measurement consists
             of a list of measured values of qubits.
