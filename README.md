@@ -26,20 +26,26 @@ print(device.run(bell, shots=100).result().measurement_counts)
 
 ## Documentation
 
-To generate the docs locally, you must have tox installed.
+To view the documentation for the simulator, either download the .zip file or build it in your local environment.
+
+**To download the .zip file**
+
+Use the following command to download the .zip file
 ```bash
-pip install tox
+aws s3 cp s3://braket-external-assets-prod-us-west-2/sdk-docs/amazon-braket-default-simulator-documentation.zip amazon-braket-default-simulator-documentation.zip
 ```
-First `cd` into the `doc` directory and run:
- ```bash
- make html
- ```
-Then, you can run the following command with tox to generate the documentation:
+Then extract the `amazon-braket-default-simulator-documentation.zip` file to your local environment. After you extract the file, open the index.html file.
+
+**To generate the API Reference HTML in your local environment**
+
+To generate the HTML, first change directories (`cd`) to position the cursor in the `amazon-braket-default-simulator-python` directory. Then, run the following command to generate the HTML documentation files:
+
 ```bash
 tox -e docs
 ```
-This generates the documentation in a `/build` subfolder. To view the generated documentation, 
-open the following file in a browser: `../build/documentation/html/index.html`
+
+To view the generated documentation, open the following file in a browser:
+`../amazon-braket-default-simulator-python/build/documentation/html/index.html`
 
 ## Testing
 
