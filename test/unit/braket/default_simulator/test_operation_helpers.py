@@ -12,7 +12,6 @@
 # language governing permissions and limitations under the License.
 
 import functools
-import itertools
 import math
 
 import numpy as np
@@ -26,16 +25,7 @@ from braket.default_simulator.operation_helpers import (
     ir_matrix_to_ndarray,
 )
 
-x_matrix = np.array([[0, 1], [1, 0]])
-y_matrix = np.array([[0, -1j], [1j, 0]])
 z_matrix = np.array([[1, 0], [0, -1]])
-h_matrix = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
-
-standard_observables = [x_matrix, y_matrix, z_matrix, h_matrix]
-
-matrix_pairs = [
-    np.kron(x, y) for x, y in list(itertools.product(standard_observables, standard_observables))
-]
 
 invalid_dimension_matrices = [
     (np.array([[1]])),
@@ -95,22 +85,19 @@ observable_testdata = [
 ]
 
 
-@pytest.mark.parametrize("pauli", standard_observables)
-def test_correct_eigenvalues_paulis(pauli):
+def test_correct_eigenvalues_paulis():
     """Test the pauli_eigenvalues function for one qubit"""
     assert np.array_equal(operation_helpers.pauli_eigenvalues(1), np.diag(z_matrix))
 
 
-@pytest.mark.parametrize("pauli_product", matrix_pairs)
-def test_correct_eigenvalues_pauli_kronecker_products_two_qubits(pauli_product):
+def test_correct_eigenvalues_pauli_kronecker_products_two_qubits():
     """Test the pauli_eigenvalues function for two qubits"""
     assert np.array_equal(
         operation_helpers.pauli_eigenvalues(2), np.diag(np.kron(z_matrix, z_matrix))
     )
 
 
-@pytest.mark.parametrize("pauli_product", matrix_pairs)
-def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(pauli_product):
+def test_correct_eigenvalues_pauli_kronecker_products_three_qubits():
     """Test the pauli_eigenvalues function for three qubits"""
     assert np.array_equal(
         operation_helpers.pauli_eigenvalues(3),
