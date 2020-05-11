@@ -95,19 +95,20 @@ class ObservableResultType(ResultType, ABC):
         targets = self._observable.targets
         if targets:
             return ObservableResultType._calculate_for_targets(
-                state, qubit_count, targets, eigenvalues, self._calculate_from_prob_distribution
+                state, qubit_count, targets, eigenvalues, self._calculate_from_prob_distribution,
             )
         else:
             return [
                 ObservableResultType._calculate_for_targets(
-                    state, qubit_count, [i], eigenvalues, self._calculate_from_prob_distribution
+                    state, qubit_count, [i], eigenvalues, self._calculate_from_prob_distribution,
                 )
                 for i in range(qubit_count)
             ]
 
+    @staticmethod
     @abstractmethod
     def _calculate_from_prob_distribution(
-        self, probabilities: np.ndarray, eigenvalues: np.ndarray
+        probabilities: np.ndarray, eigenvalues: np.ndarray
     ) -> float:
         """ Calculates a result from the probabilities of eigenvalues.
 
@@ -120,9 +121,11 @@ class ObservableResultType(ResultType, ABC):
         """
 
     @staticmethod
-    def _calculate_for_targets(state, qubit_count, targets, eigenvalues, result_calculation):
+    def _calculate_for_targets(
+        state, qubit_count, targets, eigenvalues, calculate_from_prob_distribution
+    ):
         prob = _marginal_probability(state, qubit_count, targets)
-        return result_calculation(prob, eigenvalues)
+        return calculate_from_prob_distribution(prob, eigenvalues)
 
 
 class StateVector(ResultType):
@@ -228,8 +231,9 @@ class Expectation(ObservableResultType):
         """
         super().__init__(observable)
 
+    @staticmethod
     def _calculate_from_prob_distribution(
-        self, probabilities: np.ndarray, eigenvalues: np.ndarray
+        probabilities: np.ndarray, eigenvalues: np.ndarray
     ) -> float:
         return (probabilities @ eigenvalues).real
 
@@ -251,8 +255,9 @@ class Variance(ObservableResultType):
         """
         super().__init__(observable)
 
+    @staticmethod
     def _calculate_from_prob_distribution(
-        self, probabilities: np.ndarray, eigenvalues: np.ndarray
+        probabilities: np.ndarray, eigenvalues: np.ndarray
     ) -> float:
         return probabilities @ (eigenvalues.real ** 2) - (probabilities @ eigenvalues).real ** 2
 
