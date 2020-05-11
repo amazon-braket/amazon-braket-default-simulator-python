@@ -88,6 +88,45 @@ class ObservableResultType(ResultType, ABC):
         """ Observable: The observable for which the desired result is calculated."""
         return self._observable
 
+    def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
+        state = simulation.state_with_observables
+        qubit_count = simulation.qubit_count
+        eigenvalues = self._observable.eigenvalues
+        targets = self._observable.targets
+        if targets:
+            return ObservableResultType._calculate_for_targets(
+                state, qubit_count, targets, eigenvalues, self._calculate_from_prob_distribution,
+            )
+        else:
+            return [
+                ObservableResultType._calculate_for_targets(
+                    state, qubit_count, [i], eigenvalues, self._calculate_from_prob_distribution,
+                )
+                for i in range(qubit_count)
+            ]
+
+    @staticmethod
+    @abstractmethod
+    def _calculate_from_prob_distribution(
+        probabilities: np.ndarray, eigenvalues: np.ndarray
+    ) -> float:
+        """ Calculates a result from the probabilities of eigenvalues.
+
+        Args:
+            probabilities (np.ndarray): The probability of measuring each eigenstate
+            eigenvalues (np.ndarray): The eigenvalue corresponding to each eigenstate
+
+        Returns:
+            float: The result of the calculation
+        """
+
+    @staticmethod
+    def _calculate_for_targets(
+        state, qubit_count, targets, eigenvalues, calculate_from_prob_distribution
+    ):
+        prob = _marginal_probability(state, qubit_count, targets)
+        return calculate_from_prob_distribution(prob, eigenvalues)
+
 
 class StateVector(ResultType):
     """
@@ -192,42 +231,11 @@ class Expectation(ObservableResultType):
         """
         super().__init__(observable)
 
-    def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
-        r""" Computes the expected value of :math:`O` in the state of the simulation.
-
-        The expected value of the observable :math:`O` in a state :math:`\ket{\psi}`
-        is defined as
-
-        .. math::
-
-            \expectation{O}{\psi} = \bra{\psi} O \ket{\psi}
-
-        Args:
-            simulation (StateVectorSimulation): The simulation whose state the
-                expected value of the observable will be calculated in
-
-        Returns:
-            Union[float, List[float]]: The expected value of the observable :math:`O`
-            in the given state; if the observable has no target, the expected value
-            is calculated for each qubit, and a list is returned
-        """
-        state = simulation.state_with_observables
-        qubit_count = simulation.qubit_count
-        eigenvalues = self._observable.eigenvalues
-        if self._observable.targets:
-            return Expectation._expectation(
-                state, qubit_count, eigenvalues, self._observable.targets
-            )
-        else:
-            return [
-                Expectation._expectation(state, qubit_count, eigenvalues, [i])
-                for i in range(qubit_count)
-            ]
-
     @staticmethod
-    def _expectation(state, qubit_count, eigenvalues, targets):
-        prob = _marginal_probability(state, qubit_count, targets)
-        return (prob @ eigenvalues).real
+    def _calculate_from_prob_distribution(
+        probabilities: np.ndarray, eigenvalues: np.ndarray
+    ) -> float:
+        return (probabilities @ eigenvalues).real
 
 
 @from_braket_result_type.register
@@ -247,39 +255,11 @@ class Variance(ObservableResultType):
         """
         super().__init__(observable)
 
-    def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
-        r""" Computes the variance of :math:`O` in the given state.
-
-        The variance of the observable :math:`O` in a state :math:`\ket{\psi}`
-        is defined from the expected value the same way it is in statistics:
-
-        .. math::
-
-            \variance{O}{\psi} = \expectation{O^2}{\psi} - \expectation{O}{\psi}^2
-
-        Args:
-            simulation (StateVectorSimulation): The simulation whose state
-                the variance will be calculated in
-
-        Returns:
-            Union[float, List[float]]: The variance of the observable :math:`O` in the given state;
-            if the observable has no target, the variance is calculated for each qubit,
-            and a list is returned
-        """
-        state = simulation.state_with_observables
-        qubit_count = simulation.qubit_count
-        eigenvalues = self._observable.eigenvalues
-        if self._observable.targets:
-            return Variance._variance(state, qubit_count, eigenvalues, self._observable.targets)
-        else:
-            return [
-                Variance._variance(state, qubit_count, eigenvalues, [i]) for i in range(qubit_count)
-            ]
-
     @staticmethod
-    def _variance(state, qubit_count, eigenvalues, targets):
-        prob = _marginal_probability(state, qubit_count, targets)
-        return prob @ (eigenvalues ** 2) - (prob @ eigenvalues).real ** 2
+    def _calculate_from_prob_distribution(
+        probabilities: np.ndarray, eigenvalues: np.ndarray
+    ) -> float:
+        return probabilities @ (eigenvalues.real ** 2) - (probabilities @ eigenvalues).real ** 2
 
 
 @from_braket_result_type.register
