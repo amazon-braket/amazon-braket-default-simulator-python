@@ -16,7 +16,7 @@ from __future__ import annotations
 import itertools
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 from braket.default_simulator.observables import (
@@ -76,17 +76,44 @@ class ObservableResultType(ResultType, ABC):
     Holds an observable to perform a calculation in conjunction with a state.
     """
 
-    def __init__(self, observable: Observable):
+    def __init__(
+        self, observable: Observable, result_calculation: Callable[[np.ndarray, np.ndarray], float]
+    ):
         """
         Args:
             observable (Observable): The observable for which the desired result is calculated
+            result_calculation (Callable[[np.ndarray, np.ndarray], float): A function that
+                the value of the result type from probabilities and eigenvalues
         """
         self._observable = observable
+        self._result_calculation = result_calculation
 
     @property
     def observable(self):
         """ Observable: The observable for which the desired result is calculated."""
         return self._observable
+
+    def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
+        state = simulation.state_with_observables
+        qubit_count = simulation.qubit_count
+        eigenvalues = self._observable.eigenvalues
+        targets = self._observable.targets
+        if targets:
+            return ObservableResultType._calculate_for_targets(
+                state, qubit_count, targets, eigenvalues, self._result_calculation
+            )
+        else:
+            return [
+                ObservableResultType._calculate_for_targets(
+                    state, qubit_count, [i], eigenvalues, self._result_calculation
+                )
+                for i in range(qubit_count)
+            ]
+
+    @staticmethod
+    def _calculate_for_targets(state, qubit_count, targets, eigenvalues, result_calculation):
+        prob = _marginal_probability(state, qubit_count, targets)
+        return result_calculation(prob, eigenvalues)
 
 
 class StateVector(ResultType):
@@ -190,44 +217,7 @@ class Expectation(ObservableResultType):
         Args:
             observable (Observable): The observable for which expected value is calculated
         """
-        super().__init__(observable)
-
-    def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
-        r""" Computes the expected value of :math:`O` in the state of the simulation.
-
-        The expected value of the observable :math:`O` in a state :math:`\ket{\psi}`
-        is defined as
-
-        .. math::
-
-            \expectation{O}{\psi} = \bra{\psi} O \ket{\psi}
-
-        Args:
-            simulation (StateVectorSimulation): The simulation whose state the
-                expected value of the observable will be calculated in
-
-        Returns:
-            Union[float, List[float]]: The expected value of the observable :math:`O`
-            in the given state; if the observable has no target, the expected value
-            is calculated for each qubit, and a list is returned
-        """
-        state = simulation.state_with_observables
-        qubit_count = simulation.qubit_count
-        eigenvalues = self._observable.eigenvalues
-        if self._observable.targets:
-            return Expectation._expectation(
-                state, qubit_count, eigenvalues, self._observable.targets
-            )
-        else:
-            return [
-                Expectation._expectation(state, qubit_count, eigenvalues, [i])
-                for i in range(qubit_count)
-            ]
-
-    @staticmethod
-    def _expectation(state, qubit_count, eigenvalues, targets):
-        prob = _marginal_probability(state, qubit_count, targets)
-        return (prob @ eigenvalues).real
+        super().__init__(observable, lambda prob, eigenvalues: (prob @ eigenvalues).real)
 
 
 @from_braket_result_type.register
@@ -245,41 +235,10 @@ class Variance(ObservableResultType):
         Args:
             observable (Observable): The observable for which variance is calculated
         """
-        super().__init__(observable)
-
-    def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
-        r""" Computes the variance of :math:`O` in the given state.
-
-        The variance of the observable :math:`O` in a state :math:`\ket{\psi}`
-        is defined from the expected value the same way it is in statistics:
-
-        .. math::
-
-            \variance{O}{\psi} = \expectation{O^2}{\psi} - \expectation{O}{\psi}^2
-
-        Args:
-            simulation (StateVectorSimulation): The simulation whose state
-                the variance will be calculated in
-
-        Returns:
-            Union[float, List[float]]: The variance of the observable :math:`O` in the given state;
-            if the observable has no target, the variance is calculated for each qubit,
-            and a list is returned
-        """
-        state = simulation.state_with_observables
-        qubit_count = simulation.qubit_count
-        eigenvalues = self._observable.eigenvalues
-        if self._observable.targets:
-            return Variance._variance(state, qubit_count, eigenvalues, self._observable.targets)
-        else:
-            return [
-                Variance._variance(state, qubit_count, eigenvalues, [i]) for i in range(qubit_count)
-            ]
-
-    @staticmethod
-    def _variance(state, qubit_count, eigenvalues, targets):
-        prob = _marginal_probability(state, qubit_count, targets)
-        return prob @ (eigenvalues ** 2) - (prob @ eigenvalues).real ** 2
+        super().__init__(
+            observable,
+            lambda prob, eigenvalues: prob @ (eigenvalues ** 2) - (prob @ eigenvalues).real ** 2,
+        )
 
 
 @from_braket_result_type.register
