@@ -16,7 +16,7 @@ from __future__ import annotations
 import itertools
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 from braket.default_simulator.observables import (
@@ -71,22 +71,17 @@ class ResultType(ABC):
         """
 
 
-class ObservableResultType(ResultType):
+class ObservableResultType(ResultType, ABC):
     """
     Holds an observable to perform a calculation in conjunction with a state.
     """
 
-    def __init__(
-        self, observable: Observable, result_calculation: Callable[[np.ndarray, np.ndarray], float]
-    ):
+    def __init__(self, observable: Observable):
         """
         Args:
             observable (Observable): The observable for which the desired result is calculated
-            result_calculation (Callable[[np.ndarray, np.ndarray], float): A function that
-                the value of the result type from probabilities and eigenvalues
         """
         self._observable = observable
-        self._result_calculation = result_calculation
 
     @property
     def observable(self):
@@ -100,15 +95,29 @@ class ObservableResultType(ResultType):
         targets = self._observable.targets
         if targets:
             return ObservableResultType._calculate_for_targets(
-                state, qubit_count, targets, eigenvalues, self._result_calculation
+                state, qubit_count, targets, eigenvalues, self._calculate_from_prob_distribution
             )
         else:
             return [
                 ObservableResultType._calculate_for_targets(
-                    state, qubit_count, [i], eigenvalues, self._result_calculation
+                    state, qubit_count, [i], eigenvalues, self._calculate_from_prob_distribution
                 )
                 for i in range(qubit_count)
             ]
+
+    @abstractmethod
+    def _calculate_from_prob_distribution(
+        self, probabilities: np.ndarray, eigenvalues: np.ndarray
+    ) -> float:
+        """ Calculates a result from the probabilities of eigenvalues.
+
+        Args:
+            probabilities (np.ndarray): The probability of measuring each eigenstate
+            eigenvalues (np.ndarray): The eigenvalue corresponding to each eigenstate
+
+        Returns:
+            float: The result of the calculation
+        """
 
     @staticmethod
     def _calculate_for_targets(state, qubit_count, targets, eigenvalues, result_calculation):
@@ -217,7 +226,12 @@ class Expectation(ObservableResultType):
         Args:
             observable (Observable): The observable for which expected value is calculated
         """
-        super().__init__(observable, lambda prob, eig: (prob @ eig).real)
+        super().__init__(observable)
+
+    def _calculate_from_prob_distribution(
+        self, probabilities: np.ndarray, eigenvalues: np.ndarray
+    ) -> float:
+        return (probabilities @ eigenvalues).real
 
 
 @from_braket_result_type.register
@@ -235,9 +249,12 @@ class Variance(ObservableResultType):
         Args:
             observable (Observable): The observable for which variance is calculated
         """
-        super().__init__(
-            observable, lambda prob, eig: prob @ (eig.real ** 2) - (prob @ eig).real ** 2,
-        )
+        super().__init__(observable)
+
+    def _calculate_from_prob_distribution(
+        self, probabilities: np.ndarray, eigenvalues: np.ndarray
+    ) -> float:
+        return probabilities @ (eigenvalues.real ** 2) - (probabilities @ eigenvalues).real ** 2
 
 
 @from_braket_result_type.register
