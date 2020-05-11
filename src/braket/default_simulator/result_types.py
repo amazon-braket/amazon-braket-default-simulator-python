@@ -71,7 +71,7 @@ class ResultType(ABC):
         """
 
 
-class ObservableResultType(ResultType, ABC):
+class ObservableResultType(ResultType):
     """
     Holds an observable to perform a calculation in conjunction with a state.
     """
@@ -217,7 +217,7 @@ class Expectation(ObservableResultType):
         Args:
             observable (Observable): The observable for which expected value is calculated
         """
-        super().__init__(observable, lambda prob, eigenvalues: (prob @ eigenvalues).real)
+        super().__init__(observable, lambda prob, eig: (prob @ eig).real)
 
 
 @from_braket_result_type.register
@@ -236,8 +236,7 @@ class Variance(ObservableResultType):
             observable (Observable): The observable for which variance is calculated
         """
         super().__init__(
-            observable,
-            lambda prob, eigenvalues: prob @ (eigenvalues ** 2) - (prob @ eigenvalues).real ** 2,
+            observable, lambda prob, eig: prob @ (eig.real ** 2) - (prob @ eig).real ** 2,
         )
 
 
