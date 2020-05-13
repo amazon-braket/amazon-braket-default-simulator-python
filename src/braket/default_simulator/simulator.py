@@ -22,9 +22,10 @@ from braket.default_simulator.result_types import (
 )
 from braket.default_simulator.simulation import StateVectorSimulation
 from braket.ir.jaqcd import Program
+from braket.simulator import BraketSimulator
 
 
-class DefaultSimulator:
+class DefaultSimulator(BraketSimulator):
     def run(
         self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
     ) -> Dict[str, Any]:
@@ -214,3 +215,15 @@ class DefaultSimulator:
             )
 
         return return_dict
+
+    @property
+    def properties(self) -> Dict[str, Any]:
+        return {
+            "supportedQuantumOperations": sorted(
+                [
+                    instruction.__name__
+                    for instruction in from_braket_instruction.registry
+                    if type(instruction) is not type
+                ]
+            )
+        }

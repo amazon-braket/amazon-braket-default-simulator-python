@@ -260,3 +260,44 @@ def test_simulator_fails_overlapping_targets():
         )
     )
     simulator.run(prog, qubit_count=2, shots=0)
+
+
+def test_properties():
+    simulator = DefaultSimulator()
+    expected_properties = {
+        "supportedQuantumOperations": [
+            "CCNot",
+            "CNot",
+            "CPhaseShift",
+            "CPhaseShift00",
+            "CPhaseShift01",
+            "CPhaseShift10",
+            "CSwap",
+            "CY",
+            "CZ",
+            "H",
+            "I",
+            "ISwap",
+            "PSwap",
+            "PhaseShift",
+            "Rx",
+            "Ry",
+            "Rz",
+            "S",
+            "Si",
+            "Swap",
+            "T",
+            "Ti",
+            "Unitary",
+            "V",
+            "Vi",
+            "X",
+            "XX",
+            "XY",
+            "Y",
+            "YY",
+            "Z",
+            "ZZ",
+        ]
+    }
+    assert simulator.properties == expected_properties
