@@ -18,6 +18,7 @@ from collections import Counter, namedtuple
 import pytest
 from braket.default_simulator.simulator import DefaultSimulator
 from braket.ir.jaqcd import Program
+from braket.simulator import BraketSimulator
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -260,6 +261,10 @@ def test_simulator_fails_overlapping_targets():
         )
     )
     simulator.run(prog, qubit_count=2, shots=0)
+
+
+def test_default_simulator_instance_braket_simulator():
+    assert isinstance(DefaultSimulator(), BraketSimulator)
 
 
 def test_properties():
