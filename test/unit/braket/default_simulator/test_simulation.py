@@ -50,7 +50,7 @@ evolve_testdata = [
     ),
     ([gate_operations.V([0])], 1, [0.5 + 0.5j, 0.5 - 0.5j], [0.5, 0.5],),
     ([gate_operations.Vi([0])], 1, [0.5 - 0.5j, 0.5 + 0.5j], [0.5, 0.5],),
-    ([gate_operations.Identity([0])], 1, [1, 0], [1, 0]),
+    ([gate_operations.Identity()], 1, [1, 0], [1, 0]),
     ([gate_operations.Unitary([0], [[0, 1], [1, 0]])], 1, [0, 1], [0, 1]),
     (
         [gate_operations.PauliX([0]), gate_operations.PhaseShift([0], 0.15)],
@@ -148,12 +148,30 @@ evolve_testdata = [
 
 apply_observables_testdata = [
     ([observables.PauliX([0])], [gate_operations.Hadamard([0])], 1),
+    ([observables.PauliZ([0])], [], 1),
+    ([observables.Identity([0])], [], 1),
     (
         [observables.PauliX([0]), observables.PauliZ([3]), observables.Hadamard([2])],
         [gate_operations.Hadamard([0]), gate_operations.RotY([2], -np.pi / 4)],
         5,
     ),
+    (
+        [
+            observables.TensorProduct(
+                [
+                    observables.PauliX([0]),
+                    observables.PauliZ([3]),
+                    observables.Hadamard([2]),
+                    observables.Identity([1]),
+                ]
+            )
+        ],
+        [gate_operations.Hadamard([0]), gate_operations.RotY([2], -np.pi / 4)],
+        5,
+    ),
     ([observables.PauliX()], [gate_operations.Hadamard([0]), gate_operations.Hadamard([1])], 2),
+    ([observables.PauliZ()], [], 2),
+    ([observables.Identity()], [], 2),
 ]
 
 

@@ -36,19 +36,18 @@ def apply_operations(
     for operation in operations:
         matrix = get_matrix(operation)
         targets = operation.targets
-        # `operation` is ignored if it is an observable with a trivial diagonalizing matrix
-        if matrix is not None:
-            if operation.targets:
-                state = _apply_operation(state, qubit_count, matrix, targets)
-            else:
-                # `operation` is an observable, and the only element in `operations`
-                for qubit in range(qubit_count):
-                    state = _apply_operation(state, qubit_count, matrix, (qubit,))
+        # `operation` is ignored if it acts trivially on its targets
+        if operation.targets:
+            state = _apply_operation(state, qubit_count, matrix, targets)
+        elif targets is None:
+            # `operation` is an observable, and the only element in `operations`
+            for qubit in range(qubit_count):
+                state = _apply_operation(state, qubit_count, matrix, (qubit,))
     return state
 
 
 def _apply_operation(
-    state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int]
+    state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int, ...]
 ) -> np.ndarray:
     gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
     axes = (

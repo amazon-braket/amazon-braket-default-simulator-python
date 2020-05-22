@@ -36,23 +36,19 @@ class Identity(Observable):
     """
 
     def __init__(self, targets: Optional[List[int]] = None):
-        self._targets = _validate_and_clone_single_qubit_target(targets)
+        self._measured_qubits = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> Tuple[int]:
-        return self._targets
+    def targets(self) -> Tuple[int, ...]:
+        return ()
 
     @property
-    def is_standard(self) -> bool:
-        return False
+    def measured_qubits(self):
+        return self._measured_qubits
 
     @property
     def eigenvalues(self) -> np.ndarray:
         return np.array([1, 1])
-
-    @property
-    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
-        return None
 
 
 class Hadamard(Observable):
@@ -69,7 +65,7 @@ class Hadamard(Observable):
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
     @property
@@ -103,7 +99,7 @@ class PauliX(Observable):
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
     @property
@@ -134,7 +130,7 @@ class PauliY(Observable):
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
     @property
@@ -162,11 +158,15 @@ class PauliZ(Observable):
     """
 
     def __init__(self, targets: Optional[List[int]] = None):
-        self._targets = _validate_and_clone_single_qubit_target(targets)
+        self._measured_qubits = _validate_and_clone_single_qubit_target(targets)
 
     @property
-    def targets(self) -> Tuple[int]:
-        return self._targets
+    def targets(self) -> Tuple[int, ...]:
+        return ()
+
+    @property
+    def measured_qubits(self):
+        return self._measured_qubits
 
     @property
     def is_standard(self) -> bool:
@@ -175,10 +175,6 @@ class PauliZ(Observable):
     @property
     def eigenvalues(self) -> np.ndarray:
         return pauli_eigenvalues(1)
-
-    @property
-    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
-        return None
 
 
 class Hermitian(Observable):
@@ -205,12 +201,8 @@ class Hermitian(Observable):
         return np.array(self._matrix)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
-
-    @property
-    def is_standard(self) -> bool:
-        return False
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -248,27 +240,28 @@ class TensorProduct(Observable):
     Tensor product of multiple observables.
     """
 
-    def __init__(self, constituents: List[Observable]):
+    def __init__(self, factors: List[Observable]):
         """
         Args:
-            constituents (List[Observable]): The observables being combined together
+            factors (List[Observable]): The observables being combined together
                 via tensor product
         """
-        if len(constituents) < 2:
-            raise ValueError("A tensor product should have at least 2 constituent observables")
-        self._targets = tuple(
-            target for observable in constituents for target in observable.targets
+        if len(factors) < 2:
+            raise ValueError("A tensor product should have at least 2 factors")
+        self._targets = tuple(target for observable in factors for target in observable.targets)
+        self._measured_qubits = tuple(
+            qubit for observable in factors for qubit in observable.measured_qubits
         )
-        self._diagonalizing_matrix = TensorProduct._construct_matrix(constituents)
-        self._eigenvalues = TensorProduct._compute_eigenvalues(constituents, self._targets)
+        self._diagonalizing_matrix = TensorProduct._construct_matrix(factors)
+        self._eigenvalues = TensorProduct._compute_eigenvalues(factors, self._measured_qubits)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
     @property
-    def is_standard(self) -> bool:
-        return False
+    def measured_qubits(self) -> Tuple[int, ...]:
+        return self._measured_qubits
 
     @property
     def eigenvalues(self) -> np.ndarray:
@@ -279,23 +272,23 @@ class TensorProduct(Observable):
         return self._diagonalizing_matrix
 
     @staticmethod
-    def _construct_matrix(constituents: List[Observable]) -> np.ndarray:
+    def _construct_matrix(factors: List[Observable]) -> np.ndarray:
         return reduce(
             # (A \otimes I)(I \otimes B) == A \otimes B
             lambda a, b: np.kron(a, b),
             [
-                observable.diagonalizing_matrix
-                for observable in constituents
+                factor.diagonalizing_matrix
+                for factor in factors
                 # Ignore observables with trivial diagonalizing matrices
-                if observable.diagonalizing_matrix is not None
+                if factor.diagonalizing_matrix is not None
             ],
         )
 
     @staticmethod
-    def _compute_eigenvalues(constituents: List[Observable], targets: Tuple[int]) -> np.ndarray:
+    def _compute_eigenvalues(factors: List[Observable], qubits: Tuple[int, ...]) -> np.ndarray:
         # check if there are any non-standard observables, such as Hermitian
-        if False in {observable.is_standard for observable in constituents}:
-            obs_sorted = sorted(constituents, key=lambda x: x.targets)
+        if False in {observable.is_standard for observable in factors}:
+            obs_sorted = sorted(factors, key=lambda x: x.measured_qubits)
 
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
@@ -310,12 +303,14 @@ class TensorProduct(Observable):
                         # loop through all non-standard observables
                         eigenvalues = np.kron(eigenvalues, nonstandard.eigenvalues)
         else:
-            eigenvalues = pauli_eigenvalues(len(targets))
+            eigenvalues = pauli_eigenvalues(len(qubits))
 
         return eigenvalues
 
 
-def _validate_and_clone_single_qubit_target(targets: Optional[List[int]]) -> Optional[Tuple[int]]:
+def _validate_and_clone_single_qubit_target(
+    targets: Optional[List[int]],
+) -> Optional[Tuple[int, ...]]:
     clone = tuple(targets) if targets else None
     if clone and len(clone) > 1:
         raise ValueError(f"Observable only acts on one qubit, but found {len(clone)}")
