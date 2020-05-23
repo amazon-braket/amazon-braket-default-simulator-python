@@ -272,17 +272,15 @@ class TensorProduct(Observable):
         return self._diagonalizing_matrix
 
     @staticmethod
-    def _construct_matrix(factors: List[Observable]) -> np.ndarray:
-        return reduce(
-            # (A \otimes I)(I \otimes B) == A \otimes B
-            lambda a, b: np.kron(a, b),
-            [
-                factor.diagonalizing_matrix
-                for factor in factors
-                # Ignore observables with trivial diagonalizing matrices
-                if factor.diagonalizing_matrix is not None
-            ],
+    def _construct_matrix(factors: List[Observable]) -> Optional[np.ndarray]:
+        matrices = tuple(
+            factor.diagonalizing_matrix
+            for factor in factors
+            # Ignore observables with trivial diagonalizing matrices
+            if factor.diagonalizing_matrix is not None
         )
+        # (A \otimes I)(I \otimes B) == A \otimes B
+        return reduce(np.kron, matrices) if matrices else None
 
     @staticmethod
     def _compute_eigenvalues(factors: List[Observable], qubits: Tuple[int, ...]) -> np.ndarray:

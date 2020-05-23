@@ -172,6 +172,12 @@ apply_observables_testdata = [
     ([observables.PauliX()], [gate_operations.Hadamard([0]), gate_operations.Hadamard([1])], 2),
     ([observables.PauliZ()], [], 2),
     ([observables.Identity()], [], 2),
+    ([observables.TensorProduct([observables.Identity([2]), observables.PauliZ([0])])], [], 3),
+    (
+        [observables.TensorProduct([observables.PauliX([2]), observables.PauliZ([0])])],
+        [gate_operations.Hadamard([2])],
+        3,
+    ),
 ]
 
 
