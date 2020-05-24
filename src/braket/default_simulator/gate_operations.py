@@ -48,16 +48,13 @@ def from_braket_instruction(instruction) -> GateOperation:
 class Identity(GateOperation):
     """Identity gate"""
 
-    def __init__(self):
-        self._targets = ()
-
     @property
     def matrix(self) -> np.ndarray:
         return np.eye(2)
 
     @property
     def targets(self) -> Tuple[int, ...]:
-        return self._targets
+        return ()
 
 
 @from_braket_instruction.register(braket_instruction.I)
