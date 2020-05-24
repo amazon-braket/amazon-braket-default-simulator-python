@@ -243,8 +243,8 @@ class TensorProduct(Observable):
     def __init__(self, factors: List[Observable]):
         """
         Args:
-            factors (List[Observable]): The observables being combined together
-                via tensor product
+            factors (List[Observable]): The observables to combine together
+                into a tensor product
         """
         if len(factors) < 2:
             raise ValueError("A tensor product should have at least 2 factors")

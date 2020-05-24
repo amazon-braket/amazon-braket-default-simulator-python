@@ -49,7 +49,7 @@ def check_matrix_dimensions(matrix: np.ndarray, targets: Tuple[int, ...]) -> Non
 
     Args:
         matrix (np.ndarray): The matrix to check
-        targets (Tuple[int, ...]): The target qubits the matrix is acting on
+        targets (Tuple[int, ...]): The target qubits the matrix acts on
 
     Raises:
         ValueError: If the matrix is not a square matrix or operates on a space

@@ -81,7 +81,7 @@ def _contract_operations(
             contravariant = list(range(next_index, next_index + len(covariant)))
 
             indices = contravariant + covariant
-            # Matrix as type-(len(contravariant), len(covariant)) tensor
+            # `matrix` as type-(len(contravariant), len(covariant)) tensor
             matrix_as_tensor = np.reshape(matrix, [2] * len(indices))
 
             contraction_parameters += [matrix_as_tensor, indices]
