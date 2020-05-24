@@ -71,16 +71,16 @@ class Observable(Operation, ABC):
         return False
 
     @property
-    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
-        """
-        Optional[np.ndarray]: The matrix that diagonalizes the observable
-        in the computational basis if it is not already in the computational basis.
-        """
-        return None
-
-    @property
     @abstractmethod
     def eigenvalues(self) -> np.ndarray:
         """
         np.ndarray: The eigenvalues of the observable ordered by computational basis state.
+        """
+
+    @property
+    @abstractmethod
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        """
+        Optional[np.ndarray]: The matrix that diagonalizes the observable
+        in the computational basis if it is not already in the computational basis.
         """

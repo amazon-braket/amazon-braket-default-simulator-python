@@ -50,6 +50,10 @@ class Identity(Observable):
     def eigenvalues(self) -> np.ndarray:
         return np.array([1, 1])
 
+    @property
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        return None
+
 
 class Hadamard(Observable):
     """Hadamard observable
@@ -175,6 +179,10 @@ class PauliZ(Observable):
     @property
     def eigenvalues(self) -> np.ndarray:
         return pauli_eigenvalues(1)
+
+    @property
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        return None
 
 
 class Hermitian(Observable):
