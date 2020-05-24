@@ -56,8 +56,9 @@ class Observable(Operation, ABC):
     def measured_qubits(self) -> Tuple[int, ...]:
         """ Tuple[int, ...]: The indices of the qubits that are measured for this observable.
 
-        This includes indices on which the observable acts trivially. For example, a tensor product
-        observable made entirely of n Z factors will have n measured qubits.
+        Unlike `targets`, this includes indices on which the observable acts trivially.
+        For example, a tensor product observable made entirely of n Z factors will have
+        n measured qubits.
         """
         return self.targets
 

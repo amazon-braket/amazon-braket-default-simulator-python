@@ -11,9 +11,9 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import functools
 import itertools
 import math
-from functools import reduce
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -280,7 +280,7 @@ class TensorProduct(Observable):
             if factor.diagonalizing_matrix is not None
         )
         # (A \otimes I)(I \otimes B) == A \otimes B
-        return reduce(np.kron, matrices) if matrices else None
+        return functools.reduce(np.kron, matrices) if matrices else None
 
     @staticmethod
     def _compute_eigenvalues(factors: List[Observable], qubits: Tuple[int, ...]) -> np.ndarray:
@@ -299,7 +299,9 @@ class TensorProduct(Observable):
                     if is_standard
                     # `group` contains only nonstandard observables, so eigenvalues
                     # must be calculated
-                    else reduce(np.kron, [nonstandard.eigenvalues for nonstandard in group])
+                    else functools.reduce(
+                        np.kron, tuple(nonstandard.eigenvalues for nonstandard in group)
+                    )
                 )
                 eigenvalues = np.kron(eigenvalues, group_eigenvalues)
         else:
