@@ -287,7 +287,7 @@ def _from_braket_observable(
 def _from_single_observable(
     observable: Union[str, List[List[List[float]]]],
     targets: Optional[List[int]] = None,
-    # Tensor product observables are decoupled from targets
+    # IR tensor product observables are decoupled from targets
     is_factor: bool = False,
 ) -> Observable:
     if observable == "i":

@@ -74,14 +74,14 @@ def _contract_operations(
         # `operation` is not added to the contraction parameters if
         # it acts trivially on its targets
         if targets:
-            # lower indices, which will be traced out
+            # Lower indices, which will be traced out
             covariant = [index_substitutions[i] for i in targets]
 
-            # upper indices, which will replace the contracted indices in the state vector
+            # Upper indices, which will replace the contracted indices in the state vector
             contravariant = list(range(next_index, next_index + len(covariant)))
 
             indices = contravariant + covariant
-            # matrix as type-(len(contravariant), len(covariant)) tensor
+            # Matrix as type-(len(contravariant), len(covariant)) tensor
             matrix_as_tensor = np.reshape(matrix, [2] * len(indices))
 
             contraction_parameters += [matrix_as_tensor, indices]

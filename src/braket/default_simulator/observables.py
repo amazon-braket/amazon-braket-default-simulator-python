@@ -284,22 +284,24 @@ class TensorProduct(Observable):
 
     @staticmethod
     def _compute_eigenvalues(factors: List[Observable], qubits: Tuple[int, ...]) -> np.ndarray:
-        # check if there are any non-standard observables, such as Hermitian
+        # Check if there are any non-standard observables, namely Hermitian and Identity
         if False in {observable.is_standard for observable in factors}:
-            obs_sorted = sorted(factors, key=lambda x: x.measured_qubits)
-
             # Tensor product of observables contains a mixture
-            # of standard and non-standard observables
-            eigenvalues = np.array([1])
-            for k, g in itertools.groupby(obs_sorted, lambda x: x.is_standard):
-                if k:
-                    # Subgroup g contains only standard observables.
-                    eigenvalues = np.kron(eigenvalues, pauli_eigenvalues(len(list(g))))
-                else:
-                    # Subgroup g contains only non-standard observables.
-                    for nonstandard in g:
-                        # loop through all non-standard observables
-                        eigenvalues = np.kron(eigenvalues, nonstandard.eigenvalues)
+            # of standard and nonstandard observables
+            factors_sorted = sorted(factors, key=lambda x: x.measured_qubits)
+            eigenvalues = np.ones(1)
+            for is_standard, group in itertools.groupby(factors_sorted, lambda x: x.is_standard):
+                # Group observables by whether or not they are standard
+                group_eigenvalues = (
+                    # `group` contains only standard observables, so eigenvalues
+                    # are simply Pauli eigenvalues
+                    pauli_eigenvalues(len(list(group)))
+                    if is_standard
+                    # `group` contains only nonstandard observables, so eigenvalues
+                    # must be calculated
+                    else reduce(np.kron, [nonstandard.eigenvalues for nonstandard in group])
+                )
+                eigenvalues = np.kron(eigenvalues, group_eigenvalues)
         else:
             eigenvalues = pauli_eigenvalues(len(qubits))
 

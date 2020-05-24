@@ -37,7 +37,7 @@ def apply_operations(
         matrix = get_matrix(operation)
         targets = operation.targets
         # `operation` is ignored if it acts trivially on its targets
-        if operation.targets:
+        if targets:
             state = _apply_operation(state, qubit_count, matrix, targets)
         elif targets is None:
             # `operation` is an observable, and the only element in `operations`
