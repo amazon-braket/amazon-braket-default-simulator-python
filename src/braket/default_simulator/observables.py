@@ -293,7 +293,7 @@ class TensorProduct(Observable):
     @staticmethod
     def _compute_eigenvalues(factors: List[Observable], qubits: Tuple[int, ...]) -> np.ndarray:
         # Check if there are any non-standard observables, namely Hermitian and Identity
-        if False in {observable.is_standard for observable in factors}:
+        if any({not observable.is_standard for observable in factors}):
             # Tensor product of observables contains a mixture
             # of standard and nonstandard observables
             factors_sorted = sorted(factors, key=lambda x: x.measured_qubits)
