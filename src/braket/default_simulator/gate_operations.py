@@ -48,21 +48,18 @@ def from_braket_instruction(instruction) -> GateOperation:
 class Identity(GateOperation):
     """Identity gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
-
     @property
     def matrix(self) -> np.ndarray:
         return np.eye(2)
 
     @property
-    def targets(self) -> Tuple[int]:
-        return self._targets
+    def targets(self) -> Tuple[int, ...]:
+        return ()
 
 
 @from_braket_instruction.register(braket_instruction.I)
 def _i(instruction) -> Identity:
-    return Identity([instruction.target])
+    return Identity()
 
 
 class Hadamard(GateOperation):
@@ -76,7 +73,7 @@ class Hadamard(GateOperation):
         return np.array([[1, 1], [1, -1]]) / math.sqrt(2)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -96,7 +93,7 @@ class PauliX(GateOperation):
         return np.array([[0, 1], [1, 0]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -116,7 +113,7 @@ class PauliY(GateOperation):
         return np.array([[0, -1j], [1j, 0]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -136,7 +133,7 @@ class PauliZ(GateOperation):
         return np.array([[1, 0], [0, -1]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -156,7 +153,7 @@ class CX(GateOperation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -176,7 +173,7 @@ class CY(GateOperation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -196,7 +193,7 @@ class CZ(GateOperation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -216,7 +213,7 @@ class S(GateOperation):
         return np.array([[1, 0], [0, 1j]], dtype=complex)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -236,7 +233,7 @@ class Si(GateOperation):
         return np.array([[1, 0], [0, -1j]], dtype=complex)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -256,7 +253,7 @@ class T(GateOperation):
         return np.array([[1, 0], [0, cmath.exp(1j * math.pi / 4)]], dtype=complex)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -276,7 +273,7 @@ class Ti(GateOperation):
         return np.array([[1, 0], [0, cmath.exp(-1j * math.pi / 4)]], dtype=complex)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -296,7 +293,7 @@ class V(GateOperation):
         return np.array([[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]], dtype=complex)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -316,7 +313,7 @@ class Vi(GateOperation):
         return np.array(([[0.5 - 0.5j, 0.5 + 0.5j], [0.5 + 0.5j, 0.5 - 0.5j]]), dtype=complex)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -337,7 +334,7 @@ class PhaseShift(GateOperation):
         return np.array([[1, 0], [0, cmath.exp(1j * self._angle)]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -358,7 +355,7 @@ class CPhaseShift(GateOperation):
         return np.diag([1.0, 1.0, 1.0, cmath.exp(1j * self._angle)])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -379,7 +376,7 @@ class CPhaseShift00(GateOperation):
         return np.diag([cmath.exp(1j * self._angle), 1.0, 1.0, 1.0])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -400,7 +397,7 @@ class CPhaseShift01(GateOperation):
         return np.diag([1.0, cmath.exp(1j * self._angle), 1.0, 1.0])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -421,7 +418,7 @@ class CPhaseShift10(GateOperation):
         return np.diag([1.0, 1.0, cmath.exp(1j * self._angle), 1.0])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -444,7 +441,7 @@ class RotX(GateOperation):
         return np.array([[cos_half_angle, -i_sin_half_angle], [-i_sin_half_angle, cos_half_angle]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -467,7 +464,7 @@ class RotY(GateOperation):
         return np.array([[cos_half_angle, -sin_half_angle], [sin_half_angle, cos_half_angle]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -490,7 +487,7 @@ class RotZ(GateOperation):
         return np.array([[negative_phase, 0], [0, positive_phase]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -510,7 +507,7 @@ class Swap(GateOperation):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -538,7 +535,7 @@ class ISwap(GateOperation):
         )
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -567,7 +564,7 @@ class PSwap(GateOperation):
         )
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -598,7 +595,7 @@ class XY(GateOperation):
         )
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -628,7 +625,7 @@ class XX(GateOperation):
         ) / math.sqrt(2)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -658,7 +655,7 @@ class YY(GateOperation):
         )
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -688,7 +685,7 @@ class ZZ(GateOperation):
         )
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -720,7 +717,7 @@ class CCNot(GateOperation):
         )
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -752,7 +749,7 @@ class CSwap(GateOperation):
         )
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 
@@ -776,7 +773,7 @@ class Unitary(GateOperation):
         return np.array(self._matrix)
 
     @property
-    def targets(self) -> Tuple[int]:
+    def targets(self) -> Tuple[int, ...]:
         return self._targets
 
 

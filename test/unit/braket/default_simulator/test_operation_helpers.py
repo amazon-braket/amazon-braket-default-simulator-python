@@ -41,7 +41,7 @@ invalid_unitary_matrices = [(np.array([[0, 1], [1, 1]])), (np.array([[1, 2], [3,
 invalid_hermitian_matrices = [(np.array([[1, 0], [0, 1j]])), (np.array([[1, 2], [3, 4]]))]
 
 gate_testdata = [
-    gate_operations.Identity([0]),
+    gate_operations.Identity(),
     gate_operations.Hadamard([0]),
     gate_operations.PauliX([0]),
     gate_operations.PauliY([0]),

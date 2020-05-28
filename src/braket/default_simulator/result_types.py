@@ -92,7 +92,7 @@ class ObservableResultType(ResultType, ABC):
         state = simulation.state_with_observables
         qubit_count = simulation.qubit_count
         eigenvalues = self._observable.eigenvalues
-        targets = self._observable.targets
+        targets = self._observable.measured_qubits
         if targets:
             return ObservableResultType._calculate_for_targets(
                 state, qubit_count, targets, eigenvalues, self._calculate_from_prob_distribution,
@@ -275,10 +275,7 @@ def _from_braket_observable(
         return _from_single_observable(ir_observable[0], targets)
     else:
         observable = TensorProduct(
-            [
-                _from_single_observable(constituent, targets, is_constituent=True)
-                for constituent in ir_observable
-            ]
+            [_from_single_observable(factor, targets, is_factor=True) for factor in ir_observable]
         )
         if targets:
             raise ValueError(
@@ -290,23 +287,23 @@ def _from_braket_observable(
 def _from_single_observable(
     observable: Union[str, List[List[List[float]]]],
     targets: Optional[List[int]] = None,
-    # Tensor product observables are decoupled from targets
-    is_constituent: bool = False,
+    # IR tensor product observables are decoupled from targets
+    is_factor: bool = False,
 ) -> Observable:
     if observable == "i":
-        return Identity(_actual_targets(targets, 1, is_constituent))
+        return Identity(_actual_targets(targets, 1, is_factor))
     elif observable == "h":
-        return Hadamard(_actual_targets(targets, 1, is_constituent))
+        return Hadamard(_actual_targets(targets, 1, is_factor))
     elif observable == "x":
-        return PauliX(_actual_targets(targets, 1, is_constituent))
+        return PauliX(_actual_targets(targets, 1, is_factor))
     elif observable == "y":
-        return PauliY(_actual_targets(targets, 1, is_constituent))
+        return PauliY(_actual_targets(targets, 1, is_factor))
     elif observable == "z":
-        return PauliZ(_actual_targets(targets, 1, is_constituent))
+        return PauliZ(_actual_targets(targets, 1, is_factor))
     else:
         try:
             matrix = ir_matrix_to_ndarray(observable)
-            if is_constituent:
+            if is_factor:
                 num_qubits = int(np.log2(len(matrix)))
                 return Hermitian(matrix, _actual_targets(targets, num_qubits, True))
             else:
@@ -315,8 +312,8 @@ def _from_single_observable(
             raise ValueError(f"Invalid observable specified: {observable}")
 
 
-def _actual_targets(targets: List[int], num_qubits: int, is_constituent: bool):
-    if not is_constituent:
+def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
+    if not is_factor:
         return targets
     try:
         return [targets.pop(0) for _ in range(num_qubits)]
