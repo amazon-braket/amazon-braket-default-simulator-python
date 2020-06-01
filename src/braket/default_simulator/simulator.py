@@ -139,6 +139,12 @@ class DefaultSimulator(BraketSimulator):
         none_observable_mapping = {}
         for obs in none_observables:
             none_observable_mapping[DefaultSimulator._observable_hash(obs)] = obs
+        unique_none_observables = list(none_observable_mapping.values())
+        if len(unique_none_observables) > 1:
+            raise ValueError(
+                f"All qubits are already being measured in {unique_none_observables[0]};"
+                f"cannot measure in {unique_none_observables[1:]}"
+            )
         not_none_observable_list = []
         qubit_observable_mapping = {}
         for result_type in observable_result_types:
@@ -155,14 +161,14 @@ class DefaultSimulator(BraketSimulator):
                     duplicate = True
                     if existing_obs != new_obs:
                         raise ValueError(
-                            f"Observable {qubit} has more than one observable"
-                            f" {existing_obs}, {new_obs}"
+                            f"Qubit {qubit} is already being measured in {existing_obs};"
+                            f" cannot measure in {new_obs}."
                         )
                 else:
                     qubit_observable_mapping[qubit] = new_obs
             if not duplicate and not none_observable_mapping.get(new_obs):
                 not_none_observable_list.append(obs_obj)
-        return not_none_observable_list + list(none_observable_mapping.values())
+        return not_none_observable_list + unique_none_observables
 
     @staticmethod
     def _observable_hash(observable: Observable) -> str:
