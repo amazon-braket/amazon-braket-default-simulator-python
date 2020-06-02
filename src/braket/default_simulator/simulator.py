@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import sys
 import uuid
 from typing import Any, Dict, List, Tuple
 
@@ -173,7 +174,7 @@ class DefaultSimulator(BraketSimulator):
     @staticmethod
     def _observable_hash(observable: Observable) -> str:
         if isinstance(observable, Hermitian):
-            return str(observable.matrix)
+            return str(hash(str(observable.matrix.tostring())))
         elif isinstance(observable, TensorProduct):
             return ",".join(DefaultSimulator._observable_hash(obs) for obs in observable.factors)
         else:
@@ -246,7 +247,7 @@ class DefaultSimulator(BraketSimulator):
     @property
     def properties(self) -> Dict[str, Any]:
         observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
-        max_shots = 10000000
+        max_shots = sys.maxsize
         return {
             "supportedQuantumOperations": sorted(
                 [

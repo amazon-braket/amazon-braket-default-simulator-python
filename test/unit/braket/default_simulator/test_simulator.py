@@ -13,6 +13,7 @@
 
 import cmath
 import json
+import sys
 from collections import Counter, namedtuple
 
 import numpy as np
@@ -435,7 +436,7 @@ def test_default_simulator_instance_braket_simulator():
 def test_properties():
     simulator = DefaultSimulator()
     observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
-    max_shots = 10000000
+    max_shots = sys.maxsize
     expected_properties = {
         "supportedQuantumOperations": [
             "CCNot",
