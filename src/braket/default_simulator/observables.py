@@ -262,6 +262,11 @@ class TensorProduct(Observable):
         )
         self._diagonalizing_matrix = TensorProduct._construct_matrix(factors)
         self._eigenvalues = TensorProduct._compute_eigenvalues(factors, self._measured_qubits)
+        self._factors = factors
+
+    @property
+    def factors(self) -> Tuple[Observable]:
+        return self._factors
 
     @property
     def targets(self) -> Tuple[int, ...]:

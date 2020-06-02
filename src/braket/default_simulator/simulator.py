@@ -11,10 +11,13 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import sys
 import uuid
 from typing import Any, Dict, List, Tuple
 
 from braket.default_simulator.gate_operations import from_braket_instruction
+from braket.default_simulator.observables import Hermitian, TensorProduct
+from braket.default_simulator.operation import Observable
 from braket.default_simulator.result_types import (
     ObservableResultType,
     ResultType,
@@ -81,11 +84,15 @@ class DefaultSimulator(BraketSimulator):
                 non_observable_result_types,
                 observable_result_types,
             ) = DefaultSimulator._translate_result_types(circuit_ir)
-            DefaultSimulator._validate_observable_result_types(
-                list(observable_result_types.values()), shots
+            observables = DefaultSimulator._validate_and_consolidate_observable_result_types(
+                list(observable_result_types.values()), qubit_count
             )
             results = DefaultSimulator._generate_results(
-                circuit_ir, non_observable_result_types, observable_result_types, simulation
+                circuit_ir,
+                non_observable_result_types,
+                observable_result_types,
+                observables,
+                simulation,
             )
 
         return DefaultSimulator._create_results_dict(results, circuit_ir, simulation)
@@ -124,37 +131,61 @@ class DefaultSimulator(BraketSimulator):
         return non_observable_result_types, observable_result_types
 
     @staticmethod
-    def _validate_observable_result_types(
-        observable_result_types: List[ObservableResultType], shots: int
-    ) -> None:
-        # Validate that if no target is specified for an observable
-        # (and so the observable acts on all qubits), then it is the
-        # only observable.
-        flattened = []
-        for result_type in observable_result_types:
-            if result_type.observable.targets is None:
-                if len(observable_result_types) > 1:
-                    raise ValueError(
-                        "Only one observable is allowed when one acts on all targets, but "
-                        f"{len(observable_result_types)} observables were found"
-                    )
-                else:
-                    flattened.append(None)
-            else:
-                flattened.extend(result_type.observable.targets)
-
-        # Validate that there are no overlapping observable targets
-        if len(flattened) != len(set(flattened)):
+    def _validate_and_consolidate_observable_result_types(
+        observable_result_types: List[ObservableResultType], qubit_count: int
+    ) -> List[Observable]:
+        none_observables = (
+            rt.observable for rt in observable_result_types if rt.observable.measured_qubits is None
+        )
+        none_observable_mapping = {}
+        for obs in none_observables:
+            none_observable_mapping[DefaultSimulator._observable_hash(obs)] = obs
+        unique_none_observables = list(none_observable_mapping.values())
+        if len(unique_none_observables) > 1:
             raise ValueError(
-                "Overlapping targets among observables; qubits with more than one observable: "
-                f"{set([qubit for qubit in flattened if flattened.count(qubit) > 1])}"
+                f"All qubits are already being measured in {unique_none_observables[0]};"
+                f"cannot measure in {unique_none_observables[1:]}"
             )
+        not_none_observable_list = []
+        qubit_observable_mapping = {}
+        for result_type in observable_result_types:
+            obs_obj = result_type.observable
+            measured_qubits = obs_obj.measured_qubits
+            new_obs = DefaultSimulator._observable_hash(obs_obj)
+            if measured_qubits is None:
+                measured_qubits = list(range(qubit_count))
+            duplicate = False
+            for qubit in measured_qubits:
+                # Validate that the same observable is requested for a qubit in the result types
+                existing_obs = qubit_observable_mapping.get(qubit)
+                if existing_obs:
+                    duplicate = True
+                    if existing_obs != new_obs:
+                        raise ValueError(
+                            f"Qubit {qubit} is already being measured in {existing_obs};"
+                            f" cannot measure in {new_obs}."
+                        )
+                else:
+                    qubit_observable_mapping[qubit] = new_obs
+            if not duplicate and not none_observable_mapping.get(new_obs):
+                not_none_observable_list.append(obs_obj)
+        return not_none_observable_list + unique_none_observables
+
+    @staticmethod
+    def _observable_hash(observable: Observable) -> str:
+        if isinstance(observable, Hermitian):
+            return str(hash(str(observable.matrix.tostring())))
+        elif isinstance(observable, TensorProduct):
+            return ",".join(DefaultSimulator._observable_hash(obs) for obs in observable.factors)
+        else:
+            return str(observable.__class__.__name__)
 
     @staticmethod
     def _generate_results(
         circuit_ir: Program,
         non_observable_result_types: Dict[int, ResultType],
         observable_result_types: Dict[int, ObservableResultType],
+        observables: List[Observable],
         simulation,
     ) -> List[Dict[str, Any]]:
 
@@ -167,9 +198,6 @@ class DefaultSimulator(BraketSimulator):
             }
 
         if observable_result_types:
-            observables = [
-                observable_result_types[index].observable for index in observable_result_types
-            ]
             simulation.apply_observables(observables)
             for index in observable_result_types:
                 results[index] = {
@@ -218,6 +246,8 @@ class DefaultSimulator(BraketSimulator):
 
     @property
     def properties(self) -> Dict[str, Any]:
+        observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
+        max_shots = sys.maxsize
         return {
             "supportedQuantumOperations": sorted(
                 [
@@ -225,5 +255,28 @@ class DefaultSimulator(BraketSimulator):
                     for instruction in from_braket_instruction.registry
                     if type(instruction) is not type
                 ]
-            )
+            ),
+            "supportedResultTypes": [
+                {
+                    "name": "Sample",
+                    "observables": observables,
+                    "minShots": 1,
+                    "maxShots": max_shots,
+                },
+                {
+                    "name": "Expectation",
+                    "observables": observables,
+                    "minShots": 0,
+                    "maxShots": max_shots,
+                },
+                {
+                    "name": "Variance",
+                    "observables": observables,
+                    "minShots": 0,
+                    "maxShots": max_shots,
+                },
+                {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+            ],
         }
