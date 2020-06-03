@@ -574,7 +574,10 @@ def _pswap(instruction) -> PSwap:
 
 
 class XY(GateOperation):
-    """XY gate"""
+    """XY gate
+
+    Reference: https://arxiv.org/abs/1912.04424v1
+    """
 
     def __init__(self, targets, angle):
         self._targets = tuple(targets)
@@ -605,7 +608,10 @@ def _xy(instruction) -> XY:
 
 
 class XX(GateOperation):
-    """Ising XX gate"""
+    """Ising XX gate
+
+    Reference: https://arxiv.org/abs/1707.06356
+    """
 
     def __init__(self, targets, angle):
         self._targets = tuple(targets)
@@ -613,16 +619,16 @@ class XX(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        positive_phase = cmath.exp(1j * self._angle)
-        negative_phase = cmath.exp(-1j * self._angle)
+        cos_angle = math.cos(self._angle / 2)
+        i_sin_angle = 1j * math.sin(self._angle / 2)
         return np.array(
             [
-                [1, 0, 0, -1j * positive_phase],
-                [0, 1, -1j, 0],
-                [0, -1j, 1, 0],
-                [-1j * negative_phase, 0, 0, 1],
+                [cos_angle, 0, 0, -i_sin_angle],
+                [0, cos_angle, -i_sin_angle, 0],
+                [0, -i_sin_angle, cos_angle, 0],
+                [-i_sin_angle, 0, 0, cos_angle],
             ]
-        ) / math.sqrt(2)
+        )
 
     @property
     def targets(self) -> Tuple[int, ...]:
@@ -635,7 +641,10 @@ def _xx(instruction) -> XX:
 
 
 class YY(GateOperation):
-    """Ising YY gate"""
+    """Ising YY gate
+
+    Reference: https://arxiv.org/abs/1707.06356
+    """
 
     def __init__(self, targets, angle):
         self._targets = tuple(targets)
@@ -643,8 +652,8 @@ class YY(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
-        cos_angle = math.cos(self._angle)
-        i_sin_angle = 1j * math.sin(self._angle)
+        cos_angle = math.cos(self._angle / 2)
+        i_sin_angle = 1j * math.sin(self._angle / 2)
         return np.array(
             [
                 [cos_angle, 0, 0, i_sin_angle],
@@ -665,7 +674,10 @@ def _yy(instruction) -> YY:
 
 
 class ZZ(GateOperation):
-    """Ising ZZ gate"""
+    """Ising ZZ gate
+
+    Reference: https://arxiv.org/abs/1707.06356
+    """
 
     def __init__(self, targets, angle):
         self._targets = tuple(targets)
@@ -677,10 +689,10 @@ class ZZ(GateOperation):
         negative_phase = cmath.exp(-1j * self._angle / 2)
         return np.array(
             [
-                [positive_phase, 0, 0, 0],
-                [0, negative_phase, 0, 0],
-                [0, 0, negative_phase, 0],
-                [0, 0, 0, positive_phase],
+                [negative_phase, 0, 0, 0],
+                [0, positive_phase, 0, 0],
+                [0, 0, positive_phase, 0],
+                [0, 0, 0, negative_phase],
             ]
         )
 
