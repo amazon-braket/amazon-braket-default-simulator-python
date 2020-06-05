@@ -15,7 +15,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="amazon-braket-default-simulator-python",
-    version="0.1.2",
+    version="0.2.0",
     license="Apache License 2.0",
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
