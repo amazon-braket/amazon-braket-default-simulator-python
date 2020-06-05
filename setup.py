@@ -13,9 +13,12 @@
 
 from setuptools import find_namespace_packages, setup
 
+with open("src/braket/default_simulator/_version.py") as f:
+    version = f.readlines()[-1].split()[-1].strip("\"'")
+
 setup(
     name="amazon-braket-default-simulator-python",
-    version="0.2.0",
+    version=version,
     license="Apache License 2.0",
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),

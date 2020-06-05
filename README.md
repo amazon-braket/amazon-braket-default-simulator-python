@@ -9,6 +9,21 @@ before you submit them to the Amazon Braket service for execution.
 You must have the [Amazon Braket SDK](https://github.com/aws/braket-python-sdk) installed before you can use the local simulator. 
 Follow the instructions in the [README](https://github.com/aws/braket-python-sdk/blob/stable/latest/README.md) for setup.
 
+**Checking the version of the DefaultSimulator**
+
+You can check your currently installed version of `amazon-braket-default-simulator-python` with `pip show`:
+
+```bash
+pip show amazon-braket-default-simulator-python
+```
+
+or alternatively from within Python:
+
+```
+>>> from braket import default_simulator
+>>> default_simulator.__version__
+```
+
 ## Usage
 The quantum simulator implementation `DefaultSimulator` plugs into the `LocalSimulator` interface in 
 [Amazon Braket SDK](https://github.com/aws/braket-python-sdk) using the `backend` value as `"default"`. 

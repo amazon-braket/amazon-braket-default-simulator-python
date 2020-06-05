@@ -11,10 +11,8 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-# Execute initialization code in the gate_operations module
-from braket.default_simulator import gate_operations, observables, result_types  # noqa: F401
-from braket.default_simulator.operation import GateOperation, Observable  # noqa: F401
-from braket.default_simulator.simulation import StateVectorSimulation  # noqa: F401
-from braket.default_simulator.simulator import DefaultSimulator  # noqa: F401
+"""Version information.
+   Version number (major.minor.patch[-label])
+"""
 
-from ._version import __version__  # noqa: F401
+__version__ = "0.2.0"
