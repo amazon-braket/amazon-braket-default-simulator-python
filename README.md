@@ -11,7 +11,7 @@ Follow the instructions in the [README](https://github.com/aws/braket-python-sdk
 
 **Checking the version of the DefaultSimulator**
 
-You can check your currently installed version of `amazon-braket-default-simulator-python` from with pip:
+You can check your currently installed version of `amazon-braket-default-simulator-python` with `pip show`:
 
 ```bash
 pip show amazon-braket-default-simulator-python
