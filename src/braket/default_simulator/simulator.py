@@ -13,7 +13,7 @@
 
 import sys
 import uuid
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, FrozenSet, List, Tuple
 
 from braket.default_simulator.gate_operations import from_braket_instruction
 from braket.default_simulator.observables import Hermitian, TensorProduct
@@ -26,6 +26,7 @@ from braket.default_simulator.result_types import (
 from braket.default_simulator.simulation import StateVectorSimulation
 from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
+from braket.simulator.braket_simulator import Paradigm
 
 
 class DefaultSimulator(BraketSimulator):
@@ -280,3 +281,7 @@ class DefaultSimulator(BraketSimulator):
                 {"name": "Amplitude", "minShots": 0, "maxShots": 0},
             ],
         }
+
+    @property
+    def supported_paradigms(self) -> FrozenSet[Paradigm]:
+        return frozenset((Paradigm.QUBIT_GATE,))

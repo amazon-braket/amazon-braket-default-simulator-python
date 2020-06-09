@@ -12,17 +12,32 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Union
+from enum import Enum, auto
+from typing import Any, Dict, FrozenSet, Union
 
 from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program
 
 
+class Paradigm(Enum):
+    """ Quantum computing paradigms that are supported by the Braket SDK
+
+    A BraketSimulator implementation must support one of these paradigms by implementing
+    `supported_paradigmss` to be able to run from the Braket SDK.
+
+    QUBIT_GATE must be supported to run programs defined by quantum gates on qubits.
+    ANNEALING must be supported to run quantum annealing problems.
+    """
+
+    QUBIT_GATE = auto()
+    ANNEALING = auto()
+
+
 class BraketSimulator(ABC):
     """ An abstract simulator that locally runs a quantum task.
 
-    The task can be either a circuit-based program or an annealing task,
-    specified by the given IR.
+    The task can be either a circuit-based program or an annealing problem,
+    specified by the given IR. The supported
 
     For users creating their own simulator: to register a simulator so the
     Braket SDK recognizes its name, the name and class must added as an
@@ -56,4 +71,9 @@ class BraketSimulator(ABC):
     @property
     @abstractmethod
     def properties(self) -> Dict[str, Any]:
-        """ Dict[str, Any]: Properties of the BraketSimulator device. """
+        """ Dict[str, Any]: Properties of the device."""
+
+    @property
+    @abstractmethod
+    def supported_paradigms(self) -> FrozenSet[Paradigm]:
+        """ Tuple[Paradigm, ...]: Quantum computing paradigms supported by the device."""
