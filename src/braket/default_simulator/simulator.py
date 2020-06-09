@@ -26,6 +26,7 @@ from braket.default_simulator.result_types import (
 from braket.default_simulator.simulation import StateVectorSimulation
 from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
+from braket.simulator.braket_simulator import IrType
 
 
 class DefaultSimulator(BraketSimulator):
@@ -249,6 +250,7 @@ class DefaultSimulator(BraketSimulator):
         observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
         max_shots = sys.maxsize
         return {
+            "supportedIrTypes": [IrType.JAQCD],
             "supportedQuantumOperations": sorted(
                 [
                     instruction.__name__
