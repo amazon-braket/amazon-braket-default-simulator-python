@@ -22,7 +22,7 @@ from braket.ir.jaqcd import Program
 class IrType(str, Enum):
     """ The types of Braket IR supported by the BraketSimulator implementation
 
-    A BraketSimulator implementation include a list of supported IrTypes for the key
+    A BraketSimulator implementation must include a list of supported IrTypes for the key
     `supportedIrTypes` in the `properties` dict.
 
     JAQCD must be supported to run programs defined by quantum gates on qubits.
