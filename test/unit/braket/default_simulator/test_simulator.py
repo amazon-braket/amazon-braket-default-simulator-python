@@ -23,7 +23,7 @@ from braket.default_simulator.result_types import Expectation, Variance
 from braket.default_simulator.simulator import DefaultSimulator
 from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
-from braket.simulator.braket_simulator import Paradigm
+from braket.simulator.braket_simulator import IrType
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -439,6 +439,7 @@ def test_properties():
     observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
     max_shots = sys.maxsize
     expected_properties = {
+        "supportedIrTypes": [IrType.JAQCD],
         "supportedQuantumOperations": [
             "CCNot",
             "CNot",
@@ -488,7 +489,3 @@ def test_properties():
         ],
     }
     assert simulator.properties == expected_properties
-
-
-def test_supported_paradigms():
-    assert DefaultSimulator().supported_paradigms == frozenset([Paradigm.QUBIT_GATE])
