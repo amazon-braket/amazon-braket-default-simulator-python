@@ -19,7 +19,7 @@ from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program
 
 
-class IrType(Enum):
+class IrType(str, Enum):
     """ The types of Braket IR supported by the BraketSimulator implementation
 
     A BraketSimulator implementation include a list of supported IrTypes for the key
