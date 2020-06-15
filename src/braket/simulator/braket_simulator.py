@@ -29,7 +29,7 @@ class IrType(str, Enum):
     ANNEALING must be supported to run quantum annealing problems.
     """
 
-    JAQCD = "jacqd"
+    JAQCD = "jaqcd"
     ANNEALING = "annealing"
 
 
