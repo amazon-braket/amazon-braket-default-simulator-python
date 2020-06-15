@@ -65,7 +65,7 @@ class DefaultSimulator(BraketSimulator):
             >>> circuit_ir = Circuit().h(0).to_ir()
             >>> DefaultSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
         """
-        DefaultSimulator._validate_shots_and_ir_results(shots, circuit_ir)
+        DefaultSimulator._validate_shots_and_ir_results(shots, circuit_ir, qubit_count)
 
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
@@ -99,19 +99,30 @@ class DefaultSimulator(BraketSimulator):
         return DefaultSimulator._create_results_dict(results, circuit_ir, simulation)
 
     @staticmethod
-    def _validate_shots_and_ir_results(shots: int, circuit_ir: Program):
+    def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
         if not shots:
             if not circuit_ir.results:
                 raise ValueError("Result types must be specified in the IR when shots=0")
             for rt in circuit_ir.results:
                 if rt.type in ["sample"]:
                     raise ValueError("sample can only be specified when shots>0")
+                if rt.type == "amplitude":
+                    DefaultSimulator._validate_amplitude_states(rt.states, qubit_count)
         elif shots and circuit_ir.results:
             for rt in circuit_ir.results:
                 if rt.type in ["statevector", "amplitude"]:
                     raise ValueError(
                         "statevector and amplitude result types not available when shots>0"
                     )
+
+    @staticmethod
+    def _validate_amplitude_states(states: List[str], qubit_count: int):
+        for state in states:
+            if len(state) != qubit_count:
+                raise ValueError(
+                    f"Length of state {state} for result type amplitude"
+                    f" must be equivalent to number of qubits {qubit_count} in circuit"
+                )
 
     @staticmethod
     def _get_measured_qubits(qubit_count: int) -> List[int]:

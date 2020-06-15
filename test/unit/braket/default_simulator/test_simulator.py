@@ -110,11 +110,25 @@ def test_simulator_run_amplitude_shots():
         json.dumps(
             {
                 "instructions": [{"type": "h", "target": 0}],
-                "results": [{"type": "amplitude", "states": ["0"]}],
+                "results": [{"type": "amplitude", "states": ["00"]}],
             }
         )
     )
     simulator.run(ir, qubit_count=2, shots=100)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_run_amplitude_no_shots_invalid_states():
+    simulator = DefaultSimulator()
+    ir = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [{"type": "h", "target": 0}],
+                "results": [{"type": "amplitude", "states": ["0"]}],
+            }
+        )
+    )
+    simulator.run(ir, qubit_count=2, shots=0)
 
 
 @pytest.mark.xfail(raises=ValueError)
