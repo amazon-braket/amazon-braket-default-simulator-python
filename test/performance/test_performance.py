@@ -15,9 +15,10 @@ import itertools
 import json
 import random
 
-import braket.ir.jaqcd as jaqcd
 import numpy as np
 import pytest
+
+import braket.ir.jaqcd as jaqcd
 from braket.default_simulator.simulator import DefaultSimulator
 
 results_data = [

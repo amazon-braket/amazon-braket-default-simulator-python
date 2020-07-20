@@ -11,8 +11,9 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import braket.ir.jaqcd as instruction
 import pytest
+
+import braket.ir.jaqcd as instruction
 from braket.default_simulator import gate_operations
 from braket.default_simulator.operation_helpers import check_unitary
 from braket.ir.jaqcd import shared_models

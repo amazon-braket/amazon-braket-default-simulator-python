@@ -18,6 +18,7 @@ from collections import Counter, namedtuple
 
 import numpy as np
 import pytest
+
 from braket.default_simulator import observables
 from braket.default_simulator.result_types import Expectation, Variance
 from braket.default_simulator.simulator import DefaultSimulator

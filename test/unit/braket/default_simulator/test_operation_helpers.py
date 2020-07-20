@@ -16,6 +16,7 @@ import math
 
 import numpy as np
 import pytest
+
 from braket.default_simulator import gate_operations, observables, operation_helpers
 from braket.default_simulator.operation_helpers import (
     check_hermitian,
