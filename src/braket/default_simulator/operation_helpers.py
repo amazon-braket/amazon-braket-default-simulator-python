@@ -15,6 +15,7 @@ from functools import lru_cache, singledispatch
 from typing import List, Tuple
 
 import numpy as np
+
 from braket.default_simulator.operation import GateOperation, Observable
 
 

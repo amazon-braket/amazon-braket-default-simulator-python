@@ -17,6 +17,7 @@ import math
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+
 from braket.default_simulator.operation import Observable
 from braket.default_simulator.operation_helpers import (
     check_hermitian,

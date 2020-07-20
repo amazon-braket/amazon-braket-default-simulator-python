@@ -15,6 +15,7 @@ from collections import Counter
 
 import numpy as np
 import pytest
+
 from braket.default_simulator import gate_operations, observables
 from braket.default_simulator.simulation import StateVectorSimulation
 

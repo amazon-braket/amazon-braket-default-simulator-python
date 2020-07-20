@@ -15,6 +15,7 @@ from typing import List
 
 import numpy as np
 import opt_einsum
+
 from braket.default_simulator.operation import Operation
 from braket.default_simulator.operation_helpers import get_matrix
 
