@@ -27,12 +27,21 @@ from braket.default_simulator.simulation import StateVectorSimulation
 from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
 from braket.simulator.braket_simulator import IrType
+from braket.task_result import (
+    AdditionalMetadata,
+    GateModelTaskResult,
+    ResultTypeValue,
+    TaskMetadata,
+)
 
 
 class DefaultSimulator(BraketSimulator):
+
+    DEVICE_ID = "default"
+
     def run(
         self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> GateModelTaskResult:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
         Args:
@@ -47,10 +56,7 @@ class DefaultSimulator(BraketSimulator):
                 optmized contraction.
 
         Returns:
-            Dict[str, Any]: dictionary containing the state vector (keyed by `StateVector`,
-            value type `Dict[str, complex]`), measurements (keyed by `Measurements`,
-            value type `List[List[str]]`, and task metadata, if any (keyed by `TaskMetadata`,
-            value type `Dict[str, Any]`)).
+            GateModelTaskResult: object that represents the result
 
         Raises:
             ValueError: If result types are not specified in the IR or sample is specified
@@ -96,7 +102,7 @@ class DefaultSimulator(BraketSimulator):
                 simulation,
             )
 
-        return DefaultSimulator._create_results_dict(results, circuit_ir, simulation)
+        return DefaultSimulator._create_results_obj(results, circuit_ir, simulation)
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
@@ -199,23 +205,23 @@ class DefaultSimulator(BraketSimulator):
         observable_result_types: Dict[int, ObservableResultType],
         observables: List[Observable],
         simulation,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[ResultTypeValue]:
 
         results = [0] * len(circuit_ir.results)
 
         for index in non_observable_result_types:
-            results[index] = {
-                "Type": vars(circuit_ir.results[index]),
-                "Value": non_observable_result_types[index].calculate(simulation),
-            }
+            results[index] = ResultTypeValue.construct(
+                type=circuit_ir.results[index],
+                value=non_observable_result_types[index].calculate(simulation),
+            )
 
         if observable_result_types:
             simulation.apply_observables(observables)
             for index in observable_result_types:
-                results[index] = {
-                    "Type": vars(circuit_ir.results[index]),
-                    "Value": observable_result_types[index].calculate(simulation),
-                }
+                results[index] = ResultTypeValue.construct(
+                    type=circuit_ir.results[index],
+                    value=observable_result_types[index].calculate(simulation),
+                )
         return results
 
     @staticmethod
@@ -235,26 +241,24 @@ class DefaultSimulator(BraketSimulator):
         ]
 
     @staticmethod
-    def _create_results_dict(
+    def _create_results_obj(
         results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation,
-    ) -> Dict[str, Any]:
-        return_dict = {
-            "TaskMetadata": {
-                "Id": str(uuid.uuid4()),
-                "Ir": circuit_ir.json(),
-                "IrType": "jaqcd",
-                "Shots": simulation.shots,
-            }
+    ) -> GateModelTaskResult:
+        result_dict = {
+            "taskMetadata": TaskMetadata(
+                id=str(uuid.uuid4()), shots=simulation.shots, deviceId=DefaultSimulator.DEVICE_ID
+            ),
+            "additionalMetadata": AdditionalMetadata(action=circuit_ir),
         }
         if results:
-            return_dict["ResultTypes"] = results
+            result_dict["resultTypes"] = results
         if simulation.shots:
-            return_dict["Measurements"] = DefaultSimulator._formatted_measurements(simulation)
-            return_dict["MeasuredQubits"] = DefaultSimulator._get_measured_qubits(
+            result_dict["measurements"] = DefaultSimulator._formatted_measurements(simulation)
+            result_dict["measuredQubits"] = DefaultSimulator._get_measured_qubits(
                 simulation.qubit_count
             )
 
-        return return_dict
+        return GateModelTaskResult.construct(**result_dict)
 
     @property
     def properties(self) -> Dict[str, Any]:
