@@ -17,6 +17,7 @@ from typing import Any, Dict, Union
 
 from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program
+from braket.task_result import AnnealingTaskResult, GateModelTaskResult
 
 
 class IrType(str, Enum):
@@ -52,8 +53,11 @@ class BraketSimulator(ABC):
     """
 
     @abstractmethod
-    def run(self, ir: Union[Program, Problem], *args, **kwargs) -> Dict[str, Any]:
-        """ Run the task specified by the given IR.
+    def run(
+        self, ir: Union[Program, Problem], *args, **kwargs
+    ) -> Union[GateModelTaskResult, AnnealingTaskResult]:
+        """
+        Run the task specified by the given IR.
 
         Extra arguments will contain any additional information necessary to run the task,
         such as number of qubits.
@@ -62,10 +66,8 @@ class BraketSimulator(ABC):
             ir (Union[Program, Problem]): The IR representation of the program
 
         Returns:
-            Dict[str, Any]: A dict containing the results of the simulation.
-            In order to work with braket-python-sdk, the format of the JSON dict should
-            match that needed by GateModelQuantumTaskResult or AnnealingQuantumTaskResult
-            from the SDK, depending on the type of task.
+            Union[GateModelTaskResult, AnnealingTaskResult]: An object representing
+            the results of the simulation.
         """
 
     @property

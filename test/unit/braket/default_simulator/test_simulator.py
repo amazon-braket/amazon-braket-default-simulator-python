@@ -24,6 +24,7 @@ from braket.default_simulator.result_types import Expectation, Variance
 from braket.default_simulator.simulator import DefaultSimulator
 from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
+from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -74,7 +75,7 @@ def bell_ir_with_result():
 def test_simulator_run_grcs_16(grcs_16_qubit, batch_size):
     simulator = DefaultSimulator()
     result = simulator.run(grcs_16_qubit.circuit_ir, qubit_count=16, shots=0, batch_size=batch_size)
-    state_vector = result["ResultTypes"][0]["Value"]
+    state_vector = result.resultTypes[0].value
     assert cmath.isclose(abs(state_vector[0]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7)
 
 
@@ -84,18 +85,16 @@ def test_simulator_run_bell_pair(bell_ir, batch_size):
     shots_count = 10000
     result = simulator.run(bell_ir, qubit_count=2, shots=shots_count, batch_size=batch_size)
 
-    assert all([len(measurement) == 2] for measurement in result["Measurements"])
-    assert len(result["Measurements"]) == shots_count
-    counter = Counter(["".join(measurement) for measurement in result["Measurements"]])
+    assert all([len(measurement) == 2] for measurement in result.measurements)
+    assert len(result.measurements) == shots_count
+    counter = Counter(["".join(measurement) for measurement in result.measurements])
     assert counter.keys() == {"00", "11"}
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
-    assert result["TaskMetadata"] == {
-        "Id": result["TaskMetadata"]["Id"],
-        "Ir": bell_ir.json(),
-        "IrType": "jaqcd",
-        "Shots": shots_count,
-    }
+    assert result.taskMetadata == TaskMetadata(
+        id=result.taskMetadata.id, deviceId=DefaultSimulator.DEVICE_ID, shots=shots_count
+    )
+    assert result.additionalMetadata == AdditionalMetadata(action=bell_ir)
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -158,10 +157,10 @@ def test_simulator_run_result_types_shots():
     )
     shots_count = 100
     result = simulator.run(ir, qubit_count=2, shots=shots_count)
-    assert all([len(measurement) == 2] for measurement in result["Measurements"])
-    assert len(result["Measurements"]) == shots_count
-    assert result["MeasuredQubits"] == [0, 1]
-    assert "ResultTypes" not in result
+    assert all([len(measurement) == 2] for measurement in result.measurements)
+    assert len(result.measurements) == shots_count
+    assert result.measuredQubits == [0, 1]
+    assert not result.resultTypes
 
 
 def test_simulator_run_result_types_shots_basis_rotation_gates():
@@ -180,10 +179,10 @@ def test_simulator_run_result_types_shots_basis_rotation_gates():
     )
     shots_count = 1000
     result = simulator.run(ir, qubit_count=2, shots=shots_count)
-    assert all([len(measurement) == 2] for measurement in result["Measurements"])
-    assert len(result["Measurements"]) == shots_count
-    assert "ResultTypes" not in result
-    assert result["MeasuredQubits"] == [0, 1]
+    assert all([len(measurement) == 2] for measurement in result.measurements)
+    assert len(result.measurements) == shots_count
+    assert not result.resultTypes
+    assert result.measuredQubits == [0, 1]
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -209,23 +208,19 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
 @pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
 def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_size):
     simulator = DefaultSimulator()
-    result = simulator.run(
-        bell_ir_with_result(targets), qubit_count=2, shots=0, batch_size=batch_size
+    ir = bell_ir_with_result(targets)
+    result = simulator.run(ir, qubit_count=2, shots=0, batch_size=batch_size)
+    assert len(result.resultTypes) == 2
+    assert result.resultTypes[0] == ResultTypeValue.construct(
+        type=ir.results[0], value={"11": complex(1 / 2 ** 0.5)}
     )
-    assert len(result["ResultTypes"]) == 2
-    assert result["ResultTypes"] == [
-        {"Type": {"type": "amplitude", "states": ["11"]}, "Value": {"11": 1 / 2 ** 0.5}},
-        {
-            "Type": {"type": "expectation", "observable": ["x"], "targets": targets},
-            "Value": 0 if targets else [0, 0],
-        },
-    ]
-    assert result["TaskMetadata"] == {
-        "Id": result["TaskMetadata"]["Id"],
-        "Ir": bell_ir_with_result(targets).json(),
-        "IrType": "jaqcd",
-        "Shots": 0,
-    }
+    assert result.resultTypes[1] == ResultTypeValue.construct(
+        type=ir.results[1], value=(0 if targets else [0, 0])
+    )
+    assert result.taskMetadata == TaskMetadata(
+        id=result.taskMetadata.id, deviceId=DefaultSimulator.DEVICE_ID, shots=0
+    )
+    assert result.additionalMetadata == AdditionalMetadata(action=ir)
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -311,8 +306,8 @@ def test_simulator_accepts_overlapping_targets_same_observable(
         )
     )
     result = simulator.run(prog, qubit_count=2, shots=0)
-    expectation = result["ResultTypes"][0]["Value"]
-    variance = result["ResultTypes"][1]["Value"]
+    expectation = result.resultTypes[0].value
+    variance = result.resultTypes[1].value
     assert np.allclose(expectation, expected_expectation)
     assert np.allclose(variance, expected_variance)
 
