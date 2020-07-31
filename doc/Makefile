@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = python -msphinx
-SPHINXPROJ    = amazon-braket-default-simulator-python
+SPHINXPROJ    = amazon-braket-default-simulator
 SOURCEDIR     = .
 BUILDDIR      = ../build/documentation
 
