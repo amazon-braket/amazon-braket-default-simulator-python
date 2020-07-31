@@ -17,14 +17,14 @@ with open("src/braket/default_simulator/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 setup(
-    name="amazon-braket-default-simulator-python",
+    name="amazon-braket-default-simulator",
     version=version,
     license="Apache License 2.0",
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     install_requires=[
-        "braket-ir @ git+https://github.com/aws/braket-python-ir.git",
+        "amazon-braket-schemas @ git+https://github.com/aws/amazon-braket-schemas-python.git",
         "numpy",
         "opt_einsum",
     ],
