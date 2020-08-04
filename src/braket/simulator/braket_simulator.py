@@ -12,26 +12,12 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from enum import Enum
-from typing import Any, Dict, Union
+from typing import Union
 
+from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
 from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program
 from braket.task_result import AnnealingTaskResult, GateModelTaskResult
-
-
-class IrType(str, Enum):
-    """ The types of Braket IR supported by the BraketSimulator implementation
-
-    A BraketSimulator implementation must include a list of supported IrTypes for the key
-    `supportedIrTypes` in the `properties` dict.
-
-    JAQCD must be supported to run programs defined by quantum gates on qubits.
-    ANNEALING must be supported to run quantum annealing problems.
-    """
-
-    JAQCD = "jaqcd"
-    ANNEALING = "annealing"
 
 
 class BraketSimulator(ABC):
@@ -72,5 +58,5 @@ class BraketSimulator(ABC):
 
     @property
     @abstractmethod
-    def properties(self) -> Dict[str, Any]:
+    def properties(self) -> GateModelSimulatorDeviceCapabilities:
         """ Dict[str, Any]: Properties of the device."""

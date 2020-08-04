@@ -24,9 +24,12 @@ from braket.default_simulator.result_types import (
     from_braket_result_type,
 )
 from braket.default_simulator.simulation import StateVectorSimulation
+from braket.device_schema.simulators import (
+    GateModelSimulatorDeviceCapabilities,
+    GateModelSimulatorDeviceParameters,
+)
 from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
-from braket.simulator.braket_simulator import IrType
 from braket.task_result import (
     AdditionalMetadata,
     GateModelTaskResult,
@@ -261,39 +264,59 @@ class DefaultSimulator(BraketSimulator):
         return GateModelTaskResult.construct(**result_dict)
 
     @property
-    def properties(self) -> Dict[str, Any]:
+    def properties(self) -> GateModelSimulatorDeviceCapabilities:
         observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
         max_shots = sys.maxsize
-        return {
-            "supportedIrTypes": [IrType.JAQCD],
-            "supportedQuantumOperations": sorted(
-                [
-                    instruction.__name__
-                    for instruction in from_braket_instruction.registry
-                    if type(instruction) is not type
-                ]
-            ),
-            "supportedResultTypes": [
-                {
-                    "name": "Sample",
-                    "observables": observables,
-                    "minShots": 1,
-                    "maxShots": max_shots,
+        qubit_count = 26
+        return GateModelSimulatorDeviceCapabilities.parse_obj(
+            {
+                "service": {
+                    "executionWindows": [
+                        {
+                            "executionDay": "Everyday",
+                            "windowStartHour": "00:00",
+                            "windowEndHour": "23:59:59",
+                        }
+                    ],
+                    "shotsRange": [0, max_shots],
                 },
-                {
-                    "name": "Expectation",
-                    "observables": observables,
-                    "minShots": 0,
-                    "maxShots": max_shots,
+                "action": {
+                    "braket.ir.jaqcd.program": {
+                        "actionType": "braket.ir.jaqcd.program",
+                        "version": ["1"],
+                        "supportedOperations": sorted(
+                            [
+                                instruction.__name__
+                                for instruction in from_braket_instruction.registry
+                                if type(instruction) is not type
+                            ]
+                        ),
+                        "supportedResultTypes": [
+                            {
+                                "name": "Sample",
+                                "observables": observables,
+                                "minShots": 1,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Expectation",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Variance",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+                        ],
+                    }
                 },
-                {
-                    "name": "Variance",
-                    "observables": observables,
-                    "minShots": 0,
-                    "maxShots": max_shots,
-                },
-                {"name": "Probability", "minShots": 0, "maxShots": max_shots},
-                {"name": "StateVector", "minShots": 0, "maxShots": 0},
-                {"name": "Amplitude", "minShots": 0, "maxShots": 0},
-            ],
-        }
+                "paradigm": {"qubitCount": qubit_count},
+                "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
+            }
+        )
