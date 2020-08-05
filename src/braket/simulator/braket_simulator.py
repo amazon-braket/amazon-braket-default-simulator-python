@@ -59,4 +59,4 @@ class BraketSimulator(ABC):
     @property
     @abstractmethod
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        """ Dict[str, Any]: Properties of the device."""
+        """GateModelSimulatorDeviceCapabilities: Properties of the device."""
