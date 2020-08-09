@@ -22,6 +22,10 @@ import pytest
 from braket.default_simulator import observables
 from braket.default_simulator.result_types import Expectation, Variance
 from braket.default_simulator.simulator import DefaultSimulator
+from braket.device_schema.simulators import (
+    GateModelSimulatorDeviceCapabilities,
+    GateModelSimulatorDeviceParameters,
+)
 from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
 from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
@@ -447,54 +451,84 @@ def test_properties():
     simulator = DefaultSimulator()
     observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
     max_shots = sys.maxsize
-    expected_properties = {
-        "supportedIrTypes": ["jaqcd"],
-        "supportedQuantumOperations": [
-            "CCNot",
-            "CNot",
-            "CPhaseShift",
-            "CPhaseShift00",
-            "CPhaseShift01",
-            "CPhaseShift10",
-            "CSwap",
-            "CY",
-            "CZ",
-            "H",
-            "I",
-            "ISwap",
-            "PSwap",
-            "PhaseShift",
-            "Rx",
-            "Ry",
-            "Rz",
-            "S",
-            "Si",
-            "Swap",
-            "T",
-            "Ti",
-            "Unitary",
-            "V",
-            "Vi",
-            "X",
-            "XX",
-            "XY",
-            "Y",
-            "YY",
-            "Z",
-            "ZZ",
-        ],
-        "supportedResultTypes": [
-            {"name": "Sample", "observables": observables, "minShots": 1, "maxShots": max_shots},
-            {
-                "name": "Expectation",
-                "observables": observables,
-                "minShots": 0,
-                "maxShots": max_shots,
+    qubit_count = 26
+    expected_properties = GateModelSimulatorDeviceCapabilities.parse_obj(
+        {
+            "service": {
+                "executionWindows": [
+                    {
+                        "executionDay": "Everyday",
+                        "windowStartHour": "00:00",
+                        "windowEndHour": "23:59:59",
+                    }
+                ],
+                "shotsRange": [0, max_shots],
             },
-            {"name": "Variance", "observables": observables, "minShots": 0, "maxShots": max_shots},
-            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
-            {"name": "StateVector", "minShots": 0, "maxShots": 0},
-            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
-        ],
-    }
+            "action": {
+                "braket.ir.jaqcd.program": {
+                    "actionType": "braket.ir.jaqcd.program",
+                    "version": ["1"],
+                    "supportedOperations": [
+                        "CCNot",
+                        "CNot",
+                        "CPhaseShift",
+                        "CPhaseShift00",
+                        "CPhaseShift01",
+                        "CPhaseShift10",
+                        "CSwap",
+                        "CY",
+                        "CZ",
+                        "H",
+                        "I",
+                        "ISwap",
+                        "PSwap",
+                        "PhaseShift",
+                        "Rx",
+                        "Ry",
+                        "Rz",
+                        "S",
+                        "Si",
+                        "Swap",
+                        "T",
+                        "Ti",
+                        "Unitary",
+                        "V",
+                        "Vi",
+                        "X",
+                        "XX",
+                        "XY",
+                        "Y",
+                        "YY",
+                        "Z",
+                        "ZZ",
+                    ],
+                    "supportedResultTypes": [
+                        {
+                            "name": "Sample",
+                            "observables": observables,
+                            "minShots": 1,
+                            "maxShots": max_shots,
+                        },
+                        {
+                            "name": "Expectation",
+                            "observables": observables,
+                            "minShots": 0,
+                            "maxShots": max_shots,
+                        },
+                        {
+                            "name": "Variance",
+                            "observables": observables,
+                            "minShots": 0,
+                            "maxShots": max_shots,
+                        },
+                        {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                        {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                        {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+                    ],
+                }
+            },
+            "paradigm": {"qubitCount": qubit_count},
+            "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
+        }
+    )
     assert simulator.properties == expected_properties
