@@ -14,7 +14,7 @@
 from abc import ABC, abstractmethod
 from typing import Union
 
-from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
+from braket.device_schema import DeviceCapabilities
 from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program
 from braket.task_result import AnnealingTaskResult, GateModelTaskResult
@@ -58,5 +58,5 @@ class BraketSimulator(ABC):
 
     @property
     @abstractmethod
-    def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        """GateModelSimulatorDeviceCapabilities: Properties of the device."""
+    def properties(self) -> DeviceCapabilities:
+        """DeviceCapabilities: Properties of the device."""
