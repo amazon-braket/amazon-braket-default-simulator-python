@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Tuple
 
 from braket.default_simulator.gate_operations import from_braket_instruction
 from braket.default_simulator.observables import Hermitian, TensorProduct
-from braket.default_simulator.operation import Observable
+from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.result_types import (
     ObservableResultType,
     ResultType,
@@ -84,6 +84,8 @@ class DefaultSimulator(BraketSimulator):
             for instruction in circuit_ir.basis_rotation_instructions:
                 operations.append(from_braket_instruction(instruction))
 
+        DefaultSimulator._validate_operation_qubits(operations)
+
         simulation = StateVectorSimulation(qubit_count, shots, batch_size=batch_size)
         simulation.evolve(operations)
 
@@ -134,6 +136,15 @@ class DefaultSimulator(BraketSimulator):
                 )
 
     @staticmethod
+    def _validate_operation_qubits(operations: List[Operation]) -> None:
+        qubits_referenced = {target for operation in operations for target in operation.targets}
+        if max(qubits_referenced) >= len(qubits_referenced):
+            raise ValueError(
+                "Non-contiguous qubit indices supplied; "
+                "qubit indices in a circuit must be contiguous."
+            )
+
+    @staticmethod
     def _get_measured_qubits(qubit_count: int) -> List[int]:
         return list(range(qubit_count))
 
@@ -175,6 +186,12 @@ class DefaultSimulator(BraketSimulator):
             new_obs = DefaultSimulator._observable_hash(obs_obj)
             if measured_qubits is None:
                 measured_qubits = list(range(qubit_count))
+
+            if max(measured_qubits) >= qubit_count:
+                raise ValueError(
+                    f"Result type ({result_type.__class__.__name__}) Observable "
+                    f"({obs_obj.__class__.__name__}) references invalid qubits {measured_qubits}"
+                )
             duplicate = False
             for qubit in measured_qubits:
                 # Validate that the same observable is requested for a qubit in the result types
