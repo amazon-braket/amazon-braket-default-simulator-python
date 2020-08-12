@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from functools import lru_cache, singledispatch
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -92,8 +92,7 @@ def check_hermitian(matrix: np.ndarray):
         raise ValueError(f"{matrix} is not Hermitian")
 
 
-@singledispatch
-def get_matrix(operation):
+def get_matrix(operation) -> Optional[np.ndarray]:
     """ Gets the matrix of the given operation.
 
     For a `GateOperation`, this is the gate's unitary matrix, and for an `Observable`,
@@ -105,14 +104,19 @@ def get_matrix(operation):
     Returns:
         np.ndarray: The matrix of the operation
     """
+    return _get_matrix(operation)
+
+
+@singledispatch
+def _get_matrix(operation):
     raise ValueError(f"Unrecognized operation: {operation}")
 
 
-@get_matrix.register
+@_get_matrix.register
 def _(gate: GateOperation):
     return gate.matrix
 
 
-@get_matrix.register
+@_get_matrix.register
 def _(observable: Observable):
     return observable.diagonalizing_matrix

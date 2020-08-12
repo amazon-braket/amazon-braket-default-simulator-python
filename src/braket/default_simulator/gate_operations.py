@@ -29,7 +29,6 @@ from braket.default_simulator.operation_helpers import (
 )
 
 
-@singledispatch
 def from_braket_instruction(instruction) -> GateOperation:
     """ Instantiates the concrete `GateOperation` object from the specified braket instruction.
 
@@ -43,6 +42,11 @@ def from_braket_instruction(instruction) -> GateOperation:
         ValueError: If no concrete `GateOperation` class has been registered
             for the instruction type.
     """
+    return _from_braket_instruction(instruction)
+
+
+@singledispatch
+def _from_braket_instruction(instruction):
     raise ValueError(f"Instruction {instruction} not recognized")
 
 
@@ -61,7 +65,7 @@ class Identity(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.I)
+@_from_braket_instruction.register(braket_instruction.I)
 def _i(instruction) -> Identity:
     return Identity([instruction.target])
 
@@ -81,7 +85,7 @@ class Hadamard(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.H)
+@_from_braket_instruction.register(braket_instruction.H)
 def _hadamard(instruction) -> Hadamard:
     return Hadamard([instruction.target])
 
@@ -101,7 +105,7 @@ class PauliX(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.X)
+@_from_braket_instruction.register(braket_instruction.X)
 def _pauli_x(instruction) -> PauliX:
     return PauliX([instruction.target])
 
@@ -121,7 +125,7 @@ class PauliY(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Y)
+@_from_braket_instruction.register(braket_instruction.Y)
 def _pauli_y(instruction) -> PauliY:
     return PauliY([instruction.target])
 
@@ -141,7 +145,7 @@ class PauliZ(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Z)
+@_from_braket_instruction.register(braket_instruction.Z)
 def _pauli_z(instruction) -> PauliZ:
     return PauliZ([instruction.target])
 
@@ -161,7 +165,7 @@ class CX(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CNot)
+@_from_braket_instruction.register(braket_instruction.CNot)
 def _cx(instruction) -> CX:
     return CX([instruction.control, instruction.target])
 
@@ -181,7 +185,7 @@ class CY(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CY)
+@_from_braket_instruction.register(braket_instruction.CY)
 def _cy(instruction) -> CY:
     return CY([instruction.control, instruction.target])
 
@@ -201,7 +205,7 @@ class CZ(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CZ)
+@_from_braket_instruction.register(braket_instruction.CZ)
 def _cz(instruction) -> CZ:
     return CZ([instruction.control, instruction.target])
 
@@ -221,7 +225,7 @@ class S(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.S)
+@_from_braket_instruction.register(braket_instruction.S)
 def _s(instruction) -> S:
     return S([instruction.target])
 
@@ -241,7 +245,7 @@ class Si(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Si)
+@_from_braket_instruction.register(braket_instruction.Si)
 def _si(instruction) -> Si:
     return Si([instruction.target])
 
@@ -261,7 +265,7 @@ class T(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.T)
+@_from_braket_instruction.register(braket_instruction.T)
 def _t(instruction) -> T:
     return T([instruction.target])
 
@@ -281,7 +285,7 @@ class Ti(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Ti)
+@_from_braket_instruction.register(braket_instruction.Ti)
 def _ti(instruction) -> Ti:
     return Ti([instruction.target])
 
@@ -301,7 +305,7 @@ class V(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.V)
+@_from_braket_instruction.register(braket_instruction.V)
 def _v(instruction) -> V:
     return V([instruction.target])
 
@@ -321,7 +325,7 @@ class Vi(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Vi)
+@_from_braket_instruction.register(braket_instruction.Vi)
 def _vi(instruction) -> Vi:
     return Vi([instruction.target])
 
@@ -342,7 +346,7 @@ class PhaseShift(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.PhaseShift)
+@_from_braket_instruction.register(braket_instruction.PhaseShift)
 def _phase_shift(instruction) -> PhaseShift:
     return PhaseShift([instruction.target], instruction.angle)
 
@@ -363,7 +367,7 @@ class CPhaseShift(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CPhaseShift)
+@_from_braket_instruction.register(braket_instruction.CPhaseShift)
 def _c_phase_shift(instruction) -> CPhaseShift:
     return CPhaseShift([instruction.control, instruction.target], instruction.angle)
 
@@ -384,7 +388,7 @@ class CPhaseShift00(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CPhaseShift00)
+@_from_braket_instruction.register(braket_instruction.CPhaseShift00)
 def _c_phase_shift_00(instruction) -> CPhaseShift00:
     return CPhaseShift00([instruction.control, instruction.target], instruction.angle)
 
@@ -405,7 +409,7 @@ class CPhaseShift01(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CPhaseShift01)
+@_from_braket_instruction.register(braket_instruction.CPhaseShift01)
 def _c_phase_shift_01(instruction) -> CPhaseShift01:
     return CPhaseShift01([instruction.control, instruction.target], instruction.angle)
 
@@ -426,7 +430,7 @@ class CPhaseShift10(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CPhaseShift10)
+@_from_braket_instruction.register(braket_instruction.CPhaseShift10)
 def _c_phase_shift_10(instruction) -> CPhaseShift10:
     return CPhaseShift10([instruction.control, instruction.target], instruction.angle)
 
@@ -449,7 +453,7 @@ class RotX(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Rx)
+@_from_braket_instruction.register(braket_instruction.Rx)
 def _rot_x(instruction) -> RotX:
     return RotX([instruction.target], instruction.angle)
 
@@ -472,7 +476,7 @@ class RotY(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Ry)
+@_from_braket_instruction.register(braket_instruction.Ry)
 def _rot_y(instruction) -> RotY:
     return RotY([instruction.target], instruction.angle)
 
@@ -495,7 +499,7 @@ class RotZ(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Rz)
+@_from_braket_instruction.register(braket_instruction.Rz)
 def _rot_z(instruction) -> RotZ:
     return RotZ([instruction.target], instruction.angle)
 
@@ -515,7 +519,7 @@ class Swap(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Swap)
+@_from_braket_instruction.register(braket_instruction.Swap)
 def _swap(instruction) -> Swap:
     return Swap(instruction.targets)
 
@@ -543,7 +547,7 @@ class ISwap(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.ISwap)
+@_from_braket_instruction.register(braket_instruction.ISwap)
 def _iswap(instruction) -> ISwap:
     return ISwap(instruction.targets)
 
@@ -572,7 +576,7 @@ class PSwap(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.PSwap)
+@_from_braket_instruction.register(braket_instruction.PSwap)
 def _pswap(instruction) -> PSwap:
     return PSwap(instruction.targets, instruction.angle)
 
@@ -606,7 +610,7 @@ class XY(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.XY)
+@_from_braket_instruction.register(braket_instruction.XY)
 def _xy(instruction) -> XY:
     return XY(instruction.targets, instruction.angle)
 
@@ -639,7 +643,7 @@ class XX(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.XX)
+@_from_braket_instruction.register(braket_instruction.XX)
 def _xx(instruction) -> XX:
     return XX(instruction.targets, instruction.angle)
 
@@ -672,7 +676,7 @@ class YY(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.YY)
+@_from_braket_instruction.register(braket_instruction.YY)
 def _yy(instruction) -> YY:
     return YY(instruction.targets, instruction.angle)
 
@@ -705,7 +709,7 @@ class ZZ(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.ZZ)
+@_from_braket_instruction.register(braket_instruction.ZZ)
 def _zz(instruction) -> ZZ:
     return ZZ(instruction.targets, instruction.angle)
 
@@ -737,7 +741,7 @@ class CCNot(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CCNot)
+@_from_braket_instruction.register(braket_instruction.CCNot)
 def _ccnot(instruction) -> CCNot:
     return CCNot([*instruction.controls, instruction.target])
 
@@ -769,7 +773,7 @@ class CSwap(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.CSwap)
+@_from_braket_instruction.register(braket_instruction.CSwap)
 def _cswap(instruction) -> CSwap:
     return CSwap([instruction.control, *instruction.targets])
 
@@ -793,6 +797,6 @@ class Unitary(GateOperation):
         return self._targets
 
 
-@from_braket_instruction.register(braket_instruction.Unitary)
+@_from_braket_instruction.register(braket_instruction.Unitary)
 def _unitary(instruction) -> Unitary:
     return Unitary(instruction.targets, ir_matrix_to_ndarray(instruction.matrix))
