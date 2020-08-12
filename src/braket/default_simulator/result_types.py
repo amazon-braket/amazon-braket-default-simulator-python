@@ -35,7 +35,6 @@ from braket.default_simulator.simulation import StateVectorSimulation
 from braket.ir import jaqcd
 
 
-@singledispatch
 def from_braket_result_type(result_type) -> ResultType:
     """ Creates a `ResultType` corresponding to the given Braket instruction.
 
@@ -49,6 +48,11 @@ def from_braket_result_type(result_type) -> ResultType:
         ValueError: If no concrete `ResultType` class has been registered
             for the Braket instruction type
     """
+    return _from_braket_result_type(result_type)
+
+
+@singledispatch
+def _from_braket_result_type(result_type):
     raise ValueError(f"Result type {result_type} not recognized")
 
 
@@ -146,7 +150,7 @@ class StateVector(ResultType):
         return simulation.state_vector
 
 
-@from_braket_result_type.register
+@_from_braket_result_type.register
 def _(statevector: jaqcd.StateVector):
     return StateVector()
 
@@ -179,7 +183,7 @@ class Amplitude(ResultType):
         return {basis_state: state[int(basis_state, 2)] for basis_state in self._states}
 
 
-@from_braket_result_type.register
+@_from_braket_result_type.register
 def _(amplitude: jaqcd.Amplitude):
     return Amplitude(amplitude.states)
 
@@ -215,7 +219,7 @@ class Probability(ResultType):
         return _marginal_probability(simulation.state_vector, simulation.qubit_count, self._targets)
 
 
-@from_braket_result_type.register
+@_from_braket_result_type.register
 def _(probability: jaqcd.Probability):
     return Probability(probability.targets)
 
@@ -239,7 +243,7 @@ class Expectation(ObservableResultType):
         return (probabilities @ eigenvalues).real
 
 
-@from_braket_result_type.register
+@_from_braket_result_type.register
 def _(expectation: jaqcd.Expectation):
     return Expectation(_from_braket_observable(expectation.observable, expectation.targets))
 
@@ -263,7 +267,7 @@ class Variance(ObservableResultType):
         return probabilities @ (eigenvalues.real ** 2) - (probabilities @ eigenvalues).real ** 2
 
 
-@from_braket_result_type.register
+@_from_braket_result_type.register
 def _(variance: jaqcd.Variance):
     return Variance(_from_braket_observable(variance.observable, variance.targets))
 

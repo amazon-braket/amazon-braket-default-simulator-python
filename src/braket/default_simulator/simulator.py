@@ -301,13 +301,40 @@ class DefaultSimulator(BraketSimulator):
                     "braket.ir.jaqcd.program": {
                         "actionType": "braket.ir.jaqcd.program",
                         "version": ["1"],
-                        "supportedOperations": sorted(
-                            [
-                                instruction.__name__
-                                for instruction in from_braket_instruction.registry
-                                if type(instruction) is not type
-                            ]
-                        ),
+                        "supportedOperations": [
+                            "CCNot",
+                            "CNot",
+                            "CPhaseShift",
+                            "CPhaseShift00",
+                            "CPhaseShift01",
+                            "CPhaseShift10",
+                            "CSwap",
+                            "CY",
+                            "CZ",
+                            "H",
+                            "I",
+                            "ISwap",
+                            "PSwap",
+                            "PhaseShift",
+                            "Rx",
+                            "Ry",
+                            "Rz",
+                            "S",
+                            "Si",
+                            "Swap",
+                            "T",
+                            "Ti",
+                            "Unitary",
+                            "V",
+                            "Vi",
+                            "X",
+                            "XX",
+                            "XY",
+                            "Y",
+                            "YY",
+                            "Z",
+                            "ZZ",
+                        ],
                         "supportedResultTypes": [
                             {
                                 "name": "Sample",
