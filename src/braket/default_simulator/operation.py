@@ -31,7 +31,8 @@ class Operation(ABC):
 
         Note: For an index to be a target of an observable, the observable must have a nontrivial
         (i.e. non-identity) action on that index. For example, a tensor product observable with a
-        Z factor on qubit j acts trivially on j, so j would not be a target.
+        Z factor on qubit j acts trivially on j, so j would not be a target. This does not apply to
+        gate operations.
         """
 
 
