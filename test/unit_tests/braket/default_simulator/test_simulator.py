@@ -208,6 +208,78 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
     simulator.run(ir, qubit_count=2, shots=shots_count)
 
 
+@pytest.mark.parametrize(
+    "ir, qubit_count",
+    [
+        (
+            Program.parse_raw(
+                json.dumps(
+                    {
+                        "instructions": [{"type": "z", "target": 2}],
+                        "basis_rotation_instructions": [],
+                        "results": [],
+                    }
+                )
+            ),
+            1,
+        ),
+        (
+            Program.parse_raw(
+                json.dumps(
+                    {
+                        "instructions": [{"type": "h", "target": 0}],
+                        "basis_rotation_instructions": [{"type": "z", "target": 3}],
+                        "results": [],
+                    }
+                )
+            ),
+            2,
+        ),
+    ],
+)
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_run_non_contiguous_qubits(ir, qubit_count):
+    simulator = DefaultSimulator()
+    shots_count = 1000
+    simulator.run(ir, qubit_count=qubit_count, shots=shots_count)
+
+
+@pytest.mark.parametrize(
+    "ir, qubit_count",
+    [
+        (
+            Program.parse_raw(
+                json.dumps(
+                    {
+                        "results": [{"targets": [2], "type": "expectation", "observable": ["z"]}],
+                        "basis_rotation_instructions": [],
+                        "instructions": [{"type": "z", "target": 0}],
+                    }
+                )
+            ),
+            1,
+        ),
+        (
+            Program.parse_raw(
+                json.dumps(
+                    {
+                        "results": [{"targets": [2], "type": "expectation", "observable": ["z"]}],
+                        "basis_rotation_instructions": [],
+                        "instructions": [{"type": "z", "target": 0}, {"type": "z", "target": 1}],
+                    }
+                )
+            ),
+            2,
+        ),
+    ],
+)
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_run_observable_references_invalid_qubit(ir, qubit_count):
+    simulator = DefaultSimulator()
+    shots_count = 0
+    simulator.run(ir, qubit_count=qubit_count, shots=shots_count)
+
+
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 @pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
 def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_size):
@@ -437,7 +509,7 @@ def test_validate_and_consolidate_observable_result_types_targets(obs1, obs2):
         Expectation(obs1),
         Expectation(obs2),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
+    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
     assert len(actual_obs) == 2
     assert actual_obs[0].measured_qubits == (1,)
     assert actual_obs[1].measured_qubits == (2,)
