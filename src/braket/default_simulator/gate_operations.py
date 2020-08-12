@@ -49,18 +49,21 @@ def from_braket_instruction(instruction) -> GateOperation:
 class Identity(GateOperation):
     """Identity gate"""
 
+    def __init__(self, targets):
+        self._targets = tuple(targets)
+
     @property
     def matrix(self) -> np.ndarray:
         return np.eye(2)
 
     @property
     def targets(self) -> Tuple[int, ...]:
-        return ()
+        return self._targets
 
 
 @from_braket_instruction.register(braket_instruction.I)
 def _i(instruction) -> Identity:
-    return Identity()
+    return Identity([instruction.target])
 
 
 class Hadamard(GateOperation):

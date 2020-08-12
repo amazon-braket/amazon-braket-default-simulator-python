@@ -19,7 +19,7 @@ from braket.default_simulator.operation_helpers import check_unitary
 from braket.ir.jaqcd import shared_models
 
 testdata = [
-    (instruction.I(target=4), (), gate_operations.Identity),
+    (instruction.I(target=4), (4,), gate_operations.Identity),
     (instruction.H(target=13), (13,), gate_operations.Hadamard),
     (instruction.X(target=11), (11,), gate_operations.PauliX),
     (instruction.Y(target=10), (10,), gate_operations.PauliY),
