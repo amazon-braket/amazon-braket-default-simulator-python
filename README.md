@@ -1,20 +1,19 @@
-**This prerelease documentation is confidential and is provided under the terms of your nondisclosure agreement with 
-Amazon Web Services (AWS) or other agreement governing your receipt of AWS confidential information.**
+## Amazon Braket Default Simulator
 
 The Amazon Braket Default Simulator is a Python open source library that provides an implementation of a quantum simulator 
-that you can run locally. You can use the simulator to test quantum tasks that you construct for the [Amazon Braket SDK](https://github.com/aws/braket-python-sdk)
+that you can run locally. You can use the simulator to test quantum tasks that you construct for the [Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python)
 before you submit them to the Amazon Braket service for execution.
 
 ## Setting up Amazon Braket Default Simulator Python
-You must have the [Amazon Braket SDK](https://github.com/aws/braket-python-sdk) installed before you can use the local simulator. 
-Follow the instructions in the [README](https://github.com/aws/braket-python-sdk/blob/main/README.md) for setup.
+You must have the [Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python) installed to use the local simulator.
+Follow the instructions in the [README](https://github.com/aws/amazon-braket-sdk-python/blob/main/README.md) for setup.
 
 **Checking the version of the DefaultSimulator**
 
-You can check your currently installed version of `amazon-braket-default-simulator-python` with `pip show`:
+You can check your currently installed version of `amazon-braket-default-simulator` with `pip show`:
 
 ```bash
-pip show amazon-braket-default-simulator-python
+pip show amazon-braket-default-simulator
 ```
 
 or alternatively from within Python:
@@ -26,7 +25,7 @@ or alternatively from within Python:
 
 ## Usage
 The quantum simulator implementation `DefaultSimulator` plugs into the `LocalSimulator` interface in 
-[Amazon Braket SDK](https://github.com/aws/braket-python-sdk) using the `backend` value as `"default"`. 
+[Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python) using the `backend` value as `"default"`. 
 
 **Executing a circuit using the DefaultSimulator**
 ```python
@@ -41,17 +40,13 @@ print(device.run(bell, shots=100).result().measurement_counts)
 
 ## Documentation
 
-To view the documentation for the simulator, either download the .zip file or build it in your local environment.
-
-**To download the .zip file**
-
-Use the following command to download the .zip file
-```bash
-aws s3 cp s3://braket-external-assets-prod-us-west-2/sdk-docs/amazon-braket-default-simulator-documentation.zip amazon-braket-default-simulator-documentation.zip
-```
-Then extract the `amazon-braket-default-simulator-documentation.zip` file to your local environment. After you extract the file, open the index.html file.
-
 **To generate the API Reference HTML in your local environment**
+
+First, install tox:
+
+```bash
+pip install tox
+```
 
 To generate the HTML, first change directories (`cd`) to position the cursor in the `amazon-braket-default-simulator-python` directory. Then, run the following command to generate the HTML documentation files:
 
@@ -83,9 +78,9 @@ These tests will compare the performance of a series of simulator executions for
 *Note*: The execution times for the performance tests are affected by the other processes running on the system.
 In order to get stable results, stop other applications when running these tests.
 
-To run an individual test:
+To run selected tests based on a key word in the test name:
 ```bash
-tox -- -k 'your_test'
+tox -- -k 'keyword'
 ```
 
 
