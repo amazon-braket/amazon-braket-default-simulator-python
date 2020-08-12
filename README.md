@@ -42,6 +42,12 @@ print(device.run(bell, shots=100).result().measurement_counts)
 
 **To generate the API Reference HTML in your local environment**
 
+First, install tox:
+
+```bash
+pip install tox
+```
+
 To generate the HTML, first change directories (`cd`) to position the cursor in the `amazon-braket-default-simulator-python` directory. Then, run the following command to generate the HTML documentation files:
 
 ```bash

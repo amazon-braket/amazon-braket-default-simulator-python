@@ -167,9 +167,6 @@ If a parameter of a function has a default value, please note what the default i
 If that default value is `None`, it can also be helpful to explain what happens when the parameter is `None`.
 If `**kwargs` is part of the function signature, link to the parent class(es) or method(s) so that the reader knows where to find the available parameters.
 
-For an example file with docstrings, see [the `circuit` module](https://github.com/aws/amazon-braket-default-simulator-python/blob/main/src/braket/circuits/circuit.py).
-
-
 ### Build and Test Documentation
 
 To build the Sphinx docs, run the following command in the root repo directory:
