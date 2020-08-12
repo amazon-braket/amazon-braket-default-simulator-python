@@ -101,6 +101,21 @@ def test_simulator_run_bell_pair(bell_ir, batch_size):
     assert result.additionalMetadata == AdditionalMetadata(action=bell_ir)
 
 
+def test_simulator_identity():
+    simulator = DefaultSimulator()
+    shots_count = 1000
+    result = simulator.run(
+        Program.parse_raw(
+            json.dumps({"instructions": [{"type": "i", "target": 0}, {"type": "i", "target": 1}]})
+        ),
+        qubit_count=2,
+        shots=shots_count,
+    )
+    counter = Counter(["".join(measurement) for measurement in result.measurements])
+    assert counter.keys() == {"00"}
+    assert counter["00"] == shots_count
+
+
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_no_results_no_shots(bell_ir):
     simulator = DefaultSimulator()

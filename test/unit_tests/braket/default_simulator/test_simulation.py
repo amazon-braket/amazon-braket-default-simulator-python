@@ -51,7 +51,7 @@ evolve_testdata = [
     ),
     ([gate_operations.V([0])], 1, [0.5 + 0.5j, 0.5 - 0.5j], [0.5, 0.5],),
     ([gate_operations.Vi([0])], 1, [0.5 - 0.5j, 0.5 + 0.5j], [0.5, 0.5],),
-    ([gate_operations.Identity()], 1, [1, 0], [1, 0]),
+    ([gate_operations.Identity([0])], 1, [1, 0], [1, 0]),
     ([gate_operations.Unitary([0], [[0, 1], [1, 0]])], 1, [0, 1], [0, 1]),
     (
         [gate_operations.PauliX([0]), gate_operations.PhaseShift([0], 0.15)],
