@@ -29,10 +29,9 @@ class Operation(ABC):
     def targets(self) -> Tuple[int, ...]:
         """ Tuple[int, ...]: The indices of the qubits the operation applies to.
 
-        Note: If the operation acts trivially (i.e. as the identity) on any qubits, those qubits may
-        be omitted from the target, so long as the representative matrix also excludes the factors
-        acting on those qubits. For example, a tensor product observable with a Z factor on qubit j
-        acts trivially on j, so j would not be a target.
+        Note: For an index to be a target of an observable, the observable must have a nontrivial
+        (i.e. non-identity) action on that index. For example, a tensor product observable with a
+        Z factor on qubit j acts trivially on j, so j would not be a target.
         """
 
 
