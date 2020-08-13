@@ -47,7 +47,9 @@ setup(
     },
     url="https://github.com/aws/amazon-braket-default-simulator-python",
     author="Amazon Web Services",
-    description=("An open source implementation of a quantum simulator that can be run locally"),
+    description=(
+        "An open source quantum circuit simulator to be run locally with the Amazon Braket SDK"
+    ),
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords="Amazon AWS Quantum",
