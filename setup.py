@@ -24,7 +24,7 @@ setup(
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     install_requires=[
-        "amazon-braket-schemas @ git+https://github.com/aws/amazon-braket-schemas-python.git",
+        "amazon-braket-schemas",
         "numpy",
         "opt_einsum",
     ],
