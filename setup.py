@@ -23,11 +23,7 @@ setup(
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
-    install_requires=[
-        "amazon-braket-schemas @ git+https://github.com/aws/amazon-braket-schemas-python.git",
-        "numpy",
-        "opt_einsum",
-    ],
+    install_requires=["amazon-braket-schemas", "numpy", "opt_einsum"],
     entry_points={"braket.simulators": ["default = braket.default_simulator:DefaultSimulator"]},
     extras_require={
         "test": [
