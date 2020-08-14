@@ -40,6 +40,8 @@ print(device.run(bell, shots=100).result().measurement_counts)
 
 ## Documentation
 
+Detailed documentation, including the API reference, can be found on [Read the Docs](https://amazon-braket-default-simulator-python.readthedocs.io/en/latest/)
+
 **To generate the API Reference HTML in your local environment**
 
 First, install tox:
