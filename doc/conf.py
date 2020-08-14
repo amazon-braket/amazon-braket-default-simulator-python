@@ -1,7 +1,11 @@
 """Sphinx configuration."""
 import datetime
+import os
+import sys
 
 import pkg_resources
+
+sys.path.insert(0, os.path.abspath("../src/"))
 
 # Sphinx configuration below.
 project = "amazon-braket-default-simulator"
