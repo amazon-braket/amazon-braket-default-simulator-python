@@ -48,6 +48,17 @@ class GateOperation(Operation, ABC):
         """np.ndarray: The matrix representation of the operation."""
 
 
+class KrausOperation(Operation, ABC):
+    """
+    Encapsulates a quantum channel acting on a set of target qubits in the Kraus operator representation.
+    """
+
+    @property
+    @abstractmethod
+    def matrices(self) -> List[np.ndarray]:
+        """List[np.ndarray]: A list of matrices representating Kraus operators."""
+
+
 class Observable(Operation, ABC):
     """
     Encapsulates an observable to be measured in the computational basis.
