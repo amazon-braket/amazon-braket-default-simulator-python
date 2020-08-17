@@ -15,7 +15,7 @@ import sys
 import uuid
 from typing import Any, Dict, List, Tuple
 
-from braket.default_simulator.gate_operations import from_braket_instruction
+from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.result_types import (
@@ -23,7 +23,8 @@ from braket.default_simulator.result_types import (
     ResultType,
     from_braket_result_type,
 )
-from braket.default_simulator.simulation import StateVectorSimulation
+from braket.default_simulator.simulation import Simulation
+from braket.default_simulator.statevector_simulation import StateVectorSimulation
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
@@ -36,6 +37,7 @@ from braket.task_result import (
     ResultTypeValue,
     TaskMetadata,
 )
+from braket.device_schema.device_action_properties import DeviceActionType
 
 
 class DefaultSimulator(BraketSimulator):
@@ -43,7 +45,11 @@ class DefaultSimulator(BraketSimulator):
     DEVICE_ID = "default"
 
     def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
+        self,
+        circuit_ir: Program,
+        qubit_count: int,
+        shots: int,
+        simulation: Simulation,
     ) -> GateModelTaskResult:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
@@ -52,11 +58,7 @@ class DefaultSimulator(BraketSimulator):
                 instructions to execute.
             qubit_count (int): The number of qubits to simulate.
             shots (int): The number of times to run the circuit.
-            batch_size (int): The size of the circuit partitions to contract,
-                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
-                Must be a positive integer.
-                Defaults to 1, which means gates are applied one at a time without any
-                optmized contraction.
+            simulation (Simulation): Simulation method for evolving the state.
 
         Returns:
             GateModelTaskResult: object that represents the result
@@ -66,14 +68,11 @@ class DefaultSimulator(BraketSimulator):
                 as a result type when shots=0. Or, if statevector and amplitude result types
                 are requested when shots>0.
 
-
         Examples:
             >>> circuit_ir = Circuit().h(0).to_ir()
             >>> DefaultSimulator().run(circuit_ir, qubit_count=1, shots=100)
-
-            >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
         """
+        self._validate_ir_results_compatibility(circuit_ir)
         DefaultSimulator._validate_shots_and_ir_results(shots, circuit_ir, qubit_count)
 
         operations = [
@@ -86,7 +85,6 @@ class DefaultSimulator(BraketSimulator):
 
         DefaultSimulator._validate_operation_qubits(operations)
 
-        simulation = StateVectorSimulation(qubit_count, shots, batch_size=batch_size)
         simulation.evolve(operations)
 
         results = []
@@ -109,6 +107,15 @@ class DefaultSimulator(BraketSimulator):
 
         return DefaultSimulator._create_results_obj(results, circuit_ir, simulation)
 
+    def _validate_ir_results_compatibility(self, circuit_ir):
+        if circuit_ir.results:
+            circuit_result_types_name = [result.__class__.__name__ for result in circuit_ir.results]
+            supported_result_types = self.properties.action[DeviceActionType.JAQCD].supportedResultTypes
+            supported_result_types_name = [result.name for result in supported_result_types]
+            for name in circuit_result_types_name:
+                if not name in supported_result_types_name:
+                    raise TypeError(f"result type {name} is not supported by {self.__class__.__name__}")
+
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
         if not shots:
@@ -121,9 +128,9 @@ class DefaultSimulator(BraketSimulator):
                     DefaultSimulator._validate_amplitude_states(rt.states, qubit_count)
         elif shots and circuit_ir.results:
             for rt in circuit_ir.results:
-                if rt.type in ["statevector", "amplitude"]:
+                if rt.type in ["statevector", "amplitude", "densitymatrix"]:
                     raise ValueError(
-                        "statevector and amplitude result types not available when shots>0"
+                        "statevector, amplitude and densitymatrix result types not available when shots>0"
                     )
 
     @staticmethod
@@ -282,85 +289,7 @@ class DefaultSimulator(BraketSimulator):
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
-        max_shots = sys.maxsize
-        qubit_count = 26
-        return GateModelSimulatorDeviceCapabilities.parse_obj(
-            {
-                "service": {
-                    "executionWindows": [
-                        {
-                            "executionDay": "Everyday",
-                            "windowStartHour": "00:00",
-                            "windowEndHour": "23:59:59",
-                        }
-                    ],
-                    "shotsRange": [0, max_shots],
-                },
-                "action": {
-                    "braket.ir.jaqcd.program": {
-                        "actionType": "braket.ir.jaqcd.program",
-                        "version": ["1"],
-                        "supportedOperations": [
-                            "CCNot",
-                            "CNot",
-                            "CPhaseShift",
-                            "CPhaseShift00",
-                            "CPhaseShift01",
-                            "CPhaseShift10",
-                            "CSwap",
-                            "CY",
-                            "CZ",
-                            "H",
-                            "I",
-                            "ISwap",
-                            "PSwap",
-                            "PhaseShift",
-                            "Rx",
-                            "Ry",
-                            "Rz",
-                            "S",
-                            "Si",
-                            "Swap",
-                            "T",
-                            "Ti",
-                            "Unitary",
-                            "V",
-                            "Vi",
-                            "X",
-                            "XX",
-                            "XY",
-                            "Y",
-                            "YY",
-                            "Z",
-                            "ZZ",
-                        ],
-                        "supportedResultTypes": [
-                            {
-                                "name": "Sample",
-                                "observables": observables,
-                                "minShots": 1,
-                                "maxShots": max_shots,
-                            },
-                            {
-                                "name": "Expectation",
-                                "observables": observables,
-                                "minShots": 0,
-                                "maxShots": max_shots,
-                            },
-                            {
-                                "name": "Variance",
-                                "observables": observables,
-                                "minShots": 0,
-                                "maxShots": max_shots,
-                            },
-                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
-                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
-                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
-                        ],
-                    }
-                },
-                "paradigm": {"qubitCount": qubit_count},
-                "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
-            }
-        )
+        """ properties of simulator such as supported IR types, quantum operations,
+        and result types.
+        """
+        raise NotImplementedError("properties has not been implemented yet.")
