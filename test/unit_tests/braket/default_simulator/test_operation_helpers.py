@@ -22,6 +22,7 @@ from braket.default_simulator.operation_helpers import (
     check_hermitian,
     check_matrix_dimensions,
     check_unitary,
+    check_CPTP,
     get_matrix,
     ir_matrix_to_ndarray,
 )
@@ -40,6 +41,8 @@ invalid_dimension_matrices = [
 invalid_unitary_matrices = [(np.array([[0, 1], [1, 1]])), (np.array([[1, 2], [3, 4]]))]
 
 invalid_hermitian_matrices = [(np.array([[1, 0], [0, 1j]])), (np.array([[1, 2], [3, 4]]))]
+
+invalid_CPTP_matrices = [[np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]]
 
 gate_testdata = [
     gate_operations.Identity([0]),
@@ -138,6 +141,12 @@ def test_check_unitary_invalid_matrix(matrix):
 @pytest.mark.parametrize("matrix", invalid_hermitian_matrices)
 def test_check_hermitian_invalid_matrix(matrix):
     check_hermitian(matrix)
+
+
+@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.parametrize("matrices", invalid_CPTP_matrices)
+def test_check_CPTP_invalid_matrix(matrices):
+    check_CPTP(matrices)
 
 
 @pytest.mark.parametrize("operation", gate_testdata)
