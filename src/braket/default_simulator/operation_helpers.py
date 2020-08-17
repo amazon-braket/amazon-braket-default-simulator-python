@@ -12,11 +12,32 @@
 # language governing permissions and limitations under the License.
 
 from functools import lru_cache, singledispatch
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
-from braket.default_simulator.operation import GateOperation, Observable
+from braket.default_simulator.operation import GateOperation, KrausOperation, Observable
+
+
+def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]:
+    """ Instantiates the concrete `GateOperation` object from the specified braket instruction.
+
+    Args:
+        instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
+    Returns:
+        GateOperation: instance of the concrete GateOperation class corresponding to
+        the specified instruction.
+
+    Raises:
+        ValueError: If no concrete `GateOperation` class has been registered
+            for the instruction type.
+    """
+    return _from_braket_instruction(instruction)
+
+
+@singledispatch
+def _from_braket_instruction(instruction):
+    raise ValueError(f"Instruction {instruction} not recognized")
 
 
 @lru_cache()
@@ -92,6 +113,20 @@ def check_hermitian(matrix: np.ndarray):
         raise ValueError(f"{matrix} is not Hermitian")
 
 
+def check_CPTP(matrices: List[np.ndarray]):
+    """ Checks that the given matrices satisfy CPTP.
+
+    Args:
+        matrices (List[np.ndarray]): The matrices to check
+
+    Raises:
+        ValueError: If the matrices does not satisify CPTP
+    """
+    E = sum([np.dot(matrix.T.conjugate() , matrix) for matrix in matrices])
+    if not np.allclose(E, np.eye(*E.shape)):
+        raise ValueError(f"{matrices} does not satisfy CPTP")
+
+
 def get_matrix(operation) -> Optional[np.ndarray]:
     """ Gets the matrix of the given operation.
 
@@ -116,6 +151,9 @@ def _get_matrix(operation):
 def _(gate: GateOperation):
     return gate.matrix
 
+@_get_matrix.register
+def _(kraus: KrausOperation):
+    return kraus.matrices
 
 @_get_matrix.register
 def _(observable: Observable):

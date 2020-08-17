@@ -26,28 +26,8 @@ from braket.default_simulator.operation_helpers import (
     check_matrix_dimensions,
     check_unitary,
     ir_matrix_to_ndarray,
+    _from_braket_instruction,
 )
-
-
-def from_braket_instruction(instruction) -> GateOperation:
-    """ Instantiates the concrete `GateOperation` object from the specified braket instruction.
-
-    Args:
-        instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
-    Returns:
-        GateOperation: instance of the concrete GateOperation class corresponding to
-        the specified instruction.
-
-    Raises:
-        ValueError: If no concrete `GateOperation` class has been registered
-            for the instruction type.
-    """
-    return _from_braket_instruction(instruction)
-
-
-@singledispatch
-def _from_braket_instruction(instruction):
-    raise ValueError(f"Instruction {instruction} not recognized")
 
 
 class Identity(GateOperation):
