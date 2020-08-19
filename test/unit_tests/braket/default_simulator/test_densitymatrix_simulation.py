@@ -125,7 +125,7 @@ def test_gate_targets_none():
     gate._targets = None
     simulation = DensityMatrixSimulation(2, 0)
     simulation.evolve([gate])
-    assert np.allclose(simulation.probabilities, [0,0,0,1])
+    assert np.allclose(simulation.probabilities, [0, 0, 0, 1])
 
 
 def test_noise_targets_none():
