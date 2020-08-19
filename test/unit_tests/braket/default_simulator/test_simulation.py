@@ -11,13 +11,9 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from collections import Counter
-
-import numpy as np
 import pytest
 
 from braket.default_simulator.simulation import Simulation
-
 
 test_data = [(5, 100), (8, 0), (1, 1000), (1, 0)]
 

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import cmath
 import math
-from functools import singledispatch
 from typing import Tuple
 
 import numpy as np
@@ -23,10 +22,10 @@ import numpy as np
 import braket.ir.jaqcd as braket_instruction
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.operation_helpers import (
+    _from_braket_instruction,
     check_matrix_dimensions,
     check_unitary,
     ir_matrix_to_ndarray,
-    _from_braket_instruction,
 )
 
 

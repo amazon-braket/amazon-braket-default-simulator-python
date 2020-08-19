@@ -16,10 +16,11 @@ from __future__ import annotations
 import itertools
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 
+from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation
 from braket.default_simulator.observables import (
     Hadamard,
     Hermitian,
@@ -32,7 +33,6 @@ from braket.default_simulator.observables import (
 from braket.default_simulator.operation import Observable
 from braket.default_simulator.operation_helpers import ir_matrix_to_ndarray
 from braket.default_simulator.statevector_simulation import StateVectorSimulation
-from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation
 from braket.ir import jaqcd
 
 
@@ -101,14 +101,22 @@ class ObservableResultType(ResultType, ABC):
         targets = self._observable.measured_qubits
         if targets:
             return ObservableResultType._calculate_for_targets(
-                state, qubit_count, targets, eigenvalues,
-                self._calculate_from_prob_distribution, simulation.probabilities_from_state,
+                state,
+                qubit_count,
+                targets,
+                eigenvalues,
+                self._calculate_from_prob_distribution,
+                simulation.probabilities_from_state,
             )
         else:
             return [
                 ObservableResultType._calculate_for_targets(
-                    state, qubit_count, [i], eigenvalues,
-                    self._calculate_from_prob_distribution, simulation.probabilities_from_state,
+                    state,
+                    qubit_count,
+                    [i],
+                    eigenvalues,
+                    self._calculate_from_prob_distribution,
+                    simulation.probabilities_from_state,
                 )
                 for i in range(qubit_count)
             ]
@@ -130,9 +138,12 @@ class ObservableResultType(ResultType, ABC):
 
     @staticmethod
     def _calculate_for_targets(
-        state, qubit_count, targets, eigenvalues,
+        state,
+        qubit_count,
+        targets,
+        eigenvalues,
         calculate_from_prob_distribution,
-        probabilities_from_state
+        probabilities_from_state,
     ):
         prob = _marginal_probability(probabilities_from_state, state, qubit_count, targets)
         return calculate_from_prob_distribution(prob, eigenvalues)
@@ -169,7 +180,8 @@ class DensityMatrix(ResultType):
         """ Return the given density matrix of the simulation.
 
         Args:
-            simulation (DensityMatrixSimulation): The simulation whose density matrix will be returned
+            simulation (DensityMatrixSimulation): The simulation whose density matrix will be
+                returned
 
         Returns:
             np.ndarray: The density matrix (before observables) of the simulation
@@ -243,11 +255,12 @@ class Probability(ResultType):
             indexed by the decimal encoding of the computational basis state on the target qubits
 
         """
-        return _marginal_probability(simulation.probabilities_from_state,
-                                     simulation.state,
-                                     simulation.qubit_count,
-                                     self._targets,
-                                    )
+        return _marginal_probability(
+            simulation.probabilities_from_state,
+            simulation.state,
+            simulation.qubit_count,
+            self._targets,
+        )
 
 
 @_from_braket_result_type.register

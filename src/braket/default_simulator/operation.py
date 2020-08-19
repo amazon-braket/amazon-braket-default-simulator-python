@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -50,7 +50,8 @@ class GateOperation(Operation, ABC):
 
 class KrausOperation(Operation, ABC):
     """
-    Encapsulates a quantum channel acting on a set of target qubits in the Kraus operator representation.
+    Encapsulates a quantum channel acting on a set of target qubits in the Kraus operator
+    representation.
     """
 
     @property

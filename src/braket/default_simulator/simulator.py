@@ -11,13 +11,12 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import sys
 import uuid
 from typing import Any, Dict, List, Tuple
 
-from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.operation import Observable, Operation
+from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
     ObservableResultType,
     ResultType,
@@ -25,10 +24,8 @@ from braket.default_simulator.result_types import (
 )
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.statevector_simulation import StateVectorSimulation
-from braket.device_schema.simulators import (
-    GateModelSimulatorDeviceCapabilities,
-    GateModelSimulatorDeviceParameters,
-)
+from braket.device_schema.device_action_properties import DeviceActionType
+from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
 from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
 from braket.task_result import (
@@ -37,7 +34,6 @@ from braket.task_result import (
     ResultTypeValue,
     TaskMetadata,
 )
-from braket.device_schema.device_action_properties import DeviceActionType
 
 
 class DefaultSimulator(BraketSimulator):
@@ -45,11 +41,7 @@ class DefaultSimulator(BraketSimulator):
     DEVICE_ID = "default"
 
     def run(
-        self,
-        circuit_ir: Program,
-        qubit_count: int,
-        shots: int,
-        simulation: Simulation,
+        self, circuit_ir: Program, qubit_count: int, shots: int, simulation: Simulation,
     ) -> GateModelTaskResult:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
@@ -110,11 +102,15 @@ class DefaultSimulator(BraketSimulator):
     def _validate_ir_results_compatibility(self, circuit_ir):
         if circuit_ir.results:
             circuit_result_types_name = [result.__class__.__name__ for result in circuit_ir.results]
-            supported_result_types = self.properties.action[DeviceActionType.JAQCD].supportedResultTypes
+            supported_result_types = self.properties.action[
+                DeviceActionType.JAQCD
+            ].supportedResultTypes
             supported_result_types_name = [result.name for result in supported_result_types]
             for name in circuit_result_types_name:
-                if not name in supported_result_types_name:
-                    raise TypeError(f"result type {name} is not supported by {self.__class__.__name__}")
+                if name not in supported_result_types_name:
+                    raise TypeError(
+                        f"result type {name} is not supported by {self.__class__.__name__}"
+                    )
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
@@ -130,7 +126,8 @@ class DefaultSimulator(BraketSimulator):
             for rt in circuit_ir.results:
                 if rt.type in ["statevector", "amplitude", "densitymatrix"]:
                     raise ValueError(
-                        "statevector, amplitude and densitymatrix result types not available when shots>0"
+                        "statevector, amplitude and densitymatrix result"
+                        "types not available when shots>0"
                     )
 
     @staticmethod

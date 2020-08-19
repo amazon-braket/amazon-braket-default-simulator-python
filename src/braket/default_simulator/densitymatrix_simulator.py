@@ -12,40 +12,19 @@
 # language governing permissions and limitations under the License.
 
 import sys
-import uuid
-from typing import Any, Dict, List, Tuple
 
-from braket.default_simulator.operation_helpers import from_braket_instruction
-from braket.default_simulator.observables import Hermitian, TensorProduct
-from braket.default_simulator.operation import Observable, Operation
-from braket.default_simulator.result_types import (
-    ObservableResultType,
-    ResultType,
-    from_braket_result_type,
-)
-from braket.default_simulator.simulator import DefaultSimulator
 from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation
+from braket.default_simulator.simulator import DefaultSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
 from braket.ir.jaqcd import Program
-from braket.simulator import BraketSimulator
-from braket.task_result import (
-    AdditionalMetadata,
-    GateModelTaskResult,
-    ResultTypeValue,
-    TaskMetadata,
-)
+from braket.task_result import GateModelTaskResult
 
 
 class DensityMatrixSimulator(DefaultSimulator):
-    def run(
-        self,
-        circuit_ir: Program,
-        qubit_count: int,
-        shots: int = 0,
-    ) -> GateModelTaskResult:
+    def run(self, circuit_ir: Program, qubit_count: int, shots: int = 0,) -> GateModelTaskResult:
         """ Executes the circuit specified by the supplied `circuit_ir` on the
         DensityMatrixSimulator.
 
@@ -71,7 +50,6 @@ class DensityMatrixSimulator(DefaultSimulator):
         simulation = DensityMatrixSimulation(qubit_count, shots)
 
         return DefaultSimulator.run(self, circuit_ir, qubit_count, shots, simulation)
-
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:

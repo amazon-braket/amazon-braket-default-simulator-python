@@ -14,6 +14,7 @@
 from typing import List
 
 import numpy as np
+
 from braket.default_simulator.operation import GateOperation, Observable, Operation
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulation_strategies import (
@@ -57,7 +58,7 @@ class StateVectorSimulation(Simulation):
         if batch_size < 1:
             raise ValueError(f"batch_size must be a positive integer, but {batch_size} provided")
 
-        super().__init__(qubit_count = qubit_count, shots=shots)
+        super().__init__(qubit_count=qubit_count, shots=shots)
         initial_state = np.zeros(2 ** qubit_count, dtype=complex)
         initial_state[0] = 1
         self._state_vector = initial_state

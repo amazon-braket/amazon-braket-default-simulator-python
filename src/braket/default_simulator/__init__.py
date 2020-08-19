@@ -12,11 +12,20 @@
 # language governing permissions and limitations under the License.
 
 # Execute initialization code in the gate_operations amd noise_operations module
-from braket.default_simulator import gate_operations, noise_operations, observables, result_types  # noqa: F401
-from braket.default_simulator.operation import GateOperation, KrausOperation, Observable  # noqa: F401
-from braket.default_simulator.statevector_simulation import StateVectorSimulation  # noqa: F401
+from braket.default_simulator import (  # noqa: F401
+    gate_operations,
+    noise_operations,
+    observables,
+    result_types,
+)
 from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation  # noqa: F401
-from braket.default_simulator.statevector_simulator import StateVectorSimulator  # noqa: F401
 from braket.default_simulator.densitymatrix_simulator import DensityMatrixSimulator  # noqa: F401
+from braket.default_simulator.operation import (  # noqa: F401
+    GateOperation,
+    KrausOperation,
+    Observable,
+)
+from braket.default_simulator.statevector_simulation import StateVectorSimulation  # noqa: F401
+from braket.default_simulator.statevector_simulator import StateVectorSimulator  # noqa: F401
 
 from ._version import __version__  # noqa: F401

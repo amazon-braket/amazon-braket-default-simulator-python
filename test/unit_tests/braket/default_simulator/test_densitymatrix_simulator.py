@@ -11,22 +11,19 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import cmath
 import json
 import sys
-from collections import Counter, namedtuple
+from collections import Counter
 
 import numpy as np
 import pytest
-from braket.default_simulator import observables
-from braket.default_simulator.result_types import Expectation, Variance
+
 from braket.default_simulator.densitymatrix_simulator import DensityMatrixSimulator
-from braket.ir.jaqcd import Program
-from braket.simulator import BraketSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
+from braket.ir.jaqcd import Program
 from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 
 
@@ -54,9 +51,7 @@ def bell_ir_with_result():
                         {"type": "h", "target": 0},
                         {"type": "cnot", "target": 1, "control": 0},
                     ],
-                    "results": [
-                        {"type": "expectation", "observable": ["x"], "targets": targets},
-                    ],
+                    "results": [{"type": "expectation", "observable": ["x"], "targets": targets}],
                 }
             )
         )
@@ -92,10 +87,7 @@ def test_simulator_run_statevector():
     simulator = DensityMatrixSimulator()
     ir = Program.parse_raw(
         json.dumps(
-            {
-                "instructions": [{"type": "h", "target": 0}],
-                "results": [{"type": "statevector"}],
-            }
+            {"instructions": [{"type": "h", "target": 0}], "results": [{"type": "statevector"}]}
         )
     )
     simulator.run(ir, qubit_count=2, shots=100)
@@ -347,7 +339,7 @@ def test_properties():
     observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
     max_shots = sys.maxsize
     qubit_count = 26
-    expected_properties =  GateModelSimulatorDeviceCapabilities.parse_obj(
+    expected_properties = GateModelSimulatorDeviceCapabilities.parse_obj(
         {
             "service": {
                 "executionWindows": [

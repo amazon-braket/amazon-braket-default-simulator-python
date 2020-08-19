@@ -1,6 +1,20 @@
-from typing import List, Tuple, Union
+# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
+from typing import List, Tuple
 
 import numpy as np
+
 from braket.default_simulator.operation import GateOperation, KrausOperation, Observable, Operation
 from braket.default_simulator.operation_helpers import get_matrix
 
@@ -46,7 +60,7 @@ def _apply_gate(
     """ Apply a matrix M to a density matrix D according to:
 
         .. math::
-            D \rightarrow M D M^{\dagger}
+            D \rightarrow M D M^{\\dagger}
 
     Args:
         state (np.ndarray): initial density matrix
@@ -67,14 +81,14 @@ def _apply_gate(
     state = np.tensordot(gate_matrix, state, axes=axes)
 
     # Arrange the index to the correct place.
-    unused_idxs = [idx for idx in range(2*qubit_count) if idx not in dm_targets]
+    unused_idxs = [idx for idx in range(2 * qubit_count) if idx not in dm_targets]
     permutation = list(dm_targets) + unused_idxs
     inverse_permutation = np.argsort(permutation)
-    state =  np.transpose(state, inverse_permutation)
+    state = np.transpose(state, inverse_permutation)
 
     # right product
     gate_matrix = np.reshape(matrix.conjugate(), [2] * len(targets) * 2)
-    dm_targets = tuple(i+qubit_count for i in targets)
+    dm_targets = tuple(i + qubit_count for i in targets)
     axes = (
         np.arange(len(targets), 2 * len(targets)),
         dm_targets,
@@ -82,10 +96,10 @@ def _apply_gate(
     state = np.tensordot(gate_matrix, state, axes=axes)
 
     # Arrange the index to the correct place.
-    unused_idxs = [idx for idx in range(2*qubit_count) if idx not in dm_targets]
+    unused_idxs = [idx for idx in range(2 * qubit_count) if idx not in dm_targets]
     permutation = list(dm_targets) + unused_idxs
     inverse_permutation = np.argsort(permutation)
-    state =  np.transpose(state, inverse_permutation)
+    state = np.transpose(state, inverse_permutation)
 
     return state
 
@@ -93,10 +107,10 @@ def _apply_gate(
 def _apply_kraus(
     state: np.ndarray, qubit_count: int, matrices: List[np.ndarray], targets: Tuple[int, ...]
 ) -> np.ndarray:
-    """ Apply a list of matrices \{E_i\} to a density matrix D according to:
+    """ Apply a list of matrices {E_i} to a density matrix D according to:
 
         .. math::
-            D \rightarrow \sum_i E_i D E_i^{\dagger}
+            D \rightarrow \\sum_i E_i D E_i^{\\dagger}
 
     Args:
         state (np.ndarray): initial density matrix

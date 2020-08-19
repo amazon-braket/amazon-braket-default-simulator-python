@@ -11,9 +11,10 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import braket.ir.jaqcd as instruction
 import pytest
-from braket.default_simulator import gate_operations, noise_operations
+
+import braket.ir.jaqcd as instruction
+from braket.default_simulator import noise_operations
 from braket.default_simulator.operation_helpers import check_CPTP, from_braket_instruction
 from braket.ir.jaqcd import shared_models
 
@@ -23,11 +24,13 @@ testdata = [
     (instruction.Depolarizing(target=3, prob=0.45), (3,), noise_operations.Depolarizing),
     (instruction.Amplitude_Damping(target=3, prob=0.67), (3,), noise_operations.Amplitude_Damping),
     (
-        instruction.Kraus(targets=[4],
-                          matrices=[[[[0.8, 0], [0, 0]], [[0, 0], [0.8, 0]]],
-                                    [[[0, 0], [0, 0.6]], [[0.6, 0], [0, 0]]]
-                                   ]
-                         ),
+        instruction.Kraus(
+            targets=[4],
+            matrices=[
+                [[[0.8, 0], [0, 0]], [[0, 0], [0.8, 0]]],
+                [[[0, 0], [0, 0.6]], [[0.6, 0], [0, 0]]],
+            ],
+        ),
         (4,),
         noise_operations.Kraus,
     ),

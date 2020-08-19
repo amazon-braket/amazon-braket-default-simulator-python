@@ -11,24 +11,13 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import cmath
-import json
-import sys
-from collections import Counter, namedtuple
-
 import numpy as np
 import pytest
 
-from braket.default_simulator import gate_operations, observables
+from braket.default_simulator import observables
 from braket.default_simulator.result_types import Expectation, Variance
 from braket.default_simulator.simulator import DefaultSimulator
-from braket.device_schema.simulators import (
-    GateModelSimulatorDeviceCapabilities,
-    GateModelSimulatorDeviceParameters,
-)
-from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
-from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 
 
 @pytest.mark.parametrize(

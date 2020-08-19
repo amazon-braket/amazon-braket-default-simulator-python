@@ -20,10 +20,10 @@ from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.observables import Hadamard, PauliX, TensorProduct
 from braket.default_simulator.result_types import (
     Amplitude,
+    DensityMatrix,
     Expectation,
     Probability,
     StateVector,
-    DensityMatrix,
     Variance,
     from_braket_result_type,
 )

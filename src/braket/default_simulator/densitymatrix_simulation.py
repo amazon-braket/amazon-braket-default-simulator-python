@@ -11,13 +11,13 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List, Tuple, Union
+from typing import List, Union
 
 import numpy as np
+
+from braket.default_simulator import densitymatrix_simulation_helpers
 from braket.default_simulator.operation import GateOperation, KrausOperation, Observable
 from braket.default_simulator.simulation import Simulation
-from braket.default_simulator.operation_helpers import get_matrix
-from braket.default_simulator import densitymatrix_simulation_helpers
 
 
 class DensityMatrixSimulation(Simulation):
@@ -35,7 +35,7 @@ class DensityMatrixSimulation(Simulation):
                 If set to 0, only results that do not require sampling, such as density matrix
                 or expectation, are generated.
         """
-        super().__init__(qubit_count = qubit_count, shots=shots)
+        super().__init__(qubit_count=qubit_count, shots=shots)
         initial_state = np.zeros((2 ** qubit_count, 2 ** qubit_count), dtype=complex)
         initial_state[0, 0] = 1
         self._density_matrix = initial_state
@@ -91,7 +91,6 @@ class DensityMatrixSimulation(Simulation):
         """
         return densitymatrix_simulation_helpers._apply_operations(state, qubit_count, operations)
 
-
     def retrieve_samples(self) -> List[int]:
         """ Retrieves samples of states from the density matrix of the simulation,
         based on the probabilities.
@@ -101,7 +100,9 @@ class DensityMatrixSimulation(Simulation):
             in the density matrix. Each integer represents the decimal encoding of the
             corresponding computational basis state.
         """
-        return np.random.choice(self._density_matrix.shape[0], p=self.probabilities, size=self._shots)
+        return np.random.choice(
+            self._density_matrix.shape[0], p=self.probabilities, size=self._shots
+        )
 
     @property
     def state(self) -> np.ndarray:

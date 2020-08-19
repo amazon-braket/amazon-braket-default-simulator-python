@@ -122,7 +122,7 @@ def check_CPTP(matrices: List[np.ndarray]):
     Raises:
         ValueError: If the matrices does not satisify CPTP
     """
-    E = sum([np.dot(matrix.T.conjugate() , matrix) for matrix in matrices])
+    E = sum([np.dot(matrix.T.conjugate(), matrix) for matrix in matrices])
     if not np.allclose(E, np.eye(*E.shape)):
         raise ValueError(f"{matrices} does not satisfy CPTP")
 
@@ -151,9 +151,11 @@ def _get_matrix(operation):
 def _(gate: GateOperation):
     return gate.matrix
 
+
 @_get_matrix.register
 def _(kraus: KrausOperation):
     return kraus.matrices
+
 
 @_get_matrix.register
 def _(observable: Observable):

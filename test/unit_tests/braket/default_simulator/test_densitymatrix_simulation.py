@@ -15,42 +15,42 @@ from collections import Counter
 
 import numpy as np
 import pytest
+
 from braket.default_simulator import gate_operations, noise_operations, observables
-from braket.default_simulator.statevector_simulation import StateVectorSimulation
 from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation
 
 evolve_testdata = [
     (
         [gate_operations.PauliX([0]), noise_operations.Bit_Flip([0], 0.1)],
         1,
-        [[0.1, 0.0],[0.0, 0.9]],
+        [[0.1, 0.0], [0.0, 0.9]],
         [0.1, 0.9],
     ),
     (
         [gate_operations.Hadamard([0]), noise_operations.Phase_Flip([0], 0.1)],
         1,
-        [[0.5, 0.4],[0.4, 0.5]],
+        [[0.5, 0.4], [0.4, 0.5]],
         [0.5, 0.5],
     ),
     (
         [gate_operations.PauliX([0]), noise_operations.Depolarizing([0], 0.3)],
         1,
-        [[0.2, 0.0],[0.0, 0.8]],
+        [[0.2, 0.0], [0.0, 0.8]],
         [0.2, 0.8],
     ),
     (
         [gate_operations.PauliX([0]), noise_operations.Amplitude_Damping([0], 0.15)],
         1,
-        [[0.15, 0.0],[0.0, 0.85]],
+        [[0.15, 0.0], [0.0, 0.85]],
         [0.15, 0.85],
     ),
     (
-        [gate_operations.PauliX([0]), noise_operations.Kraus([0], [[[0.8, 0],[0, 0.8]],
-                                                                   [[0, 0.6],[0.6, 0]]
-                                                                  ]
-                                                            )],
+        [
+            gate_operations.PauliX([0]),
+            noise_operations.Kraus([0], [[[0.8, 0], [0, 0.8]], [[0, 0.6], [0.6, 0]]]),
+        ],
         1,
-        [[0.36, 0.0],[0.0, 0.64]],
+        [[0.36, 0.0], [0.0, 0.64]],
         [0.36, 0.64],
     ),
 ]
@@ -89,6 +89,7 @@ apply_observables_testdata = [
     ),
 ]
 
+
 @pytest.fixture
 def qft_circuit_operations():
     def _qft_operations(qubit_count):
@@ -120,10 +121,10 @@ def test_simulation_simple_circuits(
 
 @pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
 def test_apply_observables(observables, equivalent_gates, qubit_count):
-    print("="*30, "observable")
+    print("=" * 30, "observable")
     sim_observables = DensityMatrixSimulation(qubit_count, 0)
     sim_observables.apply_observables(observables)
-    print("="*30, "equivalent_gates")
+    print("=" * 30, "equivalent_gates")
     sim_gates = DensityMatrixSimulation(qubit_count, 0)
     sim_gates.evolve(equivalent_gates)
     print(sim_observables.state_with_observables)

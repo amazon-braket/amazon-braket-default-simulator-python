@@ -19,10 +19,10 @@ import pytest
 
 from braket.default_simulator import gate_operations, observables, operation_helpers
 from braket.default_simulator.operation_helpers import (
+    check_CPTP,
     check_hermitian,
     check_matrix_dimensions,
     check_unitary,
-    check_CPTP,
     get_matrix,
     ir_matrix_to_ndarray,
 )

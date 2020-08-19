@@ -19,15 +19,12 @@ from collections import Counter, namedtuple
 import numpy as np
 import pytest
 
-from braket.default_simulator import gate_operations, observables
-from braket.default_simulator.result_types import Expectation, Variance
 from braket.default_simulator.statevector_simulator import StateVectorSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
 from braket.ir.jaqcd import Program
-from braket.simulator import BraketSimulator
 from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
@@ -472,7 +469,7 @@ def test_properties():
     observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
     max_shots = sys.maxsize
     qubit_count = 26
-    expected_properties =  GateModelSimulatorDeviceCapabilities.parse_obj(
+    expected_properties = GateModelSimulatorDeviceCapabilities.parse_obj(
         {
             "service": {
                 "executionWindows": [
