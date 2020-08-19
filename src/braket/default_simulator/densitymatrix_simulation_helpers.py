@@ -25,13 +25,13 @@ def _apply_operations(
     """ Apply the operations to the density matrix.
 
     Args:
-        state (np.array): initial density matrix
+        state (np.ndarray): initial density matrix
         qubit_count (int): number of qubit in the circuit
         operations (List[Operation]): list of GateOperation and
             KrausOperation to be applied to the density matrix
 
     Returns:
-        state (nd.array): output density matrix
+        state (nd.ndarray): output density matrix
     """
     dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
     for operation in operations:
@@ -69,7 +69,7 @@ def _apply_gate(
         targets (Tuple[int,...]): qubits of the density matrix the matrix applied to.
 
     Returns:
-        state (nd.array): output density matrix
+        state (nd.ndarray): output density matrix
     """
     # left product
     gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)

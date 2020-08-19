@@ -20,17 +20,18 @@ from braket.default_simulator.operation import GateOperation, KrausOperation, Ob
 
 
 def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]:
-    """ Instantiates the concrete `GateOperation` object from the specified braket instruction.
+    """ Instantiates the concrete `GateOperation` or `KrausOperation` object from the
+    specified braket instruction.
 
     Args:
         instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
     Returns:
-        GateOperation: instance of the concrete GateOperation class corresponding to
-        the specified instruction.
+        Union[GateOperation, KrausOperation]: instance of the concrete GateOperation or
+        KrausOperation class corresponding to the specified instruction.
 
     Raises:
-        ValueError: If no concrete `GateOperation` class has been registered
-            for the instruction type.
+        ValueError: If no concrete `GateOperation` or `KrausOperation` class has been
+            registered for the instruction type.
     """
     return _from_braket_instruction(instruction)
 
@@ -114,13 +115,13 @@ def check_hermitian(matrix: np.ndarray):
 
 
 def check_CPTP(matrices: List[np.ndarray]):
-    """ Checks that the given matrices satisfy CPTP.
+    """ Checks that the given matrices define a CPTP map.
 
     Args:
         matrices (List[np.ndarray]): The matrices to check
 
     Raises:
-        ValueError: If the matrices does not satisify CPTP
+        ValueError: If the matrices do not define CPTP a CPTP map
     """
     E = sum([np.dot(matrix.T.conjugate(), matrix) for matrix in matrices])
     if not np.allclose(E, np.eye(*E.shape)):

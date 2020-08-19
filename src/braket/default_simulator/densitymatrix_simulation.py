@@ -81,13 +81,13 @@ class DensityMatrixSimulation(Simulation):
         """ Applies the gate and noise operations to the density matrix.
 
         Args:
-            state (np.array): initial density matrix
+            state (np.ndarray): initial density matrix
             qubit_count (int): number of qubit in the circuit
             operations (List[Union[GateOperation, KrausOperation]]): list of GateOperation and
                 KrausOperation to be applied to the density matrix
 
         Returns:
-            state (np.array): output density matrix
+            state (np.ndarray): output density matrix
         """
         return densitymatrix_simulation_helpers._apply_operations(state, qubit_count, operations)
 
@@ -136,7 +136,7 @@ class DensityMatrixSimulation(Simulation):
         return self.probabilities_from_state(self._density_matrix)
 
     @staticmethod
-    def probabilities_from_state(state) -> np.array:
+    def probabilities_from_state(state) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state of a
         given state.
         """

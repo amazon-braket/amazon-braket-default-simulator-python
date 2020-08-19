@@ -111,8 +111,6 @@ def qft_circuit_operations():
 def test_simulation_simple_circuits(
     instructions, qubit_count, density_matrix, probability_amplitudes
 ):
-    # +2 to ensure evolve doesn't fail for partition size greater than
-    # or equal to the number of instructions
     simulation = DensityMatrixSimulation(qubit_count, 0)
     simulation.evolve(instructions)
     assert np.allclose(density_matrix, simulation.state)
