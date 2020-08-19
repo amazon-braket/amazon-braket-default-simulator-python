@@ -85,3 +85,8 @@ def test_validate_and_consolidate_observable_result_types_targets(obs1, obs2):
 
 def test_default_simulator_instance_braket_simulator():
     assert isinstance(DefaultSimulator(), BraketSimulator)
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_defaultsimulator_properties():
+    DefaultSimulator().properties

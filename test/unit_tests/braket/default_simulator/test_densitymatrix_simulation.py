@@ -115,8 +115,25 @@ def test_simulation_simple_circuits(
     # or equal to the number of instructions
     simulation = DensityMatrixSimulation(qubit_count, 0)
     simulation.evolve(instructions)
+    assert np.allclose(density_matrix, simulation.state)
     assert np.allclose(density_matrix, simulation.density_matrix)
     assert np.allclose(probability_amplitudes, simulation.probabilities)
+
+
+def test_gate_targets_none():
+    gate = gate_operations.PauliX([0])
+    gate._targets = None
+    simulation = DensityMatrixSimulation(2, 0)
+    simulation.evolve([gate])
+    assert np.allclose(simulation.probabilities, [0,0,0,1])
+
+
+def test_noise_targets_none():
+    noise = noise_operations.Bit_Flip([0], 0.1)
+    noise._targets = None
+    simulation = DensityMatrixSimulation(2, 0)
+    simulation.evolve([noise])
+    assert np.allclose(simulation.probabilities, [0.81, 0.09, 0.09, 0.01])
 
 
 @pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
