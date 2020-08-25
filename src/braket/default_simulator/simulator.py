@@ -36,7 +36,7 @@ from braket.task_result import (
 )
 
 
-class DefaultSimulator(BraketSimulator):
+class BaseLocalSimulator(BraketSimulator):
 
     DEVICE_ID = "default"
 
@@ -59,13 +59,9 @@ class DefaultSimulator(BraketSimulator):
             ValueError: If result types are not specified in the IR or sample is specified
                 as a result type when shots=0. Or, if statevector and amplitude result types
                 are requested when shots>0.
-
-        Examples:
-            >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, shots=100)
         """
         self._validate_ir_results_compatibility(circuit_ir)
-        DefaultSimulator._validate_shots_and_ir_results(shots, circuit_ir, qubit_count)
+        BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit_ir, qubit_count)
 
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
@@ -75,7 +71,7 @@ class DefaultSimulator(BraketSimulator):
             for instruction in circuit_ir.basis_rotation_instructions:
                 operations.append(from_braket_instruction(instruction))
 
-        DefaultSimulator._validate_operation_qubits(operations)
+        BaseLocalSimulator._validate_operation_qubits(operations)
 
         simulation.evolve(operations)
 
@@ -85,11 +81,11 @@ class DefaultSimulator(BraketSimulator):
             (
                 non_observable_result_types,
                 observable_result_types,
-            ) = DefaultSimulator._translate_result_types(circuit_ir)
-            observables = DefaultSimulator._validate_and_consolidate_observable_result_types(
+            ) = BaseLocalSimulator._translate_result_types(circuit_ir)
+            observables = BaseLocalSimulator._validate_and_consolidate_observable_result_types(
                 list(observable_result_types.values()), qubit_count
             )
-            results = DefaultSimulator._generate_results(
+            results = BaseLocalSimulator._generate_results(
                 circuit_ir,
                 non_observable_result_types,
                 observable_result_types,
@@ -97,7 +93,7 @@ class DefaultSimulator(BraketSimulator):
                 simulation,
             )
 
-        return DefaultSimulator._create_results_obj(results, circuit_ir, simulation)
+        return BaseLocalSimulator._create_results_obj(results, circuit_ir, simulation)
 
     def _validate_ir_results_compatibility(self, circuit_ir):
         if circuit_ir.results:
@@ -121,7 +117,7 @@ class DefaultSimulator(BraketSimulator):
                 if rt.type in ["sample"]:
                     raise ValueError("sample can only be specified when shots>0")
                 if rt.type == "amplitude":
-                    DefaultSimulator._validate_amplitude_states(rt.states, qubit_count)
+                    BaseLocalSimulator._validate_amplitude_states(rt.states, qubit_count)
         elif shots and circuit_ir.results:
             for rt in circuit_ir.results:
                 if rt.type in ["statevector", "amplitude", "densitymatrix"]:
@@ -175,7 +171,7 @@ class DefaultSimulator(BraketSimulator):
         )
         none_observable_mapping = {}
         for obs in none_observables:
-            none_observable_mapping[DefaultSimulator._observable_hash(obs)] = obs
+            none_observable_mapping[BaseLocalSimulator._observable_hash(obs)] = obs
         unique_none_observables = list(none_observable_mapping.values())
         if len(unique_none_observables) > 1:
             raise ValueError(
@@ -187,7 +183,7 @@ class DefaultSimulator(BraketSimulator):
         for result_type in observable_result_types:
             obs_obj = result_type.observable
             measured_qubits = obs_obj.measured_qubits
-            new_obs = DefaultSimulator._observable_hash(obs_obj)
+            new_obs = BaseLocalSimulator._observable_hash(obs_obj)
             if measured_qubits is None:
                 measured_qubits = list(range(qubit_count))
 
@@ -218,7 +214,7 @@ class DefaultSimulator(BraketSimulator):
         if isinstance(observable, Hermitian):
             return str(hash(str(observable.matrix.tostring())))
         elif isinstance(observable, TensorProduct):
-            return ",".join(DefaultSimulator._observable_hash(obs) for obs in observable.factors)
+            return ",".join(BaseLocalSimulator._observable_hash(obs) for obs in observable.factors)
         else:
             return str(observable.__class__.__name__)
 
@@ -270,15 +266,15 @@ class DefaultSimulator(BraketSimulator):
     ) -> GateModelTaskResult:
         result_dict = {
             "taskMetadata": TaskMetadata(
-                id=str(uuid.uuid4()), shots=simulation.shots, deviceId=DefaultSimulator.DEVICE_ID
+                id=str(uuid.uuid4()), shots=simulation.shots, deviceId=BaseLocalSimulator.DEVICE_ID
             ),
             "additionalMetadata": AdditionalMetadata(action=circuit_ir),
         }
         if results:
             result_dict["resultTypes"] = results
         if simulation.shots:
-            result_dict["measurements"] = DefaultSimulator._formatted_measurements(simulation)
-            result_dict["measuredQubits"] = DefaultSimulator._get_measured_qubits(
+            result_dict["measurements"] = BaseLocalSimulator._formatted_measurements(simulation)
+            result_dict["measuredQubits"] = BaseLocalSimulator._get_measured_qubits(
                 simulation.qubit_count
             )
 

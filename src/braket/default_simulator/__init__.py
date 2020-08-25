@@ -26,6 +26,6 @@ from braket.default_simulator.operation import (  # noqa: F401
     Observable,
 )
 from braket.default_simulator.statevector_simulation import StateVectorSimulation  # noqa: F401
-from braket.default_simulator.statevector_simulator import StateVectorSimulator  # noqa: F401
+from braket.default_simulator.statevector_simulator import DefaultSimulator  # noqa: F401
 
 from ._version import __version__  # noqa: F401

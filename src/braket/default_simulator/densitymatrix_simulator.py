@@ -14,7 +14,7 @@
 import sys
 
 from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation
-from braket.default_simulator.simulator import DefaultSimulator
+from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
@@ -23,7 +23,7 @@ from braket.ir.jaqcd import Program
 from braket.task_result import GateModelTaskResult
 
 
-class DensityMatrixSimulator(DefaultSimulator):
+class DensityMatrixSimulator(BaseLocalSimulator):
     def run(self, circuit_ir: Program, qubit_count: int, shots: int = 0,) -> GateModelTaskResult:
         """ Executes the circuit specified by the supplied `circuit_ir` on the
         DensityMatrixSimulator.
@@ -49,7 +49,7 @@ class DensityMatrixSimulator(DefaultSimulator):
 
         simulation = DensityMatrixSimulation(qubit_count, shots)
 
-        return DefaultSimulator.run(self, circuit_ir, qubit_count, shots, simulation)
+        return BaseLocalSimulator.run(self, circuit_ir, qubit_count, shots, simulation)
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:

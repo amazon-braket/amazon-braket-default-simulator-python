@@ -13,7 +13,7 @@
 
 import sys
 
-from braket.default_simulator.simulator import DefaultSimulator
+from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.default_simulator.statevector_simulation import StateVectorSimulation
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
@@ -23,7 +23,7 @@ from braket.ir.jaqcd import Program
 from braket.task_result import GateModelTaskResult
 
 
-class StateVectorSimulator(DefaultSimulator):
+class DefaultSimulator(BaseLocalSimulator):
     def run(
         self, circuit_ir: Program, qubit_count: int, shots: int = 0, batch_size: int = 1,
     ) -> GateModelTaskResult:
@@ -50,15 +50,15 @@ class StateVectorSimulator(DefaultSimulator):
 
         Examples:
             >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> StateVectorSimulator().run(circuit_ir, qubit_count=1, shots=100)
+            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, shots=100)
 
             >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> StateVectorSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
+            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
         """
 
         simulation = StateVectorSimulation(qubit_count, shots, batch_size=batch_size)
 
-        return DefaultSimulator.run(self, circuit_ir, qubit_count, shots, simulation)
+        return BaseLocalSimulator.run(self, circuit_ir, qubit_count, shots, simulation)
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:

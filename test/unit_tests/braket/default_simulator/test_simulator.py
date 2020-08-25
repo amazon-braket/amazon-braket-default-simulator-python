@@ -16,7 +16,7 @@ import pytest
 
 from braket.default_simulator import observables
 from braket.default_simulator.result_types import Expectation, Variance
-from braket.default_simulator.simulator import DefaultSimulator
+from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.simulator import BraketSimulator
 
 
@@ -33,7 +33,7 @@ def test_validate_and_consolidate_observable_result_types_none(obs1, obs2):
         Expectation(obs1),
         Variance(obs2),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
+    actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
     assert len(actual_obs) == 1
     assert actual_obs[0].measured_qubits is None
 
@@ -47,7 +47,7 @@ def test_validate_and_consolidate_observable_result_types_same_target(obs):
         Expectation(obs),
         Variance(obs),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
+    actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
     assert len(actual_obs) == 1
     assert actual_obs[0].measured_qubits == (1,)
 
@@ -58,7 +58,7 @@ def test_validate_and_consolidate_observable_result_types_tensor_product():
         Variance(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
         Expectation(observables.TensorProduct([observables.PauliX([2]), observables.PauliY([3])])),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
+    actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
     assert len(actual_obs) == 2
     assert actual_obs[0].measured_qubits == (0, 1,)
     assert actual_obs[1].measured_qubits == (2, 3,)
@@ -77,16 +77,16 @@ def test_validate_and_consolidate_observable_result_types_targets(obs1, obs2):
         Expectation(obs1),
         Expectation(obs2),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
+    actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
     assert len(actual_obs) == 2
     assert actual_obs[0].measured_qubits == (1,)
     assert actual_obs[1].measured_qubits == (2,)
 
 
 def test_default_simulator_instance_braket_simulator():
-    assert isinstance(DefaultSimulator(), BraketSimulator)
+    assert isinstance(BaseLocalSimulator(), BraketSimulator)
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
 def test_defaultsimulator_properties():
-    DefaultSimulator().properties
+    BaseLocalSimulator().properties
