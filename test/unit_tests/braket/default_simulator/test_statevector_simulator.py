@@ -72,6 +72,20 @@ def bell_ir_with_result():
     return _bell_ir_with_result
 
 
+@pytest.fixture
+def circuit_noise():
+    return Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                    {"type": "bit_flip", "target": 0, "probability": 0.15},
+                ]
+            }
+        )
+    )
+
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 def test_simulator_run_grcs_16(grcs_16_qubit, batch_size):
     simulator = DefaultSimulator()
@@ -111,6 +125,12 @@ def test_simulator_identity():
     counter = Counter(["".join(measurement) for measurement in result.measurements])
     assert counter.keys() == {"00"}
     assert counter["00"] == shots_count
+
+
+@pytest.mark.xfail(raises=TypeError)
+def test_simulator_instructions_not_supported(circuit_noise):
+    simulator = DefaultSimulator()
+    simulator.run(circuit_noise, qubit_count=2, shots=0)
 
 
 @pytest.mark.xfail(raises=ValueError)
