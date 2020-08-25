@@ -11,30 +11,20 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import cmath
 import json
 import sys
-from collections import Counter, namedtuple
+from collections import Counter
 
 import numpy as np
 import pytest
 
-from braket.default_simulator.statevector_simulator import DefaultSimulator
+from braket.default_simulator.density_matrix_simulator import DensityMatrixSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
 from braket.ir.jaqcd import Program
 from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
-
-CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
-
-
-@pytest.fixture
-def grcs_16_qubit():
-    with open("test/resources/grcs_16.json") as circuit_file:
-        data = json.load(circuit_file)
-        return CircuitData(Program.parse_raw(json.dumps(data["ir"])), data["probability_zero"])
 
 
 @pytest.fixture
@@ -61,10 +51,7 @@ def bell_ir_with_result():
                         {"type": "h", "target": 0},
                         {"type": "cnot", "target": 1, "control": 0},
                     ],
-                    "results": [
-                        {"type": "amplitude", "states": ["11"]},
-                        {"type": "expectation", "observable": ["x"], "targets": targets},
-                    ],
+                    "results": [{"type": "expectation", "observable": ["x"], "targets": targets}],
                 }
             )
         )
@@ -72,34 +59,10 @@ def bell_ir_with_result():
     return _bell_ir_with_result
 
 
-@pytest.fixture
-def circuit_noise():
-    return Program.parse_raw(
-        json.dumps(
-            {
-                "instructions": [
-                    {"type": "h", "target": 0},
-                    {"type": "cnot", "target": 1, "control": 0},
-                    {"type": "bit_flip", "target": 0, "probability": 0.15},
-                ]
-            }
-        )
-    )
-
-
-@pytest.mark.parametrize("batch_size", [1, 5, 10])
-def test_simulator_run_grcs_16(grcs_16_qubit, batch_size):
-    simulator = DefaultSimulator()
-    result = simulator.run(grcs_16_qubit.circuit_ir, qubit_count=16, shots=0, batch_size=batch_size)
-    state_vector = result.resultTypes[0].value
-    assert cmath.isclose(abs(state_vector[0]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7)
-
-
-@pytest.mark.parametrize("batch_size", [1, 5, 10])
-def test_simulator_run_bell_pair(bell_ir, batch_size):
-    simulator = DefaultSimulator()
+def test_simulator_run_bell_pair(bell_ir):
+    simulator = DensityMatrixSimulator()
     shots_count = 10000
-    result = simulator.run(bell_ir, qubit_count=2, shots=shots_count, batch_size=batch_size)
+    result = simulator.run(bell_ir, qubit_count=2, shots=shots_count)
 
     assert all([len(measurement) == 2] for measurement in result.measurements)
     assert len(result.measurements) == shots_count
@@ -108,69 +71,20 @@ def test_simulator_run_bell_pair(bell_ir, batch_size):
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=DefaultSimulator.DEVICE_ID, shots=shots_count
+        id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=shots_count
     )
     assert result.additionalMetadata == AdditionalMetadata(action=bell_ir)
 
 
-def test_simulator_identity():
-    simulator = DefaultSimulator()
-    shots_count = 1000
-    result = simulator.run(
-        Program.parse_raw(
-            json.dumps({"instructions": [{"type": "i", "target": 0}, {"type": "i", "target": 1}]})
-        ),
-        qubit_count=2,
-        shots=shots_count,
-    )
-    counter = Counter(["".join(measurement) for measurement in result.measurements])
-    assert counter.keys() == {"00"}
-    assert counter["00"] == shots_count
-
-
-@pytest.mark.xfail(raises=TypeError)
-def test_simulator_instructions_not_supported(circuit_noise):
-    simulator = DefaultSimulator()
-    simulator.run(circuit_noise, qubit_count=2, shots=0)
-
-
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_no_results_no_shots(bell_ir):
-    simulator = DefaultSimulator()
+    simulator = DensityMatrixSimulator()
     simulator.run(bell_ir, qubit_count=2, shots=0)
 
 
-@pytest.mark.xfail(raises=ValueError)
-def test_simulator_run_amplitude_shots():
-    simulator = DefaultSimulator()
-    ir = Program.parse_raw(
-        json.dumps(
-            {
-                "instructions": [{"type": "h", "target": 0}],
-                "results": [{"type": "amplitude", "states": ["00"]}],
-            }
-        )
-    )
-    simulator.run(ir, qubit_count=2, shots=100)
-
-
-@pytest.mark.xfail(raises=ValueError)
-def test_simulator_run_amplitude_no_shots_invalid_states():
-    simulator = DefaultSimulator()
-    ir = Program.parse_raw(
-        json.dumps(
-            {
-                "instructions": [{"type": "h", "target": 0}],
-                "results": [{"type": "amplitude", "states": ["0"]}],
-            }
-        )
-    )
-    simulator.run(ir, qubit_count=2, shots=0)
-
-
-@pytest.mark.xfail(raises=ValueError)
-def test_simulator_run_statevector_shots():
-    simulator = DefaultSimulator()
+@pytest.mark.xfail(raises=TypeError)
+def test_simulator_run_statevector():
+    simulator = DensityMatrixSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {"instructions": [{"type": "h", "target": 0}], "results": [{"type": "statevector"}]}
@@ -179,8 +93,19 @@ def test_simulator_run_statevector_shots():
     simulator.run(ir, qubit_count=2, shots=100)
 
 
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_run_densitymatrix_shots():
+    simulator = DensityMatrixSimulator()
+    ir = Program.parse_raw(
+        json.dumps(
+            {"instructions": [{"type": "h", "target": 0}], "results": [{"type": "densitymatrix"}]}
+        )
+    )
+    simulator.run(ir, qubit_count=2, shots=100)
+
+
 def test_simulator_run_result_types_shots():
-    simulator = DefaultSimulator()
+    simulator = DensityMatrixSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {
@@ -201,7 +126,7 @@ def test_simulator_run_result_types_shots():
 
 
 def test_simulator_run_result_types_shots_basis_rotation_gates():
-    simulator = DefaultSimulator()
+    simulator = DensityMatrixSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {
@@ -224,7 +149,7 @@ def test_simulator_run_result_types_shots_basis_rotation_gates():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
-    simulator = DefaultSimulator()
+    simulator = DensityMatrixSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {
@@ -241,100 +166,24 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
     simulator.run(ir, qubit_count=2, shots=shots_count)
 
 
-@pytest.mark.parametrize(
-    "ir, qubit_count",
-    [
-        (
-            Program.parse_raw(
-                json.dumps(
-                    {
-                        "instructions": [{"type": "z", "target": 2}],
-                        "basis_rotation_instructions": [],
-                        "results": [],
-                    }
-                )
-            ),
-            1,
-        ),
-        (
-            Program.parse_raw(
-                json.dumps(
-                    {
-                        "instructions": [{"type": "h", "target": 0}],
-                        "basis_rotation_instructions": [{"type": "z", "target": 3}],
-                        "results": [],
-                    }
-                )
-            ),
-            2,
-        ),
-    ],
-)
-@pytest.mark.xfail(raises=ValueError)
-def test_simulator_run_non_contiguous_qubits(ir, qubit_count):
-    simulator = DefaultSimulator()
-    shots_count = 1000
-    simulator.run(ir, qubit_count=qubit_count, shots=shots_count)
-
-
-@pytest.mark.parametrize(
-    "ir, qubit_count",
-    [
-        (
-            Program.parse_raw(
-                json.dumps(
-                    {
-                        "results": [{"targets": [2], "type": "expectation", "observable": ["z"]}],
-                        "basis_rotation_instructions": [],
-                        "instructions": [{"type": "z", "target": 0}],
-                    }
-                )
-            ),
-            1,
-        ),
-        (
-            Program.parse_raw(
-                json.dumps(
-                    {
-                        "results": [{"targets": [2], "type": "expectation", "observable": ["z"]}],
-                        "basis_rotation_instructions": [],
-                        "instructions": [{"type": "z", "target": 0}, {"type": "z", "target": 1}],
-                    }
-                )
-            ),
-            2,
-        ),
-    ],
-)
-@pytest.mark.xfail(raises=ValueError)
-def test_simulator_run_observable_references_invalid_qubit(ir, qubit_count):
-    simulator = DefaultSimulator()
-    shots_count = 0
-    simulator.run(ir, qubit_count=qubit_count, shots=shots_count)
-
-
-@pytest.mark.parametrize("batch_size", [1, 5, 10])
 @pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
-def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_size):
-    simulator = DefaultSimulator()
+def test_simulator_bell_pair_result_types(bell_ir_with_result, targets):
+    simulator = DensityMatrixSimulator()
     ir = bell_ir_with_result(targets)
-    result = simulator.run(ir, qubit_count=2, shots=0, batch_size=batch_size)
-    assert len(result.resultTypes) == 2
+    result = simulator.run(ir, qubit_count=2, shots=0)
+    assert len(result.resultTypes) == 1
     assert result.resultTypes[0] == ResultTypeValue.construct(
-        type=ir.results[0], value={"11": complex(1 / 2 ** 0.5)}
-    )
-    assert result.resultTypes[1] == ResultTypeValue.construct(
-        type=ir.results[1], value=(0 if targets else [0, 0])
+        type=ir.results[0], value=(0 if targets else [0, 0])
     )
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=DefaultSimulator.DEVICE_ID, shots=0
+        id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=0
     )
     assert result.additionalMetadata == AdditionalMetadata(action=ir)
 
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_fails_samples_0_shots():
-    simulator = DefaultSimulator()
+    simulator = DensityMatrixSimulator()
     prog = Program.parse_raw(
         json.dumps(
             {
@@ -402,7 +251,7 @@ def test_simulator_fails_samples_0_shots():
 def test_simulator_accepts_overlapping_targets_same_observable(
     result_types, expected_expectation, expected_variance
 ):
-    simulator = DefaultSimulator()
+    simulator = DensityMatrixSimulator()
     prog = Program.parse_raw(
         json.dumps(
             {
@@ -470,7 +319,7 @@ def test_simulator_accepts_overlapping_targets_same_observable(
     ],
 )
 def test_simulator_fails_overlapping_targets_different_observable(result_types):
-    simulator = DefaultSimulator()
+    simulator = DensityMatrixSimulator()
     prog = Program.parse_raw(
         json.dumps(
             {
@@ -486,7 +335,7 @@ def test_simulator_fails_overlapping_targets_different_observable(result_types):
 
 
 def test_properties():
-    simulator = DefaultSimulator()
+    simulator = DensityMatrixSimulator()
     observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
     max_shots = sys.maxsize
     qubit_count = 26
@@ -507,6 +356,8 @@ def test_properties():
                     "actionType": "braket.ir.jaqcd.program",
                     "version": ["1"],
                     "supportedOperations": [
+                        "AmplitudeDamping",
+                        "BitFlip",
                         "CCNot",
                         "CNot",
                         "CPhaseShift",
@@ -516,11 +367,15 @@ def test_properties():
                         "CSwap",
                         "CY",
                         "CZ",
+                        "Depolarizing",
                         "H",
                         "I",
                         "ISwap",
+                        "Kraus",
                         "PSwap",
                         "PhaseShift",
+                        "PhaseFlip",
+                        "PhaseDamping",
                         "Rx",
                         "Ry",
                         "Rz",
@@ -560,9 +415,7 @@ def test_properties():
                             "maxShots": max_shots,
                         },
                         {"name": "Probability", "minShots": 0, "maxShots": max_shots},
-                        {"name": "StateVector", "minShots": 0, "maxShots": 0},
                         {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
-                        {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                     ],
                 }
             },

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 from braket.default_simulator import gate_operations, noise_operations, observables
-from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation
+from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
 
 evolve_testdata = [
     (

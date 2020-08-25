@@ -23,7 +23,7 @@ from braket.default_simulator.result_types import (
     from_braket_result_type,
 )
 from braket.default_simulator.simulation import Simulation
-from braket.default_simulator.statevector_simulation import StateVectorSimulation
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.device_schema.device_action_properties import DeviceActionType
 from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
 from braket.ir.jaqcd import Program

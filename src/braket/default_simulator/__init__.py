@@ -18,14 +18,14 @@ from braket.default_simulator import (  # noqa: F401
     observables,
     result_types,
 )
-from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation  # noqa: F401
-from braket.default_simulator.densitymatrix_simulator import DensityMatrixSimulator  # noqa: F401
+from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation  # noqa: F401
+from braket.default_simulator.density_matrix_simulator import DensityMatrixSimulator  # noqa: F401
 from braket.default_simulator.operation import (  # noqa: F401
     GateOperation,
     KrausOperation,
     Observable,
 )
-from braket.default_simulator.statevector_simulation import StateVectorSimulation  # noqa: F401
-from braket.default_simulator.statevector_simulator import DefaultSimulator  # noqa: F401
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation  # noqa: F401
+from braket.default_simulator.state_vector_simulator import DefaultSimulator  # noqa: F401
 
 from ._version import __version__  # noqa: F401

@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 
-from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation
+from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
 from braket.default_simulator.observables import (
     Hadamard,
     Hermitian,
@@ -32,7 +32,7 @@ from braket.default_simulator.observables import (
 )
 from braket.default_simulator.operation import Observable
 from braket.default_simulator.operation_helpers import ir_matrix_to_ndarray
-from braket.default_simulator.statevector_simulation import StateVectorSimulation
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.ir import jaqcd
 
 

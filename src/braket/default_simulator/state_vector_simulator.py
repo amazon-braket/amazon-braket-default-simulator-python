@@ -14,7 +14,7 @@
 import sys
 
 from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.default_simulator.statevector_simulation import StateVectorSimulation
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,

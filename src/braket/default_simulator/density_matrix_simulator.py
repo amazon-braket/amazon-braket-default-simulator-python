@@ -13,7 +13,7 @@
 
 import sys
 
-from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimulation
+from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
 from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
