@@ -86,6 +86,7 @@ def circuit_noise():
         )
     )
 
+
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 def test_simulator_run_grcs_16(grcs_16_qubit, batch_size):
     simulator = DefaultSimulator()

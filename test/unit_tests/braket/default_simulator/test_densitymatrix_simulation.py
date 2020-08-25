@@ -146,14 +146,10 @@ def test_noise_targets_none():
 
 @pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
 def test_apply_observables(observables, equivalent_gates, qubit_count):
-    print("=" * 30, "observable")
     sim_observables = DensityMatrixSimulation(qubit_count, 0)
     sim_observables.apply_observables(observables)
-    print("=" * 30, "equivalent_gates")
     sim_gates = DensityMatrixSimulation(qubit_count, 0)
     sim_gates.evolve(equivalent_gates)
-    print(sim_observables.state_with_observables)
-    print(sim_gates.density_matrix)
     assert np.allclose(sim_observables.state_with_observables, sim_gates.density_matrix)
 
 

@@ -110,18 +110,13 @@ class BaseLocalSimulator(BraketSimulator):
                     )
 
     def _validate_ir_instructions_compatibility(self, circuit_ir):
-        circuit_instructions_name = [
-            instr.__class__.__name__
-            for instr in circuit_ir.instructions
-        ]
+        circuit_instructions_name = [instr.__class__.__name__ for instr in circuit_ir.instructions]
         supported_instructions_name = self.properties.action[
             DeviceActionType.JAQCD
         ].supportedOperations
         for name in circuit_instructions_name:
             if name not in supported_instructions_name:
-                raise TypeError(
-                    f"instruction {name} is not supported by {self.__class__.__name__}"
-                )
+                raise TypeError(f"instruction {name} is not supported by {self.__class__.__name__}")
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
