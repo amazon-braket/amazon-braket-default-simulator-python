@@ -19,10 +19,15 @@ from braket.default_simulator.operation_helpers import check_CPTP, from_braket_i
 from braket.ir.jaqcd import shared_models
 
 testdata = [
-    (instruction.Bit_Flip(target=5, prob=0.01), (5,), noise_operations.Bit_Flip),
-    (instruction.Phase_Flip(target=6, prob=0.23), (6,), noise_operations.Phase_Flip),
-    (instruction.Depolarizing(target=3, prob=0.45), (3,), noise_operations.Depolarizing),
-    (instruction.Amplitude_Damping(target=3, prob=0.67), (3,), noise_operations.Amplitude_Damping),
+    (instruction.BitFlip(target=5, probability=0.01), (5,), noise_operations.BitFlip),
+    (instruction.PhaseFlip(target=6, probability=0.23), (6,), noise_operations.PhaseFlip),
+    (instruction.Depolarizing(target=3, probability=0.45), (3,), noise_operations.Depolarizing),
+    (
+        instruction.AmplitudeDamping(target=3, probability=0.67),
+        (3,),
+        noise_operations.AmplitudeDamping,
+    ),
+    (instruction.PhaseDamping(target=0, probability=0.89), (0,), noise_operations.PhaseDamping),
     (
         instruction.Kraus(
             targets=[4],

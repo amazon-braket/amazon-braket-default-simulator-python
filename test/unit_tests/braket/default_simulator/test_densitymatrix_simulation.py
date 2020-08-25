@@ -21,13 +21,13 @@ from braket.default_simulator.densitymatrix_simulation import DensityMatrixSimul
 
 evolve_testdata = [
     (
-        [gate_operations.PauliX([0]), noise_operations.Bit_Flip([0], 0.1)],
+        [gate_operations.PauliX([0]), noise_operations.BitFlip([0], 0.1)],
         1,
         [[0.1, 0.0], [0.0, 0.9]],
         [0.1, 0.9],
     ),
     (
-        [gate_operations.Hadamard([0]), noise_operations.Phase_Flip([0], 0.1)],
+        [gate_operations.Hadamard([0]), noise_operations.PhaseFlip([0], 0.1)],
         1,
         [[0.5, 0.4], [0.4, 0.5]],
         [0.5, 0.5],
@@ -39,10 +39,20 @@ evolve_testdata = [
         [0.2, 0.8],
     ),
     (
-        [gate_operations.PauliX([0]), noise_operations.Amplitude_Damping([0], 0.15)],
+        [gate_operations.PauliX([0]), noise_operations.AmplitudeDamping([0], 0.15)],
         1,
         [[0.15, 0.0], [0.0, 0.85]],
         [0.15, 0.85],
+    ),
+    (
+        [
+            gate_operations.Hadamard([0]),
+            noise_operations.PhaseDamping([0], 0.36),
+            gate_operations.Hadamard([0]),
+        ],
+        1,
+        [[0.9, 0.18], [0.18, 0.1]],
+        [0.9, 0.1],
     ),
     (
         [
@@ -127,7 +137,7 @@ def test_gate_targets_none():
 
 
 def test_noise_targets_none():
-    noise = noise_operations.Bit_Flip([0], 0.1)
+    noise = noise_operations.BitFlip([0], 0.1)
     noise._targets = None
     simulation = DensityMatrixSimulation(2, 0)
     simulation.evolve([noise])

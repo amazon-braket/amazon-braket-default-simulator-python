@@ -110,6 +110,29 @@ def _amplitude_damping(instruction) -> AmplitudeDamping:
     return AmplitudeDamping([instruction.target], instruction.probability)
 
 
+class PhaseDamping(KrausOperation):
+    """Phase Damping noise channel"""
+
+    def __init__(self, targets, probability):
+        self._targets = tuple(targets)
+        self._probability = probability
+
+    @property
+    def matrices(self) -> np.ndarray:
+        K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._probability)]], dtype=complex)
+        K1 = np.array([[0.0, np.sqrt(self._probability)], [0.0, 0.0]], dtype=complex)
+        return [K0, K1]
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+@_from_braket_instruction.register(braket_instruction.PhaseDamping)
+def _phase_damping(instruction) -> PhaseDamping:
+    return PhaseDamping([instruction.target], instruction.probability)
+
+
 class Kraus(KrausOperation):
     """Arbitrary quantum channel that evolve a density matrix through the operator-sum
     formalism with the provided matrices as Kraus operators.
