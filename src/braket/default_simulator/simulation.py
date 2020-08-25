@@ -47,7 +47,7 @@ class Simulation:
         Note:
             This method mutates the state of the simulation.
         """
-        raise NotImplementedError("evolve has not been implemented yet.")
+        raise NotImplementedError("evolve is not implemented.")
 
     @property
     def qubit_count(self) -> int:
@@ -67,11 +67,11 @@ class Simulation:
     @property
     def probabilities(self) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state."""
-        raise NotImplementedError("probabilities has not been implemented yet.")
+        raise NotImplementedError("probabilities is not implemented.")
 
     @staticmethod
     def probabilities_from_state(state) -> np.array:
         """np.ndarray: The probabilities of each computational basis state of a
         given state.
         """
-        raise NotImplementedError("probabilities_from_state has not been implemented yet.")
+        raise NotImplementedError("probabilities_from_state is not implemented.")

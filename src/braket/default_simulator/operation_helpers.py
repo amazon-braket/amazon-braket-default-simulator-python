@@ -121,11 +121,11 @@ def check_CPTP(matrices: List[np.ndarray]):
         matrices (List[np.ndarray]): The matrices to check
 
     Raises:
-        ValueError: If the matrices do not define CPTP a CPTP map
+        ValueError: If the matrices do not define a CPTP map
     """
-    E = sum([np.dot(matrix.T.conjugate(), matrix) for matrix in matrices])
+    E = sum([np.matmul(matrix.T.conjugate(), matrix) for matrix in matrices])
     if not np.allclose(E, np.eye(*E.shape)):
-        raise ValueError(f"{matrices} does not satisfy CPTP")
+        raise ValueError(f"{matrices} do not define a CPTP map")
 
 
 def get_matrix(operation) -> Optional[np.ndarray]:

@@ -24,7 +24,7 @@ class DensityMatrixSimulation(Simulation):
     """
     This class tracks the evolution of the density matrix of a quantum system with
     `qubit_count` qubits. The state of system evolves by applications of `GateOperations`
-    and `KrausOperations` cusing the `evolve()` method.
+    and `KrausOperations` using the `evolve()` method.
     """
 
     def __init__(self, qubit_count: int, shots: int):
