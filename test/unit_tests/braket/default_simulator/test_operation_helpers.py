@@ -19,7 +19,7 @@ import pytest
 
 from braket.default_simulator import gate_operations, observables, operation_helpers
 from braket.default_simulator.operation_helpers import (
-    check_CPTP,
+    check_cptp,
     check_hermitian,
     check_matrix_dimensions,
     check_unitary,
@@ -145,8 +145,8 @@ def test_check_hermitian_invalid_matrix(matrix):
 
 @pytest.mark.xfail(raises=ValueError)
 @pytest.mark.parametrize("matrices", invalid_CPTP_matrices)
-def test_check_CPTP_invalid_matrix(matrices):
-    check_CPTP(matrices)
+def test_check_cptp_invalid_matrix(matrices):
+    check_cptp(matrices)
 
 
 @pytest.mark.parametrize("operation", gate_testdata)

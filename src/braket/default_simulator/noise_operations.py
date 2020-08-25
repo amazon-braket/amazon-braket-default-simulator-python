@@ -8,7 +8,7 @@ import braket.ir.jaqcd as braket_instruction
 from braket.default_simulator.operation import KrausOperation
 from braket.default_simulator.operation_helpers import (
     _from_braket_instruction,
-    check_CPTP,
+    check_cptp,
     check_matrix_dimensions,
     ir_matrix_to_ndarray,
 )
@@ -143,7 +143,7 @@ class Kraus(KrausOperation):
         clone = [np.array(matrix, dtype=complex) for matrix in matrices]
         for matrix in clone:
             check_matrix_dimensions(matrix, self._targets)
-        check_CPTP(clone)
+        check_cptp(clone)
         self._matrices = clone
 
     @property

@@ -15,7 +15,7 @@ import pytest
 
 import braket.ir.jaqcd as instruction
 from braket.default_simulator import noise_operations
-from braket.default_simulator.operation_helpers import check_CPTP, from_braket_instruction
+from braket.default_simulator.operation_helpers import check_cptp, from_braket_instruction
 from braket.ir.jaqcd import shared_models
 
 testdata = [
@@ -44,7 +44,7 @@ testdata = [
 
 @pytest.mark.parametrize("instruction, targets, operation_type", testdata)
 def test_gate_operation_matrix_is_CPTP(instruction, targets, operation_type):
-    check_CPTP(from_braket_instruction(instruction).matrices)
+    check_cptp(from_braket_instruction(instruction).matrices)
 
 
 @pytest.mark.parametrize("instruction, targets, operation_type", testdata)

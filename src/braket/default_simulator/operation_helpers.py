@@ -114,7 +114,7 @@ def check_hermitian(matrix: np.ndarray):
         raise ValueError(f"{matrix} is not Hermitian")
 
 
-def check_CPTP(matrices: List[np.ndarray]):
+def check_cptp(matrices: List[np.ndarray]):
     """ Checks that the given matrices define a CPTP map.
 
     Args:
