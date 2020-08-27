@@ -371,7 +371,7 @@ def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
 
 
 def _marginal_probability(
-    probabilities_from_state: Callable[[np.array], float],
+    probabilities_from_state: Callable[[np.ndarray], float],
     state: np.ndarray,
     qubit_count: int,
     targets: List[int] = None,

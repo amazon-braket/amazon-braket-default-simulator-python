@@ -120,7 +120,7 @@ class PhaseDamping(KrausOperation):
     @property
     def matrices(self) -> np.ndarray:
         K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._probability)]], dtype=complex)
-        K1 = np.array([[0.0, np.sqrt(self._probability)], [0.0, 0.0]], dtype=complex)
+        K1 = np.array([[0.0, 0.0], [0.0, np.sqrt(self._probability)]], dtype=complex)
         return [K0, K1]
 
     @property

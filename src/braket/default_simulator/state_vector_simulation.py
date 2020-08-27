@@ -162,7 +162,7 @@ class StateVectorSimulation(Simulation):
         return self.probabilities_from_state(self._state_vector)
 
     @staticmethod
-    def probabilities_from_state(state) -> np.array:
+    def probabilities_from_state(state) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state of a
         given state.
         """

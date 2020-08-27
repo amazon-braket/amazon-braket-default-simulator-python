@@ -179,11 +179,11 @@ class DensityMatrixSimulation(Simulation):
         Args:
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubit in the circuit
-            matrix (nd.array): matrix to be applied to the density matrix
+            matrix (np.ndarray): matrix to be applied to the density matrix
             targets (Tuple[int,...]): qubits of the density matrix the matrix applied to.
 
         Returns:
-            state (nd.ndarray): output density matrix
+            state (np.ndarray): output density matrix
         """
         # left product
         gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
@@ -228,11 +228,11 @@ class DensityMatrixSimulation(Simulation):
         Args:
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubit in the circuit
-            matrices (List[nd.array]): matrices to be applied to the density matrix
+            matrices (List[np.ndarray]): matrices to be applied to the density matrix
             targets (Tuple[int,...]): qubits of the density matrix the matrices applied to.
 
         Returns:
-            state (nd.array): output density matrix
+            state (np.ndarray): output density matrix
         """
         new_state = np.zeros_like(state)
         for matrix in matrices:

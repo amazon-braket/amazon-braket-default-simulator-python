@@ -30,7 +30,7 @@ class DefaultSimulator(BaseLocalSimulator):
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
         Args:
-            circuit_ir (Program): ir representation of a braket circuit specifying the
+            circuit_ir (Program): IR representation of a Braket circuit specifying the
                 instructions to execute.
             qubit_count (int): The number of qubits to simulate.
             shots (int): The number of times to run the circuit.
@@ -38,7 +38,7 @@ class DefaultSimulator(BaseLocalSimulator):
                 if applying multiple gates at a time is desired; see `StateVectorSimulation`.
                 Must be a positive integer.
                 Defaults to 1, which means gates are applied one at a time without any
-                optmized contraction.
+                optimized contraction.
 
         Returns:
             GateModelTaskResult: object that represents the result
