@@ -21,7 +21,7 @@ from braket.default_simulator.operation import GateOperation, Observable
 
 @lru_cache()
 def pauli_eigenvalues(num_qubits: int) -> np.ndarray:
-    """ The eigenvalues of Pauli operators and their tensor products.
+    """The eigenvalues of Pauli operators and their tensor products.
 
     Args:
         num_qubits (int): the number of qubits the operator acts on
@@ -34,7 +34,7 @@ def pauli_eigenvalues(num_qubits: int) -> np.ndarray:
 
 
 def ir_matrix_to_ndarray(matrix: List[List[List[float]]]) -> np.ndarray:
-    """ Converts a JAQCD matrix into a numpy array.
+    """Converts a JAQCD matrix into a numpy array.
 
     Args:
         matrix (List[List[List[float]]]: The IR representation of a matrix
@@ -46,7 +46,7 @@ def ir_matrix_to_ndarray(matrix: List[List[List[float]]]) -> np.ndarray:
 
 
 def check_matrix_dimensions(matrix: np.ndarray, targets: Tuple[int, ...]) -> None:
-    """ Checks that the matrix is of the correct shape to act on the targets.
+    """Checks that the matrix is of the correct shape to act on the targets.
 
     Args:
         matrix (np.ndarray): The matrix to check
@@ -67,7 +67,7 @@ def check_matrix_dimensions(matrix: np.ndarray, targets: Tuple[int, ...]) -> Non
 
 
 def check_unitary(matrix: np.ndarray):
-    """ Checks that the given matrix is unitary.
+    """Checks that the given matrix is unitary.
 
     Args:
         matrix (np.ndarray): The matrix to check
@@ -80,7 +80,7 @@ def check_unitary(matrix: np.ndarray):
 
 
 def check_hermitian(matrix: np.ndarray):
-    """ Checks that the given matrix is Hermitian.
+    """Checks that the given matrix is Hermitian.
 
     Args:
         matrix (np.ndarray): The matrix to check
@@ -93,7 +93,7 @@ def check_hermitian(matrix: np.ndarray):
 
 
 def get_matrix(operation) -> Optional[np.ndarray]:
-    """ Gets the matrix of the given operation.
+    """Gets the matrix of the given operation.
 
     For a `GateOperation`, this is the gate's unitary matrix, and for an `Observable`,
     this is its diagonalizing matrix.

@@ -22,7 +22,7 @@ from braket.default_simulator.operation_helpers import get_matrix
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: List[Operation]
 ) -> np.ndarray:
-    """ Applies operations to a state vector one at a time.
+    """Applies operations to a state vector one at a time.
 
     Args:
         state (np.ndarray): The state vector to apply the given operations to, as a type

@@ -222,7 +222,7 @@ class Hermitian(Observable):
         return self._eigendecomposition()["eigenvectors"].conj().T
 
     def _eigendecomposition(self) -> Dict[str, np.ndarray]:
-        """ Decomposes the Hermitian matrix into its eigenvectors and associated eigenvalues.
+        """Decomposes the Hermitian matrix into its eigenvectors and associated eigenvalues.
 
         The eigendecomposition is cached so that if another Hermitian observable
         is created with the same matrix, the eigendecomposition doesn't have to

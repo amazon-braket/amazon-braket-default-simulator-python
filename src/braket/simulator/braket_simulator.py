@@ -21,7 +21,7 @@ from braket.task_result import AnnealingTaskResult, GateModelTaskResult
 
 
 class BraketSimulator(ABC):
-    """ An abstract simulator that locally runs a quantum task.
+    """An abstract simulator that locally runs a quantum task.
 
     The task can be either a circuit-based program or an annealing problem,
     specified by the given IR.

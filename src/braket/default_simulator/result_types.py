@@ -36,7 +36,7 @@ from braket.ir import jaqcd
 
 
 def from_braket_result_type(result_type) -> ResultType:
-    """ Creates a `ResultType` corresponding to the given Braket instruction.
+    """Creates a `ResultType` corresponding to the given Braket instruction.
 
     Args:
         result_type: Result type for a circuit specified using the `braket.ir.jacqd` format.
@@ -65,7 +65,7 @@ class ResultType(ABC):
     @abstractmethod
     def calculate(self, simulation: StateVectorSimulation) -> Any:
         # Return type of any due to lack of sum type support in Python
-        """ Calculate a result from the given quantum state vector simulation.
+        """Calculate a result from the given quantum state vector simulation.
 
         Args:
             simulation (StateVectorSimulation): The quantum state vector simulation
@@ -100,12 +100,20 @@ class ObservableResultType(ResultType, ABC):
         targets = self._observable.measured_qubits
         if targets:
             return ObservableResultType._calculate_for_targets(
-                state, qubit_count, targets, eigenvalues, self._calculate_from_prob_distribution,
+                state,
+                qubit_count,
+                targets,
+                eigenvalues,
+                self._calculate_from_prob_distribution,
             )
         else:
             return [
                 ObservableResultType._calculate_for_targets(
-                    state, qubit_count, [i], eigenvalues, self._calculate_from_prob_distribution,
+                    state,
+                    qubit_count,
+                    [i],
+                    eigenvalues,
+                    self._calculate_from_prob_distribution,
                 )
                 for i in range(qubit_count)
             ]
@@ -115,7 +123,7 @@ class ObservableResultType(ResultType, ABC):
     def _calculate_from_prob_distribution(
         probabilities: np.ndarray, eigenvalues: np.ndarray
     ) -> float:
-        """ Calculates a result from the probabilities of eigenvalues.
+        """Calculates a result from the probabilities of eigenvalues.
 
         Args:
             probabilities (np.ndarray): The probability of measuring each eigenstate
@@ -139,7 +147,7 @@ class StateVector(ResultType):
     """
 
     def calculate(self, simulation: StateVectorSimulation) -> np.ndarray:
-        """ Return the given state vector of the simulation.
+        """Return the given state vector of the simulation.
 
         Args:
             simulation (StateVectorSimulation): The simulation whose state vector will be returned
@@ -168,7 +176,7 @@ class Amplitude(ResultType):
         self._states = states
 
     def calculate(self, simulation: StateVectorSimulation) -> Dict[str, complex]:
-        """ Return the amplitudes of the desired computational basis states in the state
+        """Return the amplitudes of the desired computational basis states in the state
         of the given simulation.
 
         Args:
@@ -203,7 +211,7 @@ class Probability(ResultType):
         self._targets = targets
 
     def calculate(self, simulation: StateVectorSimulation) -> np.ndarray:
-        """ Return the marginal probabilities of computational basis states on the target qubits.
+        """Return the marginal probabilities of computational basis states on the target qubits.
 
         Probabilities are marginalized over all non-target qubits.
 
@@ -329,7 +337,7 @@ def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
 def _marginal_probability(
     state: np.ndarray, qubit_count: int, targets: List[int] = None
 ) -> np.ndarray:
-    """ Return the marginal probability of the computational basis states.
+    """Return the marginal probability of the computational basis states.
 
     The marginal probability is obtained by summing the probabilities on
     the unused qubits. If no targets are specified, then the probability

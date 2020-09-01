@@ -43,9 +43,14 @@ class DefaultSimulator(BraketSimulator):
     DEVICE_ID = "default"
 
     def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
+        self,
+        circuit_ir: Program,
+        qubit_count: int,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
     ) -> GateModelTaskResult:
-        """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
+        """Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
         Args:
             circuit_ir (Program): ir representation of a braket circuit specifying the
@@ -246,7 +251,7 @@ class DefaultSimulator(BraketSimulator):
 
     @staticmethod
     def _formatted_measurements(simulation: StateVectorSimulation) -> List[List[str]]:
-        """ Retrieves formatted measurements obtained from the specified simulation.
+        """Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (StateVectorSimulation): Simulation to use for obtaining the measurements.
@@ -262,7 +267,9 @@ class DefaultSimulator(BraketSimulator):
 
     @staticmethod
     def _create_results_obj(
-        results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation,
+        results: List[Dict[str, Any]],
+        circuit_ir: Program,
+        simulation: StateVectorSimulation,
     ) -> GateModelTaskResult:
         result_dict = {
             "taskMetadata": TaskMetadata(

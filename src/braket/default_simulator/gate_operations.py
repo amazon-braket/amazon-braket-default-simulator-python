@@ -30,7 +30,7 @@ from braket.default_simulator.operation_helpers import (
 
 
 def from_braket_instruction(instruction) -> GateOperation:
-    """ Instantiates the concrete `GateOperation` object from the specified braket instruction.
+    """Instantiates the concrete `GateOperation` object from the specified braket instruction.
 
     Args:
         instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
