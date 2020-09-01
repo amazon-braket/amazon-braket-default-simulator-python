@@ -23,7 +23,7 @@ from braket.default_simulator.operation_helpers import get_matrix
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: List[Operation], batch_size: int
 ) -> np.ndarray:
-    r""" Applies operations to a state vector in batches of size :math:`batch\_size`.
+    r"""Applies operations to a state vector in batches of size :math:`batch\_size`.
 
     :math:`operations` is partitioned into contiguous batches of size :math:`batch\_size` (with
     remainder). The state vector is treated as a type :math:`(qubit\_count, 0)` tensor, and each

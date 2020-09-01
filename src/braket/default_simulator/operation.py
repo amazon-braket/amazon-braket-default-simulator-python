@@ -27,7 +27,7 @@ class Operation(ABC):
     @property
     @abstractmethod
     def targets(self) -> Tuple[int, ...]:
-        """ Tuple[int, ...]: The indices of the qubits the operation applies to.
+        """Tuple[int, ...]: The indices of the qubits the operation applies to.
 
         Note: For an index to be a target of an observable, the observable must have a nontrivial
         (i.e. non-identity) action on that index. For example, a tensor product observable with a
@@ -55,7 +55,7 @@ class Observable(Operation, ABC):
 
     @property
     def measured_qubits(self) -> Tuple[int, ...]:
-        """ Tuple[int, ...]: The indices of the qubits that are measured for this observable.
+        """Tuple[int, ...]: The indices of the qubits that are measured for this observable.
 
         Unlike `targets`, this includes indices on which the observable acts trivially.
         For example, a tensor product observable made entirely of n Z factors will have
@@ -65,7 +65,7 @@ class Observable(Operation, ABC):
 
     @property
     def is_standard(self) -> bool:
-        """ bool: Whether the observable is one of the four standard observables X, Y, Z and H.
+        """bool: Whether the observable is one of the four standard observables X, Y, Z and H.
 
         These observables are guaranteed to have eigenvalues of +/-1
         """

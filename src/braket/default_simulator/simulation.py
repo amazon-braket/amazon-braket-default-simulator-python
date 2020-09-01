@@ -66,7 +66,7 @@ class StateVectorSimulation:
         self._post_observables = None
 
     def evolve(self, operations: List[GateOperation]) -> None:
-        """ Evolves the state of the simulation under the action of
+        """Evolves the state of the simulation under the action of
         the specified gate operations.
 
         Args:
@@ -81,7 +81,7 @@ class StateVectorSimulation:
         )
 
     def apply_observables(self, observables: List[Observable]) -> None:
-        """ Applies the diagonalizing matrices of the given observables
+        """Applies the diagonalizing matrices of the given observables
         to the state of the simulation.
 
         This method can only be called once.
@@ -113,7 +113,7 @@ class StateVectorSimulation:
         return np.reshape(final, 2 ** qubit_count)
 
     def retrieve_samples(self) -> List[int]:
-        """ Retrieves samples of states from the state vector of the simulation,
+        """Retrieves samples of states from the state vector of the simulation,
         based on the probabilities.
 
         Returns:
