@@ -46,6 +46,11 @@ invalid_hermitian_matrices = [(np.array([[1, 0], [0, 1j]])), (np.array([[1, 2], 
 
 invalid_CPTP_matrices = [[np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]]
 
+valid_CPTP_matrices = [
+    [np.array([[1, 0], [0, 1]]) * np.sqrt(0.7), np.array([[0, 1], [1, 0]]) * np.sqrt(0.3)],
+    [np.eye(4)],
+]
+
 gate_testdata = [
     gate_operations.Identity([0]),
     gate_operations.Hadamard([0]),
@@ -148,6 +153,11 @@ def test_check_hermitian_invalid_matrix(matrix):
 @pytest.mark.xfail(raises=ValueError)
 @pytest.mark.parametrize("matrices", invalid_CPTP_matrices)
 def test_check_cptp_invalid_matrix(matrices):
+    check_cptp(matrices)
+
+
+@pytest.mark.parametrize("matrices", valid_CPTP_matrices)
+def test_check_cptp(matrices):
     check_cptp(matrices)
 
 
