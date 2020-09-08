@@ -23,8 +23,8 @@ from braket.default_simulator.simulation import Simulation
 class DensityMatrixSimulation(Simulation):
     """
     This class tracks the evolution of the density matrix of a quantum system with
-    `qubit_count` qubits. The state of system evolves by applications of `GateOperations`
-    and `KrausOperations` using the `evolve()` method.
+    `qubit_count` qubits. The state of system evolves by applications of `GateOperation`s
+    and `KrausOperation`s using the `evolve()` method.
     """
 
     def __init__(self, qubit_count: int, shots: int):

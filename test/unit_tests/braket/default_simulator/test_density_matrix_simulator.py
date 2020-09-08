@@ -338,7 +338,7 @@ def test_properties():
     simulator = DensityMatrixSimulator()
     observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
     max_shots = sys.maxsize
-    qubit_count = 26
+    qubit_count = 13
     expected_properties = GateModelSimulatorDeviceCapabilities.parse_obj(
         {
             "service": {

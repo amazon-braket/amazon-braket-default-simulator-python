@@ -83,10 +83,10 @@ def test_validate_and_consolidate_observable_result_types_targets(obs1, obs2):
     assert actual_obs[1].measured_qubits == (2,)
 
 
-def test_default_simulator_instance_braket_simulator():
+def test_base_local_simulator_instance_braket_simulator():
     assert isinstance(BaseLocalSimulator(), BraketSimulator)
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
-def test_defaultsimulator_properties():
+def test_base_local_simulator_properties():
     BaseLocalSimulator().properties

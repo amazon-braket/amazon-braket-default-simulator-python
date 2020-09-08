@@ -55,7 +55,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
         observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
         max_shots = sys.maxsize
-        qubit_count = 26
+        qubit_count = 13
         return GateModelSimulatorDeviceCapabilities.parse_obj(
             {
                 "service": {
