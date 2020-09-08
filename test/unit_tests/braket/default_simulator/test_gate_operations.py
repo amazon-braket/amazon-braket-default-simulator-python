@@ -16,7 +16,6 @@ import pytest
 import braket.ir.jaqcd as instruction
 from braket.default_simulator import gate_operations
 from braket.default_simulator.operation_helpers import check_unitary, from_braket_instruction
-from braket.ir.jaqcd import shared_models
 
 testdata = [
     (instruction.I(target=4), (4,), gate_operations.Identity),
@@ -84,8 +83,3 @@ def test_from_braket_instruction(instruction, targets, operation_type):
     operation_instance = from_braket_instruction(instruction)
     assert isinstance(operation_instance, operation_type)
     assert operation_instance.targets == targets
-
-
-@pytest.mark.xfail(raises=ValueError)
-def test_from_braket_instruction_unsupported_instruction():
-    from_braket_instruction(shared_models.DoubleTarget(targets=[4, 3]))

@@ -23,9 +23,11 @@ from braket.default_simulator.operation_helpers import (
     check_hermitian,
     check_matrix_dimensions,
     check_unitary,
+    from_braket_instruction,
     get_matrix,
     ir_matrix_to_ndarray,
 )
+from braket.ir.jaqcd import shared_models
 
 z_matrix = np.array([[1, 0], [0, -1]])
 
@@ -161,3 +163,8 @@ def test_get_matrix_observable(operation):
         assert np.allclose(matrix, operation.diagonalizing_matrix)
     else:
         assert operation.diagonalizing_matrix is None
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_from_braket_instruction_unsupported_instruction():
+    from_braket_instruction(shared_models.DoubleTarget(targets=[4, 3]))
