@@ -16,7 +16,7 @@ from __future__ import annotations
 import itertools
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -95,28 +95,26 @@ class ObservableResultType(ResultType, ABC):
         return self._observable
 
     def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
-        state = simulation.state_with_observables
+        probabilities = simulation._probabilities(simulation.state_with_observables)
         qubit_count = simulation.qubit_count
         eigenvalues = self._observable.eigenvalues
         targets = self._observable.measured_qubits
         if targets:
             return ObservableResultType._calculate_for_targets(
-                state,
+                probabilities,
                 qubit_count,
                 targets,
                 eigenvalues,
                 self._calculate_from_prob_distribution,
-                simulation.probabilities_from_state,
             )
         else:
             return [
                 ObservableResultType._calculate_for_targets(
-                    state,
+                    probabilities,
                     qubit_count,
                     [i],
                     eigenvalues,
                     self._calculate_from_prob_distribution,
-                    simulation.probabilities_from_state,
                 )
                 for i in range(qubit_count)
             ]
@@ -138,14 +136,9 @@ class ObservableResultType(ResultType, ABC):
 
     @staticmethod
     def _calculate_for_targets(
-        state,
-        qubit_count,
-        targets,
-        eigenvalues,
-        calculate_from_prob_distribution,
-        probabilities_from_state,
+        probabilities, qubit_count, targets, eigenvalues, calculate_from_prob_distribution,
     ):
-        prob = _marginal_probability(probabilities_from_state, state, qubit_count, targets)
+        prob = _marginal_probability(probabilities, qubit_count, targets)
         return calculate_from_prob_distribution(prob, eigenvalues)
 
 
@@ -256,10 +249,7 @@ class Probability(ResultType):
 
         """
         return _marginal_probability(
-            simulation.probabilities_from_state,
-            simulation.state,
-            simulation.qubit_count,
-            self._targets,
+            simulation.probabilities, simulation.qubit_count, self._targets,
         )
 
 
@@ -371,10 +361,7 @@ def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
 
 
 def _marginal_probability(
-    probabilities_from_state: Callable[[np.ndarray], float],
-    state: np.ndarray,
-    qubit_count: int,
-    targets: List[int] = None,
+    probabilities: np.ndarray, qubit_count: int, targets: List[int] = None,
 ) -> np.ndarray:
     """ Return the marginal probability of the computational basis states.
 
@@ -382,8 +369,6 @@ def _marginal_probability(
     the unused qubits. If no targets are specified, then the probability
     of all basis states is returned.
     """
-
-    probabilities = probabilities_from_state(state)
 
     if targets is None or targets == list(range(qubit_count)):
         # All qubits targeted, no need to marginalize

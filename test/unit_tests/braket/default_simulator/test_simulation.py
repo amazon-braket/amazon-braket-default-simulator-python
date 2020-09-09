@@ -38,8 +38,3 @@ def test_simulation_evolve(simulation):
 @pytest.mark.xfail(raises=NotImplementedError)
 def test_simulation_probabilities(simulation):
     simulation.probabilities()
-
-
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_simulation_probabilities_from_state(simulation):
-    simulation.probabilities_from_state([])

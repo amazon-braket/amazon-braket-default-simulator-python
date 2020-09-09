@@ -68,10 +68,3 @@ class Simulation:
     def probabilities(self) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state."""
         raise NotImplementedError("probabilities is not implemented.")
-
-    @staticmethod
-    def probabilities_from_state(state) -> np.ndarray:
-        """np.ndarray: The probabilities of each computational basis state of a
-        given state.
-        """
-        raise NotImplementedError("probabilities_from_state is not implemented.")

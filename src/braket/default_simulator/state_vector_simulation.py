@@ -158,12 +158,19 @@ class StateVectorSimulation(Simulation):
 
     @property
     def probabilities(self) -> np.ndarray:
-        """np.ndarray: The probabilities of each computational basis state."""
-        return self.probabilities_from_state(self._state_vector)
+        """
+        np.ndarray: The probabilities of each computational basis state of the current state
+            vector of the simulation.
+        """
+        return self._probabilities(self.state_vector)
 
-    @staticmethod
-    def probabilities_from_state(state) -> np.ndarray:
-        """np.ndarray: The probabilities of each computational basis state of a
-        given state.
+    def _probabilities(self, state) -> np.ndarray:
+        """The probabilities of each computational basis state of a given state vector.
+
+        Args:
+            state (np.ndarray): a state vector.
+
+        Returns:
+            probabilities (np.ndarray)
         """
         return np.abs(state) ** 2

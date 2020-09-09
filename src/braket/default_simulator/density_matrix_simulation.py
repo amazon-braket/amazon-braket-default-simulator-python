@@ -153,13 +153,20 @@ class DensityMatrixSimulation(Simulation):
 
     @property
     def probabilities(self) -> np.ndarray:
-        """np.ndarray: The probabilities of each computational basis state."""
-        return self.probabilities_from_state(self._density_matrix)
+        """
+        np.ndarray: The probabilities of each computational basis state of the current density
+            matrix of the simulation.
+        """
+        return self._probabilities(self.density_matrix)
 
-    @staticmethod
-    def probabilities_from_state(state) -> np.ndarray:
-        """np.ndarray: The probabilities of each computational basis state of a
-        given state.
+    def _probabilities(self, state) -> np.ndarray:
+        """The probabilities of each computational basis state of a given density matrix.
+
+        Args:
+            state (np.ndarray): a density matrix
+
+        Returns:
+            probabilities (np.ndarray)
         """
         return np.real(np.diag(state))
 
