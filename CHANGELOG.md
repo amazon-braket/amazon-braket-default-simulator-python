@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.0.0.post2 (2020-09-09)
+
+### Documentation Changes
+
+ * Add README badges
+ * Get Read the Docs working
+ * add readthedocs link
+
+### Testing and Release Infrastructure
+
+ * Add CHANGELOG.md
+ * Update formatting to follow new black rules
+ * Automatically publish to PyPi
+ * add stale workflow and labels to issues templates
+
 ## v1.0.0.post1 (2020-08-14)
 
 The only way to update a description in PyPi is to upload new files;
