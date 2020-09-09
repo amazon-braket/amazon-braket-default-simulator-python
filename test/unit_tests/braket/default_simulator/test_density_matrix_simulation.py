@@ -123,7 +123,6 @@ def test_simulation_simple_circuits(
 ):
     simulation = DensityMatrixSimulation(qubit_count, 0)
     simulation.evolve(instructions)
-    assert np.allclose(density_matrix, simulation.state)
     assert np.allclose(density_matrix, simulation.density_matrix)
     assert np.allclose(probability_amplitudes, simulation.probabilities)
 

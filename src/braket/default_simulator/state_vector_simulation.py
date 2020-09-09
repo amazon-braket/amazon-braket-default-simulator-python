@@ -124,13 +124,6 @@ class StateVectorSimulation(Simulation):
         return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
 
     @property
-    def state(self) -> np.ndarray:
-        """
-        np.ndarray: The current state of the simulation.
-        """
-        return self.state_vector
-
-    @property
     def state_vector(self) -> np.ndarray:
         """
         np.ndarray: The state vector specifying the current state of the simulation.

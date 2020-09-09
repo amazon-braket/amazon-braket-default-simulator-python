@@ -126,13 +126,6 @@ class DensityMatrixSimulation(Simulation):
         )
 
     @property
-    def state(self) -> np.ndarray:
-        """
-        np.ndarray: The current state of the simulation.
-        """
-        return self.density_matrix
-
-    @property
     def density_matrix(self) -> np.ndarray:
         """
         np.ndarray: The density matrix specifying the current state of the simulation.
