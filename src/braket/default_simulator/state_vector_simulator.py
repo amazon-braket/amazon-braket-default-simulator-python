@@ -25,7 +25,7 @@ from braket.task_result import GateModelTaskResult
 
 class DefaultSimulator(BaseLocalSimulator):
     def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int = 0, batch_size: int = 1,
+        self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
     ) -> GateModelTaskResult:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
