@@ -11,9 +11,10 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import cmath
 import json
 import sys
-from collections import Counter
+from collections import Counter, namedtuple
 
 import numpy as np
 import pytest
@@ -25,6 +26,15 @@ from braket.device_schema.simulators import (
 )
 from braket.ir.jaqcd import Program
 from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
+
+CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
+
+
+@pytest.fixture
+def grcs_8_qubit():
+    with open("test/resources/grcs_8.json") as circuit_file:
+        data = json.load(circuit_file)
+        return CircuitData(Program.parse_raw(json.dumps(data["ir"])), data["probability_zero"])
 
 
 @pytest.fixture
@@ -80,6 +90,13 @@ def test_simulator_run_bell_pair(bell_ir):
 def test_simulator_run_no_results_no_shots(bell_ir):
     simulator = DensityMatrixSimulator()
     simulator.run(bell_ir, qubit_count=2, shots=0)
+
+
+def test_simulator_run_grcs_8(grcs_8_qubit):
+    simulator = DensityMatrixSimulator()
+    result = simulator.run(grcs_8_qubit.circuit_ir, qubit_count=8, shots=0)
+    density_matrix = result.resultTypes[0].value
+    assert cmath.isclose(density_matrix[0][0].real, grcs_8_qubit.probability_zero, abs_tol=1e-7)
 
 
 @pytest.mark.xfail(raises=TypeError)
