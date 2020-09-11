@@ -36,9 +36,6 @@ from braket.task_result import (
 
 
 class BaseLocalSimulator(BraketSimulator):
-
-    DEVICE_ID = "default"
-
     def run(
         self, circuit_ir: Program, qubit_count: int, shots: int, *, batch_size: int = 1,
     ) -> GateModelTaskResult:
@@ -100,7 +97,7 @@ class BaseLocalSimulator(BraketSimulator):
                 simulation,
             )
 
-        return BaseLocalSimulator._create_results_obj(results, circuit_ir, simulation)
+        return self._create_results_obj(results, circuit_ir, simulation)
 
     def _validate_ir_results_compatibility(self, circuit_ir):
         if circuit_ir.results:
@@ -276,13 +273,12 @@ class BaseLocalSimulator(BraketSimulator):
             for sample in simulation.retrieve_samples()
         ]
 
-    @staticmethod
     def _create_results_obj(
-        results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation,
+        self, results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation,
     ) -> GateModelTaskResult:
         result_dict = {
             "taskMetadata": TaskMetadata(
-                id=str(uuid.uuid4()), shots=simulation.shots, deviceId=BaseLocalSimulator.DEVICE_ID
+                id=str(uuid.uuid4()), shots=simulation.shots, deviceId=self.DEVICE_ID
             ),
             "additionalMetadata": AdditionalMetadata(action=circuit_ir),
         }

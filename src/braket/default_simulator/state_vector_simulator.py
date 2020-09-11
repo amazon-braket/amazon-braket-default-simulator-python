@@ -22,6 +22,9 @@ from braket.device_schema.simulators import (
 
 
 class DefaultSimulator(BaseLocalSimulator):
+
+    DEVICE_ID = "default"
+
     def initialize_simulation(self, **kwargs):
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
