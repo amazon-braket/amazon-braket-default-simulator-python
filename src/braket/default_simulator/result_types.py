@@ -136,7 +136,11 @@ class ObservableResultType(ResultType, ABC):
 
     @staticmethod
     def _calculate_for_targets(
-        probabilities, qubit_count, targets, eigenvalues, calculate_from_prob_distribution,
+        probabilities,
+        qubit_count,
+        targets,
+        eigenvalues,
+        calculate_from_prob_distribution,
     ):
         prob = _marginal_probability(probabilities, qubit_count, targets)
         return calculate_from_prob_distribution(prob, eigenvalues)
@@ -170,7 +174,7 @@ class DensityMatrix(ResultType):
     """
 
     def calculate(self, simulation: DensityMatrixSimulation) -> np.ndarray:
-        """ Return the given density matrix of the simulation.
+        """Return the given density matrix of the simulation.
 
         Args:
             simulation (DensityMatrixSimulation): The simulation whose density matrix will be
@@ -249,7 +253,9 @@ class Probability(ResultType):
 
         """
         return _marginal_probability(
-            simulation.probabilities, simulation.qubit_count, self._targets,
+            simulation.probabilities,
+            simulation.qubit_count,
+            self._targets,
         )
 
 
@@ -361,7 +367,9 @@ def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
 
 
 def _marginal_probability(
-    probabilities: np.ndarray, qubit_count: int, targets: List[int] = None,
+    probabilities: np.ndarray,
+    qubit_count: int,
+    targets: List[int] = None,
 ) -> np.ndarray:
     """Return the marginal probability of the computational basis states.
 

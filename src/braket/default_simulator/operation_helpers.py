@@ -20,7 +20,7 @@ from braket.default_simulator.operation import GateOperation, KrausOperation, Ob
 
 
 def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]:
-    """ Instantiates the concrete `GateOperation` or `KrausOperation` object from the
+    """Instantiates the concrete `GateOperation` or `KrausOperation` object from the
     specified braket instruction.
 
     Args:
@@ -115,7 +115,7 @@ def check_hermitian(matrix: np.ndarray):
 
 
 def check_cptp(matrices: List[np.ndarray]):
-    """ Checks that the given matrices define a CPTP map.
+    """Checks that the given matrices define a CPTP map.
 
     Args:
         matrices (List[np.ndarray]): The matrices to check

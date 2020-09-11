@@ -26,10 +26,16 @@ setup(
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
-    install_requires=["amazon-braket-schemas", "numpy", "opt_einsum"],
+    install_requires=[
+        # "amazon-braket-schemas",
+        "amazon-braket-schemas @ git+https://github.com/"
+        "yitinche/amazon-braket-schemas-python@noise",
+        "numpy",
+        "opt_einsum",
+    ],
     entry_points={
         "braket.simulators": [
-            "default = braket.default_simulator:DefaultSimulator",
+            "default = braket.default_simulator.statevector_simulator:StateVectorSimulator",
             "noise_simulator = braket.default_simulator:DensityMatrixSimulator",
         ]
     },

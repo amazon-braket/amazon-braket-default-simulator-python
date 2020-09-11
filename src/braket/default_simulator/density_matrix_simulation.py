@@ -42,7 +42,7 @@ class DensityMatrixSimulation(Simulation):
         self._post_observables = None
 
     def evolve(self, operations: List[Union[GateOperation, KrausOperation]]) -> None:
-        """ Evolves the state of the simulation under the action of the specified gate
+        """Evolves the state of the simulation under the action of the specified gate
         and noise operations.
 
         Args:
@@ -57,7 +57,7 @@ class DensityMatrixSimulation(Simulation):
         )
 
     def apply_observables(self, observables: List[Observable]) -> None:
-        """ Applies the diagonalizing matrices of the given observables
+        """Applies the diagonalizing matrices of the given observables
         to the state of the simulation.
 
         This method can only be called once.
@@ -78,7 +78,7 @@ class DensityMatrixSimulation(Simulation):
     def _apply_operations(
         state: np.ndarray, qubit_count: int, operations: List[Union[GateOperation, KrausOperation]]
     ) -> np.ndarray:
-        """ Applies the gate and noise operations to the density matrix.
+        """Applies the gate and noise operations to the density matrix.
 
         Args:
             state (np.ndarray): initial density matrix
@@ -113,7 +113,7 @@ class DensityMatrixSimulation(Simulation):
         return np.reshape(dm_tensor, (2 ** qubit_count, 2 ** qubit_count))
 
     def retrieve_samples(self) -> List[int]:
-        """ Retrieves samples of states from the density matrix of the simulation,
+        """Retrieves samples of states from the density matrix of the simulation,
         based on the probabilities.
 
         Returns:
@@ -166,7 +166,7 @@ class DensityMatrixSimulation(Simulation):
     def _apply_gate(
         state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int, ...]
     ) -> np.ndarray:
-        """ Apply a matrix M to a density matrix D according to:
+        """Apply a matrix M to a density matrix D according to:
 
             .. math::
                 D \rightarrow M D M^{\\dagger}
@@ -215,7 +215,7 @@ class DensityMatrixSimulation(Simulation):
     def _apply_kraus(
         state: np.ndarray, qubit_count: int, matrices: List[np.ndarray], targets: Tuple[int, ...]
     ) -> np.ndarray:
-        """ Apply a list of matrices {E_i} to a density matrix D according to:
+        """Apply a list of matrices {E_i} to a density matrix D according to:
 
             .. math::
                 D \rightarrow \\sum_i E_i D E_i^{\\dagger}

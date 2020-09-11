@@ -37,7 +37,12 @@ from braket.task_result import (
 
 class BaseLocalSimulator(BraketSimulator):
     def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
+        self,
+        circuit_ir: Program,
+        qubit_count: int,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
     ) -> GateModelTaskResult:
         """Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
@@ -274,7 +279,10 @@ class BaseLocalSimulator(BraketSimulator):
         ]
 
     def _create_results_obj(
-        self, results: List[Dict[str, Any]], circuit_ir: Program, simulation: StateVectorSimulation,
+        self,
+        results: List[Dict[str, Any]],
+        circuit_ir: Program,
+        simulation: StateVectorSimulation,
     ) -> GateModelTaskResult:
         result_dict = {
             "taskMetadata": TaskMetadata(
@@ -298,7 +306,7 @@ class BaseLocalSimulator(BraketSimulator):
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        """ properties of simulator such as supported IR types, quantum operations,
+        """properties of simulator such as supported IR types, quantum operations,
         and result types.
         """
         raise NotImplementedError("properties has not been implemented yet.")
