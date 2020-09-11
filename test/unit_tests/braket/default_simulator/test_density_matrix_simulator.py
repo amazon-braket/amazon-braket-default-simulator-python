@@ -30,6 +30,27 @@ from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
 
+invalid_ir_result_types = [
+    {"type": "statevector"},
+    {"type": "amplitude", "states": ["11"]},
+]
+
+
+@pytest.fixture
+def noisy_circuit_2_qubit():
+    return Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "x", "target": 0},
+                    {"type": "x", "target": 1},
+                    {"type": "bit_flip", "target": 1, "probability": 0.1},
+                ]
+            }
+        )
+    )
+
+
 @pytest.fixture
 def grcs_8_qubit():
     with open("test/resources/grcs_8.json") as circuit_file:
@@ -69,6 +90,33 @@ def bell_ir_with_result():
     return _bell_ir_with_result
 
 
+def test_simulator_run_noisy_curcuit(noisy_circuit_2_qubit):
+    simulator = DensityMatrixSimulator()
+    shots_count = 10000
+    result = simulator.run(noisy_circuit_2_qubit, qubit_count=2, shots=shots_count)
+
+    assert all([len(measurement) == 2] for measurement in result.measurements)
+    assert len(result.measurements) == shots_count
+    counter = Counter(["".join(measurement) for measurement in result.measurements])
+    assert counter.keys() == {"10", "11"}
+    assert 0.0 < counter["10"] / (counter["10"] + counter["11"]) < 0.2
+    assert 0.8 < counter["11"] / (counter["10"] + counter["11"]) < 1.0
+    assert result.taskMetadata == TaskMetadata(
+        id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=shots_count
+    )
+    assert result.additionalMetadata == AdditionalMetadata(action=noisy_circuit_2_qubit)
+
+
+@pytest.mark.parametrize("result_type", invalid_ir_result_types)
+@pytest.mark.xfail(raises=TypeError)
+def test_simulator_run_invalid_ir_result_types(result_type):
+    simulator = DensityMatrixSimulator()
+    ir = Program.parse_raw(
+        json.dumps({"instructions": [{"type": "h", "target": 0}], "results": [result_type]})
+    )
+    simulator.run(ir, qubit_count=2, shots=100)
+
+
 def test_simulator_run_bell_pair(bell_ir):
     simulator = DensityMatrixSimulator()
     shots_count = 10000
@@ -97,17 +145,6 @@ def test_simulator_run_grcs_8(grcs_8_qubit):
     result = simulator.run(grcs_8_qubit.circuit_ir, qubit_count=8, shots=0)
     density_matrix = result.resultTypes[0].value
     assert cmath.isclose(density_matrix[0][0].real, grcs_8_qubit.probability_zero, abs_tol=1e-7)
-
-
-@pytest.mark.xfail(raises=TypeError)
-def test_simulator_run_statevector():
-    simulator = DensityMatrixSimulator()
-    ir = Program.parse_raw(
-        json.dumps(
-            {"instructions": [{"type": "h", "target": 0}], "results": [{"type": "statevector"}]}
-        )
-    )
-    simulator.run(ir, qubit_count=2, shots=100)
 
 
 @pytest.mark.xfail(raises=ValueError)
