@@ -19,37 +19,13 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-from braket.ir.jaqcd import Program
-from braket.task_result import GateModelTaskResult
 
 
 class DensityMatrixSimulator(BaseLocalSimulator):
-    def run(self, circuit_ir: Program, qubit_count: int, shots: int = 0,) -> GateModelTaskResult:
-        """ Executes the circuit specified by the supplied `circuit_ir` on the
-        DensityMatrixSimulator.
-
-        Args:
-            circuit_ir (Program): ir representation of a braket circuit specifying the
-                instructions to execute.
-            qubit_count (int): The number of qubits to simulate.
-            shots (int): The number of times to run the circuit.
-
-        Returns:
-            GateModelTaskResult: object that represents the result
-
-        Raises:
-            ValueError: If result types are not specified in the IR or sample is specified
-                as a result type when shots=0. Or, if densitymatrix and amplitude result types
-                are requested when shots>0.
-
-        Examples:
-            >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> DensityMatrixSimulator().run(circuit_ir, qubit_count=1, shots=100)
-        """
-
-        simulation = DensityMatrixSimulation(qubit_count, shots)
-
-        return BaseLocalSimulator.run(self, circuit_ir, qubit_count, shots, simulation)
+    def initialize_simulation(self, **kwargs):
+        qubit_count = kwargs.get("qubit_count")
+        shots = kwargs.get("shots")
+        return DensityMatrixSimulation(qubit_count, shots)
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:

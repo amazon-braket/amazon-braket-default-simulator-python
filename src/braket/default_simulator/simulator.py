@@ -22,7 +22,6 @@ from braket.default_simulator.result_types import (
     ResultType,
     from_braket_result_type,
 )
-from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.device_schema.device_action_properties import DeviceActionType
 from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
@@ -41,7 +40,7 @@ class BaseLocalSimulator(BraketSimulator):
     DEVICE_ID = "default"
 
     def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int, simulation: Simulation,
+        self, circuit_ir: Program, qubit_count: int, shots: int, *, batch_size: int = 1,
     ) -> GateModelTaskResult:
         """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
@@ -51,7 +50,11 @@ class BaseLocalSimulator(BraketSimulator):
             qubit_count (int): The number of qubits to simulate.
             shots (int): The number of times to run the circuit.
             simulation (Simulation): Simulation method for evolving the state.
-
+            batch_size (int): The size of the circuit partitions to contract,
+                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
+                Must be a positive integer.
+                Defaults to 1, which means gates are applied one at a time without any
+                optimized contraction.
         Returns:
             GateModelTaskResult: object that represents the result
 
@@ -74,6 +77,9 @@ class BaseLocalSimulator(BraketSimulator):
 
         BaseLocalSimulator._validate_operation_qubits(operations)
 
+        simulation = self.initialize_simulation(
+            qubit_count=qubit_count, shots=shots, batch_size=batch_size
+        )
         simulation.evolve(operations)
 
         results = []
@@ -289,6 +295,10 @@ class BaseLocalSimulator(BraketSimulator):
             )
 
         return GateModelTaskResult.construct(**result_dict)
+
+    @property
+    def simulation_type(self):
+        raise NotImplementedError("simulation_type has not been implemented yet.")
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:

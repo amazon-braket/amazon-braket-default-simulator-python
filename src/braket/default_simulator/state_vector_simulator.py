@@ -19,46 +19,14 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-from braket.ir.jaqcd import Program
-from braket.task_result import GateModelTaskResult
 
 
 class DefaultSimulator(BaseLocalSimulator):
-    def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
-    ) -> GateModelTaskResult:
-        """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
-
-        Args:
-            circuit_ir (Program): IR representation of a Braket circuit specifying the
-                instructions to execute.
-            qubit_count (int): The number of qubits to simulate.
-            shots (int): The number of times to run the circuit.
-            batch_size (int): The size of the circuit partitions to contract,
-                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
-                Must be a positive integer.
-                Defaults to 1, which means gates are applied one at a time without any
-                optimized contraction.
-
-        Returns:
-            GateModelTaskResult: object that represents the result
-
-        Raises:
-            ValueError: If result types are not specified in the IR or sample is specified
-                as a result type when shots=0. Or, if statevector and amplitude result types
-                are requested when shots>0.
-
-        Examples:
-            >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, shots=100)
-
-            >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
-        """
-
-        simulation = StateVectorSimulation(qubit_count, shots, batch_size=batch_size)
-
-        return BaseLocalSimulator.run(self, circuit_ir, qubit_count, shots, simulation)
+    def initialize_simulation(self, **kwargs):
+        qubit_count = kwargs.get("qubit_count")
+        shots = kwargs.get("shots")
+        batch_size = kwargs.get("batch_size")
+        return StateVectorSimulation(qubit_count, shots, batch_size)
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:

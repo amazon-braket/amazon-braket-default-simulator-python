@@ -90,3 +90,8 @@ def test_base_local_simulator_instance_braket_simulator():
 @pytest.mark.xfail(raises=NotImplementedError)
 def test_base_local_simulator_properties():
     BaseLocalSimulator().properties
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_base_local_simulator_simulation_type():
+    BaseLocalSimulator().simulation_type
