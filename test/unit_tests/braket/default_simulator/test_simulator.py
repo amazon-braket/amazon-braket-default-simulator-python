@@ -60,8 +60,14 @@ def test_validate_and_consolidate_observable_result_types_tensor_product():
     ]
     actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
     assert len(actual_obs) == 2
-    assert actual_obs[0].measured_qubits == (0, 1,)
-    assert actual_obs[1].measured_qubits == (2, 3,)
+    assert actual_obs[0].measured_qubits == (
+        0,
+        1,
+    )
+    assert actual_obs[1].measured_qubits == (
+        2,
+        3,
+    )
 
 
 @pytest.mark.parametrize(

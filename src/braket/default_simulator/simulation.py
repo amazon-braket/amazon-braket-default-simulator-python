@@ -37,7 +37,7 @@ class Simulation:
         self._shots = shots
 
     def evolve(self, operations: List[GateOperation]) -> None:
-        """ Evolves the state of the simulation under the action of
+        """Evolves the state of the simulation under the action of
         the specified gate operations.
 
         Args:

@@ -1,4 +1,9 @@
-## Amazon Braket Default Simulator
+# Amazon Braket Default Simulator
+
+[![Latest Version](https://img.shields.io/pypi/v/amazon-braket-default-simulator.svg)](https://pypi.python.org/pypi/amazon-braket-default-simulator)
+[![Supported Python Versions](https://img.shields.io/pypi/pyversions/amazon-braket-default-simulator.svg)](https://pypi.python.org/pypi/amazon-braket-default-simulator)
+[![Code Style: Black](https://img.shields.io/badge/code_style-black-000000.svg)](https://github.com/psf/black)
+[![Documentation Status](https://readthedocs.org/projects/amazon-braket-default-simulator-python/badge/?version=latest)](https://amazon-braket-default-simulator-python.readthedocs.io/en/latest/?badge=latest)
 
 The Amazon Braket Default Simulator is a Python open source library that provides an implementation of a quantum simulator 
 that you can run locally. You can use the simulator to test quantum tasks that you construct for the [Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python)

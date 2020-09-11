@@ -37,9 +37,9 @@ from braket.task_result import (
 
 class BaseLocalSimulator(BraketSimulator):
     def run(
-        self, circuit_ir: Program, qubit_count: int, shots: int, *, batch_size: int = 1,
+        self, circuit_ir: Program, qubit_count: int, shots: int = 0, *, batch_size: int = 1,
     ) -> GateModelTaskResult:
-        """ Executes the circuit specified by the supplied `circuit_ir` on the simulator.
+        """Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
         Args:
             circuit_ir (Program): ir representation of a braket circuit specifying the
@@ -259,7 +259,7 @@ class BaseLocalSimulator(BraketSimulator):
 
     @staticmethod
     def _formatted_measurements(simulation: StateVectorSimulation) -> List[List[str]]:
-        """ Retrieves formatted measurements obtained from the specified simulation.
+        """Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (StateVectorSimulation): Simulation to use for obtaining the measurements.
