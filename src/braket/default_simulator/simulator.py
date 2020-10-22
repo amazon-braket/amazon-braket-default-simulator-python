@@ -13,7 +13,19 @@
 
 import sys
 import uuid
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
+
+from braket.device_schema.simulators import (
+    GateModelSimulatorDeviceCapabilities,
+    GateModelSimulatorDeviceParameters,
+)
+from braket.ir.jaqcd import Program
+from braket.task_result import (
+    AdditionalMetadata,
+    GateModelTaskResult,
+    ResultTypeValue,
+    TaskMetadata,
+)
 
 from braket.default_simulator.gate_operations import from_braket_instruction
 from braket.default_simulator.observables import Hermitian, TensorProduct
@@ -24,18 +36,7 @@ from braket.default_simulator.result_types import (
     from_braket_result_type,
 )
 from braket.default_simulator.simulation import StateVectorSimulation
-from braket.device_schema.simulators import (
-    GateModelSimulatorDeviceCapabilities,
-    GateModelSimulatorDeviceParameters,
-)
-from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
-from braket.task_result import (
-    AdditionalMetadata,
-    GateModelTaskResult,
-    ResultTypeValue,
-    TaskMetadata,
-)
 
 
 class DefaultSimulator(BraketSimulator):
@@ -186,9 +187,13 @@ class DefaultSimulator(BraketSimulator):
         not_none_observable_list = []
         qubit_observable_mapping = {}
         for result_type in observable_result_types:
-            obs_obj = result_type.observable
-            measured_qubits = obs_obj.measured_qubits
-            new_obs = DefaultSimulator._observable_hash(obs_obj)
+            new_obs = DefaultSimulator._observable_hash(result_type.observable)
+            obs_obj = (
+                result_type.observable.factors
+                if isinstance(result_type.observable, TensorProduct)
+                else result_type.observable
+            )
+            measured_qubits = result_type.observable.measured_qubits
             if measured_qubits is None:
                 measured_qubits = list(range(qubit_count))
 
@@ -197,29 +202,30 @@ class DefaultSimulator(BraketSimulator):
                     f"Result type ({result_type.__class__.__name__}) Observable "
                     f"({obs_obj.__class__.__name__}) references invalid qubits {measured_qubits}"
                 )
-            duplicate = False
-            for qubit in measured_qubits:
+            for i in range(len(measured_qubits)):
+                qubit = measured_qubits[i]
+                new_qubit_obs = new_obs[i] if isinstance(new_obs, list) else new_obs
                 # Validate that the same observable is requested for a qubit in the result types
                 existing_obs = qubit_observable_mapping.get(qubit)
                 if existing_obs:
-                    duplicate = True
-                    if existing_obs != new_obs:
+                    if existing_obs != new_qubit_obs:
                         raise ValueError(
                             f"Qubit {qubit} is already being measured in {existing_obs};"
                             f" cannot measure in {new_obs}."
                         )
                 else:
-                    qubit_observable_mapping[qubit] = new_obs
-            if not duplicate and not none_observable_mapping.get(new_obs):
-                not_none_observable_list.append(obs_obj)
+                    qubit_observable_mapping[qubit] = new_qubit_obs
+                    if not none_observable_mapping.get(new_qubit_obs):
+                        qubit_obs_obj = obs_obj[i] if isinstance(obs_obj, list) else obs_obj
+                        not_none_observable_list.append(qubit_obs_obj)
         return not_none_observable_list + unique_none_observables
 
     @staticmethod
-    def _observable_hash(observable: Observable) -> str:
+    def _observable_hash(observable: Observable) -> Union[str, List[str]]:
         if isinstance(observable, Hermitian):
             return str(hash(str(observable.matrix.tostring())))
         elif isinstance(observable, TensorProduct):
-            return ",".join(DefaultSimulator._observable_hash(obs) for obs in observable.factors)
+            return [DefaultSimulator._observable_hash(obs) for obs in observable.factors]
         else:
             return str(observable.__class__.__name__)
 
