@@ -521,6 +521,46 @@ def test_validate_and_consolidate_observable_result_types_tensor_product_commuti
     assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,)]
 
 
+def test_validate_and_consolidate_observable_result_types_tensor_product_hermitian_commuting():
+    obs_rts = [
+        Expectation(observables.PauliX([0])),
+        Variance(
+            observables.TensorProduct(
+                [
+                    observables.PauliX([0]),
+                    observables.Hermitian(np.eye(4), [1, 2]),
+                    observables.PauliY([3]),
+                ]
+            )
+        ),
+        Expectation(
+            observables.TensorProduct(
+                [observables.Hermitian(np.eye(4), [1, 2]), observables.PauliY([3])]
+            )
+        ),
+    ]
+    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
+    assert len(actual_obs) == 3
+    assert [obs.measured_qubits for obs in actual_obs] == [
+        (0,),
+        (
+            1,
+            2,
+        ),
+        (3,),
+    ]
+
+
+def test_observable_hash_tensor_product():
+    matrix = np.eye(4)
+    obs = observables.TensorProduct(
+        [observables.PauliX([0]), observables.Hermitian(matrix, [1, 2]), observables.PauliY([1])]
+    )
+    hash_dict = DefaultSimulator._observable_hash(obs)
+    matrix_hash = hash_dict[1]
+    assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
+
+
 @pytest.mark.parametrize(
     "obs1,obs2",
     [

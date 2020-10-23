@@ -13,7 +13,7 @@
 
 import sys
 import uuid
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
@@ -189,7 +189,7 @@ class DefaultSimulator(BraketSimulator):
         for result_type in observable_result_types:
             new_obs = DefaultSimulator._observable_hash(result_type.observable)
             obs_obj = (
-                result_type.observable.factors
+                DefaultSimulator._tensor_product_index_dict(result_type.observable, lambda x: x)
                 if isinstance(result_type.observable, TensorProduct)
                 else result_type.observable
             )
@@ -204,7 +204,7 @@ class DefaultSimulator(BraketSimulator):
                 )
             for i in range(len(measured_qubits)):
                 qubit = measured_qubits[i]
-                new_qubit_obs = new_obs[i] if isinstance(new_obs, list) else new_obs
+                new_qubit_obs = new_obs[i] if isinstance(new_obs, dict) else new_obs
                 # Validate that the same observable is requested for a qubit in the result types
                 existing_obs = qubit_observable_mapping.get(qubit)
                 if existing_obs:
@@ -215,17 +215,42 @@ class DefaultSimulator(BraketSimulator):
                         )
                 else:
                     qubit_observable_mapping[qubit] = new_qubit_obs
-                    if not none_observable_mapping.get(new_qubit_obs):
-                        qubit_obs_obj = obs_obj[i] if isinstance(obs_obj, list) else obs_obj
+                    qubit_obs_obj = obs_obj[i] if isinstance(obs_obj, dict) else obs_obj
+                    if (
+                        not none_observable_mapping.get(new_qubit_obs)
+                        and qubit_obs_obj.measured_qubits.index(qubit) == 0
+                    ):
+                        qubit_obs_obj = obs_obj[i] if isinstance(obs_obj, dict) else obs_obj
                         not_none_observable_list.append(qubit_obs_obj)
         return not_none_observable_list + unique_none_observables
 
     @staticmethod
-    def _observable_hash(observable: Observable) -> Union[str, List[str]]:
+    def _tensor_product_index_dict(
+        observable: TensorProduct, callable: Callable[[Observable], Any]
+    ) -> Dict[int, Observable]:
+        obj_dict = {}
+        i = 0
+        factors = list(observable.factors)
+        total = len(factors[0].measured_qubits)
+        while factors:
+            if i >= total:
+                factors.pop(0)
+                if factors:
+                    total += len(factors[0].measured_qubits)
+            if factors:
+                obj_dict[i] = callable(factors[0])
+            i += 1
+        return obj_dict
+
+    @staticmethod
+    def _observable_hash(observable: Observable) -> Union[str, Dict[int, str]]:
         if isinstance(observable, Hermitian):
             return str(hash(str(observable.matrix.tostring())))
         elif isinstance(observable, TensorProduct):
-            return [DefaultSimulator._observable_hash(obs) for obs in observable.factors]
+            # Dict of target index to observable hash
+            return DefaultSimulator._tensor_product_index_dict(
+                observable, DefaultSimulator._observable_hash
+            )
         else:
             return str(observable.__class__.__name__)
 
