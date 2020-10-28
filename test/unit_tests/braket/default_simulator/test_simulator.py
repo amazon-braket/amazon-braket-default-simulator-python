@@ -18,17 +18,17 @@ from collections import Counter, namedtuple
 
 import numpy as np
 import pytest
-
-from braket.default_simulator import gate_operations, observables
-from braket.default_simulator.result_types import Expectation, Variance
-from braket.default_simulator.simulator import DefaultSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
 from braket.ir.jaqcd import Program
-from braket.simulator import BraketSimulator
 from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
+
+from braket.default_simulator import gate_operations, observables
+from braket.default_simulator.result_types import Expectation, Variance
+from braket.default_simulator.simulator import DefaultSimulator
+from braket.simulator import BraketSimulator
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -506,15 +506,59 @@ def test_validate_and_consolidate_observable_result_types_tensor_product():
         Expectation(observables.TensorProduct([observables.PauliX([2]), observables.PauliY([3])])),
     ]
     actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
-    assert len(actual_obs) == 2
-    assert actual_obs[0].measured_qubits == (
-        0,
-        1,
+    assert len(actual_obs) == 4
+    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,), (3,)]
+
+
+def test_validate_and_consolidate_observable_result_types_tensor_product_commuting():
+    obs_rts = [
+        Expectation(observables.PauliX([0])),
+        Variance(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
+        Expectation(observables.TensorProduct([observables.PauliY([1]), observables.PauliX([2])])),
+    ]
+    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
+    assert len(actual_obs) == 3
+    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,)]
+
+
+def test_validate_and_consolidate_observable_result_types_tensor_product_hermitian_commuting():
+    obs_rts = [
+        Expectation(observables.PauliX([0])),
+        Variance(
+            observables.TensorProduct(
+                [
+                    observables.PauliX([0]),
+                    observables.Hermitian(np.eye(4), [1, 2]),
+                    observables.PauliY([3]),
+                ]
+            )
+        ),
+        Expectation(
+            observables.TensorProduct(
+                [observables.Hermitian(np.eye(4), [1, 2]), observables.PauliY([3])]
+            )
+        ),
+    ]
+    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
+    assert len(actual_obs) == 3
+    assert [obs.measured_qubits for obs in actual_obs] == [
+        (0,),
+        (
+            1,
+            2,
+        ),
+        (3,),
+    ]
+
+
+def test_observable_hash_tensor_product():
+    matrix = np.eye(4)
+    obs = observables.TensorProduct(
+        [observables.PauliX([0]), observables.Hermitian(matrix, [1, 2]), observables.PauliY([1])]
     )
-    assert actual_obs[1].measured_qubits == (
-        2,
-        3,
-    )
+    hash_dict = DefaultSimulator._observable_hash(obs)
+    matrix_hash = hash_dict[1]
+    assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
 
 
 @pytest.mark.parametrize(
