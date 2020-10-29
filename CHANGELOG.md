@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1 (2020-10-29)
+
+### Bug Fixes and Other Changes
+
+ * Enable simultaneous measurement of observables with shared factors
+
 ## v1.0.0.post2 (2020-09-09)
 
 ### Documentation Changes
