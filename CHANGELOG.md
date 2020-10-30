@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1.post0 (2020-10-30)
+
+### Testing and Release Infrastructure
+
+ * updating CODEOWNERS
+
 ## v1.0.1 (2020-10-29)
 
 ### Bug Fixes and Other Changes
