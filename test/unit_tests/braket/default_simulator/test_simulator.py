@@ -18,17 +18,17 @@ from collections import Counter, namedtuple
 
 import numpy as np
 import pytest
+
+from braket.default_simulator import gate_operations, observables
+from braket.default_simulator.result_types import Expectation, Variance
+from braket.default_simulator.simulator import DefaultSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
 from braket.ir.jaqcd import Program
-from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
-
-from braket.default_simulator import gate_operations, observables
-from braket.default_simulator.result_types import Expectation, Variance
-from braket.default_simulator.simulator import DefaultSimulator
 from braket.simulator import BraketSimulator
+from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -467,6 +467,48 @@ def test_simulator_fails_overlapping_targets_different_observable(result_types):
     simulator.run(prog, qubit_count=2, shots=0)
 
 
+@pytest.mark.xfail(raises=ValueError)
+def test_simulator_fails_same_observable_different_target_order():
+    simulator = DefaultSimulator()
+    prog = Program.parse_raw(
+        json.dumps(
+            {
+                "instructions": [
+                    {"type": "h", "target": 0},
+                    {"type": "cnot", "target": 1, "control": 0},
+                ],
+                "results": [
+                    {
+                        "type": "expectation",
+                        "observable": [
+                            [
+                                [[0, 0], [1, 0], [0, 0], [0, 0]],
+                                [[1, 0], [0, 0], [0, 0], [0, 0]],
+                                [[0, 0], [0, 0], [0, 0], [-1, 0]],
+                                [[0, 0], [0, 0], [-1, 0], [0, 0]],
+                            ]
+                        ],
+                        "targets": [0, 1],
+                    },
+                    {
+                        "type": "variance",
+                        "observable": [
+                            [
+                                [[0, 0], [1, 0], [0, 0], [0, 0]],
+                                [[1, 0], [0, 0], [0, 0], [0, 0]],
+                                [[0, 0], [0, 0], [0, 0], [-1, 0]],
+                                [[0, 0], [0, 0], [-1, 0], [0, 0]],
+                            ]
+                        ],
+                        "targets": [1, 0],
+                    },
+                ],
+            }
+        )
+    )
+    simulator.run(prog, qubit_count=2, shots=0)
+
+
 @pytest.mark.parametrize(
     "obs1,obs2",
     [
@@ -510,7 +552,7 @@ def test_validate_and_consolidate_observable_result_types_tensor_product():
     assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,), (3,)]
 
 
-def test_validate_and_consolidate_observable_result_types_tensor_product_commuting():
+def test_validate_and_consolidate_observable_result_types_tensor_product_shared_factor():
     obs_rts = [
         Expectation(observables.PauliX([0])),
         Variance(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
@@ -521,7 +563,7 @@ def test_validate_and_consolidate_observable_result_types_tensor_product_commuti
     assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,)]
 
 
-def test_validate_and_consolidate_observable_result_types_tensor_product_hermitian_commuting():
+def test_validate_and_consolidate_observable_result_types_tensor_product_hermitian_shared_factor():
     obs_rts = [
         Expectation(observables.PauliX([0])),
         Variance(
@@ -549,6 +591,23 @@ def test_validate_and_consolidate_observable_result_types_tensor_product_hermiti
         ),
         (3,),
     ]
+
+
+def test_validate_and_consolidate_observable_result_types_identity_allowed():
+    obs_rts = [
+        Expectation(observables.PauliX([0])),
+        Expectation(observables.Identity([4])),
+        Variance(observables.Identity([2])),
+        Variance(observables.TensorProduct([observables.Identity([1]), observables.PauliX([3])])),
+        Expectation(
+            observables.TensorProduct([observables.PauliY([1]), observables.Identity([3])])
+        ),
+        Variance(observables.Identity([0])),
+        Expectation(observables.PauliX([2])),
+    ]
+    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 5)
+    assert len(actual_obs) == 5
+    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (3,), (1,), (2,), (4,)]
 
 
 def test_observable_hash_tensor_product():
