@@ -198,12 +198,13 @@ class DefaultSimulator(BraketSimulator):
         qubit_observable_mapping = {}
         identity_qubits = set()
         for result_type in observable_result_types:
+            observable = result_type.observable
             obs_obj = (
-                DefaultSimulator._tensor_product_index_dict(result_type.observable, lambda x: x)
-                if isinstance(result_type.observable, TensorProduct)
-                else result_type.observable
+                DefaultSimulator._tensor_product_index_dict(observable, lambda x: x)
+                if isinstance(observable, TensorProduct)
+                else observable
             )
-            measured_qubits = result_type.observable.measured_qubits
+            measured_qubits = observable.measured_qubits
             if measured_qubits is None:
                 measured_qubits = list(range(qubit_count))
 
@@ -212,11 +213,11 @@ class DefaultSimulator(BraketSimulator):
                     f"Result type ({result_type.__class__.__name__}) Observable "
                     f"({obs_obj.__class__.__name__}) references invalid qubits {measured_qubits}"
                 )
-            new_obs = DefaultSimulator._observable_hash(result_type.observable)
+            hashed_observable = DefaultSimulator._observable_hash(observable)
             for i in range(len(measured_qubits)):
                 DefaultSimulator._assign_observable(
                     obs_obj,
-                    new_obs,
+                    hashed_observable,
                     measured_qubits,
                     i,
                     not_none_observable_list,
@@ -231,7 +232,7 @@ class DefaultSimulator(BraketSimulator):
     @staticmethod
     def _assign_observable(
         whole_observable,
-        hashed_qubit_observable,
+        hashed_observable,
         measured_qubits,
         target_index,
         not_none_observable_list,
@@ -241,9 +242,9 @@ class DefaultSimulator(BraketSimulator):
     ):
         # Validate that the same observable is requested for a qubit in the result types
         hashed_qubit_observable = (
-            hashed_qubit_observable[target_index]
-            if isinstance(hashed_qubit_observable, dict)
-            else hashed_qubit_observable
+            hashed_observable[target_index]
+            if isinstance(hashed_observable, dict)
+            else hashed_observable
         )
         qubit = measured_qubits[target_index]
         existing_observable = qubit_observable_mapping.get(qubit)
@@ -257,12 +258,16 @@ class DefaultSimulator(BraketSimulator):
                 if isinstance(whole_observable, dict)
                 else whole_observable
             )
+            # No need to check if existing_observable is identity,
+            # as qubit_observable_mapping cannot contain identities at this point
             if not existing_observable:
                 identity_qubits.discard(qubit)
                 qubit_observable_mapping[qubit] = qubit_observable
 
                 if (
+                    # Don't add observable if it already acts on all qubits
                     not none_observable_mapping.get(hashed_qubit_observable)
+                    # If the index is nonzero then the observable has already been added
                     and qubit_observable.measured_qubits.index(qubit) == 0
                 ):
                     not_none_observable_list.append(qubit_observable)
@@ -290,7 +295,7 @@ class DefaultSimulator(BraketSimulator):
             qubits_new = new.measured_qubits
             if (
                 qubits_existing is not None
-                and len(qubits_existing) > 1
+                and qubits_new is not None
                 and qubits_existing != qubits_new
             ):
                 raise ValueError(
