@@ -15,20 +15,10 @@ import sys
 import uuid
 from typing import Any, Callable, Dict, List, Tuple, Union
 
-from braket.device_schema.simulators import (
-    GateModelSimulatorDeviceCapabilities,
-    GateModelSimulatorDeviceParameters,
-)
-from braket.ir.jaqcd import Program
-from braket.task_result import (
-    AdditionalMetadata,
-    GateModelTaskResult,
-    ResultTypeValue,
-    TaskMetadata,
-)
+import numpy as np
 
 from braket.default_simulator.gate_operations import from_braket_instruction
-from braket.default_simulator.observables import Hermitian, TensorProduct
+from braket.default_simulator.observables import Hermitian, Identity, TensorProduct
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.result_types import (
     ObservableResultType,
@@ -36,7 +26,18 @@ from braket.default_simulator.result_types import (
     from_braket_result_type,
 )
 from braket.default_simulator.simulation import StateVectorSimulation
+from braket.device_schema.simulators import (
+    GateModelSimulatorDeviceCapabilities,
+    GateModelSimulatorDeviceParameters,
+)
+from braket.ir.jaqcd import Program
 from braket.simulator import BraketSimulator
+from braket.task_result import (
+    AdditionalMetadata,
+    GateModelTaskResult,
+    ResultTypeValue,
+    TaskMetadata,
+)
 
 
 class DefaultSimulator(BraketSimulator):
@@ -184,16 +185,26 @@ class DefaultSimulator(BraketSimulator):
                 f"All qubits are already being measured in {unique_none_observables[0]};"
                 f"cannot measure in {unique_none_observables[1:]}"
             )
+        not_none_observable_list = DefaultSimulator._assign_observables_to_qubits(
+            observable_result_types, none_observable_mapping, qubit_count
+        )
+        return not_none_observable_list + unique_none_observables
+
+    @staticmethod
+    def _assign_observables_to_qubits(
+        observable_result_types, none_observable_mapping, qubit_count
+    ):
         not_none_observable_list = []
         qubit_observable_mapping = {}
+        identity_qubits = set()
         for result_type in observable_result_types:
-            new_obs = DefaultSimulator._observable_hash(result_type.observable)
+            observable = result_type.observable
             obs_obj = (
-                DefaultSimulator._tensor_product_index_dict(result_type.observable, lambda x: x)
-                if isinstance(result_type.observable, TensorProduct)
-                else result_type.observable
+                DefaultSimulator._tensor_product_index_dict(observable, lambda x: x)
+                if isinstance(observable, TensorProduct)
+                else observable
             )
-            measured_qubits = result_type.observable.measured_qubits
+            measured_qubits = observable.measured_qubits
             if measured_qubits is None:
                 measured_qubits = list(range(qubit_count))
 
@@ -202,32 +213,100 @@ class DefaultSimulator(BraketSimulator):
                     f"Result type ({result_type.__class__.__name__}) Observable "
                     f"({obs_obj.__class__.__name__}) references invalid qubits {measured_qubits}"
                 )
+            hashed_observable = DefaultSimulator._observable_hash(observable)
             for i in range(len(measured_qubits)):
-                qubit = measured_qubits[i]
-                new_qubit_obs = new_obs[i] if isinstance(new_obs, dict) else new_obs
-                # Validate that the same observable is requested for a qubit in the result types
-                existing_obs = qubit_observable_mapping.get(qubit)
-                if existing_obs:
-                    if existing_obs != new_qubit_obs:
-                        raise ValueError(
-                            f"Qubit {qubit} is already being measured in {existing_obs};"
-                            f" cannot measure in {new_obs}."
-                        )
-                else:
-                    qubit_observable_mapping[qubit] = new_qubit_obs
-                    qubit_obs_obj = obs_obj[i] if isinstance(obs_obj, dict) else obs_obj
-                    if (
-                        not none_observable_mapping.get(new_qubit_obs)
-                        and qubit_obs_obj.measured_qubits.index(qubit) == 0
-                    ):
-                        qubit_obs_obj = obs_obj[i] if isinstance(obs_obj, dict) else obs_obj
-                        not_none_observable_list.append(qubit_obs_obj)
-        return not_none_observable_list + unique_none_observables
+                DefaultSimulator._assign_observable(
+                    obs_obj,
+                    hashed_observable,
+                    measured_qubits,
+                    i,
+                    not_none_observable_list,
+                    qubit_observable_mapping,
+                    none_observable_mapping,
+                    identity_qubits,
+                )
+        for i in sorted(identity_qubits):
+            not_none_observable_list.append(Identity([i]))
+        return not_none_observable_list
+
+    @staticmethod
+    def _assign_observable(
+        whole_observable,
+        hashed_observable,
+        measured_qubits,
+        target_index,
+        not_none_observable_list,
+        qubit_observable_mapping,
+        none_observable_mapping,
+        identity_qubits,
+    ):
+        # Validate that the same observable is requested for a qubit in the result types
+        hashed_qubit_observable = (
+            hashed_observable[target_index]
+            if isinstance(hashed_observable, dict)
+            else hashed_observable
+        )
+        qubit = measured_qubits[target_index]
+        existing_observable = qubit_observable_mapping.get(qubit)
+        if hashed_qubit_observable == Identity.__name__:
+            if qubit not in qubit_observable_mapping:
+                identity_qubits.add(qubit)
+            # Do nothing if non-identity observable already exists on the qubit
+        else:
+            qubit_observable = (
+                whole_observable[target_index]
+                if isinstance(whole_observable, dict)
+                else whole_observable
+            )
+            # No need to check if existing_observable is identity,
+            # as qubit_observable_mapping cannot contain identities at this point
+            if not existing_observable:
+                identity_qubits.discard(qubit)
+                qubit_observable_mapping[qubit] = qubit_observable
+
+                if (
+                    # Don't add observable if it already acts on all qubits
+                    not none_observable_mapping.get(hashed_qubit_observable)
+                    # If the index is nonzero then the observable has already been added
+                    and qubit_observable.measured_qubits.index(qubit) == 0
+                ):
+                    not_none_observable_list.append(qubit_observable)
+            else:
+                DefaultSimulator._validate_same_observable(
+                    existing_observable, qubit_observable, qubit
+                )
+
+    @staticmethod
+    def _validate_same_observable(existing, new, qubit):
+        cls_existing = existing.__class__.__name__
+        cls_new = new.__class__.__name__
+        if cls_existing != cls_new:
+            raise ValueError(
+                f"Qubit {qubit} is already being measured in {cls_existing};"
+                f" cannot measure in {cls_new}."
+            )
+        if cls_existing == Hermitian.__name__:
+            if not np.allclose(existing.matrix, new.matrix):
+                raise ValueError(
+                    f"Qubit {qubit} is already being measured in {existing.matrix};"
+                    f" cannot measure in {new.matrix}."
+                )
+            qubits_existing = existing.measured_qubits
+            qubits_new = new.measured_qubits
+            if (
+                qubits_existing is not None
+                and qubits_new is not None
+                and qubits_existing != qubits_new
+            ):
+                raise ValueError(
+                    f"Existing measured qubits {qubits_existing} of observable {cls_existing}"
+                    f" conflict with new measured qubits {qubits_new}."
+                )
 
     @staticmethod
     def _tensor_product_index_dict(
         observable: TensorProduct, callable: Callable[[Observable], Any]
-    ) -> Dict[int, Observable]:
+    ) -> Dict[int, Any]:
         obj_dict = {}
         i = 0
         factors = list(observable.factors)
