@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0 (2020-11-26)
+
+### Features
+
+ * Always accept identity observable factors
+
 ## v1.0.1.post0 (2020-10-30)
 
 ### Testing and Release Infrastructure
