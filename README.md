@@ -68,11 +68,13 @@ To view the generated documentation, open the following file in a browser:
 
 If you want to contribute to the project, be sure to run unit tests and get a successful result 
 before you submit a pull request. To run the unit tests, first install the test dependencies using the following command:
+
 ```bash
 pip install -e "amazon-braket-default-simulator-python[test]"
 ```
 
 To run the unit tests:
+
 ```bash
 tox -e unit-tests
 ```
@@ -84,6 +86,12 @@ tox -e unit-tests -- your-arguments
 ```
 
 For more information, please see [pytest usage](https://docs.pytest.org/en/stable/usage.html).
+
+To run linters and doc generators and unit tests:
+
+```bash
+tox
+```
 
 To run the performance tests:
 
