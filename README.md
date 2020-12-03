@@ -77,19 +77,23 @@ To run the unit tests:
 tox -e unit-tests
 ```
 
+You can also pass in various pytest arguments to run selected tests:
+
+```bash
+tox -e unit-tests -- your-arguments
+```
+
+For more information, please see [pytest usage](https://docs.pytest.org/en/stable/usage.html).
+
 To run the performance tests:
+
 ```bash
 tox -e performance-tests
 ```
+
 These tests will compare the performance of a series of simulator executions for your changes against the latest commit on the main branch.
 *Note*: The execution times for the performance tests are affected by the other processes running on the system.
 In order to get stable results, stop other applications when running these tests.
-
-To run selected tests based on a key word in the test name:
-```bash
-tox -- -k 'keyword'
-```
-
 
 ## License
 
