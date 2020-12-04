@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0.post0 (2020-12-04)
+
+### Testing and Release Infrastructure
+
+ * Change tox basepython to python3
+
 ## v1.1.0 (2020-11-26)
 
 ### Features
