@@ -15,25 +15,32 @@ import numpy as np
 import pytest
 
 from braket.default_simulator import gate_operations, observables
-from braket.default_simulator.operation_helpers import check_unitary, pauli_eigenvalues
+from braket.default_simulator.operation_helpers import pauli_eigenvalues
 
 testdata = [
-    (observables.Hadamard([13]), (13,), (13,), pauli_eigenvalues(1), True),
-    (observables.PauliX([11]), (11,), (11,), pauli_eigenvalues(1), True),
-    (observables.PauliY([10]), (10,), (10,), pauli_eigenvalues(1), True),
-    (observables.PauliZ([9]), (), (9,), pauli_eigenvalues(1), True),
-    (observables.Identity([7]), (), (7,), np.array([1, 1]), False),
+    (observables.Hadamard, [], gate_operations.RotY([0], -np.pi / 4), pauli_eigenvalues(1), True),
+    (observables.PauliX, [], gate_operations.Hadamard([0]), pauli_eigenvalues(1), True),
     (
-        observables.Hermitian(np.array([[1, 1 - 1j], [1 + 1j, -1]]), [4]),
-        (4,),
-        (4,),
-        [-np.sqrt(3), np.sqrt(3)],
-        False,
+        observables.PauliY,
+        [],
+        gate_operations.Unitary([0], np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)),
+        pauli_eigenvalues(1),
+        True,
     ),
+    (observables.PauliZ, [], None, pauli_eigenvalues(1), True),
+    (observables.Identity, [], None, np.array([1, 1]), False),
     (
-        observables.Hermitian(np.array([[1, 1 - 1j], [1 + 1j, -1]])),
-        None,
-        None,
+        observables.Hermitian,
+        [np.array([[1, 1 - 1j], [1 + 1j, -1]])],
+        gate_operations.Unitary(
+            [0],
+            np.array(
+                [
+                    [-0.45970084 + 0.0j, 0.62796303 - 0.62796303j],
+                    [-0.88807383 - 0.0j, -0.32505758 + 0.32505758j],
+                ]
+            ),
+        ),
         [-np.sqrt(3), np.sqrt(3)],
         False,
     ),
@@ -55,14 +62,42 @@ x_diag = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 y_diag = np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
 
 
-@pytest.mark.parametrize("observable, targets, measured_qubits, eigenvalues, is_standard", testdata)
-def test_observable_properties(observable, targets, measured_qubits, eigenvalues, is_standard):
-    if observable.diagonalizing_matrix is not None:
-        check_unitary(observable.diagonalizing_matrix)
-    assert observable.targets == targets
+@pytest.mark.parametrize(
+    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata
+)
+def test_observable_properties_single_qubit(
+    obs_class, extra_args, expected_gates, eigenvalues, is_standard
+):
+    num_qubits = np.random.randint(1, 100)
+    measured_qubits = (np.random.randint(0, num_qubits),)
+    observable = obs_class(*extra_args, targets=list(measured_qubits))
+    actual_gates = observable.diagonalizing_gates(num_qubits)
+    for gate in actual_gates:
+        assert np.allclose(gate.matrix, expected_gates.matrix)
     assert observable.measured_qubits == measured_qubits
+    if actual_gates:
+        assert observable.targets == measured_qubits
+    else:
+        assert observable.targets == ()
     assert np.allclose(observable.eigenvalues, eigenvalues)
     assert observable.is_standard == is_standard
+
+
+@pytest.mark.parametrize(
+    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata
+)
+def test_observable_properties_all_qubits(
+    obs_class, extra_args, expected_gates, eigenvalues, is_standard
+):
+    num_qubits = np.random.randint(1, 10)  # Smaller number so tests run faster
+    observable = obs_class(*extra_args)
+    actual_gates = observable.diagonalizing_gates(num_qubits)
+    for gate in actual_gates:
+        assert np.allclose(gate.matrix, expected_gates.matrix)
+    if actual_gates:
+        assert len(actual_gates) == num_qubits
+    assert not observable.measured_qubits
+    assert not observable.targets
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -77,12 +112,6 @@ def test_hermitian_invalid_none_target():
 
 
 def test_observable_known_diagonalization():
-    assert np.allclose(
-        observables.Hadamard([0]).diagonalizing_matrix, gate_operations.RotY([0], -np.pi / 4).matrix
-    )
-    assert np.allclose(
-        observables.PauliX([0]).diagonalizing_matrix, gate_operations.Hadamard([0]).matrix
-    )
     y_diag_expected = np.linalg.multi_dot(
         [
             gate_operations.Hadamard([0]).matrix,
@@ -90,7 +119,7 @@ def test_observable_known_diagonalization():
             gate_operations.PauliZ([0]).matrix,
         ]
     )
-    assert np.allclose(observables.PauliY([0]).diagonalizing_matrix, y_diag_expected)
+    assert np.allclose(observables.PauliY([0]).diagonalizing_gates()[0].matrix, y_diag_expected)
 
 
 def test_tensor_product_standard():
@@ -107,8 +136,12 @@ def test_tensor_product_standard():
     assert (tensor.eigenvalues == pauli_eigenvalues(4)).all()
     assert not tensor.is_standard
 
+    actual_gates = [gate.matrix for gate in tensor.diagonalizing_gates()]
     # Z ignored
-    assert (tensor.diagonalizing_matrix == np.kron(np.kron(h_diag, x_diag), y_diag)).all()
+    assert len(actual_gates) == 3
+    assert np.allclose(actual_gates[0], observables.Hadamard([0]).diagonalizing_gates()[0].matrix)
+    assert np.allclose(actual_gates[1], observables.PauliX([0]).diagonalizing_gates()[0].matrix)
+    assert np.allclose(actual_gates[2], observables.PauliY([0]).diagonalizing_gates()[0].matrix)
 
 
 def test_tensor_product_nonstandard():
@@ -165,8 +198,12 @@ def test_tensor_product_nonstandard():
     # Test cached
     assert (tensor.eigenvalues == eigenvalues).all()
 
+    actual_gates = [gate.matrix for gate in tensor.diagonalizing_gates()]
     # Both Identity and Z ignored
-    assert (tensor.diagonalizing_matrix == np.kron(np.kron(h_diag, x_diag), y_diag)).all()
+    assert len(actual_gates) == 3
+    assert np.allclose(actual_gates[0], observables.Hadamard([0]).diagonalizing_gates()[0].matrix)
+    assert np.allclose(actual_gates[1], observables.PauliX([0]).diagonalizing_gates()[0].matrix)
+    assert np.allclose(actual_gates[2], observables.PauliY([0]).diagonalizing_gates()[0].matrix)
 
 
 @pytest.mark.xfail(raises=ValueError)
