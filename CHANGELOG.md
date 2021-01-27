@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.1 (2021-01-27)
+
+### Bug Fixes and Other Changes
+
+ * Make tensor products more efficient
+
 ## v1.1.0.post2 (2021-01-12)
 
 ### Testing and Release Infrastructure
