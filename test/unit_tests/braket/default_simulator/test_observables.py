@@ -68,8 +68,8 @@ y_diag = np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
 def test_observable_properties_single_qubit(
     obs_class, extra_args, expected_gates, eigenvalues, is_standard
 ):
-    num_qubits = np.random.randint(1, 100)
-    measured_qubits = (np.random.randint(0, num_qubits),)
+    num_qubits = 50
+    measured_qubits = (20,)
     observable = obs_class(*extra_args, targets=list(measured_qubits))
     actual_gates = observable.diagonalizing_gates(num_qubits)
     for gate in actual_gates:
@@ -89,7 +89,7 @@ def test_observable_properties_single_qubit(
 def test_observable_properties_all_qubits(
     obs_class, extra_args, expected_gates, eigenvalues, is_standard
 ):
-    num_qubits = np.random.randint(1, 10)  # Smaller number so tests run faster
+    num_qubits = 10  # Smaller number so tests run faster
     observable = obs_class(*extra_args)
     actual_gates = observable.diagonalizing_gates(num_qubits)
     for gate in actual_gates:
