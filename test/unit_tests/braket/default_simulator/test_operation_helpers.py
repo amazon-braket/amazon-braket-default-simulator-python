@@ -22,7 +22,6 @@ from braket.default_simulator.operation_helpers import (
     check_hermitian,
     check_matrix_dimensions,
     check_unitary,
-    get_matrix,
     ir_matrix_to_ndarray,
 )
 
@@ -138,17 +137,3 @@ def test_check_unitary_invalid_matrix(matrix):
 @pytest.mark.parametrize("matrix", invalid_hermitian_matrices)
 def test_check_hermitian_invalid_matrix(matrix):
     check_hermitian(matrix)
-
-
-@pytest.mark.parametrize("operation", gate_testdata)
-def test_get_matrix_gate_operation(operation):
-    assert np.allclose(get_matrix(operation), operation.matrix)
-
-
-@pytest.mark.parametrize("operation", observable_testdata)
-def test_get_matrix_observable(operation):
-    matrix = get_matrix(operation)
-    if matrix is not None:
-        assert np.allclose(matrix, operation.diagonalizing_matrix)
-    else:
-        assert operation.diagonalizing_matrix is None

@@ -15,12 +15,11 @@ from typing import List, Tuple
 
 import numpy as np
 
-from braket.default_simulator.operation import Operation
-from braket.default_simulator.operation_helpers import get_matrix
+from braket.default_simulator.operation import GateOperation
 
 
 def apply_operations(
-    state: np.ndarray, qubit_count: int, operations: List[Operation]
+    state: np.ndarray, qubit_count: int, operations: List[GateOperation]
 ) -> np.ndarray:
     """Applies operations to a state vector one at a time.
 
@@ -28,22 +27,16 @@ def apply_operations(
         state (np.ndarray): The state vector to apply the given operations to, as a type
             (num_qubits, 0) tensor
         qubit_count (int): The number of qubits in the state
-        operations (List[Operation]): The operations to apply to the state vector
+        operations (List[GateOperation]): The operations to apply to the state vector
 
     Returns:
         np.ndarray: The state vector after applying the given operations, as a type
         (qubit_count, 0) tensor
     """
     for operation in operations:
-        matrix = get_matrix(operation)
+        matrix = operation.matrix
         targets = operation.targets
-        # `operation` is ignored if it acts trivially on its targets
-        if targets:
-            state = _apply_operation(state, qubit_count, matrix, targets)
-        elif targets is None:
-            # `operation` is an observable, and the only element in `operations`
-            for qubit in range(qubit_count):
-                state = _apply_operation(state, qubit_count, matrix, (qubit,))
+        state = _apply_operation(state, qubit_count, matrix, targets)
     return state
 
 

@@ -11,12 +11,10 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from functools import lru_cache, singledispatch
-from typing import List, Optional, Tuple
+from functools import lru_cache
+from typing import List, Tuple
 
 import numpy as np
-
-from braket.default_simulator.operation import GateOperation, Observable
 
 
 @lru_cache()
@@ -90,33 +88,3 @@ def check_hermitian(matrix: np.ndarray):
     """
     if not np.allclose(matrix, matrix.T.conj()):
         raise ValueError(f"{matrix} is not Hermitian")
-
-
-def get_matrix(operation) -> Optional[np.ndarray]:
-    """Gets the matrix of the given operation.
-
-    For a `GateOperation`, this is the gate's unitary matrix, and for an `Observable`,
-    this is its diagonalizing matrix.
-
-    Args:
-        operation: The operation whose matrix is needed
-
-    Returns:
-        np.ndarray: The matrix of the operation
-    """
-    return _get_matrix(operation)
-
-
-@singledispatch
-def _get_matrix(operation):
-    raise ValueError(f"Unrecognized operation: {operation}")
-
-
-@_get_matrix.register
-def _(gate: GateOperation):
-    return gate.matrix
-
-
-@_get_matrix.register
-def _(observable: Observable):
-    return observable.diagonalizing_matrix
