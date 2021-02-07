@@ -11,11 +11,13 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from functools import reduce
 from typing import List
 
 import numpy as np
 import opt_einsum
 
+from braket.default_simulator.gate_operations import Unitary
 from braket.default_simulator.operation import GateOperation
 
 
@@ -52,13 +54,46 @@ def apply_operations(
         np.ndarray: The state vector after applying the given operations, as a type
         (num_qubits, 0) tensor
     """
+    combined_operations = _combine_operations(operations, qubit_count)
+
     # TODO: Write algorithm to determine partition size based on operations and qubit count
-    partitions = [operations[i : i + batch_size] for i in range(0, len(operations), batch_size)]
+    partitions = [
+        combined_operations[i : i + batch_size]
+        for i in range(0, len(combined_operations), batch_size)
+    ]
 
     for partition in partitions:
         state = _contract_operations(state, qubit_count, partition)
 
     return state
+
+
+def _combine_operations(operations: List[GateOperation], qubit_count: int) -> List[GateOperation]:
+    groups = [[] for _ in range(qubit_count)]
+    last_targets_for_qubits = [None for _ in range(qubit_count)]
+    group_order = []
+
+    for operation in operations:
+        targets = operation.targets
+        first_qubit = sorted(targets)[0]
+        if all(last_targets_for_qubits[qubit] == targets for qubit in targets):
+            groups[first_qubit][-1].append(operation)
+        else:
+            group_order.append((first_qubit, len(groups[first_qubit])))
+            groups[first_qubit].append([operation])
+            for qubit in targets:
+                last_targets_for_qubits[qubit] = targets
+
+    combined_operations = []
+    for qubit, index in group_order:
+        group = groups[qubit][index]
+        combined_operations.append(
+            Unitary(
+                group[0].targets,
+                reduce(np.dot, [operation.matrix for operation in reversed(group)]),
+            )
+        )
+    return combined_operations
 
 
 def _contract_operations(
@@ -89,24 +124,3 @@ def _contract_operations(
     new_indices = [index_substitutions[i] for i in range(qubit_count)]
     contraction_parameters.append(new_indices)
     return opt_einsum.contract(*contraction_parameters)
-
-
-def _group_operations(operations: List[GateOperation], qubit_count: int):
-    groups = [[] for _ in range(qubit_count)]
-    last_targets_for_qubits = [None for _ in range(qubit_count)]
-    group_order = []
-
-    while operations:
-        operation = operations.pop(0)
-        targets = operation.targets
-        matrix = operation.matrix
-        first_qubit = sorted(targets)[0]
-        if all(last_targets_for_qubits[qubit] == targets for qubit in targets):
-            groups[first_qubit][-1].append(operation)
-        else:
-            group_order.append((first_qubit, len(groups[first_qubit])))
-            groups[first_qubit].append([operation])
-            for qubit in targets:
-                last_targets_for_qubits[qubit] = targets
-
-    return [groups[qubit][index] for qubit, index in group_order]
