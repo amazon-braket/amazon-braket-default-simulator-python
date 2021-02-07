@@ -89,3 +89,24 @@ def _contract_operations(
     new_indices = [index_substitutions[i] for i in range(qubit_count)]
     contraction_parameters.append(new_indices)
     return opt_einsum.contract(*contraction_parameters)
+
+
+def _group_operations(operations: List[GateOperation], qubit_count: int):
+    groups = [[] for _ in range(qubit_count)]
+    last_targets_for_qubits = [None for _ in range(qubit_count)]
+    group_order = []
+
+    while operations:
+        operation = operations.pop(0)
+        targets = operation.targets
+        matrix = operation.matrix
+        first_qubit = sorted(targets)[0]
+        if all(last_targets_for_qubits[qubit] == targets for qubit in targets):
+            groups[first_qubit][-1].append(operation)
+        else:
+            group_order.append((first_qubit, len(groups[first_qubit])))
+            groups[first_qubit].append([operation])
+            for qubit in targets:
+                last_targets_for_qubits[qubit] = targets
+
+    return [groups[qubit][index] for qubit, index in group_order]
