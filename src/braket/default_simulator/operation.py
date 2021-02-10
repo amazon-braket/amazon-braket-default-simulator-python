@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -48,6 +48,18 @@ class GateOperation(Operation, ABC):
         """np.ndarray: The matrix representation of the operation."""
 
 
+class KrausOperation(Operation, ABC):
+    """
+    Encapsulates a quantum channel acting on a set of target qubits in the Kraus operator
+    representation.
+    """
+
+    @property
+    @abstractmethod
+    def matrices(self) -> List[np.ndarray]:
+        """List[np.ndarray]: A list of matrices representating Kraus operators."""
+
+
 class Observable(Operation, ABC):
     """
     Encapsulates an observable to be measured in the computational basis.
@@ -78,18 +90,10 @@ class Observable(Operation, ABC):
         np.ndarray: The eigenvalues of the observable ordered by computational basis state.
         """
 
+    @property
     @abstractmethod
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
-        """The gates that diagonalize the observable in the computational basis.
-
-        Args:
-            num_qubits (int, optional): The number of qubits the observable acts on.
-                Only used if no target is specified, in which case a gate is created
-                for each target qubit. This only makes sense for single-qubit observables.
-
-        Returns:
-            Tuple[GateOperation, ...]: The gates that diagonalize the observable in the
-            computational basis, if it is not already in the computational basis.
-            If there is no explicit target, this method returns a tuple of gates
-            acting on every qubit.
+    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
+        """
+        Optional[np.ndarray]: The matrix that diagonalizes the observable
+        in the computational basis if it is not already in the computational basis.
         """

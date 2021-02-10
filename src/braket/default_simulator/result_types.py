@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
+from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
 from braket.default_simulator.observables import (
     Hadamard,
     Hermitian,
@@ -31,7 +32,7 @@ from braket.default_simulator.observables import (
 )
 from braket.default_simulator.operation import Observable
 from braket.default_simulator.operation_helpers import ir_matrix_to_ndarray
-from braket.default_simulator.simulation import StateVectorSimulation
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.ir import jaqcd
 
 
@@ -94,13 +95,13 @@ class ObservableResultType(ResultType, ABC):
         return self._observable
 
     def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
-        state = simulation.state_with_observables
+        probabilities = simulation._probabilities(simulation.state_with_observables)
         qubit_count = simulation.qubit_count
         eigenvalues = self._observable.eigenvalues
         targets = self._observable.measured_qubits
         if targets:
             return ObservableResultType._calculate_for_targets(
-                state,
+                probabilities,
                 qubit_count,
                 targets,
                 eigenvalues,
@@ -109,7 +110,7 @@ class ObservableResultType(ResultType, ABC):
         else:
             return [
                 ObservableResultType._calculate_for_targets(
-                    state,
+                    probabilities,
                     qubit_count,
                     [i],
                     eigenvalues,
@@ -135,9 +136,13 @@ class ObservableResultType(ResultType, ABC):
 
     @staticmethod
     def _calculate_for_targets(
-        state, qubit_count, targets, eigenvalues, calculate_from_prob_distribution
+        probabilities,
+        qubit_count,
+        targets,
+        eigenvalues,
+        calculate_from_prob_distribution,
     ):
-        prob = _marginal_probability(state, qubit_count, targets)
+        prob = _marginal_probability(probabilities, qubit_count, targets)
         return calculate_from_prob_distribution(prob, eigenvalues)
 
 
@@ -161,6 +166,29 @@ class StateVector(ResultType):
 @_from_braket_result_type.register
 def _(statevector: jaqcd.StateVector):
     return StateVector()
+
+
+class DensityMatrix(ResultType):
+    """
+    Simply returns the given density matrix.
+    """
+
+    def calculate(self, simulation: DensityMatrixSimulation) -> np.ndarray:
+        """Return the given density matrix of the simulation.
+
+        Args:
+            simulation (DensityMatrixSimulation): The simulation whose density matrix will be
+                returned
+
+        Returns:
+            np.ndarray: The density matrix (before observables) of the simulation
+        """
+        return simulation.density_matrix
+
+
+@_from_braket_result_type.register
+def _(densitymatrix: jaqcd.DensityMatrix):
+    return DensityMatrix()
 
 
 class Amplitude(ResultType):
@@ -224,7 +252,11 @@ class Probability(ResultType):
             indexed by the decimal encoding of the computational basis state on the target qubits
 
         """
-        return _marginal_probability(simulation.state_vector, simulation.qubit_count, self._targets)
+        return _marginal_probability(
+            simulation.probabilities,
+            simulation.qubit_count,
+            self._targets,
+        )
 
 
 @_from_braket_result_type.register
@@ -335,7 +367,9 @@ def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
 
 
 def _marginal_probability(
-    state: np.ndarray, qubit_count: int, targets: List[int] = None
+    probabilities: np.ndarray,
+    qubit_count: int,
+    targets: List[int] = None,
 ) -> np.ndarray:
     """Return the marginal probability of the computational basis states.
 
@@ -343,8 +377,6 @@ def _marginal_probability(
     the unused qubits. If no targets are specified, then the probability
     of all basis states is returned.
     """
-
-    probabilities = np.abs(state) ** 2
 
     if targets is None or targets == list(range(qubit_count)):
         # All qubits targeted, no need to marginalize

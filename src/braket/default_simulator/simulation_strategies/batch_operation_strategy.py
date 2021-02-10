@@ -16,11 +16,12 @@ from typing import List
 import numpy as np
 import opt_einsum
 
-from braket.default_simulator.operation import GateOperation
+from braket.default_simulator.operation import Operation
+from braket.default_simulator.operation_helpers import get_matrix
 
 
 def apply_operations(
-    state: np.ndarray, qubit_count: int, operations: List[GateOperation], batch_size: int
+    state: np.ndarray, qubit_count: int, operations: List[Operation], batch_size: int
 ) -> np.ndarray:
     r"""Applies operations to a state vector in batches of size :math:`batch\_size`.
 
@@ -45,7 +46,7 @@ def apply_operations(
         state (np.ndarray): The state vector to apply :math:`operations` to, as a type
             :math:`(qubit\_count, 0)` tensor
         qubit_count (int): The number of qubits in the state
-        operations (List[GateOperation]): The operations to apply to the state vector
+        operations (List[Operation]): The operations to apply to the state vector
         batch_size: The number of operations to contract in each batch
 
     Returns:
@@ -62,28 +63,39 @@ def apply_operations(
 
 
 def _contract_operations(
-    state: np.ndarray, qubit_count: int, operations: List[GateOperation]
+    state: np.ndarray, qubit_count: int, operations: List[Operation]
 ) -> np.ndarray:
     contraction_parameters = [state, list(range(qubit_count))]
     index_substitutions = {i: i for i in range(qubit_count)}
     next_index = qubit_count
     for operation in operations:
-        matrix = operation.matrix
+        matrix = get_matrix(operation)
         targets = operation.targets
 
-        # Lower indices, which will be traced out
-        covariant = [index_substitutions[i] for i in targets]
+        # `operation` is not added to the contraction parameters if
+        # it acts trivially on its targets
+        if targets:
+            # Lower indices, which will be traced out
+            covariant = [index_substitutions[i] for i in targets]
 
-        # Upper indices, which will replace the contracted indices in the state vector
-        contravariant = list(range(next_index, next_index + len(covariant)))
+            # Upper indices, which will replace the contracted indices in the state vector
+            contravariant = list(range(next_index, next_index + len(covariant)))
 
-        indices = contravariant + covariant
-        # `matrix` as type-(len(contravariant), len(covariant)) tensor
-        matrix_as_tensor = np.reshape(matrix, [2] * len(indices))
+            indices = contravariant + covariant
+            # `matrix` as type-(len(contravariant), len(covariant)) tensor
+            matrix_as_tensor = np.reshape(matrix, [2] * len(indices))
 
-        contraction_parameters += [matrix_as_tensor, indices]
-        next_index += len(covariant)
-        index_substitutions.update({targets[i]: contravariant[i] for i in range(len(targets))})
+            contraction_parameters += [matrix_as_tensor, indices]
+            next_index += len(covariant)
+            index_substitutions.update({targets[i]: contravariant[i] for i in range(len(targets))})
+        elif targets is None:
+            # `operation` is an observable, and the only element in `operations`
+            for qubit in range(qubit_count):
+                # Since observables don't overlap,
+                # there's no need to track index replacements
+                contraction_parameters += [matrix, [next_index, qubit]]
+                index_substitutions[qubit] = next_index
+                next_index += 1
 
     # Ensure state is in correct order
     new_indices = [index_substitutions[i] for i in range(qubit_count)]
