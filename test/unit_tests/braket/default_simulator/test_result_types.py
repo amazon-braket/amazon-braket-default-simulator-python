@@ -20,6 +20,7 @@ from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.observables import Hadamard, PauliX, TensorProduct
 from braket.default_simulator.result_types import (
     Amplitude,
+    DensityMatrix,
     Expectation,
     Probability,
     StateVector,
@@ -52,6 +53,11 @@ def state_vector():
 
 
 @pytest.fixture
+def density_matrix(state_vector):
+    return np.outer(state_vector, state_vector.conj())
+
+
+@pytest.fixture
 def simulation(state_vector):
     sim = StateVectorSimulation(4, NUM_SAMPLES, 1)
     sim._state_vector = state_vector
@@ -80,6 +86,11 @@ def observable():
 def test_state_vector(simulation, state_vector):
     result_type = StateVector()
     assert np.allclose(result_type.calculate(simulation), state_vector)
+
+
+def test_density_matrix(simulation, density_matrix):
+    result_type = DensityMatrix()
+    assert np.allclose(result_type.calculate(simulation), density_matrix)
 
 
 def test_amplitude(simulation, state_vector):
@@ -133,6 +144,10 @@ def test_variance_no_targets():
 
 def test_from_braket_result_type_statevector():
     assert isinstance(from_braket_result_type(jaqcd.StateVector()), StateVector)
+
+
+def test_from_braket_result_type_densitymatrix():
+    assert isinstance(from_braket_result_type(jaqcd.DensityMatrix()), DensityMatrix)
 
 
 def test_from_braket_result_type_amplitude():
