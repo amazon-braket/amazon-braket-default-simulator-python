@@ -11,10 +11,21 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-# Execute initialization code in the gate_operations module
-from braket.default_simulator import gate_operations, observables, result_types  # noqa: F401
-from braket.default_simulator.operation import GateOperation, Observable  # noqa: F401
-from braket.default_simulator.simulation import StateVectorSimulation  # noqa: F401
-from braket.default_simulator.simulator import DefaultSimulator  # noqa: F401
+# Execute initialization code in the gate_operations amd noise_operations module
+from braket.default_simulator import (  # noqa: F401
+    gate_operations,
+    noise_operations,
+    observables,
+    result_types,
+)
+from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation  # noqa: F401
+from braket.default_simulator.density_matrix_simulator import DensityMatrixSimulator  # noqa: F401
+from braket.default_simulator.operation import (  # noqa: F401
+    GateOperation,
+    KrausOperation,
+    Observable,
+)
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation  # noqa: F401
+from braket.default_simulator.state_vector_simulator import DefaultSimulator  # noqa: F401
 
 from ._version import __version__  # noqa: F401
