@@ -12,9 +12,9 @@
 # language governing permissions and limitations under the License.
 
 import uuid
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Union
 import numpy as np
-from braket.default_simulator.observables import Hermitian, TensorProduct
+from braket.default_simulator.observables import Hermitian, Identity, TensorProduct
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
