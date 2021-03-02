@@ -15,7 +15,7 @@ from typing import List
 
 import numpy as np
 
-from braket.default_simulator.operation import GateOperation, Observable, Operation
+from braket.default_simulator.operation import GateOperation, Observable
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulation_strategies import (
     batch_operation_strategy,

@@ -12,11 +12,11 @@
 # language governing permissions and limitations under the License.
 
 from functools import lru_cache, singledispatch
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 
-from braket.default_simulator.operation import GateOperation, KrausOperation, Observable
+from braket.default_simulator.operation import GateOperation, KrausOperation
 
 
 def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]:
