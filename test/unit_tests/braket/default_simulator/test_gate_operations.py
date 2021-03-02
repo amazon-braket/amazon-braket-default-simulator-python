@@ -11,9 +11,9 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import braket.ir.jaqcd as instruction
 import pytest
 
-import braket.ir.jaqcd as instruction
 from braket.default_simulator import gate_operations
 from braket.default_simulator.operation_helpers import check_unitary, from_braket_instruction
 
@@ -73,13 +73,9 @@ testdata = [
 ]
 
 
-@pytest.mark.parametrize("instruction, targets, operation_type", testdata)
-def test_gate_operation_matrix_is_unitary(instruction, targets, operation_type):
-    check_unitary(from_braket_instruction(instruction).matrix)
-
-
-@pytest.mark.parametrize("instruction, targets, operation_type", testdata)
-def test_from_braket_instruction(instruction, targets, operation_type):
-    operation_instance = from_braket_instruction(instruction)
+@pytest.mark.parametrize("ir_instruction, targets, operation_type", testdata)
+def test_gate_operation(ir_instruction, targets, operation_type):
+    operation_instance = from_braket_instruction(ir_instruction)
     assert isinstance(operation_instance, operation_type)
     assert operation_instance.targets == targets
+    check_unitary(operation_instance.matrix)

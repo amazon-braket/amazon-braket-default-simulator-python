@@ -16,7 +16,6 @@ from typing import List, Tuple, Union
 import numpy as np
 
 from braket.default_simulator.operation import GateOperation, KrausOperation, Observable
-from braket.default_simulator.operation_helpers import get_matrix
 from braket.default_simulator.simulation import Simulation
 
 
@@ -91,7 +90,7 @@ class DensityMatrixSimulation(Simulation):
         """
         dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
         for operation in operations:
-            matrix = get_matrix(operation)
+            matrix = operation.matrix
             targets = operation.targets
 
             if targets:

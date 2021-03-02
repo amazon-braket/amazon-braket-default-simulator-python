@@ -92,8 +92,17 @@ class Observable(Operation, ABC):
 
     @property
     @abstractmethod
-    def diagonalizing_matrix(self) -> Optional[np.ndarray]:
-        """
-        Optional[np.ndarray]: The matrix that diagonalizes the observable
-        in the computational basis if it is not already in the computational basis.
+    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
+        """The gates that diagonalize the observable in the computational basis.
+
+        Args:
+            num_qubits (int, optional): The number of qubits the observable acts on.
+                Only used if no target is specified, in which case a gate is created
+                for each target qubit. This only makes sense for single-qubit observables.
+
+        Returns:
+            Tuple[GateOperation, ...]: The gates that diagonalize the observable in the
+            computational basis, if it is not already in the computational basis.
+            If there is no explicit target, this method returns a tuple of gates
+            acting on every qubit.
         """

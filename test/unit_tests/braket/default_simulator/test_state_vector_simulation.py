@@ -247,13 +247,6 @@ def test_state_with_observables_fails_before_applying(batch_size):
 
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
-@pytest.mark.xfail(raises=ValueError)
-def test_build_contraction_fails_unrecognised_operation(batch_size):
-    simulation = StateVectorSimulation(4, 0, batch_size)
-    simulation.evolve([gate_operations.PauliX([0]), "foo"])
-
-
-@pytest.mark.parametrize("batch_size", [1, 5, 10])
 def test_simulation_qft_circuit(qft_circuit_operations, batch_size):
     qubit_count = 16
     simulation = StateVectorSimulation(qubit_count, 0, batch_size)

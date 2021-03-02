@@ -11,7 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-# Execute initialization code in the gate_operations amd noise_operations module
+# Execute initialization code in the gate_operations module
 from braket.default_simulator import (  # noqa: F401
     gate_operations,
     noise_operations,
@@ -27,5 +27,3 @@ from braket.default_simulator.operation import (  # noqa: F401
 )
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation  # noqa: F401
 from braket.default_simulator.state_vector_simulator import DefaultSimulator  # noqa: F401
-
-from ._version import __version__  # noqa: F401

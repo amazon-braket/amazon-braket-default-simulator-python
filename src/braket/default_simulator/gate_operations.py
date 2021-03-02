@@ -17,9 +17,9 @@ import cmath
 import math
 from typing import Tuple
 
+import braket.ir.jaqcd as braket_instruction
 import numpy as np
 
-import braket.ir.jaqcd as braket_instruction
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.operation_helpers import (
     _from_braket_instruction,

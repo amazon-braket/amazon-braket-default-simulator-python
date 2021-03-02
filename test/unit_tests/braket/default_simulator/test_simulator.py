@@ -59,15 +59,76 @@ def test_validate_and_consolidate_observable_result_types_tensor_product():
         Expectation(observables.TensorProduct([observables.PauliX([2]), observables.PauliY([3])])),
     ]
     actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
-    assert len(actual_obs) == 2
-    assert actual_obs[0].measured_qubits == (
-        0,
-        1,
+    assert len(actual_obs) == 4
+    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,), (3,)]
+
+
+def test_validate_and_consolidate_observable_result_types_tensor_product_shared_factor():
+    obs_rts = [
+        Expectation(observables.PauliX([0])),
+        Variance(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
+        Expectation(observables.TensorProduct([observables.PauliY([1]), observables.PauliX([2])])),
+    ]
+    actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
+    assert len(actual_obs) == 3
+    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,)]
+
+
+def test_validate_and_consolidate_observable_result_types_tensor_product_hermitian_shared_factor():
+    obs_rts = [
+        Expectation(observables.PauliX([0])),
+        Variance(
+            observables.TensorProduct(
+                [
+                    observables.PauliX([0]),
+                    observables.Hermitian(np.eye(4), [1, 2]),
+                    observables.PauliY([3]),
+                ]
+            )
+        ),
+        Expectation(
+            observables.TensorProduct(
+                [observables.Hermitian(np.eye(4), [1, 2]), observables.PauliY([3])]
+            )
+        ),
+    ]
+    actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
+    assert len(actual_obs) == 3
+    assert [obs.measured_qubits for obs in actual_obs] == [
+        (0,),
+        (
+            1,
+            2,
+        ),
+        (3,),
+    ]
+
+
+def test_validate_and_consolidate_observable_result_types_identity_allowed():
+    obs_rts = [
+        Expectation(observables.PauliX([0])),
+        Expectation(observables.Identity([4])),
+        Variance(observables.Identity([2])),
+        Variance(observables.TensorProduct([observables.Identity([1]), observables.PauliX([3])])),
+        Expectation(
+            observables.TensorProduct([observables.PauliY([1]), observables.Identity([3])])
+        ),
+        Variance(observables.Identity([0])),
+        Expectation(observables.PauliX([2])),
+    ]
+    actual_obs = BaseLocalSimulator._validate_and_consolidate_observable_result_types(obs_rts, 5)
+    assert len(actual_obs) == 5
+    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (3,), (1,), (2,), (4,)]
+
+
+def test_observable_hash_tensor_product():
+    matrix = np.eye(4)
+    obs = observables.TensorProduct(
+        [observables.PauliX([0]), observables.Hermitian(matrix, [1, 2]), observables.PauliY([1])]
     )
-    assert actual_obs[1].measured_qubits == (
-        2,
-        3,
-    )
+    hash_dict = BaseLocalSimulator._observable_hash(obs)
+    matrix_hash = hash_dict[1]
+    assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
 
 
 @pytest.mark.parametrize(

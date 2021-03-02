@@ -126,38 +126,3 @@ def check_cptp(matrices: List[np.ndarray]):
     E = sum([np.matmul(matrix.T.conjugate(), matrix) for matrix in matrices])
     if not np.allclose(E, np.eye(*E.shape)):
         raise ValueError(f"{matrices} do not define a CPTP map")
-
-
-def get_matrix(operation) -> Optional[np.ndarray]:
-    """Gets the matrix of the given operation.
-
-    For a `GateOperation`, this is the gate's unitary matrix, and for an `Observable`,
-    this is its diagonalizing matrix.
-
-    Args:
-        operation: The operation whose matrix is needed
-
-    Returns:
-        np.ndarray: The matrix of the operation
-    """
-    return _get_matrix(operation)
-
-
-@singledispatch
-def _get_matrix(operation):
-    raise ValueError(f"Unrecognized operation: {operation}")
-
-
-@_get_matrix.register
-def _(gate: GateOperation):
-    return gate.matrix
-
-
-@_get_matrix.register
-def _(kraus: KrausOperation):
-    return kraus.matrices
-
-
-@_get_matrix.register
-def _(observable: Observable):
-    return observable.diagonalizing_matrix

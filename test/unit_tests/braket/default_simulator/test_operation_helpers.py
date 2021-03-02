@@ -16,6 +16,7 @@ import math
 
 import numpy as np
 import pytest
+from braket.ir.jaqcd import shared_models
 
 from braket.default_simulator import gate_operations, observables, operation_helpers
 from braket.default_simulator.operation_helpers import (
@@ -24,10 +25,8 @@ from braket.default_simulator.operation_helpers import (
     check_matrix_dimensions,
     check_unitary,
     from_braket_instruction,
-    get_matrix,
     ir_matrix_to_ndarray,
 )
-from braket.ir.jaqcd import shared_models
 
 z_matrix = np.array([[1, 0], [0, -1]])
 
@@ -159,20 +158,6 @@ def test_check_cptp_invalid_matrix(matrices):
 @pytest.mark.parametrize("matrices", valid_CPTP_matrices)
 def test_check_cptp(matrices):
     check_cptp(matrices)
-
-
-@pytest.mark.parametrize("operation", gate_testdata)
-def test_get_matrix_gate_operation(operation):
-    assert np.allclose(get_matrix(operation), operation.matrix)
-
-
-@pytest.mark.parametrize("operation", observable_testdata)
-def test_get_matrix_observable(operation):
-    matrix = get_matrix(operation)
-    if matrix is not None:
-        assert np.allclose(matrix, operation.diagonalizing_matrix)
-    else:
-        assert operation.diagonalizing_matrix is None
 
 
 @pytest.mark.xfail(raises=ValueError)

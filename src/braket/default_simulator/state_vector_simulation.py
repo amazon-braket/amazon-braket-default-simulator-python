@@ -101,12 +101,12 @@ class StateVectorSimulation(Simulation):
             )
         )
         self._post_observables = StateVectorSimulation._apply_operations(
-            self._state_vector, self._qubit_count, observables, self._batch_size
+            self._state_vector, self._qubit_count, operations, self._batch_size
         )
 
     @staticmethod
     def _apply_operations(
-        state: np.ndarray, qubit_count: int, operations: List[Operation], batch_size: int
+        state: np.ndarray, qubit_count: int, operations: List[GateOperation], batch_size: int
     ) -> np.ndarray:
         state_tensor = np.reshape(state, [2] * qubit_count)
         final = (
