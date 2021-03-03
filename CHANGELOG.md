@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.1.post0 (2021-03-03)
+
+### Testing and Release Infrastructure
+
+ * Add team to CODEOWNERS
+ * Use main instead of PyPi for build dependencies
+
 ## v1.1.1 (2021-01-27)
 
 ### Bug Fixes and Other Changes
