@@ -22,11 +22,31 @@ testdata = [
     (instruction.PhaseFlip(target=6, probability=0.23), (6,), noise_operations.PhaseFlip),
     (instruction.Depolarizing(target=3, probability=0.45), (3,), noise_operations.Depolarizing),
     (
-        instruction.AmplitudeDamping(target=3, probability=0.67),
+        instruction.TwoQubitDepolarizing(targets=[3, 4], probability=0.45),
+        ([3, 4],),
+        noise_operations.TwoQubitDepolarizing,
+    ),
+    (
+        instruction.TwoQubitDephasing(targets=[3, 4], probability=0.45),
+        ([3, 4],),
+        noise_operations.TwoQubitDephasing,
+    ),
+    (
+        instruction.AmplitudeDamping(target=3, gamma=0.67),
         (3,),
         noise_operations.AmplitudeDamping,
     ),
-    (instruction.PhaseDamping(target=0, probability=0.89), (0,), noise_operations.PhaseDamping),
+    (
+        instruction.GeneralizedAmplitudeDamping(target=3, probability=0.67, gamma=0.1),
+        (3,),
+        noise_operations.GeneralizedAmplitudeDamping,
+    ),
+    (
+        instruction.GeneralPauli(target=5, probX=0.1, probY=0.2, probZ=0.3),
+        (5,),
+        noise_operations.GeneralPauli,
+    ),
+    (instruction.PhaseDamping(target=0, gamma=0.89), (0,), noise_operations.PhaseDamping),
     (
         instruction.Kraus(
             targets=[4],

@@ -60,6 +60,37 @@ def _phase_flip(instruction) -> PhaseFlip:
     return PhaseFlip([instruction.target], instruction.probability)
 
 
+class GeneralPauli(KrausOperation):
+    """General Pauli noise channel"""
+
+    def __init__(self, targets, probX, probY, probZ):
+        self._targets = tuple(targets)
+        self._probX = probX
+        self._probY = probY
+        self._probZ = probZ
+
+    @property
+    def matrices(self) -> np.ndarray:
+        K0 = np.sqrt(1 - self._probX - self._probY - self._probZ) * np.array(
+            [[1.0, 0.0], [0.0, 1.0]]
+        )
+        K1 = np.sqrt(self._probX) * np.array([[0.0, 1.0], [1.0, 0.0]])
+        K2 = np.sqrt(self._probY) * np.array([[0.0, -1.0j], [1.0j, 0.0]])
+        K3 = np.sqrt(self._probZ) * np.array([[1.0, 0.0], [0.0, -1.0]])
+        return [K0, K1, K2, K3]
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+@_from_braket_instruction.register(braket_instruction.GeneralPauli)
+def _general_pauli(instruction) -> GeneralPauli:
+    return GeneralPauli(
+        [instruction.target], instruction.probX, instruction.probY, instruction.probZ
+    )
+
+
 class Depolarizing(KrausOperation):
     """Depolarizing noise channel"""
 
@@ -87,8 +118,8 @@ def _depolarizing(instruction) -> Depolarizing:
     return Depolarizing([instruction.target], instruction.probability)
 
 
-class AmplitudeDamping(KrausOperation):
-    """Amplitude Damping noise channel"""
+class TwoQubitDepolarizing(KrausOperation):
+    """Two-qubit Depolarizing noise channel"""
 
     def __init__(self, targets, probability):
         self._targets = tuple(targets)
@@ -96,8 +127,71 @@ class AmplitudeDamping(KrausOperation):
 
     @property
     def matrices(self) -> np.ndarray:
-        K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._probability)]], dtype=complex)
-        K1 = np.array([[0.0, np.sqrt(self._probability)], [0.0, 0.0]], dtype=complex)
+
+        SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
+        SX = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
+        SY = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
+        SZ = np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
+
+        K_list_single = [SI, SX, SY, SZ]
+        K_list = [np.kron(i, j) for i in K_list_single for j in K_list_single]
+
+        K_list[0] *= np.sqrt(1 - self._probability)
+
+        K_list[1:] = [np.sqrt(self._probability / 15) * i for i in K_list[1:]]
+
+        return K_list
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+@_from_braket_instruction.register(braket_instruction.TwoQubitDepolarizing)
+def _two_qubit_depolarizing(instruction) -> TwoQubitDepolarizing:
+    return TwoQubitDepolarizing([instruction.targets], instruction.probability)
+
+
+class TwoQubitDephasing(KrausOperation):
+    """Two-qubit Dephasing noise channel"""
+
+    def __init__(self, targets, probability):
+        self._targets = tuple(targets)
+        self._probability = probability
+
+    @property
+    def matrices(self) -> np.ndarray:
+
+        SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
+        SZ = np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
+        K0 = np.sqrt(1 - self._probability) * np.kron(SI, SI)
+        K1 = np.sqrt(self._probability / 3) * np.kron(SI, SZ)
+        K2 = np.sqrt(self._probability / 3) * np.kron(SZ, SI)
+        K3 = np.sqrt(self._probability / 3) * np.kron(SZ, SZ)
+
+        return [K0, K1, K2, K3]
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+@_from_braket_instruction.register(braket_instruction.TwoQubitDephasing)
+def _two_qubit_dephasing(instruction) -> TwoQubitDephasing:
+    return TwoQubitDephasing([instruction.targets], instruction.probability)
+
+
+class AmplitudeDamping(KrausOperation):
+    """Amplitude Damping noise channel"""
+
+    def __init__(self, targets, gamma):
+        self._targets = tuple(targets)
+        self._gamma = gamma
+
+    @property
+    def matrices(self) -> np.ndarray:
+        K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex)
+        K1 = np.array([[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex)
         return [K0, K1]
 
     @property
@@ -107,20 +201,51 @@ class AmplitudeDamping(KrausOperation):
 
 @_from_braket_instruction.register(braket_instruction.AmplitudeDamping)
 def _amplitude_damping(instruction) -> AmplitudeDamping:
-    return AmplitudeDamping([instruction.target], instruction.probability)
+    return AmplitudeDamping([instruction.target], instruction.gamma)
+
+
+class GeneralizedAmplitudeDamping(KrausOperation):
+    """Generalized Amplitude Damping noise channel"""
+
+    def __init__(self, targets, probability, gamma):
+        self._targets = tuple(targets)
+        self._probability = probability
+        self._gamma = gamma
+
+    @property
+    def matrices(self) -> np.ndarray:
+        K0 = np.sqrt(self._probability) * np.array(
+            [[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex
+        )
+        K1 = np.sqrt(self._probability) * np.array([[0.0, np.sqrt(self._gamma)],
+            [0.0, 0.0]], dtype=complex)
+        K2 = np.sqrt(1 - self._probability) * np.array([[np.sqrt(1 - self._gamma), 0.0],
+            [0.0, 1.0]])
+        K3 = np.sqrt(1 - self._probability) * np.array([[0.0, 0.0], [np.sqrt(self._gamma), 0.0]])
+        return [K0, K1, K2, K3]
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+@_from_braket_instruction.register(braket_instruction.GeneralizedAmplitudeDamping)
+def _generalized_amplitude_damping(instruction) -> GeneralizedAmplitudeDamping:
+    return GeneralizedAmplitudeDamping([instruction.target], instruction.probability,
+            instruction.gamma)
 
 
 class PhaseDamping(KrausOperation):
     """Phase Damping noise channel"""
 
-    def __init__(self, targets, probability):
+    def __init__(self, targets, gamma):
         self._targets = tuple(targets)
-        self._probability = probability
+        self._gamma = gamma
 
     @property
     def matrices(self) -> np.ndarray:
-        K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._probability)]], dtype=complex)
-        K1 = np.array([[0.0, 0.0], [0.0, np.sqrt(self._probability)]], dtype=complex)
+        K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex)
+        K1 = np.array([[0.0, 0.0], [0.0, np.sqrt(self._gamma)]], dtype=complex)
         return [K0, K1]
 
     @property
@@ -130,7 +255,7 @@ class PhaseDamping(KrausOperation):
 
 @_from_braket_instruction.register(braket_instruction.PhaseDamping)
 def _phase_damping(instruction) -> PhaseDamping:
-    return PhaseDamping([instruction.target], instruction.probability)
+    return PhaseDamping([instruction.target], instruction.gamma)
 
 
 class Kraus(KrausOperation):
