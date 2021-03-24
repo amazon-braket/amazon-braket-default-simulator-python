@@ -217,10 +217,12 @@ class GeneralizedAmplitudeDamping(KrausOperation):
         K0 = np.sqrt(self._probability) * np.array(
             [[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex
         )
-        K1 = np.sqrt(self._probability) * np.array([[0.0, np.sqrt(self._gamma)],
-            [0.0, 0.0]], dtype=complex)
-        K2 = np.sqrt(1 - self._probability) * np.array([[np.sqrt(1 - self._gamma), 0.0],
-            [0.0, 1.0]])
+        K1 = np.sqrt(self._probability) * np.array(
+            [[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex
+        )
+        K2 = np.sqrt(1 - self._probability) * np.array(
+            [[np.sqrt(1 - self._gamma), 0.0], [0.0, 1.0]]
+        )
         K3 = np.sqrt(1 - self._probability) * np.array([[0.0, 0.0], [np.sqrt(self._gamma), 0.0]])
         return [K0, K1, K2, K3]
 
@@ -231,8 +233,9 @@ class GeneralizedAmplitudeDamping(KrausOperation):
 
 @_from_braket_instruction.register(braket_instruction.GeneralizedAmplitudeDamping)
 def _generalized_amplitude_damping(instruction) -> GeneralizedAmplitudeDamping:
-    return GeneralizedAmplitudeDamping([instruction.target], instruction.probability,
-            instruction.gamma)
+    return GeneralizedAmplitudeDamping(
+        [instruction.target], instruction.probability, instruction.gamma
+    )
 
 
 class PhaseDamping(KrausOperation):

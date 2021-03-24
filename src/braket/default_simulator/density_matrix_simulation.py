@@ -69,8 +69,14 @@ class DensityMatrixSimulation(Simulation):
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
+        operations = list(
+            sum(
+                [observable.diagonalizing_gates(self._qubit_count) for observable in observables],
+                (),
+            )
+        )
         self._post_observables = DensityMatrixSimulation._apply_operations(
-            self._density_matrix, self._qubit_count, observables
+            self._density_matrix, self._qubit_count, operations
         )
 
     @staticmethod
@@ -90,7 +96,10 @@ class DensityMatrixSimulation(Simulation):
         """
         dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
         for operation in operations:
-            matrix = operation.matrix
+            if isinstance(operation, KrausOperation):
+                matrix = operation.matrices
+            else:
+                matrix = operation.matrix
             targets = operation.targets
 
             if targets:
