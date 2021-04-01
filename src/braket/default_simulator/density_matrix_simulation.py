@@ -102,21 +102,14 @@ class DensityMatrixSimulation(Simulation):
                 matrix = operation.matrix
             targets = operation.targets
 
-            if targets:
-                if isinstance(operation, (GateOperation, Observable)):
-                    dm_tensor = DensityMatrixSimulation._apply_gate(
-                        dm_tensor, qubit_count, matrix, targets
-                    )
-                if isinstance(operation, KrausOperation):
-                    dm_tensor = DensityMatrixSimulation._apply_kraus(
-                        dm_tensor, qubit_count, matrix, targets
-                    )
-            elif targets is None:
-                # `operation` is an observable, and the only element in `operations`
-                for qubit in range(qubit_count):
-                    dm_tensor = DensityMatrixSimulation._apply_gate(
-                        dm_tensor, qubit_count, matrix, (qubit,)
-                    )
+            if isinstance(operation, (GateOperation, Observable)):
+                dm_tensor = DensityMatrixSimulation._apply_gate(
+                    dm_tensor, qubit_count, matrix, targets
+                )
+            if isinstance(operation, KrausOperation):
+                dm_tensor = DensityMatrixSimulation._apply_kraus(
+                    dm_tensor, qubit_count, matrix, targets
+                )
 
         return np.reshape(dm_tensor, (2 ** qubit_count, 2 ** qubit_count))
 

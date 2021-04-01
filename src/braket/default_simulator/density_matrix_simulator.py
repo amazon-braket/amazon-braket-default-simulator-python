@@ -24,7 +24,7 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 
 class DensityMatrixSimulator(BaseLocalSimulator):
 
-    DEVICE_ID = "density_matrix"
+    DEVICE_ID = "Braket-DM"
 
     def initialize_simulation(self, **kwargs):
         qubit_count = kwargs.get("qubit_count")

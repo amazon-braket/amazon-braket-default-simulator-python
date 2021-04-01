@@ -24,7 +24,7 @@ from braket.default_simulator.state_vector_simulation import StateVectorSimulati
 
 class DefaultSimulator(BaseLocalSimulator):
 
-    DEVICE_ID = "default"
+    DEVICE_ID = "Braket-SV"
 
     def initialize_simulation(self, **kwargs):
         qubit_count = kwargs.get("qubit_count")

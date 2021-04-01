@@ -33,7 +33,7 @@ from braket.default_simulator.result_types import (
     ResultType,
     from_braket_result_type,
 )
-from braket.default_simulator.state_vector_simulation import StateVectorSimulation
+from braket.default_simulator.simulation import Simulation
 from braket.simulator import BraketSimulator
 
 
@@ -124,9 +124,17 @@ class BaseLocalSimulator(BraketSimulator):
         supported_instructions_name = self.properties.action[
             DeviceActionType.JAQCD
         ].supportedOperations
+        noise_instructions_name = [
+        'AmplitudeDamping', 'BitFlip', 'Depolarizing', 'GeneralizedAmplitudeDamping',
+        'GeneralPauli', 'Kraus', 'PhaseFlip', 'PhaseDamping', 'TwoQubitDephasing',
+        'TwoQubitDepolarizing']
         for name in circuit_instructions_name:
-            if name not in supported_instructions_name:
-                raise TypeError(f"instruction {name} is not supported by {self.__class__.__name__}")
+            if name in noise_instructions_name:
+                if name not in supported_instructions_name:
+                    raise TypeError(
+                    "Noise instructions are not supported by the state vector simulator (by default). \
+You need to use the density matrix simualtor: LocalSimulator(\"Braket-DM\").")
+
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
@@ -163,6 +171,7 @@ class BaseLocalSimulator(BraketSimulator):
                 "Non-contiguous qubit indices supplied; "
                 "qubit indices in a circuit must be contiguous."
             )
+
 
     @staticmethod
     def _get_measured_qubits(qubit_count: int) -> List[int]:
@@ -373,11 +382,11 @@ class BaseLocalSimulator(BraketSimulator):
         return results
 
     @staticmethod
-    def _formatted_measurements(simulation: StateVectorSimulation) -> List[List[str]]:
+    def _formatted_measurements(simulation: Simulation) -> List[List[str]]:
         """Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
-            simulation (StateVectorSimulation): Simulation to use for obtaining the measurements.
+            simulation (Simulation): Simulation to use for obtaining the measurements.
 
         Returns:
             List[List[str]]: List containing the measurements, where each measurement consists
@@ -392,7 +401,7 @@ class BaseLocalSimulator(BraketSimulator):
         self,
         results: List[Dict[str, Any]],
         circuit_ir: Program,
-        simulation: StateVectorSimulation,
+        simulation: Simulation,
     ) -> GateModelTaskResult:
         result_dict = {
             "taskMetadata": TaskMetadata(
