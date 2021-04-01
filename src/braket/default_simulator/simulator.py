@@ -125,16 +125,24 @@ class BaseLocalSimulator(BraketSimulator):
             DeviceActionType.JAQCD
         ].supportedOperations
         noise_instructions_name = [
-        'AmplitudeDamping', 'BitFlip', 'Depolarizing', 'GeneralizedAmplitudeDamping',
-        'GeneralPauli', 'Kraus', 'PhaseFlip', 'PhaseDamping', 'TwoQubitDephasing',
-        'TwoQubitDepolarizing']
+            "AmplitudeDamping",
+            "BitFlip",
+            "Depolarizing",
+            "GeneralizedAmplitudeDamping",
+            "GeneralPauli",
+            "Kraus",
+            "PhaseFlip",
+            "PhaseDamping",
+            "TwoQubitDephasing",
+            "TwoQubitDepolarizing",
+        ]
         for name in circuit_instructions_name:
             if name in noise_instructions_name:
                 if name not in supported_instructions_name:
                     raise TypeError(
-                    "Noise instructions are not supported by the state vector simulator (by default). \
-You need to use the density matrix simualtor: LocalSimulator(\"Braket-DM\").")
-
+                        'Noise instructions are not supported by the state vector simulator (by default). \
+You need to use the density matrix simualtor: LocalSimulator("Braket-DM").'
+                    )
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
@@ -171,7 +179,6 @@ You need to use the density matrix simualtor: LocalSimulator(\"Braket-DM\").")
                 "Non-contiguous qubit indices supplied; "
                 "qubit indices in a circuit must be contiguous."
             )
-
 
     @staticmethod
     def _get_measured_qubits(qubit_count: int) -> List[int]:
