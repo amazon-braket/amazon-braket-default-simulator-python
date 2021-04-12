@@ -149,7 +149,7 @@ class TwoQubitDepolarizing(KrausOperation):
 
 @_from_braket_instruction.register(braket_instruction.TwoQubitDepolarizing)
 def _two_qubit_depolarizing(instruction) -> TwoQubitDepolarizing:
-    return TwoQubitDepolarizing([instruction.targets], instruction.probability)
+    return TwoQubitDepolarizing(instruction.targets, instruction.probability)
 
 
 class TwoQubitDephasing(KrausOperation):
@@ -178,7 +178,7 @@ class TwoQubitDephasing(KrausOperation):
 
 @_from_braket_instruction.register(braket_instruction.TwoQubitDephasing)
 def _two_qubit_dephasing(instruction) -> TwoQubitDephasing:
-    return TwoQubitDephasing([instruction.targets], instruction.probability)
+    return TwoQubitDephasing(instruction.targets, instruction.probability)
 
 
 class AmplitudeDamping(KrausOperation):

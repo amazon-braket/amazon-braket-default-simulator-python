@@ -23,12 +23,18 @@ testdata = [
     (instruction.Depolarizing(target=3, probability=0.45), (3,), noise_operations.Depolarizing),
     (
         instruction.TwoQubitDepolarizing(targets=[3, 4], probability=0.45),
-        ([3, 4],),
+        (
+            3,
+            4,
+        ),
         noise_operations.TwoQubitDepolarizing,
     ),
     (
         instruction.TwoQubitDephasing(targets=[3, 4], probability=0.45),
-        ([3, 4],),
+        (
+            3,
+            4,
+        ),
         noise_operations.TwoQubitDephasing,
     ),
     (
