@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import warnings
 from functools import lru_cache, singledispatch
 from typing import List, Tuple, Union
 
@@ -125,4 +126,4 @@ def check_cptp(matrices: List[np.ndarray]):
     """
     E = sum([np.matmul(matrix.T.conjugate(), matrix) for matrix in matrices])
     if not np.allclose(E, np.eye(*E.shape)):
-        raise ValueError(f"{matrices} do not define a CPTP map")
+        warnings.warn(f"{matrices} do not define a completely-positive trace-preserving map.")
