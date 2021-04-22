@@ -103,9 +103,16 @@ class DensityMatrixSimulation(Simulation):
             targets = operation.targets
 
             if isinstance(operation, (GateOperation, Observable)):
-                dm_tensor = DensityMatrixSimulation._apply_gate(
-                    dm_tensor, qubit_count, matrix, targets
-                )
+                if len(matrix) > 4:
+                    dm_tensor = DensityMatrixSimulation._apply_gate(
+                        dm_tensor, qubit_count, matrix, targets
+                    )
+                else:
+                    superop = np.kron(matrix, matrix.conjugate())
+                    dm_tensor = DensityMatrixSimulation._apply_gate_superop(
+                        dm_tensor, qubit_count, superop, targets
+                    )
+
             if isinstance(operation, KrausOperation):
                 dm_tensor = DensityMatrixSimulation._apply_kraus(
                     dm_tensor, qubit_count, matrix, targets
@@ -213,6 +220,42 @@ class DensityMatrixSimulation(Simulation):
 
         return state
 
+    def _apply_gate_superop(
+        state: np.ndarray, qubit_count: int, superop: np.ndarray, targets: Tuple[int, ...]
+    ) -> np.ndarray:
+        """Apply a superoperator to a density matrix
+
+        Args:
+            state (np.ndarray): initial density matrix
+            qubit_count (int): number of qubit in the circuit
+            superop (np.ndarray): superoperator to be applied to the density matrix
+            targets (Tuple[int,...]): qubits of the density matrix the superoperator applied to.
+
+        Returns:
+            state (np.ndarray): output density matrix
+        """
+        targets_new = []
+        for t_i in targets:
+            targets_new.append(t_i)
+        targets_new = targets_new + [i + qubit_count for i in targets_new]
+        targets_new = tuple(targets_new)
+
+        superop = np.reshape(superop, [2] * len(targets_new) * 2)
+        dm_targets = targets_new
+        axes = (
+            np.arange(len(targets_new), 2 * len(targets_new)),
+            dm_targets,
+        )
+        state = np.tensordot(superop, state, axes=axes)
+
+        # Arrange the index to the correct place.
+        unused_idxs = [idx for idx in range(2 * qubit_count) if idx not in dm_targets]
+        permutation = list(dm_targets) + unused_idxs
+        inverse_permutation = np.argsort(permutation)
+        state = np.transpose(state, inverse_permutation)
+
+        return state
+
     def _apply_kraus(
         state: np.ndarray, qubit_count: int, matrices: List[np.ndarray], targets: Tuple[int, ...]
     ) -> np.ndarray:
@@ -230,9 +273,17 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             state (np.ndarray): output density matrix
         """
-        new_state = np.zeros_like(state)
-        for matrix in matrices:
-            new_state = new_state + DensityMatrixSimulation._apply_gate(
-                state, qubit_count, matrix, targets
+        if len(matrices[0]) > 4:
+            new_state = np.zeros_like(state)
+            for matrix in matrices:
+                new_state = new_state + DensityMatrixSimulation._apply_gate(
+                    state, qubit_count, matrix, targets
+                )
+        else:
+            superop = np.zeros((len(matrices[0]) ** 2, len(matrices[0]) ** 2), dtype=complex)
+            for matrix in matrices:
+                superop = superop + np.kron(matrix, matrix.conjugate())
+            new_state = DensityMatrixSimulation._apply_gate_superop(
+                state, qubit_count, superop, targets
             )
         return new_state
