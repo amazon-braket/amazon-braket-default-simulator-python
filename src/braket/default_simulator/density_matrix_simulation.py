@@ -169,7 +169,11 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             probabilities (np.ndarray)
         """
-        return np.real(np.diag(state))
+        prob = np.real(np.diag(state))
+        prob_list = prob.copy()
+        tol = 1e-20
+        prob_list[abs(prob_list) < tol] = 0.0
+        return prob_list
 
     def _apply_gate(
         state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int, ...]
