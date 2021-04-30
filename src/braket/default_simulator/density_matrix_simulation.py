@@ -173,6 +173,7 @@ class DensityMatrixSimulation(Simulation):
         prob_list = prob.copy()
         tol = 1e-20
         prob_list[abs(prob_list) < tol] = 0.0
+        prob_list[prob_list < 0] = 0.0
         return prob_list
 
     def _apply_gate(
