@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import uuid
+import warnings
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy as np
@@ -136,13 +137,21 @@ class BaseLocalSimulator(BraketSimulator):
             "TwoQubitDephasing",
             "TwoQubitDepolarizing",
         ]
+        no_noise = True
         for name in circuit_instructions_name:
             if name in noise_instructions_name:
+                no_noise = False
                 if name not in supported_instructions_name:
                     raise TypeError(
                         'Noise instructions are not supported by the state vector simulator (by default). \
-You need to use the density matrix simualtor: LocalSimulator("Braket-DM").'
+You need to use the density matrix simualtor: LocalSimulator("braket_dm").'
                     )
+        if noise_instructions_name[0] in supported_instructions_name and no_noise is True:
+            warnings.warn(
+                'You are running a noise-free circuit on the density matrix simulator. \
+We recommend to run this circuit on the state vector simulator: LocalSimulator("default") \
+to maximize your user experience.'
+            )
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
