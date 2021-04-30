@@ -38,8 +38,8 @@ setup(
     entry_points={
         "braket.simulators": [
             "default = braket.default_simulator.state_vector_simulator:DefaultSimulator",
-            "Braket-SV = braket.default_simulator.state_vector_simulator:DefaultSimulator",
-            "Braket-DM = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
+            "braket_sv = braket.default_simulator.state_vector_simulator:DefaultSimulator",
+            "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
         ]
     },
     extras_require={
