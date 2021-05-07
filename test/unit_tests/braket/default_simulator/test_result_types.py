@@ -89,7 +89,7 @@ def test_state_vector(simulation, state_vector):
 
 
 def test_density_matrix(simulation, density_matrix):
-    density_matrix_12 = DensityMatrix([0, 1, 2]).calculate(simulation)
+    density_matrix_12 = DensityMatrix([3]).calculate(simulation)
     partial_trace_12 = np.array(
         [[0.46666667 + 0.0j, 0.49464257 + 0.0j], [0.49464257 + 0.0j, 0.53333333 + 0.0j]]
     )
@@ -99,7 +99,7 @@ def test_density_matrix(simulation, density_matrix):
     assert np.allclose(density_matrix_no_targets, density_matrix)
 
     density_matrix_all_qubits = DensityMatrix([0, 1, 2, 3]).calculate(simulation)
-    assert density_matrix_all_qubits == 1
+    assert np.allclose(density_matrix_all_qubits, density_matrix)
 
 
 @pytest.mark.xfail(raises=IndexError)

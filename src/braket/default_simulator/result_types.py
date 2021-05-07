@@ -192,11 +192,9 @@ class DensityMatrix(ResultType):
         Returns:
             np.ndarray: The density matrix (before observables) of the simulation
         """
-        if self._targets is None:
+        if self._targets is None or self._targets == list(range(simulation.qubit_count)):
             return simulation.density_matrix
         else:
-            if self._targets == list(range(simulation.qubit_count)):
-                return np.trace(simulation.density_matrix)
 
             if not all(ta in list(range(simulation.qubit_count)) for ta in self._targets):
                 raise IndexError(
@@ -422,15 +420,15 @@ def _partial_trace(
     qubit_count: int,
     targets: List[int],
 ) -> np.ndarray:
-    """Return the reduced density matrix after tracing over the target qubits."""
-    kept_qubits = [i for i in list(range(qubit_count)) if i not in targets]
-    kept_qubits = np.asarray(kept_qubits)
+    """Return the reduced density matrix for the target qubits."""
+
+    targets = np.asarray(targets)
     dims = np.asarray([2] * qubit_count)
     Ndim = dims.size
-    Nkeep = np.prod(dims[kept_qubits])
+    Nkeep = np.prod(dims[targets])
 
     idx1 = [i for i in range(Ndim)]
-    idx2 = [Ndim + i if i in kept_qubits else i for i in range(Ndim)]
+    idx2 = [Ndim + i if i in targets else i for i in range(Ndim)]
     tr_rho = density_matrix.reshape(np.tile(dims, 2))
     tr_rho = np.einsum(tr_rho, idx1 + idx2)
     return tr_rho.reshape(Nkeep, Nkeep)
