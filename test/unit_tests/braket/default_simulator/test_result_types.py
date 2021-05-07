@@ -89,8 +89,22 @@ def test_state_vector(simulation, state_vector):
 
 
 def test_density_matrix(simulation, density_matrix):
-    result_type = DensityMatrix()
-    assert np.allclose(result_type.calculate(simulation), density_matrix)
+    density_matrix_12 = DensityMatrix([0, 1, 2]).calculate(simulation)
+    partial_trace_12 = np.array(
+        [[0.46666667 + 0.0j, 0.49464257 + 0.0j], [0.49464257 + 0.0j, 0.53333333 + 0.0j]]
+    )
+    assert np.allclose(density_matrix_12, partial_trace_12)
+
+    density_matrix_no_targets = DensityMatrix().calculate(simulation)
+    assert np.allclose(density_matrix_no_targets, density_matrix)
+
+    density_matrix_all_qubits = DensityMatrix([0, 1, 2, 3]).calculate(simulation)
+    assert density_matrix_all_qubits == 1
+
+
+@pytest.mark.xfail(raises=IndexError)
+def test_density_matrix_wrong_targets(simulation):
+    DensityMatrix([4]).calculate(simulation)
 
 
 def test_amplitude(simulation, state_vector):

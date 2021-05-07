@@ -173,22 +173,42 @@ class DensityMatrix(ResultType):
     Simply returns the given density matrix.
     """
 
+    def __init__(self, targets: Optional[List[int]] = None):
+        """
+        Args:
+            targets (Optional[List[int]]): The qubit indices on which the reduced density matrix
+                are desired. If no targets are specified, the full density matrix are calculated.
+                Default: `None`
+        """
+        self._targets = targets
+
     def calculate(self, simulation: DensityMatrixSimulation) -> np.ndarray:
         """Return the given density matrix of the simulation.
 
         Args:
-            simulation (DensityMatrixSimulation): The simulation whose density matrix will be
-                returned
+            simulation (DensityMatrixSimulation): The simulation whose (full or reduced)
+            density matrix will be returned.
 
         Returns:
             np.ndarray: The density matrix (before observables) of the simulation
         """
-        return simulation.density_matrix
+        if self._targets is None:
+            return simulation.density_matrix
+        else:
+            if self._targets == list(range(simulation.qubit_count)):
+                return np.trace(simulation.density_matrix)
+
+            if not all(ta in list(range(simulation.qubit_count)) for ta in self._targets):
+                raise IndexError(
+                    "Input target qubits must be within the range of the qubits in the circuit."
+                )
+
+            return _partial_trace(simulation.density_matrix, simulation.qubit_count, self._targets)
 
 
 @_from_braket_result_type.register
 def _(densitymatrix: jaqcd.DensityMatrix):
-    return DensityMatrix()
+    return DensityMatrix(densitymatrix.targets)
 
 
 class Amplitude(ResultType):
@@ -395,3 +415,22 @@ def _marginal_probability(
         basis_states[:, np.argsort(np.argsort(targets))].T, [2] * len(targets)
     )
     return marginal[perm]
+
+
+def _partial_trace(
+    density_matrix: np.ndarray,
+    qubit_count: int,
+    targets: List[int],
+) -> np.ndarray:
+    """Return the reduced density matrix after tracing over the target qubits."""
+    kept_qubits = [i for i in list(range(qubit_count)) if i not in targets]
+    kept_qubits = np.asarray(kept_qubits)
+    dims = np.asarray([2] * qubit_count)
+    Ndim = dims.size
+    Nkeep = np.prod(dims[kept_qubits])
+
+    idx1 = [i for i in range(Ndim)]
+    idx2 = [Ndim + i if i in kept_qubits else i for i in range(Ndim)]
+    tr_rho = density_matrix.reshape(np.tile(dims, 2))
+    tr_rho = np.einsum(tr_rho, idx1 + idx2)
+    return tr_rho.reshape(Nkeep, Nkeep)
