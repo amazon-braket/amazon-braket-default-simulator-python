@@ -149,7 +149,7 @@ You need to use the density matrix simualtor: LocalSimulator("braket_dm").'
         if noise_instructions_name[0] in supported_instructions_name and no_noise is True:
             warnings.warn(
                 'You are running a noise-free circuit on the density matrix simulator. \
-We recommend to run this circuit on the state vector simulator: LocalSimulator("default") \
+We recommend running this circuit on the state vector simulator: LocalSimulator("default") \
 to maximize your user experience.'
             )
 
