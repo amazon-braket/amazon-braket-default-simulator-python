@@ -43,14 +43,14 @@ testdata = [
         noise_operations.AmplitudeDamping,
     ),
     (
-        instruction.GeneralizedAmplitudeDamping(target=3, probability=0.67, gamma=0.1),
+        instruction.GeneralizedAmplitudeDamping(target=3, gamma=0.1, probability=0.67),
         (3,),
         noise_operations.GeneralizedAmplitudeDamping,
     ),
     (
-        instruction.GeneralPauli(target=5, probX=0.1, probY=0.2, probZ=0.3),
+        instruction.PauliChannel(target=5, probX=0.1, probY=0.2, probZ=0.3),
         (5,),
-        noise_operations.GeneralPauli,
+        noise_operations.PauliChannel,
     ),
     (instruction.PhaseDamping(target=0, gamma=0.89), (0,), noise_operations.PhaseDamping),
     (

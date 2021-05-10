@@ -130,7 +130,7 @@ class BaseLocalSimulator(BraketSimulator):
             "BitFlip",
             "Depolarizing",
             "GeneralizedAmplitudeDamping",
-            "GeneralPauli",
+            "PauliChannel",
             "Kraus",
             "PhaseFlip",
             "PhaseDamping",

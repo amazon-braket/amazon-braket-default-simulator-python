@@ -60,8 +60,8 @@ def _phase_flip(instruction) -> PhaseFlip:
     return PhaseFlip([instruction.target], instruction.probability)
 
 
-class GeneralPauli(KrausOperation):
-    """General Pauli noise channel"""
+class PauliChannel(KrausOperation):
+    """Pauli noise channel"""
 
     def __init__(self, targets, probX, probY, probZ):
         self._targets = tuple(targets)
@@ -84,9 +84,9 @@ class GeneralPauli(KrausOperation):
         return self._targets
 
 
-@_from_braket_instruction.register(braket_instruction.GeneralPauli)
-def _general_pauli(instruction) -> GeneralPauli:
-    return GeneralPauli(
+@_from_braket_instruction.register(braket_instruction.PauliChannel)
+def _pauli_channel(instruction) -> PauliChannel:
+    return PauliChannel(
         [instruction.target], instruction.probX, instruction.probY, instruction.probZ
     )
 
@@ -207,10 +207,10 @@ def _amplitude_damping(instruction) -> AmplitudeDamping:
 class GeneralizedAmplitudeDamping(KrausOperation):
     """Generalized Amplitude Damping noise channel"""
 
-    def __init__(self, targets, probability, gamma):
+    def __init__(self, targets, gamma, probability):
         self._targets = tuple(targets)
-        self._probability = probability
         self._gamma = gamma
+        self._probability = probability
 
     @property
     def matrices(self) -> np.ndarray:
@@ -234,7 +234,7 @@ class GeneralizedAmplitudeDamping(KrausOperation):
 @_from_braket_instruction.register(braket_instruction.GeneralizedAmplitudeDamping)
 def _generalized_amplitude_damping(instruction) -> GeneralizedAmplitudeDamping:
     return GeneralizedAmplitudeDamping(
-        [instruction.target], instruction.probability, instruction.gamma
+        [instruction.target], instruction.gamma, instruction.probability
     )
 
 

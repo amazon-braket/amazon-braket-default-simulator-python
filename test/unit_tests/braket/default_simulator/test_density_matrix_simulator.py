@@ -423,7 +423,7 @@ def test_properties():
                         "CZ",
                         "Depolarizing",
                         "GeneralizedAmplitudeDamping",
-                        "GeneralPauli",
+                        "PauliChannel",
                         "H",
                         "I",
                         "ISwap",

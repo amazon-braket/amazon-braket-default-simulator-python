@@ -66,7 +66,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                             "CZ",
                             "Depolarizing",
                             "GeneralizedAmplitudeDamping",
-                            "GeneralPauli",
+                            "PauliChannel",
                             "H",
                             "I",
                             "ISwap",
