@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.1.1.post2 (2021-03-19)
+
+### Testing and Release Infrastructure
+
+ * Run unit tests for dependent packages
+
+## v1.1.1.post1 (2021-03-11)
+
+### Testing and Release Infrastructure
+
+ * Add Python 3.9
+
+## v1.1.1.post0 (2021-03-03)
+
+### Testing and Release Infrastructure
+
+ * Add team to CODEOWNERS
+ * Use main instead of PyPi for build dependencies
+
 ## v1.1.1 (2021-01-27)
 
 ### Bug Fixes and Other Changes
