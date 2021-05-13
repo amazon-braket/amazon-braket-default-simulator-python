@@ -187,7 +187,7 @@ class DensityMatrix(ResultType):
 
         Args:
             simulation (DensityMatrixSimulation): The simulation whose (full or reduced)
-            density matrix will be returned.
+                density matrix will be returned.
 
         Returns:
             np.ndarray: The density matrix (before observables) of the simulation
@@ -195,7 +195,6 @@ class DensityMatrix(ResultType):
         if self._targets is None or self._targets == list(range(simulation.qubit_count)):
             return simulation.density_matrix
         else:
-
             if not all(ta in list(range(simulation.qubit_count)) for ta in self._targets):
                 raise IndexError(
                     "Input target qubits must be within the range of the qubits in the circuit."
@@ -428,7 +427,7 @@ def _partial_trace(
     Nkeep = np.prod(dims[targets])
 
     idx1 = [i for i in range(Ndim)]
-    idx2 = [Ndim + i if i in targets else i for i in range(Ndim)]
+    idx2 = [Ndim + i if i in targets else i for i in list(range(Ndim))]
     tr_rho = density_matrix.reshape(np.tile(dims, 2))
     tr_rho = np.einsum(tr_rho, idx1 + idx2)
     return tr_rho.reshape(Nkeep, Nkeep)

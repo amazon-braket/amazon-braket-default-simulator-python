@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 # Execute initialization code in the gate_operations and noise_operations module
+
 from braket.default_simulator import (  # noqa: F401
     gate_operations,
     noise_operations,

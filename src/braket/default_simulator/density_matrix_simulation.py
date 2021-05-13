@@ -27,7 +27,7 @@ class DensityMatrixSimulation(Simulation):
     """
 
     def __init__(self, qubit_count: int, shots: int):
-        r"""
+        """
         Args:
             qubit_count (int): The number of qubits being simulated.
             shots (int): The number of samples to take from the simulation.
@@ -96,13 +96,10 @@ class DensityMatrixSimulation(Simulation):
         """
         dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
         for operation in operations:
-            if isinstance(operation, KrausOperation):
-                matrix = operation.matrices
-            else:
-                matrix = operation.matrix
             targets = operation.targets
 
             if isinstance(operation, (GateOperation, Observable)):
+                matrix = operation.matrix
                 if len(targets) > 3:
                     dm_tensor = DensityMatrixSimulation._apply_gate(
                         dm_tensor, qubit_count, matrix, targets
@@ -115,7 +112,7 @@ class DensityMatrixSimulation(Simulation):
 
             if isinstance(operation, KrausOperation):
                 dm_tensor = DensityMatrixSimulation._apply_kraus(
-                    dm_tensor, qubit_count, matrix, targets
+                    dm_tensor, qubit_count, operation.matrices, targets
                 )
 
         return np.reshape(dm_tensor, (2 ** qubit_count, 2 ** qubit_count))
@@ -240,7 +237,6 @@ class DensityMatrixSimulation(Simulation):
             state (np.ndarray): output density matrix
         """
         targets_new = targets + tuple([target + qubit_count for target in targets])
-
         superop = np.reshape(superop, [2] * len(targets_new) * 2)
         axes = (
             np.arange(len(targets_new), 2 * len(targets_new)),
