@@ -91,7 +91,7 @@ class ObservableResultType(ResultType, ABC):
 
     @property
     def observable(self):
-        """ Observable: The observable for which the desired result is calculated."""
+        """Observable: The observable for which the desired result is calculated."""
         return self._observable
 
     def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
