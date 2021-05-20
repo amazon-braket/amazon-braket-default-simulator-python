@@ -13,7 +13,6 @@
 
 import braket.ir.jaqcd as instruction
 import pytest
-from braket.ir.jaqcd import shared_models
 
 from braket.default_simulator import gate_operations
 from braket.default_simulator.operation_helpers import check_unitary, from_braket_instruction
