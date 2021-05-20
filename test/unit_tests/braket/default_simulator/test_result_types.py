@@ -15,6 +15,8 @@ import cmath
 
 import numpy as np
 import pytest
+from braket.ir import jaqcd
+from braket.ir.jaqcd import shared_models
 
 from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.observables import Hadamard, PauliX, TensorProduct
@@ -26,8 +28,6 @@ from braket.default_simulator.result_types import (
     Variance,
     from_braket_result_type,
 )
-from braket.ir import jaqcd
-from braket.ir.jaqcd import shared_models
 
 NUM_SAMPLES = 1000
 

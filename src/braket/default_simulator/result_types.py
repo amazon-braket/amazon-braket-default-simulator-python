@@ -19,6 +19,7 @@ from functools import singledispatch
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
+from braket.ir import jaqcd
 
 from braket.default_simulator.observables import (
     Hadamard,
@@ -32,7 +33,6 @@ from braket.default_simulator.observables import (
 from braket.default_simulator.operation import Observable
 from braket.default_simulator.operation_helpers import ir_matrix_to_ndarray
 from braket.default_simulator.simulation import StateVectorSimulation
-from braket.ir import jaqcd
 
 
 def from_braket_result_type(result_type) -> ResultType:
@@ -90,7 +90,7 @@ class ObservableResultType(ResultType, ABC):
 
     @property
     def observable(self):
-        """ Observable: The observable for which the desired result is calculated."""
+        """Observable: The observable for which the desired result is calculated."""
         return self._observable
 
     def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
