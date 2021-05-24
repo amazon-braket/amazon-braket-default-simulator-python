@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.2.0 (2021-05-24)
+
+### Features
+
+ * Density matrix simulator
+
+### Testing and Release Infrastructure
+
+ * Use GitHub source for tox tests
+
 ## v1.1.1.post2 (2021-03-19)
 
 ### Testing and Release Infrastructure
