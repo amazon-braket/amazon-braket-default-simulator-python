@@ -11,10 +11,34 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from functools import lru_cache
-from typing import List, Tuple
+from functools import lru_cache, singledispatch
+from typing import List, Tuple, Union
 
 import numpy as np
+
+from braket.default_simulator.operation import GateOperation, KrausOperation
+
+
+def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]:
+    """Instantiates the concrete `GateOperation` or `KrausOperation` object from the
+    specified braket instruction.
+
+    Args:
+        instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
+    Returns:
+        Union[GateOperation, KrausOperation]: instance of the concrete GateOperation or
+        KrausOperation class corresponding to the specified instruction.
+
+    Raises:
+        ValueError: If no concrete `GateOperation` or `KrausOperation` class has been
+            registered for the instruction type.
+    """
+    return _from_braket_instruction(instruction)
+
+
+@singledispatch
+def _from_braket_instruction(instruction):
+    raise ValueError(f"Instruction {instruction} not recognized")
 
 
 @lru_cache()
@@ -88,3 +112,17 @@ def check_hermitian(matrix: np.ndarray):
     """
     if not np.allclose(matrix, matrix.T.conj()):
         raise ValueError(f"{matrix} is not Hermitian")
+
+
+def check_cptp(matrices: List[np.ndarray]):
+    """Checks that the given matrices define a CPTP map.
+
+    Args:
+        matrices (List[np.ndarray]): The matrices to check
+
+    Raises:
+        ValueError: If the matrices do not define a CPTP map
+    """
+    E = sum([np.matmul(matrix.T.conjugate(), matrix) for matrix in matrices])
+    if not np.allclose(E, np.eye(*E.shape)):
+        raise ValueError(f"{matrices} do not define a CPTP map")

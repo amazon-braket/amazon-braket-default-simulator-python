@@ -16,12 +16,15 @@ import math
 
 import numpy as np
 import pytest
+from braket.ir.jaqcd import shared_models
 
 from braket.default_simulator import gate_operations, observables, operation_helpers
 from braket.default_simulator.operation_helpers import (
+    check_cptp,
     check_hermitian,
     check_matrix_dimensions,
     check_unitary,
+    from_braket_instruction,
     ir_matrix_to_ndarray,
 )
 
@@ -39,6 +42,13 @@ invalid_dimension_matrices = [
 invalid_unitary_matrices = [(np.array([[0, 1], [1, 1]])), (np.array([[1, 2], [3, 4]]))]
 
 invalid_hermitian_matrices = [(np.array([[1, 0], [0, 1j]])), (np.array([[1, 2], [3, 4]]))]
+
+invalid_CPTP_matrices = [[np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]]
+
+valid_CPTP_matrices = [
+    [np.array([[1, 0], [0, 1]]) * np.sqrt(0.7), np.array([[0, 1], [1, 0]]) * np.sqrt(0.3)],
+    [np.eye(4)],
+]
 
 gate_testdata = [
     gate_operations.Identity([0]),
@@ -137,3 +147,19 @@ def test_check_unitary_invalid_matrix(matrix):
 @pytest.mark.parametrize("matrix", invalid_hermitian_matrices)
 def test_check_hermitian_invalid_matrix(matrix):
     check_hermitian(matrix)
+
+
+@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.parametrize("matrices", invalid_CPTP_matrices)
+def test_check_cptp_invalid_matrix(matrices):
+    check_cptp(matrices)
+
+
+@pytest.mark.parametrize("matrices", valid_CPTP_matrices)
+def test_check_cptp(matrices):
+    check_cptp(matrices)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_from_braket_instruction_unsupported_instruction():
+    from_braket_instruction(shared_models.DoubleTarget(targets=[4, 3]))

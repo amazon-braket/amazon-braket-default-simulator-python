@@ -11,15 +11,13 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import sys
 import uuid
+import warnings
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy as np
-from braket.device_schema.simulators import (
-    GateModelSimulatorDeviceCapabilities,
-    GateModelSimulatorDeviceParameters,
-)
+from braket.device_schema.device_action_properties import DeviceActionType
+from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
 from braket.ir.jaqcd import Program
 from braket.task_result import (
     AdditionalMetadata,
@@ -28,22 +26,19 @@ from braket.task_result import (
     TaskMetadata,
 )
 
-from braket.default_simulator.gate_operations import from_braket_instruction
 from braket.default_simulator.observables import Hermitian, Identity, TensorProduct
 from braket.default_simulator.operation import Observable, Operation
+from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
     ObservableResultType,
     ResultType,
     from_braket_result_type,
 )
-from braket.default_simulator.simulation import StateVectorSimulation
+from braket.default_simulator.simulation import Simulation
 from braket.simulator import BraketSimulator
 
 
-class DefaultSimulator(BraketSimulator):
-
-    DEVICE_ID = "default"
-
+class BaseLocalSimulator(BraketSimulator):
     def run(
         self,
         circuit_ir: Program,
@@ -59,12 +54,12 @@ class DefaultSimulator(BraketSimulator):
                 instructions to execute.
             qubit_count (int): The number of qubits to simulate.
             shots (int): The number of times to run the circuit.
+            simulation (Simulation): Simulation method for evolving the state.
             batch_size (int): The size of the circuit partitions to contract,
                 if applying multiple gates at a time is desired; see `StateVectorSimulation`.
                 Must be a positive integer.
                 Defaults to 1, which means gates are applied one at a time without any
-                optmized contraction.
-
+                optimized contraction.
         Returns:
             GateModelTaskResult: object that represents the result
 
@@ -72,16 +67,10 @@ class DefaultSimulator(BraketSimulator):
             ValueError: If result types are not specified in the IR or sample is specified
                 as a result type when shots=0. Or, if statevector and amplitude result types
                 are requested when shots>0.
-
-
-        Examples:
-            >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, shots=100)
-
-            >>> circuit_ir = Circuit().h(0).to_ir()
-            >>> DefaultSimulator().run(circuit_ir, qubit_count=1, batch_size=10)
         """
-        DefaultSimulator._validate_shots_and_ir_results(shots, circuit_ir, qubit_count)
+        self._validate_ir_results_compatibility(circuit_ir)
+        self._validate_ir_instructions_compatibility(circuit_ir)
+        BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit_ir, qubit_count)
 
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
@@ -91,9 +80,11 @@ class DefaultSimulator(BraketSimulator):
             for instruction in circuit_ir.basis_rotation_instructions:
                 operations.append(from_braket_instruction(instruction))
 
-        DefaultSimulator._validate_operation_qubits(operations)
+        BaseLocalSimulator._validate_operation_qubits(operations)
 
-        simulation = StateVectorSimulation(qubit_count, shots, batch_size=batch_size)
+        simulation = self.initialize_simulation(
+            qubit_count=qubit_count, shots=shots, batch_size=batch_size
+        )
         simulation.evolve(operations)
 
         results = []
@@ -102,11 +93,11 @@ class DefaultSimulator(BraketSimulator):
             (
                 non_observable_result_types,
                 observable_result_types,
-            ) = DefaultSimulator._translate_result_types(circuit_ir)
-            observables = DefaultSimulator._validate_and_consolidate_observable_result_types(
+            ) = BaseLocalSimulator._translate_result_types(circuit_ir)
+            observables = BaseLocalSimulator._validate_and_consolidate_observable_result_types(
                 list(observable_result_types.values()), qubit_count
             )
-            results = DefaultSimulator._generate_results(
+            results = BaseLocalSimulator._generate_results(
                 circuit_ir,
                 non_observable_result_types,
                 observable_result_types,
@@ -114,7 +105,53 @@ class DefaultSimulator(BraketSimulator):
                 simulation,
             )
 
-        return DefaultSimulator._create_results_obj(results, circuit_ir, simulation)
+        return self._create_results_obj(results, circuit_ir, simulation)
+
+    def _validate_ir_results_compatibility(self, circuit_ir):
+        if circuit_ir.results:
+            circuit_result_types_name = [result.__class__.__name__ for result in circuit_ir.results]
+            supported_result_types = self.properties.action[
+                DeviceActionType.JAQCD
+            ].supportedResultTypes
+            supported_result_types_name = [result.name for result in supported_result_types]
+            for name in circuit_result_types_name:
+                if name not in supported_result_types_name:
+                    raise TypeError(
+                        f"result type {name} is not supported by {self.__class__.__name__}"
+                    )
+
+    def _validate_ir_instructions_compatibility(self, circuit_ir):
+        circuit_instructions_name = [instr.__class__.__name__ for instr in circuit_ir.instructions]
+        supported_instructions_name = self.properties.action[
+            DeviceActionType.JAQCD
+        ].supportedOperations
+        noise_instructions_name = [
+            "AmplitudeDamping",
+            "BitFlip",
+            "Depolarizing",
+            "GeneralizedAmplitudeDamping",
+            "PauliChannel",
+            "Kraus",
+            "PhaseFlip",
+            "PhaseDamping",
+            "TwoQubitDephasing",
+            "TwoQubitDepolarizing",
+        ]
+        no_noise = True
+        for name in circuit_instructions_name:
+            if name in noise_instructions_name:
+                no_noise = False
+                if name not in supported_instructions_name:
+                    raise TypeError(
+                        'Noise instructions are not supported by the state vector simulator (by default). \
+You need to use the density matrix simualtor: LocalSimulator("braket_dm").'
+                    )
+        if noise_instructions_name[0] in supported_instructions_name and no_noise is True:
+            warnings.warn(
+                'You are running a noise-free circuit on the density matrix simulator. \
+Consider running this circuit on the state vector simulator: LocalSimulator("default") \
+for a better user experience.'
+            )
 
     @staticmethod
     def _validate_shots_and_ir_results(shots: int, circuit_ir: Program, qubit_count: int) -> None:
@@ -125,12 +162,13 @@ class DefaultSimulator(BraketSimulator):
                 if rt.type in ["sample"]:
                     raise ValueError("sample can only be specified when shots>0")
                 if rt.type == "amplitude":
-                    DefaultSimulator._validate_amplitude_states(rt.states, qubit_count)
+                    BaseLocalSimulator._validate_amplitude_states(rt.states, qubit_count)
         elif shots and circuit_ir.results:
             for rt in circuit_ir.results:
-                if rt.type in ["statevector", "amplitude"]:
+                if rt.type in ["statevector", "amplitude", "densitymatrix"]:
                     raise ValueError(
-                        "statevector and amplitude result types not available when shots>0"
+                        "statevector, amplitude and densitymatrix result"
+                        "types not available when shots>0"
                     )
 
     @staticmethod
@@ -178,14 +216,14 @@ class DefaultSimulator(BraketSimulator):
         )
         none_observable_mapping = {}
         for obs in none_observables:
-            none_observable_mapping[DefaultSimulator._observable_hash(obs)] = obs
+            none_observable_mapping[BaseLocalSimulator._observable_hash(obs)] = obs
         unique_none_observables = list(none_observable_mapping.values())
         if len(unique_none_observables) > 1:
             raise ValueError(
                 f"All qubits are already being measured in {unique_none_observables[0]};"
                 f"cannot measure in {unique_none_observables[1:]}"
             )
-        not_none_observable_list = DefaultSimulator._assign_observables_to_qubits(
+        not_none_observable_list = BaseLocalSimulator._assign_observables_to_qubits(
             observable_result_types, none_observable_mapping, qubit_count
         )
         return not_none_observable_list + unique_none_observables
@@ -200,7 +238,7 @@ class DefaultSimulator(BraketSimulator):
         for result_type in observable_result_types:
             observable = result_type.observable
             obs_obj = (
-                DefaultSimulator._tensor_product_index_dict(observable, lambda x: x)
+                BaseLocalSimulator._tensor_product_index_dict(observable, lambda x: x)
                 if isinstance(observable, TensorProduct)
                 else observable
             )
@@ -213,9 +251,9 @@ class DefaultSimulator(BraketSimulator):
                     f"Result type ({result_type.__class__.__name__}) Observable "
                     f"({obs_obj.__class__.__name__}) references invalid qubits {measured_qubits}"
                 )
-            hashed_observable = DefaultSimulator._observable_hash(observable)
+            hashed_observable = BaseLocalSimulator._observable_hash(observable)
             for i in range(len(measured_qubits)):
-                DefaultSimulator._assign_observable(
+                BaseLocalSimulator._assign_observable(
                     obs_obj,
                     hashed_observable,
                     measured_qubits,
@@ -272,7 +310,7 @@ class DefaultSimulator(BraketSimulator):
                 ):
                     not_none_observable_list.append(qubit_observable)
             else:
-                DefaultSimulator._validate_same_observable(
+                BaseLocalSimulator._validate_same_observable(
                     existing_observable, qubit_observable, qubit
                 )
 
@@ -327,8 +365,8 @@ class DefaultSimulator(BraketSimulator):
             return str(hash(str(observable.matrix.tostring())))
         elif isinstance(observable, TensorProduct):
             # Dict of target index to observable hash
-            return DefaultSimulator._tensor_product_index_dict(
-                observable, DefaultSimulator._observable_hash
+            return BaseLocalSimulator._tensor_product_index_dict(
+                observable, BaseLocalSimulator._observable_hash
             )
         else:
             return str(observable.__class__.__name__)
@@ -360,11 +398,11 @@ class DefaultSimulator(BraketSimulator):
         return results
 
     @staticmethod
-    def _formatted_measurements(simulation: StateVectorSimulation) -> List[List[str]]:
+    def _formatted_measurements(simulation: Simulation) -> List[List[str]]:
         """Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
-            simulation (StateVectorSimulation): Simulation to use for obtaining the measurements.
+            simulation (Simulation): Simulation to use for obtaining the measurements.
 
         Returns:
             List[List[str]]: List containing the measurements, where each measurement consists
@@ -375,109 +413,35 @@ class DefaultSimulator(BraketSimulator):
             for sample in simulation.retrieve_samples()
         ]
 
-    @staticmethod
     def _create_results_obj(
+        self,
         results: List[Dict[str, Any]],
         circuit_ir: Program,
-        simulation: StateVectorSimulation,
+        simulation: Simulation,
     ) -> GateModelTaskResult:
         result_dict = {
             "taskMetadata": TaskMetadata(
-                id=str(uuid.uuid4()), shots=simulation.shots, deviceId=DefaultSimulator.DEVICE_ID
+                id=str(uuid.uuid4()), shots=simulation.shots, deviceId=self.DEVICE_ID
             ),
             "additionalMetadata": AdditionalMetadata(action=circuit_ir),
         }
         if results:
             result_dict["resultTypes"] = results
         if simulation.shots:
-            result_dict["measurements"] = DefaultSimulator._formatted_measurements(simulation)
-            result_dict["measuredQubits"] = DefaultSimulator._get_measured_qubits(
+            result_dict["measurements"] = BaseLocalSimulator._formatted_measurements(simulation)
+            result_dict["measuredQubits"] = BaseLocalSimulator._get_measured_qubits(
                 simulation.qubit_count
             )
 
         return GateModelTaskResult.construct(**result_dict)
 
     @property
+    def simulation_type(self):
+        raise NotImplementedError("simulation_type has not been implemented yet.")
+
+    @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
-        max_shots = sys.maxsize
-        qubit_count = 26
-        return GateModelSimulatorDeviceCapabilities.parse_obj(
-            {
-                "service": {
-                    "executionWindows": [
-                        {
-                            "executionDay": "Everyday",
-                            "windowStartHour": "00:00",
-                            "windowEndHour": "23:59:59",
-                        }
-                    ],
-                    "shotsRange": [0, max_shots],
-                },
-                "action": {
-                    "braket.ir.jaqcd.program": {
-                        "actionType": "braket.ir.jaqcd.program",
-                        "version": ["1"],
-                        "supportedOperations": [
-                            "CCNot",
-                            "CNot",
-                            "CPhaseShift",
-                            "CPhaseShift00",
-                            "CPhaseShift01",
-                            "CPhaseShift10",
-                            "CSwap",
-                            "CY",
-                            "CZ",
-                            "H",
-                            "I",
-                            "ISwap",
-                            "PSwap",
-                            "PhaseShift",
-                            "Rx",
-                            "Ry",
-                            "Rz",
-                            "S",
-                            "Si",
-                            "Swap",
-                            "T",
-                            "Ti",
-                            "Unitary",
-                            "V",
-                            "Vi",
-                            "X",
-                            "XX",
-                            "XY",
-                            "Y",
-                            "YY",
-                            "Z",
-                            "ZZ",
-                        ],
-                        "supportedResultTypes": [
-                            {
-                                "name": "Sample",
-                                "observables": observables,
-                                "minShots": 1,
-                                "maxShots": max_shots,
-                            },
-                            {
-                                "name": "Expectation",
-                                "observables": observables,
-                                "minShots": 0,
-                                "maxShots": max_shots,
-                            },
-                            {
-                                "name": "Variance",
-                                "observables": observables,
-                                "minShots": 0,
-                                "maxShots": max_shots,
-                            },
-                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
-                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
-                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
-                        ],
-                    }
-                },
-                "paradigm": {"qubitCount": qubit_count},
-                "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
-            }
-        )
+        """properties of simulator such as supported IR types, quantum operations,
+        and result types.
+        """
+        raise NotImplementedError("properties has not been implemented yet.")
