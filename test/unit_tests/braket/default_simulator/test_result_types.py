@@ -22,6 +22,7 @@ from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.observables import Hadamard, PauliX, TensorProduct
 from braket.default_simulator.result_types import (
     Amplitude,
+    DensityMatrix,
     Expectation,
     Probability,
     StateVector,
@@ -49,6 +50,11 @@ observable_type_testdata = [
 def state_vector():
     multiplier = np.concatenate([np.ones(8), np.ones(8) * 1j])
     return ((np.arange(16) / 120) ** (1 / 2)) * multiplier
+
+
+@pytest.fixture
+def density_matrix(state_vector):
+    return np.outer(state_vector, state_vector.conj())
 
 
 @pytest.fixture
@@ -80,6 +86,25 @@ def observable():
 def test_state_vector(simulation, state_vector):
     result_type = StateVector()
     assert np.allclose(result_type.calculate(simulation), state_vector)
+
+
+def test_density_matrix(simulation, density_matrix):
+    density_matrix_12 = DensityMatrix([3]).calculate(simulation)
+    partial_trace_12 = np.array(
+        [[0.46666667 + 0.0j, 0.49464257 + 0.0j], [0.49464257 + 0.0j, 0.53333333 + 0.0j]]
+    )
+    assert np.allclose(density_matrix_12, partial_trace_12)
+
+    density_matrix_no_targets = DensityMatrix().calculate(simulation)
+    assert np.allclose(density_matrix_no_targets, density_matrix)
+
+    density_matrix_all_qubits = DensityMatrix([0, 1, 2, 3]).calculate(simulation)
+    assert np.allclose(density_matrix_all_qubits, density_matrix)
+
+
+@pytest.mark.xfail(raises=IndexError)
+def test_density_matrix_wrong_targets(simulation):
+    DensityMatrix([4]).calculate(simulation)
 
 
 def test_amplitude(simulation, state_vector):
@@ -133,6 +158,10 @@ def test_variance_no_targets():
 
 def test_from_braket_result_type_statevector():
     assert isinstance(from_braket_result_type(jaqcd.StateVector()), StateVector)
+
+
+def test_from_braket_result_type_densitymatrix():
+    assert isinstance(from_braket_result_type(jaqcd.DensityMatrix()), DensityMatrix)
 
 
 def test_from_braket_result_type_amplitude():
