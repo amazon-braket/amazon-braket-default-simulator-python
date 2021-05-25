@@ -22,7 +22,7 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class DefaultSimulator(BaseLocalSimulator):
+class StateVectorSimulator(BaseLocalSimulator):
 
     DEVICE_ID = "braket_sv"
 

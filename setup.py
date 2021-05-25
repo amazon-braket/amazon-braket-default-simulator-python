@@ -29,8 +29,8 @@ setup(
     install_requires=["amazon-braket-schemas", "numpy", "opt_einsum"],
     entry_points={
         "braket.simulators": [
-            "default = braket.default_simulator.state_vector_simulator:DefaultSimulator",
-            "braket_sv = braket.default_simulator.state_vector_simulator:DefaultSimulator",
+            "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
+            "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
         ]
     },
