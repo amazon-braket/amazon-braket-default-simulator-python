@@ -35,7 +35,7 @@ The quantum simulator implementations `StateVectorSimulator` and `DensityMatrixS
 [Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python), with the `backend` parameters as `"braket_sv"` and `"braket_dm"`, respectively.
 Alternatively, to use `StateVectorSimulator`, you can instantiate `LocalSimulator` with no arguments or with `backend="default"`: 
 
-**Executing a circuit using the default simualtor**
+**Executing a circuit using the default simulator**
 ```python
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
