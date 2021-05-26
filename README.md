@@ -15,7 +15,7 @@ before you submit them to the Amazon Braket service for execution.
 You must have the [Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python) installed to use the local simulator.
 Follow the instructions in the [README](https://github.com/aws/amazon-braket-sdk-python/blob/main/README.md) for setup.
 
-**Checking the version of the DefaultSimulator**
+**Checking the version of the default simulator**
 
 You can check your currently installed version of `amazon-braket-default-simulator` with `pip show`:
 
@@ -31,15 +31,16 @@ or alternatively from within Python:
 ```
 
 ## Usage
-The quantum simulator implementation `DefaultSimulator` plugs into the `LocalSimulator` interface in 
-[Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python) using the `backend` value as `"default"`. 
+The quantum simulator implementations `StateVectorSimulator` and `DensityMatrixSimulator` plug into the `LocalSimulator` interface in 
+[Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python), with the `backend` parameters as `"braket_sv"` and `"braket_dm"`, respectively.
+Alternatively, to use `StateVectorSimulator`, you can instantiate `LocalSimulator` with no arguments or with `backend="default"`: 
 
-**Executing a circuit using the DefaultSimulator**
+**Executing a circuit using the default simulator**
 ```python
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 
-device = LocalSimulator("default")
+device = LocalSimulator()
 
 bell = Circuit().h(0).cnot(0, 1)
 print(device.run(bell, shots=100).result().measurement_counts)

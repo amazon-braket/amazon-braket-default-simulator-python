@@ -27,7 +27,7 @@ from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 
 from braket.default_simulator import observables
 from braket.default_simulator.result_types import Expectation, Variance
-from braket.default_simulator.state_vector_simulator import DefaultSimulator
+from braket.default_simulator.state_vector_simulator import DefaultSimulator, StateVectorSimulator
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -91,7 +91,7 @@ def circuit_noise():
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 def test_simulator_run_grcs_16(grcs_16_qubit, batch_size):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     result = simulator.run(grcs_16_qubit.circuit_ir, qubit_count=16, shots=0, batch_size=batch_size)
     state_vector = result.resultTypes[0].value
     assert cmath.isclose(abs(state_vector[0]) ** 2, grcs_16_qubit.probability_zero, abs_tol=1e-7)
@@ -99,7 +99,7 @@ def test_simulator_run_grcs_16(grcs_16_qubit, batch_size):
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 def test_simulator_run_bell_pair(bell_ir, batch_size):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     shots_count = 10000
     result = simulator.run(bell_ir, qubit_count=2, shots=shots_count, batch_size=batch_size)
 
@@ -110,13 +110,13 @@ def test_simulator_run_bell_pair(bell_ir, batch_size):
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=DefaultSimulator.DEVICE_ID, shots=shots_count
+        id=result.taskMetadata.id, deviceId=StateVectorSimulator.DEVICE_ID, shots=shots_count
     )
     assert result.additionalMetadata == AdditionalMetadata(action=bell_ir)
 
 
 def test_simulator_identity():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     shots_count = 1000
     result = simulator.run(
         Program.parse_raw(
@@ -132,19 +132,19 @@ def test_simulator_identity():
 
 @pytest.mark.xfail(raises=TypeError)
 def test_simulator_instructions_not_supported(circuit_noise):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     simulator.run(circuit_noise, qubit_count=2, shots=0)
 
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_no_results_no_shots(bell_ir):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     simulator.run(bell_ir, qubit_count=2, shots=0)
 
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_amplitude_shots():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {
@@ -158,7 +158,7 @@ def test_simulator_run_amplitude_shots():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_amplitude_no_shots_invalid_states():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {
@@ -172,7 +172,7 @@ def test_simulator_run_amplitude_no_shots_invalid_states():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_statevector_shots():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {"instructions": [{"type": "h", "target": 0}], "results": [{"type": "statevector"}]}
@@ -182,7 +182,7 @@ def test_simulator_run_statevector_shots():
 
 
 def test_simulator_run_result_types_shots():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {
@@ -203,7 +203,7 @@ def test_simulator_run_result_types_shots():
 
 
 def test_simulator_run_result_types_shots_basis_rotation_gates():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {
@@ -226,7 +226,7 @@ def test_simulator_run_result_types_shots_basis_rotation_gates():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     ir = Program.parse_raw(
         json.dumps(
             {
@@ -274,7 +274,7 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
 )
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_non_contiguous_qubits(ir, qubit_count):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     shots_count = 1000
     simulator.run(ir, qubit_count=qubit_count, shots=shots_count)
 
@@ -310,7 +310,7 @@ def test_simulator_run_non_contiguous_qubits(ir, qubit_count):
 )
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_observable_references_invalid_qubit(ir, qubit_count):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     shots_count = 0
     simulator.run(ir, qubit_count=qubit_count, shots=shots_count)
 
@@ -318,7 +318,7 @@ def test_simulator_run_observable_references_invalid_qubit(ir, qubit_count):
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 @pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
 def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_size):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     ir = bell_ir_with_result(targets)
     result = simulator.run(ir, qubit_count=2, shots=0, batch_size=batch_size)
     assert len(result.resultTypes) == 2
@@ -329,14 +329,14 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_si
         type=ir.results[1], value=(0 if targets else [0, 0])
     )
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=DefaultSimulator.DEVICE_ID, shots=0
+        id=result.taskMetadata.id, deviceId=StateVectorSimulator.DEVICE_ID, shots=0
     )
     assert result.additionalMetadata == AdditionalMetadata(action=ir)
 
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_fails_samples_0_shots():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     prog = Program.parse_raw(
         json.dumps(
             {
@@ -404,7 +404,7 @@ def test_simulator_fails_samples_0_shots():
 def test_simulator_accepts_overlapping_targets_same_observable(
     result_types, expected_expectation, expected_variance
 ):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     prog = Program.parse_raw(
         json.dumps(
             {
@@ -472,7 +472,7 @@ def test_simulator_accepts_overlapping_targets_same_observable(
     ],
 )
 def test_simulator_fails_overlapping_targets_different_observable(result_types):
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     prog = Program.parse_raw(
         json.dumps(
             {
@@ -489,7 +489,7 @@ def test_simulator_fails_overlapping_targets_different_observable(result_types):
 
 @pytest.mark.xfail(raises=ValueError)
 def test_simulator_fails_same_observable_different_target_order():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     prog = Program.parse_raw(
         json.dumps(
             {
@@ -542,7 +542,7 @@ def test_validate_and_consolidate_observable_result_types_none(obs1, obs2):
         Expectation(obs1),
         Variance(obs2),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
+    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
     assert len(actual_obs) == 1
     assert actual_obs[0].measured_qubits is None
 
@@ -556,7 +556,7 @@ def test_validate_and_consolidate_observable_result_types_same_target(obs):
         Expectation(obs),
         Variance(obs),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
+    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
     assert len(actual_obs) == 1
     assert actual_obs[0].measured_qubits == (1,)
 
@@ -567,7 +567,7 @@ def test_validate_and_consolidate_observable_result_types_tensor_product():
         Variance(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
         Expectation(observables.TensorProduct([observables.PauliX([2]), observables.PauliY([3])])),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
+    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
     assert len(actual_obs) == 4
     assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,), (3,)]
 
@@ -578,7 +578,7 @@ def test_validate_and_consolidate_observable_result_types_tensor_product_shared_
         Variance(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
         Expectation(observables.TensorProduct([observables.PauliY([1]), observables.PauliX([2])])),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
+    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
     assert len(actual_obs) == 3
     assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,)]
 
@@ -601,7 +601,7 @@ def test_validate_and_consolidate_observable_result_types_tensor_product_hermiti
             )
         ),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
+    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
     assert len(actual_obs) == 3
     assert [obs.measured_qubits for obs in actual_obs] == [
         (0,),
@@ -625,7 +625,7 @@ def test_validate_and_consolidate_observable_result_types_identity_allowed():
         Variance(observables.Identity([0])),
         Expectation(observables.PauliX([2])),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 5)
+    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 5)
     assert len(actual_obs) == 5
     assert [obs.measured_qubits for obs in actual_obs] == [(0,), (3,), (1,), (2,), (4,)]
 
@@ -635,7 +635,7 @@ def test_observable_hash_tensor_product():
     obs = observables.TensorProduct(
         [observables.PauliX([0]), observables.Hermitian(matrix, [1, 2]), observables.PauliY([1])]
     )
-    hash_dict = DefaultSimulator._observable_hash(obs)
+    hash_dict = StateVectorSimulator._observable_hash(obs)
     matrix_hash = hash_dict[1]
     assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
 
@@ -653,14 +653,14 @@ def test_validate_and_consolidate_observable_result_types_targets(obs1, obs2):
         Expectation(obs1),
         Expectation(obs2),
     ]
-    actual_obs = DefaultSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
+    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
     assert len(actual_obs) == 2
     assert actual_obs[0].measured_qubits == (1,)
     assert actual_obs[1].measured_qubits == (2,)
 
 
 def test_properties():
-    simulator = DefaultSimulator()
+    simulator = StateVectorSimulator()
     observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
     max_shots = sys.maxsize
     qubit_count = 26
@@ -745,3 +745,7 @@ def test_properties():
         }
     )
     assert simulator.properties == expected_properties
+
+
+def test_alias():
+    assert StateVectorSimulator().properties == DefaultSimulator().properties
