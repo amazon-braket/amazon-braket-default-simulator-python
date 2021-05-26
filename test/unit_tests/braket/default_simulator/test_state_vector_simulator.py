@@ -27,7 +27,7 @@ from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 
 from braket.default_simulator import observables
 from braket.default_simulator.result_types import Expectation, Variance
-from braket.default_simulator.state_vector_simulator import StateVectorSimulator
+from braket.default_simulator.state_vector_simulator import DefaultSimulator, StateVectorSimulator
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -745,3 +745,7 @@ def test_properties():
         }
     )
     assert simulator.properties == expected_properties
+
+
+def test_alias():
+    assert StateVectorSimulator().properties == DefaultSimulator().properties

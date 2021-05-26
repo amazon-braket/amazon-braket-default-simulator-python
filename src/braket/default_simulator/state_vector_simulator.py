@@ -117,3 +117,6 @@ class StateVectorSimulator(BaseLocalSimulator):
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
             }
         )
+
+
+DefaultSimulator = StateVectorSimulator
