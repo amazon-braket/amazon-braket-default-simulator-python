@@ -165,9 +165,9 @@ for a better user experience.'
                     BaseLocalSimulator._validate_amplitude_states(rt.states, qubit_count)
         elif shots and circuit_ir.results:
             for rt in circuit_ir.results:
-                if rt.type in ["statevector", "amplitude", "densitymatrix"]:
+                if rt.type in ["statevector", "amplitude", "densitymatrix", "unitarymatrix"]:
                     raise ValueError(
-                        "statevector, amplitude and densitymatrix result"
+                        "statevector, amplitude, densitymatrix and unitarymatrix result"
                         "types not available when shots>0"
                     )
 

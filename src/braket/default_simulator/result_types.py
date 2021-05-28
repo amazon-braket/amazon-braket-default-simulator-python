@@ -34,6 +34,7 @@ from braket.default_simulator.observables import (
 from braket.default_simulator.operation import Observable
 from braket.default_simulator.operation_helpers import ir_matrix_to_ndarray
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
+from braket.default_simulator.unitary_matrix_simulation import UnitaryMatrixSimulation
 
 
 def from_braket_result_type(result_type) -> ResultType:
@@ -166,6 +167,29 @@ class StateVector(ResultType):
 @_from_braket_result_type.register
 def _(statevector: jaqcd.StateVector):
     return StateVector()
+
+
+class UnitaryMatrix(ResultType):
+    """
+    Simply returns the given unitary matrix.
+    """
+
+    def calculate(self, simulation: UnitaryMatrixSimulation) -> np.ndarray:
+        """Return the given unitary matrix of the simulation.
+
+        Args:
+            simulation (UnitaryMatrixSimulation): The simulation whose unitary matrix
+                will be returned
+
+        Returns:
+            np.ndarray: The unitary matrix (before observables) of the simulation
+        """
+        return simulation.unitary_matrix
+
+
+@_from_braket_result_type.register
+def _(unitarymatrix: jaqcd.UnitaryMatrix):
+    return UnitaryMatrix()
 
 
 class DensityMatrix(ResultType):

@@ -18,7 +18,8 @@ import pytest
 from braket.ir import jaqcd
 from braket.ir.jaqcd import shared_models
 
-from braket.default_simulator import StateVectorSimulation
+from braket.default_simulator import StateVectorSimulation, UnitaryMatrixSimulation
+from braket.default_simulator.gate_operations import PauliX as GatePauliX
 from braket.default_simulator.observables import Hadamard, PauliX, TensorProduct
 from braket.default_simulator.result_types import (
     Amplitude,
@@ -26,6 +27,7 @@ from braket.default_simulator.result_types import (
     Expectation,
     Probability,
     StateVector,
+    UnitaryMatrix,
     Variance,
     from_braket_result_type,
 )
@@ -66,6 +68,18 @@ def simulation(state_vector):
 
 
 @pytest.fixture
+def unitary_matrix():
+    return GatePauliX([0]).matrix
+
+
+@pytest.fixture
+def unitary_simulation(unitary_matrix):
+    sim = UnitaryMatrixSimulation(1, 0)
+    sim._unitary_matrix = unitary_matrix
+    return sim
+
+
+@pytest.fixture
 def marginal_12(state_vector):
     all_probs = np.abs(state_vector) ** 2
     return np.array(
@@ -86,6 +100,11 @@ def observable():
 def test_state_vector(simulation, state_vector):
     result_type = StateVector()
     assert np.allclose(result_type.calculate(simulation), state_vector)
+
+
+def test_unitary_matrix(unitary_simulation, unitary_matrix):
+    result_type = UnitaryMatrix()
+    assert np.allclose(result_type.calculate(unitary_simulation), unitary_matrix)
 
 
 def test_density_matrix(simulation, density_matrix):
@@ -158,6 +177,10 @@ def test_variance_no_targets():
 
 def test_from_braket_result_type_statevector():
     assert isinstance(from_braket_result_type(jaqcd.StateVector()), StateVector)
+
+
+def test_from_braket_result_type_unitarymatrix():
+    assert isinstance(from_braket_result_type(jaqcd.UnitaryMatrix()), UnitaryMatrix)
 
 
 def test_from_braket_result_type_densitymatrix():

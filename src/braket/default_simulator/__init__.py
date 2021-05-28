@@ -31,5 +31,7 @@ from braket.default_simulator.state_vector_simulator import (  # noqa: F401
     DefaultSimulator,
     StateVectorSimulator,
 )
+from braket.default_simulator.unitary_matrix_simulation import UnitaryMatrixSimulation  # noqa: F401
+from braket.default_simulator.unitary_matrix_simulator import UnitaryMatrixSimulator  # noqa: F401
 
 from ._version import __version__  # noqa: F401
