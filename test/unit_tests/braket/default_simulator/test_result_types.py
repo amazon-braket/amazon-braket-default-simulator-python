@@ -198,6 +198,6 @@ def test_from_braket_result_type_unknown_observable():
     )
 
 
-@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.xfail(raises=TypeError)
 def test_from_braket_result_type_unsupported_type():
     from_braket_result_type(shared_models.OptionalMultiTarget(targets=[4, 3]))

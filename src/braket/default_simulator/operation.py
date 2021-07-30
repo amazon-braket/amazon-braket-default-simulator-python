@@ -90,7 +90,29 @@ class Observable(Operation, ABC):
         np.ndarray: The eigenvalues of the observable ordered by computational basis state.
         """
 
-    @property
+    @abstractmethod
+    def apply(self, state: np.ndarray) -> np.ndarray:
+        """
+
+        Args:
+            state (np.ndarray):
+
+        Returns:
+
+        """
+
+    @abstractmethod
+    def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
+        """
+
+        Args:
+            state (np.ndarray):
+            qubit (int):
+
+        Returns:
+
+        """
+
     @abstractmethod
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         """The gates that diagonalize the observable in the computational basis.

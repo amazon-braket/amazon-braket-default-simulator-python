@@ -13,14 +13,14 @@
 
 from __future__ import annotations
 
-import itertools
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Callable
 
 import numpy as np
 from braket.ir import jaqcd
 
+from braket.default_simulator.linalg_utils import marginal_probability, partial_trace
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
 from braket.default_simulator.observables import (
     Hadamard,
@@ -33,6 +33,7 @@ from braket.default_simulator.observables import (
 )
 from braket.default_simulator.operation import Observable
 from braket.default_simulator.operation_helpers import ir_matrix_to_ndarray
+from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
@@ -46,7 +47,7 @@ def from_braket_result_type(result_type) -> ResultType:
         ResultType: Instance of specific `ResultType` corresponding to the type of result_type
 
     Raises:
-        ValueError: If no concrete `ResultType` class has been registered
+        TypeError: If no concrete `ResultType` class has been registered
             for the Braket instruction type
     """
     return _from_braket_result_type(result_type)
@@ -54,7 +55,7 @@ def from_braket_result_type(result_type) -> ResultType:
 
 @singledispatch
 def _from_braket_result_type(result_type):
-    raise ValueError(f"Result type {result_type} not recognized")
+    raise TypeError(f"Result type {result_type} not recognized")
 
 
 class ResultType(ABC):
@@ -94,56 +95,36 @@ class ObservableResultType(ResultType, ABC):
         """Observable: The observable for which the desired result is calculated."""
         return self._observable
 
-    def calculate(self, simulation: StateVectorSimulation) -> Union[float, List[float]]:
-        probabilities = simulation._probabilities(simulation.state_with_observables)
-        qubit_count = simulation.qubit_count
-        eigenvalues = self._observable.eigenvalues
-        targets = self._observable.measured_qubits
-        if targets:
-            return ObservableResultType._calculate_for_targets(
-                probabilities,
-                qubit_count,
-                targets,
-                eigenvalues,
-                self._calculate_from_prob_distribution,
-            )
-        else:
-            return [
-                ObservableResultType._calculate_for_targets(
-                    probabilities,
-                    qubit_count,
-                    [i],
-                    eigenvalues,
-                    self._calculate_from_prob_distribution,
-                )
-                for i in range(qubit_count)
-            ]
+    def calculate(self, simulation: Simulation) -> Union[float, List[float]]:
+        """
+
+        Args:
+            simulation:
+
+        Returns:
+
+        """
+        if self._observable.targets:
+            return self._calculate_for_qubit(simulation, self._observable.apply)
+        return [
+            self._calculate_for_qubit(simulation, lambda state: self._observable.apply_to_qubit(state, qubit))
+            for qubit
+            in range(simulation.qubit_count)
+        ]
 
     @staticmethod
     @abstractmethod
-    def _calculate_from_prob_distribution(
-        probabilities: np.ndarray, eigenvalues: np.ndarray
-    ) -> float:
-        """Calculates a result from the probabilities of eigenvalues.
-
-        Args:
-            probabilities (np.ndarray): The probability of measuring each eigenstate
-            eigenvalues (np.ndarray): The eigenvalue corresponding to each eigenstate
-
-        Returns:
-            float: The result of the calculation
+    def _calculate_for_qubit(simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]):
         """
 
-    @staticmethod
-    def _calculate_for_targets(
-        probabilities,
-        qubit_count,
-        targets,
-        eigenvalues,
-        calculate_from_prob_distribution,
-    ):
-        prob = _marginal_probability(probabilities, qubit_count, targets)
-        return calculate_from_prob_distribution(prob, eigenvalues)
+        Args:
+            simulation:
+            apply_func:
+
+        Returns:
+
+        """
+        raise NotImplementedError("")
 
 
 class StateVector(ResultType):
@@ -164,7 +145,7 @@ class StateVector(ResultType):
 
 
 @_from_braket_result_type.register
-def _(statevector: jaqcd.StateVector):
+def _(_: jaqcd.StateVector):
     return StateVector()
 
 
@@ -192,7 +173,7 @@ class DensityMatrix(ResultType):
         Returns:
             np.ndarray: The density matrix (before observables) of the simulation
         """
-        if self._targets is None or self._targets == list(range(simulation.qubit_count)):
+        if self._targets is None or len(self._targets) == simulation.qubit_count:
             return simulation.density_matrix
         else:
             if not all(ta in list(range(simulation.qubit_count)) for ta in self._targets):
@@ -200,7 +181,7 @@ class DensityMatrix(ResultType):
                     "Input target qubits must be within the range of the qubits in the circuit."
                 )
 
-            return _partial_trace(simulation.density_matrix, simulation.qubit_count, self._targets)
+            return partial_trace(simulation.density_matrix, simulation.qubit_count, self._targets)
 
 
 @_from_braket_result_type.register
@@ -269,7 +250,7 @@ class Probability(ResultType):
             indexed by the decimal encoding of the computational basis state on the target qubits
 
         """
-        return _marginal_probability(
+        return marginal_probability(
             simulation.probabilities,
             simulation.qubit_count,
             self._targets,
@@ -294,10 +275,8 @@ class Expectation(ObservableResultType):
         super().__init__(observable)
 
     @staticmethod
-    def _calculate_from_prob_distribution(
-        probabilities: np.ndarray, eigenvalues: np.ndarray
-    ) -> float:
-        return (probabilities @ eigenvalues).real
+    def _calculate_for_qubit(simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]):
+        return simulation.expectation(apply_func(simulation.state_as_tensor))
 
 
 @_from_braket_result_type.register
@@ -318,10 +297,10 @@ class Variance(ObservableResultType):
         super().__init__(observable)
 
     @staticmethod
-    def _calculate_from_prob_distribution(
-        probabilities: np.ndarray, eigenvalues: np.ndarray
-    ) -> float:
-        return probabilities @ (eigenvalues.real ** 2) - (probabilities @ eigenvalues).real ** 2
+    def _calculate_for_qubit(simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]):
+        squared = apply_func(apply_func(simulation.state_as_tensor))
+        expectation = simulation.expectation(apply_func(simulation.state_as_tensor))
+        return simulation.expectation(squared) - expectation ** 2
 
 
 @_from_braket_result_type.register
@@ -383,51 +362,18 @@ def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
         raise ValueError("Insufficient qubits for tensor product")
 
 
-def _marginal_probability(
-    probabilities: np.ndarray,
-    qubit_count: int,
-    targets: List[int] = None,
-) -> np.ndarray:
-    """Return the marginal probability of the computational basis states.
+@singledispatch
+def _expectation(simulation, state_with_observable: np.ndarray) -> float:
+    raise TypeError("")
 
-    The marginal probability is obtained by summing the probabilities on
-    the unused qubits. If no targets are specified, then the probability
-    of all basis states is returned.
-    """
 
-    if targets is None or targets == list(range(qubit_count)):
-        # All qubits targeted, no need to marginalize
-        return probabilities
-
-    targets = np.hstack(targets)
-
-    # Find unused qubits and sum over them
-    unused_qubits = list(set(range(qubit_count)) - set(targets))
-    as_tensor = probabilities.reshape([2] * qubit_count)
-    marginal = np.apply_over_axes(np.sum, as_tensor, unused_qubits).flatten()
-
-    # Reorder qubits to match targets
-    basis_states = np.array(list(itertools.product([0, 1], repeat=len(targets))))
-    perm = np.ravel_multi_index(
-        basis_states[:, np.argsort(np.argsort(targets))].T, [2] * len(targets)
+@_expectation.register
+def _(simulation: StateVectorSimulation, state_with_observable: np.ndarray):
+    return float(
+        np.dot(simulation.state_vector.conj(), np.reshape(state_with_observable, 2 ** len(state_with_observable.shape)))
     )
-    return marginal[perm]
 
 
-def _partial_trace(
-    density_matrix: np.ndarray,
-    qubit_count: int,
-    targets: List[int],
-) -> np.ndarray:
-    """Return the reduced density matrix for the target qubits."""
-
-    targets = np.asarray(targets)
-    dims = np.asarray([2] * qubit_count)
-    Ndim = dims.size
-    Nkeep = np.prod(dims[targets])
-
-    idx1 = [i for i in range(Ndim)]
-    idx2 = [Ndim + i if i in targets else i for i in list(range(Ndim))]
-    tr_rho = density_matrix.reshape(np.tile(dims, 2))
-    tr_rho = np.einsum(tr_rho, idx1 + idx2)
-    return tr_rho.reshape(Nkeep, Nkeep)
+@_expectation.register
+def _(simulation: DensityMatrixSimulation, state_with_observable: np.ndarray):
+    pass

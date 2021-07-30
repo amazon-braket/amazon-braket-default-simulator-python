@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from abc import ABC, abstractmethod
 from typing import List
 
 import numpy as np
@@ -18,7 +19,7 @@ import numpy as np
 from braket.default_simulator.operation import GateOperation
 
 
-class Simulation:
+class Simulation(ABC):
     """
     This class tracks the evolution of a quantum system with `qubit_count` qubits.
     The state of system the evolves by application of `GateOperation`s using the `evolve()` method.
@@ -36,19 +37,6 @@ class Simulation:
         self._qubit_count = qubit_count
         self._shots = shots
 
-    def evolve(self, operations: List[GateOperation]) -> None:
-        """Evolves the state of the simulation under the action of
-        the specified gate operations.
-
-        Args:
-            operations (List[GateOperation]): Gate operations to apply for
-                evolving the state of the simulation.
-
-        Note:
-            This method mutates the state of the simulation.
-        """
-        raise NotImplementedError("evolve is not implemented.")
-
     @property
     def qubit_count(self) -> int:
         """int: The number of qubits being simulated by the simulation."""
@@ -64,7 +52,49 @@ class Simulation:
         """
         return self._shots
 
+    @abstractmethod
+    def evolve(self, operations: List[GateOperation]) -> None:
+        """Evolves the state of the simulation under the action of
+        the specified gate operations.
+
+        Args:
+            operations (List[GateOperation]): Gate operations to apply for
+                evolving the state of the simulation.
+
+        Note:
+            This method mutates the state of the simulation.
+        """
+        raise NotImplementedError("evolve is not implemented.")
+
     @property
+    @abstractmethod
+    def state_as_tensor(self) -> np.ndarray:
+        """np.ndarray:"""
+        raise NotImplementedError("")
+
+    @abstractmethod
+    def expectation(self, with_observables: np.ndarray) -> float:
+        """
+
+        Args:
+            with_observables:
+
+        Returns:
+
+        """
+        raise NotImplementedError("")
+
+    @abstractmethod
+    def retrieve_samples(self) -> List[int]:
+        """
+
+        Returns:
+
+        """
+        raise NotImplementedError("")
+
+    @property
+    @abstractmethod
     def probabilities(self) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state."""
         raise NotImplementedError("probabilities is not implemented.")

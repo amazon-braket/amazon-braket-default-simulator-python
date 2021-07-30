@@ -108,7 +108,7 @@ class StateVectorSimulation(Simulation):
     def _apply_operations(
         state: np.ndarray, qubit_count: int, operations: List[GateOperation], batch_size: int
     ) -> np.ndarray:
-        state_tensor = np.reshape(state, [2] * qubit_count)
+        state_tensor = StateVectorSimulation._state_as_tensor(state, qubit_count)
         final = (
             single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
             if batch_size == 1
@@ -133,6 +133,8 @@ class StateVectorSimulation(Simulation):
     def state_vector(self) -> np.ndarray:
         """
         np.ndarray: The state vector specifying the current state of the simulation.
+
+        Note: mutating this array will mutate the state of the simulation.
         """
         return self._state_vector
 
@@ -144,9 +146,17 @@ class StateVectorSimulation(Simulation):
         return np.outer(self._state_vector, self._state_vector.conj())
 
     @property
+    def state_as_tensor(self) -> np.ndarray:
+        return self._state_as_tensor(self._state_vector, self._qubit_count)
+
+    @staticmethod
+    def _state_as_tensor(state_vector: np.ndarray, qubit_count: int) -> np.ndarray:
+        return np.reshape(state_vector, [2] * qubit_count)
+
+    @property
     def state_with_observables(self) -> np.ndarray:
         """
-        np.ndarray: The final state vector of the simulation after application of observables.
+        np.ndarray: The state vector diagonalized in the basis of the measured observables.
 
         Raises:
             RuntimeError: If observables have not been applied
@@ -154,6 +164,11 @@ class StateVectorSimulation(Simulation):
         if self._post_observables is None:
             raise RuntimeError("No observables applied")
         return self._post_observables
+
+    def expectation(self, with_observables: np.ndarray) -> float:
+        return complex(
+            np.dot(self._state_vector.conj(), np.reshape(with_observables, 2 ** self._qubit_count))
+        ).real
 
     @property
     def probabilities(self) -> np.ndarray:
@@ -163,7 +178,8 @@ class StateVectorSimulation(Simulation):
         """
         return self._probabilities(self.state_vector)
 
-    def _probabilities(self, state) -> np.ndarray:
+    @staticmethod
+    def _probabilities(state) -> np.ndarray:
         """The probabilities of each computational basis state of a given state vector.
 
         Args:
