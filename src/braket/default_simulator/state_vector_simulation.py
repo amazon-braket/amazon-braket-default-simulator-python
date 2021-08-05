@@ -119,14 +119,6 @@ class StateVectorSimulation(Simulation):
         return np.reshape(final, 2 ** qubit_count)
 
     def retrieve_samples(self) -> List[int]:
-        """Retrieves samples of states from the state vector of the simulation,
-        based on the probabilities.
-
-        Returns:
-            List[int]: List of states sampled according to their probabilities
-            in the state vector. Each integer represents the decimal encoding of the
-            corresponding computational basis state.
-        """
         return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
 
     @property

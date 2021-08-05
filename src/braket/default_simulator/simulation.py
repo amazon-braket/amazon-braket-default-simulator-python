@@ -69,27 +69,30 @@ class Simulation(ABC):
     @property
     @abstractmethod
     def state_as_tensor(self) -> np.ndarray:
-        """np.ndarray:"""
+        """np.ndarray: The state of the simulation as a tensor product of qubit states."""
         raise NotImplementedError("")
 
     @abstractmethod
     def expectation(self, with_observables: np.ndarray) -> float:
-        """
+        """The expected value of the observable applied to the state.
 
         Args:
-            with_observables:
+            with_observables (np.ndarray): The state vector with the observable applied
 
         Returns:
-
+            float: The expectated value of the observable.
         """
         raise NotImplementedError("")
 
     @abstractmethod
     def retrieve_samples(self) -> List[int]:
-        """
+        """Retrieves samples of states from the state of the simulation,
+        based on the probabilities.
 
         Returns:
-
+            List[int]: List of states sampled according to their probabilities
+            in the state. Each integer represents the decimal encoding of the
+            corresponding computational basis state.
         """
         raise NotImplementedError("")
 

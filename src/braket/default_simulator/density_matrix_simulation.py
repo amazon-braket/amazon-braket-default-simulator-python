@@ -118,14 +118,6 @@ class DensityMatrixSimulation(Simulation):
         return np.reshape(dm_tensor, (2 ** qubit_count, 2 ** qubit_count))
 
     def retrieve_samples(self) -> List[int]:
-        """Retrieves samples of states from the density matrix of the simulation,
-        based on the probabilities.
-
-        Returns:
-            List[int]: List of states sampled according to their probabilities
-            in the density matrix. Each integer represents the decimal encoding of the
-            corresponding computational basis state.
-        """
         return np.random.choice(
             self._density_matrix.shape[0], p=self.probabilities, size=self._shots
         )
@@ -134,6 +126,8 @@ class DensityMatrixSimulation(Simulation):
     def density_matrix(self) -> np.ndarray:
         """
         np.ndarray: The density matrix specifying the current state of the simulation.
+
+        Note: mutating this array will mutate the state of the simulation.
         """
         return self._density_matrix
 

@@ -20,7 +20,7 @@ import numpy as np
 def multiply_matrix(
         state: np.ndarray, matrix: np.ndarray, targets: Tuple[int, ...]
 ) -> np.ndarray:
-    """
+    """ Multiplies
 
     Args:
         state (np.ndarray):
