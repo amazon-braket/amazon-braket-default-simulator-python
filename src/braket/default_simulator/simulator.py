@@ -37,6 +37,22 @@ from braket.default_simulator.result_types import (
 from braket.default_simulator.simulation import Simulation
 from braket.simulator import BraketSimulator
 
+_NOISE_INSTRUCTIONS = frozenset(
+    instr.lower().replace("_", "")
+    for instr in [
+        "amplitude_damping",
+        "bit_flip",
+        "depolarizing",
+        "generalized_amplitude_damping",
+        "kraus",
+        "pauli_channel",
+        "phase_flip",
+        "phase_damping",
+        "two_qubit_dephasing",
+        "two_qubit_depolarizing",
+    ]
+)
+
 
 class BaseLocalSimulator(BraketSimulator):
     def run(
@@ -121,32 +137,23 @@ class BaseLocalSimulator(BraketSimulator):
                     )
 
     def _validate_ir_instructions_compatibility(self, circuit_ir):
-        circuit_instructions_name = [instr.__class__.__name__ for instr in circuit_ir.instructions]
-        supported_instructions_name = self.properties.action[
-            DeviceActionType.JAQCD
-        ].supportedOperations
-        noise_instructions_name = [
-            "AmplitudeDamping",
-            "BitFlip",
-            "Depolarizing",
-            "GeneralizedAmplitudeDamping",
-            "PauliChannel",
-            "Kraus",
-            "PhaseFlip",
-            "PhaseDamping",
-            "TwoQubitDephasing",
-            "TwoQubitDepolarizing",
+        circuit_instruction_names = [
+            instr.__class__.__name__.lower().replace("_", "") for instr in circuit_ir.instructions
         ]
+        supported_instructions = frozenset(
+            op.lower().replace("_", "")
+            for op in self.properties.action[DeviceActionType.JAQCD].supportedOperations
+        )
         no_noise = True
-        for name in circuit_instructions_name:
-            if name in noise_instructions_name:
+        for name in circuit_instruction_names:
+            if name in _NOISE_INSTRUCTIONS:
                 no_noise = False
-                if name not in supported_instructions_name:
+                if name not in supported_instructions:
                     raise TypeError(
                         'Noise instructions are not supported by the state vector simulator (by default). \
 You need to use the density matrix simualtor: LocalSimulator("braket_dm").'
                     )
-        if noise_instructions_name[0] in supported_instructions_name and no_noise is True:
+        if no_noise and _NOISE_INSTRUCTIONS.intersection(supported_instructions):
             warnings.warn(
                 'You are running a noise-free circuit on the density matrix simulator. \
 Consider running this circuit on the state vector simulator: LocalSimulator("default") \
