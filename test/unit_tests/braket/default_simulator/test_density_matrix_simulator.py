@@ -90,7 +90,7 @@ def bell_ir_with_result():
     return _bell_ir_with_result
 
 
-def test_simulator_run_noisy_curcuit(noisy_circuit_2_qubit):
+def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit):
     simulator = DensityMatrixSimulator()
     shots_count = 10000
     result = simulator.run(noisy_circuit_2_qubit, qubit_count=2, shots=shots_count)
@@ -390,7 +390,7 @@ def test_simulator_fails_overlapping_targets_different_observable(result_types):
 
 def test_properties():
     simulator = DensityMatrixSimulator()
-    observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
+    observables = ["x", "y", "z", "h", "i", "hermitian"]
     max_shots = sys.maxsize
     qubit_count = 13
     expected_properties = GateModelSimulatorDeviceCapabilities.parse_obj(
@@ -410,48 +410,48 @@ def test_properties():
                     "actionType": "braket.ir.jaqcd.program",
                     "version": ["1"],
                     "supportedOperations": [
-                        "AmplitudeDamping",
-                        "BitFlip",
-                        "CCNot",
-                        "CNot",
-                        "CPhaseShift",
-                        "CPhaseShift00",
-                        "CPhaseShift01",
-                        "CPhaseShift10",
-                        "CSwap",
-                        "CY",
-                        "CZ",
-                        "Depolarizing",
-                        "GeneralizedAmplitudeDamping",
-                        "PauliChannel",
-                        "H",
-                        "I",
-                        "ISwap",
-                        "Kraus",
-                        "PSwap",
-                        "PhaseShift",
-                        "PhaseFlip",
-                        "PhaseDamping",
-                        "Rx",
-                        "Ry",
-                        "Rz",
-                        "S",
-                        "Si",
-                        "Swap",
-                        "T",
-                        "Ti",
-                        "TwoQubitDephasing",
-                        "TwoQubitDepolarizing",
-                        "Unitary",
-                        "V",
-                        "Vi",
-                        "X",
-                        "XX",
-                        "XY",
-                        "Y",
-                        "YY",
-                        "Z",
-                        "ZZ",
+                        "amplitude_damping",
+                        "bit_flip",
+                        "ccnot",
+                        "cnot",
+                        "cphaseshift",
+                        "cphaseshift00",
+                        "cphaseshift01",
+                        "cphaseshift10",
+                        "cswap",
+                        "cy",
+                        "cz",
+                        "depolarizing",
+                        "generalized_amplitude_damping",
+                        "h",
+                        "i",
+                        "iswap",
+                        "kraus",
+                        "pauli_channel",
+                        "phase_flip",
+                        "phase_damping",
+                        "phaseshift",
+                        "pswap",
+                        "rx",
+                        "ry",
+                        "rz",
+                        "s",
+                        "si",
+                        "swap",
+                        "t",
+                        "ti",
+                        "two_qubit_dephasing",
+                        "two_qubit_depolarizing",
+                        "unitary",
+                        "v",
+                        "vi",
+                        "x",
+                        "xx",
+                        "xy",
+                        "y",
+                        "yy",
+                        "z",
+                        "zz",
                     ],
                     "supportedResultTypes": [
                         {
