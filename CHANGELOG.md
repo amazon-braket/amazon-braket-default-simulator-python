@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.2 (2021-08-06)
+
+### Bug Fixes and Other Changes
+
+ * Reconcile supported operations with managed format
+
 ## v1.2.1 (2021-05-26)
 
 ### Bug Fixes and Other Changes
