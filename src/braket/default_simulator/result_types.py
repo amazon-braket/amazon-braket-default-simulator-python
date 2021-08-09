@@ -15,13 +15,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 from braket.ir import jaqcd
 
-from braket.default_simulator.linalg_utils import marginal_probability, partial_trace
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
+from braket.default_simulator.linalg_utils import marginal_probability, partial_trace
 from braket.default_simulator.observables import (
     Hadamard,
     Hermitian,
@@ -107,14 +107,17 @@ class ObservableResultType(ResultType, ABC):
         if self._observable.targets:
             return self._calculate_for_qubit(simulation, self._observable.apply)
         return [
-            self._calculate_for_qubit(simulation, lambda state: self._observable.apply_to_qubit(state, qubit))
-            for qubit
-            in range(simulation.qubit_count)
+            self._calculate_for_qubit(
+                simulation, lambda state: self._observable.apply_to_qubit(state, qubit)
+            )
+            for qubit in range(simulation.qubit_count)
         ]
 
     @staticmethod
     @abstractmethod
-    def _calculate_for_qubit(simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]):
+    def _calculate_for_qubit(
+        simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
+    ):
         """
 
         Args:
@@ -275,7 +278,9 @@ class Expectation(ObservableResultType):
         super().__init__(observable)
 
     @staticmethod
-    def _calculate_for_qubit(simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]):
+    def _calculate_for_qubit(
+        simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
+    ):
         return simulation.expectation(apply_func(simulation.state_as_tensor))
 
 
@@ -297,7 +302,9 @@ class Variance(ObservableResultType):
         super().__init__(observable)
 
     @staticmethod
-    def _calculate_for_qubit(simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]):
+    def _calculate_for_qubit(
+        simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
+    ):
         squared = apply_func(apply_func(simulation.state_as_tensor))
         expectation = simulation.expectation(apply_func(simulation.state_as_tensor))
         return simulation.expectation(squared) - expectation ** 2
@@ -370,7 +377,10 @@ def _expectation(simulation, state_with_observable: np.ndarray) -> float:
 @_expectation.register
 def _(simulation: StateVectorSimulation, state_with_observable: np.ndarray):
     return float(
-        np.dot(simulation.state_vector.conj(), np.reshape(state_with_observable, 2 ** len(state_with_observable.shape)))
+        np.dot(
+            simulation.state_vector.conj(),
+            np.reshape(state_with_observable, 2 ** len(state_with_observable.shape)),
+        )
     )
 
 

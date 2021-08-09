@@ -203,7 +203,7 @@ class DensityMatrixSimulation(Simulation):
         state = multiply_matrix(
             state,
             np.reshape(matrix.conjugate(), [2] * len(targets) * 2),
-            tuple(i + qubit_count for i in targets)
+            tuple(i + qubit_count for i in targets),
         )
         return state
 

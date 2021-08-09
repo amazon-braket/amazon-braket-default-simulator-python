@@ -12,15 +12,13 @@
 # language governing permissions and limitations under the License.
 
 import itertools
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 
 
-def multiply_matrix(
-        state: np.ndarray, matrix: np.ndarray, targets: Tuple[int, ...]
-) -> np.ndarray:
-    """ Multiplies
+def multiply_matrix(state: np.ndarray, matrix: np.ndarray, targets: Tuple[int, ...]) -> np.ndarray:
+    """Multiplies
 
     Args:
         state (np.ndarray):
@@ -89,7 +87,7 @@ def partial_trace(
     qubit_count: int,
     targets: Optional[List[int]] = None,
 ) -> np.ndarray:
-    """ Returns the reduced density matrix for the target qubits.
+    """Returns the reduced density matrix for the target qubits.
 
     Args:
         density_matrix (np.ndarray):
