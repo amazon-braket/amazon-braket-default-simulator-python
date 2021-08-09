@@ -110,16 +110,14 @@ class BaseLocalSimulator(BraketSimulator):
                 non_observable_result_types,
                 observable_result_types,
             ) = BaseLocalSimulator._translate_result_types(circuit_ir)
-            # TODO: Determine if okay to remove altogether
-            # observables = BaseLocalSimulator._validate_and_consolidate_observable_result_types(
-            #     list(observable_result_types.values()), qubit_count
-            # )
+            observables = BaseLocalSimulator._validate_and_consolidate_observable_result_types(
+                list(observable_result_types.values()), qubit_count
+            )
             results = BaseLocalSimulator._generate_results(
                 circuit_ir,
                 non_observable_result_types,
                 observable_result_types,
-                # observables,
-                [],
+                observables,
                 simulation,
             )
 
