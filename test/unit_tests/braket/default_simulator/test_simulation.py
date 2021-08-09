@@ -36,5 +36,20 @@ def test_simulation_evolve(simulation):
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
+def test_simulation_state_as_tensor(simulation):
+    simulation.state_as_tensor
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_simulation_expectation(simulation):
+    simulation.expectation(None)
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_simulation_retrieve_samples(simulation):
+    simulation.retrieve_samples()
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_simulation_probabilities(simulation):
     simulation.probabilities()

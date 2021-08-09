@@ -160,6 +160,6 @@ def test_check_cptp(matrices):
     check_cptp(matrices)
 
 
-@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_from_braket_instruction_unsupported_instruction():
     from_braket_instruction(shared_models.DoubleTarget(targets=[4, 3]))

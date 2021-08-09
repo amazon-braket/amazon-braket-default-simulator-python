@@ -45,7 +45,6 @@ def multiply_matrix(state: np.ndarray, matrix: np.ndarray, targets: Tuple[int, .
 
 def marginal_probability(
     probabilities: np.ndarray,
-    qubit_count: int,
     targets: List[int] = None,
 ) -> np.ndarray:
     """Return the marginal probability of the computational basis states.
@@ -56,12 +55,12 @@ def marginal_probability(
 
     Args:
         probabilities (np.ndarray):
-        qubit_count (int):
         targets (List[int]):
 
     Returns:
         np.ndarray:
     """
+    qubit_count = int(np.log2(len(probabilities)))
 
     if targets is None or targets == list(range(qubit_count)):
         # All qubits targeted, no need to marginalize
@@ -88,6 +87,8 @@ def partial_trace(
     targets: Optional[List[int]] = None,
 ) -> np.ndarray:
     """Returns the reduced density matrix for the target qubits.
+
+    If no target qubits are supplied, this method returns the trace of the matrix.
 
     Args:
         density_matrix (np.ndarray):

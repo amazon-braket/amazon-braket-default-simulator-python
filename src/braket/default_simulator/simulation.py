@@ -11,7 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from abc import ABC, abstractmethod
 from typing import List
 
 import numpy as np
@@ -19,7 +18,7 @@ import numpy as np
 from braket.default_simulator.operation import GateOperation
 
 
-class Simulation(ABC):
+class Simulation:
     """
     This class tracks the evolution of a quantum system with `qubit_count` qubits.
     The state of system the evolves by application of `GateOperation`s using the `evolve()` method.
@@ -52,7 +51,6 @@ class Simulation(ABC):
         """
         return self._shots
 
-    @abstractmethod
     def evolve(self, operations: List[GateOperation]) -> None:
         """Evolves the state of the simulation under the action of
         the specified gate operations.
@@ -67,12 +65,10 @@ class Simulation(ABC):
         raise NotImplementedError("evolve is not implemented.")
 
     @property
-    @abstractmethod
     def state_as_tensor(self) -> np.ndarray:
         """np.ndarray: The state of the simulation as a tensor product of qubit states."""
         raise NotImplementedError("")
 
-    @abstractmethod
     def expectation(self, with_observables: np.ndarray) -> float:
         """The expected value of the observable applied to the state.
 
@@ -84,7 +80,6 @@ class Simulation(ABC):
         """
         raise NotImplementedError("")
 
-    @abstractmethod
     def retrieve_samples(self) -> List[int]:
         """Retrieves samples of states from the state of the simulation,
         based on the probabilities.
@@ -97,7 +92,6 @@ class Simulation(ABC):
         raise NotImplementedError("")
 
     @property
-    @abstractmethod
     def probabilities(self) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state."""
         raise NotImplementedError("probabilities is not implemented.")

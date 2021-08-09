@@ -30,7 +30,7 @@ def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]
         KrausOperation class corresponding to the specified instruction.
 
     Raises:
-        ValueError: If no concrete `GateOperation` or `KrausOperation` class has been
+        NotImplementedError: If no concrete `GateOperation` or `KrausOperation` class has been
             registered for the instruction type.
     """
     return _from_braket_instruction(instruction)
@@ -38,7 +38,7 @@ def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]
 
 @singledispatch
 def _from_braket_instruction(instruction):
-    raise ValueError(f"Instruction {instruction} not recognized")
+    raise NotImplementedError(f"Instruction {instruction} not recognized")
 
 
 @lru_cache()

@@ -251,7 +251,9 @@ class Hermitian(Observable):
 
     def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
         if self._targets and len(self._targets) > 1:
-            raise ValueError("")
+            raise ValueError(
+                f"Matrix must act on 1 qubit, but {self._matrix} acts on {len(self._targets)}"
+            )
         return multiply_matrix(state, self._matrix, (qubit,))
 
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
@@ -332,7 +334,7 @@ class TensorProduct(Observable):
         return final
 
     def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
-        raise NotImplementedError("")
+        raise TypeError("Tensor product cannot by measured on each qubit individually")
 
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         return sum((factor.diagonalizing_gates() for factor in self._factors), ())

@@ -111,6 +111,11 @@ def test_hermitian_invalid_none_target():
     observables.Hermitian(np.eye(4), None)
 
 
+@pytest.mark.xfail(raises=ValueError)
+def test_hermitian_multi_qubit_apply_to_qubit():
+    observables.Hermitian(np.eye(4), [0, 1]).apply_to_qubit(None, 0)
+
+
 def test_observable_known_diagonalization():
     y_diag_expected = np.linalg.multi_dot(
         [
@@ -209,3 +214,10 @@ def test_tensor_product_nonstandard():
 @pytest.mark.xfail(raises=ValueError)
 def test_tensor_product_one_component():
     observables.TensorProduct([observables.Hadamard([2])])
+
+
+@pytest.mark.xfail(raises=TypeError)
+def test_tensor_product_apply_to_qubit():
+    observables.TensorProduct(
+        [observables.Hadamard([0]), observables.Hadamard([1])]
+    ).apply_to_qubit(None, 0)

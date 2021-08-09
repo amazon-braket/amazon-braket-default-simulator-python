@@ -47,7 +47,7 @@ def from_braket_result_type(result_type) -> ResultType:
         ResultType: Instance of specific `ResultType` corresponding to the type of result_type
 
     Raises:
-        TypeError: If no concrete `ResultType` class has been registered
+        NotImplementedError: If no concrete `ResultType` class has been registered
             for the Braket instruction type
     """
     return _from_braket_result_type(result_type)
@@ -55,7 +55,7 @@ def from_braket_result_type(result_type) -> ResultType:
 
 @singledispatch
 def _from_braket_result_type(result_type):
-    raise TypeError(f"Result type {result_type} not recognized")
+    raise NotImplementedError(f"Result type {result_type} not recognized")
 
 
 class ResultType(ABC):
@@ -104,7 +104,7 @@ class ObservableResultType(ResultType, ABC):
         Returns:
 
         """
-        if self._observable.targets:
+        if self._observable.measured_qubits:
             return self._calculate_for_qubit(simulation, self._observable.apply)
         return [
             self._calculate_for_qubit(
@@ -127,7 +127,6 @@ class ObservableResultType(ResultType, ABC):
         Returns:
 
         """
-        raise NotImplementedError("")
 
 
 class StateVector(ResultType):
@@ -255,7 +254,6 @@ class Probability(ResultType):
         """
         return marginal_probability(
             simulation.probabilities,
-            simulation.qubit_count,
             self._targets,
         )
 
@@ -367,23 +365,3 @@ def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
         return [targets.pop(0) for _ in range(num_qubits)]
     except Exception:
         raise ValueError("Insufficient qubits for tensor product")
-
-
-@singledispatch
-def _expectation(simulation, state_with_observable: np.ndarray) -> float:
-    raise TypeError("")
-
-
-@_expectation.register
-def _(simulation: StateVectorSimulation, state_with_observable: np.ndarray):
-    return float(
-        np.dot(
-            simulation.state_vector.conj(),
-            np.reshape(state_with_observable, 2 ** len(state_with_observable.shape)),
-        )
-    )
-
-
-@_expectation.register
-def _(simulation: DensityMatrixSimulation, state_with_observable: np.ndarray):
-    pass
