@@ -189,7 +189,7 @@ class PauliZ(SingleQubitMatrixObservable):
 
     def __init__(self, targets: Optional[List[int]] = None):
         super().__init__(np.array([[1, 0], [0, -1]]), targets)
-        self._measured_qubits = targets
+        self._measured_qubits = self._targets
 
     @property
     def targets(self) -> Tuple[int, ...]:
