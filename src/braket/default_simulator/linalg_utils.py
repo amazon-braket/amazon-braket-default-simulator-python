@@ -103,7 +103,7 @@ def partial_trace(
     target_set = set(targets) if targets else set()
     nkeep = 2 ** len(target_set)
     idx1 = [i for i in range(qubit_count)]
-    idx2 = [qubit_count + i if i in target_set else i for i in list(range(qubit_count))]
+    idx2 = [qubit_count + i if i in target_set else i for i in range(qubit_count)]
     tr_rho = density_matrix.reshape(np.array([2] * 2 * qubit_count))
     tr_rho = np.einsum(tr_rho, idx1 + idx2)
     return tr_rho.reshape(nkeep, nkeep)
