@@ -152,7 +152,7 @@ class DensityMatrixSimulation(Simulation):
         return self._post_observables
 
     def expectation(self, with_observables: np.ndarray) -> float:
-        return complex(partial_trace(with_observables, self._qubit_count)).real
+        return complex(partial_trace(with_observables)).real
 
     @property
     def probabilities(self) -> np.ndarray:

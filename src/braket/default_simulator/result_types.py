@@ -20,7 +20,6 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 from braket.ir import jaqcd
 
-from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
 from braket.default_simulator.linalg_utils import marginal_probability, partial_trace
 from braket.default_simulator.observables import (
     Hadamard,
@@ -66,7 +65,7 @@ class ResultType(ABC):
 
     @abstractmethod
     def calculate(self, simulation: Simulation) -> Any:
-        # Return type of any due to lack of sum type support in Python
+        # Return type of Any due to lack of sum type support in Python
         """Calculate a result from the given quantum state vector simulation.
 
         Args:
@@ -170,11 +169,11 @@ class DensityMatrix(ResultType):
         """
         self._targets = targets
 
-    def calculate(self, simulation: DensityMatrixSimulation) -> np.ndarray:
+    def calculate(self, simulation: Simulation) -> np.ndarray:
         """Return the given density matrix of the simulation.
 
         Args:
-            simulation (DensityMatrixSimulation): The simulation whose (full or reduced)
+            simulation (Simulation): The simulation whose (full or reduced)
                 density matrix will be returned.
 
         Returns:
@@ -187,8 +186,10 @@ class DensityMatrix(ResultType):
                 raise IndexError(
                     "Input target qubits must be within the range of the qubits in the circuit."
                 )
-
-            return partial_trace(simulation.density_matrix, simulation.qubit_count, self._targets)
+            return partial_trace(
+                simulation.density_matrix.reshape(np.array([2] * 2 * simulation.qubit_count)),
+                self._targets,
+            )
 
 
 @_from_braket_result_type.register
@@ -243,14 +244,13 @@ class Probability(ResultType):
         """
         self._targets = targets
 
-    def calculate(self, simulation: StateVectorSimulation) -> np.ndarray:
+    def calculate(self, simulation: Simulation) -> np.ndarray:
         """Return the marginal probabilities of computational basis states on the target qubits.
 
         Probabilities are marginalized over all non-target qubits.
 
         Args:
-            simulation (StateVectorSimulation): The simulation from which probabilities
-                are calculated
+            simulation (Simulation): The simulation from which probabilities are calculated.
 
         Returns:
             np.ndarray: An array of probabilities of length equal to 2^(number of target qubits),
@@ -273,13 +273,6 @@ class Expectation(ObservableResultType):
     Holds an observable :math:`O` to calculate its expected value.
     """
 
-    def __init__(self, observable: Observable):
-        """
-        Args:
-            observable (Observable): The observable for which expected value is calculated
-        """
-        super().__init__(observable)
-
     @staticmethod
     def _calculate_from_application(
         simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
@@ -296,13 +289,6 @@ class Variance(ObservableResultType):
     """
     Holds an observable :math:`O` to calculate its variance.
     """
-
-    def __init__(self, observable: Observable):
-        """
-        Args:
-            observable (Observable): The observable for which variance is calculated
-        """
-        super().__init__(observable)
 
     @staticmethod
     def _calculate_from_application(

@@ -84,7 +84,6 @@ def marginal_probability(
 
 def partial_trace(
     density_matrix: np.ndarray,
-    qubit_count: int,
     targets: Optional[List[int]] = None,
 ) -> np.ndarray:
     """Returns the reduced density matrix for the target qubits.
@@ -92,18 +91,18 @@ def partial_trace(
     If no target qubits are supplied, this method returns the trace of the density matrix.
 
     Args:
-        density_matrix (np.ndarray): The density matrix to reduce.
-        qubit_count (int): The number of qubits in the density matrix.
+        density_matrix (np.ndarray): The density matrix to reduce,
+            as a tensor product of qubit states.
         targets (List[int]): The qubits of the output reduced density matrix;
             if no target qubits are supplied, this method returns the trace of the density matrix.
 
     Returns:
         np.ndarray: The partial trace of the density matrix.
     """
+    qubit_count = len(density_matrix.shape) // 2
     target_set = set(targets) if targets else set()
     nkeep = 2 ** len(target_set)
     idx1 = [i for i in range(qubit_count)]
     idx2 = [qubit_count + i if i in target_set else i for i in range(qubit_count)]
-    tr_rho = density_matrix.reshape(np.array([2] * 2 * qubit_count))
-    tr_rho = np.einsum(tr_rho, idx1 + idx2)
+    tr_rho = np.einsum(density_matrix, idx1 + idx2)
     return tr_rho.reshape(nkeep, nkeep)
