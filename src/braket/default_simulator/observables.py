@@ -338,7 +338,7 @@ class TensorProduct(Observable):
         return final
 
     def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
-        raise TypeError("Tensor product cannot by measured on each qubit individually")
+        raise TypeError("Tensor product cannot be measured on each qubit individually")
 
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         return sum((factor.diagonalizing_gates() for factor in self._factors), ())
