@@ -106,7 +106,7 @@ class ObservableResultType(ResultType, ABC):
 
         Returns:
             Union[float, List[float]]: The value of the result type;
-            will be a real due to Hermitiity of observable.
+            will be a real due to Hermiticity of observable.
         """
         if self._observable.measured_qubits:
             return self._calculate_from_application(simulation, self._observable.apply)
