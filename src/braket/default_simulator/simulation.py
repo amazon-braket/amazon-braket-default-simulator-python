@@ -62,23 +62,23 @@ class Simulation:
         Note:
             This method mutates the state of the simulation.
         """
-        raise NotImplementedError("evolve is not implemented.")
+        raise NotImplementedError("evolve has not been implemented.")
 
     @property
     def state_as_tensor(self) -> np.ndarray:
         """np.ndarray: The state of the simulation as a tensor product of qubit states."""
-        raise NotImplementedError("")
+        raise NotImplementedError("state_as_tensor has not been implemented.")
 
     def expectation(self, with_observables: np.ndarray) -> float:
         """The expected value of the observable applied to the state.
 
         Args:
-            with_observables (np.ndarray): The state vector with the observable applied
+            with_observables (np.ndarray): The state vector with the observable applied.
 
         Returns:
-            float: The expectated value of the observable.
+            float: The expected value of the observable.
         """
-        raise NotImplementedError("")
+        raise NotImplementedError("expectation has not been implemented.")
 
     def retrieve_samples(self) -> List[int]:
         """Retrieves samples of states from the state of the simulation,
@@ -89,9 +89,9 @@ class Simulation:
             in the state. Each integer represents the decimal encoding of the
             corresponding computational basis state.
         """
-        raise NotImplementedError("")
+        raise NotImplementedError("retrieve_samples has not been implemented.")
 
     @property
     def probabilities(self) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state."""
-        raise NotImplementedError("probabilities is not implemented.")
+        raise NotImplementedError("probabilities has not been implemented.")

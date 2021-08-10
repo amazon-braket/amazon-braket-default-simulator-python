@@ -65,6 +65,10 @@ class Identity(Observable):
 
 
 class SingleQubitMatrixObservable(Observable, ABC):
+    """
+    An observable defined by a matrix acting on a single qubit.
+    """
+
     @abstractmethod
     def __init__(self, matrix: np.ndarray, targets: Optional[List[int]] = None):
         self._matrix = matrix

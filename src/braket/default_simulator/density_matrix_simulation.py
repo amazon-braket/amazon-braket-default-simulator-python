@@ -142,7 +142,7 @@ class DensityMatrixSimulation(Simulation):
     @property
     def state_with_observables(self) -> np.ndarray:
         """
-        np.ndarray: The density matrix  diagonalized in the basis of the measured observables.
+        np.ndarray: The density matrix diagonalized in the basis of the measured observables.
 
         Raises:
             RuntimeError: If observables have not been applied

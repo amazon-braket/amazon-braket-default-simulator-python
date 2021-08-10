@@ -92,25 +92,27 @@ class Observable(Operation, ABC):
 
     @abstractmethod
     def apply(self, state: np.ndarray) -> np.ndarray:
-        """
+        """Applies this observable to the given state.
 
         Args:
-            state (np.ndarray):
+            state (np.ndarray): The state to apply the observable to.
 
         Returns:
-
+            np.ndarray: The state after the observable has been applied.
         """
 
     @abstractmethod
     def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
-        """
+        """Applies this observable to the given state on a given qubit.
+
+        This only makes sense if the observable acts on 1 qubit.
 
         Args:
-            state (np.ndarray):
-            qubit (int):
+            state (np.ndarray): The state to apply the observable to.
+            qubit (int): The qubit to apply the observable on.
 
         Returns:
-
+            np.ndarray: The state after the observable has been applied.
         """
 
     @abstractmethod

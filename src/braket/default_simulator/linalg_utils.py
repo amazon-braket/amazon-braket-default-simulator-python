@@ -18,15 +18,15 @@ import numpy as np
 
 
 def multiply_matrix(state: np.ndarray, matrix: np.ndarray, targets: Tuple[int, ...]) -> np.ndarray:
-    """Multiplies
+    """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
     Args:
-        state (np.ndarray):
-        matrix (np.ndarray):
-        targets (Tuple[int]):
+        state (np.ndarray): The state to multiply the matrix by.
+        matrix (np.ndarray): The matrix to apply to the state.
+        targets (Tuple[int]): The qubits to apply the state on.
 
     Returns:
-        np.ndarray:
+        np.ndarray: The state after the matrix has been applied.
     """
     gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
     axes = (
@@ -54,11 +54,12 @@ def marginal_probability(
     of all basis states is returned.
 
     Args:
-        probabilities (np.ndarray):
-        targets (List[int]):
+        probabilities (np.ndarray): The probability distribution to marginalize.
+        targets (List[int]): The qubits of the marginal distribution;
+            if no targets are specified, then the probability of all basis states is returned.
 
     Returns:
-        np.ndarray:
+        np.ndarray: The marginal probability distribution.
     """
     qubit_count = int(np.log2(len(probabilities)))
 
@@ -88,15 +89,16 @@ def partial_trace(
 ) -> np.ndarray:
     """Returns the reduced density matrix for the target qubits.
 
-    If no target qubits are supplied, this method returns the trace of the matrix.
+    If no target qubits are supplied, this method returns the trace of the density matrix.
 
     Args:
-        density_matrix (np.ndarray):
-        qubit_count (int):
-        targets (List[int]):
+        density_matrix (np.ndarray): The density matrix to reduce.
+        qubit_count (int): The number of qubits in the density matrix.
+        targets (List[int]): The qubits of the output reduced density matrix;
+            if no target qubits are supplied, this method returns the trace of the density matrix.
 
     Returns:
-        np.ndarray:
+        np.ndarray: The partial trace of the density matrix.
     """
     target_set = set(targets) if targets else set()
     nkeep = 2 ** len(target_set)

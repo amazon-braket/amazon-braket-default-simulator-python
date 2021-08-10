@@ -65,16 +65,15 @@ class ResultType(ABC):
     """
 
     @abstractmethod
-    def calculate(self, simulation: StateVectorSimulation) -> Any:
+    def calculate(self, simulation: Simulation) -> Any:
         # Return type of any due to lack of sum type support in Python
         """Calculate a result from the given quantum state vector simulation.
 
         Args:
-            simulation (StateVectorSimulation): The quantum state vector simulation
-                to use in the calculation
+            simulation (Simulation): The simulation to use in the calculation.
 
         Returns:
-            Any: The result of the calculation
+            Any: The result of the calculation.
         """
 
 
@@ -96,18 +95,23 @@ class ObservableResultType(ResultType, ABC):
         return self._observable
 
     def calculate(self, simulation: Simulation) -> Union[float, List[float]]:
-        """
+        """Calculates the result type using the underlying observable.
+
+        Returns a a real number if the observable has defined targets,
+        or a list of real numbers, one for the result type on each target,
+        if the observable has no target.
 
         Args:
-            simulation:
+            simulation (Simulation): The simulation to use in the calculation.
 
         Returns:
-
+            Union[float, List[float]]: The value of the result type;
+            will be a real due to Hermitiity of observable.
         """
         if self._observable.measured_qubits:
-            return self._calculate_for_qubit(simulation, self._observable.apply)
+            return self._calculate_from_application(simulation, self._observable.apply)
         return [
-            self._calculate_for_qubit(
+            self._calculate_from_application(
                 simulation, lambda state: self._observable.apply_to_qubit(state, qubit)
             )
             for qubit in range(simulation.qubit_count)
@@ -115,17 +119,18 @@ class ObservableResultType(ResultType, ABC):
 
     @staticmethod
     @abstractmethod
-    def _calculate_for_qubit(
+    def _calculate_from_application(
         simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
-    ):
-        """
+    ) -> float:
+        """Calculates the result type using the given function to apply the observable
 
         Args:
-            simulation:
-            apply_func:
+            simulation (Simulation): The simulation to use in the calculation.
+            apply_func (Callable[[np.ndarray], np.ndarray): The function applying the observable
+                to the state.
 
         Returns:
-
+            float: The value of the result type.
         """
 
 
@@ -276,7 +281,7 @@ class Expectation(ObservableResultType):
         super().__init__(observable)
 
     @staticmethod
-    def _calculate_for_qubit(
+    def _calculate_from_application(
         simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
     ):
         return simulation.expectation(apply_func(simulation.state_as_tensor))
@@ -300,7 +305,7 @@ class Variance(ObservableResultType):
         super().__init__(observable)
 
     @staticmethod
-    def _calculate_for_qubit(
+    def _calculate_from_application(
         simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
     ):
         squared = apply_func(apply_func(simulation.state_as_tensor))
