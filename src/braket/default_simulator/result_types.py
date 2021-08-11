@@ -61,6 +61,9 @@ class ResultType(ABC):
     """
     An abstract class that when implemented defines a calculation on a
     quantum state simulation.
+
+    Note:
+        All result types are calculated exactly, instead of approximated from samples.
     """
 
     @abstractmethod

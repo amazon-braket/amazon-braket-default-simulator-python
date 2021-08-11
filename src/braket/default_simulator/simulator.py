@@ -440,8 +440,8 @@ for a better user experience.'
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        """properties of simulator such as supported IR types, quantum operations,
-        and result types.
+        """GateModelSimulatorDeviceCapabilities: Properties of simulator such as supported IR types,
+        quantum operations, and result types.
         """
         raise NotImplementedError("properties has not been implemented.")
 

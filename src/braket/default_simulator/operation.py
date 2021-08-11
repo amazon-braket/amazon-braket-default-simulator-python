@@ -77,9 +77,9 @@ class Observable(Operation, ABC):
 
     @property
     def is_standard(self) -> bool:
-        """bool: Whether the observable is one of the four standard observables X, Y, Z and H.
+        r"""bool: Whether the observable is Pauli-like, that is, has eigenvalues of :math:`\pm 1`.
 
-        These observables are guaranteed to have eigenvalues of +/-1
+        Examples include the Pauli and Hadamard observables.
         """
         return False
 
@@ -92,7 +92,7 @@ class Observable(Operation, ABC):
     def _pow(self, power: int) -> Observable:
         """Raises this observable to the given power.
 
-        Only works with integer powers.
+        Only defined for integer powers.
 
         Args:
             power (int): The power to raise the observable to.
@@ -123,7 +123,7 @@ class Observable(Operation, ABC):
     def fix_qubit(self, qubit: int) -> Observable:
         """Creates a copy of it acting on the given qubit.
 
-        This only makes sense if the observable acts on 1 qubit.
+        Only defined for observables that act on 1 qubit.
 
         Args:
             qubit (int): The target qubit of the new observable.

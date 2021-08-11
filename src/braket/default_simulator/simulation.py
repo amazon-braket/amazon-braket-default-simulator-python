@@ -65,10 +65,10 @@ class Simulation:
         raise NotImplementedError("evolve has not been implemented.")
 
     def expectation(self, observable: Observable) -> float:
-        """The expected value of the observable in to the state.
+        """The expected value of the observable in the given state.
 
         Args:
-            observable (Observable): The observable to measure
+            observable (Observable): The observable to measure.
 
         Returns:
             float: The expected value of the observable.
