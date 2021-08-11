@@ -70,7 +70,6 @@ class BaseLocalSimulator(BraketSimulator):
                 instructions to execute.
             qubit_count (int): The number of qubits to simulate.
             shots (int): The number of times to run the circuit.
-            simulation (Simulation): Simulation method for evolving the state.
             batch_size (int): The size of the circuit partitions to contract,
                 if applying multiple gates at a time is desired; see `StateVectorSimulation`.
                 Must be a positive integer.
@@ -81,7 +80,7 @@ class BaseLocalSimulator(BraketSimulator):
 
         Raises:
             ValueError: If result types are not specified in the IR or sample is specified
-                as a result type when shots=0. Or, if statevector and amplitude result types
+                as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
         self._validate_ir_results_compatibility(circuit_ir)
@@ -150,7 +149,7 @@ class BaseLocalSimulator(BraketSimulator):
                 if name not in supported_instructions:
                     raise TypeError(
                         'Noise instructions are not supported by the state vector simulator (by default). \
-You need to use the density matrix simualtor: LocalSimulator("braket_dm").'
+You need to use the density matrix simulator: LocalSimulator("braket_dm").'
                     )
         if no_noise and _NOISE_INSTRUCTIONS.intersection(supported_instructions):
             warnings.warn(
@@ -440,12 +439,14 @@ for a better user experience.'
         return GateModelTaskResult.construct(**result_dict)
 
     @property
-    def simulation_type(self):
-        raise NotImplementedError("simulation_type has not been implemented yet.")
-
-    @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
         """properties of simulator such as supported IR types, quantum operations,
         and result types.
         """
-        raise NotImplementedError("properties has not been implemented yet.")
+        raise NotImplementedError("properties has not been implemented.")
+
+    def initialize_simulation(self, **kwargs) -> Simulation:
+        """
+        Initializes simulation with keyword arguments
+        """
+        raise NotImplementedError("initialize_simulation has not been implemented.")

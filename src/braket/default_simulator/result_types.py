@@ -188,8 +188,8 @@ class DensityMatrix(ResultType):
 
 
 @_from_braket_result_type.register
-def _(densitymatrix: jaqcd.DensityMatrix):
-    return DensityMatrix(densitymatrix.targets)
+def _(density_matrix: jaqcd.DensityMatrix):
+    return DensityMatrix(density_matrix.targets)
 
 
 class Amplitude(ResultType):

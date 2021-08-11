@@ -160,5 +160,5 @@ def test_base_local_simulator_properties():
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
-def test_base_local_simulator_simulation_type():
-    BaseLocalSimulator().simulation_type
+def test_base_local_simulator_initialize_simulation():
+    BaseLocalSimulator().initialize_simulation()

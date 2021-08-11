@@ -23,10 +23,9 @@ from braket.default_simulator.state_vector_simulation import StateVectorSimulati
 
 
 class StateVectorSimulator(BaseLocalSimulator):
-
     DEVICE_ID = "braket_sv"
 
-    def initialize_simulation(self, **kwargs):
+    def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         batch_size = kwargs.get("batch_size")

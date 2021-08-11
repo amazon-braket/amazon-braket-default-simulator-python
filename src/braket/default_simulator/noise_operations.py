@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-from typing import Tuple
+from typing import List, Tuple
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
@@ -35,7 +35,7 @@ class BitFlip(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
         k0 = np.sqrt(1 - self._probability) * np.array([[1, 0], [0, 1]])
         k1 = np.sqrt(self._probability) * np.array([[0, 1], [1, 0]])
         return [k0, k1]
@@ -58,7 +58,7 @@ class PhaseFlip(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
         k0 = np.sqrt(1 - self._probability) * np.array([[1.0, 0.0], [0.0, 1.0]])
         k1 = np.sqrt(self._probability) * np.array([[1.0, 0.0], [0.0, -1.0]])
         return [k0, k1]
@@ -83,7 +83,7 @@ class PauliChannel(KrausOperation):
         self._probZ = probZ
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
         K0 = np.sqrt(1 - self._probX - self._probY - self._probZ) * np.array(
             [[1.0, 0.0], [0.0, 1.0]]
         )
@@ -112,7 +112,7 @@ class Depolarizing(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
         K0 = np.sqrt(1 - self._probability) * np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
         K1 = np.sqrt(self._probability / 3) * np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
         K2 = (
@@ -139,8 +139,7 @@ class TwoQubitDepolarizing(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> np.ndarray:
-
+    def matrices(self) -> List[np.ndarray]:
         SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
         SX = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
         SY = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
@@ -173,7 +172,7 @@ class TwoQubitDephasing(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
 
         SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
         SZ = np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
@@ -202,7 +201,7 @@ class AmplitudeDamping(KrausOperation):
         self._gamma = gamma
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
         K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex)
         K1 = np.array([[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex)
         return [K0, K1]
@@ -226,7 +225,7 @@ class GeneralizedAmplitudeDamping(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
         K0 = np.sqrt(self._probability) * np.array(
             [[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex
         )
@@ -259,7 +258,7 @@ class PhaseDamping(KrausOperation):
         self._gamma = gamma
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
         K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex)
         K1 = np.array([[0.0, 0.0], [0.0, np.sqrt(self._gamma)]], dtype=complex)
         return [K0, K1]
@@ -288,7 +287,7 @@ class Kraus(KrausOperation):
         self._matrices = clone
 
     @property
-    def matrices(self) -> np.ndarray:
+    def matrices(self) -> List[np.ndarray]:
         return self._matrices
 
     @property

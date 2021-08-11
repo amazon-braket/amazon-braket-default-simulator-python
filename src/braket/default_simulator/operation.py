@@ -57,7 +57,7 @@ class KrausOperation(Operation, ABC):
     @property
     @abstractmethod
     def matrices(self) -> List[np.ndarray]:
-        """List[np.ndarray]: A list of matrices representating Kraus operators."""
+        """List[np.ndarray]: A list of matrices representing Kraus operators."""
 
 
 class Observable(Operation, ABC):
