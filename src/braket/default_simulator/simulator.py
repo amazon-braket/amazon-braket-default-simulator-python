@@ -110,14 +110,13 @@ class BaseLocalSimulator(BraketSimulator):
                 non_observable_result_types,
                 observable_result_types,
             ) = BaseLocalSimulator._translate_result_types(circuit_ir)
-            observables = BaseLocalSimulator._validate_and_consolidate_observable_result_types(
+            BaseLocalSimulator._validate_and_consolidate_observable_result_types(
                 list(observable_result_types.values()), qubit_count
             )
             results = BaseLocalSimulator._generate_results(
                 circuit_ir,
                 non_observable_result_types,
                 observable_result_types,
-                observables,
                 simulation,
             )
 
@@ -383,7 +382,6 @@ for a better user experience.'
         circuit_ir: Program,
         non_observable_result_types: Dict[int, ResultType],
         observable_result_types: Dict[int, ObservableResultType],
-        observables: List[Observable],
         simulation,
     ) -> List[ResultTypeValue]:
 
@@ -396,7 +394,6 @@ for a better user experience.'
             )
 
         if observable_result_types:
-            # simulation.apply_observables(observables)
             for index in observable_result_types:
                 results[index] = ResultTypeValue.construct(
                     type=circuit_ir.results[index],
