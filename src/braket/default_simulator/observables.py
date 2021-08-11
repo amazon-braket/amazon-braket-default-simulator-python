@@ -71,6 +71,10 @@ class _InvolutoryMatrixObservable(Observable, ABC):
     """
     An observable defined by an involutory matrix.
 
+    A matrix :math:`M` is involutory if it is its own inverse, ie :math:`M^2 = \mathbb{I}`,
+    where :math:`\mathbb{I}` is the identity. This further implies that any odd power is
+    :math:`M` itself, and any even power is :math:`\mathbb{I}`
+
     Note: this class does not enforce that the matrix is Hermitian or involutory.
     """
 
