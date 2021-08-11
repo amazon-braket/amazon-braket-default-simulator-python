@@ -68,7 +68,7 @@ class Identity(Observable):
 
 
 class _InvolutoryMatrixObservable(Observable, ABC):
-    """
+    r"""
     An observable defined by an involutory matrix.
 
     A matrix :math:`M` is involutory if it is its own inverse, ie :math:`M^2 = \mathbb{I}`,
