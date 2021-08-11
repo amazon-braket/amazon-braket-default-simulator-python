@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -30,7 +30,7 @@ def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]
         KrausOperation class corresponding to the specified instruction.
 
     Raises:
-        ValueError: If no concrete `GateOperation` or `KrausOperation` class has been
+        NotImplementedError: If no concrete `GateOperation` or `KrausOperation` class has been
             registered for the instruction type.
     """
     return _from_braket_instruction(instruction)
@@ -38,7 +38,7 @@ def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]
 
 @singledispatch
 def _from_braket_instruction(instruction):
-    raise ValueError(f"Instruction {instruction} not recognized")
+    raise NotImplementedError(f"Instruction {instruction} not recognized")
 
 
 @lru_cache()

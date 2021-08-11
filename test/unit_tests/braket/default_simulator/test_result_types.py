@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -18,8 +18,8 @@ import pytest
 from braket.ir import jaqcd
 from braket.ir.jaqcd import shared_models
 
-from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.observables import Hadamard, PauliX, TensorProduct
+from braket.default_simulator import StateVectorSimulation, observables
+from braket.default_simulator.linalg_utils import marginal_probability
 from braket.default_simulator.result_types import (
     Amplitude,
     DensityMatrix,
@@ -31,6 +31,20 @@ from braket.default_simulator.result_types import (
 )
 
 NUM_SAMPLES = 1000
+
+observables_testdata = [
+    observables.TensorProduct([observables.PauliX([1]), observables.Hadamard([2])]),
+    observables.TensorProduct([observables.Identity([0]), observables.PauliY([2])]),
+]
+
+all_qubit_observables_testdata = [
+    observables.PauliX(),
+    observables.PauliY(),
+    observables.PauliZ(),
+    observables.Hadamard(),
+    observables.Identity(),
+    observables.Hermitian(np.array([[0, 1], [1, 0]])),
+]
 
 observable_type_testdata = [
     (jaqcd.Expectation(targets=[1], observable=["x"]), Expectation),
@@ -58,10 +72,15 @@ def density_matrix(state_vector):
 
 
 @pytest.fixture
-def simulation(state_vector):
+def observable():
+    return observables.TensorProduct([observables.PauliX([1]), observables.Hadamard([2])])
+
+
+@pytest.fixture
+def simulation(state_vector, observable):
     sim = StateVectorSimulation(4, NUM_SAMPLES, 1)
     sim._state_vector = state_vector
-    sim._post_observables = state_vector  # Same for simplicity
+    sim.apply_observables([observable])
     return sim
 
 
@@ -76,11 +95,6 @@ def marginal_12(state_vector):
             np.sum(all_probs[[6, 7, 14, 15]]),
         ]
     )
-
-
-@pytest.fixture
-def observable():
-    return TensorProduct([PauliX([1]), Hadamard([2])])
 
 
 def test_state_vector(simulation, state_vector):
@@ -128,32 +142,78 @@ def test_probability(simulation, state_vector, marginal_12):
     assert np.allclose(probability_all_qubits, state_vector_probabilities)
 
 
-def test_expectation(simulation, observable, marginal_12):
-    expectation = Expectation(observable).calculate(simulation)
-    assert np.allclose(expectation, marginal_12 @ np.array([1, -1, -1, 1]))
+def _create_simulation(state, obs):
+    sim = StateVectorSimulation(4, NUM_SAMPLES, 1)
+    sim._state_vector = state
+    sim.apply_observables([obs])
+    return sim
 
 
-def test_expectation_no_targets():
-    simulation = StateVectorSimulation(2, 0, 1)
-    simulation._post_observables = np.array([1, 1, 0, 0]) / np.sqrt(2)
-    expectation = Expectation(PauliX()).calculate(simulation)
-    assert np.allclose(expectation, [1, 0])
-
-
-def test_variance(simulation, observable, marginal_12):
-    variance = Variance(observable).calculate(simulation)
-    expected_eigenvalues = np.array([1, -1, -1, 1])
-    expected_variance = (
-        marginal_12 @ (expected_eigenvalues ** 2) - (marginal_12 @ expected_eigenvalues).real ** 2
+@pytest.mark.parametrize("obs", observables_testdata)
+def test_expectation(state_vector, obs):
+    simulation = _create_simulation(state_vector, obs)
+    expectation = Expectation(obs).calculate(simulation)
+    from_diagonalization = _expectation_from_diagonalization(
+        np.abs(simulation.state_with_observables) ** 2,
+        obs.measured_qubits,
+        obs.eigenvalues,
     )
-    assert np.allclose(variance, expected_variance)
+    if not np.allclose(expectation, from_diagonalization):
+        raise ValueError("actual", expectation, "expected", from_diagonalization)
 
 
-def test_variance_no_targets():
-    simulation = StateVectorSimulation(2, 0, 1)
-    simulation._post_observables = np.array([1, 0, 0, 1]) / np.sqrt(2)
-    variance = Variance(PauliX()).calculate(simulation)
-    assert np.allclose(variance, [1, 1])
+@pytest.mark.parametrize("obs", all_qubit_observables_testdata)
+def test_expectation_no_targets(state_vector, obs):
+    simulation = _create_simulation(state_vector, obs)
+
+    expectation = Expectation(obs).calculate(simulation)
+    diagonalized_probs = np.abs(simulation.state_with_observables) ** 2
+    qubit_count = simulation.qubit_count
+    eigs = obs.eigenvalues
+    from_diagonalization = [
+        _expectation_from_diagonalization(diagonalized_probs, [qubit], eigs)
+        for qubit in range(qubit_count)
+    ]
+
+    assert np.allclose(expectation, from_diagonalization)
+
+
+def _expectation_from_diagonalization(diagonalized_probs, qubits, eigenvalues):
+    marginal = marginal_probability(diagonalized_probs, qubits)
+    return (marginal @ eigenvalues).real
+
+
+@pytest.mark.parametrize("obs", observables_testdata)
+def test_variance(state_vector, obs):
+    simulation = _create_simulation(state_vector, obs)
+    variance = Variance(obs).calculate(simulation)
+    from_diagonalization = _variance_from_diagonalization(
+        np.abs(simulation.state_with_observables) ** 2,
+        obs.measured_qubits,
+        obs.eigenvalues,
+    )
+    assert np.allclose(variance, from_diagonalization)
+
+
+@pytest.mark.parametrize("obs", all_qubit_observables_testdata)
+def test_variance_no_targets(state_vector, obs):
+    simulation = _create_simulation(state_vector, obs)
+
+    variance = Variance(obs).calculate(simulation)
+    diagonalized_probs = np.abs(simulation.state_with_observables) ** 2
+    qubit_count = simulation.qubit_count
+    eigs = obs.eigenvalues
+    from_diagonalization = [
+        _variance_from_diagonalization(diagonalized_probs, [qubit], eigs)
+        for qubit in range(qubit_count)
+    ]
+
+    assert np.allclose(variance, from_diagonalization)
+
+
+def _variance_from_diagonalization(diagonalized_probs, qubits, eigenvalues):
+    marginal = marginal_probability(diagonalized_probs, qubits)
+    return marginal @ (eigenvalues.real ** 2) - (marginal @ eigenvalues).real ** 2
 
 
 def test_from_braket_result_type_statevector():
@@ -198,6 +258,6 @@ def test_from_braket_result_type_unknown_observable():
     )
 
 
-@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_from_braket_result_type_unsupported_type():
     from_braket_result_type(shared_models.OptionalMultiTarget(targets=[4, 3]))

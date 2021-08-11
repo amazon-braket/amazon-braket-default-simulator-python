@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -23,10 +23,9 @@ from braket.default_simulator.state_vector_simulation import StateVectorSimulati
 
 
 class StateVectorSimulator(BaseLocalSimulator):
-
     DEVICE_ID = "braket_sv"
 
-    def initialize_simulation(self, **kwargs):
+    def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         batch_size = kwargs.get("batch_size")

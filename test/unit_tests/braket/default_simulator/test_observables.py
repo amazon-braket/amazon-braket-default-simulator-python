@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -17,7 +17,7 @@ import pytest
 from braket.default_simulator import gate_operations, observables
 from braket.default_simulator.operation_helpers import pauli_eigenvalues
 
-testdata = [
+testdata_1q = [
     (observables.Hadamard, [], gate_operations.RotY([0], -np.pi / 4), pauli_eigenvalues(1), True),
     (observables.PauliX, [], gate_operations.Hadamard([0]), pauli_eigenvalues(1), True),
     (
@@ -46,6 +46,13 @@ testdata = [
     ),
 ]
 
+involutory = [
+    observables.Hadamard([0]),
+    observables.PauliX([0]),
+    observables.PauliY([0]),
+    observables.PauliZ([0]),
+]
+
 predefined_observables_invalid_targets = [
     (observables.Hadamard, [0, 1]),
     (observables.PauliX, [0, 1]),
@@ -63,7 +70,7 @@ y_diag = np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
 
 
 @pytest.mark.parametrize(
-    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata
+    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata_1q
 )
 def test_observable_properties_single_qubit(
     obs_class, extra_args, expected_gates, eigenvalues, is_standard
@@ -84,7 +91,7 @@ def test_observable_properties_single_qubit(
 
 
 @pytest.mark.parametrize(
-    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata
+    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata_1q
 )
 def test_observable_properties_all_qubits(
     obs_class, extra_args, expected_gates, eigenvalues, is_standard
@@ -100,6 +107,22 @@ def test_observable_properties_all_qubits(
     assert not observable.targets
 
 
+@pytest.mark.parametrize("obs", involutory)
+def test_involutory_powers(obs):
+    for power in range(0, 10, 2):
+        assert (obs ** power).__class__ is observables.Identity
+    for power in range(1, 11, 2):
+        assert (obs ** power).__class__ is obs.__class__
+
+
+@pytest.mark.xfail(raises=TypeError)
+@pytest.mark.parametrize(
+    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata_1q
+)
+def test_power_non_integer(obs_class, extra_args, expected_gates, eigenvalues, is_standard):
+    obs_class(*extra_args, targets=[0]) ** np.pi
+
+
 @pytest.mark.xfail(raises=ValueError)
 @pytest.mark.parametrize("observable, targets", predefined_observables_invalid_targets)
 def test_observable_predefined_invalid_targets(observable, targets):
@@ -109,6 +132,11 @@ def test_observable_predefined_invalid_targets(observable, targets):
 @pytest.mark.xfail(raises=ValueError)
 def test_hermitian_invalid_none_target():
     observables.Hermitian(np.eye(4), None)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_hermitian_multi_qubit_fix_qubit():
+    observables.Hermitian(np.eye(4), [0, 1]).fix_qubit(0)
 
 
 def test_observable_known_diagonalization():
@@ -209,3 +237,8 @@ def test_tensor_product_nonstandard():
 @pytest.mark.xfail(raises=ValueError)
 def test_tensor_product_one_component():
     observables.TensorProduct([observables.Hadamard([2])])
+
+
+@pytest.mark.xfail(raises=TypeError)
+def test_tensor_product_fix_qubit():
+    observables.TensorProduct([observables.Hadamard([0]), observables.Hadamard([1])]).fix_qubit(0)

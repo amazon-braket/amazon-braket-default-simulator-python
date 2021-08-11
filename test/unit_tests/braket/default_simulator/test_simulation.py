@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -33,6 +33,16 @@ def test_simulation(qubit_count, shots):
 @pytest.mark.xfail(raises=NotImplementedError)
 def test_simulation_evolve(simulation):
     simulation.evolve([])
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_simulation_expectation(simulation):
+    simulation.expectation(None)
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_simulation_retrieve_samples(simulation):
+    simulation.retrieve_samples()
 
 
 @pytest.mark.xfail(raises=NotImplementedError)

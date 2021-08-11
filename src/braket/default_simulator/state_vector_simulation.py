@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -119,20 +119,14 @@ class StateVectorSimulation(Simulation):
         return np.reshape(final, 2 ** qubit_count)
 
     def retrieve_samples(self) -> List[int]:
-        """Retrieves samples of states from the state vector of the simulation,
-        based on the probabilities.
-
-        Returns:
-            List[int]: List of states sampled according to their probabilities
-            in the state vector. Each integer represents the decimal encoding of the
-            corresponding computational basis state.
-        """
         return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
 
     @property
     def state_vector(self) -> np.ndarray:
         """
         np.ndarray: The state vector specifying the current state of the simulation.
+
+        Note: mutating this array will mutate the state of the simulation.
         """
         return self._state_vector
 
@@ -146,7 +140,7 @@ class StateVectorSimulation(Simulation):
     @property
     def state_with_observables(self) -> np.ndarray:
         """
-        np.ndarray: The final state vector of the simulation after application of observables.
+        np.ndarray: The state vector diagonalized in the basis of the measured observables.
 
         Raises:
             RuntimeError: If observables have not been applied
@@ -154,6 +148,13 @@ class StateVectorSimulation(Simulation):
         if self._post_observables is None:
             raise RuntimeError("No observables applied")
         return self._post_observables
+
+    def expectation(self, observable: Observable) -> float:
+        qubit_count = self._qubit_count
+        with_observables = observable.apply(np.reshape(self._state_vector, [2] * qubit_count))
+        return complex(
+            np.dot(self._state_vector.conj(), np.reshape(with_observables, 2 ** qubit_count))
+        ).real
 
     @property
     def probabilities(self) -> np.ndarray:
@@ -163,7 +164,8 @@ class StateVectorSimulation(Simulation):
         """
         return self._probabilities(self.state_vector)
 
-    def _probabilities(self, state) -> np.ndarray:
+    @staticmethod
+    def _probabilities(state) -> np.ndarray:
         """The probabilities of each computational basis state of a given state vector.
 
         Args:
