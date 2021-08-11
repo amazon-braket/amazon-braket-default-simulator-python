@@ -96,7 +96,7 @@ class ObservableResultType(ResultType, ABC):
     def calculate(self, simulation: Simulation) -> Union[float, List[float]]:
         """Calculates the result type using the underlying observable.
 
-        Returns a a real number if the observable has defined targets,
+        Returns a real number if the observable has defined targets,
         or a list of real numbers, one for the result type on each target,
         if the observable has no target.
 
