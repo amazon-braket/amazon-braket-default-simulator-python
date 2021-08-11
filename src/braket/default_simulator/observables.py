@@ -42,7 +42,7 @@ class Identity(Observable):
     def __init__(self, targets: Optional[List[int]] = None):
         self._measured_qubits = _validate_and_clone_single_qubit_target(targets)
 
-    def __pow__(self, power, modulo=None):
+    def _pow(self, power: int) -> Observable:
         return self
 
     @property
@@ -79,7 +79,7 @@ class _InvolutoryMatrixObservable(Observable, ABC):
         self._matrix = matrix
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
-    def __pow__(self, power, modulo=None):
+    def _pow(self, power: int) -> Observable:
         if power % 2:
             return self
         return Identity(self._targets)
@@ -256,7 +256,7 @@ class Hermitian(Observable):
         self._eigenvalues = eigendecomposition["eigenvalues"]
         self._diagonalizing_matrix = eigendecomposition["eigenvectors"].conj().T
 
-    def __pow__(self, power, modulo=None):
+    def _pow(self, power: int) -> Observable:
         return Hermitian(np.linalg.matrix_power(self._matrix, power), self._targets)
 
     @property
@@ -337,7 +337,7 @@ class TensorProduct(Observable):
         self._eigenvalues = TensorProduct._compute_eigenvalues(factors, self._measured_qubits)
         self._factors = tuple(factors)
 
-    def __pow__(self, power, modulo=None):
+    def _pow(self, power: int) -> Observable:
         return TensorProduct([factor ** power for factor in self._factors])
 
     @property

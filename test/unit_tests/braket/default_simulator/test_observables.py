@@ -17,7 +17,7 @@ import pytest
 from braket.default_simulator import gate_operations, observables
 from braket.default_simulator.operation_helpers import pauli_eigenvalues
 
-testdata = [
+testdata_1q = [
     (observables.Hadamard, [], gate_operations.RotY([0], -np.pi / 4), pauli_eigenvalues(1), True),
     (observables.PauliX, [], gate_operations.Hadamard([0]), pauli_eigenvalues(1), True),
     (
@@ -47,10 +47,10 @@ testdata = [
 ]
 
 involutory = [
-    (observables.Hadamard, [0]),
-    (observables.PauliX, [0]),
-    (observables.PauliY, [0]),
-    (observables.PauliZ, [0]),
+    observables.Hadamard([0]),
+    observables.PauliX([0]),
+    observables.PauliY([0]),
+    observables.PauliZ([0]),
 ]
 
 predefined_observables_invalid_targets = [
@@ -70,7 +70,7 @@ y_diag = np.array([[1, -1j], [1, 1j]]) / np.sqrt(2)
 
 
 @pytest.mark.parametrize(
-    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata
+    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata_1q
 )
 def test_observable_properties_single_qubit(
     obs_class, extra_args, expected_gates, eigenvalues, is_standard
@@ -91,7 +91,7 @@ def test_observable_properties_single_qubit(
 
 
 @pytest.mark.parametrize(
-    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata
+    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata_1q
 )
 def test_observable_properties_all_qubits(
     obs_class, extra_args, expected_gates, eigenvalues, is_standard
@@ -107,13 +107,20 @@ def test_observable_properties_all_qubits(
     assert not observable.targets
 
 
-@pytest.mark.parametrize("obs_class, target", involutory)
-def test_involutory_powers(obs_class, target):
-    obs = obs_class(target)
+@pytest.mark.parametrize("obs", involutory)
+def test_involutory_powers(obs):
     for power in range(0, 10, 2):
         assert (obs ** power).__class__ is observables.Identity
     for power in range(1, 11, 2):
-        assert (obs ** power).__class__ is obs_class
+        assert (obs ** power).__class__ is obs.__class__
+
+
+@pytest.mark.xfail(raises=TypeError)
+@pytest.mark.parametrize(
+    "obs_class, extra_args, expected_gates, eigenvalues, is_standard", testdata_1q
+)
+def test_power_non_integer(obs_class, extra_args, expected_gates, eigenvalues, is_standard):
+    obs_class(*extra_args, targets=[0]) ** np.pi
 
 
 @pytest.mark.xfail(raises=ValueError)

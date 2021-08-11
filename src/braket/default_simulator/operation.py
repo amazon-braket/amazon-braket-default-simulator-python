@@ -83,6 +83,24 @@ class Observable(Operation, ABC):
         """
         return False
 
+    def __pow__(self, power: int) -> Observable:
+        if not isinstance(power, int):
+            raise TypeError("power must be integer")
+        return self._pow(power)
+
+    @abstractmethod
+    def _pow(self, power: int) -> Observable:
+        """Raises this observable to the given power.
+
+        Only works with integer powers.
+
+        Args:
+            power (int): The power to raise the observable to.
+
+        Returns:
+            Observable: The observable raised to the given power.
+        """
+
     @property
     @abstractmethod
     def eigenvalues(self) -> np.ndarray:
