@@ -64,6 +64,8 @@ class ResultType(ABC):
 
     Note:
         All result types are calculated exactly, instead of approximated from samples.
+        Sampled results are returned from `Simulation.retrieve_samples`, which can be processed by,
+        for example, the Amazon Braket SDK.
     """
 
     @abstractmethod
