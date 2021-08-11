@@ -132,14 +132,6 @@ class DensityMatrixSimulation(Simulation):
         return self._density_matrix
 
     @property
-    def state_as_tensor(self) -> np.ndarray:
-        return self._state_as_tensor(self._density_matrix, self._qubit_count)
-
-    @staticmethod
-    def _state_as_tensor(density_matrix: np.ndarray, qubit_count: int) -> np.ndarray:
-        return np.reshape(density_matrix, [2] * 2 * qubit_count)
-
-    @property
     def state_with_observables(self) -> np.ndarray:
         """
         np.ndarray: The density matrix diagonalized in the basis of the measured observables.
@@ -151,7 +143,10 @@ class DensityMatrixSimulation(Simulation):
             raise RuntimeError("No observables applied")
         return self._post_observables
 
-    def expectation(self, with_observables: np.ndarray) -> float:
+    def expectation(self, observable: Observable) -> float:
+        with_observables = observable.apply(
+            np.reshape(self._density_matrix, [2] * 2 * self._qubit_count)
+        )
         return complex(partial_trace(with_observables)).real
 
     @property

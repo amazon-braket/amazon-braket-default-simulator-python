@@ -108,7 +108,7 @@ class StateVectorSimulation(Simulation):
     def _apply_operations(
         state: np.ndarray, qubit_count: int, operations: List[GateOperation], batch_size: int
     ) -> np.ndarray:
-        state_tensor = StateVectorSimulation._state_as_tensor(state, qubit_count)
+        state_tensor = np.reshape(state, [2] * qubit_count)
         final = (
             single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
             if batch_size == 1
@@ -138,14 +138,6 @@ class StateVectorSimulation(Simulation):
         return np.outer(self._state_vector, self._state_vector.conj())
 
     @property
-    def state_as_tensor(self) -> np.ndarray:
-        return self._state_as_tensor(self._state_vector, self._qubit_count)
-
-    @staticmethod
-    def _state_as_tensor(state_vector: np.ndarray, qubit_count: int) -> np.ndarray:
-        return np.reshape(state_vector, [2] * qubit_count)
-
-    @property
     def state_with_observables(self) -> np.ndarray:
         """
         np.ndarray: The state vector diagonalized in the basis of the measured observables.
@@ -157,9 +149,11 @@ class StateVectorSimulation(Simulation):
             raise RuntimeError("No observables applied")
         return self._post_observables
 
-    def expectation(self, with_observables: np.ndarray) -> float:
+    def expectation(self, observable: Observable) -> float:
+        qubit_count = self._qubit_count
+        with_observables = observable.apply(np.reshape(self._state_vector, [2] * qubit_count))
         return complex(
-            np.dot(self._state_vector.conj(), np.reshape(with_observables, 2 ** self._qubit_count))
+            np.dot(self._state_vector.conj(), np.reshape(with_observables, 2 ** qubit_count))
         ).real
 
     @property

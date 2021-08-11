@@ -42,6 +42,9 @@ class Identity(Observable):
     def __init__(self, targets: Optional[List[int]] = None):
         self._measured_qubits = _validate_and_clone_single_qubit_target(targets)
 
+    def __pow__(self, power, modulo=None):
+        return self
+
     @property
     def targets(self) -> Tuple[int, ...]:
         return ()
@@ -57,22 +60,29 @@ class Identity(Observable):
     def apply(self, state: np.ndarray) -> np.ndarray:
         return state
 
-    def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
-        return state
+    def fix_qubit(self, qubit: int) -> Observable:
+        return Identity([qubit])
 
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         return ()
 
 
-class SingleQubitMatrixObservable(Observable, ABC):
+class _InvolutoryMatrixObservable(Observable, ABC):
     """
-    An observable defined by a matrix acting on a single qubit.
+    An observable defined by an involutory matrix.
+
+    Note: this class does not enforce that the matrix is Hermitian or involutory.
     """
 
     @abstractmethod
     def __init__(self, matrix: np.ndarray, targets: Optional[List[int]] = None):
         self._matrix = matrix
         self._targets = _validate_and_clone_single_qubit_target(targets)
+
+    def __pow__(self, power, modulo=None):
+        if power % 2:
+            return self
+        return Identity(self._targets)
 
     @property
     def targets(self) -> Tuple[int, ...]:
@@ -81,11 +91,8 @@ class SingleQubitMatrixObservable(Observable, ABC):
     def apply(self, state: np.ndarray) -> np.ndarray:
         return multiply_matrix(state, self._matrix, self.measured_qubits)
 
-    def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
-        return multiply_matrix(state, self._matrix, (qubit,))
 
-
-class Hadamard(SingleQubitMatrixObservable):
+class Hadamard(_InvolutoryMatrixObservable):
     """Hadamard observable
 
     Note:
@@ -106,6 +113,9 @@ class Hadamard(SingleQubitMatrixObservable):
     def eigenvalues(self) -> np.ndarray:
         return pauli_eigenvalues(1)
 
+    def fix_qubit(self, qubit: int) -> Observable:
+        return Hadamard([qubit])
+
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         if self._targets is None:
             return tuple(Hadamard._diagonalizing_gate([target]) for target in range(num_qubits))
@@ -116,7 +126,7 @@ class Hadamard(SingleQubitMatrixObservable):
         return gate_operations.RotY(targets, -math.pi / 4)
 
 
-class PauliX(SingleQubitMatrixObservable):
+class PauliX(_InvolutoryMatrixObservable):
     """Pauli-X observable
 
     Note:
@@ -137,6 +147,9 @@ class PauliX(SingleQubitMatrixObservable):
     def eigenvalues(self) -> np.ndarray:
         return pauli_eigenvalues(1)
 
+    def fix_qubit(self, qubit: int) -> Observable:
+        return PauliX([qubit])
+
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         if self._targets is None:
             return tuple(PauliX._diagonalizing_gate([target]) for target in range(num_qubits))
@@ -147,7 +160,7 @@ class PauliX(SingleQubitMatrixObservable):
         return gate_operations.Hadamard(targets)
 
 
-class PauliY(SingleQubitMatrixObservable):
+class PauliY(_InvolutoryMatrixObservable):
     """Pauli-Y observable
 
     Note:
@@ -171,6 +184,9 @@ class PauliY(SingleQubitMatrixObservable):
     def eigenvalues(self) -> np.ndarray:
         return pauli_eigenvalues(1)
 
+    def fix_qubit(self, qubit: int) -> Observable:
+        return PauliY([qubit])
+
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         if self._targets is None:
             return tuple(PauliY._diagonalizing_gate([target]) for target in range(num_qubits))
@@ -181,7 +197,7 @@ class PauliY(SingleQubitMatrixObservable):
         return gate_operations.Unitary(targets, PauliY._diagonalizing_matrix)
 
 
-class PauliZ(SingleQubitMatrixObservable):
+class PauliZ(_InvolutoryMatrixObservable):
     """Pauli-Z observable
 
     Note:
@@ -211,6 +227,9 @@ class PauliZ(SingleQubitMatrixObservable):
     def eigenvalues(self) -> np.ndarray:
         return pauli_eigenvalues(1)
 
+    def fix_qubit(self, qubit: int) -> Observable:
+        return PauliZ([qubit])
+
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         # Already diagonalized
         return ()
@@ -237,6 +256,9 @@ class Hermitian(Observable):
         self._eigenvalues = eigendecomposition["eigenvalues"]
         self._diagonalizing_matrix = eigendecomposition["eigenvectors"].conj().T
 
+    def __pow__(self, power, modulo=None):
+        return Hermitian(np.linalg.matrix_power(self._matrix, power), self._targets)
+
     @property
     def matrix(self) -> np.ndarray:
         """np.ndarray: The Hermitian matrix defining the observable."""
@@ -253,12 +275,12 @@ class Hermitian(Observable):
     def apply(self, state: np.ndarray) -> np.ndarray:
         return multiply_matrix(state, self._matrix, self.measured_qubits)
 
-    def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
-        if self._targets and len(self._targets) > 1:
-            raise ValueError(
-                f"Matrix must act on 1 qubit, but {self._matrix} acts on {len(self._targets)}"
-            )
-        return multiply_matrix(state, self._matrix, (qubit,))
+    def fix_qubit(self, qubit: int) -> Observable:
+        targets = self._targets
+        matrix = self._matrix
+        if targets and len(targets) > 1:
+            raise ValueError(f"Matrix must act on 1 qubit, but {matrix} acts on {len(targets)}")
+        return Hermitian(self._matrix, [qubit])
 
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         if self._targets is None:
@@ -315,6 +337,9 @@ class TensorProduct(Observable):
         self._eigenvalues = TensorProduct._compute_eigenvalues(factors, self._measured_qubits)
         self._factors = tuple(factors)
 
+    def __pow__(self, power, modulo=None):
+        return TensorProduct([factor ** power for factor in self._factors])
+
     @property
     def factors(self) -> Tuple[Observable]:
         return self._factors
@@ -337,8 +362,8 @@ class TensorProduct(Observable):
             final = factor.apply(final)
         return final
 
-    def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
-        raise TypeError("Tensor product cannot be measured on each qubit individually")
+    def fix_qubit(self, qubit: int) -> Observable:
+        raise TypeError("Tensor product cannot be measured on single qubit")
 
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         return sum((factor.diagonalizing_gates() for factor in self._factors), ())

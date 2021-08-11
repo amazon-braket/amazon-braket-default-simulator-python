@@ -102,17 +102,16 @@ class Observable(Operation, ABC):
         """
 
     @abstractmethod
-    def apply_to_qubit(self, state: np.ndarray, qubit: int) -> np.ndarray:
-        """Applies this observable to the given state on a given qubit.
+    def fix_qubit(self, qubit: int) -> Observable:
+        """Creates a copy of it acting on the given qubit.
 
         This only makes sense if the observable acts on 1 qubit.
 
         Args:
-            state (np.ndarray): The state to apply the observable to.
-            qubit (int): The qubit to apply the observable on.
+            qubit (int): The target qubit of the new observable.
 
         Returns:
-            np.ndarray: The state after the observable has been applied.
+            Observable: A copy of this observable, acting on the new qubit.
         """
 
     @abstractmethod

@@ -46,6 +46,13 @@ testdata = [
     ),
 ]
 
+involutory = [
+    (observables.Hadamard, [0]),
+    (observables.PauliX, [0]),
+    (observables.PauliY, [0]),
+    (observables.PauliZ, [0]),
+]
+
 predefined_observables_invalid_targets = [
     (observables.Hadamard, [0, 1]),
     (observables.PauliX, [0, 1]),
@@ -100,6 +107,15 @@ def test_observable_properties_all_qubits(
     assert not observable.targets
 
 
+@pytest.mark.parametrize("obs_class, target", involutory)
+def test_involutory_powers(obs_class, target):
+    obs = obs_class(target)
+    for power in range(0, 10, 2):
+        assert (obs ** power).__class__ is observables.Identity
+    for power in range(1, 11, 2):
+        assert (obs ** power).__class__ is obs_class
+
+
 @pytest.mark.xfail(raises=ValueError)
 @pytest.mark.parametrize("observable, targets", predefined_observables_invalid_targets)
 def test_observable_predefined_invalid_targets(observable, targets):
@@ -112,8 +128,8 @@ def test_hermitian_invalid_none_target():
 
 
 @pytest.mark.xfail(raises=ValueError)
-def test_hermitian_multi_qubit_apply_to_qubit():
-    observables.Hermitian(np.eye(4), [0, 1]).apply_to_qubit(None, 0)
+def test_hermitian_multi_qubit_fix_qubit():
+    observables.Hermitian(np.eye(4), [0, 1]).fix_qubit(0)
 
 
 def test_observable_known_diagonalization():
@@ -217,7 +233,5 @@ def test_tensor_product_one_component():
 
 
 @pytest.mark.xfail(raises=TypeError)
-def test_tensor_product_apply_to_qubit():
-    observables.TensorProduct(
-        [observables.Hadamard([0]), observables.Hadamard([1])]
-    ).apply_to_qubit(None, 0)
+def test_tensor_product_fix_qubit():
+    observables.TensorProduct([observables.Hadamard([0]), observables.Hadamard([1])]).fix_qubit(0)

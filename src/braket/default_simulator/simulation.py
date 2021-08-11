@@ -15,7 +15,7 @@ from typing import List
 
 import numpy as np
 
-from braket.default_simulator.operation import GateOperation
+from braket.default_simulator.operation import GateOperation, Observable
 
 
 class Simulation:
@@ -64,16 +64,11 @@ class Simulation:
         """
         raise NotImplementedError("evolve has not been implemented.")
 
-    @property
-    def state_as_tensor(self) -> np.ndarray:
-        """np.ndarray: The state of the simulation as a tensor product of qubit states."""
-        raise NotImplementedError("state_as_tensor has not been implemented.")
-
-    def expectation(self, with_observables: np.ndarray) -> float:
-        """The expected value of the observable applied to the state.
+    def expectation(self, observable: Observable) -> float:
+        """The expected value of the observable in to the state.
 
         Args:
-            with_observables (np.ndarray): The state vector with the observable applied.
+            observable (Observable): The observable to measure
 
         Returns:
             float: The expected value of the observable.

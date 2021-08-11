@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 from braket.ir import jaqcd
@@ -105,28 +105,23 @@ class ObservableResultType(ResultType, ABC):
 
         Returns:
             Union[float, List[float]]: The value of the result type;
-            will be a real due to Hermiticity of observable.
+            will be a real due to self-adjointness of observable.
         """
         if self._observable.measured_qubits:
-            return self._calculate_from_application(simulation, self._observable.apply)
+            return self._calculate_single_quantity(simulation, self._observable)
         return [
-            self._calculate_from_application(
-                simulation, lambda state: self._observable.apply_to_qubit(state, qubit)
-            )
+            self._calculate_single_quantity(simulation, self._observable.fix_qubit(qubit))
             for qubit in range(simulation.qubit_count)
         ]
 
     @staticmethod
     @abstractmethod
-    def _calculate_from_application(
-        simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
-    ) -> float:
-        """Calculates the result type using the given function to apply the observable
+    def _calculate_single_quantity(simulation: Simulation, observable: Observable) -> float:
+        """Calculates a single real value of the result type.
 
         Args:
             simulation (Simulation): The simulation to use in the calculation.
-            apply_func (Callable[[np.ndarray], np.ndarray): The function applying the observable
-                to the state.
+            observable (Observable): The observable used to calculate the result type.
 
         Returns:
             float: The value of the result type.
@@ -274,10 +269,8 @@ class Expectation(ObservableResultType):
     """
 
     @staticmethod
-    def _calculate_from_application(
-        simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
-    ):
-        return simulation.expectation(apply_func(simulation.state_as_tensor))
+    def _calculate_single_quantity(simulation: Simulation, observable: Observable) -> float:
+        return simulation.expectation(observable)
 
 
 @_from_braket_result_type.register
@@ -291,12 +284,8 @@ class Variance(ObservableResultType):
     """
 
     @staticmethod
-    def _calculate_from_application(
-        simulation: Simulation, apply_func: Callable[[np.ndarray], np.ndarray]
-    ):
-        squared = apply_func(apply_func(simulation.state_as_tensor))
-        expectation = simulation.expectation(apply_func(simulation.state_as_tensor))
-        return simulation.expectation(squared) - expectation ** 2
+    def _calculate_single_quantity(simulation: Simulation, observable: Observable) -> float:
+        return simulation.expectation(observable ** 2) - simulation.expectation(observable) ** 2
 
 
 @_from_braket_result_type.register

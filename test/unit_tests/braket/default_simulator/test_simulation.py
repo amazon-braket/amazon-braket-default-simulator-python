@@ -36,11 +36,6 @@ def test_simulation_evolve(simulation):
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
-def test_simulation_state_as_tensor(simulation):
-    simulation.state_as_tensor
-
-
-@pytest.mark.xfail(raises=NotImplementedError)
 def test_simulation_expectation(simulation):
     simulation.expectation(None)
 
