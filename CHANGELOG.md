@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.2.3 (2021-08-12)
+
+### Bug Fixes and Other Changes
+
+ * Calculate exact statistics from trace
+
+### Documentation Changes
+
+ * Doc corrections
+
 ## v1.2.2 (2021-08-06)
 
 ### Bug Fixes and Other Changes
