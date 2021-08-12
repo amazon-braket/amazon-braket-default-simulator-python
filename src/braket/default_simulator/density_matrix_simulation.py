@@ -42,16 +42,6 @@ class DensityMatrixSimulation(Simulation):
         self._post_observables = None
 
     def evolve(self, operations: List[Union[GateOperation, KrausOperation]]) -> None:
-        """Evolves the state of the simulation under the action of the specified gate
-        and noise operations.
-
-        Args:
-            operations (List[Union[GateOperation, KrausOperation]]): Operations to apply for
-                evolving the state of the simulation.
-
-        Note:
-            This method mutates the state of the simulation.
-        """
         self._density_matrix = DensityMatrixSimulation._apply_operations(
             self._density_matrix, self._qubit_count, operations
         )
@@ -93,7 +83,7 @@ class DensityMatrixSimulation(Simulation):
                 KrausOperation to be applied to the density matrix
 
         Returns:
-            state (np.ndarray): output density matrix
+            np.ndarray: output density matrix
         """
         dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
         for operation in operations:
@@ -127,7 +117,8 @@ class DensityMatrixSimulation(Simulation):
         """
         np.ndarray: The density matrix specifying the current state of the simulation.
 
-        Note: mutating this array will mutate the state of the simulation.
+        Note:
+            Mutating this array will mutate the state of the simulation.
         """
         return self._density_matrix
 
@@ -162,10 +153,10 @@ class DensityMatrixSimulation(Simulation):
         """The probabilities of each computational basis state of a given density matrix.
 
         Args:
-            state (np.ndarray): a density matrix
+            state (np.ndarray): The density matrix from which probabilities are extracted.
 
         Returns:
-            probabilities (np.ndarray)
+            np.ndarray: The probabilities of each computational basis state.
         """
         prob = np.real(np.diag(state))
         prob_list = prob.copy()
@@ -178,10 +169,10 @@ class DensityMatrixSimulation(Simulation):
     def _apply_gate(
         state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int, ...]
     ) -> np.ndarray:
-        """Apply a matrix M to a density matrix D according to:
+        r"""Apply a matrix M to a density matrix D according to:
 
             .. math::
-                D \rightarrow M D M^{\\dagger}
+                D \rightarrow M D M^{\dagger}
 
         Args:
             state (np.ndarray): initial density matrix
@@ -190,7 +181,7 @@ class DensityMatrixSimulation(Simulation):
             targets (Tuple[int,...]): qubits of the density matrix the matrix applied to.
 
         Returns:
-            state (np.ndarray): output density matrix
+            np.ndarray: output density matrix
         """
         # left product
         state = multiply_matrix(state, np.reshape(matrix, [2] * len(targets) * 2), targets)
@@ -215,7 +206,7 @@ class DensityMatrixSimulation(Simulation):
             targets (Tuple[int,...]): qubits of the density matrix the superoperator applied to.
 
         Returns:
-            state (np.ndarray): output density matrix
+            np.ndarray: output density matrix
         """
         targets_new = targets + tuple([target + qubit_count for target in targets])
         state = multiply_matrix(state, np.reshape(superop, [2] * len(targets_new) * 2), targets_new)
@@ -225,10 +216,10 @@ class DensityMatrixSimulation(Simulation):
     def _apply_kraus(
         state: np.ndarray, qubit_count: int, matrices: List[np.ndarray], targets: Tuple[int, ...]
     ) -> np.ndarray:
-        """Apply a list of matrices {E_i} to a density matrix D according to:
+        r"""Apply a list of matrices {E_i} to a density matrix D according to:
 
             .. math::
-                D \rightarrow \\sum_i E_i D E_i^{\\dagger}
+                D \rightarrow \\sum_i E_i D E_i^{\dagger}
 
         Args:
             state (np.ndarray): initial density matrix
@@ -237,7 +228,7 @@ class DensityMatrixSimulation(Simulation):
             targets (Tuple[int,...]): qubits of the density matrix the matrices applied to.
 
         Returns:
-            state (np.ndarray): output density matrix
+            np.ndarray: output density matrix
         """
         if len(targets) > 4:
             new_state = sum(

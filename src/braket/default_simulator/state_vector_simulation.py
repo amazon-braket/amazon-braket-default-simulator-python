@@ -66,16 +66,6 @@ class StateVectorSimulation(Simulation):
         self._post_observables = None
 
     def evolve(self, operations: List[GateOperation]) -> None:
-        """Evolves the state of the simulation under the action of
-        the specified gate operations.
-
-        Args:
-            operations (List[GateOperation]): Gate operations to apply for
-                evolving the state of the simulation.
-
-        Note:
-            This method mutates the state of the simulation.
-        """
         self._state_vector = StateVectorSimulation._apply_operations(
             self._state_vector, self._qubit_count, operations, self._batch_size
         )
@@ -126,7 +116,8 @@ class StateVectorSimulation(Simulation):
         """
         np.ndarray: The state vector specifying the current state of the simulation.
 
-        Note: mutating this array will mutate the state of the simulation.
+        Note:
+            Mutating this array will mutate the state of the simulation.
         """
         return self._state_vector
 
@@ -169,9 +160,9 @@ class StateVectorSimulation(Simulation):
         """The probabilities of each computational basis state of a given state vector.
 
         Args:
-            state (np.ndarray): a state vector.
+            state (np.ndarray): The state vector from which probabilities are extracted.
 
         Returns:
-            probabilities (np.ndarray)
+            np.ndarray: The probabilities of each computational basis state.
         """
         return np.abs(state) ** 2

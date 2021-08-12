@@ -21,7 +21,7 @@ from braket.default_simulator.operation import GateOperation, KrausOperation
 
 def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]:
     """Instantiates the concrete `GateOperation` or `KrausOperation` object from the
-    specified braket instruction.
+    specified Braket instruction.
 
     Args:
         instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
