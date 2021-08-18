@@ -250,23 +250,21 @@ def test_simulator_fails_samples_0_shots():
 
 
 @pytest.mark.parametrize(
-    "result_types,expected_expectation,expected_variance",
+    "result_types,expected",
     [
         (
             [
                 {"type": "expectation", "observable": ["x"], "targets": [1]},
                 {"type": "variance", "observable": ["x"], "targets": [1]},
             ],
-            0,
-            1,
+            [0, 1],
         ),
         (
             [
                 {"type": "expectation", "observable": ["x"]},
                 {"type": "variance", "observable": ["x"], "targets": [1]},
             ],
-            [0, 0],
-            1,
+            [[0, 0], 1],
         ),
         (
             [
@@ -281,8 +279,7 @@ def test_simulator_fails_samples_0_shots():
                     "targets": [1],
                 },
             ],
-            0,
-            1,
+            [0, 1],
         ),
         (
             [
@@ -297,14 +294,23 @@ def test_simulator_fails_samples_0_shots():
                     "targets": [0, 1],
                 },
             ],
-            1,
-            1,
+            [1, 1],
+        ),
+        (
+            [
+                {"type": "variance", "observable": ["x"], "targets": [1]},
+                {"type": "expectation", "observable": ["x"]},
+                {
+                    "type": "expectation",
+                    "observable": ["x", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
+                    "targets": [0, 1],
+                },
+            ],
+            [1, [0, 0], 1],
         ),
     ],
 )
-def test_simulator_accepts_overlapping_targets_same_observable(
-    result_types, expected_expectation, expected_variance
-):
+def test_simulator_valid_observables(result_types, expected):
     simulator = DensityMatrixSimulator()
     prog = Program.parse_raw(
         json.dumps(
@@ -318,74 +324,8 @@ def test_simulator_accepts_overlapping_targets_same_observable(
         )
     )
     result = simulator.run(prog, qubit_count=2, shots=0)
-    expectation = result.resultTypes[0].value
-    variance = result.resultTypes[1].value
-    assert np.allclose(expectation, expected_expectation)
-    assert np.allclose(variance, expected_variance)
-
-
-@pytest.mark.xfail(raises=ValueError)
-@pytest.mark.parametrize(
-    "result_types",
-    [
-        (
-            [
-                {"type": "expectation", "observable": ["y"]},
-                {"type": "variance", "observable": ["x"], "targets": [1]},
-            ]
-        ),
-        (
-            [
-                {"type": "expectation", "observable": ["y"], "targets": [1]},
-                {"type": "variance", "observable": ["x"], "targets": [1]},
-            ]
-        ),
-        (
-            [
-                {
-                    "type": "expectation",
-                    "observable": [[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
-                    "targets": [1],
-                },
-                {
-                    "type": "variance",
-                    "observable": [[[[1, 0], [0, 0]], [[0, 0], [1, 0]]]],
-                    "targets": [1],
-                },
-            ]
-        ),
-        (
-            [
-                {
-                    "type": "expectation",
-                    "observable": ["x", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
-                    "targets": [0, 1],
-                },
-                {"type": "variance", "observable": ["y", "x"], "targets": [0, 1]},
-            ]
-        ),
-        (
-            [
-                {"type": "expectation", "observable": ["i"]},
-                {"type": "variance", "observable": ["y"]},
-            ]
-        ),
-    ],
-)
-def test_simulator_fails_overlapping_targets_different_observable(result_types):
-    simulator = DensityMatrixSimulator()
-    prog = Program.parse_raw(
-        json.dumps(
-            {
-                "instructions": [
-                    {"type": "h", "target": 0},
-                    {"type": "cnot", "target": 1, "control": 0},
-                ],
-                "results": result_types,
-            }
-        )
-    )
-    simulator.run(prog, qubit_count=2, shots=0)
+    for i in range(len(result_types)):
+        assert np.allclose(result.resultTypes[i].value, expected[i])
 
 
 def test_properties():

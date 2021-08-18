@@ -26,7 +26,6 @@ from braket.ir.jaqcd import Program
 from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
 
 from braket.default_simulator import observables
-from braket.default_simulator.result_types import Expectation, Variance
 from braket.default_simulator.state_vector_simulator import DefaultSimulator, StateVectorSimulator
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
@@ -349,23 +348,21 @@ def test_simulator_fails_samples_0_shots():
 
 
 @pytest.mark.parametrize(
-    "result_types,expected_expectation,expected_variance",
+    "result_types,expected",
     [
         (
             [
                 {"type": "expectation", "observable": ["x"], "targets": [1]},
                 {"type": "variance", "observable": ["x"], "targets": [1]},
             ],
-            0,
-            1,
+            [0, 1],
         ),
         (
             [
                 {"type": "expectation", "observable": ["x"]},
                 {"type": "variance", "observable": ["x"], "targets": [1]},
             ],
-            [0, 0],
-            1,
+            [[0, 0], 1],
         ),
         (
             [
@@ -380,8 +377,7 @@ def test_simulator_fails_samples_0_shots():
                     "targets": [1],
                 },
             ],
-            0,
-            1,
+            [0, 1],
         ),
         (
             [
@@ -396,14 +392,23 @@ def test_simulator_fails_samples_0_shots():
                     "targets": [0, 1],
                 },
             ],
-            1,
-            1,
+            [1, 1],
+        ),
+        (
+            [
+                {"type": "variance", "observable": ["x"], "targets": [1]},
+                {"type": "expectation", "observable": ["x"]},
+                {
+                    "type": "expectation",
+                    "observable": ["x", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
+                    "targets": [0, 1],
+                },
+            ],
+            [1, [0, 0], 1],
         ),
     ],
 )
-def test_simulator_accepts_overlapping_targets_same_observable(
-    result_types, expected_expectation, expected_variance
-):
+def test_simulator_valid_observables(result_types, expected):
     simulator = StateVectorSimulator()
     prog = Program.parse_raw(
         json.dumps(
@@ -417,217 +422,8 @@ def test_simulator_accepts_overlapping_targets_same_observable(
         )
     )
     result = simulator.run(prog, qubit_count=2, shots=0)
-    expectation = result.resultTypes[0].value
-    variance = result.resultTypes[1].value
-    assert np.allclose(expectation, expected_expectation)
-    assert np.allclose(variance, expected_variance)
-
-
-@pytest.mark.xfail(raises=ValueError)
-@pytest.mark.parametrize(
-    "result_types",
-    [
-        (
-            [
-                {"type": "expectation", "observable": ["y"]},
-                {"type": "variance", "observable": ["x"], "targets": [1]},
-            ]
-        ),
-        (
-            [
-                {"type": "expectation", "observable": ["y"], "targets": [1]},
-                {"type": "variance", "observable": ["x"], "targets": [1]},
-            ]
-        ),
-        (
-            [
-                {
-                    "type": "expectation",
-                    "observable": [[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
-                    "targets": [1],
-                },
-                {
-                    "type": "variance",
-                    "observable": [[[[1, 0], [0, 0]], [[0, 0], [1, 0]]]],
-                    "targets": [1],
-                },
-            ]
-        ),
-        (
-            [
-                {
-                    "type": "expectation",
-                    "observable": ["x", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
-                    "targets": [0, 1],
-                },
-                {"type": "variance", "observable": ["y", "x"], "targets": [0, 1]},
-            ]
-        ),
-        (
-            [
-                {"type": "expectation", "observable": ["i"]},
-                {"type": "variance", "observable": ["y"]},
-            ]
-        ),
-    ],
-)
-def test_simulator_fails_overlapping_targets_different_observable(result_types):
-    simulator = StateVectorSimulator()
-    prog = Program.parse_raw(
-        json.dumps(
-            {
-                "instructions": [
-                    {"type": "h", "target": 0},
-                    {"type": "cnot", "target": 1, "control": 0},
-                ],
-                "results": result_types,
-            }
-        )
-    )
-    simulator.run(prog, qubit_count=2, shots=0)
-
-
-@pytest.mark.xfail(raises=ValueError)
-def test_simulator_fails_same_observable_different_target_order():
-    simulator = StateVectorSimulator()
-    prog = Program.parse_raw(
-        json.dumps(
-            {
-                "instructions": [
-                    {"type": "h", "target": 0},
-                    {"type": "cnot", "target": 1, "control": 0},
-                ],
-                "results": [
-                    {
-                        "type": "expectation",
-                        "observable": [
-                            [
-                                [[0, 0], [1, 0], [0, 0], [0, 0]],
-                                [[1, 0], [0, 0], [0, 0], [0, 0]],
-                                [[0, 0], [0, 0], [0, 0], [-1, 0]],
-                                [[0, 0], [0, 0], [-1, 0], [0, 0]],
-                            ]
-                        ],
-                        "targets": [0, 1],
-                    },
-                    {
-                        "type": "variance",
-                        "observable": [
-                            [
-                                [[0, 0], [1, 0], [0, 0], [0, 0]],
-                                [[1, 0], [0, 0], [0, 0], [0, 0]],
-                                [[0, 0], [0, 0], [0, 0], [-1, 0]],
-                                [[0, 0], [0, 0], [-1, 0], [0, 0]],
-                            ]
-                        ],
-                        "targets": [1, 0],
-                    },
-                ],
-            }
-        )
-    )
-    simulator.run(prog, qubit_count=2, shots=0)
-
-
-@pytest.mark.parametrize(
-    "obs1,obs2",
-    [
-        (observables.PauliX([1]), observables.PauliX(None)),
-        (observables.PauliZ([1]), observables.PauliZ(None)),
-        (observables.Hermitian(np.eye(2), [1]), observables.Hermitian(np.eye(2), None)),
-    ],
-)
-def test_validate_and_consolidate_observable_result_types_none(obs1, obs2):
-    obs_rts = [
-        Expectation(obs1),
-        Variance(obs2),
-    ]
-    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
-    assert len(actual_obs) == 1
-    assert actual_obs[0].measured_qubits is None
-
-
-@pytest.mark.parametrize(
-    "obs",
-    [(observables.PauliX([1])), (observables.PauliZ([1])), (observables.Hermitian(np.eye(2), [1]))],
-)
-def test_validate_and_consolidate_observable_result_types_same_target(obs):
-    obs_rts = [
-        Expectation(obs),
-        Variance(obs),
-    ]
-    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 2)
-    assert len(actual_obs) == 1
-    assert actual_obs[0].measured_qubits == (1,)
-
-
-def test_validate_and_consolidate_observable_result_types_tensor_product():
-    obs_rts = [
-        Expectation(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
-        Variance(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
-        Expectation(observables.TensorProduct([observables.PauliX([2]), observables.PauliY([3])])),
-    ]
-    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
-    assert len(actual_obs) == 4
-    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,), (3,)]
-
-
-def test_validate_and_consolidate_observable_result_types_tensor_product_shared_factor():
-    obs_rts = [
-        Expectation(observables.PauliX([0])),
-        Variance(observables.TensorProduct([observables.PauliX([0]), observables.PauliY([1])])),
-        Expectation(observables.TensorProduct([observables.PauliY([1]), observables.PauliX([2])])),
-    ]
-    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
-    assert len(actual_obs) == 3
-    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (1,), (2,)]
-
-
-def test_validate_and_consolidate_observable_result_types_tensor_product_hermitian_shared_factor():
-    obs_rts = [
-        Expectation(observables.PauliX([0])),
-        Variance(
-            observables.TensorProduct(
-                [
-                    observables.PauliX([0]),
-                    observables.Hermitian(np.eye(4), [1, 2]),
-                    observables.PauliY([3]),
-                ]
-            )
-        ),
-        Expectation(
-            observables.TensorProduct(
-                [observables.Hermitian(np.eye(4), [1, 2]), observables.PauliY([3])]
-            )
-        ),
-    ]
-    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 4)
-    assert len(actual_obs) == 3
-    assert [obs.measured_qubits for obs in actual_obs] == [
-        (0,),
-        (
-            1,
-            2,
-        ),
-        (3,),
-    ]
-
-
-def test_validate_and_consolidate_observable_result_types_identity_allowed():
-    obs_rts = [
-        Expectation(observables.PauliX([0])),
-        Expectation(observables.Identity([4])),
-        Variance(observables.Identity([2])),
-        Variance(observables.TensorProduct([observables.Identity([1]), observables.PauliX([3])])),
-        Expectation(
-            observables.TensorProduct([observables.PauliY([1]), observables.Identity([3])])
-        ),
-        Variance(observables.Identity([0])),
-        Expectation(observables.PauliX([2])),
-    ]
-    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 5)
-    assert len(actual_obs) == 5
-    assert [obs.measured_qubits for obs in actual_obs] == [(0,), (3,), (1,), (2,), (4,)]
+    for i in range(len(result_types)):
+        assert np.allclose(result.resultTypes[i].value, expected[i])
 
 
 def test_observable_hash_tensor_product():
@@ -638,25 +434,6 @@ def test_observable_hash_tensor_product():
     hash_dict = StateVectorSimulator._observable_hash(obs)
     matrix_hash = hash_dict[1]
     assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
-
-
-@pytest.mark.parametrize(
-    "obs1,obs2",
-    [
-        (observables.PauliX([1]), observables.PauliX([2])),
-        (observables.PauliZ([1]), observables.PauliZ([2])),
-        (observables.Hermitian(np.eye(2), [1]), observables.Hermitian(np.eye(2), [2])),
-    ],
-)
-def test_validate_and_consolidate_observable_result_types_targets(obs1, obs2):
-    obs_rts = [
-        Expectation(obs1),
-        Expectation(obs2),
-    ]
-    actual_obs = StateVectorSimulator._validate_and_consolidate_observable_result_types(obs_rts, 3)
-    assert len(actual_obs) == 2
-    assert actual_obs[0].measured_qubits == (1,)
-    assert actual_obs[1].measured_qubits == (2,)
 
 
 def test_properties():

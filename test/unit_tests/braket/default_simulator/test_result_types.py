@@ -152,21 +152,25 @@ def _create_simulation(state, obs):
 @pytest.mark.parametrize("obs", observables_testdata)
 def test_expectation(state_vector, obs):
     simulation = _create_simulation(state_vector, obs)
-    expectation = Expectation(obs).calculate(simulation)
+    result_type = Expectation(obs)
+    assert result_type.observable == obs
+
+    calculated = result_type.calculate(simulation)
     from_diagonalization = _expectation_from_diagonalization(
         np.abs(simulation.state_with_observables) ** 2,
         obs.measured_qubits,
         obs.eigenvalues,
     )
-    if not np.allclose(expectation, from_diagonalization):
-        raise ValueError("actual", expectation, "expected", from_diagonalization)
+    assert np.allclose(calculated, from_diagonalization)
 
 
 @pytest.mark.parametrize("obs", all_qubit_observables_testdata)
 def test_expectation_no_targets(state_vector, obs):
     simulation = _create_simulation(state_vector, obs)
+    result_type = Expectation(obs)
+    assert result_type.observable == obs
 
-    expectation = Expectation(obs).calculate(simulation)
+    calculated = result_type.calculate(simulation)
     diagonalized_probs = np.abs(simulation.state_with_observables) ** 2
     qubit_count = simulation.qubit_count
     eigs = obs.eigenvalues
@@ -175,7 +179,7 @@ def test_expectation_no_targets(state_vector, obs):
         for qubit in range(qubit_count)
     ]
 
-    assert np.allclose(expectation, from_diagonalization)
+    assert np.allclose(calculated, from_diagonalization)
 
 
 def _expectation_from_diagonalization(diagonalized_probs, qubits, eigenvalues):
@@ -186,20 +190,25 @@ def _expectation_from_diagonalization(diagonalized_probs, qubits, eigenvalues):
 @pytest.mark.parametrize("obs", observables_testdata)
 def test_variance(state_vector, obs):
     simulation = _create_simulation(state_vector, obs)
-    variance = Variance(obs).calculate(simulation)
+    result_type = Variance(obs)
+    assert result_type.observable == obs
+
+    calculated = result_type.calculate(simulation)
     from_diagonalization = _variance_from_diagonalization(
         np.abs(simulation.state_with_observables) ** 2,
         obs.measured_qubits,
         obs.eigenvalues,
     )
-    assert np.allclose(variance, from_diagonalization)
+    assert np.allclose(calculated, from_diagonalization)
 
 
 @pytest.mark.parametrize("obs", all_qubit_observables_testdata)
 def test_variance_no_targets(state_vector, obs):
     simulation = _create_simulation(state_vector, obs)
+    result_type = Variance(obs)
+    assert result_type.observable == obs
 
-    variance = Variance(obs).calculate(simulation)
+    calculated = result_type.calculate(simulation)
     diagonalized_probs = np.abs(simulation.state_with_observables) ** 2
     qubit_count = simulation.qubit_count
     eigs = obs.eigenvalues
@@ -208,7 +217,7 @@ def test_variance_no_targets(state_vector, obs):
         for qubit in range(qubit_count)
     ]
 
-    assert np.allclose(variance, from_diagonalization)
+    assert np.allclose(calculated, from_diagonalization)
 
 
 def _variance_from_diagonalization(diagonalized_probs, qubits, eigenvalues):
