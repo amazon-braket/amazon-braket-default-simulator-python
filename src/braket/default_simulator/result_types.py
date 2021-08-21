@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from braket.ir import jaqcd
@@ -81,7 +81,26 @@ class ResultType(ABC):
         """
 
 
-class ObservableResultType(ResultType, ABC):
+class TargetedResultType(ResultType, ABC):
+    """
+    Holds an observable that may target qubits.
+    """
+
+    def __init__(self, targets: Optional[List[int]] = None):
+        """
+        Args:
+            targets (List[int], optional): The target qubits of the result type.
+                If None, no specific qubits are targeted.
+        """
+        self._targets = targets
+
+    @property
+    def targets(self) -> Optional[Tuple[int, ...]]:
+        """Tuple[int], optional: The target qubits of the result type, if any."""
+        return self._targets
+
+
+class ObservableResultType(TargetedResultType, ABC):
     """
     Holds an observable to perform a calculation in conjunction with a state.
     """
@@ -91,12 +110,17 @@ class ObservableResultType(ResultType, ABC):
         Args:
             observable (Observable): The observable for which the desired result is calculated
         """
+        super().__init__(observable.measured_qubits)
         self._observable = observable
 
     @property
     def observable(self):
         """Observable: The observable for which the desired result is calculated."""
         return self._observable
+
+    @property
+    def targets(self) -> Optional[Tuple[int, ...]]:
+        return self._observable.measured_qubits
 
     def calculate(self, simulation: Simulation) -> Union[float, List[float]]:
         """Calculates the result type using the underlying observable.
@@ -155,7 +179,7 @@ def _(_: jaqcd.StateVector):
     return StateVector()
 
 
-class DensityMatrix(ResultType):
+class DensityMatrix(TargetedResultType):
     """
     Simply returns the given density matrix.
     """
@@ -164,10 +188,10 @@ class DensityMatrix(ResultType):
         """
         Args:
             targets (Optional[List[int]]): The qubit indices on which the reduced density matrix
-                are desired. If no targets are specified, the full density matrix are calculated.
+                are desired. If no targets are specified, the full density matrix is calculated.
                 Default: `None`
         """
-        self._targets = targets
+        super().__init__(targets)
 
     def calculate(self, simulation: Simulation) -> np.ndarray:
         """Return the given density matrix of the simulation.
@@ -230,7 +254,7 @@ def _(amplitude: jaqcd.Amplitude):
     return Amplitude(amplitude.states)
 
 
-class Probability(ResultType):
+class Probability(TargetedResultType):
     """
     Computes the marginal probabilities of computational basis states on the desired qubits.
     """
@@ -242,7 +266,7 @@ class Probability(ResultType):
                 If no targets are specified, the probabilities are calculated on the entire state.
                 Default: `None`
         """
-        self._targets = targets
+        super().__init__(targets)
 
     def calculate(self, simulation: Simulation) -> np.ndarray:
         """Return the marginal probabilities of computational basis states on the target qubits.
@@ -349,4 +373,4 @@ def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
     try:
         return [targets.pop(0) for _ in range(num_qubits)]
     except Exception:
-        raise ValueError("Insufficient qubits for tensor product")
+        raise ValueError("Insufficient target qubits for tensor product")

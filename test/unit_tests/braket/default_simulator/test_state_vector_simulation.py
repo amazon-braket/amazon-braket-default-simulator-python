@@ -223,10 +223,10 @@ def test_simulation_simple_circuits(
 
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
-@pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
-def test_apply_observables(observables, equivalent_gates, qubit_count, batch_size):
+@pytest.mark.parametrize("obs, equivalent_gates, qubit_count", apply_observables_testdata)
+def test_apply_observables(obs, equivalent_gates, qubit_count, batch_size):
     sim_observables = StateVectorSimulation(qubit_count, 0, batch_size)
-    sim_observables.apply_observables(observables)
+    sim_observables.apply_observables(obs)
     sim_gates = StateVectorSimulation(qubit_count, 0, batch_size)
     sim_gates.evolve(equivalent_gates)
     assert np.allclose(sim_observables.state_with_observables, sim_gates.state_vector)

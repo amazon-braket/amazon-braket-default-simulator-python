@@ -13,9 +13,8 @@
 
 import uuid
 import warnings
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Union
 
-import numpy as np
 from braket.device_schema.device_action_properties import DeviceActionType
 from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
 from braket.ir.jaqcd import Program
@@ -26,12 +25,12 @@ from braket.task_result import (
     TaskMetadata,
 )
 
-from braket.default_simulator.observables import Hermitian, Identity, TensorProduct
+from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
-    ObservableResultType,
     ResultType,
+    TargetedResultType,
     from_braket_result_type,
 )
 from braket.default_simulator.simulation import Simulation
@@ -105,17 +104,18 @@ class BaseLocalSimulator(BraketSimulator):
         results = []
 
         if not shots and circuit_ir.results:
-            (
-                non_observable_result_types,
-                observable_result_types,
-            ) = BaseLocalSimulator._translate_result_types(circuit_ir)
-            BaseLocalSimulator._validate_and_consolidate_observable_result_types(
-                list(observable_result_types.values()), qubit_count
+            result_types = BaseLocalSimulator._translate_result_types(circuit_ir)
+            BaseLocalSimulator._validate_result_types_qubits_exist(
+                [
+                    result_type
+                    for result_type in result_types
+                    if isinstance(result_type, TargetedResultType)
+                ],
+                qubit_count,
             )
             results = BaseLocalSimulator._generate_results(
                 circuit_ir,
-                non_observable_result_types,
-                observable_result_types,
+                result_types,
                 simulation,
             )
 
@@ -199,151 +199,19 @@ for a better user experience.'
         return list(range(qubit_count))
 
     @staticmethod
-    def _translate_result_types(
-        circuit_ir: Program,
-    ) -> Tuple[Dict[int, ResultType], Dict[int, ObservableResultType]]:
-        non_observable_result_types = {}
-        observable_result_types = {}
-        for i in range(len(circuit_ir.results)):
-            result_type = from_braket_result_type(circuit_ir.results[i])
-            if isinstance(result_type, ObservableResultType):
-                observable_result_types[i] = result_type
-            else:
-                non_observable_result_types[i] = result_type
-        return non_observable_result_types, observable_result_types
+    def _translate_result_types(circuit_ir: Program) -> List[ResultType]:
+        return [from_braket_result_type(result) for result in circuit_ir.results]
 
     @staticmethod
-    def _validate_and_consolidate_observable_result_types(
-        observable_result_types: List[ObservableResultType], qubit_count: int
-    ) -> List[Observable]:
-        none_observables = (
-            rt.observable for rt in observable_result_types if rt.observable.measured_qubits is None
-        )
-        none_observable_mapping = {}
-        for obs in none_observables:
-            none_observable_mapping[BaseLocalSimulator._observable_hash(obs)] = obs
-        unique_none_observables = list(none_observable_mapping.values())
-        if len(unique_none_observables) > 1:
-            raise ValueError(
-                f"All qubits are already being measured in {unique_none_observables[0]};"
-                f"cannot measure in {unique_none_observables[1:]}"
-            )
-        not_none_observable_list = BaseLocalSimulator._assign_observables_to_qubits(
-            observable_result_types, none_observable_mapping, qubit_count
-        )
-        return not_none_observable_list + unique_none_observables
-
-    @staticmethod
-    def _assign_observables_to_qubits(
-        observable_result_types, none_observable_mapping, qubit_count
+    def _validate_result_types_qubits_exist(
+        targeted_result_types: List[TargetedResultType], qubit_count: int
     ):
-        not_none_observable_list = []
-        qubit_observable_mapping = {}
-        identity_qubits = set()
-        for result_type in observable_result_types:
-            observable = result_type.observable
-            obs_obj = (
-                BaseLocalSimulator._tensor_product_index_dict(observable, lambda x: x)
-                if isinstance(observable, TensorProduct)
-                else observable
-            )
-            measured_qubits = observable.measured_qubits
-            if measured_qubits is None:
-                measured_qubits = list(range(qubit_count))
-
-            if max(measured_qubits) >= qubit_count:
+        for result_type in targeted_result_types:
+            targets = result_type.targets
+            if targets and max(targets) >= qubit_count:
                 raise ValueError(
-                    f"Result type ({result_type.__class__.__name__}) Observable "
-                    f"({obs_obj.__class__.__name__}) references invalid qubits {measured_qubits}"
-                )
-            hashed_observable = BaseLocalSimulator._observable_hash(observable)
-            for i in range(len(measured_qubits)):
-                BaseLocalSimulator._assign_observable(
-                    obs_obj,
-                    hashed_observable,
-                    measured_qubits,
-                    i,
-                    not_none_observable_list,
-                    qubit_observable_mapping,
-                    none_observable_mapping,
-                    identity_qubits,
-                )
-        for i in sorted(identity_qubits):
-            not_none_observable_list.append(Identity([i]))
-        return not_none_observable_list
-
-    @staticmethod
-    def _assign_observable(
-        whole_observable,
-        hashed_observable,
-        measured_qubits,
-        target_index,
-        not_none_observable_list,
-        qubit_observable_mapping,
-        none_observable_mapping,
-        identity_qubits,
-    ):
-        # Validate that the same observable is requested for a qubit in the result types
-        hashed_qubit_observable = (
-            hashed_observable[target_index]
-            if isinstance(hashed_observable, dict)
-            else hashed_observable
-        )
-        qubit = measured_qubits[target_index]
-        existing_observable = qubit_observable_mapping.get(qubit)
-        if hashed_qubit_observable == Identity.__name__:
-            if qubit not in qubit_observable_mapping:
-                identity_qubits.add(qubit)
-            # Do nothing if non-identity observable already exists on the qubit
-        else:
-            qubit_observable = (
-                whole_observable[target_index]
-                if isinstance(whole_observable, dict)
-                else whole_observable
-            )
-            # No need to check if existing_observable is identity,
-            # as qubit_observable_mapping cannot contain identities at this point
-            if not existing_observable:
-                identity_qubits.discard(qubit)
-                qubit_observable_mapping[qubit] = qubit_observable
-
-                if (
-                    # Don't add observable if it already acts on all qubits
-                    not none_observable_mapping.get(hashed_qubit_observable)
-                    # If the index is nonzero then the observable has already been added
-                    and qubit_observable.measured_qubits.index(qubit) == 0
-                ):
-                    not_none_observable_list.append(qubit_observable)
-            else:
-                BaseLocalSimulator._validate_same_observable(
-                    existing_observable, qubit_observable, qubit
-                )
-
-    @staticmethod
-    def _validate_same_observable(existing, new, qubit):
-        cls_existing = existing.__class__.__name__
-        cls_new = new.__class__.__name__
-        if cls_existing != cls_new:
-            raise ValueError(
-                f"Qubit {qubit} is already being measured in {cls_existing};"
-                f" cannot measure in {cls_new}."
-            )
-        if cls_existing == Hermitian.__name__:
-            if not np.allclose(existing.matrix, new.matrix):
-                raise ValueError(
-                    f"Qubit {qubit} is already being measured in {existing.matrix};"
-                    f" cannot measure in {new.matrix}."
-                )
-            qubits_existing = existing.measured_qubits
-            qubits_new = new.measured_qubits
-            if (
-                qubits_existing is not None
-                and qubits_new is not None
-                and qubits_existing != qubits_new
-            ):
-                raise ValueError(
-                    f"Existing measured qubits {qubits_existing} of observable {cls_existing}"
-                    f" conflict with new measured qubits {qubits_new}."
+                    f"Result type ({result_type.__class__.__name__})"
+                    f" references invalid qubits {targets}"
                 )
 
     @staticmethod
@@ -379,26 +247,16 @@ for a better user experience.'
     @staticmethod
     def _generate_results(
         circuit_ir: Program,
-        non_observable_result_types: Dict[int, ResultType],
-        observable_result_types: Dict[int, ObservableResultType],
+        result_types: List[ResultType],
         simulation,
     ) -> List[ResultTypeValue]:
-
-        results = [0] * len(circuit_ir.results)
-
-        for index in non_observable_result_types:
-            results[index] = ResultTypeValue.construct(
+        return [
+            ResultTypeValue.construct(
                 type=circuit_ir.results[index],
-                value=non_observable_result_types[index].calculate(simulation),
+                value=result_types[index].calculate(simulation),
             )
-
-        if observable_result_types:
-            for index in observable_result_types:
-                results[index] = ResultTypeValue.construct(
-                    type=circuit_ir.results[index],
-                    value=observable_result_types[index].calculate(simulation),
-                )
-        return results
+            for index in range(len(circuit_ir.results))
+        ]
 
     @staticmethod
     def _formatted_measurements(simulation: Simulation) -> List[List[str]]:
