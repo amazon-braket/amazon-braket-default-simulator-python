@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.0 (2021-08-23)
+
+### Features
+
+ * Calculate arbitrary observables
+
 ## v1.2.3 (2021-08-12)
 
 ### Bug Fixes and Other Changes
