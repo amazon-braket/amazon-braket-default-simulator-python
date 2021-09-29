@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -19,7 +19,7 @@ import braket.ir.jaqcd as jaqcd
 import numpy as np
 import pytest
 
-from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.default_simulator import StateVectorSimulator
 
 results_data = [
     ([jaqcd.Expectation(observable=["x"])]),
@@ -86,14 +86,14 @@ def grcs_circuit_16():
 
 
 def test_grcs_simulation(benchmark, grcs_circuit_16):
-    device = BaseLocalSimulator()
+    device = StateVectorSimulator()
     benchmark(device.run, grcs_circuit_16, 16, shots=0)
 
 
 @pytest.mark.parametrize("nqubits", range(4, 20, 4))
 def test_qft(benchmark, generate_qft_circuit, nqubits):
     circuit = generate_qft_circuit(nqubits)
-    device = BaseLocalSimulator()
+    device = StateVectorSimulator()
     benchmark(device.run, circuit, nqubits, shots=0)
 
 
@@ -102,7 +102,7 @@ def test_layered_continuous_gates_circuit(
     benchmark, generate_continuous_gates_circuit, nqubits, nlayers
 ):
     circuit = generate_continuous_gates_circuit(nqubits, nlayers, [jaqcd.StateVector()])
-    device = BaseLocalSimulator()
+    device = StateVectorSimulator()
     benchmark(device.run, circuit, nqubits, shots=0)
 
 
@@ -114,5 +114,5 @@ def test_layered_continuous_gates_circuit_result_types(
     nlayers = 15
     shots = 0
     circuit = generate_continuous_gates_circuit(nqubits, nlayers, results)
-    device = BaseLocalSimulator()
+    device = StateVectorSimulator()
     benchmark(device.run, circuit, nqubits, shots=shots)

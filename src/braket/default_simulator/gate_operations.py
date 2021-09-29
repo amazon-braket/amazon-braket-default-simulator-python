@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -352,7 +352,7 @@ def _c_phase_shift(instruction) -> CPhaseShift:
 
 
 class CPhaseShift00(GateOperation):
-    r"""Controlled phase shift gate phasing the phasing :math:`\ket{00}` state"""
+    r"""Controlled phase shift gate phasing the :math:`\ket{00}` state"""
 
     def __init__(self, targets, angle):
         self._targets = tuple(targets)
@@ -373,7 +373,7 @@ def _c_phase_shift_00(instruction) -> CPhaseShift00:
 
 
 class CPhaseShift01(GateOperation):
-    r"""Controlled phase shift gate phasing the phasing :math:`\ket{01}` state"""
+    r"""Controlled phase shift gate phasing the :math:`\ket{01}` state"""
 
     def __init__(self, targets, angle):
         self._targets = tuple(targets)
@@ -394,7 +394,7 @@ def _c_phase_shift_01(instruction) -> CPhaseShift01:
 
 
 class CPhaseShift10(GateOperation):
-    r"""Controlled phase shift gate phasing the phasing :math:`\ket{10}` state"""
+    r"""Controlled phase shift gate phasing the :math:`\ket{10}` state"""
 
     def __init__(self, targets, angle):
         self._targets = tuple(targets)
@@ -504,7 +504,7 @@ def _swap(instruction) -> Swap:
 
 
 class ISwap(GateOperation):
-    """ISwap gate"""
+    """iSwap gate"""
 
     def __init__(self, targets):
         self._targets = tuple(targets)
@@ -694,7 +694,7 @@ def _zz(instruction) -> ZZ:
 
 
 class CCNot(GateOperation):
-    """Controlled CNOT or Toffoli gate"""
+    """Controlled CNot or Toffoli gate"""
 
     def __init__(self, targets):
         self._targets = tuple(targets)
@@ -758,7 +758,7 @@ def _cswap(instruction) -> CSwap:
 
 
 class Unitary(GateOperation):
-    """Unitary gate"""
+    """Arbitrary unitary gate"""
 
     def __init__(self, targets, matrix):
         self._targets = tuple(targets)

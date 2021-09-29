@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -160,6 +160,6 @@ def test_check_cptp(matrices):
     check_cptp(matrices)
 
 
-@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_from_braket_instruction_unsupported_instruction():
     from_braket_instruction(shared_models.DoubleTarget(targets=[4, 3]))

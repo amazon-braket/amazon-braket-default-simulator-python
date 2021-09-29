@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.3.0 (2021-08-23)
+
+### Features
+
+ * Calculate arbitrary observables
+
+## v1.2.3 (2021-08-12)
+
+### Bug Fixes and Other Changes
+
+ * Calculate exact statistics from trace
+
+### Documentation Changes
+
+ * Doc corrections
+
+## v1.2.2 (2021-08-06)
+
+### Bug Fixes and Other Changes
+
+ * Reconcile supported operations with managed format
+
+## v1.2.1 (2021-05-26)
+
+### Bug Fixes and Other Changes
+
+ * Fix perf tests
+
 ## v1.2.0 (2021-05-24)
 
 ### Features

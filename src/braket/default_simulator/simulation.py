@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -15,7 +15,7 @@ from typing import List
 
 import numpy as np
 
-from braket.default_simulator.operation import GateOperation
+from braket.default_simulator.operation import GateOperation, Observable
 
 
 class Simulation:
@@ -36,19 +36,6 @@ class Simulation:
         self._qubit_count = qubit_count
         self._shots = shots
 
-    def evolve(self, operations: List[GateOperation]) -> None:
-        """Evolves the state of the simulation under the action of
-        the specified gate operations.
-
-        Args:
-            operations (List[GateOperation]): Gate operations to apply for
-                evolving the state of the simulation.
-
-        Note:
-            This method mutates the state of the simulation.
-        """
-        raise NotImplementedError("evolve is not implemented.")
-
     @property
     def qubit_count(self) -> int:
         """int: The number of qubits being simulated by the simulation."""
@@ -64,7 +51,42 @@ class Simulation:
         """
         return self._shots
 
+    def evolve(self, operations: List[GateOperation]) -> None:
+        """Evolves the state of the simulation under the action of
+        the specified gate operations.
+
+        Args:
+            operations (List[GateOperation]): Gate operations to apply for
+                evolving the state of the simulation.
+
+        Note:
+            This method mutates the state of the simulation.
+        """
+        raise NotImplementedError("evolve has not been implemented.")
+
+    def expectation(self, observable: Observable) -> float:
+        """The expected value of the observable in the given state.
+
+        Args:
+            observable (Observable): The observable to measure.
+
+        Returns:
+            float: The expected value of the observable.
+        """
+        raise NotImplementedError("expectation has not been implemented.")
+
+    def retrieve_samples(self) -> List[int]:
+        """Retrieves samples of states from the state of the simulation,
+        based on the probabilities.
+
+        Returns:
+            List[int]: List of states sampled according to their probabilities
+            in the state. Each integer represents the decimal encoding of the
+            corresponding computational basis state.
+        """
+        raise NotImplementedError("retrieve_samples has not been implemented.")
+
     @property
     def probabilities(self) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state."""
-        raise NotImplementedError("probabilities is not implemented.")
+        raise NotImplementedError("probabilities has not been implemented.")

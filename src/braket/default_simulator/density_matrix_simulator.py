@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -23,17 +23,16 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 
 
 class DensityMatrixSimulator(BaseLocalSimulator):
-
     DEVICE_ID = "braket_dm"
 
-    def initialize_simulation(self, **kwargs):
+    def initialize_simulation(self, **kwargs) -> DensityMatrixSimulation:
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         return DensityMatrixSimulation(qubit_count, shots)
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
+        observables = ["x", "y", "z", "h", "i", "hermitian"]
         max_shots = sys.maxsize
         qubit_count = 13
         return GateModelSimulatorDeviceCapabilities.parse_obj(
@@ -53,48 +52,48 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                         "actionType": "braket.ir.jaqcd.program",
                         "version": ["1"],
                         "supportedOperations": [
-                            "AmplitudeDamping",
-                            "BitFlip",
-                            "CCNot",
-                            "CNot",
-                            "CPhaseShift",
-                            "CPhaseShift00",
-                            "CPhaseShift01",
-                            "CPhaseShift10",
-                            "CSwap",
-                            "CY",
-                            "CZ",
-                            "Depolarizing",
-                            "GeneralizedAmplitudeDamping",
-                            "PauliChannel",
-                            "H",
-                            "I",
-                            "ISwap",
-                            "Kraus",
-                            "PSwap",
-                            "PhaseShift",
-                            "PhaseFlip",
-                            "PhaseDamping",
-                            "Rx",
-                            "Ry",
-                            "Rz",
-                            "S",
-                            "Si",
-                            "Swap",
-                            "T",
-                            "Ti",
-                            "TwoQubitDephasing",
-                            "TwoQubitDepolarizing",
-                            "Unitary",
-                            "V",
-                            "Vi",
-                            "X",
-                            "XX",
-                            "XY",
-                            "Y",
-                            "YY",
-                            "Z",
-                            "ZZ",
+                            "amplitude_damping",
+                            "bit_flip",
+                            "ccnot",
+                            "cnot",
+                            "cphaseshift",
+                            "cphaseshift00",
+                            "cphaseshift01",
+                            "cphaseshift10",
+                            "cswap",
+                            "cy",
+                            "cz",
+                            "depolarizing",
+                            "generalized_amplitude_damping",
+                            "h",
+                            "i",
+                            "iswap",
+                            "kraus",
+                            "pauli_channel",
+                            "phase_flip",
+                            "phase_damping",
+                            "phaseshift",
+                            "pswap",
+                            "rx",
+                            "ry",
+                            "rz",
+                            "s",
+                            "si",
+                            "swap",
+                            "t",
+                            "ti",
+                            "two_qubit_dephasing",
+                            "two_qubit_depolarizing",
+                            "unitary",
+                            "v",
+                            "vi",
+                            "x",
+                            "xx",
+                            "xy",
+                            "y",
+                            "yy",
+                            "z",
+                            "zz",
                         ],
                         "supportedResultTypes": [
                             {

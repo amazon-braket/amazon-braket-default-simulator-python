@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -57,7 +57,7 @@ class KrausOperation(Operation, ABC):
     @property
     @abstractmethod
     def matrices(self) -> List[np.ndarray]:
-        """List[np.ndarray]: A list of matrices representating Kraus operators."""
+        """List[np.ndarray]: A list of matrices representing Kraus operators."""
 
 
 class Observable(Operation, ABC):
@@ -77,11 +77,29 @@ class Observable(Operation, ABC):
 
     @property
     def is_standard(self) -> bool:
-        """bool: Whether the observable is one of the four standard observables X, Y, Z and H.
+        r"""bool: Whether the observable is Pauli-like, that is, has eigenvalues of :math:`\pm 1`.
 
-        These observables are guaranteed to have eigenvalues of +/-1
+        Examples include the Pauli and Hadamard observables.
         """
         return False
+
+    def __pow__(self, power: int) -> Observable:
+        if not isinstance(power, int):
+            raise TypeError("power must be integer")
+        return self._pow(power)
+
+    @abstractmethod
+    def _pow(self, power: int) -> Observable:
+        """Raises this observable to the given power.
+
+        Only defined for integer powers.
+
+        Args:
+            power (int): The power to raise the observable to.
+
+        Returns:
+            Observable: The observable raised to the given power.
+        """
 
     @property
     @abstractmethod
@@ -90,7 +108,30 @@ class Observable(Operation, ABC):
         np.ndarray: The eigenvalues of the observable ordered by computational basis state.
         """
 
-    @property
+    @abstractmethod
+    def apply(self, state: np.ndarray) -> np.ndarray:
+        """Applies this observable to the given state.
+
+        Args:
+            state (np.ndarray): The state to apply the observable to.
+
+        Returns:
+            np.ndarray: The state after the observable has been applied.
+        """
+
+    @abstractmethod
+    def fix_qubit(self, qubit: int) -> Observable:
+        """Creates a copy of it acting on the given qubit.
+
+        Only defined for observables that act on 1 qubit.
+
+        Args:
+            qubit (int): The target qubit of the new observable.
+
+        Returns:
+            Observable: A copy of this observable, acting on the new qubit.
+        """
+
     @abstractmethod
     def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
         """The gates that diagonalize the observable in the computational basis.

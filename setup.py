@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -29,8 +29,8 @@ setup(
     install_requires=["amazon-braket-schemas", "numpy", "opt_einsum"],
     entry_points={
         "braket.simulators": [
-            "default = braket.default_simulator.state_vector_simulator:DefaultSimulator",
-            "braket_sv = braket.default_simulator.state_vector_simulator:DefaultSimulator",
+            "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
+            "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
         ]
     },

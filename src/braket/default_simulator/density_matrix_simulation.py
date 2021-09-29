@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -15,6 +15,7 @@ from typing import List, Tuple, Union
 
 import numpy as np
 
+from braket.default_simulator.linalg_utils import multiply_matrix, partial_trace
 from braket.default_simulator.operation import GateOperation, KrausOperation, Observable
 from braket.default_simulator.simulation import Simulation
 
@@ -41,16 +42,6 @@ class DensityMatrixSimulation(Simulation):
         self._post_observables = None
 
     def evolve(self, operations: List[Union[GateOperation, KrausOperation]]) -> None:
-        """Evolves the state of the simulation under the action of the specified gate
-        and noise operations.
-
-        Args:
-            operations (List[Union[GateOperation, KrausOperation]]): Operations to apply for
-                evolving the state of the simulation.
-
-        Note:
-            This method mutates the state of the simulation.
-        """
         self._density_matrix = DensityMatrixSimulation._apply_operations(
             self._density_matrix, self._qubit_count, operations
         )
@@ -92,7 +83,7 @@ class DensityMatrixSimulation(Simulation):
                 KrausOperation to be applied to the density matrix
 
         Returns:
-            state (np.ndarray): output density matrix
+            np.ndarray: output density matrix
         """
         dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
         for operation in operations:
@@ -105,9 +96,8 @@ class DensityMatrixSimulation(Simulation):
                         dm_tensor, qubit_count, matrix, targets
                     )
                 else:
-                    superop = np.kron(matrix, matrix.conjugate())
                     dm_tensor = DensityMatrixSimulation._apply_gate_superop(
-                        dm_tensor, qubit_count, superop, targets
+                        dm_tensor, qubit_count, np.kron(matrix, matrix.conjugate()), targets
                     )
 
             if isinstance(operation, KrausOperation):
@@ -118,14 +108,6 @@ class DensityMatrixSimulation(Simulation):
         return np.reshape(dm_tensor, (2 ** qubit_count, 2 ** qubit_count))
 
     def retrieve_samples(self) -> List[int]:
-        """Retrieves samples of states from the density matrix of the simulation,
-        based on the probabilities.
-
-        Returns:
-            List[int]: List of states sampled according to their probabilities
-            in the density matrix. Each integer represents the decimal encoding of the
-            corresponding computational basis state.
-        """
         return np.random.choice(
             self._density_matrix.shape[0], p=self.probabilities, size=self._shots
         )
@@ -134,13 +116,16 @@ class DensityMatrixSimulation(Simulation):
     def density_matrix(self) -> np.ndarray:
         """
         np.ndarray: The density matrix specifying the current state of the simulation.
+
+        Note:
+            Mutating this array will mutate the state of the simulation.
         """
         return self._density_matrix
 
     @property
     def state_with_observables(self) -> np.ndarray:
         """
-        np.ndarray: The final density matrix of the simulation after application of observables.
+        np.ndarray: The density matrix diagonalized in the basis of the measured observables.
 
         Raises:
             RuntimeError: If observables have not been applied
@@ -149,22 +134,29 @@ class DensityMatrixSimulation(Simulation):
             raise RuntimeError("No observables applied")
         return self._post_observables
 
+    def expectation(self, observable: Observable) -> float:
+        with_observables = observable.apply(
+            np.reshape(self._density_matrix, [2] * 2 * self._qubit_count)
+        )
+        return complex(partial_trace(with_observables)).real
+
     @property
     def probabilities(self) -> np.ndarray:
         """
         np.ndarray: The probabilities of each computational basis state of the current density
             matrix of the simulation.
         """
-        return self._probabilities(self.density_matrix)
+        return DensityMatrixSimulation._probabilities(self.density_matrix)
 
-    def _probabilities(self, state) -> np.ndarray:
+    @staticmethod
+    def _probabilities(state) -> np.ndarray:
         """The probabilities of each computational basis state of a given density matrix.
 
         Args:
-            state (np.ndarray): a density matrix
+            state (np.ndarray): The density matrix from which probabilities are extracted.
 
         Returns:
-            probabilities (np.ndarray)
+            np.ndarray: The probabilities of each computational basis state.
         """
         prob = np.real(np.diag(state))
         prob_list = prob.copy()
@@ -173,13 +165,14 @@ class DensityMatrixSimulation(Simulation):
         prob_list[prob_list < 0] = 0.0
         return prob_list
 
+    @staticmethod
     def _apply_gate(
         state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int, ...]
     ) -> np.ndarray:
-        """Apply a matrix M to a density matrix D according to:
+        r"""Apply a matrix M to a density matrix D according to:
 
             .. math::
-                D \rightarrow M D M^{\\dagger}
+                D \rightarrow M D M^{\dagger}
 
         Args:
             state (np.ndarray): initial density matrix
@@ -188,40 +181,19 @@ class DensityMatrixSimulation(Simulation):
             targets (Tuple[int,...]): qubits of the density matrix the matrix applied to.
 
         Returns:
-            state (np.ndarray): output density matrix
+            np.ndarray: output density matrix
         """
         # left product
-        gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
-        dm_targets = targets
-        axes = (
-            np.arange(len(targets), 2 * len(targets)),
-            dm_targets,
-        )
-        state = np.tensordot(gate_matrix, state, axes=axes)
-
-        # Arrange the index to the correct place.
-        unused_idxs = [idx for idx in range(2 * qubit_count) if idx not in dm_targets]
-        permutation = list(dm_targets) + unused_idxs
-        inverse_permutation = np.argsort(permutation)
-        state = np.transpose(state, inverse_permutation)
-
+        state = multiply_matrix(state, np.reshape(matrix, [2] * len(targets) * 2), targets)
         # right product
-        gate_matrix = np.reshape(matrix.conjugate(), [2] * len(targets) * 2)
-        dm_targets = tuple(i + qubit_count for i in targets)
-        axes = (
-            np.arange(len(targets), 2 * len(targets)),
-            dm_targets,
+        state = multiply_matrix(
+            state,
+            np.reshape(matrix.conjugate(), [2] * len(targets) * 2),
+            tuple(i + qubit_count for i in targets),
         )
-        state = np.tensordot(gate_matrix, state, axes=axes)
-
-        # Arrange the index to the correct place.
-        unused_idxs = [idx for idx in range(2 * qubit_count) if idx not in dm_targets]
-        permutation = list(dm_targets) + unused_idxs
-        inverse_permutation = np.argsort(permutation)
-        state = np.transpose(state, inverse_permutation)
-
         return state
 
+    @staticmethod
     def _apply_gate_superop(
         state: np.ndarray, qubit_count: int, superop: np.ndarray, targets: Tuple[int, ...]
     ) -> np.ndarray:
@@ -234,31 +206,20 @@ class DensityMatrixSimulation(Simulation):
             targets (Tuple[int,...]): qubits of the density matrix the superoperator applied to.
 
         Returns:
-            state (np.ndarray): output density matrix
+            np.ndarray: output density matrix
         """
         targets_new = targets + tuple([target + qubit_count for target in targets])
-        superop = np.reshape(superop, [2] * len(targets_new) * 2)
-        axes = (
-            np.arange(len(targets_new), 2 * len(targets_new)),
-            targets_new,
-        )
-        state = np.tensordot(superop, state, axes=axes)
-
-        # Arrange the index to the correct place.
-        unused_idxs = [idx for idx in range(2 * qubit_count) if idx not in targets_new]
-        permutation = list(targets_new) + unused_idxs
-        inverse_permutation = np.argsort(permutation)
-        state = np.transpose(state, inverse_permutation)
-
+        state = multiply_matrix(state, np.reshape(superop, [2] * len(targets_new) * 2), targets_new)
         return state
 
+    @staticmethod
     def _apply_kraus(
         state: np.ndarray, qubit_count: int, matrices: List[np.ndarray], targets: Tuple[int, ...]
     ) -> np.ndarray:
-        """Apply a list of matrices {E_i} to a density matrix D according to:
+        r"""Apply a list of matrices {E_i} to a density matrix D according to:
 
             .. math::
-                D \rightarrow \\sum_i E_i D E_i^{\\dagger}
+                D \rightarrow \\sum_i E_i D E_i^{\dagger}
 
         Args:
             state (np.ndarray): initial density matrix
@@ -267,7 +228,7 @@ class DensityMatrixSimulation(Simulation):
             targets (Tuple[int,...]): qubits of the density matrix the matrices applied to.
 
         Returns:
-            state (np.ndarray): output density matrix
+            np.ndarray: output density matrix
         """
         if len(targets) > 4:
             new_state = sum(

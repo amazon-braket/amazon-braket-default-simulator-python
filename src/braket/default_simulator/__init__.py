@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -27,6 +27,9 @@ from braket.default_simulator.operation import (  # noqa: F401
     Observable,
 )
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation  # noqa: F401
-from braket.default_simulator.state_vector_simulator import DefaultSimulator  # noqa: F401
+from braket.default_simulator.state_vector_simulator import (  # noqa: F401
+    DefaultSimulator,
+    StateVectorSimulator,
+)
 
 from ._version import __version__  # noqa: F401

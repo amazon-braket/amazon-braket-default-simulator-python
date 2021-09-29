@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -185,10 +185,10 @@ def test_simulation_simple_circuits(
     assert np.allclose(probability_amplitudes, simulation.probabilities)
 
 
-@pytest.mark.parametrize("observables, equivalent_gates, qubit_count", apply_observables_testdata)
-def test_apply_observables(observables, equivalent_gates, qubit_count):
+@pytest.mark.parametrize("obs, equivalent_gates, qubit_count", apply_observables_testdata)
+def test_apply_observables(obs, equivalent_gates, qubit_count):
     sim_observables = DensityMatrixSimulation(qubit_count, 0)
-    sim_observables.apply_observables(observables)
+    sim_observables.apply_observables(obs)
     sim_gates = DensityMatrixSimulation(qubit_count, 0)
     sim_gates.evolve(equivalent_gates)
     assert np.allclose(sim_observables.state_with_observables, sim_gates.density_matrix)

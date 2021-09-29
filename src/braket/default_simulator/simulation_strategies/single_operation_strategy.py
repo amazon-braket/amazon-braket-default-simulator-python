@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -11,10 +11,11 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 
+from braket.default_simulator.linalg_utils import multiply_matrix
 from braket.default_simulator.operation import GateOperation
 
 
@@ -26,7 +27,7 @@ def apply_operations(
     Args:
         state (np.ndarray): The state vector to apply the given operations to, as a type
             (num_qubits, 0) tensor
-        qubit_count (int): The number of qubits in the state
+        qubit_count (int): Unused parameter; in signature for backwards-compatibility
         operations (List[GateOperation]): The operations to apply to the state vector
 
     Returns:
@@ -36,23 +37,5 @@ def apply_operations(
     for operation in operations:
         matrix = operation.matrix
         targets = operation.targets
-        state = _apply_operation(state, qubit_count, matrix, targets)
+        state = multiply_matrix(state, matrix, targets)
     return state
-
-
-def _apply_operation(
-    state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int, ...]
-) -> np.ndarray:
-    gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
-    axes = (
-        np.arange(len(targets), 2 * len(targets)),
-        targets,
-    )
-    dot_product = np.tensordot(gate_matrix, state, axes=axes)
-
-    # Axes given in `operation.targets` are in the first positions.
-    unused_idxs = [idx for idx in range(qubit_count) if idx not in targets]
-    permutation = list(targets) + unused_idxs
-    # Invert the permutation to put the indices in the correct place
-    inverse_permutation = np.argsort(permutation)
-    return np.transpose(dot_product, inverse_permutation)

@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -90,7 +90,7 @@ def bell_ir_with_result():
     return _bell_ir_with_result
 
 
-def test_simulator_run_noisy_curcuit(noisy_circuit_2_qubit):
+def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit):
     simulator = DensityMatrixSimulator()
     shots_count = 10000
     result = simulator.run(noisy_circuit_2_qubit, qubit_count=2, shots=shots_count)
@@ -250,23 +250,21 @@ def test_simulator_fails_samples_0_shots():
 
 
 @pytest.mark.parametrize(
-    "result_types,expected_expectation,expected_variance",
+    "result_types,expected",
     [
         (
             [
                 {"type": "expectation", "observable": ["x"], "targets": [1]},
                 {"type": "variance", "observable": ["x"], "targets": [1]},
             ],
-            0,
-            1,
+            [0, 1],
         ),
         (
             [
                 {"type": "expectation", "observable": ["x"]},
                 {"type": "variance", "observable": ["x"], "targets": [1]},
             ],
-            [0, 0],
-            1,
+            [[0, 0], 1],
         ),
         (
             [
@@ -281,8 +279,7 @@ def test_simulator_fails_samples_0_shots():
                     "targets": [1],
                 },
             ],
-            0,
-            1,
+            [0, 1],
         ),
         (
             [
@@ -297,14 +294,23 @@ def test_simulator_fails_samples_0_shots():
                     "targets": [0, 1],
                 },
             ],
-            1,
-            1,
+            [1, 1],
+        ),
+        (
+            [
+                {"type": "variance", "observable": ["x"], "targets": [1]},
+                {"type": "expectation", "observable": ["x"]},
+                {
+                    "type": "expectation",
+                    "observable": ["x", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
+                    "targets": [0, 1],
+                },
+            ],
+            [1, [0, 0], 1],
         ),
     ],
 )
-def test_simulator_accepts_overlapping_targets_same_observable(
-    result_types, expected_expectation, expected_variance
-):
+def test_simulator_valid_observables(result_types, expected):
     simulator = DensityMatrixSimulator()
     prog = Program.parse_raw(
         json.dumps(
@@ -318,79 +324,13 @@ def test_simulator_accepts_overlapping_targets_same_observable(
         )
     )
     result = simulator.run(prog, qubit_count=2, shots=0)
-    expectation = result.resultTypes[0].value
-    variance = result.resultTypes[1].value
-    assert np.allclose(expectation, expected_expectation)
-    assert np.allclose(variance, expected_variance)
-
-
-@pytest.mark.xfail(raises=ValueError)
-@pytest.mark.parametrize(
-    "result_types",
-    [
-        (
-            [
-                {"type": "expectation", "observable": ["y"]},
-                {"type": "variance", "observable": ["x"], "targets": [1]},
-            ]
-        ),
-        (
-            [
-                {"type": "expectation", "observable": ["y"], "targets": [1]},
-                {"type": "variance", "observable": ["x"], "targets": [1]},
-            ]
-        ),
-        (
-            [
-                {
-                    "type": "expectation",
-                    "observable": [[[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
-                    "targets": [1],
-                },
-                {
-                    "type": "variance",
-                    "observable": [[[[1, 0], [0, 0]], [[0, 0], [1, 0]]]],
-                    "targets": [1],
-                },
-            ]
-        ),
-        (
-            [
-                {
-                    "type": "expectation",
-                    "observable": ["x", [[[0, 0], [1, 0]], [[1, 0], [0, 0]]]],
-                    "targets": [0, 1],
-                },
-                {"type": "variance", "observable": ["y", "x"], "targets": [0, 1]},
-            ]
-        ),
-        (
-            [
-                {"type": "expectation", "observable": ["i"]},
-                {"type": "variance", "observable": ["y"]},
-            ]
-        ),
-    ],
-)
-def test_simulator_fails_overlapping_targets_different_observable(result_types):
-    simulator = DensityMatrixSimulator()
-    prog = Program.parse_raw(
-        json.dumps(
-            {
-                "instructions": [
-                    {"type": "h", "target": 0},
-                    {"type": "cnot", "target": 1, "control": 0},
-                ],
-                "results": result_types,
-            }
-        )
-    )
-    simulator.run(prog, qubit_count=2, shots=0)
+    for i in range(len(result_types)):
+        assert np.allclose(result.resultTypes[i].value, expected[i])
 
 
 def test_properties():
     simulator = DensityMatrixSimulator()
-    observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
+    observables = ["x", "y", "z", "h", "i", "hermitian"]
     max_shots = sys.maxsize
     qubit_count = 13
     expected_properties = GateModelSimulatorDeviceCapabilities.parse_obj(
@@ -410,48 +350,48 @@ def test_properties():
                     "actionType": "braket.ir.jaqcd.program",
                     "version": ["1"],
                     "supportedOperations": [
-                        "AmplitudeDamping",
-                        "BitFlip",
-                        "CCNot",
-                        "CNot",
-                        "CPhaseShift",
-                        "CPhaseShift00",
-                        "CPhaseShift01",
-                        "CPhaseShift10",
-                        "CSwap",
-                        "CY",
-                        "CZ",
-                        "Depolarizing",
-                        "GeneralizedAmplitudeDamping",
-                        "PauliChannel",
-                        "H",
-                        "I",
-                        "ISwap",
-                        "Kraus",
-                        "PSwap",
-                        "PhaseShift",
-                        "PhaseFlip",
-                        "PhaseDamping",
-                        "Rx",
-                        "Ry",
-                        "Rz",
-                        "S",
-                        "Si",
-                        "Swap",
-                        "T",
-                        "Ti",
-                        "TwoQubitDephasing",
-                        "TwoQubitDepolarizing",
-                        "Unitary",
-                        "V",
-                        "Vi",
-                        "X",
-                        "XX",
-                        "XY",
-                        "Y",
-                        "YY",
-                        "Z",
-                        "ZZ",
+                        "amplitude_damping",
+                        "bit_flip",
+                        "ccnot",
+                        "cnot",
+                        "cphaseshift",
+                        "cphaseshift00",
+                        "cphaseshift01",
+                        "cphaseshift10",
+                        "cswap",
+                        "cy",
+                        "cz",
+                        "depolarizing",
+                        "generalized_amplitude_damping",
+                        "h",
+                        "i",
+                        "iswap",
+                        "kraus",
+                        "pauli_channel",
+                        "phase_flip",
+                        "phase_damping",
+                        "phaseshift",
+                        "pswap",
+                        "rx",
+                        "ry",
+                        "rz",
+                        "s",
+                        "si",
+                        "swap",
+                        "t",
+                        "ti",
+                        "two_qubit_dephasing",
+                        "two_qubit_depolarizing",
+                        "unitary",
+                        "v",
+                        "vi",
+                        "x",
+                        "xx",
+                        "xy",
+                        "y",
+                        "yy",
+                        "z",
+                        "zz",
                     ],
                     "supportedResultTypes": [
                         {

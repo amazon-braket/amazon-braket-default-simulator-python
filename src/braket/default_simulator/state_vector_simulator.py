@@ -1,4 +1,4 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
 # may not use this file except in compliance with the License. A copy of
@@ -22,11 +22,10 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class DefaultSimulator(BaseLocalSimulator):
-
+class StateVectorSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_sv"
 
-    def initialize_simulation(self, **kwargs):
+    def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         batch_size = kwargs.get("batch_size")
@@ -34,7 +33,7 @@ class DefaultSimulator(BaseLocalSimulator):
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        observables = ["X", "Y", "Z", "H", "I", "Hermitian"]
+        observables = ["x", "y", "z", "h", "i", "hermitian"]
         max_shots = sys.maxsize
         qubit_count = 26
         return GateModelSimulatorDeviceCapabilities.parse_obj(
@@ -54,38 +53,38 @@ class DefaultSimulator(BaseLocalSimulator):
                         "actionType": "braket.ir.jaqcd.program",
                         "version": ["1"],
                         "supportedOperations": [
-                            "CCNot",
-                            "CNot",
-                            "CPhaseShift",
-                            "CPhaseShift00",
-                            "CPhaseShift01",
-                            "CPhaseShift10",
-                            "CSwap",
-                            "CY",
-                            "CZ",
-                            "H",
-                            "I",
-                            "ISwap",
-                            "PSwap",
-                            "PhaseShift",
-                            "Rx",
-                            "Ry",
-                            "Rz",
-                            "S",
-                            "Si",
-                            "Swap",
-                            "T",
-                            "Ti",
-                            "Unitary",
-                            "V",
-                            "Vi",
-                            "X",
-                            "XX",
-                            "XY",
-                            "Y",
-                            "YY",
-                            "Z",
-                            "ZZ",
+                            "ccnot",
+                            "cnot",
+                            "cphaseshift",
+                            "cphaseshift00",
+                            "cphaseshift01",
+                            "cphaseshift10",
+                            "cswap",
+                            "cy",
+                            "cz",
+                            "h",
+                            "i",
+                            "iswap",
+                            "pswap",
+                            "phaseshift",
+                            "rx",
+                            "ry",
+                            "rz",
+                            "s",
+                            "si",
+                            "swap",
+                            "t",
+                            "ti",
+                            "unitary",
+                            "v",
+                            "vi",
+                            "x",
+                            "xx",
+                            "xy",
+                            "y",
+                            "yy",
+                            "z",
+                            "zz",
                         ],
                         "supportedResultTypes": [
                             {
@@ -117,3 +116,6 @@ class DefaultSimulator(BaseLocalSimulator):
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
             }
         )
+
+
+DefaultSimulator = StateVectorSimulator
