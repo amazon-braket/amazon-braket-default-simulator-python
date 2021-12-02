@@ -25,6 +25,10 @@ class QasmSimulator:
     def num_qubits(self):
         return len(self.qubits)
 
+    def get_variable_value(self, variable):
+        var_index = self.variables[variable].index
+        return self.qubits[var_index]
+
     def run_qasm(self, qasm: str):
         program = parse(qasm)
         for statement in program.statements:
@@ -46,17 +50,3 @@ class QasmSimulator:
 
         self.variables[name] = QasmVariable(name, index)
         self.qubits = np.append(self.qubits, np.zeros(size))
-
-
-if __name__ == '__main__':
-    qasm = """
-    qubit q;
-    qubit[0] p;
-    qubit[4] a;
-    """
-    simulator = QasmSimulator()
-    simulator.run_qasm(qasm)
-    print(simulator.variables)
-    print(simulator.qubits)
-    for name, var in simulator.variables.items():
-        print(np.array(simulator.qubits[var.index]))
