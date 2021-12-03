@@ -26,7 +26,7 @@ setup(
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
-    install_requires=["amazon-braket-schemas", "numpy", "opt_einsum", "openqasm3", "attr"],
+    install_requires=["amazon-braket-schemas", "numpy", "opt_einsum", "openqasm3"],
     entry_points={
         "braket.simulators": [
             "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
