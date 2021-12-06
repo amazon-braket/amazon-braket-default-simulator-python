@@ -8,11 +8,12 @@ from openqasm.ast import (
     StringLiteral,
     Constant,
     ConstantName,
-    BitType,
+    BitType, IntType, UnaryExpression, UnaryOperator, UintType, FloatType,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
-from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer
+from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer, IntVariable, UintVariable, \
+    FloatVariable
 
 
 class QasmSimulator:
@@ -62,19 +63,17 @@ class QasmSimulator:
         self.qubits = np.append(self.qubits, new_qubits)
 
     def handle_classical_declaration(self, statement):
-        if isinstance(statement.type, BitType):
-            self.handle_bit_declaration(statement)
-
-    def handle_bit_declaration(self, statement):
-        """
-        Single bits can be initialized with true, false, or a number which will be interpreted
-        as false if 0, true otherwise.
-        Bit registers can be initialized with a binary string of correct length.
-        """
+        type_map = {
+            BitType: BitVariable,
+            IntType: IntVariable,
+            UintType: UintVariable,
+            FloatType: FloatVariable,
+        }
+        variable_class = type_map[type(statement.type)]
         name = statement.identifier.name
         value = self.evaluate_expression(statement.init_expression)
         size = self.evaluate_expression(statement.type.size)
-        self.qasm_variables[name] = BitVariable(name, value, size)
+        self.qasm_variables[name] = variable_class(name, value, size)
 
     @staticmethod
     def evaluate_expression(expression):
@@ -93,6 +92,16 @@ class QasmSimulator:
                 ConstantName.euler: np.e,
             }
             return constant_values.get(expression.name)
+
+        elif isinstance(expression, UnaryExpression):
+            base_value = QasmSimulator.evaluate_expression(expression.expression)
+            operator = expression.op
+            if operator.name == "-":
+                return -base_value
+            elif operator.name == "~":
+                return ~base_value
+            elif operator.name == "!":
+                return type(base_value)(not base_value)
 
         else:
             raise NotImplementedError

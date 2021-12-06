@@ -1,21 +1,24 @@
+import warnings
+from abc import ABC, abstractmethod
+
 import numpy as np
 
 
-class QasmVariable:
+class QasmVariable(ABC):
 
     def __init__(self, name, value=None, size=None):
         self.name = name
         self._value = value
         self._size = size
-        if value is not None:
-            self.validate_value(value, size)
         if size is not None:
             self.validate_size(size)
+        if value is not None:
+            self.validate_value(value, size)
 
     @property
+    @abstractmethod
     def data_type(self):
         """ Name of the variable type """
-        return ""
 
     @property
     def value(self):
@@ -53,6 +56,10 @@ class QubitPointer(QasmVariable):
 
 
 class BitVariable(QasmVariable):
+    """
+    Single bits can be initialized with true/false, or 0/1.
+    Bit registers can be initialized with a binary string of correct length.
+    """
 
     @property
     def data_type(self):
@@ -71,11 +78,93 @@ class BitVariable(QasmVariable):
             try:
                 assert len(value) == size
                 self._value = int(f"0b{value}", base=2)
-            except (AssertionError, ValueError):
+            except (AssertionError, ValueError, TypeError):
                 raise ValueError(
-                    f"Invalid string '{value}' to initialize bit register '{self.name}'. "
-                    "Provided string must be a binary string of length equal to "
-                    f"given size '{size}'."
+                    f"Invalid value to initialize bit register '{self.name}': {repr(value)}. "
+                    "Provided value must be a binary string of length equal to "
+                    f"given size, {size}."
                 )
         else:
+            if value not in (True, False):
+                raise ValueError(
+                    f"Invalid value to initialize bit variable '{self.name}': {repr(value)}. "
+                    "Provided value must be a boolean value."
+                )
             self._value = bool(value)
+
+
+class IntVariable(QasmVariable):
+    """
+    Integers have one sign bit and (size - 1) integer bits
+    Valid values are in [-2**(size - 1) + 1, 2**(size - 1) - 1]
+    """
+
+    @property
+    def limit(self):
+        return 2 ** (self.size - 1)
+
+    @property
+    def data_type(self):
+        return "integer register"
+
+    @property
+    def value(self):
+        if self._value is not None:
+            return np.sign(self._value) * (np.abs(self._value) % self.limit)
+
+    def validate_value(self, value, size):
+        if int(value) != value:
+            raise ValueError(
+                f"Not a valid value for {self.data_type} '{self.name}': {repr(value)}"
+            )
+        self._value = value
+        if self._value != self.value:
+            warnings.warn(
+                f"Integer overflow for {self.data_type} '{self.name}'. "
+                f"Value '{self._value}' is outside the range for an "
+                f"{self.data_type} of size '{self.size}'."
+            )
+
+
+class UintVariable(IntVariable):
+    """
+    Valid values are in [0, 2**size - 1]
+    """
+
+    @property
+    def limit(self):
+        return 2 ** self.size
+
+    @property
+    def data_type(self):
+        return "unsigned integer register"
+
+
+class FloatVariable(QasmVariable):
+    """
+    Floats must have a size in { 16, 32, 64, 128 }.
+    """
+
+    @property
+    def data_type(self):
+        return "float"
+
+    @property
+    def value(self):
+        if self._value is not None:
+            return self._value
+
+    def validate_value(self, value, size):
+        try:
+            self._value = np.array(value, dtype=np.dtype(f"float{size}"))
+        except ValueError:
+            raise ValueError(
+                f"Not a valid value for {self.data_type} '{self.name}': {repr(value)}"
+            )
+
+    def validate_size(self, size):
+        if size not in (16, 32, 64, 128):
+            raise ValueError(
+                f"{self.data_type.capitalize()} size must be one of {{16, 32, 64, 128}}. "
+                f"Provided size '{size}' for {self.data_type} '{self.name}'."
+            )
