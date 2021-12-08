@@ -149,11 +149,6 @@ class FloatVariable(QasmVariable):
     def data_type(self):
         return "float"
 
-    @property
-    def value(self):
-        if self._value is not None:
-            return self._value
-
     def validate_value(self, value, size):
         try:
             self._value = np.array(value, dtype=np.dtype(f"float{size}"))
@@ -167,4 +162,27 @@ class FloatVariable(QasmVariable):
             raise ValueError(
                 f"{self.data_type.capitalize()} size must be one of {{16, 32, 64, 128}}. "
                 f"Provided size '{size}' for {self.data_type} '{self.name}'."
+            )
+
+
+class AngleVariable(QasmVariable):
+    """
+    Fixed point angles
+    """
+
+    @property
+    def data_type(self):
+        return "angle"
+
+    @property
+    def value(self):
+        if self._value is not None:
+            return (2 * np.pi * self._value) / (2 ** self._size)
+
+    def validate_value(self, value, size):
+        try:
+            self._value = int((value % (2 * np.pi)) / (2 * np.pi) * 2 ** self._size)
+        except (ValueError, TypeError):
+            raise ValueError(
+                f"Not a valid value for {self.data_type} '{self.name}': {repr(value)}"
             )

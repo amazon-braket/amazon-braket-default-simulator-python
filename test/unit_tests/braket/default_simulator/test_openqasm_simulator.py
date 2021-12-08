@@ -1,10 +1,8 @@
-import re
-
 import numpy as np
 import pytest
 
 from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer, IntVariable, UintVariable, \
-    FloatVariable
+    FloatVariable, AngleVariable
 from braket.default_simulator.openqasm_simulator import QasmSimulator
 
 
@@ -58,15 +56,18 @@ def test_qubit_negative_size_declaration():
 
 
 @pytest.mark.parametrize(
-    "size", ("2 + 4", "2**3")
+    "size", ("2 + 4", "2 * 3")
 )
 def test_qubit_expression_declaration(size):
     qasm = f"""
     qubit[{size}] a;
     """
     simulator = QasmSimulator()
-    with pytest.raises(NotImplementedError):
-        simulator.run_qasm(qasm)
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "a": QubitPointer("a", slice(0, 6), size=6),
+    }
 
 
 def test_bit_declaration():
@@ -273,3 +274,52 @@ def test_float_declaration_bad_size(size):
     with pytest.raises(ValueError, match=bad_value):
         simulator.run_qasm(qasm)
 
+
+def test_angle_declaration():
+    qasm = """
+    angle[20] uninitialized;
+    angle[20] initialized = 3*π/2;
+    angle[2] multiples_of_pi_are_compact = 3*π/2;
+    angle[5] integers_are_harder = 3;
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    three_pi_over_two = 4.71238898038469
+
+    assert simulator.qasm_variables == {
+        "uninitialized": AngleVariable("uninitialized", size=20),
+        "initialized": AngleVariable("initialized", three_pi_over_two, 20),
+        "multiples_of_pi_are_compact": AngleVariable(
+            "multiples_of_pi_are_compact", three_pi_over_two, 2
+        ),
+        "integers_are_harder": AngleVariable("integers_are_harder", 3, 5),
+    }
+
+    # note how the multiple of pi is preserved exactly while the integer loses precision
+    assert simulator.qasm_variables["multiples_of_pi_are_compact"].value == three_pi_over_two
+    assert simulator.qasm_variables["integers_are_harder"].value == 2.945243112740431
+
+
+@pytest.mark.parametrize("size", (2.3, 0, -1))
+def test_angle_declaration_bad_size(size):
+    qasm = f"angle[{size}] bad_size;"
+    bad_size = (
+        f"Angle size must be a positive integer. "
+        f"Provided size '{size}' for angle 'bad_size'."
+    )
+    simulator = QasmSimulator()
+    with pytest.raises(ValueError, match=bad_size):
+        simulator.run_qasm(qasm)
+
+
+def test_angle_declaration_wrong_type():
+    qasm = f"""
+    angle[8] wrong_type = "a string";
+    """
+    wrong_type = (
+        f"Not a valid value for angle 'wrong_type': 'a string'"
+    )
+    simulator = QasmSimulator()
+    with pytest.raises(ValueError, match=wrong_type):
+        simulator.run_qasm(qasm)

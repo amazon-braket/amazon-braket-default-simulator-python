@@ -8,12 +8,12 @@ from openqasm.ast import (
     StringLiteral,
     Constant,
     ConstantName,
-    BitType, IntType, UnaryExpression, UnaryOperator, UintType, FloatType,
+    BitType, IntType, UnaryExpression, UnaryOperator, UintType, FloatType, AngleType, BinaryExpression, Identifier,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer, IntVariable, UintVariable, \
-    FloatVariable
+    FloatVariable, AngleVariable
 
 
 class QasmSimulator:
@@ -68,6 +68,7 @@ class QasmSimulator:
             IntType: IntVariable,
             UintType: UintVariable,
             FloatType: FloatVariable,
+            AngleType: AngleVariable,
         }
         variable_class = type_map[type(statement.type)]
         name = statement.identifier.name
@@ -102,6 +103,19 @@ class QasmSimulator:
                 return ~base_value
             elif operator.name == "!":
                 return type(base_value)(not base_value)
+
+        elif isinstance(expression, BinaryExpression):
+            lhs = QasmSimulator.evaluate_expression(expression.lhs)
+            rhs = QasmSimulator.evaluate_expression(expression.rhs)
+            operator = expression.op
+            if operator.name == "*":
+                return lhs * rhs
+            elif operator.name == "/":
+                return lhs / rhs
+            elif operator.name == "+":
+                return lhs + rhs
+            elif operator.name == "-":
+                return lhs - rhs
 
         else:
             raise NotImplementedError
