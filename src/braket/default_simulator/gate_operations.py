@@ -129,6 +129,33 @@ def _pauli_z(instruction) -> PauliZ:
     return PauliZ([instruction.target])
 
 
+class CV(GateOperation):
+    """Controlled-Sqrt(NOT) gate"""
+
+    def __init__(self, targets):
+        self._targets = tuple(targets)
+
+    @property
+    def matrix(self) -> np.ndarray:
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0.5 + 0.5j, 0.5 - 0.5j],
+                [0, 0, 0.5 - 0.5j, 0.5 + 0.5j],
+            ]
+        )
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+@_from_braket_instruction.register(braket_instruction.CV)
+def _cv(instruction) -> CV:
+    return CV([instruction.control, instruction.target])
+
+
 class CX(GateOperation):
     """Controlled Pauli-X gate"""
 

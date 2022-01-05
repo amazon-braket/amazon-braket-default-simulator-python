@@ -24,6 +24,7 @@ testdata = [
     (instruction.Y(target=10), (10,), gate_operations.PauliY),
     (instruction.Z(target=9), (9,), gate_operations.PauliZ),
     (instruction.CNot(target=9, control=11), (11, 9), gate_operations.CX),
+    (instruction.CV(target=9, control=11), (11, 9), gate_operations.CV),
     (instruction.CY(target=10, control=7), (7, 10), gate_operations.CY),
     (instruction.CZ(target=14, control=7), (7, 14), gate_operations.CZ),
     (instruction.S(target=2), (2,), gate_operations.S),
