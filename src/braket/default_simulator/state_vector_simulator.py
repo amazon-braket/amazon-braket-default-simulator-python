@@ -60,6 +60,7 @@ class StateVectorSimulator(BaseLocalSimulator):
                             "cphaseshift01",
                             "cphaseshift10",
                             "cswap",
+                            "cv",
                             "cy",
                             "cz",
                             "h",
