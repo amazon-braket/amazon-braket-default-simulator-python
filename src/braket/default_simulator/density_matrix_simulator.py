@@ -61,7 +61,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                             "cphaseshift01",
                             "cphaseshift10",
                             "cswap",
-                            "cv"
+                            "cv",
                             "cy",
                             "cz",
                             "depolarizing",
