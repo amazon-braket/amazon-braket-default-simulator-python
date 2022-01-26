@@ -359,6 +359,7 @@ def test_properties():
                         "cphaseshift01",
                         "cphaseshift10",
                         "cswap",
+                        "cv",
                         "cy",
                         "cz",
                         "depolarizing",
