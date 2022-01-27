@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.4.0 (2022-01-27)
+
+### Features
+
+ * added controlled-sqrt-not gate.
+
+### Bug Fixes and Other Changes
+
+ * Add controlled-sqrt-not gate to dm simulator
+
 ## v1.3.0 (2021-08-23)
 
 ### Features
