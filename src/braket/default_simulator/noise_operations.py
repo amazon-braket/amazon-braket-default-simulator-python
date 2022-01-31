@@ -342,5 +342,5 @@ class TwoQubitPauliChannel(KrausOperation):
 
 
 @_from_braket_instruction.register(braket_instruction.MultiQubitPauliChannel)
-def _two_qubit_pauli_channel(instruction) -> MultiQubitPauliChannel:
-    return MultiQubitPauliChannel(instruction.targets, instruction.probabilities)
+def _two_qubit_pauli_channel(instruction) -> TwoQubitPauliChannel:
+    return TwoQubitPauliChannel(instruction.targets, instruction.probabilities)
