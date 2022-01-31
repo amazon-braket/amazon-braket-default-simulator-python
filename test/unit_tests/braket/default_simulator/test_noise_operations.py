@@ -52,6 +52,20 @@ testdata = [
         (5,),
         noise_operations.PauliChannel,
     ),
+    (
+        instruction.MultiQubitPauliChannel(
+            target=[0], probabilities={"X": 0.1, "Y": 0.2, "Z": 0.3}
+        ),
+        (5,),
+        noise_operations.TwoQubitPauliChannel,
+    ),
+    (
+        instruction.MultiQubitPauliChannel(
+            target=[0, 1], probabilities={"XX": 0.01, "YY": 0.02, "XZ": 0.03}
+        ),
+        (5,),
+        noise_operations.TwoQubitPauliChannel,
+    ),
     (instruction.PhaseDamping(target=0, gamma=0.89), (0,), noise_operations.PhaseDamping),
     (
         instruction.Kraus(

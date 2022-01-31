@@ -369,6 +369,7 @@ def test_properties():
                         "iswap",
                         "kraus",
                         "pauli_channel",
+                        "two_qubit_pauli_channel",
                         "phase_flip",
                         "phase_damping",
                         "phaseshift",
