@@ -252,7 +252,7 @@ def test_simulation_qft_circuit(qft_circuit_operations, batch_size):
     simulation = StateVectorSimulation(qubit_count, 0, batch_size)
     operations = qft_circuit_operations(qubit_count)
     simulation.evolve(operations)
-    assert np.allclose(simulation.probabilities, [1 / (2 ** qubit_count)] * (2 ** qubit_count))
+    assert np.allclose(simulation.probabilities, [1 / (2**qubit_count)] * (2**qubit_count))
 
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])

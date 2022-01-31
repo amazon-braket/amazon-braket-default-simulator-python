@@ -314,7 +314,7 @@ class Variance(ObservableResultType):
 
     @staticmethod
     def _calculate_single_quantity(simulation: Simulation, observable: Observable) -> float:
-        return simulation.expectation(observable ** 2) - simulation.expectation(observable) ** 2
+        return simulation.expectation(observable**2) - simulation.expectation(observable) ** 2
 
 
 @_from_braket_result_type.register

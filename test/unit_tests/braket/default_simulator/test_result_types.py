@@ -222,7 +222,7 @@ def test_variance_no_targets(state_vector, obs):
 
 def _variance_from_diagonalization(diagonalized_probs, qubits, eigenvalues):
     marginal = marginal_probability(diagonalized_probs, qubits)
-    return marginal @ (eigenvalues.real ** 2) - (marginal @ eigenvalues).real ** 2
+    return marginal @ (eigenvalues.real**2) - (marginal @ eigenvalues).real ** 2
 
 
 def test_from_braket_result_type_statevector():

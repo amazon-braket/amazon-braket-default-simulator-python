@@ -36,7 +36,7 @@ class DensityMatrixSimulation(Simulation):
                 or expectation, are generated.
         """
         super().__init__(qubit_count=qubit_count, shots=shots)
-        initial_state = np.zeros((2 ** qubit_count, 2 ** qubit_count), dtype=complex)
+        initial_state = np.zeros((2**qubit_count, 2**qubit_count), dtype=complex)
         initial_state[0, 0] = 1
         self._density_matrix = initial_state
         self._post_observables = None
@@ -105,7 +105,7 @@ class DensityMatrixSimulation(Simulation):
                     dm_tensor, qubit_count, operation.matrices, targets
                 )
 
-        return np.reshape(dm_tensor, (2 ** qubit_count, 2 ** qubit_count))
+        return np.reshape(dm_tensor, (2**qubit_count, 2**qubit_count))
 
     def retrieve_samples(self) -> List[int]:
         return np.random.choice(
