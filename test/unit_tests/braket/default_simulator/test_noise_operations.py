@@ -54,7 +54,7 @@ testdata = [
     ),
     (
         instruction.MultiQubitPauliChannel(
-             targets=[0], probabilities={"X": 0.1, "Y": 0.2, "Z": 0.3}
+            targets=[0], probabilities={"X": 0.1, "Y": 0.2, "Z": 0.3}
         ),
         (5,),
         noise_operations.TwoQubitPauliChannel,
