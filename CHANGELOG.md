@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.0 (2022-02-01)
+
+### Features
+
+ * adding two qubit Pauli channels
+
 ## v1.4.0 (2022-01-27)
 
 ### Features
