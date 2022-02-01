@@ -110,9 +110,9 @@ def test_observable_properties_all_qubits(
 @pytest.mark.parametrize("obs", involutory)
 def test_involutory_powers(obs):
     for power in range(0, 10, 2):
-        assert (obs ** power).__class__ is observables.Identity
+        assert (obs**power).__class__ is observables.Identity
     for power in range(1, 11, 2):
-        assert (obs ** power).__class__ is obs.__class__
+        assert (obs**power).__class__ is obs.__class__
 
 
 @pytest.mark.xfail(raises=TypeError)

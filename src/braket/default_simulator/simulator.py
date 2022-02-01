@@ -45,6 +45,7 @@ _NOISE_INSTRUCTIONS = frozenset(
         "generalized_amplitude_damping",
         "kraus",
         "pauli_channel",
+        "two_qubit_pauli_channel",
         "phase_flip",
         "phase_damping",
         "two_qubit_dephasing",
