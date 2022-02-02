@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
+from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer, IntVariable, UintVariable, \
-    FloatVariable, AngleVariable
+    FloatVariable, AngleVariable, BoolVariable
 from braket.default_simulator.openqasm_simulator import QasmSimulator
 
 
@@ -64,6 +65,7 @@ def test_qubit_expression_declaration(size):
     """
     simulator = QasmSimulator()
     simulator.run_qasm(qasm)
+    print(parse(qasm))
 
     assert simulator.qasm_variables == {
         "a": QubitPointer("a", slice(0, 6), size=6),
@@ -154,6 +156,7 @@ def test_int_declaration():
     int[5] neg = -4;
     int[3] pos_overflow = 5;
     int[3] neg_overflow = -6;
+    const int[8] co = pos;
     """
     simulator = QasmSimulator()
     pos_overflow = (
@@ -323,3 +326,27 @@ def test_angle_declaration_wrong_type():
     simulator = QasmSimulator()
     with pytest.raises(ValueError, match=wrong_type):
         simulator.run_qasm(qasm)
+
+
+def test_bool_declaration():
+    qasm = """
+    bool uninitialized;
+    bool t_bool = true;
+    bool t_int = 10;
+    bool t_float = -π;
+    bool f_bool = false;
+    bool f_int = 0;
+    bool f_float = 0.0;
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "uninitialized": BoolVariable("uninitialized", None),
+        "t_bool": BoolVariable("t_bool", True),
+        "t_int": BoolVariable("t_int", True),
+        "t_float": BoolVariable("t_float", True),
+        "f_bool": BoolVariable("f_bool", False),
+        "f_int": BoolVariable("f_int", False),
+        "f_float": BoolVariable("f_float", False),
+    }

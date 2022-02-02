@@ -9,11 +9,12 @@ from openqasm.ast import (
     Constant,
     ConstantName,
     BitType, IntType, UnaryExpression, UnaryOperator, UintType, FloatType, AngleType, BinaryExpression, Identifier,
+    BoolType,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer, IntVariable, UintVariable, \
-    FloatVariable, AngleVariable
+    FloatVariable, AngleVariable, BoolVariable
 
 
 class QasmSimulator:
@@ -69,11 +70,16 @@ class QasmSimulator:
             UintType: UintVariable,
             FloatType: FloatVariable,
             AngleType: AngleVariable,
+            BoolType: BoolVariable,
         }
         variable_class = type_map[type(statement.type)]
         name = statement.identifier.name
         value = self.evaluate_expression(statement.init_expression)
-        size = self.evaluate_expression(statement.type.size)
+        size = (
+           self.evaluate_expression(statement.type.size)
+           if variable_class.supports_size
+           else None
+        )
         self.qasm_variables[name] = variable_class(name, value, size)
 
     @staticmethod

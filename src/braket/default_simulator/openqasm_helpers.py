@@ -15,6 +15,8 @@ class QasmVariable(ABC):
         if value is not None:
             self.validate_value(value, size)
 
+    supports_size = True
+
     @property
     @abstractmethod
     def data_type(self):
@@ -186,3 +188,18 @@ class AngleVariable(QasmVariable):
             raise ValueError(
                 f"Not a valid value for {self.data_type} '{self.name}': {repr(value)}"
             )
+
+
+class BoolVariable(QasmVariable):
+    """
+    Boolean values
+    """
+
+    supports_size = False
+
+    @property
+    def data_type(self):
+        return "bool"
+
+    def validate_value(self, value, size):
+        self._value = bool(value)
