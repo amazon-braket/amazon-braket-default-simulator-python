@@ -477,13 +477,10 @@ def test_if_else(conditional):
 def test_if_scope():
     qasm = f"""
         int[16] locally_overridden = 1;
-        if (true) {{
-            int[16] locally_overridden = 2;
-        }}
-
         int[16] globally_changed = 1;
         if (true) {{
-            globally_changed = 2;
+            int[16] locally_overridden = 2;
+            globally_changed = locally_overridden;
         }}
         """
     simulator = QasmSimulator()

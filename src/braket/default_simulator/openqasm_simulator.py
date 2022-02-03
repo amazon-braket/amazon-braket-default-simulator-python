@@ -43,12 +43,24 @@ class QasmSimulator:
     def exit_scope(self):
         self._qasm_variables_stack.pop()
 
+    def get_variable(self, name):
+        for scope in reversed(self._qasm_variables_stack):
+            if name in scope:
+                return scope[name]
+
+    def declare_variable(self, name, value):
+        local_scope = self._qasm_variables_stack[-1]
+        if name in local_scope:
+            raise NameError(f"Variable '{name}' already declared in local scope.")
+        local_scope[name] = value
+
+
     @property
     def num_qubits(self):
         return len(self.qubits)
 
     def get_qubit_state(self, quantum_variable):
-        return self.qubits[self.qasm_variables[quantum_variable].value]
+        return self.qubits[self.get_variable(quantum_variable).value]
 
     def run_qasm(self, qasm: str):
         program = parse(qasm)
@@ -81,7 +93,8 @@ class QasmSimulator:
         name = statement.qubit.name
         size = self.evaluate_expression(statement.size)
         index = slice(self.num_qubits, self.num_qubits + size) if size else self.num_qubits
-        self.qasm_variables[name] = QubitPointer(name, index, size)
+        # self.qasm_variables[name] = QubitPointer(name, index, size)
+        self.declare_variable(name, QubitPointer(name, index, size))
         new_qubits = np.empty(size or 1)
         new_qubits[:] = np.nan
         self.qubits = np.append(self.qubits, new_qubits)
@@ -104,7 +117,7 @@ class QasmSimulator:
            if variable_class.supports_size
            else None
         )
-        self.qasm_variables[name] = variable_class(name, value, size)
+        self.declare_variable(name, variable_class(name, value, size))
 
     def handle_classical_assignment(self, statement: ClassicalAssignment):
         lvalue = statement.lvalue.name
@@ -115,19 +128,14 @@ class QasmSimulator:
         variable.assign_value(rvalue)
 
     def handle_branching_statement(self, statement: BranchingStatement):
-        print(self._qasm_variables_stack)
         self.enter_scope()
-        print(self._qasm_variables_stack)
         if self.evaluate_expression(statement.condition):
             self.run_program(statement.if_block)
         else:
             self.run_program(statement.else_block)
-        print(self._qasm_variables_stack)
         self.exit_scope()
-        print(self._qasm_variables_stack)
 
-    @staticmethod
-    def evaluate_expression(expression):
+    def evaluate_expression(self, expression):
         if expression is None:
             return None
 
@@ -145,7 +153,7 @@ class QasmSimulator:
             return constant_values.get(expression.name)
 
         elif isinstance(expression, UnaryExpression):
-            base_value = QasmSimulator.evaluate_expression(expression.expression)
+            base_value = self.evaluate_expression(expression.expression)
             operator = expression.op
             if operator.name == "-":
                 return -base_value
@@ -155,8 +163,8 @@ class QasmSimulator:
                 return type(base_value)(not base_value)
 
         elif isinstance(expression, BinaryExpression):
-            lhs = QasmSimulator.evaluate_expression(expression.lhs)
-            rhs = QasmSimulator.evaluate_expression(expression.rhs)
+            lhs = self.evaluate_expression(expression.lhs)
+            rhs = self.evaluate_expression(expression.rhs)
             operator = expression.op
             if operator.name == "*":
                 return lhs * rhs
@@ -166,6 +174,9 @@ class QasmSimulator:
                 return lhs + rhs
             elif operator.name == "-":
                 return lhs - rhs
+
+        elif isinstance(expression, Identifier):
+            return self.get_variable(expression.name).value
 
         else:
             raise NotImplementedError
