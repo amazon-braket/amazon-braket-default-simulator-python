@@ -1,3 +1,6 @@
+from functools import reduce
+from typing import List
+
 import numpy as np
 from openqasm.ast import (
     QubitDeclaration,
@@ -9,12 +12,12 @@ from openqasm.ast import (
     Constant,
     ConstantName,
     BitType, IntType, UnaryExpression, UnaryOperator, UintType, FloatType, AngleType, BinaryExpression, Identifier,
-    BoolType,
+    BoolType, ClassicalAssignment, ComplexType, BranchingStatement, Statement,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer, IntVariable, UintVariable, \
-    FloatVariable, AngleVariable, BoolVariable
+    FloatVariable, AngleVariable, BoolVariable, ComplexVariable
 
 
 class QasmSimulator:
@@ -25,7 +28,20 @@ class QasmSimulator:
 
     def __init__(self):
         self.qubits = np.array([], dtype=complex)
-        self.qasm_variables = {}
+        self._qasm_variables_stack = [{}]
+
+    @property
+    def qasm_variables(self):
+        return reduce(
+            lambda scope, new_scope: {**scope, **new_scope},
+            self._qasm_variables_stack
+        )
+
+    def enter_scope(self):
+        self._qasm_variables_stack.append({})
+
+    def exit_scope(self):
+        self._qasm_variables_stack.pop()
 
     @property
     def num_qubits(self):
@@ -36,7 +52,10 @@ class QasmSimulator:
 
     def run_qasm(self, qasm: str):
         program = parse(qasm)
-        for statement in program.statements:
+        self.run_program(program.statements)
+
+    def run_program(self, statements: List[Statement]):
+        for statement in statements:
             self.handle_statement(statement)
 
     def handle_statement(self, statement):
@@ -44,12 +63,16 @@ class QasmSimulator:
             self.handle_qubit_declaration(statement)
         elif isinstance(statement, ClassicalDeclaration):
             self.handle_classical_declaration(statement)
+        elif isinstance(statement, ClassicalAssignment):
+            self.handle_classical_assignment(statement)
+        elif isinstance(statement, BranchingStatement):
+            self.handle_branching_statement(statement)
         else:
             raise NotImplementedError(
                 f"Handling statement not implemented for statement: {statement}"
             )
 
-    def handle_qubit_declaration(self, statement):
+    def handle_qubit_declaration(self, statement: QubitDeclaration):
         """
         Qubits and qubit registers can be declared, but only initialized using `reset`.
         New qubit declarations will automatically be mapped to the next contiguous
@@ -63,7 +86,7 @@ class QasmSimulator:
         new_qubits[:] = np.nan
         self.qubits = np.append(self.qubits, new_qubits)
 
-    def handle_classical_declaration(self, statement):
+    def handle_classical_declaration(self, statement: ClassicalDeclaration):
         type_map = {
             BitType: BitVariable,
             IntType: IntVariable,
@@ -71,6 +94,7 @@ class QasmSimulator:
             FloatType: FloatVariable,
             AngleType: AngleVariable,
             BoolType: BoolVariable,
+            ComplexType: ComplexVariable,
         }
         variable_class = type_map[type(statement.type)]
         name = statement.identifier.name
@@ -81,6 +105,26 @@ class QasmSimulator:
            else None
         )
         self.qasm_variables[name] = variable_class(name, value, size)
+
+    def handle_classical_assignment(self, statement: ClassicalAssignment):
+        lvalue = statement.lvalue.name
+        variable = self.qasm_variables.get(lvalue)
+        if not variable:
+            raise NameError(f"Variable '{lvalue}' not in scope.")
+        rvalue = self.evaluate_expression(statement.rvalue)
+        variable.assign_value(rvalue)
+
+    def handle_branching_statement(self, statement: BranchingStatement):
+        print(self._qasm_variables_stack)
+        self.enter_scope()
+        print(self._qasm_variables_stack)
+        if self.evaluate_expression(statement.condition):
+            self.run_program(statement.if_block)
+        else:
+            self.run_program(statement.else_block)
+        print(self._qasm_variables_stack)
+        self.exit_scope()
+        print(self._qasm_variables_stack)
 
     @staticmethod
     def evaluate_expression(expression):

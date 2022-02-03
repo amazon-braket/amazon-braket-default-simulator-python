@@ -3,7 +3,7 @@ import pytest
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer, IntVariable, UintVariable, \
-    FloatVariable, AngleVariable, BoolVariable
+    FloatVariable, AngleVariable, BoolVariable, ComplexVariable
 from braket.default_simulator.openqasm_simulator import QasmSimulator
 
 
@@ -65,7 +65,6 @@ def test_qubit_expression_declaration(size):
     """
     simulator = QasmSimulator()
     simulator.run_qasm(qasm)
-    print(parse(qasm))
 
     assert simulator.qasm_variables == {
         "a": QubitPointer("a", slice(0, 6), size=6),
@@ -156,7 +155,6 @@ def test_int_declaration():
     int[5] neg = -4;
     int[3] pos_overflow = 5;
     int[3] neg_overflow = -6;
-    const int[8] co = pos;
     """
     simulator = QasmSimulator()
     pos_overflow = (
@@ -349,4 +347,149 @@ def test_bool_declaration():
         "f_bool": BoolVariable("f_bool", False),
         "f_int": BoolVariable("f_int", False),
         "f_float": BoolVariable("f_float", False),
+    }
+
+
+# def test_complex_declaration():
+#     qasm = """
+#     complex[int[8]] real = 1 + 2im;
+#     """
+#     simulator = QasmSimulator()
+#     simulator.run_qasm(qasm)
+#
+#     assert simulator.qasm_variables == {
+#         "uninitialized": ComplexVariable("uninitialized", None),
+#         "real": ComplexVariable("real", 1),
+#         "t_int": BoolVariable("t_int", True),
+#         "t_float": BoolVariable("t_float", True),
+#         "f_bool": BoolVariable("f_bool", False),
+#         "f_int": BoolVariable("f_int", False),
+#         "f_float": BoolVariable("f_float", False),
+#     }
+
+
+def test_assign_declared():
+    qasm = """
+    int[16] int_var;
+    float[16] float_var;
+    bit[2] bit_var;
+    uint[5] uint_var;
+    angle[10] angle_var;
+    bool bool_var;
+    int_var = -2;
+    float_var = 2;
+    bit_var = "10";
+    uint_var = 7;
+    angle_var = π;
+    bool_var = false;
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "int_var": IntVariable("int_var", -2, 16),
+        "float_var": FloatVariable("float_var", 2.0, 16),
+        "bit_var": BitVariable("bit_var", "10", 2),
+        "uint_var": UintVariable("uint_var", 7, 5),
+        "angle_var": AngleVariable("angle_var", np.pi, 10),
+        "bool_var": BoolVariable("bool_var", False),
+    }
+
+
+def test_assign_instantiated():
+    qasm = """
+    int[16] int_var = 1;
+    float[16] float_var = 1.0;
+    bit[2] bit_var = "00";
+    uint[5] uint_var = 3;
+    angle[10] angle_var = π / 3;
+    bool bool_var = true;
+    int_var = -2;
+    float_var = 2;
+    bit_var = "10";
+    uint_var = 7;
+    angle_var = π;
+    bool_var = false;
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "int_var": IntVariable("int_var", -2, 16),
+        "float_var": FloatVariable("float_var", 2.0, 16),
+        "bit_var": BitVariable("bit_var", "10", 2),
+        "uint_var": UintVariable("uint_var", 7, 5),
+        "angle_var": AngleVariable("angle_var", np.pi, 10),
+        "bool_var": BoolVariable("bool_var", False),
+    }
+
+
+def test_assign_undeclared():
+    qasm = """
+    x = 2;
+    """
+    not_in_scope = (
+        "Variable 'x' not in scope."
+    )
+    simulator = QasmSimulator()
+    with pytest.raises(NameError, match=not_in_scope):
+        simulator.run_qasm(qasm)
+
+
+@pytest.mark.parametrize(
+    "conditional", ("true", "false")
+)
+def test_if(conditional):
+    qasm = f"""
+    int[16] x = 2;
+    if ({conditional}) {{
+        x = 1;
+    }}
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "x": IntVariable("x", 1 if conditional == "true" else 2, 16),
+    }
+
+
+@pytest.mark.parametrize(
+    "conditional", ("true", "false")
+)
+def test_if_else(conditional):
+    qasm = f"""
+    int[16] x;
+    if ({conditional}) {{
+        x = 1;
+    }} else {{
+        x = 2;
+    }}
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "x": IntVariable("x", 1 if conditional == "true" else 2, 16),
+    }
+
+
+def test_if_scope():
+    qasm = f"""
+        int[16] locally_overridden = 1;
+        if (true) {{
+            int[16] locally_overridden = 2;
+        }}
+
+        int[16] globally_changed = 1;
+        if (true) {{
+            globally_changed = 2;
+        }}
+        """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "locally_overridden": IntVariable("locally_overridden", 1, 16),
+        "globally_changed": IntVariable("globally_changed", 2, 16),
     }

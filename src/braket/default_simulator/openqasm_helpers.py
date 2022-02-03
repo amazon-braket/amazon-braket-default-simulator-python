@@ -13,7 +13,7 @@ class QasmVariable(ABC):
         if size is not None:
             self.validate_size(size)
         if value is not None:
-            self.validate_value(value, size)
+            self.assign_value(value)
 
     supports_size = True
 
@@ -30,8 +30,8 @@ class QasmVariable(ABC):
     def size(self):
         return self._size
 
-    def validate_value(self, value, size):
-        """ Validate value is valid for variable """
+    def assign_value(self, value):
+        """ Validate value is valid and assign to variable """
 
     def validate_size(self, size):
         """ Validate size is valid for variable """
@@ -75,16 +75,16 @@ class BitVariable(QasmVariable):
             else:
                 return int(self._value)
 
-    def validate_value(self, value, size):
-        if size:
+    def assign_value(self, value):
+        if self.size:
             try:
-                assert len(value) == size
+                assert len(value) == self.size
                 self._value = int(f"0b{value}", base=2)
             except (AssertionError, ValueError, TypeError):
                 raise ValueError(
                     f"Invalid value to initialize bit register '{self.name}': {repr(value)}. "
                     "Provided value must be a binary string of length equal to "
-                    f"given size, {size}."
+                    f"given size, {self.size}."
                 )
         else:
             if value not in (True, False):
@@ -114,7 +114,7 @@ class IntVariable(QasmVariable):
         if self._value is not None:
             return np.sign(self._value) * (np.abs(self._value) % self.limit)
 
-    def validate_value(self, value, size):
+    def assign_value(self, value):
         if int(value) != value:
             raise ValueError(
                 f"Not a valid value for {self.data_type} '{self.name}': {repr(value)}"
@@ -151,9 +151,9 @@ class FloatVariable(QasmVariable):
     def data_type(self):
         return "float"
 
-    def validate_value(self, value, size):
+    def assign_value(self, value):
         try:
-            self._value = np.array(value, dtype=np.dtype(f"float{size}"))
+            self._value = np.array(value, dtype=np.dtype(f"float{self.size}"))
         except ValueError:
             raise ValueError(
                 f"Not a valid value for {self.data_type} '{self.name}': {repr(value)}"
@@ -179,11 +179,11 @@ class AngleVariable(QasmVariable):
     @property
     def value(self):
         if self._value is not None:
-            return (2 * np.pi * self._value) / (2 ** self._size)
+            return (2 * np.pi * self._value) / (2 ** self.size)
 
-    def validate_value(self, value, size):
+    def assign_value(self, value):
         try:
-            self._value = int((value % (2 * np.pi)) / (2 * np.pi) * 2 ** self._size)
+            self._value = int((value % (2 * np.pi)) / (2 * np.pi) * 2 ** self.size)
         except (ValueError, TypeError):
             raise ValueError(
                 f"Not a valid value for {self.data_type} '{self.name}': {repr(value)}"
@@ -201,5 +201,21 @@ class BoolVariable(QasmVariable):
     def data_type(self):
         return "bool"
 
-    def validate_value(self, value, size):
+    def assign_value(self, value):
+        self._value = bool(value)
+
+
+class ComplexVariable(QasmVariable):
+    # WIP, parser errors with complex values
+    """
+    Complex values with components of type Int, Uint, Float, and Angle
+    """
+
+    supports_size = False
+
+    @property
+    def data_type(self):
+        return "complex"
+
+    def assign_value(self, value):
         self._value = bool(value)
