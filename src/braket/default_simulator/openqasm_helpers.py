@@ -219,3 +219,40 @@ class ComplexVariable(QasmVariable):
 
     def assign_value(self, value):
         self._value = bool(value)
+
+
+class ArrayVariable(QasmVariable):
+
+    def __init__(self, name, value=None, size=None, subtype=None):
+        super().__init__(name, value, size)
+
+    @property
+    @abstractmethod
+    def data_type(self):
+        """ Name of the variable type """
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def size(self):
+        return self._size
+
+    def assign_value(self, value):
+        """ Validate value is valid and assign to variable """
+
+    def validate_size(self, size):
+        """ Validate size is valid for variable """
+        if not (size > 0 and size == int(size)):
+            raise ValueError(
+                f"{self.data_type.capitalize()} size must be a positive integer. "
+                f"Provided size '{size}' for {self.data_type} '{self.name}'."
+            )
+
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        return f"{class_name}(name={self.name}, value={self.value}, size={self._size})"
+
+    def __eq__(self, other):
+        return repr(self) == repr(other)

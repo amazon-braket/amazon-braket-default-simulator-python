@@ -350,22 +350,22 @@ def test_bool_declaration():
     }
 
 
-# def test_complex_declaration():
-#     qasm = """
-#     complex[int[8]] real = 1 + 2im;
-#     """
-#     simulator = QasmSimulator()
-#     simulator.run_qasm(qasm)
-#
-#     assert simulator.qasm_variables == {
-#         "uninitialized": ComplexVariable("uninitialized", None),
-#         "real": ComplexVariable("real", 1),
-#         "t_int": BoolVariable("t_int", True),
-#         "t_float": BoolVariable("t_float", True),
-#         "f_bool": BoolVariable("f_bool", False),
-#         "f_int": BoolVariable("f_int", False),
-#         "f_float": BoolVariable("f_float", False),
-#     }
+def test_complex_declaration():
+    qasm = """
+    complex[int[8]] real = 1 + 2im;
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "uninitialized": ComplexVariable("uninitialized", None),
+        "real": ComplexVariable("real", 1),
+        "t_int": BoolVariable("t_int", True),
+        "t_float": BoolVariable("t_float", True),
+        "f_bool": BoolVariable("f_bool", False),
+        "f_int": BoolVariable("f_int", False),
+        "f_float": BoolVariable("f_float", False),
+    }
 
 
 def test_assign_declared():
@@ -482,6 +482,19 @@ def test_if_scope():
             int[16] locally_overridden = 2;
             globally_changed = locally_overridden;
         }}
+        """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "locally_overridden": IntVariable("locally_overridden", 1, 16),
+        "globally_changed": IntVariable("globally_changed", 2, 16),
+    }
+
+
+def test_array():
+    qasm = f"""
+        array[int[32], 5] myArray = {{0, 1, 2, 3, 4}};
         """
     simulator = QasmSimulator()
     simulator.run_qasm(qasm)

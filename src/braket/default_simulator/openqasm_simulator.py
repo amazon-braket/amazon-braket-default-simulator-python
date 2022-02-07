@@ -12,12 +12,12 @@ from openqasm.ast import (
     Constant,
     ConstantName,
     BitType, IntType, UnaryExpression, UnaryOperator, UintType, FloatType, AngleType, BinaryExpression, Identifier,
-    BoolType, ClassicalAssignment, ComplexType, BranchingStatement, Statement,
+    BoolType, ClassicalAssignment, ComplexType, BranchingStatement, Statement, ArrayType,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import BitVariable, QubitPointer, IntVariable, UintVariable, \
-    FloatVariable, AngleVariable, BoolVariable, ComplexVariable
+    FloatVariable, AngleVariable, BoolVariable, ComplexVariable, ArrayVariable
 
 
 class QasmSimulator:
@@ -80,6 +80,7 @@ class QasmSimulator:
         elif isinstance(statement, BranchingStatement):
             self.handle_branching_statement(statement)
         else:
+            print(statement)
             raise NotImplementedError(
                 f"Handling statement not implemented for statement: {statement}"
             )
@@ -108,6 +109,7 @@ class QasmSimulator:
             AngleType: AngleVariable,
             BoolType: BoolVariable,
             ComplexType: ComplexVariable,
+            ArrayType: ArrayVariable,
         }
         variable_class = type_map[type(statement.type)]
         name = statement.identifier.name
