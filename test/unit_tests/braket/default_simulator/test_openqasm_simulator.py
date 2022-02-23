@@ -5,7 +5,7 @@ import pytest
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import Bit, QubitPointer, Int, Uint, \
-    Float, Angle, Bool, Complex, Array
+    Float, Angle, Bool, Complex, Array, sample_qubit
 from braket.default_simulator.openqasm_simulator import QasmSimulator
 
 
@@ -603,3 +603,8 @@ def test_bad_size_array():
     simulator = QasmSimulator()
     with pytest.raises(ValueError, match=bad_size):
         simulator.run_qasm(qasm)
+
+
+def test_sample_qubit():
+    assert sample_qubit([1, 0]) == 0
+    assert sample_qubit([0, 1]) == 1

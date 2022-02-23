@@ -230,4 +230,5 @@ class Array(QasmType):
 
 
 def sample_qubit(qubit):
-    return 0
+    p1 = qubit[1] ** 2
+    return np.random.binomial(1, p1)
