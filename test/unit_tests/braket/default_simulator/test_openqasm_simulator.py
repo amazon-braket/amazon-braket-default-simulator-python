@@ -22,11 +22,10 @@ def test_qubit_declaration():
         "qs": QubitPointer(slice(1, 5), 4),
     }
 
-    assert np.isnan(simulator.get_qubit_state("q"))
-
+    assert np.all(np.isnan(simulator.get_qubit_state("q")))
     assert np.all(np.isnan(simulator.get_qubit_state("qs")))
-    assert simulator.get_qubit_state("qs").shape == (4,)
-    assert simulator.qubits.shape == (5,)
+    assert simulator.get_qubit_state("qs").shape == (4, 2)
+    assert simulator.qubits.shape == (5, 2)
 
 
 @pytest.mark.parametrize(
@@ -89,8 +88,40 @@ def test_qubit_reset():
         "qs": QubitPointer(slice(1, 5), 4),
     }
 
-    assert simulator.get_qubit_state("q") == 0
-    assert np.all(simulator.get_qubit_state("qs") == [0, 0, 0, 0])
+    assert np.all(simulator.get_qubit_state("q") == [[1, 0]])
+    assert np.all(simulator.get_qubit_state("qs") == [
+        [1, 0], [1, 0], [1, 0], [1, 0]
+    ])
+
+
+def test_qubit_measure():
+    qasm = """
+    qubit q;
+    qubit[4] qs;
+    
+    bit b;
+    bit[4] bs;
+    
+    reset q;
+    reset qs;
+    
+    b = measure q;
+    bs = measure qs;
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "q": QubitPointer(0),
+        "qs": QubitPointer(slice(1, 5), 4),
+        "b": Bit(0),
+        "bs": Bit("0000", 4),
+    }
+
+    assert np.all(simulator.get_qubit_state("q") == [[1, 0]])
+    assert np.all(simulator.get_qubit_state("qs") == [
+        [1, 0], [1, 0], [1, 0], [1, 0]
+    ])
 
 
 def test_bit_declaration():

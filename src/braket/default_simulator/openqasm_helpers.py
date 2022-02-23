@@ -228,5 +228,6 @@ class Array(QasmType):
     def size(self):
         return self._size
 
-    # def assign_value(self, value):
-    #     """ Validate value is valid and assign to variable """
+
+def sample_qubit(qubit):
+    return 0

@@ -13,11 +13,12 @@ from openqasm.ast import (
     ConstantName,
     BitType, IntType, UnaryExpression, UintType, FloatType, AngleType, BinaryExpression, Identifier,
     BoolType, ClassicalAssignment, ComplexType, BranchingStatement, Statement, ArrayType, ArrayLiteral, QuantumReset,
+    QuantumMeasurementAssignment,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import Bit, QubitPointer, Int, Uint, \
-    Float, Angle, Bool, Complex, Array
+    Float, Angle, Bool, Complex, Array, sample_qubit
 
 
 class QasmSimulator:
@@ -27,7 +28,7 @@ class QasmSimulator:
     """
 
     def __init__(self):
-        self.qubits = np.array([], dtype=complex)
+        self.qubits = np.empty((0, 2), dtype=complex)
         self._qasm_variables_stack = [{}]
 
     @property
@@ -56,10 +57,13 @@ class QasmSimulator:
 
     @property
     def num_qubits(self):
-        return len(self.qubits)
+        return self.qubits.shape[0]
 
     def get_qubit_state(self, quantum_variable):
         return self.qubits[self.get_variable(quantum_variable).value]
+
+    def reset_qubits(self, quantum_variable):
+        self.qubits[self.get_variable(quantum_variable).value] = [1, 0]
 
     def run_qasm(self, qasm: str):
         program = parse(qasm)
@@ -80,6 +84,8 @@ class QasmSimulator:
             self.handle_branching_statement(statement)
         elif isinstance(statement, QuantumReset):
             self.handle_quantum_reset(statement)
+        elif isinstance(statement, QuantumMeasurementAssignment):
+            self.handle_quantum_measurement_assignment(statement)
         else:
             print(statement)
             raise NotImplementedError(
@@ -96,17 +102,41 @@ class QasmSimulator:
         size = self.evaluate_expression(statement.size)
         index = slice(self.num_qubits, self.num_qubits + size) if size else self.num_qubits
         self.declare_variable(name, QubitPointer(index, size))
-        new_qubits = np.empty(size or 1)
-        new_qubits[:] = np.nan
-        self.qubits = np.append(self.qubits, new_qubits)
+        new_qubits = np.empty(((size or 1), 2))
+        new_qubits[:] = [np.nan, np.nan]
+        self.qubits = np.append(self.qubits, new_qubits, axis=0)
 
     def handle_quantum_reset(self, statement: QuantumReset):
-        print(statement)
-        print(self.qubits)
-        target_index = self.get_variable(statement.qubits.name).value
-        print(target_index)
-        self.qubits[target_index] = 0
-        print(self.qubits)
+        self.reset_qubits(statement.qubits.name)
+
+    def handle_quantum_measurement_assignment(self, statement: QuantumMeasurementAssignment):
+        assignment_target = statement.target.name
+        measurement_target = statement.measure_instruction.qubit.name
+        assignment_target_variable = self.get_variable(assignment_target)
+        measurement_target_variable = self.get_variable(measurement_target)
+
+        # assert types match
+        if assignment_target_variable.size != measurement_target_variable.size:
+            raise ValueError(
+                "Measurement target size must match assignment target size."
+            )
+
+        # sample and collapse quantum state
+        if not measurement_target_variable.size:
+            sampled = sample_qubit(self.get_qubit_state(measurement_target))
+            self.qubits[measurement_target_variable.value] = (np.array([0, 1]) == sampled)
+        else:
+            sampled = ''.join(
+                str(sample_qubit(q)) for q in self.get_qubit_state(measurement_target)
+            )
+            sampled_array = np.array([[int(m)] for m in sampled])
+            self.qubits[measurement_target_variable.value] = (
+                sampled_array == np.repeat([[0, 1]], measurement_target_variable.size, axis=0)
+            )
+
+        # assign result to assignment target
+        assignment_target_variable.assign_value(sampled)
+
 
     def handle_classical_declaration(self, statement: ClassicalDeclaration):
         if isinstance(statement.type, ArrayType):
