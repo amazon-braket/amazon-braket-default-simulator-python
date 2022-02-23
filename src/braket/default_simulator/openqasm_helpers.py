@@ -1,5 +1,6 @@
 import warnings
-from abc import ABC, abstractmethod
+from abc import ABC
+from typing import List, Union, TypeVar, Generic, Tuple
 
 import numpy as np
 
@@ -192,19 +193,37 @@ class Complex(QasmType):
     """
 
     supports_size = False
-    data_type = "complex"
 
-    def assign_value(self, value):
-        self._value = bool(value)
+    def __init__(
+        self,
+        value: Tuple[QasmType, QasmType] = None,
+        base_type: QasmType = None,
+    ):
+        self._base_type = base_type
+        super().__init__(value)
+
+    @property
+    def data_type(self):
+        """ Name of the variable type """
+        return f"complex {self._base_type.data_type}"
+
+
+QasmArrayType = List[Union['QasmArrayType', QasmType]]
 
 
 class Array(QasmType):
     """
     Value is an array of QasmTypes, size is a list of integers
-    giving the dimensions of the array
+    giving the dimensions of the array, base_type is uninitialized
+    type value of some QasmType
     """
 
-    def __init__(self, value=None, size=None, base_type=None):
+    def __init__(
+        self,
+        value: QasmArrayType = None,
+        size: List[int] = None,
+        base_type: QasmType = None,
+    ):
         self._base_type = base_type
         super().__init__(value, size)
 
@@ -218,7 +237,7 @@ class Array(QasmType):
     @property
     def data_type(self):
         """ Name of the variable type """
-        return f"{self._base_type[0].data_type} array"
+        return f"{self._base_type.data_type} array"
 
     @property
     def value(self):
@@ -230,5 +249,5 @@ class Array(QasmType):
 
 
 def sample_qubit(qubit):
-    p1 = qubit[1] ** 2
+    p1 = np.absolute(qubit[1]) ** 2
     return np.random.binomial(1, p1)

@@ -2,7 +2,6 @@ import re
 
 import numpy as np
 import pytest
-from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import Bit, QubitPointer, Int, Uint, \
     Float, Angle, Bool, Complex, Array, sample_qubit
@@ -403,19 +402,15 @@ def test_bool_declaration():
 
 # def test_complex_declaration():
 #     qasm = """
-#     complex[int[8]] real = 1 + 2im;
+#     complex[int[8]] uninitialized;
+#     # complex[int[8]] comp = 1 + 2im;
 #     """
 #     simulator = QasmSimulator()
 #     simulator.run_qasm(qasm)
 #
 #     assert simulator.qasm_variables == {
-#         "uninitialized": ComplexVariable(None),
-#         "real": ComplexVariable(1),
-#         "t_int": BoolVariable(True),
-#         "t_float": BoolVariable(True),
-#         "f_bool": BoolVariable(False),
-#         "f_int": BoolVariable(False),
-#         "f_float": BoolVariable(False),
+#         "uninitialized": Complex(None, Int(size=8)),
+#         "comp": Complex((Int(1, 8), Int(2, 8)), Int(size=8)),
 #     }
 
 

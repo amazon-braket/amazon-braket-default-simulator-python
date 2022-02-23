@@ -151,6 +151,7 @@ class QasmSimulator:
                 BoolType: Bool,
                 ComplexType: Complex,
             }
+            print(statement)
             variable_class = type_map[type(statement.type)]
             name = statement.identifier.name
             value = self.evaluate_expression(statement.init_expression)
@@ -194,9 +195,11 @@ class QasmSimulator:
             else None
         )
 
+        base_type_template = base_type_variable_class(value=None, size=base_type_size)
+
         self.declare_variable(
             name,
-            Array(values, dimensions, (base_type_variable_class, base_type_size)),
+            Array(values, dimensions, base_type_template),
         )
 
     def handle_classical_assignment(self, statement: ClassicalAssignment):
