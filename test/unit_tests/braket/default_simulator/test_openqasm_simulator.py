@@ -73,6 +73,26 @@ def test_qubit_expression_declaration(size):
     }
 
 
+def test_qubit_reset():
+    qasm = """
+    qubit q;
+    qubit[4] qs;
+    
+    reset q;
+    reset qs;
+    """
+    simulator = QasmSimulator()
+    simulator.run_qasm(qasm)
+
+    assert simulator.qasm_variables == {
+        "q": QubitPointer(0),
+        "qs": QubitPointer(slice(1, 5), 4),
+    }
+
+    assert simulator.get_qubit_state("q") == 0
+    assert np.all(simulator.get_qubit_state("qs") == [0, 0, 0, 0])
+
+
 def test_bit_declaration():
     qasm = """
     bit single_uninitialized;

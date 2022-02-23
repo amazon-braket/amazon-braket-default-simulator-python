@@ -11,8 +11,8 @@ from openqasm.ast import (
     StringLiteral,
     Constant,
     ConstantName,
-    BitType, IntType, UnaryExpression, UnaryOperator, UintType, FloatType, AngleType, BinaryExpression, Identifier,
-    BoolType, ClassicalAssignment, ComplexType, BranchingStatement, Statement, ArrayType, ArrayLiteral,
+    BitType, IntType, UnaryExpression, UintType, FloatType, AngleType, BinaryExpression, Identifier,
+    BoolType, ClassicalAssignment, ComplexType, BranchingStatement, Statement, ArrayType, ArrayLiteral, QuantumReset,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
@@ -78,6 +78,8 @@ class QasmSimulator:
             self.handle_classical_assignment(statement)
         elif isinstance(statement, BranchingStatement):
             self.handle_branching_statement(statement)
+        elif isinstance(statement, QuantumReset):
+            self.handle_quantum_reset(statement)
         else:
             print(statement)
             raise NotImplementedError(
@@ -93,11 +95,18 @@ class QasmSimulator:
         name = statement.qubit.name
         size = self.evaluate_expression(statement.size)
         index = slice(self.num_qubits, self.num_qubits + size) if size else self.num_qubits
-        # self.qasm_variables[name] = QubitPointer(name, index, size)
         self.declare_variable(name, QubitPointer(index, size))
         new_qubits = np.empty(size or 1)
         new_qubits[:] = np.nan
         self.qubits = np.append(self.qubits, new_qubits)
+
+    def handle_quantum_reset(self, statement: QuantumReset):
+        print(statement)
+        print(self.qubits)
+        target_index = self.get_variable(statement.qubits.name).value
+        print(target_index)
+        self.qubits[target_index] = 0
+        print(self.qubits)
 
     def handle_classical_declaration(self, statement: ClassicalDeclaration):
         if isinstance(statement.type, ArrayType):
