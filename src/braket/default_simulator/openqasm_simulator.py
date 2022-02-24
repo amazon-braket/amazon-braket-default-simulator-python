@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import List
+from typing import List, Tuple, Iterable
 
 import numpy as np
 from openqasm.ast import (
@@ -13,12 +13,12 @@ from openqasm.ast import (
     ConstantName,
     BitType, IntType, UnaryExpression, UintType, FloatType, AngleType, BinaryExpression, Identifier,
     BoolType, ClassicalAssignment, ComplexType, BranchingStatement, Statement, ArrayType, ArrayLiteral, QuantumReset,
-    QuantumMeasurementAssignment,
+    QuantumMeasurementAssignment, QuantumGate, QuantumGateDefinition, Expression,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm_helpers import Bit, QubitPointer, Int, Uint, \
-    Float, Angle, Bool, Complex, Array, sample_qubit
+    Float, Angle, Bool, Complex, Array, sample_qubit, Gate, GateCall, Number
 
 
 class QasmSimulator:
@@ -86,6 +86,10 @@ class QasmSimulator:
             self.handle_quantum_reset(statement)
         elif isinstance(statement, QuantumMeasurementAssignment):
             self.handle_quantum_measurement_assignment(statement)
+        elif isinstance(statement, QuantumGateDefinition):
+            self.handle_quantum_gate_definition(statement)
+        elif isinstance(statement, QuantumGate):
+            self.handle_quantum_gate(statement)
         else:
             print(statement)
             raise NotImplementedError(
@@ -131,12 +135,11 @@ class QasmSimulator:
             )
             sampled_array = np.array([[int(m)] for m in sampled])
             self.qubits[measurement_target_variable.value] = (
-                sampled_array == np.repeat([[0, 1]], measurement_target_variable.size, axis=0)
+                    sampled_array == np.repeat([[0, 1]], measurement_target_variable.size, axis=0)
             )
 
         # assign result to assignment target
         assignment_target_variable.assign_value(sampled)
-
 
     def handle_classical_declaration(self, statement: ClassicalDeclaration):
         if isinstance(statement.type, ArrayType):
@@ -151,14 +154,13 @@ class QasmSimulator:
                 BoolType: Bool,
                 ComplexType: Complex,
             }
-            print(statement)
             variable_class = type_map[type(statement.type)]
             name = statement.identifier.name
             value = self.evaluate_expression(statement.init_expression)
             size = (
-               self.evaluate_expression(statement.type.size)
-               if variable_class.supports_size
-               else None
+                self.evaluate_expression(statement.type.size)
+                if variable_class.supports_size
+                else None
             )
             self.declare_variable(name, variable_class(value, size))
 
@@ -175,9 +177,9 @@ class QasmSimulator:
             ComplexType: Complex,
         }[type(base_type)]
         base_type_size = (
-           self.evaluate_expression(base_type.size)
-           if base_type_variable_class.supports_size
-           else None
+            self.evaluate_expression(base_type.size)
+            if base_type_variable_class.supports_size
+            else None
         )
         dimensions = [dim.value for dim in statement.type.dimensions]
 
@@ -218,12 +220,103 @@ class QasmSimulator:
             self.run_program(statement.else_block)
         self.exit_scope()
 
-    def evaluate_expression(self, expression):
+    def handle_quantum_gate_definition(self, statement: QuantumGateDefinition):
+        name = statement.name.name
+        params = [arg.name for arg in statement.arguments]
+        targets = [target.name for target in statement.qubits]
+        body = []
+
+        # need to parse body
+        # decision: gates in body are stored by reference
+
+        for directive in statement.body:
+            if isinstance(directive, QuantumGate):
+                body.append(self.parse_quantum_gate(directive))
+            else:
+                raise NotImplementedError("mods and stuff")
+
+        self.declare_variable(name, Gate(params, targets, body))
+        # print(self.get_variable(name))
+
+    def parse_quantum_gate(self, statement: QuantumGate):
+        name = statement.name.name
+        params = statement.arguments
+        targets = statement.qubits
+        modifiers = statement.modifiers
+
+        return GateCall(name, params, targets, modifiers)
+
+    def handle_quantum_gate(self, statement: QuantumGate):
+        name = statement.name.name
+        params = statement.arguments
+        targets = statement.qubits
+        modifiers = statement.modifiers
+
+        gate_call = GateCall(name, params, targets, modifiers)
+
+        self.execute_gate_call(gate_call)
+
+    def execute_gate_call(self, gate_call: GateCall):
+        params = [self.evaluate_expression(param, unwrap=True) for param in gate_call.params]
+        targets = [self.evaluate_expression(target) for target in gate_call.targets]
+
+        target_sizes = [t.size for t in targets if t.size is not None]
+        if target_sizes:
+            register_size = target_sizes[0]
+            assert all(size == register_size for size in target_sizes), (
+                "unmatched target sizes"
+            )
+        else:
+            register_size = 1
+
+        for i in range(register_size):
+            unsliced_targets = [
+                (
+                    QubitPointer(t.value)
+                    if not t.size
+                    # need to generalize when implementing qreg aliasing
+                    else QubitPointer(t.value.start + i)
+                ) for t in targets
+            ]
+
+            if gate_call.name == "U":
+                assert len(unsliced_targets) == 1, "built-in unitary is a single qubit gate"
+                self.execute_builtin_unitary(unsliced_targets[0], params)
+            else:
+                gate = self.get_variable(gate_call.name)
+
+                self.enter_scope()
+
+                assert len(gate.params) == len(params), "different number of params"
+                for param, value in zip(gate.params, params):
+                    self.declare_variable(param, Number(value))
+
+                assert len(gate.targets) == len(targets), "different number of targets"
+                for target, value in zip(gate.targets, unsliced_targets):
+                    self.declare_variable(target, value)
+
+                for directive in gate.body:
+                    if isinstance(directive, GateCall):
+                        self.execute_gate_call(directive)
+                    else:
+                        raise NotImplementedError("mods and stuff")
+
+    def execute_builtin_unitary(
+        self, qubit_pointer: QubitPointer, params: Iterable[complex]
+    ):
+        θ, ϕ, λ = params
+        unitary = np.array([
+            [np.cos(θ / 2), -np.exp(1j * λ) * np.sin(θ / 2)],
+            [np.exp(1j * ϕ) * np.sin(θ / 2), np.exp(1j * (ϕ + λ)) * np.cos(θ / 2)],
+        ])
+        self.qubits[qubit_pointer.value] = unitary @ self.qubits[qubit_pointer.value]
+
+    def evaluate_expression(self, expression, unwrap=False):
         if expression is None:
             return None
 
         elif isinstance(expression, (
-            IntegerLiteral, RealLiteral, BooleanLiteral, StringLiteral
+                IntegerLiteral, RealLiteral, BooleanLiteral, StringLiteral
         )):
             return expression.value
 
@@ -236,7 +329,7 @@ class QasmSimulator:
             return constant_values.get(expression.name)
 
         elif isinstance(expression, UnaryExpression):
-            base_value = self.evaluate_expression(expression.expression)
+            base_value = self.evaluate_expression(expression.expression, unwrap)
             operator = expression.op
             if operator.name == "-":
                 return -base_value
@@ -246,8 +339,8 @@ class QasmSimulator:
                 return type(base_value)(not base_value)
 
         elif isinstance(expression, BinaryExpression):
-            lhs = self.evaluate_expression(expression.lhs)
-            rhs = self.evaluate_expression(expression.rhs)
+            lhs = self.evaluate_expression(expression.lhs, unwrap)
+            rhs = self.evaluate_expression(expression.rhs, unwrap)
             operator = expression.op
             if operator.name == "*":
                 return lhs * rhs
@@ -259,7 +352,8 @@ class QasmSimulator:
                 return lhs - rhs
 
         elif isinstance(expression, Identifier):
-            return self.get_variable(expression.name).value
+            variable = self.get_variable(expression.name)
+            return variable.value if unwrap else variable
 
         else:
             raise NotImplementedError

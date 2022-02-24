@@ -6,6 +6,17 @@ import numpy as np
 
 
 class QasmType(ABC):
+    data_type = None    # Name of the variable type
+
+    __slots__ = ()
+
+    def __eq__(self, other):
+        return repr(self) == repr(other)
+
+
+class QasmPrimitiveType(QasmType):
+
+    __slots__ = ('_value', '_size')
 
     def __init__(self, value=None, size=None):
         self._value = value
@@ -16,7 +27,6 @@ class QasmType(ABC):
             self.assign_value(value)
 
     supports_size = True
-    data_type = None    # Name of the variable type
 
     @property
     def value(self):
@@ -41,17 +51,14 @@ class QasmType(ABC):
         class_name = self.__class__.__name__
         return f"{class_name}(value={self.value}, size={self._size})"
 
-    def __eq__(self, other):
-        return repr(self) == repr(other)
 
-
-class QubitPointer(QasmType):
+class QubitPointer(QasmPrimitiveType):
     """ Qubit pointers """
 
     data_type = "qubit register"
 
 
-class Bit(QasmType):
+class Bit(QasmPrimitiveType):
     """
     Single bits can be initialized with true/false, or 0/1.
     Bit registers can be initialized with a binary string of correct length.
@@ -87,7 +94,7 @@ class Bit(QasmType):
             self._value = bool(value)
 
 
-class Int(QasmType):
+class Int(QasmPrimitiveType):
     """
     Integers have one sign bit and (size - 1) integer bits
     Valid values are in [-2**(size - 1) + 1, 2**(size - 1) - 1]
@@ -105,6 +112,8 @@ class Int(QasmType):
             return np.sign(self._value) * (np.abs(self._value) % self.limit)
 
     def assign_value(self, value):
+        if isinstance(value, QasmPrimitiveType):
+            value = value.value
         if int(value) != value:
             raise ValueError(
                 f"Not a valid value for {self.data_type}: {repr(value)}"
@@ -130,7 +139,7 @@ class Uint(Int):
         return 2 ** self.size
 
 
-class Float(QasmType):
+class Float(QasmPrimitiveType):
     """
     Floats must have a size in { 16, 32, 64, 128 }.
     """
@@ -153,7 +162,7 @@ class Float(QasmType):
             )
 
 
-class Angle(QasmType):
+class Angle(QasmPrimitiveType):
     """
     Fixed point angles
     """
@@ -174,7 +183,7 @@ class Angle(QasmType):
             )
 
 
-class Bool(QasmType):
+class Bool(QasmPrimitiveType):
     """
     Boolean values
     """
@@ -186,7 +195,7 @@ class Bool(QasmType):
         self._value = bool(value)
 
 
-class Complex(QasmType):
+class Complex(QasmPrimitiveType):
     # WIP, parser errors with complex values
     """
     Complex values with components of type Int, Uint, Float, and Angle
@@ -196,8 +205,8 @@ class Complex(QasmType):
 
     def __init__(
         self,
-        value: Tuple[QasmType, QasmType] = None,
-        base_type: QasmType = None,
+        value: Tuple[QasmPrimitiveType, QasmPrimitiveType] = None,
+        base_type: QasmPrimitiveType = None,
     ):
         self._base_type = base_type
         super().__init__(value)
@@ -208,21 +217,23 @@ class Complex(QasmType):
         return f"complex {self._base_type.data_type}"
 
 
-QasmArrayType = List[Union['QasmArrayType', QasmType]]
+QasmArrayType = List[Union['QasmArrayType', QasmPrimitiveType]]
 
 
-class Array(QasmType):
+class Array(QasmPrimitiveType):
     """
     Value is an array of QasmTypes, size is a list of integers
     giving the dimensions of the array, base_type is uninitialized
     type value of some QasmType
     """
 
+    __slots__ = ('_base_type',)
+
     def __init__(
         self,
         value: QasmArrayType = None,
         size: List[int] = None,
-        base_type: QasmType = None,
+        base_type: QasmPrimitiveType = None,
     ):
         self._base_type = base_type
         super().__init__(value, size)
@@ -251,3 +262,89 @@ class Array(QasmType):
 def sample_qubit(qubit):
     p1 = np.absolute(qubit[1]) ** 2
     return np.random.binomial(1, p1)
+
+
+# noinspection NonAsciiCharacters
+def generate_unitary(θ, ϕ, λ):
+    return np.array([
+        [np.cos(θ / 2), -np.exp(1j * λ) * np.sin(θ / 2)],
+        [np.exp(1j * ϕ) * np.sin(θ / 2), np.exp(ϕ + λ) * np.cos(θ / 2)],
+    ])
+
+
+# gate execution:
+#
+# use args to assign new scope of local variables (taken from gate definition)
+# do the same for targets (in the same scope)
+#
+# execute the gate, manipulating local variables
+# initially this step can use the ast code
+# in the future, we may only want to parse this once
+#
+# pop the scope
+
+class Gate(QasmType):
+
+    data_type = "gate definition"
+
+    __slots__ = ('_params', '_targets', '_body')
+
+    def __init__(self, params=(), targets=(), body=()):
+        self._params = params
+        self._targets = targets
+        self._body = body
+
+    @property
+    def params(self):
+        return self._params
+
+    @property
+    def targets(self):
+        return self._targets
+
+    @property
+    def body(self):
+        return self._body
+
+    def __repr__(self):
+        return f"Gate(params={self._params}, targets={self._targets}, body=[...])"
+
+
+class GateCall(QasmType):
+
+    data_type = "gate call"
+
+    __slots__ = ('_name', '_params', '_targets', '_modifiers')
+
+    def __init__(self, name, params=(), targets=(), modifiers=()):
+        self._name = name
+        self._params = params
+        self._targets = targets
+        self._modifiers = modifiers
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def params(self):
+        return self._params
+
+    @property
+    def targets(self):
+        return self._targets
+
+    @property
+    def modifiers(self):
+        return self._modifiers
+
+    def __repr__(self):
+        return (
+            f"GateCall({self._name}, params={self._params}, "
+            f"targets={self._targets}, mods={self._modifiers})"
+        )
+
+
+class Number(QasmPrimitiveType):
+
+    data_type = "number"
