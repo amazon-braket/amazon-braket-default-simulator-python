@@ -247,13 +247,7 @@ class QasmSimulator:
         return GateCall(name, params, targets, modifiers)
 
     def handle_quantum_gate(self, statement: QuantumGate):
-        name = statement.name.name
-        params = statement.arguments
-        targets = statement.qubits
-        modifiers = statement.modifiers
-
-        gate_call = GateCall(name, params, targets, modifiers)
-
+        gate_call = self.parse_quantum_gate(statement)
         self.execute_gate_call(gate_call)
 
     def execute_gate_call(self, gate_call: GateCall):

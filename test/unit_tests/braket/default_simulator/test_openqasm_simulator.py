@@ -605,45 +605,20 @@ def test_sample_qubit():
     assert sample_qubit([0, 1]) == 1
 
 
-def test_gate_definition():
-    qasm = """
-    gate h_p(p) q {
-       U(π/2, 0, p*π) q;
-    }
-    """
-    simulator = QasmSimulator()
-    simulator.run_qasm(qasm)
-
-    assert simulator.qasm_variables == {
-        "q": QubitPointer(0),
-        "qs": QubitPointer(slice(1, 5), 4),
-    }
-
-    # assert np.all(simulator.get_qubit_state("q") == [[1, 0]])
-    # assert np.all(simulator.get_qubit_state("qs") == [
-    #     [1, 0], [1, 0], [1, 0], [1, 0]
-    # ])
-
-
 def test_built_in_gate():
     qasm = """
     qubit[2] q;
+    reset q;
     U(π/2, 0, π) q;
-    misc(param) p, q, r;
     """
     simulator = QasmSimulator()
     simulator.run_qasm(qasm)
 
-    assert simulator.qasm_variables == {
-        "q": QubitPointer(0),
-        "qs": QubitPointer(slice(1, 5), 4),
-    }
-
-    assert np.all(simulator.get_qubit_state("q") == [[1, 0]])
-    assert np.all(simulator.get_qubit_state("qs") == [
-        [1, 0], [1, 0], [1, 0], [1, 0]
-    ])
-
+    assert np.all(np.isclose(
+        simulator.qubits,
+        [[0.70710678, 0.70710678],
+         [0.70710678, 0.70710678]]
+    ))
 
 def test_custom_gate():
     qasm = """
