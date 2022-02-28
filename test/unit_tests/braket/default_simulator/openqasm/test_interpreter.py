@@ -4,7 +4,7 @@ from openqasm.ast import IntegerLiteral, IntType, BitType, BooleanLiteral, UintT
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm.program_context import ProgramContext
-from braket.default_simulator.openqasm.variable_transformer import Interpreter
+from braket.default_simulator.openqasm.interpreter import Interpreter
 
 
 def test_bit_declaration():
@@ -16,19 +16,19 @@ def test_bit_declaration():
     bit[2] register_initialized = "01";
     """
     program = parse(qasm)
-    context: ProgramContext = Interpreter().visit(program)
+    context = Interpreter().run(program)
 
-    assert context.symbol_table.get_type("single_uninitialized") == BitType(None)
-    assert context.symbol_table.get_type("single_initialized_int") == BitType(None)
-    assert context.symbol_table.get_type("single_initialized_bool") == BitType(None)
-    assert context.symbol_table.get_type("register_uninitialized") == BitType(IntegerLiteral(2))
-    assert context.symbol_table.get_type("register_initialized") == BitType(IntegerLiteral(2))
+    assert context.get_type("single_uninitialized") == BitType(None)
+    assert context.get_type("single_initialized_int") == BitType(None)
+    assert context.get_type("single_initialized_bool") == BitType(None)
+    assert context.get_type("register_uninitialized") == BitType(IntegerLiteral(2))
+    assert context.get_type("register_initialized") == BitType(IntegerLiteral(2))
 
-    assert context.variable_table.get_value("single_uninitialized") is None
-    assert context.variable_table.get_value("single_initialized_int") == BooleanLiteral(False)
-    assert context.variable_table.get_value("single_initialized_bool") == BooleanLiteral(True)
-    assert context.variable_table.get_value("register_uninitialized") is None
-    assert context.variable_table.get_value("register_initialized") == IntegerLiteral(1)
+    assert context.get_value("single_uninitialized") is None
+    assert context.get_value("single_initialized_int") == BooleanLiteral(False)
+    assert context.get_value("single_initialized_bool") == BooleanLiteral(True)
+    assert context.get_value("register_uninitialized") is None
+    assert context.get_value("register_initialized") == IntegerLiteral(1)
 
 
 def test_int_declaration():
@@ -44,19 +44,19 @@ def test_int_declaration():
 
     program = parse(qasm)
     with pytest.warns(UserWarning) as warn_info:
-        context: ProgramContext = Interpreter().visit(program)
+        context = Interpreter().run(program)
 
-    assert context.symbol_table.get_type("uninitialized") == IntType(IntegerLiteral(8))
-    assert context.symbol_table.get_type("pos") == IntType(IntegerLiteral(8))
-    assert context.symbol_table.get_type("neg") == IntType(IntegerLiteral(5))
-    assert context.symbol_table.get_type("pos_overflow") == IntType(IntegerLiteral(3))
-    assert context.symbol_table.get_type("neg_overflow") == IntType(IntegerLiteral(3))
+    assert context.get_type("uninitialized") == IntType(IntegerLiteral(8))
+    assert context.get_type("pos") == IntType(IntegerLiteral(8))
+    assert context.get_type("neg") == IntType(IntegerLiteral(5))
+    assert context.get_type("pos_overflow") == IntType(IntegerLiteral(3))
+    assert context.get_type("neg_overflow") == IntType(IntegerLiteral(3))
 
-    assert context.variable_table.get_value("uninitialized") is None
-    assert context.variable_table.get_value("pos") == IntegerLiteral(10)
-    assert context.variable_table.get_value("neg") == IntegerLiteral(-4)
-    assert context.variable_table.get_value("pos_overflow") == IntegerLiteral(1)
-    assert context.variable_table.get_value("neg_overflow") == IntegerLiteral(-2)
+    assert context.get_value("uninitialized") is None
+    assert context.get_value("pos") == IntegerLiteral(10)
+    assert context.get_value("neg") == IntegerLiteral(-4)
+    assert context.get_value("pos_overflow") == IntegerLiteral(1)
+    assert context.get_value("neg_overflow") == IntegerLiteral(-2)
 
     warnings = {(warn.category, warn.message.args[0]) for warn in warn_info}
     assert warnings == {
@@ -76,17 +76,17 @@ def test_uint_declaration():
 
     program = parse(qasm)
     with pytest.warns(UserWarning, match=pos_overflow):
-        context: ProgramContext = Interpreter().visit(program)
+        context = Interpreter().run(program)
 
-    assert context.symbol_table.get_type("uninitialized") == UintType(IntegerLiteral(8))
-    assert context.symbol_table.get_type("pos") == UintType(IntegerLiteral(8))
-    assert context.symbol_table.get_type("pos_not_overflow") == UintType(IntegerLiteral(3))
-    assert context.symbol_table.get_type("pos_overflow") == UintType(IntegerLiteral(3))
+    assert context.get_type("uninitialized") == UintType(IntegerLiteral(8))
+    assert context.get_type("pos") == UintType(IntegerLiteral(8))
+    assert context.get_type("pos_not_overflow") == UintType(IntegerLiteral(3))
+    assert context.get_type("pos_overflow") == UintType(IntegerLiteral(3))
 
-    assert context.variable_table.get_value("uninitialized") is None
-    assert context.variable_table.get_value("pos") == IntegerLiteral(10)
-    assert context.variable_table.get_value("pos_not_overflow") == IntegerLiteral(5)
-    assert context.variable_table.get_value("pos_overflow") == IntegerLiteral(0)
+    assert context.get_value("uninitialized") is None
+    assert context.get_value("pos") == IntegerLiteral(10)
+    assert context.get_value("pos_not_overflow") == IntegerLiteral(5)
+    assert context.get_value("pos_overflow") == IntegerLiteral(0)
 
 
 def test_float_declaration():
@@ -97,14 +97,43 @@ def test_float_declaration():
     float[128] precise = π;
     """
     program = parse(qasm)
-    context: ProgramContext = Interpreter().visit(program)
+    context = Interpreter().run(program)
 
-    assert context.symbol_table.get_type("uninitialized") == FloatType(IntegerLiteral(16))
-    assert context.symbol_table.get_type("pos") == FloatType(IntegerLiteral(32))
-    assert context.symbol_table.get_type("neg") == FloatType(IntegerLiteral(64))
-    assert context.symbol_table.get_type("precise") == FloatType(IntegerLiteral(128))
+    assert context.get_type("uninitialized") == FloatType(IntegerLiteral(16))
+    assert context.get_type("pos") == FloatType(IntegerLiteral(32))
+    assert context.get_type("neg") == FloatType(IntegerLiteral(64))
+    assert context.get_type("precise") == FloatType(IntegerLiteral(128))
 
-    assert context.variable_table.get_value("uninitialized") is None
-    assert context.variable_table.get_value("pos") == RealLiteral(10)
-    assert context.variable_table.get_value("neg") == RealLiteral(-4)
-    assert context.variable_table.get_value("precise") == RealLiteral(np.pi)
+    assert context.get_value("uninitialized") is None
+    assert context.get_value("pos") == RealLiteral(10)
+    assert context.get_value("neg") == RealLiteral(-4)
+    assert context.get_value("precise") == RealLiteral(np.pi)
+
+
+def test_assign_variable():
+    qasm = """
+    bit[8] og_bit = "10001000";
+    bit[8] copy_bit = og_bit;
+    
+    int[10] og_int = 100;
+    int[10] copy_int = og_int;
+    
+    uint[5] og_uint = 8;
+    uint[5] copy_uint = og_uint;
+    
+    float[16] og_float = π;
+    float[16] copy_float = og_float;
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+
+    assert context.get_type("copy_bit") == BitType(IntegerLiteral(8))
+    assert context.get_type("copy_int") == IntType(IntegerLiteral(10))
+    assert context.get_type("copy_uint") == UintType(IntegerLiteral(5))
+    assert context.get_type("copy_float") == FloatType(IntegerLiteral(16))
+
+    assert context.get_value("copy_bit") == IntegerLiteral(0b10001000)
+    assert context.get_value("copy_int") == IntegerLiteral(100)
+    assert context.get_value("copy_uint") == IntegerLiteral(8)
+    # notice the reduced precision compared to np.pi from float[16]
+    assert context.get_value("copy_float") == RealLiteral(3.140625)

@@ -80,3 +80,12 @@ class ProgramContext:
 
     def __repr__(self):
         return "Symbols\n" f"{self.symbol_table}\n\n" "Data\n" f"{self.variable_table}\n"
+
+    def get_type(self, name: str):
+        return self.symbol_table.get_type(name)
+
+    def get_const(self, name: str):
+        return self.symbol_table.get_const(name)
+
+    def get_value(self, name: str):
+        return self.variable_table.get_value(name)
