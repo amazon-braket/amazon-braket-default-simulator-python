@@ -1,24 +1,54 @@
 from functools import reduce
-from typing import List, Tuple, Iterable
+from typing import Iterable, List, Tuple
 
 import numpy as np
 from openqasm.ast import (
-    QubitDeclaration,
-    ClassicalDeclaration,
-    IntegerLiteral,
-    RealLiteral,
+    AngleType,
+    ArrayLiteral,
+    ArrayType,
+    BinaryExpression,
+    BitType,
     BooleanLiteral,
-    StringLiteral,
+    BoolType,
+    BranchingStatement,
+    ClassicalAssignment,
+    ClassicalDeclaration,
+    ComplexType,
     Constant,
     ConstantName,
-    BitType, IntType, UnaryExpression, UintType, FloatType, AngleType, BinaryExpression, Identifier,
-    BoolType, ClassicalAssignment, ComplexType, BranchingStatement, Statement, ArrayType, ArrayLiteral, QuantumReset,
-    QuantumMeasurementAssignment, QuantumGate, QuantumGateDefinition, Expression,
+    Expression,
+    FloatType,
+    Identifier,
+    IntegerLiteral,
+    IntType,
+    QuantumGate,
+    QuantumGateDefinition,
+    QuantumMeasurementAssignment,
+    QuantumReset,
+    QubitDeclaration,
+    RealLiteral,
+    Statement,
+    StringLiteral,
+    UintType,
+    UnaryExpression,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
-from braket.default_simulator.openqasm_helpers import Bit, QubitPointer, Int, Uint, \
-    Float, Angle, Bool, Complex, Array, sample_qubit, Gate, GateCall, Number
+from braket.default_simulator.openqasm_helpers import (
+    Angle,
+    Array,
+    Bit,
+    Bool,
+    Complex,
+    Float,
+    Gate,
+    GateCall,
+    Int,
+    Number,
+    QubitPointer,
+    Uint,
+    sample_qubit,
+)
 
 
 class QasmSimulator:
@@ -33,10 +63,7 @@ class QasmSimulator:
 
     @property
     def qasm_variables(self):
-        return reduce(
-            lambda scope, new_scope: {**scope, **new_scope},
-            self._qasm_variables_stack
-        )
+        return reduce(lambda scope, new_scope: {**scope, **new_scope}, self._qasm_variables_stack)
 
     def enter_scope(self):
         self._qasm_variables_stack.append({})
@@ -121,21 +148,19 @@ class QasmSimulator:
 
         # assert types match
         if assignment_target_variable.size != measurement_target_variable.size:
-            raise ValueError(
-                "Measurement target size must match assignment target size."
-            )
+            raise ValueError("Measurement target size must match assignment target size.")
 
         # sample and collapse quantum state
         if not measurement_target_variable.size:
             sampled = sample_qubit(self.get_qubit_state(measurement_target))
-            self.qubits[measurement_target_variable.value] = (np.array([0, 1]) == sampled)
+            self.qubits[measurement_target_variable.value] = np.array([0, 1]) == sampled
         else:
-            sampled = ''.join(
+            sampled = "".join(
                 str(sample_qubit(q)) for q in self.get_qubit_state(measurement_target)
             )
             sampled_array = np.array([[int(m)] for m in sampled])
-            self.qubits[measurement_target_variable.value] = (
-                    sampled_array == np.repeat([[0, 1]], measurement_target_variable.size, axis=0)
+            self.qubits[measurement_target_variable.value] = sampled_array == np.repeat(
+                [[0, 1]], measurement_target_variable.size, axis=0
             )
 
         # assign result to assignment target
@@ -257,9 +282,7 @@ class QasmSimulator:
         target_sizes = [t.size for t in targets if t.size is not None]
         if target_sizes:
             register_size = target_sizes[0]
-            assert all(size == register_size for size in target_sizes), (
-                "unmatched target sizes"
-            )
+            assert all(size == register_size for size in target_sizes), "unmatched target sizes"
         else:
             register_size = 1
 
@@ -270,7 +293,8 @@ class QasmSimulator:
                     if not t.size
                     # need to generalize when implementing qreg aliasing
                     else QubitPointer(t.value.start + i)
-                ) for t in targets
+                )
+                for t in targets
             ]
 
             if gate_call.name == "U":
@@ -295,23 +319,21 @@ class QasmSimulator:
                     else:
                         raise NotImplementedError("mods and stuff")
 
-    def execute_builtin_unitary(
-        self, qubit_pointer: QubitPointer, params: Iterable[complex]
-    ):
+    def execute_builtin_unitary(self, qubit_pointer: QubitPointer, params: Iterable[complex]):
         θ, ϕ, λ = params
-        unitary = np.array([
-            [np.cos(θ / 2), -np.exp(1j * λ) * np.sin(θ / 2)],
-            [np.exp(1j * ϕ) * np.sin(θ / 2), np.exp(1j * (ϕ + λ)) * np.cos(θ / 2)],
-        ])
+        unitary = np.array(
+            [
+                [np.cos(θ / 2), -np.exp(1j * λ) * np.sin(θ / 2)],
+                [np.exp(1j * ϕ) * np.sin(θ / 2), np.exp(1j * (ϕ + λ)) * np.cos(θ / 2)],
+            ]
+        )
         self.qubits[qubit_pointer.value] = unitary @ self.qubits[qubit_pointer.value]
 
     def evaluate_expression(self, expression, unwrap=False):
         if expression is None:
             return None
 
-        elif isinstance(expression, (
-                IntegerLiteral, RealLiteral, BooleanLiteral, StringLiteral
-        )):
+        elif isinstance(expression, (IntegerLiteral, RealLiteral, BooleanLiteral, StringLiteral)):
             return expression.value
 
         elif isinstance(expression, Constant):

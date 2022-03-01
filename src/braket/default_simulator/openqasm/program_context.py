@@ -1,6 +1,8 @@
-from typing import Any
+from typing import Any, Union
 
 from openqasm.ast import ClassicalType
+
+from braket.default_simulator.openqasm.quantum import QubitType
 
 
 class ScopedTable:
@@ -31,7 +33,8 @@ class ScopedTable:
         return items.items()
 
     def _longest_key_length(self):
-        return max(len(key) for key, value in self.items())
+        items = self.items()
+        return max(len(key) for key, value in items) if items else None
 
     def __repr__(self):
         rows = []
@@ -45,7 +48,7 @@ class ScopedTable:
 
 class SymbolTable(ScopedTable):
     class Symbol:
-        def __init__(self, symbol_type: ClassicalType, const: bool = False):
+        def __init__(self, symbol_type: Union[ClassicalType, QubitType], const: bool = False):
             self.type = symbol_type
             self.const = const
 
@@ -79,7 +82,7 @@ class ProgramContext:
         self.variable_table = VariableTable()
 
     def __repr__(self):
-        return "Symbols\n" f"{self.symbol_table}\n\n" "Data\n" f"{self.variable_table}\n"
+        return f"Symbols\n{self.symbol_table}\n\nData\n{self.variable_table}\n"
 
     def get_type(self, name: str):
         return self.symbol_table.get_type(name)

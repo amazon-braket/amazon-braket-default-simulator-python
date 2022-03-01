@@ -4,6 +4,8 @@ from typing import Union
 
 import numpy as np
 from openqasm.ast import (
+    ArrayLiteral,
+    ArrayType,
     BinaryOperator,
     BitType,
     BooleanLiteral,
@@ -141,9 +143,7 @@ def _(into: BitType, variable: LiteralType):
         if isinstance(variable, StringLiteral):
             try:
                 assert len(variable.value) == into.size.value
-                print("HEYYYYY", variable)
                 variable = IntegerLiteral(int(f"0b{variable.value}", base=2))
-                print("HEYYYYY", variable)
             except (AssertionError, ValueError, TypeError):
                 raise ValueError(
                     f"Invalid string to initialize bit register of size {into.size.value}: "
@@ -155,7 +155,7 @@ def _(into: BitType, variable: LiteralType):
 @cast_to.register
 def _(into: IntType, variable: LiteralType):
     limit = 2 ** (into.size.value - 1)
-    value = np.sign(variable.value) * (np.abs(variable.value) % limit)
+    value = int(np.sign(variable.value) * (np.abs(int(variable.value)) % limit))
     if value != variable.value:
         warnings.warn(f"Integer overflow for value {variable.value} and size {into.size.value}.")
     return IntegerLiteral(value)
@@ -164,7 +164,7 @@ def _(into: IntType, variable: LiteralType):
 @cast_to.register
 def _(into: UintType, variable: LiteralType):
     limit = 2 ** into.size.value
-    value = variable.value % limit
+    value = int(variable.value) % limit
     if value != variable.value:
         warnings.warn(
             f"Unsigned integer overflow for value {variable.value} and size {into.size.value}."
@@ -178,6 +178,21 @@ def _(into: FloatType, variable: LiteralType):
         raise ValueError("Float size must be one of {{16, 32, 64, 128}}.")
     value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
     return RealLiteral(value)
+
+
+@cast_to.register
+def _(into: ArrayType, variable: ArrayLiteral):
+    if len(variable.values) != into.dimensions[0].value:
+        raise ValueError(
+            f"Size mismatch between dimension of size {into.dimensions[0].value} "
+            f"and values length {len(variable.values)}"
+        )
+    subtype = (
+        ArrayType(into.base_type, into.dimensions[1:])
+        if len(into.dimensions) > 1
+        else into.base_type
+    )
+    return ArrayLiteral([cast_to(subtype, v) for v in variable.values])
 
 
 def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOperator):

@@ -3,8 +3,18 @@ import re
 import numpy as np
 import pytest
 
-from braket.default_simulator.openqasm_helpers import Bit, QubitPointer, Int, Uint, \
-    Float, Angle, Bool, Complex, Array, sample_qubit
+from braket.default_simulator.openqasm_helpers import (
+    Angle,
+    Array,
+    Bit,
+    Bool,
+    Complex,
+    Float,
+    Int,
+    QubitPointer,
+    Uint,
+    sample_qubit,
+)
 from braket.default_simulator.openqasm_simulator import QasmSimulator
 
 
@@ -27,9 +37,7 @@ def test_qubit_declaration():
     assert simulator.qubits.shape == (5, 2)
 
 
-@pytest.mark.parametrize(
-    "size", (0, 4.3)
-)
+@pytest.mark.parametrize("size", (0, 4.3))
 def test_qubit_bad_declaration(size):
     qasm = f"""
     qubit[{size}] qs;
@@ -48,17 +56,14 @@ def test_qubit_negative_size_declaration():
     qubit[-1] a;
     """
     size_must_be_pos = (
-        "Qubit register size must be a positive integer. "
-        "Provided size '-1' for qubit register."
+        "Qubit register size must be a positive integer. " "Provided size '-1' for qubit register."
     )
     simulator = QasmSimulator()
     with pytest.raises(ValueError, match=size_must_be_pos):
         simulator.run_qasm(qasm)
 
 
-@pytest.mark.parametrize(
-    "size", ("2 + 4", "2 * 3")
-)
+@pytest.mark.parametrize("size", ("2 + 4", "2 * 3"))
 def test_qubit_expression_declaration(size):
     qasm = f"""
     qubit[{size}] a;
@@ -88,9 +93,7 @@ def test_qubit_reset():
     }
 
     assert np.all(simulator.get_qubit_state("q") == [[1, 0]])
-    assert np.all(simulator.get_qubit_state("qs") == [
-        [1, 0], [1, 0], [1, 0], [1, 0]
-    ])
+    assert np.all(simulator.get_qubit_state("qs") == [[1, 0], [1, 0], [1, 0], [1, 0]])
 
 
 def test_qubit_measure():
@@ -118,9 +121,7 @@ def test_qubit_measure():
     }
 
     assert np.all(simulator.get_qubit_state("q") == [[1, 0]])
-    assert np.all(simulator.get_qubit_state("qs") == [
-        [1, 0], [1, 0], [1, 0], [1, 0]
-    ])
+    assert np.all(simulator.get_qubit_state("qs") == [[1, 0], [1, 0], [1, 0], [1, 0]])
 
 
 def test_bit_declaration():
@@ -253,9 +254,7 @@ def test_int_declaration_wrong_type(value):
     qasm = f"""
     int[8] wrong_type = {qasm_value};
     """
-    wrong_type = (
-        f"Not a valid value for integer register: {repr(value)}"
-    )
+    wrong_type = f"Not a valid value for integer register: {repr(value)}"
     simulator = QasmSimulator()
     with pytest.raises(ValueError, match=wrong_type):
         simulator.run_qasm(qasm)
@@ -306,23 +305,18 @@ def test_float_declaration_bad_value():
     qasm = """
     float[16] string = "not a float";
     """
-    bad_value = re.escape(
-        "Not a valid value for float[16]: 'not a float'"
-    )
+    bad_value = re.escape("Not a valid value for float[16]: 'not a float'")
     simulator = QasmSimulator()
     with pytest.raises(ValueError, match=bad_value):
         simulator.run_qasm(qasm)
 
 
-@pytest.mark.parametrize("size", (-1, 0, .3, 8))
+@pytest.mark.parametrize("size", (-1, 0, 0.3, 8))
 def test_float_declaration_bad_size(size):
     qasm = f"""
     float[{size}] bad_size;
     """
-    bad_value = (
-        "Float size must be one of {16, 32, 64, 128}. "
-        f"Provided size '{size}' for float."
-    )
+    bad_value = "Float size must be one of {16, 32, 64, 128}. " f"Provided size '{size}' for float."
     simulator = QasmSimulator()
     with pytest.raises(ValueError, match=bad_value):
         simulator.run_qasm(qasm)
@@ -355,10 +349,7 @@ def test_angle_declaration():
 @pytest.mark.parametrize("size", (2.3, 0, -1))
 def test_angle_declaration_bad_size(size):
     qasm = f"angle[{size}] bad_size;"
-    bad_size = (
-        f"Angle size must be a positive integer. "
-        f"Provided size '{size}' for angle."
-    )
+    bad_size = f"Angle size must be a positive integer. " f"Provided size '{size}' for angle."
     simulator = QasmSimulator()
     with pytest.raises(ValueError, match=bad_size):
         simulator.run_qasm(qasm)
@@ -368,9 +359,7 @@ def test_angle_declaration_wrong_type():
     qasm = f"""
     angle[8] wrong_type = "a string";
     """
-    wrong_type = (
-        f"Not a valid value for angle: 'a string'"
-    )
+    wrong_type = f"Not a valid value for angle: 'a string'"
     simulator = QasmSimulator()
     with pytest.raises(ValueError, match=wrong_type):
         simulator.run_qasm(qasm)
@@ -474,17 +463,13 @@ def test_assign_undeclared():
     qasm = """
     x = 2;
     """
-    not_in_scope = (
-        "Variable 'x' not in scope."
-    )
+    not_in_scope = "Variable 'x' not in scope."
     simulator = QasmSimulator()
     with pytest.raises(NameError, match=not_in_scope):
         simulator.run_qasm(qasm)
 
 
-@pytest.mark.parametrize(
-    "conditional", ("true", "false")
-)
+@pytest.mark.parametrize("conditional", ("true", "false"))
 def test_if(conditional):
     qasm = f"""
     int[16] x = 2;
@@ -500,9 +485,7 @@ def test_if(conditional):
     }
 
 
-@pytest.mark.parametrize(
-    "conditional", ("true", "false")
-)
+@pytest.mark.parametrize("conditional", ("true", "false"))
 def test_if_else(conditional):
     qasm = f"""
     int[16] x;
@@ -614,11 +597,10 @@ def test_built_in_gate():
     simulator = QasmSimulator()
     simulator.run_qasm(qasm)
 
-    assert np.all(np.isclose(
-        simulator.qubits,
-        [[0.70710678, 0.70710678],
-         [0.70710678, 0.70710678]]
-    ))
+    assert np.all(
+        np.isclose(simulator.qubits, [[0.70710678, 0.70710678], [0.70710678, 0.70710678]])
+    )
+
 
 def test_custom_gate():
     qasm = """
@@ -640,10 +622,9 @@ def test_custom_gate():
     simulator = QasmSimulator()
     simulator.run_qasm(qasm)
 
-    assert np.all(np.isclose(
-        simulator.qubits,
-        [[0.70710678, 0.70710678],
-         [0.70710678, 0.70710678],
-         [1,          0         ],
-         [0.70710678, 0.70710678]]
-    ))
+    assert np.all(
+        np.isclose(
+            simulator.qubits,
+            [[0.70710678, 0.70710678], [0.70710678, 0.70710678], [1, 0], [0.70710678, 0.70710678]],
+        )
+    )

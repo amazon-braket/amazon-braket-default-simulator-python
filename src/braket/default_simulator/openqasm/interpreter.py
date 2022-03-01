@@ -7,15 +7,19 @@ from openqasm.ast import (
     Constant,
     ConstantDeclaration,
     Identifier,
+    IndexedIdentifier,
     IntegerLiteral,
     Program,
     QASMNode,
+    QuantumReset,
+    QubitDeclaration,
     RealLiteral,
     UnaryExpression,
 )
 
 from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.program_context import ProgramContext
+from braket.default_simulator.openqasm.quantum import Qubit, QubitType
 from braket.default_simulator.openqasm.visitor import QASMTransformer
 
 
@@ -91,3 +95,20 @@ class Interpreter(QASMTransformer):
         if context.get_value(node.name) is None:
             raise NameError(f"Identifier {node.name} is not initialized.")
         return context.get_value(node.name)
+
+    @visit.register
+    def _(self, node: QubitDeclaration, context: ProgramContext):
+        print(f"Qubit declaration: {node}")
+        size = self.visit(node.size, context)
+        context.symbol_table.add_symbol(node.qubit.name, QubitType(size))
+        context.variable_table.add_variable(node.qubit.name, Qubit(size))
+
+    @visit.register
+    def _(self, node: QuantumReset, context: ProgramContext):
+        print(f"Quantum reset: {node}")
+        target = self.visit(node.qubits, context)
+        target.reset()
+
+    @visit.register
+    def _(self, node: IndexedIdentifier, context: ProgramContext):
+        print(f"Indexed identifier: {node}")

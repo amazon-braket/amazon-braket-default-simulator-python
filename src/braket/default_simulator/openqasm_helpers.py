@@ -1,12 +1,12 @@
 import warnings
 from abc import ABC
-from typing import List, Union, TypeVar, Generic, Tuple
+from typing import Generic, List, Tuple, TypeVar, Union
 
 import numpy as np
 
 
 class QasmType(ABC):
-    data_type = None    # Name of the variable type
+    data_type = None  # Name of the variable type
 
     __slots__ = ()
 
@@ -16,7 +16,7 @@ class QasmType(ABC):
 
 class QasmPrimitiveType(QasmType):
 
-    __slots__ = ('_value', '_size')
+    __slots__ = ("_value", "_size")
 
     def __init__(self, value=None, size=None):
         self._value = value
@@ -37,10 +37,10 @@ class QasmPrimitiveType(QasmType):
         return self._size
 
     def assign_value(self, value):
-        """ Validate value is valid and assign to variable """
+        """Validate value is valid and assign to variable"""
 
     def validate_size(self, size):
-        """ Validate size is valid for variable """
+        """Validate size is valid for variable"""
         if not (size > 0 and size == int(size)):
             raise ValueError(
                 f"{self.data_type.capitalize()} size must be a positive integer. "
@@ -53,7 +53,7 @@ class QasmPrimitiveType(QasmType):
 
 
 class QubitPointer(QasmPrimitiveType):
-    """ Qubit pointers """
+    """Qubit pointers"""
 
     data_type = "qubit register"
 
@@ -115,9 +115,7 @@ class Int(QasmPrimitiveType):
         if isinstance(value, QasmPrimitiveType):
             value = value.value
         if int(value) != value:
-            raise ValueError(
-                f"Not a valid value for {self.data_type}: {repr(value)}"
-            )
+            raise ValueError(f"Not a valid value for {self.data_type}: {repr(value)}")
         self._value = value
         if self._value != self.value:
             warnings.warn(
@@ -136,7 +134,7 @@ class Uint(Int):
 
     @property
     def limit(self):
-        return 2 ** self.size
+        return 2**self.size
 
 
 class Float(QasmPrimitiveType):
@@ -150,9 +148,7 @@ class Float(QasmPrimitiveType):
         try:
             self._value = np.array(value, dtype=np.dtype(f"float{self.size}"))
         except ValueError:
-            raise ValueError(
-                f"Not a valid value for {self.data_type}[{self.size}]: {repr(value)}"
-            )
+            raise ValueError(f"Not a valid value for {self.data_type}[{self.size}]: {repr(value)}")
 
     def validate_size(self, size):
         if size not in (16, 32, 64, 128):
@@ -172,15 +168,13 @@ class Angle(QasmPrimitiveType):
     @property
     def value(self):
         if self._value is not None:
-            return (2 * np.pi * self._value) / (2 ** self.size)
+            return (2 * np.pi * self._value) / (2**self.size)
 
     def assign_value(self, value):
         try:
-            self._value = int((value % (2 * np.pi)) / (2 * np.pi) * 2 ** self.size)
+            self._value = int((value % (2 * np.pi)) / (2 * np.pi) * 2**self.size)
         except (ValueError, TypeError):
-            raise ValueError(
-                f"Not a valid value for {self.data_type}: {repr(value)}"
-            )
+            raise ValueError(f"Not a valid value for {self.data_type}: {repr(value)}")
 
 
 class Bool(QasmPrimitiveType):
@@ -213,11 +207,11 @@ class Complex(QasmPrimitiveType):
 
     @property
     def data_type(self):
-        """ Name of the variable type """
+        """Name of the variable type"""
         return f"complex {self._base_type.data_type}"
 
 
-QasmArrayType = List[Union['QasmArrayType', QasmPrimitiveType]]
+QasmArrayType = List[Union["QasmArrayType", QasmPrimitiveType]]
 
 
 class Array(QasmPrimitiveType):
@@ -227,7 +221,7 @@ class Array(QasmPrimitiveType):
     type value of some QasmType
     """
 
-    __slots__ = ('_base_type',)
+    __slots__ = ("_base_type",)
 
     def __init__(
         self,
@@ -247,7 +241,7 @@ class Array(QasmPrimitiveType):
 
     @property
     def data_type(self):
-        """ Name of the variable type """
+        """Name of the variable type"""
         return f"{self._base_type.data_type} array"
 
     @property
@@ -266,10 +260,12 @@ def sample_qubit(qubit):
 
 # noinspection NonAsciiCharacters
 def generate_unitary(θ, ϕ, λ):
-    return np.array([
-        [np.cos(θ / 2), -np.exp(1j * λ) * np.sin(θ / 2)],
-        [np.exp(1j * ϕ) * np.sin(θ / 2), np.exp(ϕ + λ) * np.cos(θ / 2)],
-    ])
+    return np.array(
+        [
+            [np.cos(θ / 2), -np.exp(1j * λ) * np.sin(θ / 2)],
+            [np.exp(1j * ϕ) * np.sin(θ / 2), np.exp(ϕ + λ) * np.cos(θ / 2)],
+        ]
+    )
 
 
 # gate execution:
@@ -283,11 +279,12 @@ def generate_unitary(θ, ϕ, λ):
 #
 # pop the scope
 
+
 class Gate(QasmType):
 
     data_type = "gate definition"
 
-    __slots__ = ('_params', '_targets', '_body')
+    __slots__ = ("_params", "_targets", "_body")
 
     def __init__(self, params=(), targets=(), body=()):
         self._params = params
@@ -314,7 +311,7 @@ class GateCall(QasmType):
 
     data_type = "gate call"
 
-    __slots__ = ('_name', '_params', '_targets', '_modifiers')
+    __slots__ = ("_name", "_params", "_targets", "_modifiers")
 
     def __init__(self, name, params=(), targets=(), modifiers=()):
         self._name = name
