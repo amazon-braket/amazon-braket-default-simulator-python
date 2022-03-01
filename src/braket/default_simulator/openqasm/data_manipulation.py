@@ -12,8 +12,10 @@ from openqasm.ast import (
     ClassicalType,
     Constant,
     ConstantName,
+    DiscreteSet,
     Expression,
     FloatType,
+    IndexElement,
     IntegerLiteral,
     IntType,
     RealLiteral,
@@ -217,3 +219,13 @@ def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
 
 def evaluate_constant(constant: Constant):
     return RealLiteral(constant_map.get(constant.name))
+
+
+def get_elements(array: ArrayLiteral, index: IndexElement):
+    if isinstance(index, DiscreteSet):
+        return ArrayLiteral([get_elements(array, [i]) for i in index.values])
+    if not isinstance(index, list):
+        index = [index]
+    for i in index:
+        array = array.values[i.value]
+    return array

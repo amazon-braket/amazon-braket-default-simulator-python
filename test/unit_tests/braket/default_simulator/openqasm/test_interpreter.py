@@ -1,18 +1,19 @@
 import numpy as np
 import pytest
 from openqasm.ast import (
+    ArrayLiteral,
+    ArrayType,
     BitType,
     BooleanLiteral,
     FloatType,
     IntegerLiteral,
     IntType,
     RealLiteral,
-    UintType, ArrayType, ArrayLiteral,
+    UintType,
 )
 from openqasm.parser.antlr.qasm_parser import parse
 
 from braket.default_simulator.openqasm.interpreter import Interpreter
-from braket.default_simulator.openqasm.program_context import ProgramContext
 
 
 def test_bit_declaration():
@@ -158,73 +159,162 @@ def test_array_declaration():
     context = Interpreter().run(program)
 
     assert context.get_type("row") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)),
-        dimensions=[IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2)]
     )
     assert context.get_type("multi_dim") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)),
-        dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
     )
     assert context.get_type("by_ref") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)),
-        dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
     )
     assert context.get_type("with_expressions") == ArrayType(
         base_type=UintType(IntegerLiteral(8)),
-        dimensions=[IntegerLiteral(1), IntegerLiteral(1), IntegerLiteral(1)]
+        dimensions=[IntegerLiteral(1), IntegerLiteral(1), IntegerLiteral(1)],
     )
 
-    assert context.get_value("row") == ArrayLiteral([
-        IntegerLiteral(1), IntegerLiteral(2),
-    ])
-    assert context.get_value("multi_dim") == ArrayLiteral([
-        ArrayLiteral([
-            IntegerLiteral(1), IntegerLiteral(2),
-        ]),
-        ArrayLiteral([
-            IntegerLiteral(3), IntegerLiteral(4),
-        ]),
-    ])
-    assert context.get_value("by_ref") == ArrayLiteral([
-        ArrayLiteral([
-            IntegerLiteral(1), IntegerLiteral(2),
-        ]),
-        ArrayLiteral([
-            IntegerLiteral(1), IntegerLiteral(2),
-        ]),
-    ])
-    assert context.get_value("with_expressions") == ArrayLiteral([
-        ArrayLiteral([
-            ArrayLiteral([
-                IntegerLiteral(3)
-            ])
-        ])
-    ])
+    assert context.get_value("row") == ArrayLiteral(
+        [
+            IntegerLiteral(1),
+            IntegerLiteral(2),
+        ]
+    )
+    assert context.get_value("multi_dim") == ArrayLiteral(
+        [
+            ArrayLiteral(
+                [
+                    IntegerLiteral(1),
+                    IntegerLiteral(2),
+                ]
+            ),
+            ArrayLiteral(
+                [
+                    IntegerLiteral(3),
+                    IntegerLiteral(4),
+                ]
+            ),
+        ]
+    )
+    assert context.get_value("by_ref") == ArrayLiteral(
+        [
+            ArrayLiteral(
+                [
+                    IntegerLiteral(1),
+                    IntegerLiteral(2),
+                ]
+            ),
+            ArrayLiteral(
+                [
+                    IntegerLiteral(1),
+                    IntegerLiteral(2),
+                ]
+            ),
+        ]
+    )
+    assert context.get_value("with_expressions") == ArrayLiteral(
+        [ArrayLiteral([ArrayLiteral([IntegerLiteral(3)])])]
+    )
 
 
 @pytest.mark.parametrize(
-    'qasm', (
-        'array[uint[8], 2] row = {1, 2, 3};',
-        'array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4, 5}};',
-        'array[uint[8], 2, 2] multi_dim = {{1, 2, 3}, {3, 4}};',
-        'array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4}, {5, 6}};',
-    )
+    "qasm",
+    (
+        "array[uint[8], 2] row = {1, 2, 3};",
+        "array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4, 5}};",
+        "array[uint[8], 2, 2] multi_dim = {{1, 2, 3}, {3, 4}};",
+        "array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4}, {5, 6}};",
+    ),
 )
 def test_bad_array_size_declaration(qasm):
-    bad_size = (
-        "Size mismatch between dimension of size 2 "
-        "and values length 3"
-    )
+    bad_size = "Size mismatch between dimension of size 2 " "and values length 3"
     program = parse(qasm)
     with pytest.raises(ValueError, match=bad_size):
         Interpreter().run(program)
+
+
+def test_indexed_identifier():
+    qasm = """
+    array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4}};
+    int[8] int_from_array = multi_dim[0, 1 * 1];
+    array[int[8], 2] array_from_array = multi_dim[1];
+    array[uint[8], 3] using_set = multi_dim[0][{1, 0, 1}];
+    array[uint[8], 3, 2] using_set_multi_dim = multi_dim[{0, 1}][{1, 0, 1}];
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+
+    assert context.get_type("multi_dim") == ArrayType(
+        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+    )
+    assert context.get_type("int_from_array") == IntType(IntegerLiteral(8))
+    assert context.get_type("array_from_array") == ArrayType(
+        base_type=IntType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2)]
+    )
+    assert context.get_type("using_set") == ArrayType(
+        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(3)]
+    )
+    assert context.get_type("using_set_multi_dim") == ArrayType(
+        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(3), IntegerLiteral(2)]
+    )
+
+    assert context.get_value("multi_dim") == ArrayLiteral(
+        [
+            ArrayLiteral(
+                [
+                    IntegerLiteral(1),
+                    IntegerLiteral(2),
+                ]
+            ),
+            ArrayLiteral(
+                [
+                    IntegerLiteral(3),
+                    IntegerLiteral(4),
+                ]
+            ),
+        ]
+    )
+    assert context.get_value("int_from_array") == IntegerLiteral(2)
+    assert context.get_value("array_from_array") == ArrayLiteral(
+        [
+            IntegerLiteral(3),
+            IntegerLiteral(4),
+        ]
+    )
+    assert context.get_value("using_set") == ArrayLiteral(
+        [
+            IntegerLiteral(2),
+            IntegerLiteral(1),
+            IntegerLiteral(2),
+        ]
+    )
+    assert context.get_value("using_set_multi_dim") == ArrayLiteral(
+        [
+            ArrayLiteral(
+                [
+                    IntegerLiteral(3),
+                    IntegerLiteral(4),
+                ]
+            ),
+            ArrayLiteral(
+                [
+                    IntegerLiteral(1),
+                    IntegerLiteral(2),
+                ]
+            ),
+            ArrayLiteral(
+                [
+                    IntegerLiteral(3),
+                    IntegerLiteral(4),
+                ]
+            ),
+        ]
+    )
 
 
 def test_declare_qubit():
     qasm = """
     qubit q;
     qubit[2] qs;
-    
+
     reset q;
     reset qs;
     # reset qs[0];

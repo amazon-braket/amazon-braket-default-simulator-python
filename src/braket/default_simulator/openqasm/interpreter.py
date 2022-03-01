@@ -6,8 +6,10 @@ from openqasm.ast import (
     ClassicalDeclaration,
     Constant,
     ConstantDeclaration,
+    DiscreteSet,
     Identifier,
     IndexedIdentifier,
+    IndexExpression,
     IntegerLiteral,
     Program,
     QASMNode,
@@ -112,3 +114,14 @@ class Interpreter(QASMTransformer):
     @visit.register
     def _(self, node: IndexedIdentifier, context: ProgramContext):
         print(f"Indexed identifier: {node}")
+
+    @visit.register
+    def _(self, node: IndexExpression, context: ProgramContext):
+        """cast index to list of integer literals"""
+        print(f"Index expression: {node}")
+        array = self.visit(node.collection, context)
+        if isinstance(node.index, DiscreteSet):
+            index = self.visit(node.index, context)
+        else:
+            index = [self.visit(i, context) for i in node.index]
+        return data_manipulation.get_elements(array, index)
