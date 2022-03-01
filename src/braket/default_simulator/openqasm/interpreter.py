@@ -1,6 +1,6 @@
 from functools import singledispatchmethod
 
-from openqasm.ast import (
+from openqasm3.ast import (
     BinaryExpression,
     BooleanLiteral,
     ClassicalDeclaration,

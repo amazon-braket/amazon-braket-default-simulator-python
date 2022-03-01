@@ -1,6 +1,6 @@
-from openqasm.ast import BoolType, FloatType, IntegerLiteral, IntType
+from openqasm3.ast import BoolType, FloatType, IntegerLiteral, IntType
 
-from braket.default_simulator.openqasm.variable_transformer import SymbolTable, VariableTable
+from braket.default_simulator.openqasm.program_context import SymbolTable, VariableTable
 
 
 def test_symbol_table():

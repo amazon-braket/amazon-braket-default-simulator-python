@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from openqasm.ast import Expression, IntegerLiteral
+from openqasm3.ast import Expression, IntegerLiteral
 
 
 @dataclass

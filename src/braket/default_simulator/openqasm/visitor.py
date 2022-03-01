@@ -6,7 +6,7 @@ from dataclasses import asdict
 from functools import singledispatchmethod
 from typing import Generic, Optional, TypeVar
 
-from openqasm.ast import QASMNode
+from openqasm3.ast import QASMNode
 
 T = TypeVar("T")
 

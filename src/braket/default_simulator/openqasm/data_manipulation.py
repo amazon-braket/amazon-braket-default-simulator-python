@@ -3,7 +3,7 @@ from functools import singledispatch
 from typing import Union
 
 import numpy as np
-from openqasm.ast import (
+from openqasm3.ast import (
     ArrayLiteral,
     ArrayType,
     BinaryOperator,

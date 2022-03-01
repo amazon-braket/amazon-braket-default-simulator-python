@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from openqasm.ast import (
+from openqasm3.ast import (
     ArrayLiteral,
     ArrayType,
     BitType,
@@ -11,7 +11,7 @@ from openqasm.ast import (
     RealLiteral,
     UintType,
 )
-from openqasm.parser.antlr.qasm_parser import parse
+from openqasm3.parser import parse
 
 from braket.default_simulator.openqasm.interpreter import Interpreter
 
@@ -314,9 +314,11 @@ def test_declare_qubit():
     qasm = """
     qubit q;
     qubit[2] qs;
+    # array[qubit, 2] qs2;
 
     reset q;
     reset qs;
+    reset qs2;
     # reset qs[0];
     """
     program = parse(qasm)

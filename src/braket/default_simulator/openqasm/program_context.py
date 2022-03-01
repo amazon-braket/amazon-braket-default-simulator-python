@@ -1,6 +1,6 @@
 from typing import Any, Union
 
-from openqasm.ast import ClassicalType
+from openqasm3.ast import ClassicalType
 
 from braket.default_simulator.openqasm.quantum import QubitType
 
