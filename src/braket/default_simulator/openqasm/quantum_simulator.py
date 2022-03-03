@@ -109,12 +109,14 @@ class QuantumSimulator:
                 raise ValueError(f"Invalid state value {state} for target size {target_size}")
             return np.array(state)
 
-    @staticmethod
-    def _is_binary(x: int):
-        return str(x)[:] == "0b"
+    def execute_unitary(self, unitary, target: Union[int, Sequence[int]]):
+        if isinstance(target, int):
+            target = [target]
+        self._state_tensor = multiply_matrix(self._state_tensor, unitary, target)
 
-    def execute_u(self, qubit, theta, phi, lambda_):
-        unitary = np.array(
+    @staticmethod
+    def generate_u(theta, phi, lambda_):
+        return np.array(
             [
                 [np.cos(theta / 2), -np.exp(1j * lambda_) * np.sin(theta / 2)],
                 [
@@ -123,4 +125,3 @@ class QuantumSimulator:
                 ],
             ]
         )
-        self._state_tensor = multiply_matrix(self._state_tensor, unitary, (qubit,))

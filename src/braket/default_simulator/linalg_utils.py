@@ -119,3 +119,13 @@ def _get_target_permutation(targets: Sequence[int]) -> Sequence[int]:
     return np.ravel_multi_index(
         basis_states[:, np.argsort(np.argsort(targets))].T, [2] * len(targets)
     )
+
+
+def controlled_unitary(unitary, neg=False):
+    upper_left, bottom_right = np.eye(unitary.shape[0]), unitary
+    if neg:
+        upper_left, bottom_right = bottom_right, upper_left
+    return np.block([
+        [upper_left, np.zeros_like(unitary)],
+        [np.zeros_like(unitary), bottom_right],
+    ])

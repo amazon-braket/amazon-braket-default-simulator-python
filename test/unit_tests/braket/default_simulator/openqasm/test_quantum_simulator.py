@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
 
@@ -95,9 +96,29 @@ def test_reset(qubits, result):
         )
     ),
 )
-def test_execute_u(qubits, result):
+def test_execute_unitary(qubits, result):
     quantum_simulator = QuantumSimulator()
     quantum_simulator.add_qubits(3)
+
+    hadamard = QuantumSimulator.generate_u(np.pi / 2, 0, np.pi)
+
     for qubit in qubits:
-        quantum_simulator.execute_u(qubit, np.pi / 2, 0, np.pi)
+        quantum_simulator.execute_unitary(hadamard, qubit)
     assert np.allclose(quantum_simulator.state_vector, result)
+
+
+def test_control():
+    quantum_simulator = QuantumSimulator()
+    quantum_simulator.add_qubits(3)
+
+    x = QuantumSimulator.generate_u(np.pi, 0, np.pi)
+    hadamard = QuantumSimulator.generate_u(np.pi / 2, 0, np.pi)
+    ch = controlled_unitary(hadamard)
+    nch = controlled_unitary(hadamard, neg=True)
+
+    quantum_simulator.execute_unitary(x, 0)
+    quantum_simulator.execute_unitary(ch, (0, 1))
+    quantum_simulator.execute_unitary(nch, (0, 2))
+    assert np.allclose(
+        quantum_simulator.state_vector, [0, 0, 0, 0, 1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]
+    )
