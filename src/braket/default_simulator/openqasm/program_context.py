@@ -1,12 +1,39 @@
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any, List, Optional
 
 from openqasm3.ast import ArrayLiteral, ClassicalType, IndexElement
 
-from braket.default_simulator.openqasm.quantum import QuantumSimulator, QubitType
+from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
 
-class ScopedTable:
-    def __init__(self):
+class Table:
+    def __init__(self, title):
+        self._title = title
+        self._dict = {}
+
+    def __getitem__(self, item):
+        return self._dict[item]
+
+    def __setitem__(self, key, value):
+        self._dict[key] = value
+
+    def items(self):
+        return self._dict.items()
+
+    def _longest_key_length(self):
+        items = self.items()
+        return max(len(key) for key, value in items) if items else None
+
+    def __repr__(self):
+        rows = [self._title]
+        longest_key_length = self._longest_key_length()
+        for item, value in self.items():
+            rows.append(f"{item:<{longest_key_length}}\t{value}")
+        return "\n".join(rows)
+
+
+class ScopedTable(Table):
+    def __init__(self, title):
+        super().__init__(title)
         self._scopes = [{}]
 
     def push_scope(self):
@@ -24,6 +51,9 @@ class ScopedTable:
             if item in scope:
                 return scope[item]
 
+    def __setitem__(self, key, value):
+        self.current_scope[key] = value
+
     def items(self):
         items = {}
         for scope in reversed(self._scopes):
@@ -32,12 +62,8 @@ class ScopedTable:
                     items[key] = value
         return items.items()
 
-    def _longest_key_length(self):
-        items = self.items()
-        return max(len(key) for key, value in items) if items else None
-
     def __repr__(self):
-        rows = []
+        rows = [self._title]
         longest_key_length = self._longest_key_length()
         for level, scope in enumerate(self._scopes):
             rows.append(f"SCOPE LEVEL {level}")
@@ -48,20 +74,23 @@ class ScopedTable:
 
 class SymbolTable(ScopedTable):
     class Symbol:
-        def __init__(self, symbol_type: Union[ClassicalType, QubitType], const: bool = False):
+        def __init__(self, symbol_type: ClassicalType, const: bool = False):
             self.type = symbol_type
             self.const = const
 
         def __repr__(self):
             return f"Symbol<{self.type}, const={self.const}>"
 
+    def __init__(self):
+        super().__init__("Symbols")
+
     def add_symbol(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, QubitType],
+        symbol_type: ClassicalType,
         const: bool = False,
     ):
-        self.current_scope[name] = SymbolTable.Symbol(symbol_type, const)
+        self[name] = SymbolTable.Symbol(symbol_type, const)
 
     def get_symbol(self, name: str):
         return self[name]
@@ -74,8 +103,11 @@ class SymbolTable(ScopedTable):
 
 
 class VariableTable(ScopedTable):
+    def __init__(self):
+        super().__init__("Data")
+
     def add_variable(self, name: str, value: Any):
-        self.current_scope[name] = value
+        self[name] = value
 
     def get_value(self, name: str):
         return self[name]
@@ -94,14 +126,19 @@ class ProgramContext:
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
         self.quantum_simulator = QuantumSimulator()
+        self.qubit_mapping = Table("Qubits")
 
     def __repr__(self):
-        return f"Symbols\n{self.symbol_table}\n\nData\n{self.variable_table}\n"
+        return f"{self.symbol_table}\n\n{self.variable_table}\n\n{self.qubit_mapping}"
+
+    @property
+    def num_qubits(self):
+        return self.quantum_simulator.num_qubits
 
     def declare_variable(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, QubitType],
+        symbol_type: ClassicalType,
         value: Optional[Any] = None,
         const: bool = False,
     ):
@@ -120,8 +157,16 @@ class ProgramContext:
     def update_value(self, name: str, value: Any, indices: Optional[List[IndexElement]] = None):
         return self.variable_table.update_value(name, value, indices)
 
-    def add_qubits(self, num_qubits: int):
+    def add_qubits(self, name: str, num_qubits: int):
+        self.qubit_mapping[name] = range(self.num_qubits, self.num_qubits + num_qubits)
         self.quantum_simulator.add_qubits(num_qubits)
 
-    def reset_qubits(self, target: Union[int, Sequence]):
+    def get_qubit_length(self, name: str):
+        return len(self.qubit_mapping[name])
+
+    def reset_qubits(self, qubits: str, index=None):
+        print(qubits, index)
+        target = self.qubit_mapping[qubits]
+        if index is not None:
+            target = target[index]
         self.quantum_simulator.reset_qubits(target)

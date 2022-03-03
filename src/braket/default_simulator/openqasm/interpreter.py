@@ -15,13 +15,13 @@ from openqasm3.ast import (
     QASMNode,
     QuantumReset,
     QubitDeclaration,
+    RangeDefinition,
     RealLiteral,
     UnaryExpression,
 )
 
 from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.program_context import ProgramContext
-from braket.default_simulator.openqasm.quantum import Qubit, QubitType
 from braket.default_simulator.openqasm.visitor import QASMTransformer
 
 
@@ -99,14 +99,36 @@ class Interpreter(QASMTransformer):
     @visit.register
     def _(self, node: QubitDeclaration, context: ProgramContext):
         print(f"Qubit declaration: {node}")
-        size = self.visit(node.size, context)
-        context.declare_variable(node.qubit.name, QubitType(size), Qubit(size))
+        size = self.visit(node.size, context).value if node.size else 1
+        context.add_qubits(node.qubit.name, size)
 
     @visit.register
     def _(self, node: QuantumReset, context: ProgramContext):
         print(f"Quantum reset: {node}")
-        target = self.visit(node.qubits, context)
-        target.reset()
+        target = node.qubits
+        if isinstance(target, IndexedIdentifier):
+            name = target.name.name
+            if len(target.indices) > 1:
+                raise NotImplementedError("Multiple dimensions of qubit indices")
+            index = target.indices[0]
+            if len(index) > 1:
+                raise NotImplementedError("Multiple qubit indices")
+            index = index[0]
+            # define start, end, step of range
+            if isinstance(index, IntegerLiteral):
+                start, end, step = index.value, index.value + 1, 1
+            elif isinstance(index, RangeDefinition):
+                start = index.start.value if index.start else 0
+                end = index.end.value if index.end else context.get_qubit_length(name)
+                step = index.step.value if index.step else 1
+            else:
+                raise NotImplementedError(f"Index {index} not valid for qubit indexing")
+            index = slice(start, end, step)
+        else:
+            name = target.name
+            index = None
+
+        context.reset_qubits(name, index)
 
     @visit.register
     def _(self, node: IndexedIdentifier, context: ProgramContext):

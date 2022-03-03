@@ -1,3 +1,5 @@
+from unittest.mock import Mock, call
+
 import numpy as np
 import pytest
 from openqasm3.ast import (
@@ -14,6 +16,7 @@ from openqasm3.ast import (
 from openqasm3.parser import parse
 
 from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.program_context import ProgramContext
 
 
 def test_bit_declaration():
@@ -315,11 +318,24 @@ def test_reset_qubit():
     qubit q;
     qubit[2] qs;
     qubit[2] qs2;
+    qubit[5] qs5;
 
     reset q;
     reset qs;
     reset qs2[0];
+    reset qs5[:2:4];
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
-    print(context)
+    mocked_context = ProgramContext()
+    reset_qubits_mock = Mock()
+    mocked_context.quantum_simulator.reset_qubits = reset_qubits_mock
+    Interpreter().visit(program, mocked_context)
+
+    reset_qubits_mock.assert_has_calls(
+        (
+            call(range(0, 1)),
+            call(range(1, 3)),
+            call(range(3, 4)),
+            call(range(5, 9, 2)),
+        )
+    )

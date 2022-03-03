@@ -1,27 +1,8 @@
-from dataclasses import dataclass
 from typing import Optional, Sequence, Union
 
 import numpy as np
-from openqasm3.ast import Expression, IntegerLiteral
 
 from braket.default_simulator.linalg_utils import multiply_matrix
-
-
-@dataclass
-class QubitType:
-    size: Optional[Expression]
-
-
-@dataclass
-class Qubit:
-    state: np.ndarray
-
-    def __init__(self, size: IntegerLiteral = None):
-        size = size.value if size is not None else 1
-        self.state = np.full((size, 2), np.nan, dtype=complex)
-
-    def reset(self):
-        self.state[:] = (1, 0)
 
 
 class QuantumSimulator:
@@ -111,7 +92,7 @@ class QuantumSimulator:
 
     def execute_unitary(self, unitary, target: Union[int, Sequence[int]]):
         if isinstance(target, int):
-            target = [target]
+            target = (target,)
         self._state_tensor = multiply_matrix(self._state_tensor, unitary, target)
 
     @staticmethod
