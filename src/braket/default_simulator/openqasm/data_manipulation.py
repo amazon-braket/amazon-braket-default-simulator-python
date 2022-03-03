@@ -183,7 +183,7 @@ def _(into: FloatType, variable: LiteralType):
 
 
 @cast_to.register
-def _(into: ArrayType, variable: ArrayLiteral):
+def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]):
     if len(variable.values) != into.dimensions[0].value:
         raise ValueError(
             f"Size mismatch between dimension of size {into.dimensions[0].value} "
@@ -223,7 +223,7 @@ def evaluate_constant(constant: Constant):
 
 def get_elements(array: ArrayLiteral, index: IndexElement):
     if isinstance(index, DiscreteSet):
-        return ArrayLiteral([get_elements(array, [i]) for i in index.values])
+        return DiscreteSet([get_elements(array, [i]) for i in index.values])
     if not isinstance(index, list):
         index = [index]
     for i in index:

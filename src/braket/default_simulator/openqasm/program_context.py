@@ -1,8 +1,8 @@
-from typing import Any, Union
+from typing import Any, List, Optional, Sequence, Union
 
-from openqasm3.ast import ClassicalType
+from openqasm3.ast import ArrayLiteral, ClassicalType, IndexElement
 
-from braket.default_simulator.openqasm.quantum import QubitType
+from braket.default_simulator.openqasm.quantum import QuantumSimulator, QubitType
 
 
 class ScopedTable:
@@ -55,7 +55,12 @@ class SymbolTable(ScopedTable):
         def __repr__(self):
             return f"Symbol<{self.type}, const={self.const}>"
 
-    def add_symbol(self, name: str, symbol_type: ClassicalType, const: bool = False):
+    def add_symbol(
+        self,
+        name: str,
+        symbol_type: Union[ClassicalType, QubitType],
+        const: bool = False,
+    ):
         self.current_scope[name] = SymbolTable.Symbol(symbol_type, const)
 
     def get_symbol(self, name: str):
@@ -75,14 +80,33 @@ class VariableTable(ScopedTable):
     def get_value(self, name: str):
         return self[name]
 
+    def update_value(self, name: str, value: Any, indices: Optional[List[IndexElement]] = None):
+        variable = self[name]
+        if indices and not (isinstance(variable, ArrayLiteral)):
+            raise TypeError(f"Cannot get index for variable of type {type(variable).__name__}")
+        for i in indices:
+            variable = variable.values[i]
+        # if isinstance()
+
 
 class ProgramContext:
     def __init__(self):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
+        self.quantum_simulator = QuantumSimulator()
 
     def __repr__(self):
         return f"Symbols\n{self.symbol_table}\n\nData\n{self.variable_table}\n"
+
+    def declare_variable(
+        self,
+        name: str,
+        symbol_type: Union[ClassicalType, QubitType],
+        value: Optional[Any] = None,
+        const: bool = False,
+    ):
+        self.symbol_table.add_symbol(name, symbol_type, const)
+        self.variable_table.add_variable(name, value)
 
     def get_type(self, name: str):
         return self.symbol_table.get_type(name)
@@ -92,3 +116,12 @@ class ProgramContext:
 
     def get_value(self, name: str):
         return self.variable_table.get_value(name)
+
+    def update_value(self, name: str, value: Any, indices: Optional[List[IndexElement]] = None):
+        return self.variable_table.update_value(name, value, indices)
+
+    def add_qubits(self, num_qubits: int):
+        self.quantum_simulator.add_qubits(num_qubits)
+
+    def reset_qubits(self, target: Union[int, Sequence]):
+        self.quantum_simulator.reset_qubits(target)

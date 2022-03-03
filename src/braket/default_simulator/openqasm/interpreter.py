@@ -44,25 +44,23 @@ class Interpreter(QASMTransformer):
     def _(self, node: ClassicalDeclaration, context: ProgramContext):
         print(f"Classical declaration: {node}")
         node_type = self.visit(node.type, context)
-        context.symbol_table.add_symbol(node.identifier.name, node_type)
         if node.init_expression is not None:
-            init_value = self.visit(node.init_expression, context)
-            casted = data_manipulation.cast_to(node.type, init_value)
-            context.variable_table.add_variable(node.identifier.name, casted)
+            init_expression = self.visit(node.init_expression, context)
+            init_value = data_manipulation.cast_to(node.type, init_expression)
         else:
-            context.variable_table.add_variable(node.identifier.name, None)
+            init_value = None
+        context.declare_variable(node.identifier.name, node_type, init_value)
 
     @visit.register
     def _(self, node: ConstantDeclaration, context: ProgramContext):
         print(f"Constant declaration: {node}")
         node_type = self.visit(node.type, context)
-        context.symbol_table.add_symbol(node.identifier.name, node_type, True)
         if node.init_expression is not None:
-            init_value = self.visit(node.init_expression, context)
-            casted = data_manipulation.cast_to(node.type, init_value)
-            context.variable_table.add_variable(node.identifier.name, casted)
+            init_expression = self.visit(node.init_expression, context)
+            init_value = data_manipulation.cast_to(node.type, init_expression)
         else:
-            context.variable_table.add_variable(node.identifier.name, None)
+            init_value = None
+        context.declare_variable(node.identifier.name, node_type, init_value, const=True)
 
     @visit.register
     def _(self, node: BinaryExpression, context: ProgramContext):
@@ -102,8 +100,7 @@ class Interpreter(QASMTransformer):
     def _(self, node: QubitDeclaration, context: ProgramContext):
         print(f"Qubit declaration: {node}")
         size = self.visit(node.size, context)
-        context.symbol_table.add_symbol(node.qubit.name, QubitType(size))
-        context.variable_table.add_variable(node.qubit.name, Qubit(size))
+        context.declare_variable(node.qubit.name, QubitType(size), Qubit(size))
 
     @visit.register
     def _(self, node: QuantumReset, context: ProgramContext):
@@ -114,6 +111,7 @@ class Interpreter(QASMTransformer):
     @visit.register
     def _(self, node: IndexedIdentifier, context: ProgramContext):
         print(f"Indexed identifier: {node}")
+        raise NotImplementedError
 
     @visit.register
     def _(self, node: IndexExpression, context: ProgramContext):
@@ -125,3 +123,5 @@ class Interpreter(QASMTransformer):
         else:
             index = [self.visit(i, context) for i in node.index]
         return data_manipulation.get_elements(array, index)
+
+    # next up: implement indexed identifiers, for loops, gates

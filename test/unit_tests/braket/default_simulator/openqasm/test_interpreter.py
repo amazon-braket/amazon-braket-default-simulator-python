@@ -310,16 +310,15 @@ def test_indexed_identifier():
     )
 
 
-def test_declare_qubit():
+def test_reset_qubit():
     qasm = """
     qubit q;
     qubit[2] qs;
-    # array[qubit, 2] qs2;
+    qubit[2] qs2;
 
     reset q;
     reset qs;
-    reset qs2;
-    # reset qs[0];
+    reset qs2[0];
     """
     program = parse(qasm)
     context = Interpreter().run(program)
