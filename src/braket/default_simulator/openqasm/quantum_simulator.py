@@ -27,14 +27,14 @@ class Qubit:
 class QuantumSimulator:
     """
     Qubits are initially in a ground state.
-    Qubit indexing is as follows: |n...3210>
+    Qubit indexing is as follows: |0123...n>
     """
 
     GROUND_STATE = (1, 0)
 
     def __init__(self):
         self._num_qubits = 0
-        self._state_vector = np.array([], dtype=complex)
+        self._state_tensor = np.array([], dtype=complex)
 
     @property
     def num_qubits(self):
@@ -42,26 +42,27 @@ class QuantumSimulator:
 
     @property
     def state_vector(self):
-        return self._state_vector
+        return self._state_tensor.flatten()
+
+    @property
+    def state_tensor(self):
+        return self._state_tensor.flatten()
 
     def add_qubits(self, num_qubits: int):
         """allocate additional qubits"""
-        new_qubits = np.zeros(2 ** num_qubits, dtype=complex)
-        new_qubits[0] = 1
-        if self.num_qubits:
-            self._state_vector = np.kron(self._state_vector, new_qubits)
+        if not self._num_qubits:
+            self._state_tensor = np.zeros(np.full(num_qubits, 2))
+            self._state_tensor[(0,) * num_qubits] = 1
         else:
-            self._state_vector = new_qubits
+            for _ in range(num_qubits):
+                self._state_tensor = np.stack(
+                    (self._state_tensor, np.zeros_like(self._state_tensor)),
+                    axis=-1,
+                )
         self._num_qubits += num_qubits
 
     def _normalize_state(self):
-        self._state_vector /= np.linalg.norm(self._state_vector)
-
-    def _tensorize_state(self):
-        self._state_vector = self._state_vector.reshape(np.full(self.num_qubits, 2))
-
-    def _detensorize_state(self):
-        self._state_vector = self._state_vector.flatten()
+        self._state_tensor /= np.linalg.norm(self._state_tensor)
 
     def reset_qubits(self, target: Union[int, Sequence]):
         """reset one or more qubits"""
@@ -86,16 +87,11 @@ class QuantumSimulator:
         state = QuantumSimulator._translate_state_to_array(state, len(target))
         measured_state = state if state is not None else self._sample_quantum_state(target)
 
-        # get mask of states compatible with measurement
-        mask = np.ones_like(self._state_vector, dtype=bool)
+        # zero out incompatible states
         for qubit, measurement in zip(target, measured_state):
-            qubit_mask = self._get_qubit_mask(qubit)
-            if not measurement:
-                qubit_mask = ~qubit_mask
-            mask &= qubit_mask
+            self._state_tensor[(slice(None),) * qubit + (int(not measurement),)] = 0
 
-        # update state vector
-        self._state_vector[~mask] = 0
+        # normalize state vector
         self._normalize_state()
 
     def _sample_quantum_state(self, target: Union[int, Sequence]) -> np.ndarray:
@@ -113,18 +109,11 @@ class QuantumSimulator:
                 raise ValueError(f"Invalid state value {state} for target size {target_size}")
             return np.array(state)
 
-    def _get_qubit_mask(self, qubit: int):
-        """
-        Get a mask of all the states where the given qubit is excited
-        """
-        return (np.arange(2 ** self.num_qubits) & (1 << qubit)).astype(bool)
-
     @staticmethod
     def _is_binary(x: int):
         return str(x)[:] == "0b"
 
     def execute_u(self, qubit, theta, phi, lambda_):
-        self._tensorize_state()
         unitary = np.array(
             [
                 [np.cos(theta / 2), -np.exp(1j * lambda_) * np.sin(theta / 2)],
@@ -134,5 +123,4 @@ class QuantumSimulator:
                 ],
             ]
         )
-        self._state_vector = multiply_matrix(self._state_vector, unitary, (qubit,))
-        self._detensorize_state()
+        self._state_tensor = multiply_matrix(self._state_tensor, unitary, (qubit,))
