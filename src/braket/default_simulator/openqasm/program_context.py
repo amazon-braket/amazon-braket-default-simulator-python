@@ -1,6 +1,13 @@
+from enum import Enum, auto
 from typing import Any, List, Optional
 
-from openqasm3.ast import ArrayLiteral, ClassicalType, IndexElement
+from openqasm3.ast import (
+    ArrayLiteral,
+    ClassicalType,
+    Identifier,
+    IndexElement,
+    QuantumGateDefinition,
+)
 
 from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
@@ -50,6 +57,7 @@ class ScopedTable(Table):
         for scope in reversed(self._scopes):
             if item in scope:
                 return scope[item]
+        raise KeyError(f"Undefined key: {item}")
 
     def __setitem__(self, key, value):
         self.current_scope[key] = value
@@ -121,15 +129,41 @@ class VariableTable(ScopedTable):
         # if isinstance()
 
 
+class GateTable(ScopedTable):
+    def __init__(self):
+        super().__init__("Gates")
+
+    def add_gate(self, name: str, definition: QuantumGateDefinition):
+        self[name] = definition
+
+    def get_gate_definition(self, name: str):
+        return self[name]
+
+
 class ProgramContext:
+    class ExecutionContext(Enum):
+        BASE = auto()
+        GATE_DEF = auto()
+
+    class IdentifierContext(Enum):
+        CLASSICAL = auto()
+        QUBIT = auto()
+        GATE = auto()
+
     def __init__(self):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
+        self.gate_table = GateTable()
         self.quantum_simulator = QuantumSimulator()
         self.qubit_mapping = Table("Qubits")
+        self.execution_context = ProgramContext.ExecutionContext.BASE
+        self.identifier_context = ProgramContext.IdentifierContext.CLASSICAL
 
     def __repr__(self):
-        return f"{self.symbol_table}\n\n{self.variable_table}\n\n{self.qubit_mapping}"
+        return "\n\n".join(
+            repr(x)
+            for x in (self.symbol_table, self.variable_table, self.gate_table, self.qubit_mapping)
+        )
 
     @property
     def num_qubits(self):
@@ -145,6 +179,24 @@ class ProgramContext:
         self.symbol_table.add_symbol(name, symbol_type, const)
         self.variable_table.add_variable(name, value)
 
+    def declare_alias(
+        self,
+        name: str,
+        value: Identifier,
+    ):
+        self.symbol_table.add_symbol(name, Identifier)
+        self.variable_table.add_variable(name, value)
+
+    def push_scope(self):
+        self.symbol_table.push_scope()
+        self.variable_table.push_scope()
+        self.gate_table.push_scope()
+
+    def pop_scope(self):
+        self.symbol_table.pop_scope()
+        self.variable_table.pop_scope()
+        self.gate_table.pop_scope()
+
     def get_type(self, name: str):
         return self.symbol_table.get_type(name)
 
@@ -157,7 +209,7 @@ class ProgramContext:
     def update_value(self, name: str, value: Any, indices: Optional[List[IndexElement]] = None):
         return self.variable_table.update_value(name, value, indices)
 
-    def add_qubits(self, name: str, num_qubits: int):
+    def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
         self.qubit_mapping[name] = range(self.num_qubits, self.num_qubits + num_qubits)
         self.quantum_simulator.add_qubits(num_qubits)
 
@@ -170,3 +222,12 @@ class ProgramContext:
         if index is not None:
             target = target[index]
         self.quantum_simulator.reset_qubits(target)
+
+    def add_gate(self, name: str, definition: QuantumGateDefinition):
+        self.gate_table.add_gate(name, definition)
+
+    def get_gate_definition(self, name: str):
+        try:
+            return self.gate_table.get_gate_definition(name)
+        except KeyError:
+            raise ValueError(f"Gate {name} is not defined.")

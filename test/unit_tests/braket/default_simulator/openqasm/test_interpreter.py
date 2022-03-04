@@ -8,8 +8,11 @@ from openqasm3.ast import (
     BitType,
     BooleanLiteral,
     FloatType,
+    Identifier,
     IntegerLiteral,
     IntType,
+    QuantumGate,
+    QuantumGateDefinition,
     RealLiteral,
     UintType,
 )
@@ -339,3 +342,118 @@ def test_reset_qubit():
             call(range(5, 9, 2)),
         )
     )
+
+
+def test_gate_def():
+    qasm = """
+    float[128] my_pi = π;
+    gate x a { U(π, 0, my_pi) a; }
+    gate x1(mp) c { U(π, 0, mp) c; }
+    gate x2(p) a, b {
+        x b;
+        x1(p) a;
+        x1(my_pi) a;
+        U(1, 2, p) b;
+    }
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+    print(context)
+
+    assert context.get_gate_definition("x") == QuantumGateDefinition(
+        name=Identifier("x"),
+        arguments=[],
+        qubits=[Identifier("a")],
+        body=[
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("U"),
+                arguments=[
+                    RealLiteral(np.pi),
+                    IntegerLiteral(0),
+                    RealLiteral(np.pi),
+                ],
+                qubits=[Identifier("a")],
+            )
+        ],
+    )
+    assert context.get_gate_definition("x1") == QuantumGateDefinition(
+        name=Identifier("x1"),
+        arguments=[Identifier("mp")],
+        qubits=[Identifier("c")],
+        body=[
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("U"),
+                arguments=[
+                    RealLiteral(np.pi),
+                    IntegerLiteral(0),
+                    Identifier("mp"),
+                ],
+                qubits=[Identifier("c")],
+            )
+        ],
+    )
+    assert context.get_gate_definition("x2") == QuantumGateDefinition(
+        name=Identifier("x2"),
+        arguments=[Identifier("p")],
+        qubits=[Identifier("a"), Identifier("b")],
+        body=[
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("U"),
+                arguments=[
+                    RealLiteral(np.pi),
+                    IntegerLiteral(0),
+                    RealLiteral(np.pi),
+                ],
+                qubits=[Identifier("b")],
+            ),
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("U"),
+                arguments=[
+                    RealLiteral(np.pi),
+                    IntegerLiteral(0),
+                    Identifier("p"),
+                ],
+                qubits=[Identifier("a")],
+            ),
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("U"),
+                arguments=[
+                    RealLiteral(np.pi),
+                    IntegerLiteral(0),
+                    RealLiteral(np.pi),
+                ],
+                qubits=[Identifier("a")],
+            ),
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("U"),
+                arguments=[
+                    IntegerLiteral(1),
+                    IntegerLiteral(2),
+                    Identifier("p"),
+                ],
+                qubits=[Identifier("b")],
+            ),
+        ],
+    )
+
+
+def test_gate_undef():
+    qasm = """
+    gate x a { y a; }
+    gate y a { U(π, π/2, π/2) a; }
+    """
+    program = parse(qasm)
+
+    undefined_gate = "Gate y is not defined."
+    with pytest.raises(ValueError, match=undefined_gate):
+        Interpreter().run(program)
+
+
+def test_if():
+    pass

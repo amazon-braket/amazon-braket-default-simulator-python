@@ -1,8 +1,10 @@
+from copy import deepcopy
 from functools import singledispatchmethod
 
 from openqasm3.ast import (
     BinaryExpression,
     BooleanLiteral,
+    BranchingStatement,
     ClassicalDeclaration,
     Constant,
     ConstantDeclaration,
@@ -13,6 +15,8 @@ from openqasm3.ast import (
     IntegerLiteral,
     Program,
     QASMNode,
+    QuantumGate,
+    QuantumGateDefinition,
     QuantumReset,
     QubitDeclaration,
     RangeDefinition,
@@ -92,9 +96,16 @@ class Interpreter(QASMTransformer):
 
     @visit.register
     def _(self, node: Identifier, context: ProgramContext):
-        if context.get_value(node.name) is None:
-            raise NameError(f"Identifier {node.name} is not initialized.")
-        return context.get_value(node.name)
+        if context.identifier_context == context.IdentifierContext.CLASSICAL:
+            if context.get_value(node.name) is None:
+                raise NameError(f"Identifier {node.name} is not initialized.")
+            return context.get_value(node.name)
+        elif context.identifier_context == ProgramContext.IdentifierContext.QUBIT:
+            return node.name
+        elif context.identifier_context == ProgramContext.IdentifierContext.GATE:
+            if context.get_gate_definition(node.name) is None:
+                raise NameError(f"Gate {node.name} is not initialized.")
+            return context.get_gate_definition(node.name)
 
     @visit.register
     def _(self, node: QubitDeclaration, context: ProgramContext):
@@ -147,3 +158,70 @@ class Interpreter(QASMTransformer):
         return data_manipulation.get_elements(array, index)
 
     # next up: implement indexed identifiers, for loops, gates
+
+    @visit.register
+    def _(self, node: QuantumGateDefinition, context: ProgramContext):
+        print(f"Quantum gate definition: {node}")
+        context.push_scope()
+        context.execution_context = ProgramContext.ExecutionContext.GATE_DEF
+
+        for qubit in node.qubits:
+            context.declare_alias(qubit.name, qubit)
+
+        for param in node.arguments:
+            context.declare_alias(param.name, param)
+
+        node.body = sum((self.visit(statement, context) for statement in node.body), [])
+
+        context.pop_scope()
+        context.execution_context = ProgramContext.ExecutionContext.BASE
+        context.add_gate(node.name.name, node)
+
+    @visit.register
+    def _(self, node: QuantumGate, context: ProgramContext):
+        # print(f"Quantum gate: {node}")
+        gate_name = node.name.name
+        node.arguments = [self.visit(arg, context) for arg in node.arguments]
+
+        if gate_name != "U":
+            context.push_scope()
+            gate_def = context.get_gate_definition(gate_name)
+
+            for qubit_called, qubit_defined in zip(node.qubits, gate_def.qubits):
+                context.declare_alias(qubit_defined.name, qubit_called)
+
+            for param_called, param_defined in zip(node.arguments, gate_def.arguments):
+                context.declare_alias(param_defined.name, param_called)
+
+        if context.execution_context == ProgramContext.ExecutionContext.GATE_DEF:
+            # flatten nested gate calls while replacing qubits from definition with
+            # qubits from call
+
+            qubits = [self.visit(qubit, context) for qubit in node.qubits]
+
+            if gate_name == "U":
+                return [
+                    QuantumGate(
+                        node.modifiers,
+                        node.name,
+                        node.arguments,
+                        qubits,
+                    )
+                ]
+
+            visited_body = []
+            for statement in deepcopy(gate_def.body):
+                visited_body += self.visit(statement, context)
+
+            context.pop_scope()
+            return visited_body
+
+        if gate_name != "U":
+            context.pop_scope()
+
+    @visit.register
+    def _(self, node: BranchingStatement, context: ProgramContext):
+        print(f"Branching statement: {node}")
+        block = node.if_block if self.visit(node.condition, context) else node.else_block
+        for statement in block:
+            self.visit(statement, context)

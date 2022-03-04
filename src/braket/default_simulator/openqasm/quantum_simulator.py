@@ -2,7 +2,7 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 
-from braket.default_simulator.linalg_utils import multiply_matrix
+from braket.default_simulator.linalg_utils import marginal_probability, multiply_matrix
 
 
 class QuantumSimulator:
@@ -26,6 +26,10 @@ class QuantumSimulator:
         return self._state_tensor.flatten()
 
     @property
+    def probabilities(self):
+        return np.abs(self.state_vector) ** 2
+
+    @property
     def state_tensor(self):
         return self._state_tensor.flatten()
 
@@ -45,8 +49,10 @@ class QuantumSimulator:
     def _normalize_state(self):
         self._state_tensor /= np.linalg.norm(self._state_tensor)
 
-    def reset_qubits(self, target: Union[int, Sequence]):
+    def reset_qubits(self, target: Optional[Union[int, Sequence]] = None):
         """reset one or more qubits"""
+        if target is None:
+            target = range(self.num_qubits)
         self.measure_qubits(target, 0)
 
     def measure_qubits(
@@ -77,7 +83,10 @@ class QuantumSimulator:
 
     def _sample_quantum_state(self, target: Union[int, Sequence]) -> np.ndarray:
         """measure target qubit(s)"""
-        raise NotImplementedError
+        target = [target] if isinstance(target, int) else target
+        marginal = marginal_probability(self.probabilities, target)
+        sample = np.random.choice(2 ** len(target), p=marginal)
+        return np.array([x == "1" for x in np.binary_repr(sample, len(target))])
 
     @staticmethod
     def _translate_state_to_array(

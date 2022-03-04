@@ -129,3 +129,7 @@ def controlled_unitary(unitary, neg=False):
         [upper_left, np.zeros_like(unitary)],
         [np.zeros_like(unitary), bottom_right],
     ])
+
+
+def inverse_unitary(unitary):
+    return unitary.conj().T
