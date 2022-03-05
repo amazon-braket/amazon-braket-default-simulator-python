@@ -9,6 +9,7 @@ from openqasm3.ast import (
     Constant,
     ConstantDeclaration,
     DiscreteSet,
+    GateModifierName,
     Identifier,
     IndexedIdentifier,
     IndexExpression,
@@ -17,6 +18,7 @@ from openqasm3.ast import (
     QASMNode,
     QuantumGate,
     QuantumGateDefinition,
+    QuantumGateModifier,
     QuantumReset,
     QubitDeclaration,
     RangeDefinition,
@@ -100,12 +102,6 @@ class Interpreter(QASMTransformer):
             if context.get_value(node.name) is None:
                 raise NameError(f"Identifier {node.name} is not initialized.")
             return context.get_value(node.name)
-        elif context.identifier_context == ProgramContext.IdentifierContext.QUBIT:
-            return node.name
-        elif context.identifier_context == ProgramContext.IdentifierContext.GATE:
-            if context.get_gate_definition(node.name) is None:
-                raise NameError(f"Gate {node.name} is not initialized.")
-            return context.get_gate_definition(node.name)
 
     @visit.register
     def _(self, node: QubitDeclaration, context: ProgramContext):
@@ -179,7 +175,7 @@ class Interpreter(QASMTransformer):
 
     @visit.register
     def _(self, node: QuantumGate, context: ProgramContext):
-        # print(f"Quantum gate: {node}")
+        print(f"Quantum gate: {node}")
         gate_name = node.name.name
         node.arguments = [self.visit(arg, context) for arg in node.arguments]
 
@@ -187,7 +183,14 @@ class Interpreter(QASMTransformer):
             context.push_scope()
             gate_def = context.get_gate_definition(gate_name)
 
-            for qubit_called, qubit_defined in zip(node.qubits, gate_def.qubits):
+            num_ctrl = 0
+            for mod in node.modifiers:
+                if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
+                    num_ctrl += mod.argument if mod.argument is not None else 1
+
+            ctrl_qubits, gate_qubits = node.qubits[:num_ctrl], node.qubits[num_ctrl:]
+
+            for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
                 context.declare_alias(qubit_defined.name, qubit_called)
 
             for param_called, param_defined in zip(node.arguments, gate_def.arguments):
@@ -209,15 +212,42 @@ class Interpreter(QASMTransformer):
                     )
                 ]
 
+            gate_def_body = deepcopy(gate_def.body)
+            inv_modifier = QuantumGateModifier(GateModifierName.inv, None)
+            num_inv_modifiers = node.modifiers.count(inv_modifier)
+            if num_inv_modifiers % 2:
+                # reverse body and invert all gates
+                gate_def_body = list(reversed(gate_def_body))
+                for statement in gate_def_body:
+                    if isinstance(statement, QuantumGate):
+                        statement.modifiers.insert(0, inv_modifier)
+            ctrl_modifiers = [
+                mod
+                for mod in node.modifiers
+                if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
+            ]
             visited_body = []
-            for statement in deepcopy(gate_def.body):
+            for statement in gate_def_body:
+                if isinstance(statement, QuantumGate):
+                    statement.modifiers = ctrl_modifiers + statement.modifiers
+                    statement.qubits = ctrl_qubits + statement.qubits
                 visited_body += self.visit(statement, context)
 
             context.pop_scope()
             return visited_body
+        else:
+            qubits = [self.visit(qubit, context) for qubit in node.qubits]
 
-        if gate_name != "U":
-            context.pop_scope()
+            if gate_name == "U":
+                context.execute_builtin_unitary(
+                    node.arguments,
+                    qubits,
+                    node.modifiers,
+                )
+            else:
+                for statement in deepcopy(gate_def.body):
+                    self.visit(statement, context)
+                context.pop_scope()
 
     @visit.register
     def _(self, node: BranchingStatement, context: ProgramContext):

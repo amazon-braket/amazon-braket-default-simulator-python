@@ -358,7 +358,6 @@ def test_gate_def():
     """
     program = parse(qasm)
     context = Interpreter().run(program)
-    print(context)
 
     assert context.get_gate_definition("x") == QuantumGateDefinition(
         name=Identifier("x"),
@@ -453,6 +452,108 @@ def test_gate_undef():
     undefined_gate = "Gate y is not defined."
     with pytest.raises(ValueError, match=undefined_gate):
         Interpreter().run(program)
+
+
+def test_gate_call():
+    qasm = """
+    float[128] my_pi = π;
+    gate x a { U(π, 0, my_pi) a; }
+
+    qubit q1;
+    qubit q2;
+
+    reset q1;
+    reset q2;
+
+    U(π, 0, my_pi) q1;
+    x q2;
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+
+    assert np.allclose(context.quantum_simulator.state_vector, [0, 0, 0, 1])
+
+
+def test_gate_inv():
+    qasm = """
+    gate rand_u_1 a { U(1, 2, 3) a; }
+    gate rand_u_2 a { U(2, 3, 4) a; }
+    gate rand_u_3 a { U(3, 4, 5) a; }
+
+    gate both a {
+        rand_u_1 a;
+        rand_u_2 a;
+    }
+    gate both_inv a {
+        inv @ both a;
+    }
+    gate all_3 a {
+        rand_u_1 a;
+        rand_u_2 a;
+        rand_u_3 a;
+    }
+    gate all_3_inv a {
+        inv @ inv @ inv @ all_3 a;
+    }
+
+    qubit q;
+
+    reset q;
+
+    both q;
+    both_inv q;
+
+    all_3 q;
+    all_3_inv q;
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+
+    assert np.allclose(context.quantum_simulator.state_vector, [1, 0])
+
+
+def test_gate_ctrl():
+    qasm = """
+    gate x a { U(π, 0, π) a; }
+    gate cx c, a {
+        ctrl @ x c, a;
+    }
+    gate ccx_1 c1, c2, a {
+        ctrl @ ctrl @ x c1, c2, a;
+    }
+    gate ccx_2 c1, c2, a {
+        ctrl @ cx c1, c2, a;
+    }
+
+    qubit q1;
+    qubit q2;
+    qubit q3;
+    qubit q4;
+
+    reset q1;
+    reset q2;
+    reset q3;
+    reset q4;
+
+    // doesn't flip q2
+    cx q1, q2;
+    // flip q1
+    x q1;
+    // flip q2
+    cx q1, q2;
+    // doesn't flip q3, q4
+    ccx_1 q1, q4, q3;
+    ccx_2 q1, q3, q4;
+    // flip q3, q4;
+    ccx_1 q1, q2, q3;
+    ccx_2 q1, q2, q4;
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+    assert np.allclose(
+        context.quantum_simulator.state_vector,
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    )
 
 
 def test_if():

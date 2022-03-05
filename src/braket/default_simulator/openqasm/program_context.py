@@ -1,14 +1,19 @@
 from enum import Enum, auto
 from typing import Any, List, Optional
 
+import numpy as np
 from openqasm3.ast import (
     ArrayLiteral,
     ClassicalType,
+    GateModifierName,
     Identifier,
     IndexElement,
     QuantumGateDefinition,
+    QuantumGateModifier,
 )
 
+from braket.default_simulator.linalg_utils import controlled_unitary
+from braket.default_simulator.openqasm.data_manipulation import LiteralType
 from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
 
@@ -212,12 +217,12 @@ class ProgramContext:
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
         self.qubit_mapping[name] = range(self.num_qubits, self.num_qubits + num_qubits)
         self.quantum_simulator.add_qubits(num_qubits)
+        self.declare_alias(name, Identifier(name))
 
     def get_qubit_length(self, name: str):
         return len(self.qubit_mapping[name])
 
     def reset_qubits(self, qubits: str, index=None):
-        print(qubits, index)
         target = self.qubit_mapping[qubits]
         if index is not None:
             target = target[index]
@@ -231,3 +236,25 @@ class ProgramContext:
             return self.gate_table.get_gate_definition(name)
         except KeyError:
             raise ValueError(f"Gate {name} is not defined.")
+
+    def execute_builtin_unitary(
+        self,
+        parameters: List[LiteralType],
+        qubits: List[Identifier],
+        modifiers: Optional[List[QuantumGateModifier]] = None,
+    ):
+        params = np.array([param.value for param in parameters])
+        target = sum(((*self.qubit_mapping[qubit.name],) for qubit in qubits), ())
+        num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
+        if num_inv_modifiers % 2:
+            # inv @ U(θ, ϕ, λ) == U(-θ, -λ, -ϕ)
+            params = -params[[0, 2, 1]]
+        unitary = QuantumSimulator.generate_u(*params)
+        for mod in modifiers:
+            if mod.modifier == GateModifierName.ctrl:
+                for _ in range(mod.argument if mod.argument is not None else 1):
+                    unitary = controlled_unitary(unitary)
+            if mod.modifier == GateModifierName.negctrl:
+                for _ in range(mod.argument if mod.argument is not None else 1):
+                    unitary = controlled_unitary(unitary, neg=True)
+        self.quantum_simulator.execute_unitary(unitary, target)
