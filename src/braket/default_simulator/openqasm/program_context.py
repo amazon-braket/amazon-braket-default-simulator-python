@@ -252,9 +252,9 @@ class ProgramContext:
         unitary = QuantumSimulator.generate_u(*params)
         for mod in modifiers:
             if mod.modifier == GateModifierName.ctrl:
-                for _ in range(mod.argument if mod.argument is not None else 1):
+                for _ in range(mod.argument.value if mod.argument is not None else 1):
                     unitary = controlled_unitary(unitary)
             if mod.modifier == GateModifierName.negctrl:
-                for _ in range(mod.argument if mod.argument is not None else 1):
+                for _ in range(mod.argument.value if mod.argument is not None else 1):
                     unitary = controlled_unitary(unitary, neg=True)
         self.quantum_simulator.execute_unitary(unitary, target)

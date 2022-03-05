@@ -522,6 +522,9 @@ def test_gate_ctrl():
         ctrl @ ctrl @ x c1, c2, a;
     }
     gate ccx_2 c1, c2, a {
+        ctrl(2) @ x c1, c2, a;
+    }
+    gate ccx_3 c1, c2, a {
         ctrl @ cx c1, c2, a;
     }
 
@@ -529,11 +532,13 @@ def test_gate_ctrl():
     qubit q2;
     qubit q3;
     qubit q4;
+    qubit q5;
 
     reset q1;
     reset q2;
     reset q3;
     reset q4;
+    reset q5;
 
     // doesn't flip q2
     cx q1, q2;
@@ -541,18 +546,20 @@ def test_gate_ctrl():
     x q1;
     // flip q2
     cx q1, q2;
-    // doesn't flip q3, q4
+    // doesn't flip q3, q4, q5
     ccx_1 q1, q4, q3;
     ccx_2 q1, q3, q4;
-    // flip q3, q4;
+    ccx_3 q1, q3, q5;
+    // flip q3, q4, q5;
     ccx_1 q1, q2, q3;
     ccx_2 q1, q2, q4;
+    ccx_2 q1, q2, q5;
     """
     program = parse(qasm)
     context = Interpreter().run(program)
     assert np.allclose(
         context.quantum_simulator.state_vector,
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [0] * 31 + [1],
     )
 
 

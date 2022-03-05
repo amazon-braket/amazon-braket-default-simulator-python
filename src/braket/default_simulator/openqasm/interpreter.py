@@ -186,7 +186,9 @@ class Interpreter(QASMTransformer):
             num_ctrl = 0
             for mod in node.modifiers:
                 if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
-                    num_ctrl += mod.argument if mod.argument is not None else 1
+                    num_ctrl += (
+                        self.visit(mod.argument, context).value if mod.argument is not None else 1
+                    )
 
             ctrl_qubits, gate_qubits = node.qubits[:num_ctrl], node.qubits[num_ctrl:]
 
