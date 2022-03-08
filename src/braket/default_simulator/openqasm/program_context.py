@@ -1,6 +1,6 @@
 from enum import Enum, auto
 from functools import singledispatchmethod
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import numpy as np
 from openqasm3.ast import (
@@ -239,17 +239,28 @@ class ProgramContext:
     def get_qubit_length(self, name: str):
         return len(self.qubit_mapping[name])
 
-    def reset_qubits(self, qubits: str, index=None):
-        target = self.qubit_mapping[qubits]
-        if index is not None:
-            target = target[index]
+    def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
+        if isinstance(qubits, IndexedIdentifier):
+            range_def = qubits.indices[0][0]
+            name = qubits.name.name
+            index = slice(range_def.start, range_def.end, range_def.step)
+            return self.qubit_mapping[name][index]
+        else:
+            name = qubits.name
+            return self.qubit_mapping[name]
+
+    def reset_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
+        target = self.get_qubits(qubits)
         self.quantum_simulator.reset_qubits(target)
 
-    def measure_qubits(self, qubits: str, index=None):
-        target = self.qubit_mapping[qubits]
-        if index is not None:
-            target = target[index]
+    def measure_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
+        target = self.get_qubits(qubits)
         return "".join("01"[int(m)] for m in self.quantum_simulator.measure_qubits(target))
+
+    def apply_phase(self, phase: float, qubits: Union[Identifier, IndexedIdentifier]):
+        for qubit in qubits:
+            target = self.get_qubits(qubit)
+            self.quantum_simulator.apply_phase(phase, target)
 
     def add_gate(self, name: str, definition: QuantumGateDefinition):
         self.gate_table.add_gate(name, definition)
@@ -266,10 +277,9 @@ class ProgramContext:
         qubits: List[Identifier],
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ):
-        # print(qubits)
-        target = sum(((*self.qubit_mapping.get_by_identifier(qubit),) for qubit in qubits), ())
+        # target = sum(((*self.qubit_mapping.get_by_identifier(qubit),) for qubit in qubits), ())
+        target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
-        # target = sum(((*self.qubit_mapping[qubit.name],) for qubit in qubits), ())
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         if num_inv_modifiers % 2:
             # inv @ U(θ, ϕ, λ) == U(-θ, -λ, -ϕ)
@@ -277,9 +287,9 @@ class ProgramContext:
         unitary = QuantumSimulator.generate_u(*params)
         for mod in modifiers:
             if mod.modifier == GateModifierName.ctrl:
-                for _ in range(mod.argument.value if mod.argument is not None else 1):
+                for _ in range(mod.argument.value):
                     unitary = controlled_unitary(unitary)
             if mod.modifier == GateModifierName.negctrl:
-                for _ in range(mod.argument.value if mod.argument is not None else 1):
+                for _ in range(mod.argument.value):
                     unitary = controlled_unitary(unitary, neg=True)
         self.quantum_simulator.execute_unitary(unitary, target)

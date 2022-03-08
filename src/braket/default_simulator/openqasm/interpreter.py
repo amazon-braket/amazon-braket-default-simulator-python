@@ -21,10 +21,12 @@ from openqasm3.ast import (
     QuantumGateModifier,
     QuantumMeasurement,
     QuantumMeasurementAssignment,
+    QuantumPhase,
     QuantumReset,
     QubitDeclaration,
     RangeDefinition,
     RealLiteral,
+    StringLiteral,
     UnaryExpression,
 )
 
@@ -114,17 +116,8 @@ class Interpreter(QASMTransformer):
     @visit.register
     def _(self, node: QuantumReset, context: ProgramContext):
         print(f"Quantum reset: {node}")
-        target = node.qubits
-        if isinstance(target, IndexedIdentifier):
-            target = self.visit(target, context)
-            range_def = target.indices[0][0]
-            name = target.name.name
-            index = slice(range_def.start, range_def.end, range_def.step)
-        else:
-            name = target.name
-            index = None
-
-        context.reset_qubits(name, index)
+        qubits = self.visit(node.qubits, context)
+        context.reset_qubits(qubits)
 
     @visit.register
     def _(self, node: IndexedIdentifier, context: ProgramContext):
@@ -190,7 +183,6 @@ class Interpreter(QASMTransformer):
         gate_name = node.name.name
         node.arguments = [self.visit(arg, context) for arg in node.arguments]
         qubits = [self.visit(qubit, context) for qubit in node.qubits]
-        print(qubits)
 
         if gate_name != "U":
             context.push_scope()
@@ -215,15 +207,9 @@ class Interpreter(QASMTransformer):
             # flatten nested gate calls while replacing qubits from definition with
             # qubits from call
 
+            bound_gate_call = QuantumGate(node.modifiers, node.name, node.arguments, qubits)
             if gate_name == "U":
-                return [
-                    QuantumGate(
-                        node.modifiers,
-                        node.name,
-                        node.arguments,
-                        qubits,
-                    )
-                ]
+                return [bound_gate_call]
 
             gate_def_body = deepcopy(gate_def.body)
             inv_modifier = QuantumGateModifier(GateModifierName.inv, None)
@@ -232,10 +218,9 @@ class Interpreter(QASMTransformer):
                 # reverse body and invert all gates
                 gate_def_body = list(reversed(gate_def_body))
                 for statement in gate_def_body:
-                    if isinstance(statement, QuantumGate):
-                        statement.modifiers.insert(0, inv_modifier)
+                    statement.modifiers.insert(0, inv_modifier)
             ctrl_modifiers = [
-                mod
+                self.visit(mod, context)
                 for mod in node.modifiers
                 if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
             ]
@@ -259,31 +244,81 @@ class Interpreter(QASMTransformer):
                 )
             else:
                 for statement in deepcopy(gate_def.body):
-                    self.visit(statement, context)
+                    if isinstance(statement, QuantumGate):
+                        self.visit(statement, context)
+                    elif isinstance(statement, QuantumPhase):
+                        phase = statement.argument.value
+                        context.apply_phase(phase, qubits)
                 context.pop_scope()
+
+    @visit.register
+    def _(self, node: QuantumPhase, context: ProgramContext):
+        print(f"Quantum phase: {node}")
+        phase = self.visit(node.argument, context)
+
+        inv_modifier = QuantumGateModifier(GateModifierName.inv, None)
+        num_inv_modifiers = node.quantum_gate_modifiers.count(inv_modifier)
+        if num_inv_modifiers % 2:
+            phase.value *= -1
+
+        ctrl_modifiers = [
+            self.visit(mod, context)
+            for mod in node.quantum_gate_modifiers
+            if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
+        ]
+        if ctrl_modifiers:
+            first_ctrl_modifier = ctrl_modifiers[-1]
+            if first_ctrl_modifier.modifier == GateModifierName.negctrl:
+                raise ValueError("negctrl modifier undefined for gphase operation")
+            if first_ctrl_modifier.argument.value == 1:
+                ctrl_modifiers.pop()
+            else:
+                ctrl_modifiers[-1].argument.value -= 1
+            return [
+                QuantumGate(
+                    ctrl_modifiers,
+                    Identifier("U"),
+                    [
+                        IntegerLiteral(0),
+                        IntegerLiteral(0),
+                        phase,
+                    ],
+                    node.qubits,
+                )
+            ]
+        else:
+            if node.qubits:
+                raise ValueError(
+                    "Cannot specify qubits for a global phase instruction "
+                    "unless using the controlled global phase gate."
+                )
+        return [QuantumPhase([], phase, [])]
+
+    @visit.register
+    def _(self, node: QuantumGateModifier, context: ProgramContext):
+        print(f"Quantum gate modifier: {node}")
+        if node.modifier == GateModifierName.inv:
+            if node.argument is not None:
+                raise ValueError("inv modifier does not take an argument")
+        elif node.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
+            if node.argument is None:
+                node.argument = IntegerLiteral(1)
+            else:
+                node.argument = self.visit(node.argument, context)
+        return node
 
     @visit.register
     def _(self, node: QuantumMeasurement, context: ProgramContext):
         print(f"Quantum measurement: {node}")
-        target = node.qubit
-        if isinstance(target, IndexedIdentifier):
-            target = self.visit(target, context)
-            range_def = target.indices[0][0]
-            name = target.name.name
-            index = slice(range_def.start, range_def.end, range_def.step)
-        else:
-            name = target.name
-            index = None
-
-        return context.measure_qubits(name, index)
+        qubits = self.visit(node.qubit, context)
+        return StringLiteral(context.measure_qubits(qubits))
 
     @visit.register
     def _(self, node: QuantumMeasurementAssignment, context: ProgramContext):
         print(f"Quantum measurement assignment: {node}")
         measurement = self.visit(node.measure_instruction, context)
-        print("TARMEA: ", node.target, measurement)
         if node.target is not None:
-            context.update_value(node.target.name, measurement)
+            context.update_value(node.target.name, measurement.value)
 
     @visit.register
     def _(self, node: BranchingStatement, context: ProgramContext):

@@ -521,6 +521,7 @@ def test_gate_inv():
 
 def test_gate_ctrl():
     qasm = """
+    int[8] two = 2;
     gate x a { U(π, 0, π) a; }
     gate cx c, a {
         ctrl @ x c, a;
@@ -529,7 +530,7 @@ def test_gate_ctrl():
         ctrl @ ctrl @ x c1, c2, a;
     }
     gate ccx_2 c1, c2, a {
-        ctrl(2) @ x c1, c2, a;
+        ctrl(two) @ x c1, c2, a;
     }
     gate ccx_3 c1, c2, a {
         ctrl @ cx c1, c2, a;
@@ -609,6 +610,34 @@ def test_measurement():
     assert context.get_value("mqs") == "10"
     assert context.get_value("mqs2_0") == "0"
     assert context.get_value("mqs5") == "11"
+
+
+def test_gphase():
+    qasm = """
+    qubit[2] qs;
+
+    int[8] two = 2;
+
+    gate x a { U(π, 0, π) a; }
+    gate cx c, a { ctrl @ x c, a; }
+    gate phase c, a {
+        gphase(π/2);
+        ctrl(two) @ gphase(π) c, a;
+    }
+    gate h a { U(π/2, 0, π) a; }
+
+    reset qs;
+
+    h qs[0];
+    cx qs[0], qs[1];
+    phase qs[0], qs[1];
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+
+    assert np.allclose(
+        context.quantum_simulator.state_vector, [1 / np.sqrt(2) * 1j, 0, 0, -1 / np.sqrt(2) * 1j]
+    )
 
 
 def test_if():

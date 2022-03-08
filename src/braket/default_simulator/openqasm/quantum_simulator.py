@@ -106,7 +106,16 @@ class QuantumSimulator:
     def execute_unitary(self, unitary, target: Union[int, Sequence[int]]):
         if isinstance(target, int):
             target = (target,)
+        print(self._state_tensor)
         self._state_tensor = multiply_matrix(self._state_tensor, unitary, target)
+        print(self._state_tensor)
+
+    def apply_phase(self, phase: float, target: Union[int, Sequence[int]]):
+        if isinstance(target, int):
+            target = (target,)
+        tensorized_target = self.get_tensorized_indices(target)
+        print("tt", tensorized_target)
+        self._state_tensor[tensorized_target] *= np.exp(phase * 1j)
 
     @staticmethod
     def generate_u(theta, phi, lambda_):
@@ -119,3 +128,6 @@ class QuantumSimulator:
                 ],
             ]
         )
+
+    def get_tensorized_indices(self, qubit_indices: Sequence[int]):
+        return np.stack(np.unravel_index(qubit_indices, self.state_tensor.shape), axis=-1)
