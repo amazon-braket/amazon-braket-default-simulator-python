@@ -323,10 +323,12 @@ def test_reset_qubit():
     qubit[2] qs2;
     qubit[5] qs5;
 
+    int[8] two = 2;
+
     reset q;
     reset qs;
     reset qs2[0];
-    reset qs5[:2:4];
+    reset qs5[:two:4];
     """
     program = parse(qasm)
     mocked_context = ProgramContext()
@@ -461,17 +463,22 @@ def test_gate_call():
 
     qubit q1;
     qubit q2;
+    qubit[2] qs;
 
     reset q1;
     reset q2;
+    reset qs;
 
     U(π, 0, my_pi) q1;
     x q2;
+    x qs[0];
     """
     program = parse(qasm)
     context = Interpreter().run(program)
 
-    assert np.allclose(context.quantum_simulator.state_vector, [0, 0, 0, 1])
+    assert np.allclose(
+        context.quantum_simulator.state_vector, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+    )
 
 
 def test_gate_inv():
@@ -561,6 +568,47 @@ def test_gate_ctrl():
         context.quantum_simulator.state_vector,
         [0] * 31 + [1],
     )
+    # todo: test neg ctrl
+
+
+def test_measurement():
+    qasm = """
+    qubit q;
+    qubit[2] qs;
+    qubit[2] qs2;
+    qubit[5] qs5;
+
+    int[8] two = 2;
+
+    gate x a { U(π, 0, π) a; }
+
+    reset q;
+    reset qs;
+    reset qs2;
+    reset qs5;
+
+    x q;
+    x qs[0];
+    x qs5[0];
+    x qs5[2];
+
+    bit mq;
+    bit[2] mqs;
+    bit[1] mqs2_0;
+    bit[two] mqs5;
+
+    mq = measure q;
+    mqs = measure qs;
+    mqs2_0 = measure qs2[0];
+    mqs5 = measure qs5[:two:4];
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+
+    assert context.get_value("mq") == "1"
+    assert context.get_value("mqs") == "10"
+    assert context.get_value("mqs2_0") == "0"
+    assert context.get_value("mqs5") == "11"
 
 
 def test_if():

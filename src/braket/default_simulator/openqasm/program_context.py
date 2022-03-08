@@ -1,12 +1,13 @@
 from enum import Enum, auto
+from functools import singledispatchmethod
 from typing import Any, List, Optional
 
 import numpy as np
 from openqasm3.ast import (
-    ArrayLiteral,
     ClassicalType,
     GateModifierName,
     Identifier,
+    IndexedIdentifier,
     IndexElement,
     QuantumGateDefinition,
     QuantumGateModifier,
@@ -25,6 +26,9 @@ class Table:
     def __getitem__(self, item):
         return self._dict[item]
 
+    def __contains__(self, item):
+        return item in self._dict
+
     def __setitem__(self, key, value):
         self._dict[key] = value
 
@@ -41,6 +45,17 @@ class Table:
         for item, value in self.items():
             rows.append(f"{item:<{longest_key_length}}\t{value}")
         return "\n".join(rows)
+
+    @singledispatchmethod
+    def get_by_identifier(self, identifier: Identifier):
+        return self[identifier.name]
+
+    @get_by_identifier.register
+    def _(self, identifier: IndexedIdentifier):
+        # assume index is of the form [[RangeDefinition]]
+        name = identifier.name.name
+        range_def = identifier.indices[0][0]
+        return self[name][slice(range_def.start, range_def.end, range_def.step)]
 
 
 class ScopedTable(Table):
@@ -126,11 +141,13 @@ class VariableTable(ScopedTable):
         return self[name]
 
     def update_value(self, name: str, value: Any, indices: Optional[List[IndexElement]] = None):
-        variable = self[name]
-        if indices and not (isinstance(variable, ArrayLiteral)):
-            raise TypeError(f"Cannot get index for variable of type {type(variable).__name__}")
-        for i in indices:
-            variable = variable.values[i]
+        self[name] = value
+        # todo support indices
+
+        # if indices and not (isinstance(variable, ArrayLiteral)):
+        #     raise TypeError(f"Cannot get index for variable of type {type(variable).__name__}")
+        # for i in indices:
+        #     variable = variable.values[i]
         # if isinstance()
 
 
@@ -228,6 +245,12 @@ class ProgramContext:
             target = target[index]
         self.quantum_simulator.reset_qubits(target)
 
+    def measure_qubits(self, qubits: str, index=None):
+        target = self.qubit_mapping[qubits]
+        if index is not None:
+            target = target[index]
+        return "".join("01"[int(m)] for m in self.quantum_simulator.measure_qubits(target))
+
     def add_gate(self, name: str, definition: QuantumGateDefinition):
         self.gate_table.add_gate(name, definition)
 
@@ -243,8 +266,10 @@ class ProgramContext:
         qubits: List[Identifier],
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ):
+        # print(qubits)
+        target = sum(((*self.qubit_mapping.get_by_identifier(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
-        target = sum(((*self.qubit_mapping[qubit.name],) for qubit in qubits), ())
+        # target = sum(((*self.qubit_mapping[qubit.name],) for qubit in qubits), ())
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         if num_inv_modifiers % 2:
             # inv @ U(θ, ϕ, λ) == U(-θ, -λ, -ϕ)

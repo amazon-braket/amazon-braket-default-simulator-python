@@ -71,8 +71,11 @@ class QuantumSimulator:
         """
         # process input
         target = [target] if isinstance(target, int) else target
-        state = QuantumSimulator._translate_state_to_array(state, len(target))
-        measured_state = state if state is not None else self._sample_quantum_state(target)
+        measured_state = (
+            QuantumSimulator._translate_state_to_array(state, len(target))
+            if state is not None
+            else self._sample_quantum_state(target)
+        )
 
         # zero out incompatible states
         for qubit, measurement in zip(target, measured_state):
@@ -80,6 +83,7 @@ class QuantumSimulator:
 
         # normalize state vector
         self._normalize_state()
+        return measured_state
 
     def _sample_quantum_state(self, target: Union[int, Sequence]) -> np.ndarray:
         """measure target qubit(s)"""

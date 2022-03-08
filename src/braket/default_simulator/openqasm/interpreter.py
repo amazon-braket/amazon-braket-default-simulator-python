@@ -19,6 +19,8 @@ from openqasm3.ast import (
     QuantumGate,
     QuantumGateDefinition,
     QuantumGateModifier,
+    QuantumMeasurement,
+    QuantumMeasurementAssignment,
     QuantumReset,
     QubitDeclaration,
     RangeDefinition,
@@ -114,23 +116,10 @@ class Interpreter(QASMTransformer):
         print(f"Quantum reset: {node}")
         target = node.qubits
         if isinstance(target, IndexedIdentifier):
+            target = self.visit(target, context)
+            range_def = target.indices[0][0]
             name = target.name.name
-            if len(target.indices) > 1:
-                raise NotImplementedError("Multiple dimensions of qubit indices")
-            index = target.indices[0]
-            if len(index) > 1:
-                raise NotImplementedError("Multiple qubit indices")
-            index = index[0]
-            # define start, end, step of range
-            if isinstance(index, IntegerLiteral):
-                start, end, step = index.value, index.value + 1, 1
-            elif isinstance(index, RangeDefinition):
-                start = index.start.value if index.start else 0
-                end = index.end.value if index.end else context.get_qubit_length(name)
-                step = index.step.value if index.step else 1
-            else:
-                raise NotImplementedError(f"Index {index} not valid for qubit indexing")
-            index = slice(start, end, step)
+            index = slice(range_def.start, range_def.end, range_def.step)
         else:
             name = target.name
             index = None
@@ -140,7 +129,31 @@ class Interpreter(QASMTransformer):
     @visit.register
     def _(self, node: IndexedIdentifier, context: ProgramContext):
         print(f"Indexed identifier: {node}")
-        raise NotImplementedError
+        name = node.name
+        if name.name not in context.qubit_mapping:
+            raise NotImplementedError("Indexed identifier only implemented for qubits")
+        if isinstance(node.indices[0], DiscreteSet):
+            raise NotImplementedError("Indexed identifier with descrete set")
+        indices = [
+            [self.visit(index_element, context) for index_element in index]
+            for index in node.indices
+        ]
+        if len(indices) > 1:
+            raise NotImplementedError("Multiple dimensions of qubit indices")
+        index = indices[0]
+        if len(index) > 1:
+            raise NotImplementedError("Multiple qubit indices")
+        index = index[0]
+        # define start, end, step of range
+        if isinstance(index, IntegerLiteral):
+            start, end, step = index.value, index.value + 1, 1
+        elif isinstance(index, RangeDefinition):
+            start = index.start.value if index.start else 0
+            end = index.end.value if index.end else context.get_qubit_length(name.name)
+            step = index.step.value if index.step else 1
+        else:
+            raise NotImplementedError(f"Index {index} not valid for qubit indexing")
+        return IndexedIdentifier(name, [[RangeDefinition(start, end, step)]])
 
     @visit.register
     def _(self, node: IndexExpression, context: ProgramContext):
@@ -152,8 +165,6 @@ class Interpreter(QASMTransformer):
         else:
             index = [self.visit(i, context) for i in node.index]
         return data_manipulation.get_elements(array, index)
-
-    # next up: implement indexed identifiers, for loops, gates
 
     @visit.register
     def _(self, node: QuantumGateDefinition, context: ProgramContext):
@@ -178,6 +189,8 @@ class Interpreter(QASMTransformer):
         print(f"Quantum gate: {node}")
         gate_name = node.name.name
         node.arguments = [self.visit(arg, context) for arg in node.arguments]
+        qubits = [self.visit(qubit, context) for qubit in node.qubits]
+        print(qubits)
 
         if gate_name != "U":
             context.push_scope()
@@ -190,7 +203,7 @@ class Interpreter(QASMTransformer):
                         self.visit(mod.argument, context).value if mod.argument is not None else 1
                     )
 
-            ctrl_qubits, gate_qubits = node.qubits[:num_ctrl], node.qubits[num_ctrl:]
+            ctrl_qubits, gate_qubits = qubits[:num_ctrl], qubits[num_ctrl:]
 
             for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
                 context.declare_alias(qubit_defined.name, qubit_called)
@@ -201,8 +214,6 @@ class Interpreter(QASMTransformer):
         if context.execution_context == ProgramContext.ExecutionContext.GATE_DEF:
             # flatten nested gate calls while replacing qubits from definition with
             # qubits from call
-
-            qubits = [self.visit(qubit, context) for qubit in node.qubits]
 
             if gate_name == "U":
                 return [
@@ -250,6 +261,29 @@ class Interpreter(QASMTransformer):
                 for statement in deepcopy(gate_def.body):
                     self.visit(statement, context)
                 context.pop_scope()
+
+    @visit.register
+    def _(self, node: QuantumMeasurement, context: ProgramContext):
+        print(f"Quantum measurement: {node}")
+        target = node.qubit
+        if isinstance(target, IndexedIdentifier):
+            target = self.visit(target, context)
+            range_def = target.indices[0][0]
+            name = target.name.name
+            index = slice(range_def.start, range_def.end, range_def.step)
+        else:
+            name = target.name
+            index = None
+
+        return context.measure_qubits(name, index)
+
+    @visit.register
+    def _(self, node: QuantumMeasurementAssignment, context: ProgramContext):
+        print(f"Quantum measurement assignment: {node}")
+        measurement = self.visit(node.measure_instruction, context)
+        print("TARMEA: ", node.target, measurement)
+        if node.target is not None:
+            context.update_value(node.target.name, measurement)
 
     @visit.register
     def _(self, node: BranchingStatement, context: ProgramContext):
