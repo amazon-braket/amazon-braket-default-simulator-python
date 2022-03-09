@@ -63,7 +63,7 @@ def marginal_probability(
     """
     qubit_count = int(np.log2(len(probabilities)))
 
-    if targets is None or targets == list(range(qubit_count)):
+    if targets is None or np.array_equal(targets, range(qubit_count)):
         # All qubits targeted, no need to marginalize
         return probabilities
 

@@ -338,12 +338,40 @@ def test_reset_qubit():
 
     reset_qubits_mock.assert_has_calls(
         (
-            call(range(0, 1)),
-            call(range(1, 3)),
-            call(range(3, 4)),
-            call(range(5, 9, 2)),
+            call((0,)),
+            call((1, 2)),
+            call((3,)),
+            call((5, 7, 9)),
         )
     )
+
+
+def test_for_loop():
+    qasm = """
+    gate x a { U(π, 0, π) a; }
+    qubit[8] q;
+
+    int[8] ten = 10;
+    bit[8] m1;
+    bit[8] m2;
+
+    reset q;
+
+    for i in [0:2:ten - 3] {
+        x q[i];
+    }
+    m1 = measure q;
+
+    for i in {2, 4, 6} {
+        reset q[i];
+    }
+    m2 = measure q;
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+
+    assert context.get_value("m1") == "10101010"
+    assert context.get_value("m2") == "10000000"
 
 
 def test_gate_def():
@@ -601,7 +629,7 @@ def test_measurement():
     mq = measure q;
     mqs = measure qs;
     mqs2_0 = measure qs2[0];
-    mqs5 = measure qs5[:two:4];
+    mqs5 = measure qs5[:two:3];
     """
     program = parse(qasm)
     context = Interpreter().run(program)

@@ -9,6 +9,7 @@ from openqasm3.ast import (
     Constant,
     ConstantDeclaration,
     DiscreteSet,
+    ForInLoop,
     GateModifierName,
     Identifier,
     IndexedIdentifier,
@@ -49,6 +50,10 @@ class Interpreter(QASMTransformer):
     def _(self, node: Program, context: ProgramContext):
         """Returns ProgramContext rather than the consumed Program node"""
         return super().visit(node, context)
+
+    @visit.register
+    def _(self, node_list: list, context: ProgramContext):
+        return [self.visit(node, context) for node in node_list]
 
     @visit.register
     def _(self, node: ClassicalDeclaration, context: ProgramContext):
@@ -125,28 +130,29 @@ class Interpreter(QASMTransformer):
         name = node.name
         if name.name not in context.qubit_mapping:
             raise NotImplementedError("Indexed identifier only implemented for qubits")
-        if isinstance(node.indices[0], DiscreteSet):
-            raise NotImplementedError("Indexed identifier with descrete set")
-        indices = [
-            [self.visit(index_element, context) for index_element in index]
-            for index in node.indices
-        ]
-        if len(indices) > 1:
-            raise NotImplementedError("Multiple dimensions of qubit indices")
-        index = indices[0]
-        if len(index) > 1:
-            raise NotImplementedError("Multiple qubit indices")
-        index = index[0]
-        # define start, end, step of range
-        if isinstance(index, IntegerLiteral):
-            start, end, step = index.value, index.value + 1, 1
-        elif isinstance(index, RangeDefinition):
-            start = index.start.value if index.start else 0
-            end = index.end.value if index.end else context.get_qubit_length(name.name)
-            step = index.step.value if index.step else 1
-        else:
-            raise NotImplementedError(f"Index {index} not valid for qubit indexing")
-        return IndexedIdentifier(name, [[RangeDefinition(start, end, step)]])
+        indices = []
+        for index in node.indices:
+            if isinstance(index, DiscreteSet):
+                indices.append(index)
+            else:
+                for element in index:
+                    # todo: set current dimension's length for [:] and [:-1] indexing
+                    element = self.visit(element, context)
+                    if isinstance(element, IntegerLiteral):
+                        indices.append(DiscreteSet([element]))
+                    elif isinstance(element, DiscreteSet):
+                        indices.append(element)
+                    else:
+                        raise NotImplementedError(f"Index {index} not valid for qubit indexing")
+        return IndexedIdentifier(name, indices)
+
+    @visit.register
+    def _(self, node: RangeDefinition, context: ProgramContext):
+        print(f"Range definition: {node}")
+        start = self.visit(node.start, context).value if node.start else 0
+        end = self.visit(node.end, context).value + 1 if node.end else NotImplementedError
+        step = self.visit(node.step, context).value if node.step else 1
+        return DiscreteSet([IntegerLiteral(i) for i in range(start, end, step)])
 
     @visit.register
     def _(self, node: IndexExpression, context: ProgramContext):
@@ -326,3 +332,13 @@ class Interpreter(QASMTransformer):
         block = node.if_block if self.visit(node.condition, context) else node.else_block
         for statement in block:
             self.visit(statement, context)
+
+    @visit.register
+    def _(self, node: ForInLoop, context: ProgramContext):
+        print(f"For in loop: {node}")
+        index = self.visit(node.set_declaration, context)
+        for i in index.values:
+            context.push_scope()
+            context.declare_variable(node.loop_variable.name, IntegerLiteral, i)
+            self.visit(node.block, context)
+            context.pop_scope()

@@ -52,10 +52,10 @@ class Table:
 
     @get_by_identifier.register
     def _(self, identifier: IndexedIdentifier):
-        # assume index is of the form [[RangeDefinition]]
+        # assume index is of the form [DiscreteSet]
         name = identifier.name.name
-        range_def = identifier.indices[0][0]
-        return self[name][slice(range_def.start, range_def.end, range_def.step)]
+        index = tuple(tuple(i.value for i in ix.values) for ix in identifier.indices)
+        return tuple(np.array(self[name])[index])
 
 
 class ScopedTable(Table):
@@ -180,6 +180,7 @@ class ProgramContext:
         self.qubit_mapping = Table("Qubits")
         self.execution_context = ProgramContext.ExecutionContext.BASE
         self.identifier_context = ProgramContext.IdentifierContext.CLASSICAL
+        self.current_element_length = None
 
     def __repr__(self):
         return "\n\n".join(
@@ -232,7 +233,7 @@ class ProgramContext:
         return self.variable_table.update_value(name, value, indices)
 
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
-        self.qubit_mapping[name] = range(self.num_qubits, self.num_qubits + num_qubits)
+        self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.quantum_simulator.add_qubits(num_qubits)
         self.declare_alias(name, Identifier(name))
 
@@ -240,14 +241,7 @@ class ProgramContext:
         return len(self.qubit_mapping[name])
 
     def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
-        if isinstance(qubits, IndexedIdentifier):
-            range_def = qubits.indices[0][0]
-            name = qubits.name.name
-            index = slice(range_def.start, range_def.end, range_def.step)
-            return self.qubit_mapping[name][index]
-        else:
-            name = qubits.name
-            return self.qubit_mapping[name]
+        return self.qubit_mapping.get_by_identifier(qubits)
 
     def reset_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
         target = self.get_qubits(qubits)
@@ -277,7 +271,6 @@ class ProgramContext:
         qubits: List[Identifier],
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ):
-        # target = sum(((*self.qubit_mapping.get_by_identifier(qubit),) for qubit in qubits), ())
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))

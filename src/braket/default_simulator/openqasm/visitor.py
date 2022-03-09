@@ -4,7 +4,7 @@ Copied over and debugged from the openqasm repo
 
 from dataclasses import asdict
 from functools import singledispatchmethod
-from typing import Generic, Optional, TypeVar
+from typing import Generic, List, Optional, TypeVar, Union
 
 from openqasm3.ast import QASMNode
 
@@ -44,7 +44,7 @@ class QASMTransformer(QASMVisitor[T]):
     Modified from the implementation in ast.py in the Python standard library
     """
 
-    def visit(self, node: QASMNode, context: Optional[T] = None) -> QASMNode:
+    def visit(self, node: Union[QASMNode, List[QASMNode]], context: Optional[T] = None) -> QASMNode:
         if node is None:
             return None
         for field, old_value in list(node.__dict__.items()):

@@ -1,4 +1,5 @@
 from typing import Optional, Sequence, Union
+from warnings import warn
 
 import numpy as np
 
@@ -47,16 +48,41 @@ class QuantumSimulator:
         self._num_qubits += num_qubits
 
     def _normalize_state(self):
+        norm = np.linalg.norm(self._state_tensor)
+        if not norm:
+            warn(
+                "State vector norm is zero. This is probably a result of forcing "
+                "an impossible measurement outcome."
+            )
         self._state_tensor /= np.linalg.norm(self._state_tensor)
+
+    def _flip_qubit(self, qubit: int):
+        self._state_tensor = np.roll(
+            self._state_tensor,
+            1,
+            axis=qubit,
+        )
+
+    def resolve_target(self, target: Optional[Union[int, Sequence]] = None):
+        if target is None:
+            target = range(self.num_qubits)
+        elif isinstance(target, int):
+            target = (target,)
+        return target
 
     def reset_qubits(self, target: Optional[Union[int, Sequence]] = None):
         """reset one or more qubits"""
-        if target is None:
-            target = range(self.num_qubits)
-        self.measure_qubits(target, 0)
+        target = self.resolve_target(target)
+        measurement = self.measure_qubits(target)
+
+        for qubit, result in zip(target, measurement):
+            if result:
+                self._flip_qubit(qubit)
 
     def measure_qubits(
-        self, target: Union[int, Sequence], state: Optional[Union[bool, int, Sequence]] = None
+        self,
+        target: Union[int, Sequence] = None,
+        state: Optional[Union[bool, int, Sequence]] = None,
     ):
         """
         Measure target qubits and update state vector. If state parameter is given,
@@ -70,7 +96,7 @@ class QuantumSimulator:
         of phase 0 over all compatible states and a warning will be raised.
         """
         # process input
-        target = [target] if isinstance(target, int) else target
+        target = self.resolve_target(target)
         measured_state = (
             QuantumSimulator._translate_state_to_array(state, len(target))
             if state is not None
@@ -106,15 +132,15 @@ class QuantumSimulator:
     def execute_unitary(self, unitary, target: Union[int, Sequence[int]]):
         if isinstance(target, int):
             target = (target,)
-        print(self._state_tensor)
+        # print(self._state_tensor)
         self._state_tensor = multiply_matrix(self._state_tensor, unitary, target)
-        print(self._state_tensor)
+        # print(self._state_tensor)
 
     def apply_phase(self, phase: float, target: Union[int, Sequence[int]]):
         if isinstance(target, int):
             target = (target,)
         tensorized_target = self.get_tensorized_indices(target)
-        print("tt", tensorized_target)
+        # print("tt", tensorized_target)
         self._state_tensor[tensorized_target] *= np.exp(phase * 1j)
 
     @staticmethod
