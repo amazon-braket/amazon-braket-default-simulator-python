@@ -659,12 +659,14 @@ def test_gphase():
     h qs[0];
     cx qs[0], qs[1];
     phase qs[0], qs[1];
+
+    gphase(π);
     """
     program = parse(qasm)
     context = Interpreter().run(program)
 
     assert np.allclose(
-        context.quantum_simulator.state_vector, [1 / np.sqrt(2) * 1j, 0, 0, -1 / np.sqrt(2) * 1j]
+        context.quantum_simulator.state_vector, [-1 / np.sqrt(2) * 1j, 0, 0, 1 / np.sqrt(2) * 1j]
     )
 
 

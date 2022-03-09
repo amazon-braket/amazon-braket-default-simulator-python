@@ -1,5 +1,6 @@
 from copy import deepcopy
 from functools import singledispatchmethod
+from typing import List
 
 from openqasm3.ast import (
     BinaryExpression,
@@ -24,6 +25,7 @@ from openqasm3.ast import (
     QuantumMeasurementAssignment,
     QuantumPhase,
     QuantumReset,
+    QuantumStatement,
     QubitDeclaration,
     RangeDefinition,
     RealLiteral,
@@ -32,6 +34,14 @@ from openqasm3.ast import (
 )
 
 from braket.default_simulator.openqasm import data_manipulation
+from braket.default_simulator.openqasm.data_manipulation import (
+    convert_to_gate,
+    get_ctrl_modifiers,
+    invert,
+    is_controlled,
+    is_inverted,
+    modify_body,
+)
 from braket.default_simulator.openqasm.program_context import ProgramContext
 from braket.default_simulator.openqasm.visitor import QASMTransformer
 
@@ -168,20 +178,63 @@ class Interpreter(QASMTransformer):
     @visit.register
     def _(self, node: QuantumGateDefinition, context: ProgramContext):
         print(f"Quantum gate definition: {node}")
-        context.push_scope()
-        context.execution_context = ProgramContext.ExecutionContext.GATE_DEF
+        with context.enter_scope():
+            for qubit in node.qubits:
+                context.declare_alias(qubit.name, qubit)
 
-        for qubit in node.qubits:
-            context.declare_alias(qubit.name, qubit)
+            for param in node.arguments:
+                context.declare_alias(param.name, param)
 
-        for param in node.arguments:
-            context.declare_alias(param.name, param)
-
-        node.body = sum((self.visit(statement, context) for statement in node.body), [])
-
-        context.pop_scope()
-        context.execution_context = ProgramContext.ExecutionContext.BASE
+            node.body = self.inline_gate_def_body(node.body, context)
         context.add_gate(node.name.name, node)
+
+    def inline_gate_def_body(self, body: List[QuantumStatement], context: ProgramContext):
+        inlined_body = []
+        for statement in body:
+            if isinstance(statement, QuantumPhase):
+                statement.argument = self.visit(statement.argument, context)
+                statement.modifiers = self.visit(statement.quantum_gate_modifiers, context)
+                if is_inverted(statement):
+                    statement = invert(statement)
+                if is_controlled(statement):
+                    statement = convert_to_gate(statement)
+                # statement is a quantum phase instruction
+                else:
+                    inlined_body.append(statement)
+            # this includes converted phase instructions
+            if isinstance(statement, QuantumGate):
+                gate_name = statement.name.name
+                statement.arguments = self.visit(statement.arguments, context)
+                statement.modifiers = self.visit(statement.modifiers, context)
+                statement.qubits = self.visit(statement.qubits, context)
+                if gate_name == "U":
+                    if is_inverted(statement):
+                        statement = invert(statement)
+                    inlined_body.append(statement)
+                else:
+                    with context.enter_scope():
+                        gate_def = context.get_gate_definition(gate_name)
+                        ctrl_modifiers = get_ctrl_modifiers(statement.modifiers)
+                        num_ctrl = sum(mod.argument.value for mod in ctrl_modifiers)
+                        ctrl_qubits = statement.qubits[:num_ctrl]
+                        gate_qubits = statement.qubits[num_ctrl:]
+
+                        for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
+                            context.declare_alias(qubit_defined.name, qubit_called)
+
+                        for param_called, param_defined in zip(
+                            statement.arguments, gate_def.arguments
+                        ):
+                            context.declare_alias(param_defined.name, param_called)
+
+                        body_copy = modify_body(
+                            deepcopy(gate_def.body),
+                            is_inverted(statement),
+                            ctrl_modifiers,
+                            ctrl_qubits,
+                        )
+                        inlined_body += self.inline_gate_def_body(body_copy, context)
+        return inlined_body
 
     @visit.register
     def _(self, node: QuantumGate, context: ProgramContext):
@@ -190,115 +243,45 @@ class Interpreter(QASMTransformer):
         node.arguments = [self.visit(arg, context) for arg in node.arguments]
         qubits = [self.visit(qubit, context) for qubit in node.qubits]
 
-        if gate_name != "U":
-            context.push_scope()
-            gate_def = context.get_gate_definition(gate_name)
-
-            num_ctrl = 0
-            for mod in node.modifiers:
-                if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
-                    num_ctrl += (
-                        self.visit(mod.argument, context).value if mod.argument is not None else 1
-                    )
-
-            ctrl_qubits, gate_qubits = qubits[:num_ctrl], qubits[num_ctrl:]
-
-            for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
-                context.declare_alias(qubit_defined.name, qubit_called)
-
-            for param_called, param_defined in zip(node.arguments, gate_def.arguments):
-                context.declare_alias(param_defined.name, param_called)
-
-        if context.execution_context == ProgramContext.ExecutionContext.GATE_DEF:
-            # flatten nested gate calls while replacing qubits from definition with
-            # qubits from call
-
-            bound_gate_call = QuantumGate(node.modifiers, node.name, node.arguments, qubits)
-            if gate_name == "U":
-                return [bound_gate_call]
-
-            gate_def_body = deepcopy(gate_def.body)
-            inv_modifier = QuantumGateModifier(GateModifierName.inv, None)
-            num_inv_modifiers = node.modifiers.count(inv_modifier)
-            if num_inv_modifiers % 2:
-                # reverse body and invert all gates
-                gate_def_body = list(reversed(gate_def_body))
-                for statement in gate_def_body:
-                    statement.modifiers.insert(0, inv_modifier)
-            ctrl_modifiers = [
-                self.visit(mod, context)
-                for mod in node.modifiers
-                if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
-            ]
-            visited_body = []
-            for statement in gate_def_body:
-                if isinstance(statement, QuantumGate):
-                    statement.modifiers = ctrl_modifiers + statement.modifiers
-                    statement.qubits = ctrl_qubits + statement.qubits
-                visited_body += self.visit(statement, context)
-
-            context.pop_scope()
-            return visited_body
+        if gate_name == "U":
+            context.execute_builtin_unitary(
+                node.arguments,
+                qubits,
+                node.modifiers,
+            )
         else:
-            qubits = [self.visit(qubit, context) for qubit in node.qubits]
+            with context.enter_scope():
+                gate_def = context.get_gate_definition(gate_name)
 
-            if gate_name == "U":
-                context.execute_builtin_unitary(
-                    node.arguments,
-                    qubits,
-                    node.modifiers,
-                )
-            else:
+                ctrl_modifiers = get_ctrl_modifiers(node.modifiers)
+                num_ctrl = sum(mod.argument.value for mod in ctrl_modifiers)
+                gate_qubits = qubits[num_ctrl:]
+
+                for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
+                    context.declare_alias(qubit_defined.name, qubit_called)
+
+                for param_called, param_defined in zip(node.arguments, gate_def.arguments):
+                    context.declare_alias(param_defined.name, param_called)
+
                 for statement in deepcopy(gate_def.body):
                     if isinstance(statement, QuantumGate):
                         self.visit(statement, context)
                     elif isinstance(statement, QuantumPhase):
                         phase = statement.argument.value
                         context.apply_phase(phase, qubits)
-                context.pop_scope()
 
     @visit.register
     def _(self, node: QuantumPhase, context: ProgramContext):
         print(f"Quantum phase: {node}")
-        phase = self.visit(node.argument, context)
-
-        inv_modifier = QuantumGateModifier(GateModifierName.inv, None)
-        num_inv_modifiers = node.quantum_gate_modifiers.count(inv_modifier)
-        if num_inv_modifiers % 2:
-            phase.value *= -1
-
-        ctrl_modifiers = [
-            self.visit(mod, context)
-            for mod in node.quantum_gate_modifiers
-            if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
-        ]
-        if ctrl_modifiers:
-            first_ctrl_modifier = ctrl_modifiers[-1]
-            if first_ctrl_modifier.modifier == GateModifierName.negctrl:
-                raise ValueError("negctrl modifier undefined for gphase operation")
-            if first_ctrl_modifier.argument.value == 1:
-                ctrl_modifiers.pop()
-            else:
-                ctrl_modifiers[-1].argument.value -= 1
-            return [
-                QuantumGate(
-                    ctrl_modifiers,
-                    Identifier("U"),
-                    [
-                        IntegerLiteral(0),
-                        IntegerLiteral(0),
-                        phase,
-                    ],
-                    node.qubits,
-                )
-            ]
+        node.argument = self.visit(node.argument, context)
+        node.modifiers = self.visit(node.quantum_gate_modifiers, context)
+        if is_inverted(node):
+            node = invert(node)
+        if is_controlled(node):
+            node = convert_to_gate(node)
+            self.visit(node, context)
         else:
-            if node.qubits:
-                raise ValueError(
-                    "Cannot specify qubits for a global phase instruction "
-                    "unless using the controlled global phase gate."
-                )
-        return [QuantumPhase([], phase, [])]
+            context.apply_phase(node.argument.value)
 
     @visit.register
     def _(self, node: QuantumGateModifier, context: ProgramContext):

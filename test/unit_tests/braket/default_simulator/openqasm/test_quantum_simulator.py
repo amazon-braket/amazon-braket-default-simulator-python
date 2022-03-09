@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
@@ -24,7 +26,7 @@ def test_add_qubits():
 
 
 @pytest.mark.parametrize(
-    "qubits, measurement, state_vector",
+    "qubits, outcome, state_vector",
     (
         (
             [0, 2],
@@ -42,23 +44,20 @@ def test_add_qubits():
             [0, 0, 0, 1 / np.sqrt(2), 0, 0, 0, 1 / np.sqrt(2)],
         ),
         (
-            [0, 2],
             1,
-            [0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 1 / np.sqrt(2)],
-        ),
-        (
-            1,
-            1,
+            [1],
             [0, 0, 1 / 2, 1 / 2, 0, 0, 1 / 2, 1 / 2],
         ),
         (
             1,
-            0,
+            [0],
             [1 / 2, 1 / 2, 0, 0, 1 / 2, 1 / 2, 0, 0],
         ),
     ),
 )
-def test_measure_qubits(qubits, measurement, state_vector):
+@patch("braket.default_simulator.openqasm.quantum_simulator.QuantumSimulator._sample_quantum_state")
+def test_measure_qubits(mock_sample, qubits, outcome, state_vector):
+    mock_sample.return_value = outcome
     quantum_simulator = QuantumSimulator()
     quantum_simulator.add_qubits(3)
 
@@ -66,7 +65,7 @@ def test_measure_qubits(qubits, measurement, state_vector):
     for q in range(quantum_simulator.num_qubits):
         quantum_simulator.execute_unitary(h, q)
 
-    quantum_simulator.measure_qubits(qubits, measurement)
+    quantum_simulator.measure_qubits(qubits)
     assert np.allclose(quantum_simulator.state_vector, state_vector)
 
 

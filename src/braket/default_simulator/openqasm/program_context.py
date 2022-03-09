@@ -19,6 +19,10 @@ from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
 
 class Table:
+    """
+    Utility class for storing and displaying items.
+    """
+
     def __init__(self, title):
         self._title = title
         self._dict = {}
@@ -48,17 +52,28 @@ class Table:
 
     @singledispatchmethod
     def get_by_identifier(self, identifier: Identifier):
+        """
+        Convenience method to get an element with a possibly indexed identifier.
+        """
         return self[identifier.name]
 
     @get_by_identifier.register
     def _(self, identifier: IndexedIdentifier):
-        # assume index is of the form [DiscreteSet]
+        """
+        When identifier is an IndexedIdentifier, function returns a tuple
+        corresponding to the elements referenced by the indexed identifier.
+        """
+        # an index that has been visited will be of type DiscreteSet
         name = identifier.name.name
         index = tuple(tuple(i.value for i in ix.values) for ix in identifier.indices)
         return tuple(np.array(self[name])[index])
 
 
 class ScopedTable(Table):
+    """
+    Scoped version of Table
+    """
+
     def __init__(self, title):
         super().__init__(title)
         self._scopes = [{}]
@@ -74,12 +89,18 @@ class ScopedTable(Table):
         return self._scopes[-1]
 
     def __getitem__(self, item):
+        """
+        Resolve scope of item and return its value.
+        """
         for scope in reversed(self._scopes):
             if item in scope:
                 return scope[item]
         raise KeyError(f"Undefined key: {item}")
 
     def __setitem__(self, key, value):
+        """
+        Set value of item in current scope.
+        """
         self.current_scope[key] = value
 
     def items(self):
@@ -101,8 +122,12 @@ class ScopedTable(Table):
 
 
 class SymbolTable(ScopedTable):
+    """
+    Scoped table used to map names to types.
+    """
+
     class Symbol:
-        def __init__(self, symbol_type: ClassicalType, const: bool = False):
+        def __init__(self, symbol_type: Union[ClassicalType, LiteralType], const: bool = False):
             self.type = symbol_type
             self.const = const
 
@@ -115,22 +140,64 @@ class SymbolTable(ScopedTable):
     def add_symbol(
         self,
         name: str,
-        symbol_type: ClassicalType,
+        symbol_type: Union[ClassicalType, LiteralType],
         const: bool = False,
     ):
+        """
+        Add a symbol to the symbol table.
+
+        Args:
+            name (str): Name of the symbol.
+            symbol_type (Union[ClassicalType, LiteralType]): Type of the symbol. Symbols can
+                have a literal type when they are a numeric argument to a gate or an integer
+                literal loop variable.
+            const (bool): Whether the variable is immutable.
+        """
         self[name] = SymbolTable.Symbol(symbol_type, const)
 
     def get_symbol(self, name: str):
+        """
+        Get a symbol from the symbol table by name.
+
+        Args:
+            name (str): Name of the symbol.
+
+        Returns:
+            Symbol: The symbol object.
+        """
         return self[name]
 
     def get_type(self, name: str):
+        """
+        Get the type of a symbol by name.
+
+        Args:
+            name (str): Name of the symbol.
+
+        Returns:
+            Union[ClassicalType, LiteralType]: The type of the symbol.
+        """
         return self.get_symbol(name).type
 
     def get_const(self, name: str):
+        """
+        Get const status of a symbol by name.
+
+        Args:
+            name (str): Name of the symbol.
+
+        Returns:
+            bool: Whether the symbol is a const symbol.
+        """
         return self.get_symbol(name).const
 
 
 class VariableTable(ScopedTable):
+    """
+    Scoped table used store values for symbols. This implements the classical memory for
+    the Interpreter.
+    """
+
     def __init__(self):
         super().__init__("Data")
 
@@ -162,11 +229,22 @@ class GateTable(ScopedTable):
         return self[name]
 
 
-class ProgramContext:
-    class ExecutionContext(Enum):
-        BASE = auto()
-        GATE_DEF = auto()
+class ScopeManager:
+    """
+    Allows ProgramContext to manage scope with `with` keyword.
+    """
 
+    def __init__(self, context: "ProgramContext"):
+        self.context = context
+
+    def __enter__(self):
+        self.context.push_scope()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.context.pop_scope()
+
+
+class ProgramContext:
     class IdentifierContext(Enum):
         CLASSICAL = auto()
         QUBIT = auto()
@@ -178,9 +256,9 @@ class ProgramContext:
         self.gate_table = GateTable()
         self.quantum_simulator = QuantumSimulator()
         self.qubit_mapping = Table("Qubits")
-        self.execution_context = ProgramContext.ExecutionContext.BASE
         self.identifier_context = ProgramContext.IdentifierContext.CLASSICAL
         self.current_element_length = None
+        self.scope_manager = ScopeManager(self)
 
     def __repr__(self):
         return "\n\n".join(
@@ -195,7 +273,7 @@ class ProgramContext:
     def declare_variable(
         self,
         name: str,
-        symbol_type: ClassicalType,
+        symbol_type: Union[ClassicalType, LiteralType],
         value: Optional[Any] = None,
         const: bool = False,
     ):
@@ -209,6 +287,9 @@ class ProgramContext:
     ):
         self.symbol_table.add_symbol(name, Identifier)
         self.variable_table.add_variable(name, value)
+
+    def enter_scope(self):
+        return self.scope_manager
 
     def push_scope(self):
         self.symbol_table.push_scope()
@@ -251,10 +332,15 @@ class ProgramContext:
         target = self.get_qubits(qubits)
         return "".join("01"[int(m)] for m in self.quantum_simulator.measure_qubits(target))
 
-    def apply_phase(self, phase: float, qubits: Union[Identifier, IndexedIdentifier]):
-        for qubit in qubits:
-            target = self.get_qubits(qubit)
-            self.quantum_simulator.apply_phase(phase, target)
+    def apply_phase(
+        self, phase: float, qubits: Optional[Union[Identifier, IndexedIdentifier]] = None
+    ):
+        if qubits is None:
+            self.quantum_simulator.apply_phase(phase, range(self.num_qubits))
+        else:
+            for qubit in qubits:
+                target = self.get_qubits(qubit)
+                self.quantum_simulator.apply_phase(phase, target)
 
     def add_gate(self, name: str, definition: QuantumGateDefinition):
         self.gate_table.add_gate(name, definition)

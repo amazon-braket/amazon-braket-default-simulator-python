@@ -45,7 +45,7 @@ def multiply_matrix(state: np.ndarray, matrix: np.ndarray, targets: Tuple[int, .
 
 def marginal_probability(
     probabilities: np.ndarray,
-    targets: List[int] = None,
+    targets: Sequence[int] = None,
 ) -> np.ndarray:
     """Return the marginal probability of the computational basis states.
 

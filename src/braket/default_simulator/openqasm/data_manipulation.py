@@ -1,6 +1,6 @@
 import warnings
 from functools import singledispatch
-from typing import Union
+from typing import List, Union
 
 import numpy as np
 from openqasm3.ast import (
@@ -15,9 +15,15 @@ from openqasm3.ast import (
     DiscreteSet,
     Expression,
     FloatType,
+    GateModifierName,
+    Identifier,
     IndexElement,
     IntegerLiteral,
     IntType,
+    QuantumGate,
+    QuantumGateModifier,
+    QuantumPhase,
+    QuantumStatement,
     RealLiteral,
     StringLiteral,
     UintType,
@@ -229,3 +235,99 @@ def get_elements(array: ArrayLiteral, index: IndexElement):
     for i in index:
         array = array.values[i.value]
     return array
+
+
+@singledispatch
+def get_modifiers(quantum_op: Union[QuantumGate, QuantumPhase]):
+    return quantum_op.modifiers
+
+
+@get_modifiers.register
+def _(quantum_op: QuantumPhase):
+    return quantum_op.quantum_gate_modifiers
+
+
+@singledispatch
+def invert(quantum_op: Union[QuantumGate, QuantumPhase]):
+    new_modifiers = [
+        mod for mod in get_modifiers(quantum_op) if mod.modifier != GateModifierName.inv
+    ]
+    if quantum_op.name.name == "U":
+        param_values = np.array([arg.value for arg in quantum_op.arguments])
+        new_param_values = -param_values[[0, 2, 1]]
+        new_params = [RealLiteral(value) for value in new_param_values]
+        return QuantumGate(new_modifiers, Identifier("U"), new_params, quantum_op.qubits)
+    else:
+        raise ValueError("This shouldn't be visiting non-U gates")
+
+
+@invert.register
+def _(quantum_op: QuantumPhase):
+    new_modifiers = [
+        mod for mod in get_modifiers(quantum_op) if mod.modifier != GateModifierName.inv
+    ]
+    new_param = -quantum_op.argument.value
+    return QuantumPhase(new_modifiers, new_param, quantum_op.qubits)
+
+
+def is_inverted(quantum_op: Union[QuantumGate, QuantumPhase]):
+    inv_modifier = QuantumGateModifier(GateModifierName.inv, None)
+    num_inv_modifiers = get_modifiers(quantum_op).count(inv_modifier)
+    return num_inv_modifiers % 2
+
+
+def is_controlled(phase: QuantumPhase):
+    for mod in phase.quantum_gate_modifiers:
+        if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
+            return True
+    return False
+
+
+def convert_to_gate(controlled_phase: QuantumPhase):
+    ctrl_modifiers = [
+        mod
+        for mod in controlled_phase.quantum_gate_modifiers
+        if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
+    ]
+    first_ctrl_modifier = ctrl_modifiers[-1]
+    if first_ctrl_modifier.modifier == GateModifierName.negctrl:
+        raise ValueError("negctrl modifier undefined for gphase operation")
+    if first_ctrl_modifier.argument.value == 1:
+        ctrl_modifiers.pop()
+    else:
+        ctrl_modifiers[-1].argument.value -= 1
+    return QuantumGate(
+        ctrl_modifiers,
+        Identifier("U"),
+        [
+            IntegerLiteral(0),
+            IntegerLiteral(0),
+            controlled_phase.argument,
+        ],
+        controlled_phase.qubits,
+    )
+
+
+def get_ctrl_modifiers(modifiers: List[QuantumGateModifier]) -> List[QuantumGateModifier]:
+    return [
+        mod
+        for mod in modifiers
+        if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
+    ]
+
+
+def modify_body(
+    body: List[QuantumStatement],
+    do_invert: bool,
+    ctrl_modifiers: List[QuantumGateModifier],
+    ctrl_qubits: List[Identifier],
+):
+    if do_invert:
+        body = list(reversed(body))
+        for s in body:
+            s.modifiers.insert(0, QuantumGateModifier(GateModifierName.inv, None))
+    for s in body:
+        if isinstance(s, QuantumGate) or is_controlled(s):
+            s.modifiers = ctrl_modifiers + s.modifiers
+            s.qubits = ctrl_qubits + s.qubits
+    return body
