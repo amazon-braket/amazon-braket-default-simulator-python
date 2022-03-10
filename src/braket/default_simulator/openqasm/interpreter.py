@@ -117,10 +117,10 @@ class Interpreter(QASMTransformer):
 
     @visit.register
     def _(self, node: Identifier, context: ProgramContext):
-        if context.identifier_context == context.IdentifierContext.CLASSICAL:
-            if context.get_value(node.name) is None:
-                raise NameError(f"Identifier {node.name} is not initialized.")
-            return context.get_value(node.name)
+        if context.get_value(node.name) is None:
+            raise NameError(f"Identifier {node.name} is not initialized.")
+        value = context.get_value(node.name)
+        return value if value == node else self.visit(value, context)
 
     @visit.register
     def _(self, node: QubitDeclaration, context: ProgramContext):

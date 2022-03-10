@@ -245,10 +245,6 @@ class ScopeManager:
 
 
 class ProgramContext:
-    class IdentifierContext(Enum):
-        CLASSICAL = auto()
-        QUBIT = auto()
-        GATE = auto()
 
     def __init__(self):
         self.symbol_table = SymbolTable()
@@ -256,7 +252,6 @@ class ProgramContext:
         self.gate_table = GateTable()
         self.quantum_simulator = QuantumSimulator()
         self.qubit_mapping = Table("Qubits")
-        self.identifier_context = ProgramContext.IdentifierContext.CLASSICAL
         self.current_element_length = None
         self.scope_manager = ScopeManager(self)
 
