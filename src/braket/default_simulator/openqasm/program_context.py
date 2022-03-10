@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from functools import singledispatchmethod
 from typing import Any, List, Optional, Union
 
@@ -245,7 +244,6 @@ class ScopeManager:
 
 
 class ProgramContext:
-
     def __init__(self):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()

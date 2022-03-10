@@ -334,7 +334,7 @@ def test_reset_qubit():
     mocked_context = ProgramContext()
     reset_qubits_mock = Mock()
     mocked_context.quantum_simulator.reset_qubits = reset_qubits_mock
-    Interpreter().visit(program, mocked_context)
+    Interpreter(mocked_context).visit(program)
 
     reset_qubits_mock.assert_has_calls(
         (
@@ -667,6 +667,54 @@ def test_gphase():
 
     assert np.allclose(
         context.quantum_simulator.state_vector, [-1 / np.sqrt(2) * 1j, 0, 0, 1 / np.sqrt(2) * 1j]
+    )
+
+
+def test_include_stdgates():
+    qasm = """
+    OPENQASM 3;
+    include "stdgates.inc";
+    """
+    program = parse(qasm)
+    context = Interpreter().run(program)
+    print(context)
+
+    assert np.array_equal(
+        list(context.gate_table.current_scope.keys()),
+        [
+            "p",
+            "x",
+            "y",
+            "z",
+            "h",
+            "s",
+            "sdg",
+            "t",
+            "tdg",
+            "sx",
+            "rx",
+            "ry",
+            "rz",
+            "cx",
+            "cy",
+            "cz",
+            "cp",
+            "crx",
+            "cry",
+            "crz",
+            "ch",
+            "swap",
+            "ccx",
+            "cswap",
+            "cu",
+            "CX",
+            "phase",
+            "cphase",
+            "id",
+            "u1",
+            "u2",
+            "u3",
+        ],
     )
 
 

@@ -30,7 +30,7 @@ from openqasm3.ast import (
     UnaryOperator,
 )
 
-LiteralType = Union[BooleanLiteral, IntegerLiteral, RealLiteral]
+LiteralType = Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral]
 
 operator_maps = {
     IntegerLiteral: {
@@ -205,6 +205,7 @@ def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]):
 
 def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOperator):
     # assume lhs and rhs are of same type
+    print(lhs, rhs, op)
     result_type = type(lhs)
     func = operator_maps[result_type].get(op)
     if not func:
@@ -331,3 +332,15 @@ def modify_body(
             s.modifiers = ctrl_modifiers + s.modifiers
             s.qubits = ctrl_qubits + s.qubits
     return body
+
+
+def is_literal(expression: Expression):
+    return isinstance(
+        expression,
+        (
+            BooleanLiteral,
+            IntegerLiteral,
+            RealLiteral,
+            StringLiteral,
+        ),
+    )
