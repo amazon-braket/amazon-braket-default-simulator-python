@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import asdict, fields
 from functools import singledispatchmethod
 from typing import List
 
@@ -43,23 +44,24 @@ from braket.default_simulator.openqasm.data_manipulation import (
     modify_body,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext
-from braket.default_simulator.openqasm.visitor import QASMTransformer
 
 
-class Interpreter(QASMTransformer):
+class Interpreter:
     def run(self, program: QASMNode):
         program_context = ProgramContext()
         self.visit(program, program_context)
         return program_context
 
     @singledispatchmethod
-    def visit(self, node, context=None):
-        return super().visit(node, context)
-
-    @visit.register
-    def _(self, node: Program, context: ProgramContext):
-        """Returns ProgramContext rather than the consumed Program node"""
-        return super().visit(node, context)
+    def visit(self, node, context: ProgramContext):
+        if node is None:
+            return
+        if not isinstance(node, QASMNode):
+            return node
+        for field in fields(node):
+            value = getattr(node, field.name)
+            setattr(node, field.name, self.visit(value, context))
+        return node
 
     @visit.register
     def _(self, node_list: list, context: ProgramContext):
