@@ -14,10 +14,11 @@ from openqasm3.ast import (
     QuantumGate,
     QuantumGateDefinition,
     RealLiteral,
-    UintType,
+    UintType, StringLiteral,
 )
 from openqasm3.parser import parse
 
+from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.program_context import ProgramContext
 
@@ -42,8 +43,8 @@ def test_bit_declaration():
     assert context.get_value("single_uninitialized") is None
     assert context.get_value("single_initialized_int") == BooleanLiteral(False)
     assert context.get_value("single_initialized_bool") == BooleanLiteral(True)
-    assert context.get_value("register_uninitialized") is None
-    assert context.get_value("register_initialized") == IntegerLiteral(1)
+    assert context.get_value("register_uninitialized") == ArrayLiteral([None, None])
+    assert context.get_value("register_initialized") == StringLiteral("01")
 
 
 def test_int_declaration():
@@ -147,7 +148,7 @@ def test_assign_variable():
     assert context.get_type("copy_uint") == UintType(IntegerLiteral(5))
     assert context.get_type("copy_float") == FloatType(IntegerLiteral(16))
 
-    assert context.get_value("copy_bit") == IntegerLiteral(0b10001000)
+    assert context.get_value("copy_bit") == StringLiteral("10001000")
     assert context.get_value("copy_int") == IntegerLiteral(100)
     assert context.get_value("copy_uint") == IntegerLiteral(8)
     # notice the reduced precision compared to np.pi from float[16]
@@ -321,8 +322,8 @@ def test_indexed_identifier():
     )
     assert context.get_type("fifteen_b") == BitType(IntegerLiteral(4))
     assert context.get_type("one_b") == BitType(IntegerLiteral(4))
-    assert context.get_value("fifteen_b") == IntegerLiteral(15)
-    assert context.get_value("one_b") == IntegerLiteral(1)
+    assert context.get_value("fifteen_b") == StringLiteral("1111")
+    assert context.get_value("one_b") == StringLiteral("0001")
 
 
 def test_reset_qubit():
@@ -736,4 +737,5 @@ def test_if():
 def test_adder():
     context = Interpreter().run_file("adder.qasm")
     print(context)
-    assert 0
+    assert context.get_value("ans") == data_manipulation.cast_to(BitType(IntegerLiteral(5)), StringLiteral("11110"))
+

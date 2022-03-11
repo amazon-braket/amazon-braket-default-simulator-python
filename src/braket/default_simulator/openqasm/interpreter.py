@@ -36,7 +36,7 @@ from openqasm3.ast import (
     RangeDefinition,
     RealLiteral,
     StringLiteral,
-    UnaryExpression,
+    UnaryExpression, BitType,
 )
 
 from braket.default_simulator.openqasm import data_manipulation
@@ -97,6 +97,13 @@ class Interpreter:
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
             init_value = data_manipulation.cast_to(node.type, init_expression)
+        elif isinstance(node_type, ArrayType) or (isinstance(node_type, BitType) and node_type.size):
+            def build_empty_array(dims):
+                if len(dims) == 1:
+                    return ArrayLiteral([None] * dims[0].value)
+                return ArrayLiteral([build_empty_array(dims[1:])] * dims[0].value)
+            dims = node_type.dimensions if isinstance(node_type, ArrayType) else [node_type.size]
+            init_value = build_empty_array(dims)
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
@@ -173,7 +180,8 @@ class Interpreter:
     @visit.register
     def _(self, node: IndexedIdentifier):
         print(f"Indexed identifier: {node}")
-        name = self.visit(node.name)
+        # name = self.visit(node.name)
+        name = node.name
         if name.name not in self.context.qubit_mapping:
             raise NotImplementedError("Indexed identifier only implemented for qubits")
         indices = []
@@ -372,7 +380,8 @@ class Interpreter:
     @visit.register
     def _(self, node: BranchingStatement):
         print(f"Branching statement: {node}")
-        block = node.if_block if self.visit(node.condition).value else node.else_block
+        condition = data_manipulation.cast_to(BooleanLiteral, self.visit(node.condition))
+        block = node.if_block if condition.value else node.else_block
         for statement in block:
             self.visit(statement)
 

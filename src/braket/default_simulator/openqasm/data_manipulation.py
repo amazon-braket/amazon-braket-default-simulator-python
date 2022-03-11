@@ -28,7 +28,7 @@ from openqasm3.ast import (
     RealLiteral,
     StringLiteral,
     UintType,
-    UnaryOperator,
+    UnaryOperator, RangeDefinition,
 )
 
 LiteralType = Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral]
@@ -146,13 +146,14 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
 
 @cast_to.register
 def _(into: BitType, variable: LiteralType):
+    print("var: ", variable)
     if not into.size:
         return cast_to(BooleanLiteral, variable)
     else:
         if isinstance(variable, StringLiteral):
             try:
                 assert len(variable.value) == into.size.value
-                variable = IntegerLiteral(int(f"0b{variable.value}", base=2))
+                int_value = int(f"0b{variable.value}", base=2)
             except (AssertionError, ValueError, TypeError):
                 raise ValueError(
                     f"Invalid string to initialize bit register of size {into.size.value}: "
@@ -161,10 +162,8 @@ def _(into: BitType, variable: LiteralType):
         elif isinstance(variable, ArrayLiteral):
             if not all(isinstance(x, BooleanLiteral) for x in variable.values):
                 raise ValueError("Invalid array to cast to bit register.")
-            bin_array = np.array([x.value for x in variable.values])
-            powers_of_two = 2 ** np.arange(into.size.value - 1, -1, -1)
-            variable = IntegerLiteral(bin_array @ powers_of_two)
-        return cast_to(UintType(into.size), variable)
+            variable = StringLiteral(''.join(("1" if x.value else "0") for x in variable.values))
+        return variable
 
 
 @cast_to.register
@@ -377,5 +376,15 @@ def is_literal(expression: Expression):
 
 @singledispatch
 def update_value(current_value: ArrayLiteral, value, indices):
+    # todo: generalize from 1d array with string and range
     print(indices)
-    return None
+    new_value = ArrayLiteral(current_value.values[:])
+    index = indices[0][0]
+    if isinstance(index, RangeDefinition):
+        indices = range(index.start.value, index.end.value + 1, index.step.value)
+    elif isinstance(index, IntegerLiteral):
+        indices = (index.value,)
+    for i, val in zip(indices, reversed(value)):
+        # reverse indices for bit registers, todo generalize to arrays
+        new_value.values[-(i + 1)] = BooleanLiteral(val == "1")
+    return new_value
