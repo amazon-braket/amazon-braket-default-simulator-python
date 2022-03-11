@@ -14,7 +14,8 @@ from openqasm3.ast import (
     QuantumGate,
     QuantumGateDefinition,
     RealLiteral,
-    UintType, StringLiteral,
+    StringLiteral,
+    UintType,
 )
 from openqasm3.parser import parse
 
@@ -238,7 +239,7 @@ def test_bad_array_size_declaration(qasm):
         Interpreter().run(program)
 
 
-def test_indexed_identifier():
+def test_indexed_expression():
     qasm = """
     array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4}};
     int[8] int_from_array = multi_dim[0, 1 * 1];
@@ -247,9 +248,13 @@ def test_indexed_identifier():
     array[uint[8], 3, 2] using_set_multi_dim = multi_dim[{0, 1}][{1, 0, 1}];
     uint[4] fifteen = 15; // 1111
     uint[4] one = 1; // 0001
-    bit[4] fifteen_b = fifteen[0:3];
+    bit[4] fifteen_b = fifteen[:];
     bit[4] one_b = one[0:3];
-    // todo: add signed int bit indexing
+    bit[3] trunc_b = one[0:-2]; // 000
+    int[5] neg_fifteen = -15; // 10001
+    int[5] neg_one = -1; // 11111
+    bit[5] neg_fifteen_b = neg_fifteen[0:4];
+    bit[5] neg_one_b = neg_one[0:4];
     """
     program = parse(qasm)
     context = Interpreter().run(program)
@@ -322,8 +327,14 @@ def test_indexed_identifier():
     )
     assert context.get_type("fifteen_b") == BitType(IntegerLiteral(4))
     assert context.get_type("one_b") == BitType(IntegerLiteral(4))
+    assert context.get_type("trunc_b") == BitType(IntegerLiteral(3))
     assert context.get_value("fifteen_b") == StringLiteral("1111")
     assert context.get_value("one_b") == StringLiteral("0001")
+    assert context.get_value("trunc_b") == StringLiteral("000")
+    assert context.get_type("neg_fifteen_b") == BitType(IntegerLiteral(5))
+    assert context.get_type("neg_one_b") == BitType(IntegerLiteral(5))
+    assert context.get_value("neg_fifteen_b") == StringLiteral("10001")
+    assert context.get_value("neg_one_b") == StringLiteral("11111")
 
 
 def test_reset_qubit():
@@ -737,5 +748,6 @@ def test_if():
 def test_adder():
     context = Interpreter().run_file("adder.qasm")
     print(context)
-    assert context.get_value("ans") == data_manipulation.cast_to(BitType(IntegerLiteral(5)), StringLiteral("11110"))
-
+    assert context.get_value("ans") == data_manipulation.cast_to(
+        BitType(IntegerLiteral(5)), StringLiteral("11110")
+    )

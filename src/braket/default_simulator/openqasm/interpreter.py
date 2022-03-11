@@ -1,13 +1,13 @@
 from copy import deepcopy
 from dataclasses import fields
 from functools import singledispatchmethod
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from openqasm3 import parse
 from openqasm3.ast import (
-    ArrayLiteral,
     ArrayType,
     BinaryExpression,
+    BitType,
     BooleanLiteral,
     BranchingStatement,
     Cast,
@@ -36,7 +36,7 @@ from openqasm3.ast import (
     RangeDefinition,
     RealLiteral,
     StringLiteral,
-    UnaryExpression, BitType,
+    UnaryExpression,
 )
 
 from braket.default_simulator.openqasm import data_manipulation
@@ -97,13 +97,10 @@ class Interpreter:
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
             init_value = data_manipulation.cast_to(node.type, init_expression)
-        elif isinstance(node_type, ArrayType) or (isinstance(node_type, BitType) and node_type.size):
-            def build_empty_array(dims):
-                if len(dims) == 1:
-                    return ArrayLiteral([None] * dims[0].value)
-                return ArrayLiteral([build_empty_array(dims[1:])] * dims[0].value)
-            dims = node_type.dimensions if isinstance(node_type, ArrayType) else [node_type.size]
-            init_value = build_empty_array(dims)
+        elif isinstance(node_type, ArrayType):
+            init_value = data_manipulation.create_empty_array(node_type.dimensions)
+        elif isinstance(node_type, BitType) and node_type.size:
+            init_value = data_manipulation.create_empty_array([node_type.size])
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
@@ -207,7 +204,7 @@ class Interpreter:
     def _(self, node: RangeDefinition):
         print(f"Range definition: {node}")
         start = self.visit(node.start).value if node.start else 0
-        end = self.visit(node.end).value if node.end else NotImplementedError()
+        end = self.visit(node.end).value if node.end else None
         step = self.visit(node.step).value if node.step else 1
         return RangeDefinition(IntegerLiteral(start), IntegerLiteral(end), IntegerLiteral(step))
 
@@ -222,6 +219,7 @@ class Interpreter:
         #     type_width = None
         collection = self.visit(node.collection)
         index = self.visit(node.index)
+        print("index: ", index)
         # type_width = None
         # if not isinstance(collection, ArrayLiteral):
         #     type_width = self.context.get_type(node.collection.name).size.value
@@ -391,7 +389,7 @@ class Interpreter:
         index = self.visit(node.set_declaration)
         if isinstance(index, RangeDefinition):
             index_values = [
-                IntegerLiteral(x) for x in range(index.start.value, index.end.value + 1, index.step.value)
+                IntegerLiteral(x) for x in data_manipulation.convert_range_def_to_range(index)
             ]
         # DiscreteSet
         else:

@@ -25,10 +25,11 @@ from openqasm3.ast import (
     QuantumGateModifier,
     QuantumPhase,
     QuantumStatement,
+    RangeDefinition,
     RealLiteral,
     StringLiteral,
     UintType,
-    UnaryOperator, RangeDefinition,
+    UnaryOperator,
 )
 
 LiteralType = Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral]
@@ -153,7 +154,7 @@ def _(into: BitType, variable: LiteralType):
         if isinstance(variable, StringLiteral):
             try:
                 assert len(variable.value) == into.size.value
-                int_value = int(f"0b{variable.value}", base=2)
+                int(f"0b{variable.value}", base=2)
             except (AssertionError, ValueError, TypeError):
                 raise ValueError(
                     f"Invalid string to initialize bit register of size {into.size.value}: "
@@ -162,7 +163,7 @@ def _(into: BitType, variable: LiteralType):
         elif isinstance(variable, ArrayLiteral):
             if not all(isinstance(x, BooleanLiteral) for x in variable.values):
                 raise ValueError("Invalid array to cast to bit register.")
-            variable = StringLiteral(''.join(("1" if x.value else "0") for x in variable.values))
+            variable = StringLiteral("".join(("1" if x.value else "0") for x in variable.values))
         return variable
 
 
@@ -234,6 +235,20 @@ def evaluate_constant(constant: Constant):
     return RealLiteral(constant_map.get(constant.name))
 
 
+def convert_range_def_to_slice(range_def: RangeDefinition):
+    start = range_def.start.value
+    stop = range_def.end.value + 1 if range_def.end.value is not None else None
+    step = range_def.step.value
+    return slice(start, stop, step)
+
+
+def convert_range_def_to_range(range_def: RangeDefinition):
+    start = range_def.start.value
+    stop = range_def.end.value + 1 if range_def.end.value is not None else None
+    step = range_def.step.value
+    return range(start, stop, step)
+
+
 @singledispatch
 def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
     print(value, index)
@@ -242,6 +257,10 @@ def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
     for i, ix in enumerate(index):
         if is_literal(ix):
             value = value.values[ix.value]
+        elif isinstance(ix, RangeDefinition):
+            value = ArrayLiteral(value.values[convert_range_def_to_slice(ix)])
+        else:
+            raise NotImplementedError("unknown index format")
     return value
 
 
@@ -372,6 +391,12 @@ def is_literal(expression: Expression):
             StringLiteral,
         ),
     )
+
+
+def create_empty_array(dims):
+    if len(dims) == 1:
+        return ArrayLiteral([None] * dims[0].value)
+    return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
 
 
 @singledispatch
