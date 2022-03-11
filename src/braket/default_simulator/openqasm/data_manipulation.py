@@ -9,6 +9,7 @@ from openqasm3.ast import (
     BinaryOperator,
     BitType,
     BooleanLiteral,
+    BoolType,
     ClassicalType,
     Constant,
     ConstantName,
@@ -134,7 +135,7 @@ def resolve_result_type(x: Union[ClassicalType, LiteralType], y: Union[Classical
 def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
     if type(variable) == into:
         return variable
-    if into == BooleanLiteral:
+    if into == BooleanLiteral or isinstance(into, BoolType):
         return BooleanLiteral(bool(variable.value))
     if into == IntegerLiteral:
         return IntegerLiteral(int(variable.value))
@@ -157,6 +158,12 @@ def _(into: BitType, variable: LiteralType):
                     f"Invalid string to initialize bit register of size {into.size.value}: "
                     f"'{variable.value}'"
                 )
+        elif isinstance(variable, ArrayLiteral):
+            if not all(isinstance(x, BooleanLiteral) for x in variable.values):
+                raise ValueError("Invalid array to cast to bit register.")
+            bin_array = np.array([x.value for x in variable.values])
+            powers_of_two = 2 ** np.arange(into.size.value - 1, -1, -1)
+            variable = IntegerLiteral(bin_array @ powers_of_two)
         return cast_to(UintType(into.size), variable)
 
 
@@ -228,14 +235,36 @@ def evaluate_constant(constant: Constant):
     return RealLiteral(constant_map.get(constant.name))
 
 
-def get_elements(array: ArrayLiteral, index: IndexElement):
+@singledispatch
+def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
+    print(value, index)
     if isinstance(index, DiscreteSet):
-        return DiscreteSet([get_elements(array, [i]) for i in index.values])
-    if not isinstance(index, list):
-        index = [index]
-    for i in index:
-        array = array.values[i.value]
-    return array
+        return DiscreteSet([get_elements(value, [i]) for i in index.values])
+    for i, ix in enumerate(index):
+        if is_literal(ix):
+            value = value.values[ix.value]
+    return value
+
+
+@get_elements.register
+def _(value: IntegerLiteral, index: IndexElement, type_width: int):
+    binary_rep = ArrayLiteral(
+        [BooleanLiteral(x == "1") for x in np.binary_repr(value.value, type_width)]
+    )
+    return get_elements(binary_rep, index)
+
+
+# @get_elements.register
+# def _(value: DiscreteSet, index: IndexElement, type_width: int):
+#     print(value, index)
+#     for i, ix in enumerate(index):
+#         if is_literal(ix):
+#             value = value.values[ix.value]
+#         elif isinstance(ix, DiscreteSet):
+#             value = DiscreteSet(sum(
+#                 get_elements(value, [i]).values for i in ix.values
+#             ))
+#     return value
 
 
 @singledispatch
@@ -344,3 +373,9 @@ def is_literal(expression: Expression):
             StringLiteral,
         ),
     )
+
+
+@singledispatch
+def update_value(current_value: ArrayLiteral, value, indices):
+    print(indices)
+    return None

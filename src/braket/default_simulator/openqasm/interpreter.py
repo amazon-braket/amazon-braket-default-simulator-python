@@ -1,13 +1,16 @@
 from copy import deepcopy
 from dataclasses import fields
 from functools import singledispatchmethod
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from openqasm3 import parse
 from openqasm3.ast import (
+    ArrayLiteral,
+    ArrayType,
     BinaryExpression,
     BooleanLiteral,
     BranchingStatement,
+    Cast,
     ClassicalDeclaration,
     Constant,
     ConstantDeclaration,
@@ -58,6 +61,11 @@ class Interpreter:
         self.visit(program)
         return self.context
 
+    def run_file(self, filename: str):
+        with open(filename, "r") as f:
+            program = parse(f.read())
+            return self.run(program)
+
     @singledispatchmethod
     def visit(self, node):
         print(f"Node: {node}")
@@ -74,6 +82,13 @@ class Interpreter:
     def _(self, node_list: list):
         print(f"list: {node_list}")
         return [self.visit(node) for node in node_list]
+
+    @visit.register
+    def _(self, node: Program):
+        print(f"Program: {node}")
+        self.visit(node.includes)
+        self.visit(node.io_variables)
+        self.visit(node.statements)
 
     @visit.register
     def _(self, node: ClassicalDeclaration):
@@ -120,6 +135,12 @@ class Interpreter:
             return UnaryExpression(node.op, expression)
 
     @visit.register
+    def _(self, node: Cast):
+        print(f"Cast: {node}")
+        casted = [data_manipulation.cast_to(node.type, self.visit(arg)) for arg in node.arguments]
+        return casted[0] if len(casted) == 1 else casted
+
+    @visit.register
     def _(self, node: Constant):
         print(f"Constant: {node}")
         return data_manipulation.evaluate_constant(node)
@@ -152,7 +173,7 @@ class Interpreter:
     @visit.register
     def _(self, node: IndexedIdentifier):
         print(f"Indexed identifier: {node}")
-        name = node.name
+        name = self.visit(node.name)
         if name.name not in self.context.qubit_mapping:
             raise NotImplementedError("Indexed identifier only implemented for qubits")
         indices = []
@@ -164,31 +185,39 @@ class Interpreter:
                     # todo: set current dimension's length for [:] and [:-1] indexing
                     element = self.visit(element)
                     if isinstance(element, IntegerLiteral):
-                        indices.append(DiscreteSet([element]))
-                    elif isinstance(element, DiscreteSet):
-                        indices.append(element)
+                        indices.append([element])
+                    elif isinstance(element, RangeDefinition):
+                        indices.append([element])
                     else:
                         raise NotImplementedError(f"Index {index} not valid for qubit indexing")
+        if self.context.get_value(name.name) is None:
+            raise NameError(f"Identifier {name.name} is not initialized.")
         return IndexedIdentifier(name, indices)
+        # return self.context.get_indexed_value(node)
 
     @visit.register
     def _(self, node: RangeDefinition):
         print(f"Range definition: {node}")
         start = self.visit(node.start).value if node.start else 0
-        end = self.visit(node.end).value + 1 if node.end else NotImplementedError
+        end = self.visit(node.end).value if node.end else NotImplementedError()
         step = self.visit(node.step).value if node.step else 1
-        return DiscreteSet([IntegerLiteral(i) for i in range(start, end, step)])
+        return RangeDefinition(IntegerLiteral(start), IntegerLiteral(end), IntegerLiteral(step))
 
     @visit.register
     def _(self, node: IndexExpression):
-        """cast index to list of integer literals"""
         print(f"Index expression: {node}")
-        array = self.visit(node.collection)
-        if isinstance(node.index, DiscreteSet):
-            index = self.visit(node.index)
-        else:
-            index = [self.visit(i) for i in node.index]
-        return data_manipulation.get_elements(array, index)
+        type_width = None
+        if isinstance(node.collection, Identifier):
+            if not isinstance(self.context.get_type(node.collection.name), ArrayType):
+                type_width = self.context.get_type(node.collection.name).size.value
+        # else:
+        #     type_width = None
+        collection = self.visit(node.collection)
+        index = self.visit(node.index)
+        # type_width = None
+        # if not isinstance(collection, ArrayLiteral):
+        #     type_width = self.context.get_type(node.collection.name).size.value
+        return data_manipulation.get_elements(collection, index, type_width)
 
     @visit.register
     def _(self, node: QuantumGateDefinition):
@@ -200,10 +229,10 @@ class Interpreter:
             for param in node.arguments:
                 self.context.declare_alias(param.name, param)
 
-            node.body = self.inline_gate_def_body(node.body)
+            node.body = self.inline_gate_def_body(node.body)  # , node.qubits)
         self.context.add_gate(node.name.name, node)
 
-    def inline_gate_def_body(self, body: List[QuantumStatement]):
+    def inline_gate_def_body(self, body: List[QuantumStatement]):  # , qubit_map):
         inlined_body = []
         for statement in body:
             if isinstance(statement, QuantumPhase):
@@ -242,23 +271,37 @@ class Interpreter:
                         ):
                             self.context.declare_alias(param_defined.name, param_called)
 
-                        body_copy = modify_body(
-                            deepcopy(gate_def.body),
-                            is_inverted(statement),
-                            ctrl_modifiers,
-                            ctrl_qubits,
-                        )
-                        inlined_body += self.inline_gate_def_body(body_copy)
+                        inlined_copy = self.inline_gate_def_body(deepcopy(gate_def.body))
+
+                    inlined_body += modify_body(
+                        inlined_copy,
+                        is_inverted(statement),
+                        ctrl_modifiers,
+                        ctrl_qubits,
+                    )
         return inlined_body
 
     @visit.register
     def _(self, node: QuantumGate):
         print(f"Quantum gate: {node}")
         gate_name = node.name.name
+        if gate_name == "majority":
+            print("in majority")
         node.arguments = [self.visit(arg) for arg in node.arguments]
-        qubits = [self.visit(qubit) for qubit in node.qubits]
+        # qubits = [self.visit(qubit) for qubit in node.qubits]
+
+        qubits = []
+        for qubit in node.qubits:
+            if isinstance(qubit, Identifier):
+                qubits.append(self.visit(qubit))
+            elif isinstance(qubit, IndexedIdentifier):
+                dereffed_name = self.visit(qubit.name)
+                simplified_indices = self.visit(qubit.indices)
+                qubits.append(IndexedIdentifier(dereffed_name, simplified_indices))
 
         if gate_name == "U":
+            # to simplify indices
+            qubits = self.visit(qubits)
             self.context.execute_builtin_unitary(
                 node.arguments,
                 qubits,
@@ -321,13 +364,15 @@ class Interpreter:
     def _(self, node: QuantumMeasurementAssignment):
         print(f"Quantum measurement assignment: {node}")
         measurement = self.visit(node.measure_instruction)
+        if isinstance(node.target, IndexedIdentifier):
+            node.target.indices = self.visit(node.target.indices)
         if node.target is not None:
-            self.context.update_value(node.target.name, measurement.value)
+            self.context.update_value(node.target, measurement.value)
 
     @visit.register
     def _(self, node: BranchingStatement):
         print(f"Branching statement: {node}")
-        block = node.if_block if self.visit(node.condition) else node.else_block
+        block = node.if_block if self.visit(node.condition).value else node.else_block
         for statement in block:
             self.visit(statement)
 
@@ -335,7 +380,14 @@ class Interpreter:
     def _(self, node: ForInLoop):
         print(f"For in loop: {node}")
         index = self.visit(node.set_declaration)
-        for i in index.values:
+        if isinstance(index, RangeDefinition):
+            index_values = [
+                IntegerLiteral(x) for x in range(index.start.value, index.end.value + 1, index.step.value)
+            ]
+        # DiscreteSet
+        else:
+            index_values = index.values
+        for i in index_values:
             with self.context.enter_scope():
                 self.context.declare_variable(node.loop_variable.name, IntegerLiteral, i)
                 self.visit(node.block)

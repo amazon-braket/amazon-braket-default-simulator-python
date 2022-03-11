@@ -8,11 +8,14 @@ from openqasm3.ast import (
     Identifier,
     IndexedIdentifier,
     IndexElement,
+    IntegerLiteral,
     QuantumGateDefinition,
     QuantumGateModifier,
+    RangeDefinition,
 )
 
 from braket.default_simulator.linalg_utils import controlled_unitary
+from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.data_manipulation import LiteralType
 from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
@@ -62,10 +65,23 @@ class Table:
         When identifier is an IndexedIdentifier, function returns a tuple
         corresponding to the elements referenced by the indexed identifier.
         """
-        # an index that has been visited will be of type DiscreteSet
+        # an index that has been visited will be of type [DiscreteSet]
         name = identifier.name.name
-        index = tuple(tuple(i.value for i in ix.values) for ix in identifier.indices)
-        return tuple(np.array(self[name])[index])
+        if len(identifier.indices) != 1:
+            raise NotImplementedError("Multiple dimensions of indices for IndexedIdentifier")
+        if len(identifier.indices[0]) != 1:
+            raise NotImplementedError(
+                "Multiple dimensions of indices for IndexedIdentifier (inside)"
+            )
+        index = identifier.indices[0][0]
+        if isinstance(index, IntegerLiteral):
+            return (self[name][index.value],)
+        elif isinstance(index, RangeDefinition):
+            return tuple(
+                np.array(self[name])[
+                    range(index.start.value, index.end.value + 1, index.step.value)
+                ]
+            )
 
 
 class ScopedTable(Table):
@@ -207,14 +223,10 @@ class VariableTable(ScopedTable):
         return self[name]
 
     def update_value(self, name: str, value: Any, indices: Optional[List[IndexElement]] = None):
+        current_value = self[name]
+        if indices:
+            value = data_manipulation.update_value(current_value, value, indices)
         self[name] = value
-        # todo support indices
-
-        # if indices and not (isinstance(variable, ArrayLiteral)):
-        #     raise TypeError(f"Cannot get index for variable of type {type(variable).__name__}")
-        # for i in indices:
-        #     variable = variable.values[i]
-        # if isinstance()
 
 
 class GateTable(ScopedTable):
@@ -303,8 +315,13 @@ class ProgramContext:
     def get_value(self, name: str):
         return self.variable_table.get_value(name)
 
-    def update_value(self, name: str, value: Any, indices: Optional[List[IndexElement]] = None):
-        return self.variable_table.update_value(name, value, indices)
+    def get_indexed_value(self, variable: IndexedIdentifier):
+        pass
+
+    def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any):
+        if isinstance(variable, Identifier):
+            return self.variable_table.update_value(variable.name, value)
+        return self.variable_table.update_value(variable.name.name, value, variable.indices)
 
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))

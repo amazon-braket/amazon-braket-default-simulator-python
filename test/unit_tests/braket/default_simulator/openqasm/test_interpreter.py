@@ -244,6 +244,11 @@ def test_indexed_identifier():
     array[int[8], 2] array_from_array = multi_dim[1];
     array[uint[8], 3] using_set = multi_dim[0][{1, 0, 1}];
     array[uint[8], 3, 2] using_set_multi_dim = multi_dim[{0, 1}][{1, 0, 1}];
+    uint[4] fifteen = 15; // 1111
+    uint[4] one = 1; // 0001
+    bit[4] fifteen_b = fifteen[0:3];
+    bit[4] one_b = one[0:3];
+    // todo: add signed int bit indexing
     """
     program = parse(qasm)
     context = Interpreter().run(program)
@@ -314,6 +319,10 @@ def test_indexed_identifier():
             ),
         ]
     )
+    assert context.get_type("fifteen_b") == BitType(IntegerLiteral(4))
+    assert context.get_type("one_b") == BitType(IntegerLiteral(4))
+    assert context.get_value("fifteen_b") == IntegerLiteral(15)
+    assert context.get_value("one_b") == IntegerLiteral(1)
 
 
 def test_reset_qubit():
@@ -423,6 +432,8 @@ def test_gate_def():
             )
         ],
     )
+    print("def")
+    print(context.get_gate_definition("x2"))
     assert context.get_gate_definition("x2") == QuantumGateDefinition(
         name=Identifier("x2"),
         arguments=[Identifier("p")],
@@ -720,3 +731,9 @@ def test_include_stdgates():
 
 def test_if():
     pass
+
+
+def test_adder():
+    context = Interpreter().run_file("adder.qasm")
+    print(context)
+    assert 0
