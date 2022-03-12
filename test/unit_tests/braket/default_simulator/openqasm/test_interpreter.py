@@ -33,7 +33,7 @@ def test_bit_declaration():
     bit[2] register_initialized = "01";
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert context.get_type("single_uninitialized") == BitType(None)
     assert context.get_type("single_initialized_int") == BitType(None)
@@ -45,7 +45,9 @@ def test_bit_declaration():
     assert context.get_value("single_initialized_int") == BooleanLiteral(False)
     assert context.get_value("single_initialized_bool") == BooleanLiteral(True)
     assert context.get_value("register_uninitialized") == ArrayLiteral([None, None])
-    assert context.get_value("register_initialized") == StringLiteral("01")
+    assert context.get_value("register_initialized") == ArrayLiteral(
+        [BooleanLiteral(False), BooleanLiteral(True)]
+    )
 
 
 def test_int_declaration():
@@ -61,7 +63,7 @@ def test_int_declaration():
 
     program = parse(qasm)
     with pytest.warns(UserWarning) as warn_info:
-        context = Interpreter().run(program)
+        context = Interpreter().run_program(program)
 
     assert context.get_type("uninitialized") == IntType(IntegerLiteral(8))
     assert context.get_type("pos") == IntType(IntegerLiteral(8))
@@ -93,7 +95,7 @@ def test_uint_declaration():
 
     program = parse(qasm)
     with pytest.warns(UserWarning, match=pos_overflow):
-        context = Interpreter().run(program)
+        context = Interpreter().run_program(program)
 
     assert context.get_type("uninitialized") == UintType(IntegerLiteral(8))
     assert context.get_type("pos") == UintType(IntegerLiteral(8))
@@ -114,7 +116,7 @@ def test_float_declaration():
     float[128] precise = π;
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert context.get_type("uninitialized") == FloatType(IntegerLiteral(16))
     assert context.get_type("pos") == FloatType(IntegerLiteral(32))
@@ -142,14 +144,16 @@ def test_assign_variable():
     float[16] copy_float = og_float;
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert context.get_type("copy_bit") == BitType(IntegerLiteral(8))
     assert context.get_type("copy_int") == IntType(IntegerLiteral(10))
     assert context.get_type("copy_uint") == UintType(IntegerLiteral(5))
     assert context.get_type("copy_float") == FloatType(IntegerLiteral(16))
 
-    assert context.get_value("copy_bit") == StringLiteral("10001000")
+    assert context.get_value("copy_bit") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("10001000")
+    )
     assert context.get_value("copy_int") == IntegerLiteral(100)
     assert context.get_value("copy_uint") == IntegerLiteral(8)
     # notice the reduced precision compared to np.pi from float[16]
@@ -164,7 +168,7 @@ def test_array_declaration():
     array[uint[8], 1, 1, 1] with_expressions = {{{1 + 2}}};
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert context.get_type("row") == ArrayType(
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2)]
@@ -236,7 +240,7 @@ def test_bad_array_size_declaration(qasm):
     bad_size = "Size mismatch between dimension of size 2 " "and values length 3"
     program = parse(qasm)
     with pytest.raises(ValueError, match=bad_size):
-        Interpreter().run(program)
+        Interpreter().run_program(program)
 
 
 def test_indexed_expression():
@@ -249,15 +253,16 @@ def test_indexed_expression():
     uint[4] fifteen = 15; // 1111
     uint[4] one = 1; // 0001
     bit[4] fifteen_b = fifteen[:];
-    bit[4] one_b = one[0:3];
+    bit[4] one_b = one[0:3]; // 0001
     bit[3] trunc_b = one[0:-2]; // 000
     int[5] neg_fifteen = -15; // 10001
     int[5] neg_one = -1; // 11111
-    bit[5] neg_fifteen_b = neg_fifteen[0:4];
-    bit[5] neg_one_b = neg_one[0:4];
+    bit[5] neg_fifteen_b = neg_fifteen[0:4];  // 10001
+    bit[5] neg_one_b = neg_one[0:4];  // 11111
+    bit[3] bit_slice = neg_fifteen_b[0:2:-1];  // 101
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert context.get_type("multi_dim") == ArrayType(
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
@@ -328,13 +333,27 @@ def test_indexed_expression():
     assert context.get_type("fifteen_b") == BitType(IntegerLiteral(4))
     assert context.get_type("one_b") == BitType(IntegerLiteral(4))
     assert context.get_type("trunc_b") == BitType(IntegerLiteral(3))
-    assert context.get_value("fifteen_b") == StringLiteral("1111")
-    assert context.get_value("one_b") == StringLiteral("0001")
-    assert context.get_value("trunc_b") == StringLiteral("000")
     assert context.get_type("neg_fifteen_b") == BitType(IntegerLiteral(5))
     assert context.get_type("neg_one_b") == BitType(IntegerLiteral(5))
-    assert context.get_value("neg_fifteen_b") == StringLiteral("10001")
-    assert context.get_value("neg_one_b") == StringLiteral("11111")
+    assert context.get_type("bit_slice") == BitType(IntegerLiteral(3))
+    assert context.get_value("fifteen_b") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("1111")
+    )
+    assert context.get_value("one_b") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("0001")
+    )
+    assert context.get_value("trunc_b") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("000")
+    )
+    assert context.get_value("neg_fifteen_b") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("10001")
+    )
+    assert context.get_value("neg_one_b") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("11111")
+    )
+    assert context.get_value("bit_slice") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("101")
+    )
 
 
 def test_reset_qubit():
@@ -389,10 +408,14 @@ def test_for_loop():
     m2 = measure q;
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
-    assert context.get_value("m1") == "10101010"
-    assert context.get_value("m2") == "10000000"
+    assert context.get_value("m1") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("10101010")
+    )
+    assert context.get_value("m2") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("10000000")
+    )
 
 
 def test_gate_def():
@@ -408,7 +431,7 @@ def test_gate_def():
     }
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert context.get_gate_definition("x") == QuantumGateDefinition(
         name=Identifier("x"),
@@ -504,7 +527,7 @@ def test_gate_undef():
 
     undefined_gate = "Gate y is not defined."
     with pytest.raises(ValueError, match=undefined_gate):
-        Interpreter().run(program)
+        Interpreter().run_program(program)
 
 
 def test_gate_call():
@@ -525,7 +548,7 @@ def test_gate_call():
     x qs[0];
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert np.allclose(
         context.quantum_simulator.state_vector, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
@@ -565,7 +588,7 @@ def test_gate_inv():
     all_3_inv q;
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert np.allclose(context.quantum_simulator.state_vector, [1, 0])
 
@@ -615,7 +638,7 @@ def test_gate_ctrl():
     ccx_2 q1, q2, q5;
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
     assert np.allclose(
         context.quantum_simulator.state_vector,
         [0] * 31 + [1],
@@ -655,12 +678,19 @@ def test_measurement():
     mqs5 = measure qs5[:two:3];
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
-    assert context.get_value("mq") == "1"
-    assert context.get_value("mqs") == "10"
-    assert context.get_value("mqs2_0") == "0"
-    assert context.get_value("mqs5") == "11"
+    measurements = {
+        "mq": "1",
+        "mqs": "10",
+        "mqs2_0": "0",
+        "mqs5": "11",
+    }
+
+    for bit, result in measurements.items():
+        assert context.get_value(bit) == data_manipulation.convert_string_to_bool_array(
+            StringLiteral(result)
+        )
 
 
 def test_gphase():
@@ -686,20 +716,20 @@ def test_gphase():
     gphase(π);
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
 
     assert np.allclose(
         context.quantum_simulator.state_vector, [-1 / np.sqrt(2) * 1j, 0, 0, 1 / np.sqrt(2) * 1j]
     )
 
 
-def test_include_stdgates():
+def test_include_stdgates(stdgates):
     qasm = """
     OPENQASM 3;
     include "stdgates.inc";
     """
     program = parse(qasm)
-    context = Interpreter().run(program)
+    context = Interpreter().run_program(program)
     print(context)
 
     assert np.array_equal(
@@ -745,9 +775,8 @@ def test_if():
     pass
 
 
-def test_adder():
+def test_adder(adder):
     context = Interpreter().run_file("adder.qasm")
-    print(context)
-    assert context.get_value("ans") == data_manipulation.cast_to(
-        BitType(IntegerLiteral(5)), StringLiteral("11110")
-    )
+    assert data_manipulation.convert_bool_array_to_string(
+        context.get_value("ans")
+    ) == StringLiteral("11110")

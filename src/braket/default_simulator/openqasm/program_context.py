@@ -77,11 +77,7 @@ class Table:
         if isinstance(index, IntegerLiteral):
             return (self[name][index.value],)
         elif isinstance(index, RangeDefinition):
-            return tuple(
-                np.array(self[name])[
-                    range(index.start.value, index.end.value + 1, index.step.value)
-                ]
-            )
+            return tuple(np.array(self[name])[data_manipulation.convert_range_def_to_slice(index)])
 
 
 class ScopedTable(Table):

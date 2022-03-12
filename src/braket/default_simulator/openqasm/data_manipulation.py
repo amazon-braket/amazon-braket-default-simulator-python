@@ -155,16 +155,26 @@ def _(into: BitType, variable: LiteralType):
             try:
                 assert len(variable.value) == into.size.value
                 int(f"0b{variable.value}", base=2)
+                return convert_string_to_bool_array(variable)
             except (AssertionError, ValueError, TypeError):
                 raise ValueError(
                     f"Invalid string to initialize bit register of size {into.size.value}: "
                     f"'{variable.value}'"
                 )
         elif isinstance(variable, ArrayLiteral):
-            if not all(isinstance(x, BooleanLiteral) for x in variable.values):
-                raise ValueError("Invalid array to cast to bit register.")
-            variable = StringLiteral("".join(("1" if x.value else "0") for x in variable.values))
-        return variable
+            if (
+                not all(isinstance(x, BooleanLiteral) for x in variable.values)
+                or len(variable.values) != into.size.value
+            ):
+                raise ValueError(
+                    f"Invalid array to cast to bit register of size {into.size.value}."
+                )
+            return variable
+        else:
+            raise ValueError(
+                f"Invalid value to initialize bit register of size {into.size.value}: "
+                f"'{variable}'"
+            )
 
 
 @cast_to.register
@@ -236,15 +246,19 @@ def evaluate_constant(constant: Constant):
 
 
 def convert_range_def_to_slice(range_def: RangeDefinition):
-    start = range_def.start.value
-    stop = range_def.end.value + 1 if range_def.end.value is not None else None
-    step = range_def.step.value
+    start = range_def.start.value if range_def.start is not None else None
+    stop = (
+        range_def.end.value + 1
+        if not (range_def.end is None or range_def.end.value == -1)
+        else None
+    )
+    step = range_def.step.value if range_def.step is not None else None
     return slice(start, stop, step)
 
 
 def convert_range_def_to_range(range_def: RangeDefinition):
     start = range_def.start.value
-    stop = range_def.end.value + 1 if range_def.end.value is not None else None
+    stop = range_def.end.value + 1
     step = range_def.step.value
     return range(start, stop, step)
 
@@ -272,17 +286,10 @@ def _(value: IntegerLiteral, index: IndexElement, type_width: int):
     return get_elements(binary_rep, index)
 
 
-# @get_elements.register
-# def _(value: DiscreteSet, index: IndexElement, type_width: int):
-#     print(value, index)
-#     for i, ix in enumerate(index):
-#         if is_literal(ix):
-#             value = value.values[ix.value]
-#         elif isinstance(ix, DiscreteSet):
-#             value = DiscreteSet(sum(
-#                 get_elements(value, [i]).values for i in ix.values
-#             ))
-#     return value
+@get_elements.register
+def _(value: StringLiteral, index: IndexElement, type_width=None):
+    binary_rep = ArrayLiteral([BooleanLiteral(x == "1") for x in value.value])
+    return get_elements(binary_rep, index)
 
 
 @singledispatch
@@ -399,7 +406,6 @@ def create_empty_array(dims):
     return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
 
 
-@singledispatch
 def update_value(current_value: ArrayLiteral, value, indices):
     # todo: generalize from 1d array with string and range
     print(indices)
@@ -409,7 +415,14 @@ def update_value(current_value: ArrayLiteral, value, indices):
         indices = range(index.start.value, index.end.value + 1, index.step.value)
     elif isinstance(index, IntegerLiteral):
         indices = (index.value,)
-    for i, val in zip(indices, reversed(value)):
-        # reverse indices for bit registers, todo generalize to arrays
-        new_value.values[-(i + 1)] = BooleanLiteral(val == "1")
+    for i, val in zip(indices, value.values):
+        new_value.values[i] = val
     return new_value
+
+
+def convert_string_to_bool_array(bit_string: StringLiteral) -> ArrayLiteral:
+    return ArrayLiteral([BooleanLiteral(x == "1") for x in bit_string.value])
+
+
+def convert_bool_array_to_string(bit_string: ArrayLiteral) -> StringLiteral:
+    return StringLiteral("".join(("1" if x.value else "0") for x in bit_string.values))

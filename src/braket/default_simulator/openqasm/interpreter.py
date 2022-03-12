@@ -57,14 +57,17 @@ class Interpreter:
         # context keeps track of all state
         self.context = context or ProgramContext()
 
-    def run(self, program: Program):
+    def run(self, string: str):
+        program = parse(string)
+        return self.run_program(program)
+
+    def run_program(self, program: Program):
         self.visit(program)
         return self.context
 
     def run_file(self, filename: str):
         with open(filename, "r") as f:
-            program = parse(f.read())
-            return self.run(program)
+            return self.run(f.read())
 
     @singledispatchmethod
     def visit(self, node):
@@ -203,10 +206,10 @@ class Interpreter:
     @visit.register
     def _(self, node: RangeDefinition):
         print(f"Range definition: {node}")
-        start = self.visit(node.start).value if node.start else 0
-        end = self.visit(node.end).value if node.end else None
-        step = self.visit(node.step).value if node.step else 1
-        return RangeDefinition(IntegerLiteral(start), IntegerLiteral(end), IntegerLiteral(step))
+        start = self.visit(node.start) if node.start else IntegerLiteral(0)
+        end = self.visit(node.end)
+        step = self.visit(node.step) if node.step else IntegerLiteral(1)
+        return RangeDefinition(start, end, step)
 
     @visit.register
     def _(self, node: IndexExpression):
@@ -215,14 +218,8 @@ class Interpreter:
         if isinstance(node.collection, Identifier):
             if not isinstance(self.context.get_type(node.collection.name), ArrayType):
                 type_width = self.context.get_type(node.collection.name).size.value
-        # else:
-        #     type_width = None
         collection = self.visit(node.collection)
         index = self.visit(node.index)
-        print("index: ", index)
-        # type_width = None
-        # if not isinstance(collection, ArrayLiteral):
-        #     type_width = self.context.get_type(node.collection.name).size.value
         return data_manipulation.get_elements(collection, index, type_width)
 
     @visit.register
@@ -373,7 +370,11 @@ class Interpreter:
         if isinstance(node.target, IndexedIdentifier):
             node.target.indices = self.visit(node.target.indices)
         if node.target is not None:
-            self.context.update_value(node.target, measurement.value)
+            print("val", measurement.value)
+            measurement_value = data_manipulation.convert_string_to_bool_array(
+                StringLiteral(measurement.value)
+            )
+            self.context.update_value(node.target, measurement_value)
 
     @visit.register
     def _(self, node: BranchingStatement):

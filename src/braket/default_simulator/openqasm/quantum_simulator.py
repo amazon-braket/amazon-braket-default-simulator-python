@@ -160,6 +160,7 @@ class QuantumSimulator:
         target = self.resolve_target(target)
         marginal = marginal_probability(self.probabilities, target)
         sample = np.random.choice(2 ** len(target), p=marginal)
+        print("sample", sample)
         return np.array([x == "1" for x in np.binary_repr(sample, len(target))])
 
     def execute_unitary(
