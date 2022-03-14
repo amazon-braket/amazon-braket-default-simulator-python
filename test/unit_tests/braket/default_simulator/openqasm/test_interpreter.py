@@ -643,7 +643,64 @@ def test_gate_ctrl():
         context.quantum_simulator.state_vector,
         [0] * 31 + [1],
     )
-    # todo: test neg ctrl
+
+
+def test_neg_gate_ctrl():
+    qasm = """
+    int[8] two = 2;
+    gate x a { U(π, 0, π) a; }
+    gate cx c, a {
+        negctrl @ x c, a;
+    }
+    gate ccx_1 c1, c2, a {
+        negctrl @ negctrl @ x c1, c2, a;
+    }
+    gate ccx_2 c1, c2, a {
+        negctrl(two) @ x c1, c2, a;
+    }
+    gate ccx_3 c1, c2, a {
+        negctrl @ cx c1, c2, a;
+    }
+
+    qubit q1;
+    qubit q2;
+    qubit q3;
+    qubit q4;
+    qubit q5;
+
+    reset q1;
+    reset q2;
+    reset q3;
+    reset q4;
+    reset q5;
+
+    x q1;
+    x q2;
+    x q3;
+    x q4;
+    x q5;
+
+    // doesn't flip q2
+    cx q1, q2;
+    // flip q1
+    x q1;
+    // flip q2
+    cx q1, q2;
+    // doesn't flip q3, q4, q5
+    ccx_1 q1, q4, q3;
+    ccx_2 q1, q3, q4;
+    ccx_3 q1, q3, q5;
+    // flip q3, q4, q5;
+    ccx_1 q1, q2, q3;
+    ccx_2 q1, q2, q4;
+    ccx_2 q1, q2, q5;
+    """
+    program = parse(qasm)
+    context = Interpreter().run_program(program)
+    assert np.allclose(
+        context.quantum_simulator.state_vector,
+        [1] + [0] * 31,
+    )
 
 
 def test_measurement():
@@ -723,6 +780,34 @@ def test_gphase():
     )
 
 
+def test_if():
+    qasm = """
+    int[8] two = 2;
+    bit[3] m;
+
+    qubit[3] qs;
+    reset qs;
+
+    gate x a { U(π, 0, π) a; }
+
+    if (two + 1) {
+        x qs[0];
+    } else {
+        x qs[1];
+    }
+
+    if (!bool(two - 2)) {
+        x qs[2];
+    }
+
+    m = measure qs;
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("m") == data_manipulation.convert_string_to_bool_array(
+        StringLiteral("101")
+    )
+
+
 def test_include_stdgates(stdgates):
     qasm = """
     OPENQASM 3;
@@ -769,10 +854,6 @@ def test_include_stdgates(stdgates):
             "u3",
         ],
     )
-
-
-def test_if():
-    pass
 
 
 def test_adder(adder):

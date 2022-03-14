@@ -65,7 +65,6 @@ class Table:
         When identifier is an IndexedIdentifier, function returns a tuple
         corresponding to the elements referenced by the indexed identifier.
         """
-        # an index that has been visited will be of type [DiscreteSet]
         name = identifier.name.name
         if len(identifier.indices) != 1:
             raise NotImplementedError("Multiple dimensions of indices for IndexedIdentifier")
@@ -323,9 +322,6 @@ class ProgramContext:
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.quantum_simulator.add_qubits(num_qubits)
         self.declare_alias(name, Identifier(name))
-
-    def get_qubit_length(self, name: str):
-        return len(self.qubit_mapping[name])
 
     def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
         return self.qubit_mapping.get_by_identifier(qubits)

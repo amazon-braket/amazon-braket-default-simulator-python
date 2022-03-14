@@ -190,7 +190,6 @@ class Interpreter:
                 indices.append(index)
             else:
                 for element in index:
-                    # todo: set current dimension's length for [:] and [:-1] indexing
                     element = self.visit(element)
                     if isinstance(element, IntegerLiteral):
                         indices.append([element])
@@ -201,7 +200,6 @@ class Interpreter:
         if self.context.get_value(name.name) is None:
             raise NameError(f"Identifier {name.name} is not initialized.")
         return IndexedIdentifier(name, indices)
-        # return self.context.get_indexed_value(node)
 
     @visit.register
     def _(self, node: RangeDefinition):
