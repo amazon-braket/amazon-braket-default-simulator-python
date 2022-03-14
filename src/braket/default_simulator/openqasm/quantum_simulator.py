@@ -9,7 +9,7 @@ from braket.default_simulator.linalg_utils import marginal_probability, multiply
 class QuantumSimulator:
     """
     Qubits are initially in a ground state.
-    Qubit indexing is as follows: |0123...n>
+    Qubit indexing is as follows: |0123...n> (same as BDK, opposite from Qiskit)
 
     Currently, measurements and reset instructions are sampled, disrupting a pure state
     for a shots=0 analytic simulation. This is a temporary implementation for development

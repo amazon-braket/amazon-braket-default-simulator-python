@@ -289,7 +289,6 @@ class Interpreter:
         if gate_name == "majority":
             print("in majority")
         node.arguments = [self.visit(arg) for arg in node.arguments]
-        # qubits = [self.visit(qubit) for qubit in node.qubits]
 
         qubits = []
         for qubit in node.qubits:
