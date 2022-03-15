@@ -859,7 +859,7 @@ def test_adder(adder):
     context = Interpreter().run_file("adder.qasm")
     assert data_manipulation.convert_bool_array_to_string(
         context.get_value("ans")
-    ) == StringLiteral("11110")
+    ) == StringLiteral("10000")
 
 
 def shot_data_is_equal(s1: Dict, s2: Dict):
@@ -875,7 +875,7 @@ def test_adder_shots(adder):
 
     assert shot_data_is_equal(
         context.shot_data,
-        {"ans": np.full(10, "11110")},
+        {"ans": np.full(10, "10000")},
     )
 
 

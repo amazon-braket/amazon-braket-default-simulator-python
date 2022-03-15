@@ -3,8 +3,6 @@ import numpy as np
 from braket.ir.openqasm import Program
 from braket.devices import LocalSimulator
 
-device = LocalSimulator('braket_oq3_sv')
-
 
 def adder_qasm(a: int, b: int):
     return f"""
@@ -56,10 +54,12 @@ for i in [1: 3] {{ unmaj a[i], b[i - 1], a[i - 1]; }}
 unmaj cin, b[3], a[3];
 
 // measure results
-ans[0] = measure cout[0];
+ans[0] = measure cout;
 ans[1:4] = measure b[0:3];
 """
 
+
+device = LocalSimulator('braket_oq3_sv')
 
 for _ in range(10):
     a, b = np.random.randint(0, 16, 2)

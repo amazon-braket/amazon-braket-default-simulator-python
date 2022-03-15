@@ -109,13 +109,14 @@ gate unmaj a, b, c {
     cx a, b;
 }
 
-qubit[1] cin;
+qubit cin;
 qubit[4] a;
 qubit[4] b;
-qubit[1] cout;
+qubit cout;
 bit[5] ans;
 uint[4] a_in = 1;  // a = 0001
 uint[4] b_in = 15; // b = 1111
+
 // initialize qubits
 reset cin;
 reset a;
@@ -127,15 +128,16 @@ for i in [0: 3] {
   if(bool(a_in[i])) x a[i];
   if(bool(b_in[i])) x b[i];
 }
-// add a to b, storing result in b
-majority cin[0], b[0], a[0];
-for i in [0: 2] { majority a[i], b[i + 1], a[i + 1]; }
-cx a[3], cout[0];
-for i in [2: -1: 0] { unmaj a[i],b[i+1],a[i+1]; }
-unmaj cin[0], b[0], a[0];
 
-/* modified from example due to difference
-in IBM's vs Braket's Endianness */
-measure b[0:3] -> ans[1:4];     // used to be 0:3
-measure cout[0] -> ans[0];      // used to be 4""",
+// add a to b, storing result in b
+majority cin, b[3], a[3];
+for i in [3: -1: 1] { majority a[i], b[i - 1], a[i - 1]; }
+cx a[0], cout;
+for i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
+unmaj cin, b[3], a[3];
+
+// measure results
+ans[0] = measure cout;
+ans[1:4] = measure b[0:3];
+""",
     )
