@@ -147,34 +147,31 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
 
 @cast_to.register
 def _(into: BitType, variable: LiteralType):
-    print("var: ", variable)
     if not into.size:
-        return cast_to(BooleanLiteral, variable)
+        size = 1
+        variable = ArrayLiteral([cast_to(BooleanLiteral, variable)])
     else:
-        if isinstance(variable, StringLiteral):
-            try:
-                assert len(variable.value) == into.size.value
-                int(f"0b{variable.value}", base=2)
-                return convert_string_to_bool_array(variable)
-            except (AssertionError, ValueError, TypeError):
-                raise ValueError(
-                    f"Invalid string to initialize bit register of size {into.size.value}: "
-                    f"'{variable.value}'"
-                )
-        elif isinstance(variable, ArrayLiteral):
-            if (
-                not all(isinstance(x, BooleanLiteral) for x in variable.values)
-                or len(variable.values) != into.size.value
-            ):
-                raise ValueError(
-                    f"Invalid array to cast to bit register of size {into.size.value}."
-                )
-            return variable
-        else:
+        size = into.size.value
+    if isinstance(variable, StringLiteral):
+        try:
+            assert len(variable.value) == size
+            int(f"0b{variable.value}", base=2)
+            return convert_string_to_bool_array(variable)
+        except (AssertionError, ValueError, TypeError):
             raise ValueError(
-                f"Invalid value to initialize bit register of size {into.size.value}: "
-                f"'{variable}'"
+                f"Invalid string to initialize bit register of size {size}: " f"'{variable.value}'"
             )
+    elif isinstance(variable, ArrayLiteral):
+        if (
+            not all(isinstance(x, BooleanLiteral) for x in variable.values)
+            or len(variable.values) != size
+        ):
+            raise ValueError(f"Invalid array to cast to bit register of size {size}.")
+        return variable
+    else:
+        raise ValueError(
+            f"Invalid value to initialize bit register of size {size}: " f"'{variable}'"
+        )
 
 
 @cast_to.register
@@ -222,7 +219,6 @@ def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]):
 
 def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOperator):
     # assume lhs and rhs are of same type
-    print(lhs, rhs, op)
     result_type = type(lhs)
     func = operator_maps[result_type].get(op)
     if not func:
@@ -265,7 +261,6 @@ def convert_range_def_to_range(range_def: RangeDefinition):
 
 @singledispatch
 def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
-    print(value, index)
     if isinstance(index, DiscreteSet):
         return DiscreteSet([get_elements(value, [i]) for i in index.values])
     for i, ix in enumerate(index):
@@ -408,7 +403,6 @@ def create_empty_array(dims):
 
 def update_value(current_value: ArrayLiteral, value, indices):
     # todo: generalize from 1d array with string and range
-    print(indices)
     new_value = ArrayLiteral(current_value.values[:])
     index = indices[0][0]
     if isinstance(index, RangeDefinition):

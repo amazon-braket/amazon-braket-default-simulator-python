@@ -17,7 +17,6 @@ from openqasm3.ast import (
     StringLiteral,
     UintType,
 )
-from openqasm3.parser import parse
 
 from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.interpreter import Interpreter
@@ -32,8 +31,7 @@ def test_bit_declaration():
     bit[2] register_uninitialized;
     bit[2] register_initialized = "01";
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert context.get_type("single_uninitialized") == BitType(None)
     assert context.get_type("single_initialized_int") == BitType(None)
@@ -41,9 +39,9 @@ def test_bit_declaration():
     assert context.get_type("register_uninitialized") == BitType(IntegerLiteral(2))
     assert context.get_type("register_initialized") == BitType(IntegerLiteral(2))
 
-    assert context.get_value("single_uninitialized") is None
-    assert context.get_value("single_initialized_int") == BooleanLiteral(False)
-    assert context.get_value("single_initialized_bool") == BooleanLiteral(True)
+    assert context.get_value("single_uninitialized") == ArrayLiteral([None])
+    assert context.get_value("single_initialized_int") == ArrayLiteral([BooleanLiteral(False)])
+    assert context.get_value("single_initialized_bool") == ArrayLiteral([BooleanLiteral(True)])
     assert context.get_value("register_uninitialized") == ArrayLiteral([None, None])
     assert context.get_value("register_initialized") == ArrayLiteral(
         [BooleanLiteral(False), BooleanLiteral(True)]
@@ -61,9 +59,8 @@ def test_int_declaration():
     pos_overflow = "Integer overflow for value 5 and size 3."
     neg_overflow = "Integer overflow for value -6 and size 3."
 
-    program = parse(qasm)
     with pytest.warns(UserWarning) as warn_info:
-        context = Interpreter().run_program(program)
+        context = Interpreter().run(qasm)
 
     assert context.get_type("uninitialized") == IntType(IntegerLiteral(8))
     assert context.get_type("pos") == IntType(IntegerLiteral(8))
@@ -93,9 +90,8 @@ def test_uint_declaration():
     """
     pos_overflow = "Unsigned integer overflow for value 8 and size 3."
 
-    program = parse(qasm)
     with pytest.warns(UserWarning, match=pos_overflow):
-        context = Interpreter().run_program(program)
+        context = Interpreter().run(qasm)
 
     assert context.get_type("uninitialized") == UintType(IntegerLiteral(8))
     assert context.get_type("pos") == UintType(IntegerLiteral(8))
@@ -115,8 +111,7 @@ def test_float_declaration():
     float[64] neg = -4.;
     float[128] precise = π;
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert context.get_type("uninitialized") == FloatType(IntegerLiteral(16))
     assert context.get_type("pos") == FloatType(IntegerLiteral(32))
@@ -143,8 +138,7 @@ def test_assign_variable():
     float[16] og_float = π;
     float[16] copy_float = og_float;
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert context.get_type("copy_bit") == BitType(IntegerLiteral(8))
     assert context.get_type("copy_int") == IntType(IntegerLiteral(10))
@@ -167,8 +161,7 @@ def test_array_declaration():
     array[uint[8], 2, 2] by_ref = {row, row};
     array[uint[8], 1, 1, 1] with_expressions = {{{1 + 2}}};
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert context.get_type("row") == ArrayType(
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2)]
@@ -237,10 +230,9 @@ def test_array_declaration():
     ),
 )
 def test_bad_array_size_declaration(qasm):
-    bad_size = "Size mismatch between dimension of size 2 " "and values length 3"
-    program = parse(qasm)
+    bad_size = "Size mismatch between dimension of size 2 and values length 3"
     with pytest.raises(ValueError, match=bad_size):
-        Interpreter().run_program(program)
+        Interpreter().run(qasm)
 
 
 def test_indexed_expression():
@@ -261,8 +253,7 @@ def test_indexed_expression():
     bit[5] neg_one_b = neg_one[0:4];  // 11111
     bit[3] bit_slice = neg_fifteen_b[0:2:-1];  // 101
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert context.get_type("multi_dim") == ArrayType(
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
@@ -370,11 +361,10 @@ def test_reset_qubit():
     reset qs2[0];
     reset qs5[:two:4];
     """
-    program = parse(qasm)
     mocked_context = ProgramContext()
     reset_qubits_mock = Mock()
     mocked_context.quantum_simulator.reset_qubits = reset_qubits_mock
-    Interpreter(mocked_context).visit(program)
+    Interpreter(mocked_context).run(qasm)
 
     reset_qubits_mock.assert_has_calls(
         (
@@ -407,8 +397,7 @@ def test_for_loop():
     }
     m2 = measure q;
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert context.get_value("m1") == data_manipulation.convert_string_to_bool_array(
         StringLiteral("10101010")
@@ -430,8 +419,7 @@ def test_gate_def():
         U(1, 2, p) b;
     }
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert context.get_gate_definition("x") == QuantumGateDefinition(
         name=Identifier("x"),
@@ -523,11 +511,9 @@ def test_gate_undef():
     gate x a { y a; }
     gate y a { U(π, π/2, π/2) a; }
     """
-    program = parse(qasm)
-
     undefined_gate = "Gate y is not defined."
     with pytest.raises(ValueError, match=undefined_gate):
-        Interpreter().run_program(program)
+        Interpreter().run(qasm)
 
 
 def test_gate_call():
@@ -547,8 +533,7 @@ def test_gate_call():
     x q2;
     x qs[0];
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert np.allclose(
         context.quantum_simulator.state_vector, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
@@ -587,8 +572,7 @@ def test_gate_inv():
     all_3 q;
     all_3_inv q;
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert np.allclose(context.quantum_simulator.state_vector, [1, 0])
 
@@ -637,8 +621,7 @@ def test_gate_ctrl():
     ccx_2 q1, q2, q4;
     ccx_2 q1, q2, q5;
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
     assert np.allclose(
         context.quantum_simulator.state_vector,
         [0] * 31 + [1],
@@ -695,8 +678,7 @@ def test_neg_gate_ctrl():
     ccx_2 q1, q2, q4;
     ccx_2 q1, q2, q5;
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
     assert np.allclose(
         context.quantum_simulator.state_vector,
         [1] + [0] * 31,
@@ -734,8 +716,7 @@ def test_measurement():
     mqs2_0 = measure qs2[0];
     mqs5 = measure qs5[:two:3];
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     measurements = {
         "mq": "1",
@@ -772,8 +753,7 @@ def test_gphase():
 
     gphase(π);
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
+    context = Interpreter().run(qasm)
 
     assert np.allclose(
         context.quantum_simulator.state_vector, [-1 / np.sqrt(2) * 1j, 0, 0, 1 / np.sqrt(2) * 1j]
@@ -813,9 +793,7 @@ def test_include_stdgates(stdgates):
     OPENQASM 3;
     include "stdgates.inc";
     """
-    program = parse(qasm)
-    context = Interpreter().run_program(program)
-    print(context)
+    context = Interpreter().run(qasm)
 
     assert np.array_equal(
         list(context.gate_table.current_scope.keys()),
@@ -861,3 +839,24 @@ def test_adder(adder):
     assert data_manipulation.convert_bool_array_to_string(
         context.get_value("ans")
     ) == StringLiteral("11110")
+
+
+def test_shots(stdgates):
+    bell_qasm = """
+    include "STDGATES.inc";
+
+    qubit[3] q;
+    bit[3] c;
+    bit d = true;
+
+    h q[0];
+    cx q[0], q[1];
+    cx q[1], q[2];
+
+    c = measure q;
+    """
+    context = Interpreter().run(bell_qasm, shots=10)
+
+    assert len(context.shot_data["c"]) == 10
+    for result in context.shot_data["c"]:
+        assert result in ("000", "111")

@@ -3,6 +3,7 @@ from typing import Any, List, Optional, Union
 
 import numpy as np
 from openqasm3.ast import (
+    BitType,
     ClassicalType,
     GateModifierName,
     Identifier,
@@ -257,14 +258,36 @@ class ProgramContext:
         self.gate_table = GateTable()
         self.quantum_simulator = QuantumSimulator()
         self.qubit_mapping = Table("Qubits")
-        self.current_element_length = None
         self.scope_manager = ScopeManager(self)
+        self.shot_data = {}
 
     def __repr__(self):
         return "\n\n".join(
             repr(x)
             for x in (self.symbol_table, self.variable_table, self.gate_table, self.qubit_mapping)
         )
+
+    def record_and_reset(self):
+        current_shot_data = {}
+
+        for name, symbol in self.symbol_table.items():
+            var_type = symbol.type
+            if isinstance(var_type, BitType):
+                value = self.get_value(name)
+                bit_string = data_manipulation.convert_bool_array_to_string(value).value
+                current_shot_data[name] = np.array([bit_string])
+
+        if not self.shot_data:
+            self.shot_data = current_shot_data
+        else:
+            for name, val in self.shot_data.items():
+                self.shot_data[name] = np.append(self.shot_data[name], current_shot_data[name])
+
+        self.symbol_table = SymbolTable()
+        self.variable_table = VariableTable()
+        self.gate_table = GateTable()
+        self.qubit_mapping = Table("Qubits")
+        self.quantum_simulator.reset_simulator()
 
     @property
     def num_qubits(self):
