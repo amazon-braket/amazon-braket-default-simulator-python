@@ -7,11 +7,13 @@ from typing import List, Optional
 from openqasm3 import parse
 from openqasm3.ast import (
     ArrayType,
+    AssignmentOperator,
     BinaryExpression,
     BitType,
     BooleanLiteral,
     BranchingStatement,
     Cast,
+    ClassicalAssignment,
     ClassicalDeclaration,
     Constant,
     ConstantDeclaration,
@@ -37,7 +39,7 @@ from openqasm3.ast import (
     RangeDefinition,
     RealLiteral,
     StringLiteral,
-    UnaryExpression, ArrayLiteral, ClassicalAssignment, AssignmentOperator,
+    UnaryExpression,
 )
 
 from braket.default_simulator.openqasm import data_manipulation
@@ -68,10 +70,6 @@ class Interpreter:
             self.visit(program)
 
         for _ in range(shots):
-            # program_copy = deepcopy(program)
-            # self.visit(program_copy)
-            # print(self.context)
-            # print('\n\n\n\n')
             program = self.visit(program)
             self.context.record_and_reset()
         return self.context

@@ -317,7 +317,6 @@ class ProgramContext:
                 del self.symbol_table[name]
                 del self.variable_table[name]
 
-
     @property
     def num_qubits(self):
         return self.quantum_simulator.num_qubits
