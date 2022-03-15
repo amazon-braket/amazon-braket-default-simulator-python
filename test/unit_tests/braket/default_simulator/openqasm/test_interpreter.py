@@ -416,11 +416,15 @@ def test_for_loop_shots():
     for i in [0:ten - 1] {
         b[i] = 1;
     }
+    
+    for i in [4: -1: 0] {
+        b[i] = 0;
+    }
     """
     context = Interpreter().run(qasm, shots=10)
     assert shot_data_is_equal(
         context.shot_data,
-        {"b": np.full(10, "1111111111")},
+        {"b": np.full(10, "0000011111")},
     )
 
 

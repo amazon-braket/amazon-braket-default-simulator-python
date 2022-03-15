@@ -293,7 +293,6 @@ class ProgramContext:
             var_type = symbol.type
             if isinstance(var_type, BitType):
                 value = self.get_value(name)
-                print("val:", value)
                 bit_string = data_manipulation.convert_bool_array_to_string(value).value
                 current_shot_data[name] = np.array([bit_string])
 

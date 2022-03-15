@@ -242,9 +242,10 @@ def evaluate_constant(constant: Constant):
 
 
 def convert_range_def_to_slice(range_def: RangeDefinition):
+    buffer = np.sign(range_def.step.value) if range_def.step is not None else 1
     start = range_def.start.value if range_def.start is not None else None
     stop = (
-        range_def.end.value + 1
+        range_def.end.value + buffer
         if not (range_def.end is None or range_def.end.value == -1)
         else None
     )
@@ -253,8 +254,9 @@ def convert_range_def_to_slice(range_def: RangeDefinition):
 
 
 def convert_range_def_to_range(range_def: RangeDefinition):
+    buffer = np.sign(range_def.step.value) if range_def.step is not None else 1
     start = range_def.start.value
-    stop = range_def.end.value + 1
+    stop = range_def.end.value + buffer
     step = range_def.step.value
     return range(start, stop, step)
 
