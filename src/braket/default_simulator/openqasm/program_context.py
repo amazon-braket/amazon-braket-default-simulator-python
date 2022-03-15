@@ -283,11 +283,7 @@ class ProgramContext:
             for name, val in self.shot_data.items():
                 self.shot_data[name] = np.append(self.shot_data[name], current_shot_data[name])
 
-        self.symbol_table = SymbolTable()
-        self.variable_table = VariableTable()
-        self.gate_table = GateTable()
-        self.qubit_mapping = Table("Qubits")
-        self.quantum_simulator.reset_simulator()
+        self.quantum_simulator.reset_qubits()
 
     @property
     def num_qubits(self):

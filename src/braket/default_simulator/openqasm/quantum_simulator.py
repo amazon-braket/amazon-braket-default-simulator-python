@@ -48,11 +48,6 @@ class QuantumSimulator:
         """state tensor of shape (2, 2,..., 2) with a dimension for each qubit"""
         return self._state_tensor.flatten()
 
-    def reset_simulator(self):
-        """fully reset simulator"""
-        self._num_qubits = 0
-        self._state_tensor = np.array([], dtype=complex)
-
     def add_qubits(self, num_qubits: int):
         """
         Allocate additional qubits with an initial state of |0⟩.

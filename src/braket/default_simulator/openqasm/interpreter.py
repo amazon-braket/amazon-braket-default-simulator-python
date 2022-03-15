@@ -66,8 +66,9 @@ class Interpreter:
             self.visit(program)
 
         for _ in range(shots):
-            program_copy = deepcopy(program)
-            self.visit(program_copy)
+            # program_copy = deepcopy(program)
+            # self.visit(program_copy)
+            program = self.visit(program)
             self.context.record_and_reset()
         return self.context
 
@@ -90,14 +91,15 @@ class Interpreter:
     @visit.register
     def _(self, node_list: list):
         # print(f"list: {node_list}")
-        return [self.visit(node) for node in node_list]
+        return [n for n in [self.visit(node) for node in node_list] if n is not None]
 
     @visit.register
     def _(self, node: Program):
         # print(f"Program: {node}")
         self.visit(node.includes)
         self.visit(node.io_variables)
-        self.visit(node.statements)
+        statements = self.visit(node.statements)
+        return Program(statements)
 
     @visit.register
     def _(self, node: ClassicalDeclaration):
@@ -183,6 +185,7 @@ class Interpreter:
         # print(f"Quantum reset: {node}")
         qubits = self.visit(node.qubits)
         self.context.reset_qubits(qubits)
+        return QuantumReset(qubits)
 
     @visit.register
     def _(self, node: IndexedIdentifier):
@@ -293,7 +296,7 @@ class Interpreter:
     def _(self, node: QuantumGate):
         # print(f"Quantum gate: {node}")
         gate_name = node.name.name
-        node.arguments = [self.visit(arg) for arg in node.arguments]
+        arguments = [self.visit(arg) for arg in node.arguments]
 
         qubits = []
         for qubit in node.qubits:
@@ -308,10 +311,11 @@ class Interpreter:
             # to simplify indices
             qubits = self.visit(qubits)
             self.context.execute_builtin_unitary(
-                node.arguments,
+                arguments,
                 qubits,
                 node.modifiers,
             )
+            return QuantumGate(node.modifiers, node.name, arguments, qubits)
         else:
             with self.context.enter_scope():
                 gate_def = self.context.get_gate_definition(gate_name)
@@ -323,7 +327,7 @@ class Interpreter:
                 for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
                     self.context.declare_alias(qubit_defined.name, qubit_called)
 
-                for param_called, param_defined in zip(node.arguments, gate_def.arguments):
+                for param_called, param_defined in zip(arguments, gate_def.arguments):
                     self.context.declare_alias(param_defined.name, param_called)
 
                 for statement in deepcopy(gate_def.body):
@@ -332,6 +336,7 @@ class Interpreter:
                     elif isinstance(statement, QuantumPhase):
                         phase = statement.argument.value
                         self.context.apply_phase(phase, qubits)
+                return QuantumGate(node.modifiers, node.name, arguments, qubits)
 
     @visit.register
     def _(self, node: QuantumPhase):
@@ -345,6 +350,7 @@ class Interpreter:
             self.visit(node)
         else:
             self.context.apply_phase(node.argument.value)
+        return node
 
     @visit.register
     def _(self, node: QuantumGateModifier):
@@ -376,6 +382,7 @@ class Interpreter:
                 StringLiteral(measurement.value)
             )
             self.context.update_value(node.target, measurement_value)
+        return node
 
     @visit.register
     def _(self, node: BranchingStatement):
@@ -384,6 +391,7 @@ class Interpreter:
         block = node.if_block if condition.value else node.else_block
         for statement in block:
             self.visit(statement)
+        return block
 
     @visit.register
     def _(self, node: ForInLoop):
@@ -399,7 +407,8 @@ class Interpreter:
         for i in index_values:
             with self.context.enter_scope():
                 self.context.declare_variable(node.loop_variable.name, IntegerLiteral, i)
-                self.visit(node.block)
+                block = self.visit(node.block)
+        return ForInLoop(node.loop_variable, index, block)
 
     @visit.register
     def _(self, node: Include):
