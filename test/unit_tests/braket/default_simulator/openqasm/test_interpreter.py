@@ -1,3 +1,4 @@
+from typing import Dict
 from unittest.mock import Mock, call
 
 import numpy as np
@@ -404,6 +405,24 @@ def test_for_loop():
     )
     assert context.get_value("m2") == data_manipulation.convert_string_to_bool_array(
         StringLiteral("10000000")
+    )
+
+
+def test_for_loop_shots():
+    qasm = """
+    bit[10] b;
+    int[8] ten = 10;
+
+    for i in [0:ten - 1] {
+        b[i] = 1;
+    }
+    
+    """
+    context = Interpreter().run(qasm, shots=10)
+    print(context)
+    assert shot_data_is_equal(
+        context.shot_data,
+        {"b": np.full(10, "1111111111")},
     )
 
 
@@ -839,6 +858,23 @@ def test_adder(adder):
     assert data_manipulation.convert_bool_array_to_string(
         context.get_value("ans")
     ) == StringLiteral("11110")
+
+
+def shot_data_is_equal(s1: Dict, s2: Dict):
+    assert set(s1.keys()) == set(s2.keys())
+    for key in s1.keys():
+        if not np.array_equal(s1[key], s2[key]):
+            return False
+    return True
+
+
+def test_adder_shots(adder):
+    context = Interpreter().run_file("adder.qasm", 10)
+
+    assert shot_data_is_equal(
+        context.shot_data,
+        {"ans": np.full(10, "11110")},
+    )
 
 
 def test_shots(stdgates):

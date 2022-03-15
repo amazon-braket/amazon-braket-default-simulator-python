@@ -99,6 +99,10 @@ class ScopedTable(Table):
     def current_scope(self):
         return self._scopes[-1]
 
+    @property
+    def is_in_global_scope(self):
+        return len(self._scopes) == 1
+
     def __getitem__(self, item):
         """
         Resolve scope of item and return its value.
@@ -113,6 +117,21 @@ class ScopedTable(Table):
         Set value of item in current scope.
         """
         self.current_scope[key] = value
+
+    def __delitem__(self, key):
+        """
+        Delete item from first scope in which it exists.
+        """
+        for scope in reversed(self._scopes):
+            if key in scope:
+                del scope[key]
+                return
+        raise KeyError(f"Undefined key: {key}")
+
+    def _get_scope(self, key):
+        for scope in reversed(self._scopes):
+            if key in scope:
+                return scope
 
     def items(self):
         items = {}
@@ -222,7 +241,7 @@ class VariableTable(ScopedTable):
         current_value = self[name]
         if indices:
             value = data_manipulation.update_value(current_value, value, indices)
-        self[name] = value
+        self._get_scope(name)[name] = value
 
 
 class GateTable(ScopedTable):
@@ -274,6 +293,7 @@ class ProgramContext:
             var_type = symbol.type
             if isinstance(var_type, BitType):
                 value = self.get_value(name)
+                print("val:", value)
                 bit_string = data_manipulation.convert_bool_array_to_string(value).value
                 current_shot_data[name] = np.array([bit_string])
 
@@ -283,7 +303,20 @@ class ProgramContext:
             for name, val in self.shot_data.items():
                 self.shot_data[name] = np.append(self.shot_data[name], current_shot_data[name])
 
-        self.quantum_simulator.reset_qubits()
+        if self.num_qubits:
+            self.quantum_simulator.reset_qubits()
+        self.clear_classical_variables()
+
+    def clear_classical_variables(self):
+        if not self.symbol_table.is_in_global_scope:
+            raise ValueError("Can only clear classical variables from global scope.")
+
+        symbol_names = [name for name, _ in self.symbol_table.items()]
+        for name in symbol_names:
+            if not self.get_const(name) and name not in self.qubit_mapping:
+                del self.symbol_table[name]
+                del self.variable_table[name]
+
 
     @property
     def num_qubits(self):

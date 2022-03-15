@@ -409,6 +409,8 @@ def update_value(current_value: ArrayLiteral, value, indices):
         indices = range(index.start.value, index.end.value + 1, index.step.value)
     elif isinstance(index, IntegerLiteral):
         indices = (index.value,)
+    if len(indices) == 1 and not isinstance(value, ArrayLiteral):
+        value = ArrayLiteral([value])
     for i, val in zip(indices, value.values):
         new_value.values[i] = val
     return new_value

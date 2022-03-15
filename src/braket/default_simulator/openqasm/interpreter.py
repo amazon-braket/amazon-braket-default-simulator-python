@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import fields
 from functools import singledispatchmethod
+from logging import getLogger
 from typing import List, Optional
 
 from openqasm3 import parse
@@ -36,7 +37,7 @@ from openqasm3.ast import (
     RangeDefinition,
     RealLiteral,
     StringLiteral,
-    UnaryExpression,
+    UnaryExpression, ArrayLiteral, ClassicalAssignment, AssignmentOperator,
 )
 
 from braket.default_simulator.openqasm import data_manipulation
@@ -56,6 +57,7 @@ class Interpreter:
     def __init__(self, context: Optional[ProgramContext] = None):
         # context keeps track of all state
         self.context = context or ProgramContext()
+        self.logger = getLogger(__name__)
 
     def run(self, string: str, shots: int = 0):
         program = parse(string)
@@ -68,6 +70,8 @@ class Interpreter:
         for _ in range(shots):
             # program_copy = deepcopy(program)
             # self.visit(program_copy)
+            # print(self.context)
+            # print('\n\n\n\n')
             program = self.visit(program)
             self.context.record_and_reset()
         return self.context
@@ -78,7 +82,7 @@ class Interpreter:
 
     @singledispatchmethod
     def visit(self, node):
-        # print(f"Node: {node}")
+        self.logger.debug(f"Node: {node}")
         if node is None:
             return
         if not isinstance(node, QASMNode):
@@ -90,12 +94,12 @@ class Interpreter:
 
     @visit.register
     def _(self, node_list: list):
-        # print(f"list: {node_list}")
+        self.logger.debug(f"list: {node_list}")
         return [n for n in [self.visit(node) for node in node_list] if n is not None]
 
     @visit.register
     def _(self, node: Program):
-        # print(f"Program: {node}")
+        self.logger.debug(f"Program: {node}")
         self.visit(node.includes)
         self.visit(node.io_variables)
         statements = self.visit(node.statements)
@@ -103,7 +107,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalDeclaration):
-        # print(f"Classical declaration: {node}")
+        self.logger.debug(f"Classical declaration: {node}")
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
@@ -116,10 +120,11 @@ class Interpreter:
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
+        return ClassicalDeclaration(node_type, node.identifier, node.init_expression)
 
     @visit.register
     def _(self, node: ConstantDeclaration):
-        # print(f"Constant declaration: {node}")
+        self.logger.debug(f"Constant declaration: {node}")
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
@@ -130,7 +135,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: BinaryExpression):
-        # print(f"Binary expression: {node}")
+        self.logger.debug(f"Binary expression: {node}")
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
@@ -143,7 +148,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: UnaryExpression):
-        # print(f"Unary expression: {node}")
+        self.logger.debug(f"Unary expression: {node}")
         expression = self.visit(node.expression)
         if is_literal(expression):
             return data_manipulation.evaluate_unary_expression(expression, node.op)
@@ -152,20 +157,20 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Cast):
-        # print(f"Cast: {node}")
+        self.logger.debug(f"Cast: {node}")
         casted = [data_manipulation.cast_to(node.type, self.visit(arg)) for arg in node.arguments]
         return casted[0] if len(casted) == 1 else casted
 
     @visit.register
     def _(self, node: Constant):
-        # print(f"Constant: {node}")
+        self.logger.debug(f"Constant: {node}")
         return data_manipulation.evaluate_constant(node)
 
     @visit.register(BooleanLiteral)
     @visit.register(IntegerLiteral)
     @visit.register(RealLiteral)
     def _(self, node):
-        # print(f"Literal: {node}")
+        self.logger.debug(f"Literal: {node}")
         return node
 
     @visit.register
@@ -176,20 +181,20 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QubitDeclaration):
-        # print(f"Qubit declaration: {node}")
+        self.logger.debug(f"Qubit declaration: {node}")
         size = self.visit(node.size).value if node.size else 1
         self.context.add_qubits(node.qubit.name, size)
 
     @visit.register
     def _(self, node: QuantumReset):
-        # print(f"Quantum reset: {node}")
+        self.logger.debug(f"Quantum reset: {node}")
         qubits = self.visit(node.qubits)
         self.context.reset_qubits(qubits)
         return QuantumReset(qubits)
 
     @visit.register
     def _(self, node: IndexedIdentifier):
-        # print(f"Indexed identifier: {node}")
+        self.logger.debug(f"Indexed identifier: {node}")
         # name = self.visit(node.name)
         name = node.name
         if name.name not in self.context.qubit_mapping:
@@ -213,7 +218,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: RangeDefinition):
-        # print(f"Range definition: {node}")
+        self.logger.debug(f"Range definition: {node}")
         start = self.visit(node.start) if node.start else IntegerLiteral(0)
         end = self.visit(node.end)
         step = self.visit(node.step) if node.step else IntegerLiteral(1)
@@ -221,7 +226,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: IndexExpression):
-        # print(f"Index expression: {node}")
+        self.logger.debug(f"Index expression: {node}")
         type_width = None
         if isinstance(node.collection, Identifier):
             if not isinstance(self.context.get_type(node.collection.name), ArrayType):
@@ -232,7 +237,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGateDefinition):
-        # print(f"Quantum gate definition: {node}")
+        self.logger.debug(f"Quantum gate definition: {node}")
         with self.context.enter_scope():
             for qubit in node.qubits:
                 self.context.declare_alias(qubit.name, qubit)
@@ -294,7 +299,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGate):
-        # print(f"Quantum gate: {node}")
+        self.logger.debug(f"Quantum gate: {node}")
         gate_name = node.name.name
         arguments = [self.visit(arg) for arg in node.arguments]
 
@@ -340,7 +345,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumPhase):
-        # print(f"Quantum phase: {node}")
+        self.logger.debug(f"Quantum phase: {node}")
         node.argument = self.visit(node.argument)
         node.modifiers = self.visit(node.quantum_gate_modifiers)
         if is_inverted(node):
@@ -354,7 +359,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGateModifier):
-        # print(f"Quantum gate modifier: {node}")
+        self.logger.debug(f"Quantum gate modifier: {node}")
         if node.modifier == GateModifierName.inv:
             if node.argument is not None:
                 raise ValueError("inv modifier does not take an argument")
@@ -367,13 +372,13 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumMeasurement):
-        # print(f"Quantum measurement: {node}")
+        self.logger.debug(f"Quantum measurement: {node}")
         qubits = self.visit(node.qubit)
         return StringLiteral(self.context.measure_qubits(qubits))
 
     @visit.register
     def _(self, node: QuantumMeasurementAssignment):
-        # print(f"Quantum measurement assignment: {node}")
+        self.logger.debug(f"Quantum measurement assignment: {node}")
         measurement = self.visit(node.measure_instruction)
         if isinstance(node.target, IndexedIdentifier):
             node.target.indices = self.visit(node.target.indices)
@@ -385,17 +390,28 @@ class Interpreter:
         return node
 
     @visit.register
+    def _(self, node: ClassicalAssignment):
+        self.logger.debug(f"Classical assignment: {node}")
+        if node.op != getattr(AssignmentOperator, "="):
+            raise NotImplementedError("= only")
+        rvalue = self.visit(node.rvalue)
+        if isinstance(node.lvalue, IndexedIdentifier):
+            node.lvalue.indices = self.visit(node.lvalue.indices)
+        self.context.update_value(node.lvalue, rvalue)
+        return node
+
+    @visit.register
     def _(self, node: BranchingStatement):
-        # print(f"Branching statement: {node}")
+        self.logger.debug(f"Branching statement: {node}")
         condition = data_manipulation.cast_to(BooleanLiteral, self.visit(node.condition))
         block = node.if_block if condition.value else node.else_block
         for statement in block:
             self.visit(statement)
-        return block
+        return BranchingStatement(BooleanLiteral(True), block, [])
 
     @visit.register
     def _(self, node: ForInLoop):
-        # print(f"For in loop: {node}")
+        self.logger.debug(f"For in loop: {node}")
         index = self.visit(node.set_declaration)
         if isinstance(index, RangeDefinition):
             index_values = [
@@ -404,15 +420,17 @@ class Interpreter:
         # DiscreteSet
         else:
             index_values = index.values
+        block = node.block
         for i in index_values:
+            block_copy = deepcopy(block)
             with self.context.enter_scope():
                 self.context.declare_variable(node.loop_variable.name, IntegerLiteral, i)
-                block = self.visit(node.block)
+                self.visit(block_copy)
         return ForInLoop(node.loop_variable, index, block)
 
     @visit.register
     def _(self, node: Include):
-        # print(f"Include: {node}")
+        self.logger.debug(f"Include: {node}")
         with open(node.filename, "r") as f:
             included = f.read()
             parsed = parse(included)
