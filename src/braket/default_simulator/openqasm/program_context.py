@@ -1,9 +1,8 @@
 from functools import singledispatchmethod
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 from openqasm3.ast import (
-    BitType,
     ClassicalType,
     GateModifierName,
     Identifier,
@@ -17,7 +16,7 @@ from openqasm3.ast import (
 
 from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.openqasm import data_manipulation
-from braket.default_simulator.openqasm.data_manipulation import LiteralType
+from braket.default_simulator.openqasm.data_manipulation import LiteralType, get_identifier_string
 from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
 
@@ -78,6 +77,25 @@ class Table:
             return (self[name][index.value],)
         elif isinstance(index, RangeDefinition):
             return tuple(np.array(self[name])[data_manipulation.convert_range_def_to_slice(index)])
+
+
+class QubitTable(Table):
+    def __init__(self):
+        super().__init__("Qubits")
+        self._used_indices = set()
+        self._measured_indices = set()
+
+    def record_qubit_use(self, indices: Sequence[int]):
+        self._used_indices |= set(indices)
+
+    def record_qubit_measurement(self, indices: Sequence[int]):
+        self._measured_indices |= set(indices)
+
+    def qubits_used(self, indices: Sequence[int]):
+        return set(indices) & self._used_indices
+
+    def qubits_measured(self, indices: Sequence[int]):
+        return set(indices) & self._measured_indices
 
 
 class ScopedTable(Table):
@@ -157,7 +175,11 @@ class SymbolTable(ScopedTable):
     """
 
     class Symbol:
-        def __init__(self, symbol_type: Union[ClassicalType, LiteralType], const: bool = False):
+        def __init__(
+            self,
+            symbol_type: Union[ClassicalType, LiteralType],
+            const: bool = False,
+        ):
             self.type = symbol_type
             self.const = const
 
@@ -276,9 +298,12 @@ class ProgramContext:
         self.variable_table = VariableTable()
         self.gate_table = GateTable()
         self.quantum_simulator = QuantumSimulator()
-        self.qubit_mapping = Table("Qubits")
+        self.qubit_mapping = QubitTable()
         self.scope_manager = ScopeManager(self)
         self.shot_data = {}
+        self.is_analytic = None
+        self.outputs = set()
+        self.inputs = {}
 
     def __repr__(self):
         return "\n\n".join(
@@ -286,15 +311,28 @@ class ProgramContext:
             for x in (self.symbol_table, self.variable_table, self.gate_table, self.qubit_mapping)
         )
 
+    def specify_output(self, name: str):
+        self.outputs.add(name)
+
+    def is_output(self, name: str):
+        return name in self.outputs
+
+    def load_inputs(self, inputs: Dict[str, Any]):
+        for key, value in inputs.items():
+            self.inputs[key] = value
+
     def record_and_reset(self):
         current_shot_data = {}
 
         for name, symbol in self.symbol_table.items():
             var_type = symbol.type
-            if isinstance(var_type, BitType):
+
+            if data_manipulation.is_supported_output_type(var_type) and (
+                not self.outputs or self.is_output(name)
+            ):
                 value = self.get_value(name)
-                bit_string = data_manipulation.convert_bool_array_to_string(value).value
-                current_shot_data[name] = np.array([bit_string])
+                output = data_manipulation.convert_to_output(value)
+                current_shot_data[name] = np.array([output])
 
         if not self.shot_data:
             self.shot_data = current_shot_data
@@ -378,9 +416,16 @@ class ProgramContext:
 
     def reset_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
         target = self.get_qubits(qubits)
+        if self.is_analytic and self.qubit_mapping.qubits_used(target):
+            raise ValueError(
+                f"Cannot reset qubit(s) '{get_identifier_string(qubits)}' since "
+                "doing so would collapse the wave function in a shots=0 simulation."
+            )
         self.quantum_simulator.reset_qubits(target)
 
     def measure_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
+        if self.is_analytic:
+            raise ValueError("Measurement operation not supported for analytic shots=0 simulation.")
         target = self.get_qubits(qubits)
         return "".join("01"[int(m)] for m in self.quantum_simulator.measure_qubits(target))
 
@@ -410,6 +455,7 @@ class ProgramContext:
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ):
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
+        self.qubit_mapping.record_qubit_use(target)
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         if num_inv_modifiers % 2:

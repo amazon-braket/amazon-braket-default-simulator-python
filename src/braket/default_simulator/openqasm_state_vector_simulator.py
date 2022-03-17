@@ -22,7 +22,18 @@ class OpenQASMStateVectorSimulator(BraketSimulator):
         openqasm_ir: Program,
         shots: int = 0,
     ) -> OQ3ProgramResult:
-        context = Interpreter().run(openqasm_ir.source, shots)
+        if openqasm_ir.source.endswith(".qasm"):
+            context = Interpreter().run_file(
+                openqasm_ir.source,
+                shots=shots,
+                inputs=openqasm_ir.inputs,
+            )
+        else:
+            context = Interpreter().run(
+                openqasm_ir.source,
+                shots=shots,
+                inputs=openqasm_ir.inputs,
+            )
         return self._create_results_obj(openqasm_ir, shots, context)
 
     @property
@@ -60,5 +71,6 @@ class OpenQASMStateVectorSimulator(BraketSimulator):
             additionalMetadata=AdditionalMetadata(
                 action=openqasm_ir,
             ),
-            bitVariables={key: list(vals) for key, vals in context.shot_data.items()},
+            # bitVariables={key: list(vals) for key, vals in context.shot_data.items()},
+            outputVariables={key: list(vals) for key, vals in context.shot_data.items()},
         )

@@ -1,3 +1,4 @@
+import re
 from typing import Dict
 from unittest.mock import Mock, call
 
@@ -398,25 +399,27 @@ def test_for_loop():
     }
     m2 = measure q;
     """
-    context = Interpreter().run(qasm)
+    context = Interpreter().run(qasm, shots=1)
 
-    assert context.get_value("m1") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("10101010")
+    assert np.array_equal(
+        context.shot_data["m1"],
+        ("10101010",),
     )
-    assert context.get_value("m2") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("10000000")
+    assert np.array_equal(
+        context.shot_data["m2"],
+        ("10000000",),
     )
 
 
 def test_for_loop_shots():
     qasm = """
-    bit[10] b;
+    output bit[10] b;
     int[8] ten = 10;
 
     for i in [0:ten - 1] {
         b[i] = 1;
     }
-    
+
     for i in [4: -1: 0] {
         b[i] = 0;
     }
@@ -424,7 +427,9 @@ def test_for_loop_shots():
     context = Interpreter().run(qasm, shots=10)
     assert shot_data_is_equal(
         context.shot_data,
-        {"b": np.full(10, "0000011111")},
+        {
+            "b": np.full(10, "0000011111"),
+        },
     )
 
 
@@ -737,7 +742,7 @@ def test_measurement():
     mqs2_0 = measure qs2[0];
     mqs5 = measure qs5[:two:3];
     """
-    context = Interpreter().run(qasm)
+    context = Interpreter().run(qasm, shots=1)
 
     measurements = {
         "mq": "1",
@@ -747,8 +752,9 @@ def test_measurement():
     }
 
     for bit, result in measurements.items():
-        assert context.get_value(bit) == data_manipulation.convert_string_to_bool_array(
-            StringLiteral(result)
+        assert np.array_equal(
+            context.shot_data[bit],
+            [result],
         )
 
 
@@ -803,9 +809,10 @@ def test_if():
 
     m = measure qs;
     """
-    context = Interpreter().run(qasm)
-    assert context.get_value("m") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("101")
+    context = Interpreter().run(qasm, shots=1)
+    assert np.array_equal(
+        context.shot_data["m"],
+        ["101"],
     )
 
 
@@ -855,13 +862,6 @@ def test_include_stdgates(stdgates):
     )
 
 
-def test_adder(adder):
-    context = Interpreter().run_file("adder.qasm")
-    assert data_manipulation.convert_bool_array_to_string(
-        context.get_value("ans")
-    ) == StringLiteral("10000")
-
-
 def shot_data_is_equal(s1: Dict, s2: Dict):
     assert set(s1.keys()) == set(s2.keys())
     for key in s1.keys():
@@ -870,8 +870,8 @@ def shot_data_is_equal(s1: Dict, s2: Dict):
     return True
 
 
-def test_adder_shots(adder):
-    context = Interpreter().run_file("adder.qasm", 10)
+def test_adder(adder):
+    context = Interpreter().run_file("adder.qasm", 10, {"a_in": 1, "b_in": 15})
 
     assert shot_data_is_equal(
         context.shot_data,
@@ -898,3 +898,42 @@ def test_shots(stdgates):
     assert len(context.shot_data["c"]) == 10
     for result in context.shot_data["c"]:
         assert result in ("000", "111")
+
+
+@pytest.mark.parametrize(
+    "used_qubit",
+    ("qs", "qs[0]", "qs[:]", "qs[0:]", "qs[:-1]", "qs[-2]", "qs[0:1:1]", "qs[-2:1:-1]"),
+)
+def test_cannot_reset_used_analytic(stdgates, used_qubit):
+    qasm = f"""
+    include "stdgates.inc";
+
+    qubit[2] qs;
+
+    reset qs;
+
+    h qs[0];
+    reset qs[1];
+    reset {used_qubit};
+    """
+    Interpreter().run(qasm, shots=2)
+    cannot_reset_qubit = re.escape(
+        f"Cannot reset qubit(s) '{used_qubit}' since doing so would collapse "
+        "the wave function in a shots=0 simulation."
+    )
+    with pytest.raises(ValueError, match=cannot_reset_qubit):
+        Interpreter().run(qasm)
+
+
+def test_cannot_measure_analytic():
+    qasm = """
+    qubit q;
+    reset q;
+    measure q;
+    """
+    Interpreter().run(qasm, shots=2)
+    cannot_measure_analytic = re.escape(
+        "Measurement operation not supported for analytic shots=0 simulation."
+    )
+    with pytest.raises(ValueError, match=cannot_measure_analytic):
+        Interpreter().run(qasm)

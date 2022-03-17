@@ -97,6 +97,10 @@ def adder(pytester, stdgates):
 OPENQASM 3;
 include "stdgates.inc";
 
+input uint[4] a_in;
+input uint[4] b_in;
+output bit[5] ans;
+
 gate majority a, b, c {
     cx c, b;
     cx c, a;
@@ -113,9 +117,6 @@ qubit cin;
 qubit[4] a;
 qubit[4] b;
 qubit cout;
-bit[5] ans;
-uint[4] a_in = 1;  // a = 0001
-uint[4] b_in = 15; // b = 1111
 
 // initialize qubits
 reset cin;

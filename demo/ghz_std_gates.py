@@ -1,13 +1,13 @@
-from braket.ir.openqasm import Program
 from braket.devices import LocalSimulator
+from braket.ir.openqasm import Program
 
-device = LocalSimulator('braket_oq3_sv')
+device = LocalSimulator("braket_oq3_sv")
 
 ghz_qasm = """
 include "stdgates.inc";
+output bit[3] c;
 
 qubit[3] q;
-bit[3] c;
 
 h q[0];
 cx q[0], q[1];
@@ -16,8 +16,9 @@ cx q[1], q[2];
 c = measure q;
 """
 
-
-ghz = Program(source=ghz_qasm)
+inputs = {"a": 8}
+ghz = Program(source=ghz_qasm, inputs=inputs)
 result = device.run(ghz, shots=10).result()
+print(result)
 
-print(result.bit_variables)
+print(result.output_variables)

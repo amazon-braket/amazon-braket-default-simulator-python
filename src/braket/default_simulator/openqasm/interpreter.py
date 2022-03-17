@@ -2,7 +2,7 @@ from copy import deepcopy
 from dataclasses import fields
 from functools import singledispatchmethod
 from logging import getLogger
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from openqasm3 import parse
 from openqasm3.ast import (
@@ -25,6 +25,8 @@ from openqasm3.ast import (
     IndexedIdentifier,
     IndexExpression,
     IntegerLiteral,
+    IODeclaration,
+    IOKeyword,
     Program,
     QASMNode,
     QuantumGate,
@@ -42,7 +44,7 @@ from openqasm3.ast import (
     UnaryExpression,
 )
 
-from braket.default_simulator.openqasm import data_manipulation
+from braket.default_simulator.openqasm import data_manipulation as dm
 from braket.default_simulator.openqasm.data_manipulation import (
     convert_to_gate,
     get_ctrl_modifiers,
@@ -61,22 +63,27 @@ class Interpreter:
         self.context = context or ProgramContext()
         self.logger = getLogger(__name__)
 
-    def run(self, string: str, shots: int = 0):
+    def run(self, string: str, shots: int = 0, inputs: Dict[str, Any] = None):
         program = parse(string)
-        return self.run_program(program, shots)
+        return self.run_program(program, shots, inputs)
 
-    def run_program(self, program: Program, shots: int = 0):
-        if not shots:
+    def run_program(self, program: Program, shots: int = 0, inputs: Dict[str, Any] = None):
+        self.context.is_analytic = not shots
+        if inputs:
+            self.context.load_inputs(inputs)
+
+        if self.context.is_analytic:
             self.visit(program)
 
         for _ in range(shots):
             program = self.visit(program)
             self.context.record_and_reset()
+
         return self.context
 
-    def run_file(self, filename: str, shots: int = 0):
+    def run_file(self, filename: str, shots: int = 0, inputs: Dict[str, Any] = None):
         with open(filename, "r") as f:
-            return self.run(f.read(), shots)
+            return self.run(f.read(), shots, inputs)
 
     @singledispatchmethod
     def visit(self, node):
@@ -99,9 +106,11 @@ class Interpreter:
     def _(self, node: Program):
         self.logger.debug(f"Program: {node}")
         self.visit(node.includes)
-        self.visit(node.io_variables)
+        io = self.visit(node.io_variables)
         statements = self.visit(node.statements)
-        return Program(statements)
+        new_node = Program(statements)
+        new_node.io_variables = io
+        return new_node
 
     @visit.register
     def _(self, node: ClassicalDeclaration):
@@ -109,16 +118,34 @@ class Interpreter:
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
-            init_value = data_manipulation.cast_to(node.type, init_expression)
+            init_value = dm.cast_to(node.type, init_expression)
         elif isinstance(node_type, ArrayType):
-            init_value = data_manipulation.create_empty_array(node_type.dimensions)
+            init_value = dm.create_empty_array(node_type.dimensions)
         elif isinstance(node_type, BitType):
             size = node_type.size if node_type.size is not None else IntegerLiteral(1)
-            init_value = data_manipulation.create_empty_array([size])
+            init_value = dm.create_empty_array([size])
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
         return ClassicalDeclaration(node_type, node.identifier, node.init_expression)
+
+    @visit.register
+    def _(self, node: IODeclaration):
+        self.logger.debug(f"IO Declaration: {node}")
+        if node.io_identifier == IOKeyword.output:
+            declaration = ClassicalDeclaration(
+                node.type,
+                node.identifier,
+                node.init_expression,
+            )
+            self.context.specify_output(node.identifier.name)
+        elif node.io_identifier == IOKeyword.input:
+            if node.identifier.name not in self.context.inputs:
+                raise NameError(f"Missing input variable '{node.identifier.name}'")
+            init_value = dm.wrap_value_into_literal(self.context.inputs[node.identifier.name])
+            declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
+        self.visit(declaration)
+        return declaration
 
     @visit.register
     def _(self, node: ConstantDeclaration):
@@ -126,7 +153,7 @@ class Interpreter:
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
-            init_value = data_manipulation.cast_to(node.type, init_expression)
+            init_value = dm.cast_to(node.type, init_expression)
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value, const=True)
@@ -137,10 +164,10 @@ class Interpreter:
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
-            result_type = data_manipulation.resolve_result_type(type(lhs), type(rhs))
-            lhs = data_manipulation.cast_to(result_type, lhs)
-            rhs = data_manipulation.cast_to(result_type, rhs)
-            return data_manipulation.evaluate_binary_expression(lhs, rhs, node.op)
+            result_type = dm.resolve_result_type(type(lhs), type(rhs))
+            lhs = dm.cast_to(result_type, lhs)
+            rhs = dm.cast_to(result_type, rhs)
+            return dm.evaluate_binary_expression(lhs, rhs, node.op)
         else:
             return BinaryExpression(node.op, lhs, rhs)
 
@@ -149,20 +176,20 @@ class Interpreter:
         self.logger.debug(f"Unary expression: {node}")
         expression = self.visit(node.expression)
         if is_literal(expression):
-            return data_manipulation.evaluate_unary_expression(expression, node.op)
+            return dm.evaluate_unary_expression(expression, node.op)
         else:
             return UnaryExpression(node.op, expression)
 
     @visit.register
     def _(self, node: Cast):
         self.logger.debug(f"Cast: {node}")
-        casted = [data_manipulation.cast_to(node.type, self.visit(arg)) for arg in node.arguments]
+        casted = [dm.cast_to(node.type, self.visit(arg)) for arg in node.arguments]
         return casted[0] if len(casted) == 1 else casted
 
     @visit.register
     def _(self, node: Constant):
         self.logger.debug(f"Constant: {node}")
-        return data_manipulation.evaluate_constant(node)
+        return dm.evaluate_constant(node)
 
     @visit.register(BooleanLiteral)
     @visit.register(IntegerLiteral)
@@ -217,9 +244,9 @@ class Interpreter:
     @visit.register
     def _(self, node: RangeDefinition):
         self.logger.debug(f"Range definition: {node}")
-        start = self.visit(node.start) if node.start else IntegerLiteral(0)
+        start = self.visit(node.start) if node.start else None  # IntegerLiteral(0)
         end = self.visit(node.end)
-        step = self.visit(node.step) if node.step else IntegerLiteral(1)
+        step = self.visit(node.step) if node.step else None  # IntegerLiteral(1)
         return RangeDefinition(start, end, step)
 
     @visit.register
@@ -231,7 +258,7 @@ class Interpreter:
                 type_width = self.context.get_type(node.collection.name).size.value
         collection = self.visit(node.collection)
         index = self.visit(node.index)
-        return data_manipulation.get_elements(collection, index, type_width)
+        return dm.get_elements(collection, index, type_width)
 
     @visit.register
     def _(self, node: QuantumGateDefinition):
@@ -381,9 +408,7 @@ class Interpreter:
         if isinstance(node.target, IndexedIdentifier):
             node.target.indices = self.visit(node.target.indices)
         if node.target is not None:
-            measurement_value = data_manipulation.convert_string_to_bool_array(
-                StringLiteral(measurement.value)
-            )
+            measurement_value = dm.convert_string_to_bool_array(StringLiteral(measurement.value))
             self.context.update_value(node.target, measurement_value)
         return node
 
@@ -393,6 +418,8 @@ class Interpreter:
         if node.op != getattr(AssignmentOperator, "="):
             raise NotImplementedError("= only")
         rvalue = self.visit(node.rvalue)
+        # todo add logic to cast to Array(base_type) or base_type
+        # depending on the length of indices
         if isinstance(node.lvalue, IndexedIdentifier):
             node.lvalue.indices = self.visit(node.lvalue.indices)
         self.context.update_value(node.lvalue, rvalue)
@@ -401,7 +428,7 @@ class Interpreter:
     @visit.register
     def _(self, node: BranchingStatement):
         self.logger.debug(f"Branching statement: {node}")
-        condition = data_manipulation.cast_to(BooleanLiteral, self.visit(node.condition))
+        condition = dm.cast_to(BooleanLiteral, self.visit(node.condition))
         block = node.if_block if condition.value else node.else_block
         for statement in block:
             self.visit(statement)
@@ -412,9 +439,7 @@ class Interpreter:
         self.logger.debug(f"For in loop: {node}")
         index = self.visit(node.set_declaration)
         if isinstance(index, RangeDefinition):
-            index_values = [
-                IntegerLiteral(x) for x in data_manipulation.convert_range_def_to_range(index)
-            ]
+            index_values = [IntegerLiteral(x) for x in dm.convert_range_def_to_range(index)]
         # DiscreteSet
         else:
             index_values = index.values

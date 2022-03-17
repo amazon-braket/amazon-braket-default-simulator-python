@@ -18,6 +18,7 @@ from openqasm3.ast import (
     FloatType,
     GateModifierName,
     Identifier,
+    IndexedIdentifier,
     IndexElement,
     IntegerLiteral,
     IntType,
@@ -255,9 +256,9 @@ def convert_range_def_to_slice(range_def: RangeDefinition):
 
 def convert_range_def_to_range(range_def: RangeDefinition):
     buffer = np.sign(range_def.step.value) if range_def.step is not None else 1
-    start = range_def.start.value
+    start = range_def.start.value if range_def.start is not None else 0
     stop = range_def.end.value + buffer
-    step = range_def.step.value
+    step = range_def.step.value if range_def.step is not None else 1
     return range(start, stop, step)
 
 
@@ -408,12 +409,15 @@ def update_value(current_value: ArrayLiteral, value, indices):
     new_value = ArrayLiteral(current_value.values[:])
     index = indices[0][0]
     if isinstance(index, RangeDefinition):
-        indices = range(index.start.value, index.end.value + 1, index.step.value)
+        indices = convert_range_def_to_range(index)
     elif isinstance(index, IntegerLiteral):
         indices = (index.value,)
     if len(indices) == 1 and not isinstance(value, ArrayLiteral):
         value = ArrayLiteral([value])
-    for i, val in zip(indices, value.values):
+    print(current_value)
+    # base_type = type(current_value.values[0])
+    values = [cast_to(BooleanLiteral, v) for v in value.values]
+    for i, val in zip(indices, values):
         new_value.values[i] = val
     return new_value
 
@@ -424,3 +428,93 @@ def convert_string_to_bool_array(bit_string: StringLiteral) -> ArrayLiteral:
 
 def convert_bool_array_to_string(bit_string: ArrayLiteral) -> StringLiteral:
     return StringLiteral("".join(("1" if x.value else "0") for x in bit_string.values))
+
+
+@singledispatch
+def get_identifier_name(identifier: Identifier):
+    return identifier.name
+
+
+@get_identifier_name.register
+def _(identifier: IndexedIdentifier):
+    return identifier.name.name
+
+
+@singledispatch
+def get_identifier_string(identifier: Identifier):
+    return identifier.name
+
+
+@get_identifier_string.register
+def _(identifier: IndexedIdentifier):
+    name = identifier.name.name
+    indices = identifier.indices
+
+    if len(indices) > 1 or len(indices[0]) > 1:
+        raise NotImplementedError("nested indices string conversion")
+
+    index = indices[0][0]
+
+    if isinstance(index, IntegerLiteral):
+        index_string = index.value
+    elif isinstance(index, RangeDefinition):
+        start = index.start
+        stop = index.end
+        start_string = start.value if start is not None else ""
+        stop_string = stop.value if stop is not None else ""
+        if index.step is not None:
+            index_string = f"{start_string}:{index.step.value}:{stop_string}"
+        else:
+            index_string = f"{start_string}:{stop_string}"
+    else:
+        raise NotImplementedError("Discrete set indexed identifier string")
+
+    return f"{name}[{index_string}]"
+
+
+def is_supported_output_type(var_type):
+    return isinstance(var_type, (IntType, FloatType, BoolType, BitType))
+
+
+@singledispatch
+def convert_to_output(value):
+    raise NotImplementedError(f"converting {value} to output")
+
+
+@convert_to_output.register(IntegerLiteral)
+@convert_to_output.register(RealLiteral)
+@convert_to_output.register(BooleanLiteral)
+def _(value):
+    return value.value
+
+
+@convert_to_output.register
+def _(value: ArrayLiteral):
+    if isinstance(value.values[0], BooleanLiteral):
+        return convert_bool_array_to_string(value).value
+    return np.array([convert_to_output(x) for x in value.values])
+
+
+@singledispatch
+def wrap_value_into_literal(value):
+    raise NotImplementedError(f"Wrapping {value}")
+
+
+@wrap_value_into_literal.register
+def _(value: str):
+    return StringLiteral(value)
+
+
+@wrap_value_into_literal.register
+def _(value: int):
+    return IntegerLiteral(value)
+
+
+@wrap_value_into_literal.register
+def _(value: float):
+    return RealLiteral(value)
+
+
+@wrap_value_into_literal.register
+def _(value: bool):
+    return BooleanLiteral(value)
