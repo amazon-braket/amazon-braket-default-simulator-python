@@ -42,6 +42,7 @@ from openqasm3.ast import (
     RealLiteral,
     StringLiteral,
     UnaryExpression,
+    WhileLoop,
 )
 
 from braket.default_simulator.openqasm import data_manipulation as dm
@@ -418,10 +419,12 @@ class Interpreter:
         if node.op != getattr(AssignmentOperator, "="):
             raise NotImplementedError("= only")
         rvalue = self.visit(node.rvalue)
-        # todo add logic to cast to Array(base_type) or base_type
-        # depending on the length of indices
         if isinstance(node.lvalue, IndexedIdentifier):
+            # todo add logic to cast to Array(base_type) or base_type
+            # depending on the length of indices
             node.lvalue.indices = self.visit(node.lvalue.indices)
+        else:
+            rvalue = dm.cast_to(self.context.get_type(node.lvalue.name), rvalue)
         self.context.update_value(node.lvalue, rvalue)
         return node
 
@@ -450,6 +453,13 @@ class Interpreter:
                 self.context.declare_variable(node.loop_variable.name, IntegerLiteral, i)
                 self.visit(block_copy)
         return ForInLoop(node.loop_variable, index, block)
+
+    @visit.register
+    def _(self, node: WhileLoop):
+        self.logger.debug(f"While loop: {node}")
+        while dm.cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
+            self.visit(deepcopy(node.block))
+        return node
 
     @visit.register
     def _(self, node: Include):

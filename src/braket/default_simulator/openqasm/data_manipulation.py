@@ -404,7 +404,14 @@ def create_empty_array(dims):
     return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
 
 
-def update_value(current_value: ArrayLiteral, value, indices):
+def cast_update_values(value, var_type):
+    if isinstance(var_type, BitType):
+        return [cast_to(BooleanLiteral, v) for v in value.values]
+
+
+def update_value(current_value: ArrayLiteral, value, indices, var_type):
+    """Handles updating Arrays or bit registers"""
+    print(var_type)
     # todo: generalize from 1d array with string and range
     new_value = ArrayLiteral(current_value.values[:])
     index = indices[0][0]
@@ -414,10 +421,8 @@ def update_value(current_value: ArrayLiteral, value, indices):
         indices = (index.value,)
     if len(indices) == 1 and not isinstance(value, ArrayLiteral):
         value = ArrayLiteral([value])
-    print(current_value)
-    # base_type = type(current_value.values[0])
-    values = [cast_to(BooleanLiteral, v) for v in value.values]
-    for i, val in zip(indices, values):
+    casted = cast_update_values(value, var_type)
+    for i, val in zip(indices, casted):
         new_value.values[i] = val
     return new_value
 

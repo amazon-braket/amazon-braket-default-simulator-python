@@ -15,7 +15,7 @@ from openqasm3.ast import (
 )
 
 from braket.default_simulator.linalg_utils import controlled_unitary
-from braket.default_simulator.openqasm import data_manipulation
+from braket.default_simulator.openqasm import data_manipulation as dm
 from braket.default_simulator.openqasm.data_manipulation import LiteralType, get_identifier_string
 from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
@@ -76,7 +76,7 @@ class Table:
         if isinstance(index, IntegerLiteral):
             return (self[name][index.value],)
         elif isinstance(index, RangeDefinition):
-            return tuple(np.array(self[name])[data_manipulation.convert_range_def_to_slice(index)])
+            return tuple(np.array(self[name])[dm.convert_range_def_to_slice(index)])
 
 
 class QubitTable(Table):
@@ -259,10 +259,16 @@ class VariableTable(ScopedTable):
     def get_value(self, name: str):
         return self[name]
 
-    def update_value(self, name: str, value: Any, indices: Optional[List[IndexElement]] = None):
+    def update_value(
+        self,
+        name: str,
+        value: Any,
+        var_type: ClassicalType,
+        indices: Optional[List[IndexElement]] = None,
+    ):
         current_value = self[name]
         if indices:
-            value = data_manipulation.update_value(current_value, value, indices)
+            value = dm.update_value(current_value, value, indices, var_type)
         self._get_scope(name)[name] = value
 
 
@@ -327,11 +333,9 @@ class ProgramContext:
         for name, symbol in self.symbol_table.items():
             var_type = symbol.type
 
-            if data_manipulation.is_supported_output_type(var_type) and (
-                not self.outputs or self.is_output(name)
-            ):
+            if dm.is_supported_output_type(var_type) and (not self.outputs or self.is_output(name)):
                 value = self.get_value(name)
-                output = data_manipulation.convert_to_output(value)
+                output = dm.convert_to_output(value)
                 current_shot_data[name] = np.array([output])
 
         if not self.shot_data:
@@ -402,9 +406,10 @@ class ProgramContext:
         pass
 
     def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any):
-        if isinstance(variable, Identifier):
-            return self.variable_table.update_value(variable.name, value)
-        return self.variable_table.update_value(variable.name.name, value, variable.indices)
+        name = dm.get_identifier_name(variable)
+        var_type = self.get_type(name)
+        indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
+        return self.variable_table.update_value(name, value, var_type, indices)
 
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))

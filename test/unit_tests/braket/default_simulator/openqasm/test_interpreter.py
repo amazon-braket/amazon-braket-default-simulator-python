@@ -433,6 +433,27 @@ def test_for_loop_shots():
     )
 
 
+def test_while_loop():
+    qasm = """
+    output bit[10] b;
+    b = "0000000000";
+    int[8] ten = 10;
+    int[8] i = 0;
+
+    while (i < 7) {
+        b[i] = 1;
+        i = i + 1;
+    }
+    """
+    context = Interpreter().run(qasm, shots=10)
+    assert shot_data_is_equal(
+        context.shot_data,
+        {
+            "b": np.full(10, "1111111000"),
+        },
+    )
+
+
 def test_gate_def():
     qasm = """
     float[128] my_pi = π;
