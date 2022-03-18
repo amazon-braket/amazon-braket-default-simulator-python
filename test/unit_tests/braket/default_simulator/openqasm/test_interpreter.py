@@ -254,6 +254,7 @@ def test_indexed_expression():
     bit[5] neg_fifteen_b = neg_fifteen[0:4];  // 10001
     bit[5] neg_one_b = neg_one[0:4];  // 11111
     bit[3] bit_slice = neg_fifteen_b[0:2:-1];  // 101
+    array[uint[8], 2] one_three = multi_dim[:, 0];
     """
     context = Interpreter().run(qasm)
 
@@ -346,6 +347,9 @@ def test_indexed_expression():
     )
     assert context.get_value("bit_slice") == data_manipulation.convert_string_to_bool_array(
         StringLiteral("101")
+    )
+    assert context.get_value("one_three") == ArrayLiteral(
+        values=[IntegerLiteral(1), IntegerLiteral(3)]
     )
 
 
@@ -451,6 +455,100 @@ def test_while_loop():
         {
             "b": np.full(10, "1111111000"),
         },
+    )
+
+
+def test_indexed_identifier():
+    qasm = """
+    output uint[8] one;
+    output uint[8] another_one;
+    output array[uint[8], 2] twos;
+    output array[uint[8], 2] threes;
+
+    bit[4] fz = "0000";
+    array[uint[8], 2, 2] multi_dim = {{0, 0}, {0, 0}};
+    array[uint[8], 4] single_dim = {0, 0, 0, 0};
+    array[bit[4], 2, 2] multi_dim_bit = {{fz, fz}, {fz, fz}};
+
+    multi_dim[0, 0] = 1;
+    one = multi_dim[0, 0];
+
+    array[uint[8], 1] one_one = {1};
+    multi_dim[0, 1:1] = one_one;
+    another_one = multi_dim[0, 0];
+
+    array[uint[8], 2] two_twos = {2, 2};
+    multi_dim[1, :] = two_twos;
+    twos = multi_dim[1, :];
+
+    array[uint[8], 2] two_threes = {3, 3};
+    multi_dim[:, 0] = two_threes;
+    threes = multi_dim[:, 0];
+    /*
+    array[bit[2], 2] two_elevens = {"11", "11"};
+    multi_dim_bit[:, 0, 1:2:3] = two_elevens;
+    multi_dim_bit[0, 1, 0] = true;
+    */
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("one") == IntegerLiteral(1)
+    assert context.get_value("another_one") == IntegerLiteral(1)
+    assert context.get_value("twos") == ArrayLiteral(
+        [
+            IntegerLiteral(2),
+            IntegerLiteral(2),
+        ]
+    )
+    assert context.get_value("threes") == ArrayLiteral(
+        [
+            IntegerLiteral(3),
+            IntegerLiteral(3),
+        ]
+    )
+    return
+    assert context.get_value("multi_dim_bit") == ArrayLiteral(
+        [
+            ArrayLiteral(
+                [
+                    ArrayLiteral(
+                        [
+                            BooleanLiteral(False),
+                            BooleanLiteral(True),
+                            BooleanLiteral(False),
+                            BooleanLiteral(True),
+                        ]
+                    ),
+                    ArrayLiteral(
+                        [
+                            BooleanLiteral(True),
+                            BooleanLiteral(False),
+                            BooleanLiteral(False),
+                            BooleanLiteral(False),
+                        ]
+                    ),
+                ]
+            ),
+            ArrayLiteral(
+                [
+                    ArrayLiteral(
+                        [
+                            BooleanLiteral(False),
+                            BooleanLiteral(True),
+                            BooleanLiteral(False),
+                            BooleanLiteral(True),
+                        ]
+                    ),
+                    ArrayLiteral(
+                        [
+                            BooleanLiteral(False),
+                            BooleanLiteral(False),
+                            BooleanLiteral(False),
+                            BooleanLiteral(False),
+                        ]
+                    ),
+                ]
+            ),
+        ]
     )
 
 

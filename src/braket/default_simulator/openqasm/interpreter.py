@@ -223,8 +223,6 @@ class Interpreter:
         self.logger.debug(f"Indexed identifier: {node}")
         # name = self.visit(node.name)
         name = node.name
-        if name.name not in self.context.qubit_mapping:
-            raise NotImplementedError("Indexed identifier only implemented for qubits")
         indices = []
         for index in node.indices:
             if isinstance(index, DiscreteSet):
@@ -237,7 +235,7 @@ class Interpreter:
                     elif isinstance(element, RangeDefinition):
                         indices.append([element])
                     else:
-                        raise NotImplementedError(f"Index {index} not valid for qubit indexing")
+                        raise NotImplementedError(f"Index {index} not implemented")
         if self.context.get_value(name.name) is None:
             raise NameError(f"Identifier {name.name} is not initialized.")
         return IndexedIdentifier(name, indices)
@@ -409,9 +407,13 @@ class Interpreter:
         if isinstance(node.target, IndexedIdentifier):
             node.target.indices = self.visit(node.target.indices)
         if node.target is not None:
-            measurement_value = dm.convert_string_to_bool_array(StringLiteral(measurement.value))
-            self.context.update_value(node.target, measurement_value)
+            self.context.update_value(node.target, measurement)
         return node
+
+    @visit.register
+    def _(self, node: StringLiteral):
+        self.logger.debug(f"String Literal: {node}")
+        return dm.convert_string_to_bool_array(node)
 
     @visit.register
     def _(self, node: ClassicalAssignment):
@@ -419,13 +421,14 @@ class Interpreter:
         if node.op != getattr(AssignmentOperator, "="):
             raise NotImplementedError("= only")
         rvalue = self.visit(node.rvalue)
-        if isinstance(node.lvalue, IndexedIdentifier):
+        lvalue = node.lvalue
+        if isinstance(lvalue, IndexedIdentifier):
             # todo add logic to cast to Array(base_type) or base_type
             # depending on the length of indices
-            node.lvalue.indices = self.visit(node.lvalue.indices)
+            lvalue.indices = self.visit(lvalue.indices)
         else:
-            rvalue = dm.cast_to(self.context.get_type(node.lvalue.name), rvalue)
-        self.context.update_value(node.lvalue, rvalue)
+            rvalue = dm.cast_to(self.context.get_type(lvalue.name), rvalue)
+        self.context.update_value(lvalue, rvalue)
         return node
 
     @visit.register

@@ -268,7 +268,7 @@ class VariableTable(ScopedTable):
     ):
         current_value = self[name]
         if indices:
-            value = dm.update_value(current_value, value, indices, var_type)
+            value = dm.update_value(current_value, value, dm.flatten_indices(indices), var_type)
         self._get_scope(name)[name] = value
 
 

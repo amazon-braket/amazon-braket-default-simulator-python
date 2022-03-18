@@ -138,6 +138,8 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
     if type(variable) == into:
         return variable
     if into == BooleanLiteral or isinstance(into, BoolType):
+        if isinstance(variable, StringLiteral):
+            return BooleanLiteral(variable.value == "1")
         return BooleanLiteral(bool(variable.value))
     if into == IntegerLiteral:
         return IntegerLiteral(int(variable.value))
@@ -263,7 +265,7 @@ def convert_range_def_to_range(range_def: RangeDefinition):
 
 
 @singledispatch
-def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
+def _get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
     if isinstance(index, DiscreteSet):
         return DiscreteSet([get_elements(value, [i]) for i in index.values])
     for i, ix in enumerate(index):
@@ -274,6 +276,25 @@ def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
         else:
             raise NotImplementedError("unknown index format")
     return value
+
+
+@singledispatch
+def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
+    if not index:
+        return value
+    if isinstance(index, DiscreteSet):
+        return DiscreteSet([get_elements(value, [i]) for i in index.values])
+    first_index = convert_index(index[0])
+    if isinstance(first_index, int):
+        if not index[1:]:
+            return value.values[first_index]
+        return get_elements(value.values[first_index], index[1:], type_width)
+    index_as_range = range(len(value.values))[first_index]
+    if not index[1:]:
+        return ArrayLiteral([value.values[ix] for ix in index_as_range])
+    return ArrayLiteral(
+        [get_elements(value.values[ix], index[1:], type_width) for ix in index_as_range]
+    )
 
 
 @get_elements.register
@@ -404,27 +425,65 @@ def create_empty_array(dims):
     return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
 
 
-def cast_update_values(value, var_type):
-    if isinstance(var_type, BitType):
-        return [cast_to(BooleanLiteral, v) for v in value.values]
-
-
-def update_value(current_value: ArrayLiteral, value, indices, var_type):
-    """Handles updating Arrays or bit registers"""
-    print(var_type)
-    # todo: generalize from 1d array with string and range
-    new_value = ArrayLiteral(current_value.values[:])
-    index = indices[0][0]
+def convert_index(index):
     if isinstance(index, RangeDefinition):
-        indices = convert_range_def_to_range(index)
+        return convert_range_def_to_slice(index)
     elif isinstance(index, IntegerLiteral):
-        indices = (index.value,)
-    if len(indices) == 1 and not isinstance(value, ArrayLiteral):
-        value = ArrayLiteral([value])
-    casted = cast_update_values(value, var_type)
-    for i, val in zip(indices, casted):
-        new_value.values[i] = val
-    return new_value
+        return index.value
+
+
+def flatten_indices(indices):
+    return sum((index for index in indices), [])
+
+
+def get_dims(array):
+    if not isinstance(array, ArrayLiteral):
+        return []
+    return [len(array.values), *get_dims(array.values[0])]
+
+
+def unwrap_var_type(var_type):
+    if isinstance(var_type, ArrayType):
+        if len(var_type.dimensions) > 1:
+            return ArrayType(var_type.base_type, var_type.dimensions[1:])
+        else:
+            return var_type.base_type
+    elif isinstance(var_type, BitType):
+        return BoolType()
+
+
+def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
+    # current value will be an ArrayLiteral or StringLiteral
+    if isinstance(current_value, ArrayLiteral):
+        first_ix = convert_index(update_indices[0])
+
+        if isinstance(first_ix, int):
+            current_value.values[first_ix] = update_value(
+                current_value.values[first_ix],
+                value,
+                update_indices[1:],
+                unwrap_var_type(var_type),
+            )
+        else:
+            if isinstance(value, StringLiteral):
+                value = convert_string_to_bool_array(value)
+            if not isinstance(value, ArrayLiteral):
+                raise ValueError("Must assign Array type to slice")
+            index_as_range = range(len(current_value.values))[first_ix]
+            if len(index_as_range) != len(value.values):
+                raise ValueError(
+                    f"Dimensions do not match: {len(index_as_range)}, {len(value.values)}"
+                )
+            for ix, sub_value in zip(index_as_range, value.values):
+                current_value.values[ix] = update_value(
+                    current_value.values[ix],
+                    sub_value,
+                    update_indices[1:],
+                    unwrap_var_type(var_type),
+                )
+        return current_value
+    else:
+        return cast_to(var_type, value)
 
 
 def convert_string_to_bool_array(bit_string: StringLiteral) -> ArrayLiteral:
@@ -489,6 +548,7 @@ def convert_to_output(value):
 @convert_to_output.register(IntegerLiteral)
 @convert_to_output.register(RealLiteral)
 @convert_to_output.register(BooleanLiteral)
+@convert_to_output.register(StringLiteral)
 def _(value):
     return value.value
 
