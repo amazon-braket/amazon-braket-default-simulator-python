@@ -152,7 +152,8 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
 def _(into: BitType, variable: LiteralType):
     if not into.size:
         size = 1
-        variable = ArrayLiteral([cast_to(BooleanLiteral, variable)])
+        # variable = ArrayLiteral([cast_to(BooleanLiteral, variable)])
+        return cast_to(BooleanLiteral, variable)
     else:
         size = into.size.value
     if isinstance(variable, StringLiteral):
@@ -537,7 +538,7 @@ def _(identifier: IndexedIdentifier):
 
 
 def is_supported_output_type(var_type):
-    return isinstance(var_type, (IntType, FloatType, BoolType, BitType))
+    return isinstance(var_type, (IntType, FloatType, BoolType, BitType, ArrayType))
 
 
 @singledispatch
@@ -583,3 +584,8 @@ def _(value: float):
 @wrap_value_into_literal.register
 def _(value: bool):
     return BooleanLiteral(value)
+
+
+@wrap_value_into_literal.register(list)
+def _(value):
+    return ArrayLiteral([wrap_value_into_literal(v) for v in value])

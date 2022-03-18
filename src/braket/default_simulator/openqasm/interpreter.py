@@ -79,6 +79,7 @@ class Interpreter:
         for _ in range(shots):
             program = self.visit(program)
             self.context.record_and_reset()
+        self.context.serialize_output()
 
         return self.context
 
@@ -122,9 +123,9 @@ class Interpreter:
             init_value = dm.cast_to(node.type, init_expression)
         elif isinstance(node_type, ArrayType):
             init_value = dm.create_empty_array(node_type.dimensions)
-        elif isinstance(node_type, BitType):
-            size = node_type.size if node_type.size is not None else IntegerLiteral(1)
-            init_value = dm.create_empty_array([size])
+        elif isinstance(node_type, BitType) and node_type.size:
+            # size = node_type.size if node_type.size is not None else IntegerLiteral(1)
+            init_value = dm.create_empty_array([node_type.size])
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)

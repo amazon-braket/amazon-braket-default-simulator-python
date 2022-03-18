@@ -103,3 +103,66 @@ def test_adder(adder):
         result = device.run(program, shots=1).result()
         ans = int(result.output_variables["ans"][0], base=2)
         assert a + b == ans
+
+
+def test_input_output_types():
+    device = LocalSimulator("braket_oq3_sv")
+    result = device.run(
+        Program(
+            source="""
+                input bit[4] bits_in;
+                input bit bit_in;
+                input int[8] int_in;
+                input float[16] float_in;
+                input array[uint[8], 4] array_in;
+
+                output bit[4] bits_out;
+                output bit bit_out;
+                output int[8] int_out;
+                output float[16] float_out;
+                output array[uint[8], 4] array_out;
+
+                bits_out = bits_in;
+                bit_out = bit_in;
+                int_out = int_in;
+                float_out = float_in;
+                array_out = array_in;
+            """,
+            inputs={
+                "bits_in": "1010",
+                "bit_in": True,
+                "int_in": 12,
+                "float_in": np.pi,
+                "array_in": [1, 2, 3, 4],
+            },
+        ),
+        shots=2,
+    ).result()
+    print(result.output_variables)
+    assert set(result.output_variables.keys()) == {
+        "bits_out",
+        "bit_out",
+        "int_out",
+        "float_out",
+        "array_out",
+    }
+    assert np.array_equal(
+        result.output_variables["bits_out"],
+        np.full(2, "1010"),
+    )
+    assert np.array_equal(
+        result.output_variables["bit_out"],
+        np.full(2, True),
+    )
+    assert np.array_equal(
+        result.output_variables["int_out"],
+        np.full(2, 12),
+    )
+    assert np.array_equal(
+        result.output_variables["float_out"],
+        np.full(2, np.pi, dtype=np.float16),
+    )
+    assert np.array_equal(
+        result.output_variables["array_out"],
+        [[1, 2, 3, 4]] * 2,
+    )

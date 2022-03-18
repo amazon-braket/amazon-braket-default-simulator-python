@@ -41,9 +41,9 @@ def test_bit_declaration():
     assert context.get_type("register_uninitialized") == BitType(IntegerLiteral(2))
     assert context.get_type("register_initialized") == BitType(IntegerLiteral(2))
 
-    assert context.get_value("single_uninitialized") == ArrayLiteral([None])
-    assert context.get_value("single_initialized_int") == ArrayLiteral([BooleanLiteral(False)])
-    assert context.get_value("single_initialized_bool") == ArrayLiteral([BooleanLiteral(True)])
+    assert context.get_value("single_uninitialized") is None
+    assert context.get_value("single_initialized_int") == BooleanLiteral(False)
+    assert context.get_value("single_initialized_bool") == BooleanLiteral(True)
     assert context.get_value("register_uninitialized") == ArrayLiteral([None, None])
     assert context.get_value("register_initialized") == ArrayLiteral(
         [BooleanLiteral(False), BooleanLiteral(True)]

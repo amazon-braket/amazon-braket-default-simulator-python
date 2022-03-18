@@ -342,11 +342,17 @@ class ProgramContext:
             self.shot_data = current_shot_data
         else:
             for name, val in self.shot_data.items():
-                self.shot_data[name] = np.append(self.shot_data[name], current_shot_data[name])
+                self.shot_data[name] = np.append(
+                    self.shot_data[name], current_shot_data[name], axis=0
+                )
 
         if self.num_qubits:
             self.quantum_simulator.reset_qubits()
         self.clear_classical_variables()
+
+    def serialize_output(self):
+        for name, val in self.shot_data.items():
+            self.shot_data[name] = self.shot_data[name].tolist()
 
     def clear_classical_variables(self):
         if not self.symbol_table.is_in_global_scope:
