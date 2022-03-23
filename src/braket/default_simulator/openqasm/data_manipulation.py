@@ -38,76 +38,95 @@ LiteralType = Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral]
 operator_maps = {
     IntegerLiteral: {
         # returns int
-        getattr(BinaryOperator, "+"): lambda x, y: x + y,
-        getattr(BinaryOperator, "-"): lambda x, y: x - y,
-        getattr(BinaryOperator, "*"): lambda x, y: x * y,
-        getattr(BinaryOperator, "/"): lambda x, y: x // y,
-        getattr(BinaryOperator, "%"): lambda x, y: x % y,
-        getattr(BinaryOperator, "**"): lambda x, y: x ** y,
-        getattr(UnaryOperator, "-"): lambda x: -x,
+        getattr(BinaryOperator, "+"): lambda x, y: IntegerLiteral(x.value + y.value),
+        getattr(BinaryOperator, "-"): lambda x, y: IntegerLiteral(x.value - y.value),
+        getattr(BinaryOperator, "*"): lambda x, y: IntegerLiteral(x.value * y.value),
+        getattr(BinaryOperator, "/"): lambda x, y: IntegerLiteral(x.value // y.value),
+        getattr(BinaryOperator, "%"): lambda x, y: IntegerLiteral(x.value % y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value ** y.value),
+        getattr(UnaryOperator, "-"): lambda x: IntegerLiteral(-x.value),
         # returns bool
-        getattr(BinaryOperator, ">"): lambda x, y: x > y,
-        getattr(BinaryOperator, "<"): lambda x, y: x < y,
-        getattr(BinaryOperator, ">="): lambda x, y: x >= y,
-        getattr(BinaryOperator, "<="): lambda x, y: x <= y,
-        getattr(BinaryOperator, "=="): lambda x, y: x == y,
-        getattr(BinaryOperator, "!="): lambda x, y: x != y,
+        getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
+        getattr(BinaryOperator, "<"): lambda x, y: BooleanLiteral(x.value < y.value),
+        getattr(BinaryOperator, ">="): lambda x, y: BooleanLiteral(x.value >= y.value),
+        getattr(BinaryOperator, "<="): lambda x, y: BooleanLiteral(x.value <= y.value),
+        getattr(BinaryOperator, "=="): lambda x, y: BooleanLiteral(x.value == y.value),
+        getattr(BinaryOperator, "!="): lambda x, y: BooleanLiteral(x.value != y.value),
     },
     RealLiteral: {
         # returns real
-        getattr(BinaryOperator, "+"): lambda x, y: x + y,
-        getattr(BinaryOperator, "-"): lambda x, y: x - y,
-        getattr(BinaryOperator, "*"): lambda x, y: x * y,
-        getattr(BinaryOperator, "/"): lambda x, y: x / y,
-        getattr(BinaryOperator, "%"): lambda x, y: x % y,
-        getattr(BinaryOperator, "**"): lambda x, y: x ** y,
-        getattr(UnaryOperator, "-"): lambda x: -x,
+        getattr(BinaryOperator, "+"): lambda x, y: RealLiteral(x.value + y.value),
+        getattr(BinaryOperator, "-"): lambda x, y: RealLiteral(x.value - y.value),
+        getattr(BinaryOperator, "*"): lambda x, y: RealLiteral(x.value * y.value),
+        getattr(BinaryOperator, "/"): lambda x, y: RealLiteral(x.value / y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: RealLiteral(x.value ** y.value),
+        getattr(UnaryOperator, "-"): lambda x: RealLiteral(-x.value),
         # returns bool
-        getattr(BinaryOperator, ">"): lambda x, y: x > y,
-        getattr(BinaryOperator, "<"): lambda x, y: x < y,
-        getattr(BinaryOperator, ">="): lambda x, y: x >= y,
-        getattr(BinaryOperator, "<="): lambda x, y: x <= y,
-        getattr(BinaryOperator, "=="): lambda x, y: x == y,
-        getattr(BinaryOperator, "!="): lambda x, y: x != y,
+        getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
+        getattr(BinaryOperator, "<"): lambda x, y: BooleanLiteral(x.value < y.value),
+        getattr(BinaryOperator, ">="): lambda x, y: BooleanLiteral(x.value >= y.value),
+        getattr(BinaryOperator, "<="): lambda x, y: BooleanLiteral(x.value <= y.value),
+        getattr(BinaryOperator, "=="): lambda x, y: BooleanLiteral(x.value == y.value),
+        getattr(BinaryOperator, "!="): lambda x, y: BooleanLiteral(x.value != y.value),
     },
     BooleanLiteral: {
         # returns bool
-        getattr(BinaryOperator, "&&"): lambda x, y: x and y,
-        getattr(BinaryOperator, "||"): lambda x, y: x or y,
-        getattr(BinaryOperator, ">"): lambda x, y: x > y,
-        getattr(BinaryOperator, "<"): lambda x, y: x < y,
-        getattr(BinaryOperator, ">="): lambda x, y: x >= y,
-        getattr(BinaryOperator, "<="): lambda x, y: x <= y,
-        getattr(BinaryOperator, "=="): lambda x, y: x == y,
-        getattr(BinaryOperator, "!="): lambda x, y: x != y,
-        getattr(UnaryOperator, "!"): lambda x: not x,
+        getattr(BinaryOperator, "&&"): lambda x, y: BooleanLiteral(x.value and y.value),
+        getattr(BinaryOperator, "||"): lambda x, y: BooleanLiteral(x.value or y.value),
+        getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
+        getattr(BinaryOperator, "<"): lambda x, y: BooleanLiteral(x.value < y.value),
+        getattr(BinaryOperator, ">="): lambda x, y: BooleanLiteral(x.value >= y.value),
+        getattr(BinaryOperator, "<="): lambda x, y: BooleanLiteral(x.value <= y.value),
+        getattr(BinaryOperator, "=="): lambda x, y: BooleanLiteral(x.value == y.value),
+        getattr(BinaryOperator, "!="): lambda x, y: BooleanLiteral(x.value != y.value),
+        getattr(UnaryOperator, "!"): lambda x: BooleanLiteral(not x.value),
     },
-    # comprehensive list for ref (will delete)
-    getattr(BinaryOperator, ">"): lambda x, y: x > y,
-    getattr(BinaryOperator, "<"): lambda x, y: x < y,
-    getattr(BinaryOperator, ">="): lambda x, y: x >= y,
-    getattr(BinaryOperator, "<="): lambda x, y: x <= y,
-    getattr(BinaryOperator, "=="): lambda x, y: x == y,
-    getattr(BinaryOperator, "!="): lambda x, y: x != y,
-    getattr(BinaryOperator, "&&"): lambda x, y: x and y,
-    getattr(BinaryOperator, "||"): lambda x, y: x or y,
-    getattr(BinaryOperator, "|"): lambda x, y: x | y,
-    getattr(BinaryOperator, "^"): lambda x, y: x ^ y,
-    getattr(BinaryOperator, "&"): lambda x, y: x & y,
-    getattr(BinaryOperator, "<<"): lambda x, y: x << y,
-    getattr(BinaryOperator, ">>"): lambda x, y: x >> y,
-    getattr(BinaryOperator, "+"): lambda x, y: x + y,
-    getattr(BinaryOperator, "-"): lambda x, y: x - y,
-    getattr(BinaryOperator, "*"): lambda x, y: x * y,
-    getattr(BinaryOperator, "/"): lambda x, y: x / y,
-    getattr(BinaryOperator, "%"): lambda x, y: x % y,
-    getattr(BinaryOperator, "**"): lambda x, y: x ** y,
+    # Array literals are only used to store bit registers
+    ArrayLiteral: {
+        # returns array
+        getattr(BinaryOperator, "&"): lambda x, y: ArrayLiteral([
+            BooleanLiteral(xv.value and yv.value) for xv, yv in zip(x.values, y.values)
+        ]),
+        getattr(BinaryOperator, "|"): lambda x, y: ArrayLiteral([
+            BooleanLiteral(xv.value or yv.value) for xv, yv in zip(x.values, y.values)
+        ]),
+        getattr(BinaryOperator, "^"): lambda x, y: ArrayLiteral([
+            BooleanLiteral(xv.value ^ yv.value) for xv, yv in zip(x.values, y.values)
+        ]),
+        getattr(BinaryOperator, "<<"): lambda x, y: ArrayLiteral(
+            x.values[y.value:] + [0 for _ in range(y.value)]
+        ),
+        getattr(BinaryOperator, ">>"): lambda x, y: ArrayLiteral(
+            [0 for _ in range(y.value)] + x.values[:len(x.values) - y.value]
+        ),
+        getattr(UnaryOperator, "~"): lambda x, y: ArrayLiteral(
+            [BooleanLiteral(not v.value) for v in x.values]
+        ),
+        # returns bool
+        getattr(BinaryOperator, "<"): lambda x, y: BooleanLiteral(
+            convert_bool_array_to_string(x).value < convert_bool_array_to_string(y).value
+        ),
+        getattr(BinaryOperator, ">="): lambda x, y: BooleanLiteral(
+            convert_bool_array_to_string(x).value >= convert_bool_array_to_string(y).value
+        ),
+        getattr(BinaryOperator, "<="): lambda x, y: BooleanLiteral(
+            convert_bool_array_to_string(x).value <= convert_bool_array_to_string(y).value
+        ),
+        getattr(BinaryOperator, "=="): lambda x, y: BooleanLiteral(
+            convert_bool_array_to_string(x).value == convert_bool_array_to_string(y).value
+        ),
+        getattr(BinaryOperator, "!="): lambda x, y: BooleanLiteral(
+            convert_bool_array_to_string(x).value != convert_bool_array_to_string(y).value
+        ),
+        getattr(UnaryOperator, "!"): lambda x: BooleanLiteral(not any(v.value for v in x.values)),
+    },
 }
 
 type_hierarchy = [
     BooleanLiteral,
     IntegerLiteral,
     RealLiteral,
+    ArrayLiteral,
 ]
 
 constant_map = {
@@ -115,17 +134,6 @@ constant_map = {
     ConstantName.tau: 2 * np.pi,
     ConstantName.euler: np.e,
 }
-
-
-def _returns_boolean(op: BinaryOperator):
-    return op in (
-        getattr(BinaryOperator, ">"),
-        getattr(BinaryOperator, "<"),
-        getattr(BinaryOperator, ">="),
-        getattr(BinaryOperator, "<="),
-        getattr(BinaryOperator, "=="),
-        getattr(BinaryOperator, "!="),
-    )
 
 
 def resolve_result_type(x: Union[ClassicalType, LiteralType], y: Union[ClassicalType, LiteralType]):
@@ -227,8 +235,7 @@ def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOpera
     func = operator_maps[result_type].get(op)
     if not func:
         raise TypeError(f"Invalid operator {op} for {result_type.__name__}")
-    return_type = BooleanLiteral if _returns_boolean(op) else result_type
-    return return_type(func(lhs.value, rhs.value))
+    return func(lhs, rhs)
 
 
 def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
@@ -237,8 +244,7 @@ def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
     func = operator_maps[result_type].get(op)
     if not func:
         raise TypeError(f"Invalid operator {op} for {result_type.__name__}")
-    return_type = BooleanLiteral if _returns_boolean(op) else result_type
-    return return_type(func(expression.value))
+    return func(expression)
 
 
 def evaluate_constant(constant: Constant):
@@ -416,6 +422,7 @@ def is_literal(expression: Expression):
             IntegerLiteral,
             RealLiteral,
             StringLiteral,
+            ArrayLiteral,
         ),
     )
 

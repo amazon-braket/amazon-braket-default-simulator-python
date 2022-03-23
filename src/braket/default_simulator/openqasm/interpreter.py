@@ -424,8 +424,6 @@ class Interpreter:
         rvalue = self.visit(node.rvalue)
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
-            # todo add logic to cast to Array(base_type) or base_type
-            # depending on the length of indices
             lvalue.indices = self.visit(lvalue.indices)
         else:
             rvalue = dm.cast_to(self.context.get_type(lvalue.name), rvalue)

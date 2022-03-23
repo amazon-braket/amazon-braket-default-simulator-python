@@ -1056,3 +1056,39 @@ def test_cannot_measure_analytic():
     )
     with pytest.raises(ValueError, match=cannot_measure_analytic):
         Interpreter().run(qasm)
+
+
+def test_assignment_operators():
+    qasm = """
+    output int[16] x;
+    x = 0;
+    
+    x += 1; // 1
+    x *= 2; // 2
+    x /= 2; // 1
+    x -= 5; // -4
+    """
+    context = Interpreter().run(qasm, shots=1)
+    assert shot_data_is_equal(
+        context.shot_data,
+        {
+            "x": [-4],
+        },
+    )
+
+
+def test_bit_operators():
+    qasm = """
+    output bit[4] z;
+    
+    bit[4] x = "0101";
+    bit[4] y = "1100";
+    z = x & y;
+    """
+    context = Interpreter().run(qasm, shots=1)
+    assert shot_data_is_equal(
+        context.shot_data,
+        {
+            "z": ["0100"],
+        },
+    )
