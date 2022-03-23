@@ -94,15 +94,18 @@ operator_maps = {
             BooleanLiteral(xv.value ^ yv.value) for xv, yv in zip(x.values, y.values)
         ]),
         getattr(BinaryOperator, "<<"): lambda x, y: ArrayLiteral(
-            x.values[y.value:] + [0 for _ in range(y.value)]
+            x.values[y.value:] + [BooleanLiteral(False) for _ in range(y.value)]
         ),
         getattr(BinaryOperator, ">>"): lambda x, y: ArrayLiteral(
-            [0 for _ in range(y.value)] + x.values[:len(x.values) - y.value]
+            [BooleanLiteral(False) for _ in range(y.value)] + x.values[:len(x.values) - y.value]
         ),
-        getattr(UnaryOperator, "~"): lambda x, y: ArrayLiteral(
+        getattr(UnaryOperator, "~"): lambda x: ArrayLiteral(
             [BooleanLiteral(not v.value) for v in x.values]
         ),
         # returns bool
+        getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(
+            convert_bool_array_to_string(x).value > convert_bool_array_to_string(y).value
+        ),
         getattr(BinaryOperator, "<"): lambda x, y: BooleanLiteral(
             convert_bool_array_to_string(x).value < convert_bool_array_to_string(y).value
         ),

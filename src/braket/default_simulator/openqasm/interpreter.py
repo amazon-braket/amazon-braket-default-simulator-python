@@ -168,7 +168,7 @@ class Interpreter:
         if is_literal(lhs) and is_literal(rhs):
             result_type = dm.resolve_result_type(type(lhs), type(rhs))
             lhs = dm.cast_to(result_type, lhs)
-            rhs = dm.cast_to(result_type, rhs)
+            # rhs = dm.cast_to(result_type, rhs)
             return dm.evaluate_binary_expression(lhs, rhs, node.op)
         else:
             return BinaryExpression(node.op, lhs, rhs)
