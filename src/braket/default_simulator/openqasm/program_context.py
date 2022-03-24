@@ -194,6 +194,7 @@ class SymbolTable(ScopedTable):
         name: str,
         symbol_type: Union[ClassicalType, LiteralType],
         const: bool = False,
+        measured: bool = False,
     ):
         """
         Add a symbol to the symbol table.

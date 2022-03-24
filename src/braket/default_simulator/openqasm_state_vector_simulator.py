@@ -71,6 +71,5 @@ class OpenQASMStateVectorSimulator(BraketSimulator):
             additionalMetadata=AdditionalMetadata(
                 action=openqasm_ir,
             ),
-            # bitVariables={key: list(vals) for key, vals in context.shot_data.items()},
             outputVariables={key: list(vals) for key, vals in context.shot_data.items()},
         )

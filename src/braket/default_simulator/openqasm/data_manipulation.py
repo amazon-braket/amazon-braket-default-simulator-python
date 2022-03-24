@@ -1,4 +1,5 @@
 import warnings
+from copy import deepcopy
 from functools import singledispatch
 from typing import List, Union
 
@@ -182,7 +183,7 @@ def _(into: BitType, variable: LiteralType):
             or len(variable.values) != size
         ):
             raise ValueError(f"Invalid array to cast to bit register of size {size}.")
-        return variable
+        return ArrayLiteral(deepcopy(variable.values))
     else:
         raise ValueError(
             f"Invalid value to initialize bit register of size {size}: " f"'{variable}'"

@@ -22,4 +22,4 @@ c = measure q;
 ghz = Program(source=ghz_qasm)
 result = device.run(ghz, shots=10).result()
 
-print(result.bit_variables)
+print(result.output_variables)

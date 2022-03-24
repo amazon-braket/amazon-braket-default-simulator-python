@@ -464,8 +464,9 @@ def test_indexed_identifier():
     output uint[8] another_one;
     output array[uint[8], 2] twos;
     output array[uint[8], 2] threes;
+    output bit[4] fz;
 
-    bit[4] fz = "0000";
+    fz = "0000";
     array[uint[8], 2, 2] multi_dim = {{0, 0}, {0, 0}};
     array[uint[8], 4] single_dim = {0, 0, 0, 0};
     array[bit[4], 2, 2] multi_dim_bit = {{fz, fz}, {fz, fz}};
@@ -484,11 +485,12 @@ def test_indexed_identifier():
     array[uint[8], 2] two_threes = {3, 3};
     multi_dim[:, 0] = two_threes;
     threes = multi_dim[:, 0];
-    /*
+
+    fz[1:2:3] = "11";
+
     array[bit[2], 2] two_elevens = {"11", "11"};
     multi_dim_bit[:, 0, 1:2:3] = two_elevens;
     multi_dim_bit[0, 1, 0] = true;
-    */
     """
     context = Interpreter().run(qasm)
     assert context.get_value("one") == IntegerLiteral(1)
@@ -505,7 +507,14 @@ def test_indexed_identifier():
             IntegerLiteral(3),
         ]
     )
-    return
+    assert context.get_value("fz") == ArrayLiteral(
+        [
+            BooleanLiteral(False),
+            BooleanLiteral(True),
+            BooleanLiteral(False),
+            BooleanLiteral(True),
+        ]
+    )
     assert context.get_value("multi_dim_bit") == ArrayLiteral(
         [
             ArrayLiteral(
@@ -1058,6 +1067,7 @@ def test_cannot_measure_analytic():
         Interpreter().run(qasm)
 
 
+@pytest.mark.xfail(reason='not implemented yet')
 def test_assignment_operators():
     qasm = """
     output int[16] x;
@@ -1079,16 +1089,56 @@ def test_assignment_operators():
 
 def test_bit_operators():
     qasm = """
-    output bit[4] z;
+    output bit[4] and;
+    output bit[4] or;
+    output bit[4] xor;
+    output bit[4] lshift;
+    output bit[4] rshift;
+    output bit[4] flip;
+    output bit gt;
+    output bit lt;
+    output bit ge;
+    output bit le;
+    output bit eq;
+    output bit neq;
+    output bit not;
+    output bit not_zero;
     
     bit[4] x = "0101";
     bit[4] y = "1100";
-    z = x & y;
+    
+    and = x & y;
+    or = x | y;
+    xor = x ^ y;
+    lshift = x << 2;
+    rshift = y >> 2;
+    flip = ~x;
+    gt = x > y;
+    lt = x < y;
+    ge = x >= y;
+    le = x <= y;
+    eq = x == y;
+    neq = x != y;
+    not = !x;
+    not_zero = !(x << 4);
     """
     context = Interpreter().run(qasm, shots=1)
     assert shot_data_is_equal(
         context.shot_data,
         {
-            "z": ["0100"],
+            "and": ["0100"],
+            "or": ["1101"],
+            "xor": ["1001"],
+            "lshift": ["0100"],
+            "rshift": ["0011"],
+            "flip": ["1010"],
+            "gt": [False],
+            "lt": [True],
+            "ge": [False],
+            "le": [True],
+            "eq": [False],
+            "neq": [True],
+            "not": [False],
+            "not_zero": [True],
         },
     )
