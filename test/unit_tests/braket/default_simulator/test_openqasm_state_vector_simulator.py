@@ -233,10 +233,10 @@ def test_input_output_types():
     )
 
 
-def test_shots_equals_zero(hadamard_adder):
-    device = LocalSimulator("braket_oq3_sv")
-    # result = device.run(
-    #     Program(source="hadamard_adder.qasm"),
-    #     shots=0,
-    # )
-    # print(result)
+# def test_shots_equals_zero(hadamard_adder):
+#     device = LocalSimulator("braket_oq3_sv")
+#     # result = device.run(
+#     #     Program(source="hadamard_adder.qasm"),
+#     #     shots=0,
+#     # )
+#     # print(result)

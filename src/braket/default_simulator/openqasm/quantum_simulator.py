@@ -1,5 +1,4 @@
 from typing import Optional, Sequence, Union
-from warnings import warn
 
 import numpy as np
 

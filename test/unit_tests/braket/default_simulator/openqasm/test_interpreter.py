@@ -1072,7 +1072,7 @@ def test_assignment_operators():
     qasm = """
     output int[16] x;
     x = 0;
-    
+
     x += 1; // 1
     x *= 2; // 2
     x /= 2; // 1
@@ -1103,10 +1103,10 @@ def test_bit_operators():
     output bit neq;
     output bit not;
     output bit not_zero;
-    
+
     bit[4] x = "0101";
     bit[4] y = "1100";
-    
+
     and = x & y;
     or = x | y;
     xor = x ^ y;
