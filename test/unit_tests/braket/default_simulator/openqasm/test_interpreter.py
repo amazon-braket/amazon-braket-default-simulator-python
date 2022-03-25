@@ -1067,7 +1067,7 @@ def test_cannot_measure_analytic():
         Interpreter().run(qasm)
 
 
-@pytest.mark.xfail(reason='not implemented yet')
+@pytest.mark.xfail(reason="not implemented yet")
 def test_assignment_operators():
     qasm = """
     output int[16] x;

@@ -59,6 +59,21 @@ from braket.default_simulator.openqasm.program_context import ProgramContext
 
 
 class Interpreter:
+    """
+    Shots=0 (sv implementation) will not support using measured values,
+    resetting active qubits, using measured qubits. In other words, it will
+    only support 'classically deterministic' programs. Initially will implement
+    with a runtime guard against prohibited behavior. Next iteration will involve
+    a static analysis pass to ensure prohibited behavior is not present. Once this
+    is implemented, it can optionally be used on shots=n simulations to determine
+    whether to use a shots=0 simulation and then sample.
+
+    We also want to support casting measured values to other types. This will involve
+    checking whether the value of a cast is a measured value, and if so deferring
+    computation until the value is sampled, similar to a js promise. This is mainly
+    non-trivial for the shots=0 case, but worth exploring if we can optimize in general.
+    """
+
     def __init__(self, context: Optional[ProgramContext] = None):
         # context keeps track of all state
         self.context = context or ProgramContext()

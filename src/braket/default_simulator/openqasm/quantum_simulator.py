@@ -68,12 +68,6 @@ class QuantumSimulator:
 
     def _normalize_state(self):
         """normalize state"""
-        norm = np.linalg.norm(self._state_tensor)
-        if not norm:
-            warn(
-                "State vector norm is zero. This is probably a result of forcing "
-                "an impossible measurement outcome."
-            )
         self._state_tensor /= np.linalg.norm(self._state_tensor)
 
     def _flip_qubit(self, qubit: int):

@@ -36,6 +36,7 @@ qubit cout;
 reset cin;
 reset a;
 reset b;
+reset b_copy;
 reset cout;
 
 // set input states
