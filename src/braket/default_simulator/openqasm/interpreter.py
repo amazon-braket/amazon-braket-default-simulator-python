@@ -1,7 +1,7 @@
 from copy import deepcopy
 from dataclasses import fields
 from functools import singledispatchmethod
-from logging import getLogger
+from logging import Logger, getLogger
 from typing import Any, Dict, List, Optional
 
 from openqasm3 import parse
@@ -74,10 +74,10 @@ class Interpreter:
     non-trivial for the shots=0 case, but worth exploring if we can optimize in general.
     """
 
-    def __init__(self, context: Optional[ProgramContext] = None):
+    def __init__(self, context: Optional[ProgramContext] = None, logger: Optional[Logger] = None):
         # context keeps track of all state
         self.context = context or ProgramContext()
-        self.logger = getLogger(__name__)
+        self.logger = logger or getLogger(__name__)
 
     def run(self, string: str, shots: int = 0, inputs: Dict[str, Any] = None):
         program = parse(string)
@@ -181,9 +181,6 @@ class Interpreter:
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
-            result_type = dm.resolve_result_type(type(lhs), type(rhs))
-            lhs = dm.cast_to(result_type, lhs)
-            # rhs = dm.cast_to(result_type, rhs)
             return dm.evaluate_binary_expression(lhs, rhs, node.op)
         else:
             return BinaryExpression(node.op, lhs, rhs)

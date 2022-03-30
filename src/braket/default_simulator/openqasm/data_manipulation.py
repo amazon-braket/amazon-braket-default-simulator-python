@@ -34,7 +34,10 @@ from openqasm3.ast import (
     UnaryOperator,
 )
 
-LiteralType = Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral]
+"""
+Evaluating expressions
+"""
+
 
 operator_maps = {
     IntegerLiteral: {
@@ -44,7 +47,7 @@ operator_maps = {
         getattr(BinaryOperator, "*"): lambda x, y: IntegerLiteral(x.value * y.value),
         getattr(BinaryOperator, "/"): lambda x, y: IntegerLiteral(x.value // y.value),
         getattr(BinaryOperator, "%"): lambda x, y: IntegerLiteral(x.value % y.value),
-        getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value**y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value ** y.value),
         getattr(UnaryOperator, "-"): lambda x: IntegerLiteral(-x.value),
         # returns bool
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
@@ -60,7 +63,7 @@ operator_maps = {
         getattr(BinaryOperator, "-"): lambda x, y: RealLiteral(x.value - y.value),
         getattr(BinaryOperator, "*"): lambda x, y: RealLiteral(x.value * y.value),
         getattr(BinaryOperator, "/"): lambda x, y: RealLiteral(x.value / y.value),
-        getattr(BinaryOperator, "**"): lambda x, y: RealLiteral(x.value**y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: RealLiteral(x.value ** y.value),
         getattr(UnaryOperator, "-"): lambda x: RealLiteral(-x.value),
         # returns bool
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
@@ -140,9 +143,36 @@ constant_map = {
 }
 
 
-def resolve_result_type(x: Union[ClassicalType, LiteralType], y: Union[ClassicalType, LiteralType]):
-    # TODO: add support for actual ClassicalTypes, not just literals
-    return max(x, y, key=type_hierarchy.index)
+def resolve_result_type(x: Expression, y: Expression):
+    return max(type(x), type(y), key=type_hierarchy.index)
+
+
+def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOperator):
+    result_type = resolve_result_type(lhs, rhs)
+    func = operator_maps[result_type].get(op)
+    if not func:
+        raise TypeError(f"Invalid operator {op} for {result_type.__name__}")
+    return func(lhs, rhs)
+
+
+def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
+    expression_type = type(expression)
+    func = operator_maps[expression_type].get(op)
+    if not func:
+        raise TypeError(f"Invalid operator {op} for {expression_type.__name__}")
+    return func(expression)
+
+
+def evaluate_constant(constant: Constant):
+    return RealLiteral(constant_map.get(constant.name))
+
+
+"""
+Casting values
+"""
+
+
+LiteralType = Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral, ArrayLiteral]
 
 
 @singledispatch
@@ -163,8 +193,6 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
 @cast_to.register
 def _(into: BitType, variable: LiteralType):
     if not into.size:
-        size = 1
-        # variable = ArrayLiteral([cast_to(BooleanLiteral, variable)])
         return cast_to(BooleanLiteral, variable)
     else:
         size = into.size.value
@@ -201,7 +229,7 @@ def _(into: IntType, variable: LiteralType):
 
 @cast_to.register
 def _(into: UintType, variable: LiteralType):
-    limit = 2**into.size.value
+    limit = 2 ** into.size.value
     value = int(variable.value) % limit
     if value != variable.value:
         warnings.warn(
@@ -233,26 +261,30 @@ def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]):
     return ArrayLiteral([cast_to(subtype, v) for v in variable.values])
 
 
-def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOperator):
-    # assume lhs and rhs are of same type
-    result_type = type(lhs)
-    func = operator_maps[result_type].get(op)
-    if not func:
-        raise TypeError(f"Invalid operator {op} for {result_type.__name__}")
-    return func(lhs, rhs)
+def is_literal(expression: Expression):
+    return isinstance(
+        expression,
+        (
+            BooleanLiteral,
+            IntegerLiteral,
+            RealLiteral,
+            StringLiteral,
+            ArrayLiteral,
+        ),
+    )
 
 
-def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
-    # assume lhs and rhs are of same type
-    result_type = type(expression)
-    func = operator_maps[result_type].get(op)
-    if not func:
-        raise TypeError(f"Invalid operator {op} for {result_type.__name__}")
-    return func(expression)
+def convert_string_to_bool_array(bit_string: StringLiteral) -> ArrayLiteral:
+    return ArrayLiteral([BooleanLiteral(x == "1") for x in bit_string.value])
 
 
-def evaluate_constant(constant: Constant):
-    return RealLiteral(constant_map.get(constant.name))
+def convert_bool_array_to_string(bit_string: ArrayLiteral) -> StringLiteral:
+    return StringLiteral("".join(("1" if x.value else "0") for x in bit_string.values))
+
+
+"""
+Helper functions for working with indexed values
+"""
 
 
 def convert_range_def_to_slice(range_def: RangeDefinition):
@@ -273,6 +305,10 @@ def convert_range_def_to_range(range_def: RangeDefinition):
     stop = range_def.end.value + buffer
     step = range_def.step.value if range_def.step is not None else 1
     return range(start, stop, step)
+
+
+def convert_discrete_set_to_list(discrete_set: DiscreteSet):
+    return [x.value for x in discrete_set.values]
 
 
 @singledispatch
@@ -320,6 +356,72 @@ def _(value: IntegerLiteral, index: IndexElement, type_width: int):
 def _(value: StringLiteral, index: IndexElement, type_width=None):
     binary_rep = ArrayLiteral([BooleanLiteral(x == "1") for x in value.value])
     return get_elements(binary_rep, index)
+
+
+def create_empty_array(dims):
+    if len(dims) == 1:
+        return ArrayLiteral([None] * dims[0].value)
+    return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
+
+
+def convert_index(index):
+    if isinstance(index, RangeDefinition):
+        return convert_range_def_to_slice(index)
+    elif isinstance(index, IntegerLiteral):
+        return index.value
+
+
+def flatten_indices(indices):
+    return sum((index for index in indices), [])
+
+
+def unwrap_var_type(var_type):
+    if isinstance(var_type, ArrayType):
+        if len(var_type.dimensions) > 1:
+            return ArrayType(var_type.base_type, var_type.dimensions[1:])
+        else:
+            return var_type.base_type
+    elif isinstance(var_type, BitType):
+        return BoolType()
+
+
+def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
+    # current value will be an ArrayLiteral or StringLiteral
+    if isinstance(current_value, ArrayLiteral):
+        first_ix = convert_index(update_indices[0])
+
+        if isinstance(first_ix, int):
+            current_value.values[first_ix] = update_value(
+                current_value.values[first_ix],
+                value,
+                update_indices[1:],
+                unwrap_var_type(var_type),
+            )
+        else:
+            if isinstance(value, StringLiteral):
+                value = convert_string_to_bool_array(value)
+            if not isinstance(value, ArrayLiteral):
+                raise ValueError("Must assign Array type to slice")
+            index_as_range = range(len(current_value.values))[first_ix]
+            if len(index_as_range) != len(value.values):
+                raise ValueError(
+                    f"Dimensions do not match: {len(index_as_range)}, {len(value.values)}"
+                )
+            for ix, sub_value in zip(index_as_range, value.values):
+                current_value.values[ix] = update_value(
+                    current_value.values[ix],
+                    sub_value,
+                    update_indices[1:],
+                    unwrap_var_type(var_type),
+                )
+        return current_value
+    else:
+        return cast_to(var_type, value)
+
+
+"""
+Helper functions for working with OpenQASM quantum directives
+"""
 
 
 @singledispatch
@@ -418,92 +520,9 @@ def modify_body(
     return body
 
 
-def is_literal(expression: Expression):
-    return isinstance(
-        expression,
-        (
-            BooleanLiteral,
-            IntegerLiteral,
-            RealLiteral,
-            StringLiteral,
-            ArrayLiteral,
-        ),
-    )
-
-
-def create_empty_array(dims):
-    if len(dims) == 1:
-        return ArrayLiteral([None] * dims[0].value)
-    return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
-
-
-def convert_index(index):
-    if isinstance(index, RangeDefinition):
-        return convert_range_def_to_slice(index)
-    elif isinstance(index, IntegerLiteral):
-        return index.value
-
-
-def flatten_indices(indices):
-    return sum((index for index in indices), [])
-
-
-def get_dims(array):
-    if not isinstance(array, ArrayLiteral):
-        return []
-    return [len(array.values), *get_dims(array.values[0])]
-
-
-def unwrap_var_type(var_type):
-    if isinstance(var_type, ArrayType):
-        if len(var_type.dimensions) > 1:
-            return ArrayType(var_type.base_type, var_type.dimensions[1:])
-        else:
-            return var_type.base_type
-    elif isinstance(var_type, BitType):
-        return BoolType()
-
-
-def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
-    # current value will be an ArrayLiteral or StringLiteral
-    if isinstance(current_value, ArrayLiteral):
-        first_ix = convert_index(update_indices[0])
-
-        if isinstance(first_ix, int):
-            current_value.values[first_ix] = update_value(
-                current_value.values[first_ix],
-                value,
-                update_indices[1:],
-                unwrap_var_type(var_type),
-            )
-        else:
-            if isinstance(value, StringLiteral):
-                value = convert_string_to_bool_array(value)
-            if not isinstance(value, ArrayLiteral):
-                raise ValueError("Must assign Array type to slice")
-            index_as_range = range(len(current_value.values))[first_ix]
-            if len(index_as_range) != len(value.values):
-                raise ValueError(
-                    f"Dimensions do not match: {len(index_as_range)}, {len(value.values)}"
-                )
-            for ix, sub_value in zip(index_as_range, value.values):
-                current_value.values[ix] = update_value(
-                    current_value.values[ix],
-                    sub_value,
-                    update_indices[1:],
-                    unwrap_var_type(var_type),
-                )
-        return current_value
-    else:
-        return cast_to(var_type, value)
-
-
-def convert_string_to_bool_array(bit_string: StringLiteral) -> ArrayLiteral:
-    return ArrayLiteral([BooleanLiteral(x == "1") for x in bit_string.value])
-
-
-def convert_bool_array_to_string(bit_string: ArrayLiteral) -> StringLiteral:
-    return StringLiteral("".join(("1" if x.value else "0") for x in bit_string.values))
+"""
+Helper functions for printing identifiers
+"""
 
 
 @singledispatch
@@ -546,6 +565,11 @@ def _(identifier: IndexedIdentifier):
         raise NotImplementedError("Discrete set indexed identifier string")
 
     return f"{name}[{index_string}]"
+
+
+"""
+Input/Output
+"""
 
 
 def is_supported_output_type(var_type):

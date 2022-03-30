@@ -17,12 +17,12 @@ from openqasm3.ast import (
     QuantumGateDefinition,
     RealLiteral,
     StringLiteral,
-    UintType,
+    UintType, IndexedIdentifier,
 )
 
 from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.interpreter import Interpreter
-from braket.default_simulator.openqasm.program_context import ProgramContext
+from braket.default_simulator.openqasm.program_context import ProgramContext, QubitTable
 
 
 def test_bit_declaration():
@@ -366,6 +366,7 @@ def test_reset_qubit():
     reset qs;
     reset qs2[0];
     reset qs5[:two:4];
+    reset qs5[{4, 1, 0}];
     """
     mocked_context = ProgramContext()
     reset_qubits_mock = Mock()
@@ -378,6 +379,7 @@ def test_reset_qubit():
             call((1, 2)),
             call((3,)),
             call((5, 7, 9)),
+            call((9, 6, 5)),
         )
     )
 
@@ -490,9 +492,9 @@ def test_indexed_identifier():
 
     array[bit[2], 2] two_elevens = {"11", "11"};
     multi_dim_bit[:, 0, 1:2:3] = two_elevens;
-    multi_dim_bit[0, 1, 0] = true;
+    multi_dim_bit[0][1][0] = true;
     """
-    context = Interpreter().run(qasm)
+    context = Interpreter().run(qasm, shots=0)
     assert context.get_value("one") == IntegerLiteral(1)
     assert context.get_value("another_one") == IntegerLiteral(1)
     assert context.get_value("twos") == ArrayLiteral(
@@ -1087,6 +1089,31 @@ def test_assignment_operators():
     )
 
 
+def test_resolve_result_type():
+    qasm = """
+    output float[16] small_pi;
+    output float[16] one_point_five;
+    output int[8] int_not_bool;
+
+    int[8] one = 1;
+    float[16] half = 0.5;
+    bit t = true;
+
+    small_pi = π + one - 1;
+    one_point_five = one + half;
+    int_not_bool = t + 1;
+    """
+    context = Interpreter().run(qasm, shots=1)
+    assert shot_data_is_equal(
+        context.shot_data,
+        {
+            "small_pi": [3.140625],
+            "one_point_five": [1.5],
+            "int_not_bool": [2],
+        },
+    )
+
+
 def test_bit_operators():
     qasm = """
     output bit[4] and;
@@ -1142,3 +1169,38 @@ def test_bit_operators():
             "not_zero": [True],
         },
     )
+
+
+@pytest.mark.parametrize("in_int", (0, 1, -2, 5))
+def test_input(in_int):
+    qasm = """
+    input int[8] in_int;
+    output int[8] doubled;
+
+    doubled = in_int * 2;
+    """
+    context = Interpreter().run(qasm, shots=1, inputs={"in_int": in_int})
+    assert shot_data_is_equal(context.shot_data, {"doubled": [in_int * 2]})
+
+
+@pytest.mark.parametrize("bad_index", ("[0:1][0]", "[0][1]", "[0, 1]",  "[0:1, 1]"))
+def test_qubit_multidim(bad_index):
+    qasm = f"""
+    qubit q;
+    reset q{bad_index};
+    """
+    multi_dim_qubit = "Cannot index multiple dimensions for qubits."
+    with pytest.raises(IndexError, match=multi_dim_qubit):
+        Interpreter().run(qasm)
+
+
+def test_qubit_multi_dim_index():
+    """ this verifies that interpreter handles q[0, 1] correctly """
+    multi_dim_qubit = "Cannot index multiple dimensions for qubits."
+    with pytest.raises(IndexError, match=multi_dim_qubit):
+        QubitTable().get_by_identifier(
+            IndexedIdentifier(
+                Identifier("q"),
+                [[IntegerLiteral(0), IntegerLiteral(1)]],
+            )
+        )

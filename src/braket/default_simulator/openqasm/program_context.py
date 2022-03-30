@@ -52,6 +52,19 @@ class Table:
             rows.append(f"{item:<{longest_key_length}}\t{value}")
         return "\n".join(rows)
 
+
+class QubitTable(Table):
+    def __init__(self):
+        super().__init__("Qubits")
+        self._used_indices = set()
+        self._measured_indices = set()
+
+    def record_qubit_use(self, indices: Sequence[int]):
+        self._used_indices |= set(indices)
+
+    def qubits_used(self, indices: Sequence[int]):
+        return set(indices) & self._used_indices
+
     @singledispatchmethod
     def get_by_identifier(self, identifier: Identifier):
         """
@@ -65,37 +78,22 @@ class Table:
         When identifier is an IndexedIdentifier, function returns a tuple
         corresponding to the elements referenced by the indexed identifier.
         """
+        print(identifier)
         name = identifier.name.name
         if len(identifier.indices) != 1:
-            raise NotImplementedError("Multiple dimensions of indices for IndexedIdentifier")
-        if len(identifier.indices[0]) != 1:
-            raise NotImplementedError(
-                "Multiple dimensions of indices for IndexedIdentifier (inside)"
-            )
-        index = identifier.indices[0][0]
+            raise IndexError("Cannot index multiple dimensions for qubits.")
+        index = identifier.indices[0]
+        if isinstance(index, list):
+            if len(index) != 1:
+                raise IndexError("Cannot index multiple dimensions for qubits.")
+            index = identifier.indices[0][0]
         if isinstance(index, IntegerLiteral):
             return (self[name][index.value],)
         elif isinstance(index, RangeDefinition):
             return tuple(np.array(self[name])[dm.convert_range_def_to_slice(index)])
-
-
-class QubitTable(Table):
-    def __init__(self):
-        super().__init__("Qubits")
-        self._used_indices = set()
-        self._measured_indices = set()
-
-    def record_qubit_use(self, indices: Sequence[int]):
-        self._used_indices |= set(indices)
-
-    def record_qubit_measurement(self, indices: Sequence[int]):
-        self._measured_indices |= set(indices)
-
-    def qubits_used(self, indices: Sequence[int]):
-        return set(indices) & self._used_indices
-
-    def qubits_measured(self, indices: Sequence[int]):
-        return set(indices) & self._measured_indices
+        # Discrete set
+        else:
+            return tuple(np.array(self[name])[dm.convert_discrete_set_to_list(index)])
 
 
 class ScopedTable(Table):
@@ -116,10 +114,6 @@ class ScopedTable(Table):
     @property
     def current_scope(self):
         return self._scopes[-1]
-
-    @property
-    def is_in_global_scope(self):
-        return len(self._scopes) == 1
 
     def __getitem__(self, item):
         """
@@ -145,11 +139,6 @@ class ScopedTable(Table):
                 del scope[key]
                 return
         raise KeyError(f"Undefined key: {key}")
-
-    def _get_scope(self, key):
-        for scope in reversed(self._scopes):
-            if key in scope:
-                return scope
 
     def items(self):
         items = {}
@@ -194,7 +183,6 @@ class SymbolTable(ScopedTable):
         name: str,
         symbol_type: Union[ClassicalType, LiteralType],
         const: bool = False,
-        measured: bool = False,
     ):
         """
         Add a symbol to the symbol table.
@@ -270,7 +258,7 @@ class VariableTable(ScopedTable):
         current_value = self[name]
         if indices:
             value = dm.update_value(current_value, value, dm.flatten_indices(indices), var_type)
-        self._get_scope(name)[name] = value
+        self[name] = value
 
 
 class GateTable(ScopedTable):
@@ -356,9 +344,6 @@ class ProgramContext:
             self.shot_data[name] = self.shot_data[name].tolist()
 
     def clear_classical_variables(self):
-        if not self.symbol_table.is_in_global_scope:
-            raise ValueError("Can only clear classical variables from global scope.")
-
         symbol_names = [name for name, _ in self.symbol_table.items()]
         for name in symbol_names:
             if not self.get_const(name) and name not in self.qubit_mapping:
@@ -408,9 +393,6 @@ class ProgramContext:
 
     def get_value(self, name: str):
         return self.variable_table.get_value(name)
-
-    def get_indexed_value(self, variable: IndexedIdentifier):
-        pass
 
     def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any):
         name = dm.get_identifier_name(variable)
