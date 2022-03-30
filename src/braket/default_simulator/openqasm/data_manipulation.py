@@ -282,6 +282,12 @@ def convert_bool_array_to_string(bit_string: ArrayLiteral) -> StringLiteral:
     return StringLiteral("".join(("1" if x.value else "0") for x in bit_string.values))
 
 
+def is_none_like(value):
+    if isinstance(value, ArrayLiteral):
+        return all(is_none_like(v) for v in value.values)
+    return value is None
+
+
 """
 Helper functions for working with indexed values
 """
@@ -453,7 +459,7 @@ def _(quantum_op: QuantumPhase):
     new_modifiers = [
         mod for mod in get_modifiers(quantum_op) if mod.modifier != GateModifierName.inv
     ]
-    new_param = -quantum_op.argument.value
+    new_param = RealLiteral(-quantum_op.argument.value)
     return QuantumPhase(new_modifiers, new_param, quantum_op.qubits)
 
 

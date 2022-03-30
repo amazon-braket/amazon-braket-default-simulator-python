@@ -126,6 +126,34 @@ def test_float_declaration():
     assert context.get_value("precise") == RealLiteral(np.pi)
 
 
+def test_constant_declaration():
+    qasm = """
+    const float[16] const_tau = 2 * π;
+    const int[8] const_one = 1;
+    """
+    context = Interpreter().run(qasm)
+
+    assert context.get_type("const_tau") == FloatType(IntegerLiteral(16))
+    assert context.get_type("const_one") == IntType(IntegerLiteral(8))
+
+    assert context.get_value("const_tau") == RealLiteral(6.28125)
+    assert context.get_value("const_one") == IntegerLiteral(1)
+
+    assert context.get_const("const_tau")
+    assert context.get_const("const_one")
+
+
+@pytest.mark.parametrize("index", ("", "[:]"))
+def test_uninitialized_identifier(index):
+    qasm = f"""
+    bit[8] x;
+    bit[8] y = x{index};
+    """
+    uninitialized_identifier = "Identifier 'x' is not initialized."
+    with pytest.raises(NameError, match=uninitialized_identifier):
+        Interpreter().run(qasm)
+
+
 def test_assign_variable():
     qasm = """
     bit[8] og_bit = "10001000";
@@ -676,6 +704,7 @@ def test_gate_call():
     qasm = """
     float[128] my_pi = π;
     gate x a { U(π, 0, my_pi) a; }
+    gate x2(p) a { U(π, 0, p) a; }
 
     qubit q1;
     qubit q2;
@@ -687,7 +716,7 @@ def test_gate_call():
 
     U(π, 0, my_pi) q1;
     x q2;
-    x qs[0];
+    x2(my_pi) qs[0];
     """
     context = Interpreter().run(qasm)
 
@@ -700,7 +729,7 @@ def test_gate_inv():
     qasm = """
     gate rand_u_1 a { U(1, 2, 3) a; }
     gate rand_u_2 a { U(2, 3, 4) a; }
-    gate rand_u_3 a { U(3, 4, 5) a; }
+    gate rand_u_3 a { inv @ U(3, 4, 5) a; }
 
     gate both a {
         rand_u_1 a;
@@ -717,6 +746,14 @@ def test_gate_inv():
     gate all_3_inv a {
         inv @ inv @ inv @ all_3 a;
     }
+    
+    gate apply_phase a {
+        gphase(1);
+    }
+    
+    gate apply_phase_inv a {
+        inv @ gphase(1);
+    }
 
     qubit q;
 
@@ -727,6 +764,9 @@ def test_gate_inv():
 
     all_3 q;
     all_3_inv q;
+    
+    apply_phase q;
+    apply_phase_inv q;
     """
     context = Interpreter().run(qasm)
 
@@ -909,6 +949,8 @@ def test_gphase():
     phase qs[0], qs[1];
 
     gphase(π);
+    inv @ gphase(2 * π);
+    ctrl @ gphase(2 * π) qs[0];
     """
     context = Interpreter().run(qasm)
 
@@ -1181,6 +1223,18 @@ def test_input(in_int):
     """
     context = Interpreter().run(qasm, shots=1, inputs={"in_int": in_int})
     assert shot_data_is_equal(context.shot_data, {"doubled": [in_int * 2]})
+
+
+def test_missing_input():
+    qasm = """
+    input int[8] in_int;
+    output int[8] doubled;
+
+    doubled = in_int * 2;
+    """
+    missing_input = "Missing input variable 'in_int'."
+    with pytest.raises(NameError, match=missing_input):
+        Interpreter().run(qasm, shots=1)
 
 
 @pytest.mark.parametrize("bad_index", ("[0:1][0]", "[0][1]", "[0, 1]",  "[0:1, 1]"))

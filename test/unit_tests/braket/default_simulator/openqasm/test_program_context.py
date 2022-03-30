@@ -107,5 +107,6 @@ def test_delete_from_scope():
     del table["x"]
     assert table._scopes == [{}, {}]
 
-    with pytest.raises(KeyError, match="Undefined key: x"):
+    undefined_key = "Undefined key: x"
+    with pytest.raises(KeyError, match=undefined_key):
         del table["x"]

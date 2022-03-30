@@ -260,6 +260,9 @@ class VariableTable(ScopedTable):
             value = dm.update_value(current_value, value, dm.flatten_indices(indices), var_type)
         self[name] = value
 
+    def is_initalized(self, name: str):
+        return not dm.is_none_like(self[name])
+
 
 class GateTable(ScopedTable):
     def __init__(self):
@@ -393,6 +396,9 @@ class ProgramContext:
 
     def get_value(self, name: str):
         return self.variable_table.get_value(name)
+
+    def is_initialized(self, name: str):
+        return self.variable_table.is_initalized(name)
 
     def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any):
         name = dm.get_identifier_name(variable)

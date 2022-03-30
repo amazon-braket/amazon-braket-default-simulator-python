@@ -139,7 +139,6 @@ class Interpreter:
         elif isinstance(node_type, ArrayType):
             init_value = dm.create_empty_array(node_type.dimensions)
         elif isinstance(node_type, BitType) and node_type.size:
-            # size = node_type.size if node_type.size is not None else IntegerLiteral(1)
             init_value = dm.create_empty_array([node_type.size])
         else:
             init_value = None
@@ -156,9 +155,9 @@ class Interpreter:
                 node.init_expression,
             )
             self.context.specify_output(node.identifier.name)
-        elif node.io_identifier == IOKeyword.input:
+        else:   # IOKeyword.input:
             if node.identifier.name not in self.context.inputs:
-                raise NameError(f"Missing input variable '{node.identifier.name}'")
+                raise NameError(f"Missing input variable '{node.identifier.name}'.")
             init_value = dm.wrap_value_into_literal(self.context.inputs[node.identifier.name])
             declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
         self.visit(declaration)
@@ -168,11 +167,8 @@ class Interpreter:
     def _(self, node: ConstantDeclaration):
         self.logger.debug(f"Constant declaration: {node}")
         node_type = self.visit(node.type)
-        if node.init_expression is not None:
-            init_expression = self.visit(node.init_expression)
-            init_value = dm.cast_to(node.type, init_expression)
-        else:
-            init_value = None
+        init_expression = self.visit(node.init_expression)
+        init_value = dm.cast_to(node.type, init_expression)
         self.context.declare_variable(node.identifier.name, node_type, init_value, const=True)
 
     @visit.register
@@ -214,8 +210,8 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Identifier):
-        if self.context.get_value(node.name) is None:
-            raise NameError(f"Identifier {node.name} is not initialized.")
+        if not self.context.is_initialized(node.name):
+            raise NameError(f"Identifier '{node.name}' is not initialized.")
         return self.context.get_value(node.name)
 
     @visit.register
@@ -234,7 +230,6 @@ class Interpreter:
     @visit.register
     def _(self, node: IndexedIdentifier):
         self.logger.debug(f"Indexed identifier: {node}")
-        # name = self.visit(node.name)
         name = node.name
         indices = []
         for index in node.indices:
@@ -243,22 +238,15 @@ class Interpreter:
             else:
                 for element in index:
                     element = self.visit(element)
-                    if isinstance(element, IntegerLiteral):
-                        indices.append([element])
-                    elif isinstance(element, RangeDefinition):
-                        indices.append([element])
-                    else:
-                        raise NotImplementedError(f"Index {index} not implemented")
-        if self.context.get_value(name.name) is None:
-            raise NameError(f"Identifier {name.name} is not initialized.")
+                    indices.append([element])
         return IndexedIdentifier(name, indices)
 
     @visit.register
     def _(self, node: RangeDefinition):
         self.logger.debug(f"Range definition: {node}")
-        start = self.visit(node.start) if node.start else None  # IntegerLiteral(0)
+        start = self.visit(node.start) if node.start else None
         end = self.visit(node.end)
-        step = self.visit(node.step) if node.step else None  # IntegerLiteral(1)
+        step = self.visit(node.step) if node.step else None
         return RangeDefinition(start, end, step)
 
     @visit.register
@@ -344,7 +332,7 @@ class Interpreter:
         for qubit in node.qubits:
             if isinstance(qubit, Identifier):
                 qubits.append(self.visit(qubit))
-            elif isinstance(qubit, IndexedIdentifier):
+            else:   # IndexedIdentifier
                 dereffed_name = self.visit(qubit.name)
                 simplified_indices = self.visit(qubit.indices)
                 qubits.append(IndexedIdentifier(dereffed_name, simplified_indices))
@@ -375,7 +363,7 @@ class Interpreter:
                 for statement in deepcopy(gate_def.body):
                     if isinstance(statement, QuantumGate):
                         self.visit(statement)
-                    elif isinstance(statement, QuantumPhase):
+                    else:   # QuantumPhase
                         phase = statement.argument.value
                         self.context.apply_phase(phase, qubits)
                 return QuantumGate(node.modifiers, node.name, arguments, qubits)
@@ -397,10 +385,7 @@ class Interpreter:
     @visit.register
     def _(self, node: QuantumGateModifier):
         self.logger.debug(f"Quantum gate modifier: {node}")
-        if node.modifier == GateModifierName.inv:
-            if node.argument is not None:
-                raise ValueError("inv modifier does not take an argument")
-        elif node.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
+        if node.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
             if node.argument is None:
                 node.argument = IntegerLiteral(1)
             else:
