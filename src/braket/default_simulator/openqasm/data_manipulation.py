@@ -151,7 +151,7 @@ def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOpera
     result_type = resolve_result_type(lhs, rhs)
     func = operator_maps[result_type].get(op)
     if not func:
-        raise TypeError(f"Invalid operator {op} for {result_type.__name__}")
+        raise TypeError(f"Invalid operator {op.name} for {result_type.__name__}")
     return func(lhs, rhs)
 
 
@@ -159,7 +159,7 @@ def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
     expression_type = type(expression)
     func = operator_maps[expression_type].get(op)
     if not func:
-        raise TypeError(f"Invalid operator {op} for {expression_type.__name__}")
+        raise TypeError(f"Invalid operator {op.name} for {expression_type.__name__}")
     return func(expression)
 
 
@@ -187,35 +187,21 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
         return IntegerLiteral(int(variable.value))
     if into == RealLiteral:
         return RealLiteral(float(variable.value))
-    raise TypeError(f"Cannot cast {type(variable)} into {into}.")
+    raise TypeError(f"Cannot cast {type(variable).__name__} into {into.__name__}.")
 
 
 @cast_to.register
-def _(into: BitType, variable: LiteralType):
+def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral]):
     if not into.size:
         return cast_to(BooleanLiteral, variable)
     else:
         size = into.size.value
-    if isinstance(variable, StringLiteral):
-        try:
-            assert len(variable.value) == size
-            int(f"0b{variable.value}", base=2)
-            return convert_string_to_bool_array(variable)
-        except (AssertionError, ValueError, TypeError):
-            raise ValueError(
-                f"Invalid string to initialize bit register of size {size}: " f"'{variable.value}'"
-            )
-    elif isinstance(variable, ArrayLiteral):
-        if (
-            not all(isinstance(x, BooleanLiteral) for x in variable.values)
-            or len(variable.values) != size
-        ):
-            raise ValueError(f"Invalid array to cast to bit register of size {size}.")
-        return ArrayLiteral(deepcopy(variable.values))
-    else:
-        raise ValueError(
-            f"Invalid value to initialize bit register of size {size}: " f"'{variable}'"
-        )
+    if (
+        not all(isinstance(x, BooleanLiteral) for x in variable.values)
+        or len(variable.values) != size
+    ):
+        raise ValueError(f"Invalid array to cast to bit register of size {size}: {variable}.")
+    return ArrayLiteral(deepcopy(variable.values))
 
 
 @cast_to.register
@@ -241,7 +227,7 @@ def _(into: UintType, variable: LiteralType):
 @cast_to.register
 def _(into: FloatType, variable: LiteralType):
     if into.size.value not in (16, 32, 64, 128):
-        raise ValueError("Float size must be one of {{16, 32, 64, 128}}.")
+        raise ValueError("Float size must be one of {16, 32, 64, 128}.")
     value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
     return RealLiteral(value)
 
@@ -318,23 +304,7 @@ def convert_discrete_set_to_list(discrete_set: DiscreteSet):
 
 
 @singledispatch
-def _get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
-    if isinstance(index, DiscreteSet):
-        return DiscreteSet([get_elements(value, [i]) for i in index.values])
-    for i, ix in enumerate(index):
-        if is_literal(ix):
-            value = value.values[ix.value]
-        elif isinstance(ix, RangeDefinition):
-            value = ArrayLiteral(value.values[convert_range_def_to_slice(ix)])
-        else:
-            raise NotImplementedError("unknown index format")
-    return value
-
-
-@singledispatch
 def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
-    if not index:
-        return value
     if isinstance(index, DiscreteSet):
         return DiscreteSet([get_elements(value, [i]) for i in index.values])
     first_index = convert_index(index[0])
@@ -358,12 +328,6 @@ def _(value: IntegerLiteral, index: IndexElement, type_width: int):
     return get_elements(binary_rep, index)
 
 
-@get_elements.register
-def _(value: StringLiteral, index: IndexElement, type_width=None):
-    binary_rep = ArrayLiteral([BooleanLiteral(x == "1") for x in value.value])
-    return get_elements(binary_rep, index)
-
-
 def create_empty_array(dims):
     if len(dims) == 1:
         return ArrayLiteral([None] * dims[0].value)
@@ -373,7 +337,7 @@ def create_empty_array(dims):
 def convert_index(index):
     if isinstance(index, RangeDefinition):
         return convert_range_def_to_slice(index)
-    elif isinstance(index, IntegerLiteral):
+    else:  # IntegerLiteral:
         return index.value
 
 
@@ -387,7 +351,7 @@ def unwrap_var_type(var_type):
             return ArrayType(var_type.base_type, var_type.dimensions[1:])
         else:
             return var_type.base_type
-    elif isinstance(var_type, BitType):
+    else:  # isinstance(var_type, BitType):
         return BoolType()
 
 
@@ -445,13 +409,11 @@ def invert(quantum_op: Union[QuantumGate, QuantumPhase]):
     new_modifiers = [
         mod for mod in get_modifiers(quantum_op) if mod.modifier != GateModifierName.inv
     ]
-    if quantum_op.name.name == "U":
-        param_values = np.array([arg.value for arg in quantum_op.arguments])
-        new_param_values = -param_values[[0, 2, 1]]
-        new_params = [RealLiteral(value) for value in new_param_values]
-        return QuantumGate(new_modifiers, Identifier("U"), new_params, quantum_op.qubits)
-    else:
-        raise ValueError("This shouldn't be visiting non-U gates")
+    assert quantum_op.name.name == "U", "This shouldn't be visiting non-U gates"
+    param_values = np.array([arg.value for arg in quantum_op.arguments])
+    new_param_values = -param_values[[0, 2, 1]]
+    new_params = [RealLiteral(value) for value in new_param_values]
+    return QuantumGate(new_modifiers, Identifier("U"), new_params, quantum_op.qubits)
 
 
 @invert.register
@@ -551,14 +513,22 @@ def _(identifier: IndexedIdentifier):
     name = identifier.name.name
     indices = identifier.indices
 
-    if len(indices) > 1 or len(indices[0]) > 1:
+    if len(indices) > 1:
         raise NotImplementedError("nested indices string conversion")
 
-    index = indices[0][0]
+    index = indices[0]
+
+    if isinstance(index, DiscreteSet):
+        raise NotImplementedError("Discrete set indexed identifier string")
+    else:
+        index = index[0]
+
+    if len(indices[0]) > 1:
+        raise NotImplementedError("nested indices string conversion")
 
     if isinstance(index, IntegerLiteral):
         index_string = index.value
-    elif isinstance(index, RangeDefinition):
+    else:  # RangeDefinition
         start = index.start
         stop = index.end
         start_string = start.value if start is not None else ""
@@ -567,8 +537,6 @@ def _(identifier: IndexedIdentifier):
             index_string = f"{start_string}:{index.step.value}:{stop_string}"
         else:
             index_string = f"{start_string}:{stop_string}"
-    else:
-        raise NotImplementedError("Discrete set indexed identifier string")
 
     return f"{name}[{index_string}]"
 
@@ -584,7 +552,7 @@ def is_supported_output_type(var_type):
 
 @singledispatch
 def convert_to_output(value):
-    raise NotImplementedError(f"converting {value} to output")
+    raise TypeError(f"converting {value} to output")
 
 
 @convert_to_output.register(IntegerLiteral)
@@ -604,7 +572,7 @@ def _(value: ArrayLiteral):
 
 @singledispatch
 def wrap_value_into_literal(value):
-    raise NotImplementedError(f"Wrapping {value}")
+    raise TypeError(f"Cannot wrap {value} into literal type")
 
 
 @wrap_value_into_literal.register

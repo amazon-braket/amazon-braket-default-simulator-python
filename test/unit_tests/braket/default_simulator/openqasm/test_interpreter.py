@@ -11,13 +11,14 @@ from openqasm3.ast import (
     BooleanLiteral,
     FloatType,
     Identifier,
+    IndexedIdentifier,
     IntegerLiteral,
     IntType,
     QuantumGate,
     QuantumGateDefinition,
     RealLiteral,
     StringLiteral,
-    UintType, IndexedIdentifier,
+    UintType,
 )
 
 from braket.default_simulator.openqasm import data_manipulation
@@ -496,6 +497,8 @@ def test_indexed_identifier():
     output array[uint[8], 2] threes;
     output bit[4] fz;
 
+    array[uint[8], 2, 2] empty;
+
     fz = "0000";
     array[uint[8], 2, 2] multi_dim = {{0, 0}, {0, 0}};
     array[uint[8], 4] single_dim = {0, 0, 0, 0};
@@ -587,6 +590,12 @@ def test_indexed_identifier():
                     ),
                 ]
             ),
+        ]
+    )
+    assert context.get_value("empty") == ArrayLiteral(
+        [
+            ArrayLiteral([None, None]),
+            ArrayLiteral([None, None]),
         ]
     )
 
@@ -746,11 +755,11 @@ def test_gate_inv():
     gate all_3_inv a {
         inv @ inv @ inv @ all_3 a;
     }
-    
+
     gate apply_phase a {
         gphase(1);
     }
-    
+
     gate apply_phase_inv a {
         inv @ gphase(1);
     }
@@ -764,7 +773,7 @@ def test_gate_inv():
 
     all_3 q;
     all_3_inv q;
-    
+
     apply_phase q;
     apply_phase_inv q;
     """
@@ -938,7 +947,7 @@ def test_gphase():
     gate cx c, a { ctrl @ x c, a; }
     gate phase c, a {
         gphase(π/2);
-        ctrl(two) @ gphase(π) c, a;
+        pow(1) @ ctrl(two) @ gphase(π) c, a;
     }
     gate h a { U(π/2, 0, π) a; }
 
@@ -950,13 +959,24 @@ def test_gphase():
 
     gphase(π);
     inv @ gphase(2 * π);
-    ctrl @ gphase(2 * π) qs[0];
+    negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
     """
     context = Interpreter().run(qasm)
 
     assert np.allclose(
         context.quantum_simulator.state_vector, [-1 / np.sqrt(2) * 1j, 0, 0, 1 / np.sqrt(2) * 1j]
     )
+
+
+def test_no_neg_ctrl_phase():
+    qasm = """
+    gate bad_phase a {
+        negctrl @ gphase(π/2);
+    }
+    """
+    no_negctrl = "negctrl modifier undefined for gphase operation"
+    with pytest.raises(ValueError, match=no_negctrl):
+        Interpreter().run(qasm)
 
 
 def test_if():
@@ -1237,7 +1257,7 @@ def test_missing_input():
         Interpreter().run(qasm, shots=1)
 
 
-@pytest.mark.parametrize("bad_index", ("[0:1][0]", "[0][1]", "[0, 1]",  "[0:1, 1]"))
+@pytest.mark.parametrize("bad_index", ("[0:1][0]", "[0][1]", "[0, 1]", "[0:1, 1]"))
 def test_qubit_multidim(bad_index):
     qasm = f"""
     qubit q;
@@ -1249,7 +1269,7 @@ def test_qubit_multidim(bad_index):
 
 
 def test_qubit_multi_dim_index():
-    """ this verifies that interpreter handles q[0, 1] correctly """
+    """this verifies that interpreter handles q[0, 1] correctly"""
     multi_dim_qubit = "Cannot index multiple dimensions for qubits."
     with pytest.raises(IndexError, match=multi_dim_qubit):
         QubitTable().get_by_identifier(
@@ -1258,3 +1278,59 @@ def test_qubit_multi_dim_index():
                 [[IntegerLiteral(0), IntegerLiteral(1)]],
             )
         )
+
+
+@pytest.mark.parametrize("bad_op", ("x - y", "-x"))
+def test_invalid_op(bad_op):
+    qasm = f"""
+    bit[4] x = "0001";
+    bit[4] y = "1010";
+
+    bit[4] z = {bad_op};
+    """
+    invalid_op = "Invalid operator - for ArrayLiteral"
+    with pytest.raises(TypeError, match=invalid_op):
+        Interpreter().run(qasm, shots=1)
+
+
+def test_bad_bit_declaration():
+    qasm = """
+    bit[4] x = "00010";
+    """
+    invalid_op = re.escape(
+        "Invalid array to cast to bit register of size 4: "
+        "ArrayLiteral(span=None, values=[BooleanLiteral(span=None, value=False), "
+        "BooleanLiteral(span=None, value=False), BooleanLiteral(span=None, value=False), "
+        "BooleanLiteral(span=None, value=True), BooleanLiteral(span=None, value=False)])."
+    )
+    with pytest.raises(ValueError, match=invalid_op):
+        Interpreter().run(qasm, shots=1)
+
+
+def test_bad_float_declaration():
+    qasm = """
+    float[4] x = π;
+    """
+    invalid_float = "Float size must be one of {16, 32, 64, 128}."
+    with pytest.raises(ValueError, match=invalid_float):
+        Interpreter().run(qasm, shots=1)
+
+
+def test_bad_update_values_declaration_non_array():
+    qasm = """
+    bit[4] x = "0000";
+    x[0:1] = 1;
+    """
+    invalid_value = "Must assign Array type to slice"
+    with pytest.raises(ValueError, match=invalid_value):
+        Interpreter().run(qasm, shots=1)
+
+
+def test_bad_update_values_declaration_size_mismatch():
+    qasm = """
+    bit[4] x = "0000";
+    x[0:1] = "111";
+    """
+    invalid_value = "Dimensions do not match: 2, 3"
+    with pytest.raises(ValueError, match=invalid_value):
+        Interpreter().run(qasm, shots=1)

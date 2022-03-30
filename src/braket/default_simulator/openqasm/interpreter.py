@@ -155,7 +155,7 @@ class Interpreter:
                 node.init_expression,
             )
             self.context.specify_output(node.identifier.name)
-        else:   # IOKeyword.input:
+        else:  # IOKeyword.input:
             if node.identifier.name not in self.context.inputs:
                 raise NameError(f"Missing input variable '{node.identifier.name}'.")
             init_value = dm.wrap_value_into_literal(self.context.inputs[node.identifier.name])
@@ -332,7 +332,7 @@ class Interpreter:
         for qubit in node.qubits:
             if isinstance(qubit, Identifier):
                 qubits.append(self.visit(qubit))
-            else:   # IndexedIdentifier
+            else:  # IndexedIdentifier
                 dereffed_name = self.visit(qubit.name)
                 simplified_indices = self.visit(qubit.indices)
                 qubits.append(IndexedIdentifier(dereffed_name, simplified_indices))
@@ -363,7 +363,7 @@ class Interpreter:
                 for statement in deepcopy(gate_def.body):
                     if isinstance(statement, QuantumGate):
                         self.visit(statement)
-                    else:   # QuantumPhase
+                    else:  # QuantumPhase
                         phase = statement.argument.value
                         self.context.apply_phase(phase, qubits)
                 return QuantumGate(node.modifiers, node.name, arguments, qubits)

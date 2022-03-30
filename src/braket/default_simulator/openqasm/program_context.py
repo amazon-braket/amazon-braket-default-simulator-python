@@ -78,7 +78,6 @@ class QubitTable(Table):
         When identifier is an IndexedIdentifier, function returns a tuple
         corresponding to the elements referenced by the indexed identifier.
         """
-        print(identifier)
         name = identifier.name.name
         if len(identifier.indices) != 1:
             raise IndexError("Cannot index multiple dimensions for qubits.")
