@@ -7,6 +7,7 @@ import numpy as np
 from openqasm3.ast import (
     ArrayLiteral,
     ArrayType,
+    AssignmentOperator,
     BinaryOperator,
     BitType,
     BooleanLiteral,
@@ -165,6 +166,10 @@ def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
 
 def evaluate_constant(constant: Constant):
     return RealLiteral(constant_map.get(constant.name))
+
+
+def get_operator_of_assignment_operator(assignment_operator: AssignmentOperator):
+    return getattr(BinaryOperator, assignment_operator.name[:-1])
 
 
 """
@@ -387,6 +392,51 @@ def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
     else:
         return cast_to(var_type, value)
 
+
+#
+# def get_elements_(value: ArrayLiteral, update_indices):
+#     # current value will be an ArrayLiteral or StringLiteral
+#     if isinstance(value, ArrayLiteral):
+#         first_ix = convert_index(update_indices[0])
+#
+#         if isinstance(first_ix, int):
+#             return get_elements(
+#                 value.values[first_ix],
+#                 update_indices[1:],
+#             )
+#         else:
+#             index_as_range = range(len(value.values))[first_ix]
+#             elements = []
+#             for ix, sub_value in zip(index_as_range, value.values):
+#                 elements.append(get_elements(
+#                     value.values[ix],
+#                     update_indices[1:],
+#                 ))
+#         return elements
+#     else:
+#         raise NotImplementedError("get_elements")
+#
+#
+# def get_elements(value: ArrayLiteral, indices: List[IndexElement], type_width=None):
+#     if not indices:
+#         return value
+#     index = indices[0]
+#     if isinstance(index, DiscreteSet):
+#         new_value = ArrayLiteral([get_elements(value, [i]) for i in index.values])
+#         new_indices = indices[1:]
+#     else:
+#         first_index = convert_index(index[0])
+#         if isinstance(first_index, int):
+#             new_value = ArrayLiteral(value.values[first_index])
+#         else:  # slice
+#             index_as_range = range(len(value.values))[first_index]
+#             new_value = ArrayLiteral([value.values[ix] for ix in index_as_range])
+#         if not index[1:]:
+#             new_indices = indices[1:]
+#         else:
+#             new_indices = [index[1:]] + indices[1:]
+#     return get_elements(new_value, new_indices)
+#
 
 """
 Helper functions for working with OpenQASM quantum directives

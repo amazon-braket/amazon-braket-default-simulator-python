@@ -17,6 +17,7 @@ from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.openqasm import data_manipulation as dm
 from braket.default_simulator.openqasm.data_manipulation import (
     LiteralType,
+    get_elements,
     get_identifier_string,
     singledispatchmethod,
 )
@@ -250,6 +251,24 @@ class VariableTable(ScopedTable):
     def get_value(self, name: str):
         return self[name]
 
+    @singledispatchmethod
+    def get_value_by_identifier(self, identifier: Identifier):
+        """
+        Convenience method to get value with a possibly indexed identifier.
+        """
+        return self[identifier.name]
+
+    @get_value_by_identifier.register
+    def _(self, identifier: IndexedIdentifier):
+        """
+        When identifier is an IndexedIdentifier, function returns an ArrayLiteral
+        corresponding to the elements referenced by the indexed identifier.
+        """
+        name = identifier.name.name
+        value = self[name]
+        indices = dm.flatten_indices(identifier.indices)
+        return get_elements(value, indices)
+
     def update_value(
         self,
         name: str,
@@ -398,6 +417,9 @@ class ProgramContext:
 
     def get_value(self, name: str):
         return self.variable_table.get_value(name)
+
+    def get_value_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]):
+        return self.variable_table.get_value_by_identifier(identifier)
 
     def is_initialized(self, name: str):
         return self.variable_table.is_initalized(name)

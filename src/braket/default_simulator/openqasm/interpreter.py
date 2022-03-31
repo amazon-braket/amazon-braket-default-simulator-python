@@ -44,16 +44,25 @@ from openqasm3.ast import (
     WhileLoop,
 )
 
-from braket.default_simulator.openqasm import data_manipulation as dm
 from braket.default_simulator.openqasm.data_manipulation import (
+    cast_to,
+    convert_range_def_to_range,
+    convert_string_to_bool_array,
     convert_to_gate,
+    create_empty_array,
+    evaluate_binary_expression,
+    evaluate_constant,
+    evaluate_unary_expression,
     get_ctrl_modifiers,
+    get_elements,
+    get_operator_of_assignment_operator,
     invert,
     is_controlled,
     is_inverted,
     is_literal,
     modify_body,
     singledispatchmethod,
+    wrap_value_into_literal,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext
 
@@ -133,13 +142,14 @@ class Interpreter:
     def _(self, node: ClassicalDeclaration):
         self.logger.debug(f"Classical declaration: {node}")
         node_type = self.visit(node.type)
+        print(node)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
-            init_value = dm.cast_to(node.type, init_expression)
+            init_value = cast_to(node.type, init_expression)
         elif isinstance(node_type, ArrayType):
-            init_value = dm.create_empty_array(node_type.dimensions)
+            init_value = create_empty_array(node_type.dimensions)
         elif isinstance(node_type, BitType) and node_type.size:
-            init_value = dm.create_empty_array([node_type.size])
+            init_value = create_empty_array([node_type.size])
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
@@ -158,7 +168,7 @@ class Interpreter:
         else:  # IOKeyword.input:
             if node.identifier.name not in self.context.inputs:
                 raise NameError(f"Missing input variable '{node.identifier.name}'.")
-            init_value = dm.wrap_value_into_literal(self.context.inputs[node.identifier.name])
+            init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
             declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
         self.visit(declaration)
         return declaration
@@ -168,7 +178,7 @@ class Interpreter:
         self.logger.debug(f"Constant declaration: {node}")
         node_type = self.visit(node.type)
         init_expression = self.visit(node.init_expression)
-        init_value = dm.cast_to(node.type, init_expression)
+        init_value = cast_to(node.type, init_expression)
         self.context.declare_variable(node.identifier.name, node_type, init_value, const=True)
 
     @visit.register
@@ -177,7 +187,7 @@ class Interpreter:
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
-            return dm.evaluate_binary_expression(lhs, rhs, node.op)
+            return evaluate_binary_expression(lhs, rhs, node.op)
         else:
             return BinaryExpression(node.op, lhs, rhs)
 
@@ -186,20 +196,20 @@ class Interpreter:
         self.logger.debug(f"Unary expression: {node}")
         expression = self.visit(node.expression)
         if is_literal(expression):
-            return dm.evaluate_unary_expression(expression, node.op)
+            return evaluate_unary_expression(expression, node.op)
         else:
             return UnaryExpression(node.op, expression)
 
     @visit.register
     def _(self, node: Cast):
         self.logger.debug(f"Cast: {node}")
-        casted = [dm.cast_to(node.type, self.visit(arg)) for arg in node.arguments]
+        casted = [cast_to(node.type, self.visit(arg)) for arg in node.arguments]
         return casted[0] if len(casted) == 1 else casted
 
     @visit.register
     def _(self, node: Constant):
         self.logger.debug(f"Constant: {node}")
-        return dm.evaluate_constant(node)
+        return evaluate_constant(node)
 
     @visit.register(BooleanLiteral)
     @visit.register(IntegerLiteral)
@@ -212,7 +222,7 @@ class Interpreter:
     def _(self, node: Identifier):
         if not self.context.is_initialized(node.name):
             raise NameError(f"Identifier '{node.name}' is not initialized.")
-        return self.context.get_value(node.name)
+        return self.context.get_value_by_identifier(node)
 
     @visit.register
     def _(self, node: QubitDeclaration):
@@ -239,7 +249,10 @@ class Interpreter:
                 for element in index:
                     element = self.visit(element)
                     indices.append([element])
-        return IndexedIdentifier(name, indices)
+        updated = IndexedIdentifier(name, indices)
+        if name.name not in self.context.qubit_mapping:
+            return self.context.get_value_by_identifier(updated)
+        return updated
 
     @visit.register
     def _(self, node: RangeDefinition):
@@ -258,7 +271,7 @@ class Interpreter:
                 type_width = self.context.get_type(node.collection.name).size.value
         collection = self.visit(node.collection)
         index = self.visit(node.index)
-        return dm.get_elements(collection, index, type_width)
+        return get_elements(collection, index, type_width)
 
     @visit.register
     def _(self, node: QuantumGateDefinition):
@@ -411,26 +424,29 @@ class Interpreter:
     @visit.register
     def _(self, node: StringLiteral):
         self.logger.debug(f"String Literal: {node}")
-        return dm.convert_string_to_bool_array(node)
+        return convert_string_to_bool_array(node)
 
     @visit.register
     def _(self, node: ClassicalAssignment):
         self.logger.debug(f"Classical assignment: {node}")
-        if node.op != getattr(AssignmentOperator, "="):
-            raise NotImplementedError("= only")
-        rvalue = self.visit(node.rvalue)
+        if node.op == getattr(AssignmentOperator, "="):
+            rvalue = self.visit(node.rvalue)
+        else:
+            op = get_operator_of_assignment_operator(node.op)
+            binary_expression = BinaryExpression(op, node.lvalue, node.rvalue)
+            rvalue = self.visit(binary_expression)
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
         else:
-            rvalue = dm.cast_to(self.context.get_type(lvalue.name), rvalue)
+            rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)
         return node
 
     @visit.register
     def _(self, node: BranchingStatement):
         self.logger.debug(f"Branching statement: {node}")
-        condition = dm.cast_to(BooleanLiteral, self.visit(node.condition))
+        condition = cast_to(BooleanLiteral, self.visit(node.condition))
         block = node.if_block if condition.value else node.else_block
         for statement in block:
             self.visit(statement)
@@ -441,7 +457,7 @@ class Interpreter:
         self.logger.debug(f"For in loop: {node}")
         index = self.visit(node.set_declaration)
         if isinstance(index, RangeDefinition):
-            index_values = [IntegerLiteral(x) for x in dm.convert_range_def_to_range(index)]
+            index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
         # DiscreteSet
         else:
             index_values = index.values
@@ -456,7 +472,7 @@ class Interpreter:
     @visit.register
     def _(self, node: WhileLoop):
         self.logger.debug(f"While loop: {node}")
-        while dm.cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
+        while cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
             self.visit(deepcopy(node.block))
         return node
 

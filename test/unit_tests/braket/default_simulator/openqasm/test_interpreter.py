@@ -1131,22 +1131,27 @@ def test_cannot_measure_analytic():
         Interpreter().run(qasm)
 
 
-@pytest.mark.xfail(reason="not implemented yet")
 def test_assignment_operators():
     qasm = """
     output int[16] x;
+    output bit[4] xs;
+
     x = 0;
+    xs = "0000";
 
     x += 1; // 1
     x *= 2; // 2
     x /= 2; // 1
     x -= 5; // -4
+
+    xs[2:] |= "11";
     """
     context = Interpreter().run(qasm, shots=1)
     assert shot_data_is_equal(
         context.shot_data,
         {
             "x": [-4],
+            "xs": ["0011"],
         },
     )
 
