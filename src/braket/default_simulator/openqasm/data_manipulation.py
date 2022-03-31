@@ -1,6 +1,6 @@
 import warnings
 from copy import deepcopy
-from functools import singledispatch
+from functools import singledispatch, update_wrapper
 from typing import List, Union
 
 import numpy as np
@@ -597,3 +597,19 @@ def _(value: bool):
 @wrap_value_into_literal.register(list)
 def _(value):
     return ArrayLiteral([wrap_value_into_literal(v) for v in value])
+
+
+"""
+Python 3.7 compatibility
+"""
+
+
+def singledispatchmethod(func):
+    dispatcher = singledispatch(func)
+
+    def wrapper(*args, **kw):
+        return dispatcher.dispatch(args[1].__class__)(*args, **kw)
+
+    wrapper.register = dispatcher.register
+    update_wrapper(wrapper, func)
+    return wrapper

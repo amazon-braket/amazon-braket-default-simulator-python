@@ -1,4 +1,3 @@
-from functools import singledispatchmethod
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
@@ -16,7 +15,11 @@ from openqasm3.ast import (
 
 from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.openqasm import data_manipulation as dm
-from braket.default_simulator.openqasm.data_manipulation import LiteralType, get_identifier_string
+from braket.default_simulator.openqasm.data_manipulation import (
+    LiteralType,
+    get_identifier_string,
+    singledispatchmethod,
+)
 from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
 
 
