@@ -179,10 +179,10 @@ class QuantumSimulator:
                 Default: range(self.num_qubits).
         """
         target = self.resolve_target(target)
-        tensorized_target = self.get_tensorized_indices(target)
+        tensorized_target = self._get_tensorized_indices(target)
         self._state_tensor[tensorized_target] *= np.exp(phase * 1j)
 
-    def get_tensorized_indices(
+    def _get_tensorized_indices(
         self, target: Optional[Union[int, Sequence[int]]] = None
     ) -> np.ndarray:
         """

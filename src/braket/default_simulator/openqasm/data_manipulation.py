@@ -129,12 +129,12 @@ operator_maps = {
     },
 }
 
-type_hierarchy = [
+type_hierarchy = (
     BooleanLiteral,
     IntegerLiteral,
     RealLiteral,
     ArrayLiteral,
-]
+)
 
 constant_map = {
     ConstantName.pi: np.pi,
@@ -143,12 +143,12 @@ constant_map = {
 }
 
 
-def resolve_result_type(x: Expression, y: Expression):
+def resolve_type_hierarchy(x: Expression, y: Expression):
     return max(type(x), type(y), key=type_hierarchy.index)
 
 
 def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOperator):
-    result_type = resolve_result_type(lhs, rhs)
+    result_type = resolve_type_hierarchy(lhs, rhs)
     func = operator_maps[result_type].get(op)
     if not func:
         raise TypeError(f"Invalid operator {op.name} for {result_type.__name__}")
@@ -194,8 +194,7 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
 def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral]):
     if not into.size:
         return cast_to(BooleanLiteral, variable)
-    else:
-        size = into.size.value
+    size = into.size.value
     if (
         not all(isinstance(x, BooleanLiteral) for x in variable.values)
         or len(variable.values) != size

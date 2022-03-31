@@ -1,6 +1,6 @@
 from copy import deepcopy
 from dataclasses import fields
-from functools import singledispatchmethod
+from functools import singledispatch, update_wrapper
 from logging import Logger, getLogger
 from typing import Any, Dict, List, Optional
 
@@ -56,6 +56,18 @@ from braket.default_simulator.openqasm.data_manipulation import (
     modify_body,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext
+
+
+# for Python 3.7 compatibility
+def singledispatchmethod(func):
+    dispatcher = singledispatch(func)
+
+    def wrapper(*args, **kw):
+        return dispatcher.dispatch(args[1].__class__)(*args, **kw)
+
+    wrapper.register = dispatcher.register
+    update_wrapper(wrapper, func)
+    return wrapper
 
 
 class Interpreter:
