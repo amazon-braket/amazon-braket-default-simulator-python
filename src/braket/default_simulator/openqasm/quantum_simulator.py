@@ -45,7 +45,7 @@ class QuantumSimulator:
     @property
     def state_tensor(self):
         """state tensor of shape (2, 2,..., 2) with a dimension for each qubit"""
-        return self._state_tensor.flatten()
+        return self._state_tensor
 
     def add_qubits(self, num_qubits: int):
         """
@@ -179,25 +179,8 @@ class QuantumSimulator:
                 Default: range(self.num_qubits).
         """
         target = self.resolve_target(target)
-        tensorized_target = self._get_tensorized_indices(target)
-        self._state_tensor[tensorized_target] *= np.exp(phase * 1j)
-
-    def _get_tensorized_indices(
-        self, target: Optional[Union[int, Sequence[int]]] = None
-    ) -> np.ndarray:
-        """
-        Map indices in the state vector to indices in the state tensor.
-
-        Args:
-            target (Optional[Union[int, Sequence[int]]]): Qubit target.
-                Default: range(self.num_qubits).
-
-        Returns:
-            np.ndarray: An array of multi-dimensional indices corresponding to the
-                specified elements' locations in the state tensor.
-        """
-        target = self.resolve_target(target)
-        return np.stack(np.unravel_index(target, self.state_tensor.shape), axis=-1)
+        unitary = np.exp(phase * 1j) * np.eye(2 ** len(target))
+        self._state_tensor = multiply_matrix(self._state_tensor, unitary, target)
 
     @staticmethod
     def generate_u(theta, phi, lambda_):

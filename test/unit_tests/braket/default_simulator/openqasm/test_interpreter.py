@@ -648,8 +648,6 @@ def test_gate_def():
             )
         ],
     )
-    print("def")
-    print(context.get_gate_definition("x2"))
     assert context.get_gate_definition("x2") == QuantumGateDefinition(
         name=Identifier("x2"),
         arguments=[Identifier("p")],
@@ -958,13 +956,13 @@ def test_gphase():
     phase qs[0], qs[1];
 
     gphase(π);
-    inv @ gphase(2 * π);
+    inv @ gphase(π / 2);
     negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
     """
     context = Interpreter().run(qasm)
-
+    print(context.quantum_simulator.state_vector)
     assert np.allclose(
-        context.quantum_simulator.state_vector, [-1 / np.sqrt(2) * 1j, 0, 0, 1 / np.sqrt(2) * 1j]
+        context.quantum_simulator.state_vector, [-1j / np.sqrt(2), 0, 0, 1j / np.sqrt(2)]
     )
 
 
@@ -1262,7 +1260,7 @@ def test_missing_input():
         Interpreter().run(qasm, shots=1)
 
 
-@pytest.mark.parametrize("bad_index", ("[0:1][0]", "[0][1]", "[0, 1]", "[0:1, 1]"))
+@pytest.mark.parametrize("bad_index", ("[0:1][0][0]", "[0][0][1]", "[0, 1][0]", "[0:1, 1][0]"))
 def test_qubit_multidim(bad_index):
     qasm = f"""
     qubit q;
@@ -1339,3 +1337,58 @@ def test_bad_update_values_declaration_size_mismatch():
     invalid_value = "Dimensions do not match: 2, 3"
     with pytest.raises(ValueError, match=invalid_value):
         Interpreter().run(qasm, shots=1)
+
+
+def test_gate_qubit_reg(stdgates):
+    qasm = """
+    include "stdgates.inc";
+    qubit[3] qs;
+    qubit q;
+
+    x qs[{0, 2}];
+    ctrl @ rx(π/2) qs, q;
+    """
+    context = Interpreter().run(qasm, shots=0)
+    assert np.allclose(
+        context.quantum_simulator.state_vector,
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -1 / np.sqrt(2),
+            -1j / np.sqrt(2),
+            0,
+            0,
+            0,
+            0,
+        ],
+    )
+
+
+def test_gate_qubit_reg_size_mismatch(stdgates):
+    qasm = """
+    include "stdgates.inc";
+    qubit[3] qs;
+    qubit q;
+
+    x qs[{0, 2}];
+    ctrl @ rx(π/2) qs, qs[0:1];
+    """
+    size_mismatch = "Qubit registers must all be the same length."
+    with pytest.raises(ValueError, match=size_mismatch):
+        Interpreter().run(qasm, shots=0)
+
+
+def test_pragma():
+    qasm = """
+    qubit q;
+    #pragma {"braket result probability q";}
+    """
+    Interpreter().run(qasm, shots=0)

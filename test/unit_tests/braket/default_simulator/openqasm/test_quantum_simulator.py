@@ -148,3 +148,17 @@ def test_sample():
         assert np.array_equal(sample, [False, False, False]) or np.array_equal(
             sample, [True, False, True]
         )
+
+
+def test_state():
+    quantum_simulator = QuantumSimulator()
+    quantum_simulator.add_qubits(3)
+
+    assert np.array_equal(
+        quantum_simulator.state_vector,
+        [1, 0, 0, 0, 0, 0, 0, 0],
+    )
+    assert np.array_equal(
+        quantum_simulator.state_tensor,
+        [[[1, 0], [0, 0]], [[0, 0], [0, 0]]],
+    )

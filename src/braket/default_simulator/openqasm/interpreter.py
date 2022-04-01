@@ -3,6 +3,7 @@ from dataclasses import fields
 from logging import Logger, getLogger
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 from openqasm3 import parse
 from openqasm3.ast import (
     ArrayType,
@@ -26,6 +27,7 @@ from openqasm3.ast import (
     IntegerLiteral,
     IODeclaration,
     IOKeyword,
+    Pragma,
     Program,
     QASMNode,
     QuantumGate,
@@ -339,7 +341,8 @@ class Interpreter:
     def _(self, node: QuantumGate):
         self.logger.debug(f"Quantum gate: {node}")
         gate_name = node.name.name
-        arguments = [self.visit(arg) for arg in node.arguments]
+        arguments = self.visit(node.arguments)
+        modifiers = self.visit(node.modifiers)
 
         qubits = []
         for qubit in node.qubits:
@@ -350,20 +353,48 @@ class Interpreter:
                 simplified_indices = self.visit(qubit.indices)
                 qubits.append(IndexedIdentifier(dereffed_name, simplified_indices))
 
+        qubit_lengths = np.array(
+            [self.context.qubit_mapping.get_qubit_size(qubit) for qubit in qubits]
+        )
+        register_lengths = qubit_lengths[qubit_lengths > 1]
+        if register_lengths.size:
+            reg_length = register_lengths[0]
+            if not np.all(register_lengths == reg_length):
+                raise ValueError("Qubit registers must all be the same length.")
+
+            for i in range(reg_length):
+                indexed_qubits = deepcopy(qubits)
+                for j, qubit_length in enumerate(qubit_lengths):
+                    if qubit_length > 1:
+                        if isinstance(indexed_qubits[j], Identifier):
+                            indexed_qubits[j] = IndexedIdentifier(
+                                indexed_qubits[j], [IntegerLiteral(i)]
+                            )
+                        else:
+                            indexed_qubits[j].indices.append([IntegerLiteral(i)])
+                gate_call = QuantumGate(
+                    modifiers,
+                    node.name,
+                    arguments,
+                    indexed_qubits,
+                )
+                self.visit(gate_call)
+            return node
+
         if gate_name == "U":
             # to simplify indices
             qubits = self.visit(qubits)
             self.context.execute_builtin_unitary(
                 arguments,
                 qubits,
-                node.modifiers,
+                modifiers,
             )
-            return QuantumGate(node.modifiers, node.name, arguments, qubits)
+            return QuantumGate(modifiers, node.name, arguments, qubits)
         else:
             with self.context.enter_scope():
                 gate_def = self.context.get_gate_definition(gate_name)
 
-                ctrl_modifiers = get_ctrl_modifiers(node.modifiers)
+                ctrl_modifiers = get_ctrl_modifiers(modifiers)
                 num_ctrl = sum(mod.argument.value for mod in ctrl_modifiers)
                 gate_qubits = qubits[num_ctrl:]
 
@@ -377,9 +408,9 @@ class Interpreter:
                     if isinstance(statement, QuantumGate):
                         self.visit(statement)
                     else:  # QuantumPhase
-                        phase = statement.argument.value
+                        phase = self.visit(statement.argument).value
                         self.context.apply_phase(phase, qubits)
-                return QuantumGate(node.modifiers, node.name, arguments, qubits)
+                return QuantumGate(modifiers, node.name, arguments, qubits)
 
     @visit.register
     def _(self, node: QuantumPhase):
@@ -483,3 +514,8 @@ class Interpreter:
             included = f.read()
             parsed = parse(included)
             self.visit(parsed)
+
+    @visit.register
+    def _(self, node: Pragma):
+        self.logger.debug(f"Pragma: {node}")
+        print(f"Pragma: {node}")

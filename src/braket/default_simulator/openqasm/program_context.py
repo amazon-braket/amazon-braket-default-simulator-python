@@ -83,20 +83,30 @@ class QubitTable(Table):
         corresponding to the elements referenced by the indexed identifier.
         """
         name = identifier.name.name
-        if len(identifier.indices) != 1:
-            raise IndexError("Cannot index multiple dimensions for qubits.")
-        index = identifier.indices[0]
-        if isinstance(index, list):
-            if len(index) != 1:
+        primary_index = identifier.indices[0]
+        if isinstance(primary_index, list):
+            if len(primary_index) != 1:
                 raise IndexError("Cannot index multiple dimensions for qubits.")
-            index = identifier.indices[0][0]
-        if isinstance(index, IntegerLiteral):
-            return (self[name][index.value],)
-        elif isinstance(index, RangeDefinition):
-            return tuple(np.array(self[name])[dm.convert_range_def_to_slice(index)])
+            primary_index = primary_index[0]
+        if isinstance(primary_index, IntegerLiteral):
+            target = (self[name][primary_index.value],)
+        elif isinstance(primary_index, RangeDefinition):
+            target = tuple(np.array(self[name])[dm.convert_range_def_to_slice(primary_index)])
         # Discrete set
         else:
-            return tuple(np.array(self[name])[dm.convert_discrete_set_to_list(index)])
+            target = tuple(np.array(self[name])[dm.convert_discrete_set_to_list(primary_index)])
+
+        if len(identifier.indices) == 1:
+            return target
+        elif len(identifier.indices) == 2:
+            # used for gate calls on registers, index will be IntegerLiteral
+            secondary_index = identifier.indices[1][0].value
+            return (target[secondary_index],)
+        else:
+            raise IndexError("Cannot index multiple dimensions for qubits.")
+
+    def get_qubit_size(self, identifier: Union[Identifier, IndexedIdentifier]):
+        return len(self.get_by_identifier(identifier))
 
 
 class ScopedTable(Table):
