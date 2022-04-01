@@ -125,11 +125,9 @@ def controlled_unitary(unitary, neg=False):
     upper_left, bottom_right = np.eye(unitary.shape[0]), unitary
     if neg:
         upper_left, bottom_right = bottom_right, upper_left
-    return np.block([
-        [upper_left, np.zeros_like(unitary)],
-        [np.zeros_like(unitary), bottom_right],
-    ])
-
-
-def inverse_unitary(unitary):
-    return unitary.conj().T
+    return np.block(
+        [
+            [upper_left, np.zeros_like(unitary)],
+            [np.zeros_like(unitary), bottom_right],
+        ]
+    )

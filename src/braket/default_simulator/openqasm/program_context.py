@@ -358,7 +358,6 @@ class ProgramContext:
 
             if dm.is_supported_output_type(var_type) and (not self.outputs or self.is_output(name)):
                 value = self.get_value(name)
-                print(value)
                 output = dm.convert_to_output(value)
                 current_shot_data[name] = np.array([output])
 

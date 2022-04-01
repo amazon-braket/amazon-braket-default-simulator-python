@@ -322,7 +322,7 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_si
     result = simulator.run(ir, qubit_count=2, shots=0, batch_size=batch_size)
     assert len(result.resultTypes) == 2
     assert result.resultTypes[0] == ResultTypeValue.construct(
-        type=ir.results[0], value={"11": complex(1 / 2 ** 0.5)}
+        type=ir.results[0], value={"11": complex(1 / 2**0.5)}
     )
     assert result.resultTypes[1] == ResultTypeValue.construct(
         type=ir.results[1], value=(0 if targets else [0, 0])

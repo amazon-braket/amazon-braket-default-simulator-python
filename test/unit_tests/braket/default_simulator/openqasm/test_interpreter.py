@@ -1390,13 +1390,13 @@ def test_gate_qubit_reg_shots(stdgates):
     qasm = """
     include "stdgates.inc";
     output bit[4] x;
-    
+
     qubit[3] qs;
     qubit q;
 
     h q;
     cx q, qs;
-    
+
     x[0] = measure q;
     x[1:] = measure qs;
     """
