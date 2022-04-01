@@ -51,7 +51,10 @@ class InstallOQ3Command(distutils.cmd.Command):
             )
             os.chdir(curdir)
         classpath = f".:/usr/local/lib/antlr-4.9-complete.jar:{os.environ.get('CLASSPATH')}"
-        antlr4 = f'java -Xmx500M -cp "/usr/local/lib/antlr-4.9-complete.jar:{classpath}" org.antlr.v4.Tool'
+        antlr4 = (
+            f'java -Xmx500M -cp "/usr/local/lib/antlr-4.9-complete.jar:{classpath}" '
+            f"org.antlr.v4.Tool"
+        )
 
         if not Path("openqasm").is_dir():
             subprocess.check_call(["git", "clone", "git@github.com:Qiskit/openqasm.git"])
@@ -113,7 +116,11 @@ setup(
             "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
-            "braket_oq3_sv = braket.default_simulator.openqasm_state_vector_simulator:OpenQASMStateVectorSimulator",
+            (
+                "braket_oq3_sv = "
+                "braket.default_simulator.openqasm_state_vector_simulator:"
+                "OpenQASMStateVectorSimulator",
+            ),
         ]
     },
     extras_require={
