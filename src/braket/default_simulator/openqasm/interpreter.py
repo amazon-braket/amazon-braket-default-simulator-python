@@ -144,7 +144,6 @@ class Interpreter:
     def _(self, node: ClassicalDeclaration):
         self.logger.debug(f"Classical declaration: {node}")
         node_type = self.visit(node.type)
-        print(node)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
             init_value = cast_to(node.type, init_expression)
@@ -368,7 +367,7 @@ class Interpreter:
                     if qubit_length > 1:
                         if isinstance(indexed_qubits[j], Identifier):
                             indexed_qubits[j] = IndexedIdentifier(
-                                indexed_qubits[j], [IntegerLiteral(i)]
+                                indexed_qubits[j], [[IntegerLiteral(i)]]
                             )
                         else:
                             indexed_qubits[j].indices.append([IntegerLiteral(i)])
