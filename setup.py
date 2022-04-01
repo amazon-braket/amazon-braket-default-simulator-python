@@ -102,11 +102,11 @@ setup(
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     install_requires=[
-        "amazon-braket-schemas @ git+https://github.com/aws/amazon-braket-schemas-python-staging.git@openqasm-local-sim",
+        "amazon-braket-schemas",
         "numpy",
         "opt_einsum",
         "openqasm3",
-        "amazon-braket-sdk @ git+https://github.com/aws/amazon-braket-sdk-python-staging.git@openqasm-local-sim",
+        "amazon-braket-sdk",
     ],
     entry_points={
         "braket.simulators": [
