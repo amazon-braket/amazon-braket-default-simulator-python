@@ -1071,7 +1071,7 @@ def test_adder(adder):
 
 def test_shots(stdgates):
     bell_qasm = """
-    include "STDGATES.inc";
+    include "stdgates.inc";
 
     qubit[3] q;
     bit[3] c;
