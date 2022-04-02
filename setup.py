@@ -42,16 +42,14 @@ class InstallOQ3Command(distutils.cmd.Command):
 
     def run(self):
         """Run command."""
-        if not Path("/usr/local/lib/antlr-4.9-complete.jar").is_file():
-            curdir = os.getcwd()
-            os.chdir("/usr/local/lib")
+        curdir = os.getcwd()
+        if not Path("antlr-4.9-complete.jar").is_file():
             subprocess.check_call(
                 ["curl", "-O", "https://www.antlr.org/download/antlr-4.9-complete.jar"]
             )
-            os.chdir(curdir)
-        classpath = f".:/usr/local/lib/antlr-4.9-complete.jar:{os.environ.get('CLASSPATH')}"
+        classpath = f".:{curdir}/antlr-4.9-complete.jar:{os.environ.get('CLASSPATH')}"
         antlr4 = (
-            f'java -Xmx500M -cp "/usr/local/lib/antlr-4.9-complete.jar:{classpath}" '
+            f'java -Xmx500M -cp "{curdir}/antlr-4.9-complete.jar:{classpath}" '
             f"org.antlr.v4.Tool"
         )
 
