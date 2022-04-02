@@ -47,14 +47,19 @@ class InstallOQ3Command(distutils.cmd.Command):
             subprocess.check_call(
                 ["curl", "-O", "https://www.antlr.org/download/antlr-4.9-complete.jar"]
             )
-        classpath = f".:{curdir}/antlr-4.9-complete.jar:{os.environ.get('CLASSPATH')}"
+        classpath = str(
+            Path(
+                f".:{curdir}",
+                f"antlr-4.9-complete.jar:{os.environ.get('CLASSPATH')}",
+            )
+        )
         antlr4 = (
-            f'java -Xmx500M -cp "{curdir}/antlr-4.9-complete.jar:{classpath}" ' f"org.antlr.v4.Tool"
+            f'java -Xmx500M -cp "{str(Path(curdir, f"antlr-4.9-complete.jar:{classpath})"))}" ' f"org.antlr.v4.Tool"
         )
 
         if not Path("openqasm").is_dir():
             subprocess.check_call(["git", "clone", "https://github.com/Qiskit/openqasm.git"])
-        os.chdir("openqasm/source/grammar")
+        os.chdir(str(Path("openqasm", "source", "grammar")))
 
         subprocess.check_call(
             [
@@ -73,16 +78,16 @@ class InstallOQ3Command(distutils.cmd.Command):
             [
                 *antlr4.split(),
                 "-o",
-                "../openqasm/openqasm3/antlr",
+                str(Path(*"../openqasm/openqasm3/antlr".split("/"))),
                 "-Dlanguage=Python3",
                 "-visitor",
                 "qasm3.g4",
             ]
         )
-        os.chdir("../openqasm")
+        os.chdir(str(Path("..", "openqasm")))
         subprocess.check_call(["pip", "install", "-e", "."])
         subprocess.check_call(["pip", "install", "-e", ".[tests]"])
-        os.chdir("../../..")
+        os.chdir(str(Path(*"../../..".split("/"))))
 
 
 class BuildPyCommand(build_py):
@@ -157,6 +162,5 @@ setup(
     ],
     cmdclass={
         "install_oq3": InstallOQ3Command,
-        # "build_py": BuildPyCommand,
     },
 )
