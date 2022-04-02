@@ -54,7 +54,8 @@ class InstallOQ3Command(distutils.cmd.Command):
             )
         )
         antlr4 = (
-            f'java -Xmx500M -cp "{str(Path(curdir, f"antlr-4.9-complete.jar:{classpath})"))}" ' f"org.antlr.v4.Tool"
+            f'java -Xmx500M -cp "{str(Path(curdir, f"antlr-4.9-complete.jar:{classpath})"))}" '
+            f"org.antlr.v4.Tool"
         )
 
         if not Path("openqasm").is_dir():
