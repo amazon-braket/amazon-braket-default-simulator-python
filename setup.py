@@ -45,7 +45,6 @@ class InstallOQ3Command(distutils.cmd.Command):
         if not Path("/usr/local/lib/antlr-4.9-complete.jar").is_file():
             curdir = os.getcwd()
             os.chdir("/usr/local/lib")
-            subprocess.check_call(["cd", "/usr/local/lib"])
             subprocess.check_call(
                 ["curl", "-O", "https://www.antlr.org/download/antlr-4.9-complete.jar"]
             )
