@@ -1,6 +1,8 @@
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
+from braket.default_simulator.result_types import ResultType
+from braket.task_result import ResultTypeValue
 from openqasm3.ast import (
     ClassicalType,
     GateModifierName,
@@ -333,6 +335,7 @@ class ProgramContext:
         self.is_analytic = None
         self.outputs = set()
         self.inputs = {}
+        self.result_types = []
 
     def __repr__(self):
         return "\n\n".join(
@@ -372,6 +375,17 @@ class ProgramContext:
         if self.num_qubits:
             self.quantum_simulator.reset_qubits()
         self.clear_classical_variables()
+
+    def add_result_type(self, result_type: ResultType):
+        self.result_types.append(result_type)
+
+    def calculate_result_types(self):
+        for i, result_type in enumerate(self.result_types):
+            self.result_types[i] = ResultTypeValue.construct(
+                type=result_type,
+                value=dm.convert_to_output(result_type.calculate(self.quantum_simulator))
+            )
+
 
     def serialize_output(self):
         for name, val in self.shot_data.items():

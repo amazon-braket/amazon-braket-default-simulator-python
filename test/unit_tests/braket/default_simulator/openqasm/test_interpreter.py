@@ -1408,6 +1408,6 @@ def test_gate_qubit_reg_shots(stdgates):
 def test_pragma():
     qasm = """
     qubit q;
-    #pragma {"braket result probability q";}
+    #pragma {"braket result state_vector";}
     """
     Interpreter().run(qasm, shots=0)

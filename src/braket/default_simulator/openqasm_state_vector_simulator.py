@@ -9,7 +9,7 @@ from braket.device_schema.simulators import (
     GateModelSimulatorParadigmProperties,
 )
 from braket.ir.openqasm import Program
-from braket.task_result import AdditionalMetadata, TaskMetadata
+from braket.task_result import AdditionalMetadata, TaskMetadata, ResultTypeValue
 from braket.task_result.oq3_program_result_v1 import OQ3ProgramResult
 
 from braket.default_simulator.openqasm.interpreter import Interpreter
@@ -72,4 +72,5 @@ class OpenQASMStateVectorSimulator(BraketSimulator):
                 action=openqasm_ir,
             ),
             outputVariables={key: list(vals) for key, vals in context.shot_data.items()},
+            resultTypes=context.result_types,
         )

@@ -4,6 +4,7 @@ from logging import Logger, getLogger
 from typing import Any, Dict, List, Optional
 
 import numpy as np
+from braket.default_simulator.result_types import StateVector
 from openqasm3 import parse
 from openqasm3.ast import (
     ArrayType,
@@ -106,6 +107,8 @@ class Interpreter:
             program = self.visit(program)
             self.context.record_and_reset()
         self.context.serialize_output()
+
+        self.context.calculate_result_types()
 
         return self.context
 
@@ -517,4 +520,12 @@ class Interpreter:
     @visit.register
     def _(self, node: Pragma):
         self.logger.debug(f"Pragma: {node}")
-        print(f"Pragma: {node}")
+        pragma_string = node.statements[0].expression.value
+        self.handle_pragma(pragma_string)
+
+    def handle_pragma(self, pragma_string: str):
+        pragma = pragma_string.split()
+        if pragma[:2] == ["braket", "result"]:
+            pragma_body = pragma[2:]
+            if pragma_body == ["state_vector"]:
+                self.context.add_result_type(StateVector())

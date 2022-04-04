@@ -619,6 +619,12 @@ def _(value: ArrayLiteral):
     return np.array([convert_to_output(x) for x in value.values])
 
 
+@convert_to_output.register
+def _(value: np.ndarray):
+    """ used for ResultTypes """
+    return list(value)
+
+
 @singledispatch
 def wrap_value_into_literal(value):
     raise TypeError(f"Cannot wrap {value} into literal type")

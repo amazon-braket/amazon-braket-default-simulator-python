@@ -16,9 +16,6 @@ cx q[1], q[2];
 c = measure q;
 """
 
-inputs = {"a": 8}
-ghz = Program(source=ghz_qasm, inputs=inputs)
+ghz = Program(source=ghz_qasm)
 result = device.run(ghz, shots=10).result()
-print(result)
-
 print(result.output_variables)
