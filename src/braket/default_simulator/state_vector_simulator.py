@@ -18,11 +18,11 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceParameters,
 )
 
-from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.default_simulator.simulator import BaseLocalJaqcdSimulator
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class StateVectorSimulator(BaseLocalSimulator):
+class StateVectorSimulator(BaseLocalJaqcdSimulator):
     DEVICE_ID = "braket_sv"
 
     def initialize_simulation(self, **kwargs) -> StateVectorSimulation:

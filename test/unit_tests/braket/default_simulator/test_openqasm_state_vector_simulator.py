@@ -240,3 +240,18 @@ def test_input_output_types():
 #     #     shots=0,
 #     # )
 #     # print(result)
+
+
+# def test_results_not_supported():
+#     qasm = """
+#     include "stdgates.inc";
+#     qubit[3] q;
+#
+#     h q[0];
+#     cx q[0], q[1];
+#     cx q[1], q[2];
+#
+#     #pragma {"braket result state_vector";}
+#     """
+#     not_supported = "result type FakeStateVector is not supported by OpenQASMStateVectorSimulator"
+#     with pytest.raises(TypeError, match=not_supported)

@@ -621,7 +621,7 @@ def _(value: ArrayLiteral):
 
 @convert_to_output.register
 def _(value: np.ndarray):
-    """ used for ResultTypes """
+    """used for ResultTypes"""
     return list(value)
 
 

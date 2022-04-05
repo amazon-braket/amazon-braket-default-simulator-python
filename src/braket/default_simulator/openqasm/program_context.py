@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
-from braket.default_simulator.result_types import ResultType
+from braket.ir.jaqcd.program_v1 import Results
 from braket.task_result import ResultTypeValue
 from openqasm3.ast import (
     ClassicalType,
@@ -24,6 +24,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     singledispatchmethod,
 )
 from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
+from braket.default_simulator.result_types import ResultType
 
 
 class Table:
@@ -336,6 +337,7 @@ class ProgramContext:
         self.outputs = set()
         self.inputs = {}
         self.result_types = []
+        self.results = []
 
     def __repr__(self):
         return "\n\n".join(
@@ -376,16 +378,17 @@ class ProgramContext:
             self.quantum_simulator.reset_qubits()
         self.clear_classical_variables()
 
-    def add_result_type(self, result_type: ResultType):
-        self.result_types.append(result_type)
+    def add_result(self, result: Results):
+        self.results.append(result)
 
     def calculate_result_types(self):
-        for i, result_type in enumerate(self.result_types):
-            self.result_types[i] = ResultTypeValue.construct(
-                type=result_type,
-                value=dm.convert_to_output(result_type.calculate(self.quantum_simulator))
+        for result_type in self.result_types:
+            self.results.append(
+                ResultTypeValue.construct(
+                    type=result_type,
+                    value=dm.convert_to_output(result_type.calculate(self.quantum_simulator)),
+                )
             )
-
 
     def serialize_output(self):
         for name, val in self.shot_data.items():
