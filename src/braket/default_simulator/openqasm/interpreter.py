@@ -4,7 +4,7 @@ from logging import Logger, getLogger
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from braket.ir.jaqcd import Probability, StateVector
+from braket.ir.jaqcd import Amplitude, DensityMatrix, Probability, StateVector
 from openqasm3 import parse
 from openqasm3.ast import (
     ArrayType,
@@ -529,7 +529,7 @@ class Interpreter:
             pragma_body = pragma[2:]
             if pragma_body == ["state_vector"]:
                 self.context.add_result(StateVector())
-            if pragma_body[0] == "probability":
+            elif pragma_body[0] == "probability":
                 if len(pragma_body) > 1:
                     parsed_statement = parse(f"{' '.join(pragma_body)};")
                     parsed_target = parsed_statement.statements[0].qubits[0]
@@ -537,5 +537,20 @@ class Interpreter:
                 else:
                     targets = None
                 self.context.add_result(Probability(targets=targets))
+            elif pragma_body[0] == "amplitude":
+                states_str = " ".join(pragma_body[1:])
+                # separate and unquote state words
+                states = [quoted_state[1:-1] for quoted_state in states_str.split(", ")]
+                self.context.add_result(Amplitude(states=states))
+            elif pragma_body[0] == "density_matrix":
+                if len(pragma_body) > 1:
+                    parsed_statement = parse(f"{' '.join(pragma_body)};")
+                    parsed_target = parsed_statement.statements[0].qubits[0]
+                    targets = self.context.get_qubits(parsed_target)
+                else:
+                    targets = None
+                self.context.add_result(DensityMatrix(targets=targets))
+            else:
+                raise ValueError(f"Not a valid Braket result pragma: {pragma_string}")
         else:
             raise ValueError(f"This pragma is not supported: {pragma_string}")

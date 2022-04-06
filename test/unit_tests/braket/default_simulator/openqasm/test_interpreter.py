@@ -1420,3 +1420,12 @@ def test_unsupported_pragma():
     not_supported = "This pragma is not supported: something_unexpected"
     with pytest.raises(ValueError, match=not_supported):
         Interpreter().run(qasm)
+
+
+def test_unsupported_pragma():
+    qasm = """
+    #pragma {"braket result something_unexpected";}
+    """
+    invalid = "Not a valid Braket result pragma: braket result something_unexpected"
+    with pytest.raises(ValueError, match=invalid):
+        Interpreter().run(qasm)

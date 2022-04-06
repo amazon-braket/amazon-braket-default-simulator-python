@@ -33,6 +33,11 @@ class QuantumSimulator:
         return self._num_qubits
 
     @property
+    def qubit_count(self):
+        """for integration with Simulator interface"""
+        return self._num_qubits
+
+    @property
     def state_vector(self):
         """state vector of shape (2 ** num_qubits,)"""
         return self._state_tensor.flatten()
@@ -46,6 +51,11 @@ class QuantumSimulator:
     def state_tensor(self):
         """state tensor of shape (2, 2,..., 2) with a dimension for each qubit"""
         return self._state_tensor
+
+    @property
+    def density_matrix(self):
+        """density matrix representation"""
+        return np.outer(self.state_vector, self.state_vector.conj())
 
     def add_qubits(self, num_qubits: int):
         """

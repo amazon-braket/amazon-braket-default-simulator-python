@@ -68,6 +68,8 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
                     supportedOperations=[],
                     supportedResultTypes=[
                         {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                        {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+                        {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                         {"name": "Probability", "minShots": 0, "maxShots": max_shots},
                     ],
                     version=["1"],

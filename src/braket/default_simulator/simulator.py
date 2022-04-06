@@ -71,12 +71,12 @@ class BaseLocalSimulator(BraketSimulator):
     def run(
         self, ir: Union[JaqcdProgram, OQ3Program, Problem], *args, **kwargs
     ) -> Union[GateModelTaskResult, AnnealingTaskResult, OQ3ProgramResult]:
-        """ run method """
+        """run method"""
 
     @property
     @abstractmethod
     def properties(self) -> DeviceCapabilities:
-        """ simulator properties """
+        """simulator properties"""
 
     def _validate_ir_results_compatibility(self, results):
         if results:

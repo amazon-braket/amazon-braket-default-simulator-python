@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from braket.devices import LocalSimulator
-from braket.ir.jaqcd import Probability, StateVector
+from braket.ir.jaqcd import Amplitude, Probability, StateVector
 from braket.ir.openqasm import Program
 
 
@@ -254,12 +254,20 @@ def test_result_types_analytic(stdgates):
     #pragma {"braket result probability q[0]";}
     #pragma {"braket result probability q[0:1]";}
     #pragma {"braket result probability q[{0, 2, 1}]";}
+    #pragma {'braket result amplitude "001", "110"';}
+    #pragma {"braket result density_matrix";}
+    #pragma {"braket result density_matrix q";}
+    #pragma {"braket result density_matrix q[0]";}
+    #pragma {"braket result density_matrix q[0:1]";}
+    #pragma {"braket result density_matrix q[{0, 2, 1}]";}
     """
     device = LocalSimulator("braket_oq3_sv")
     program = Program(source=qasm)
     result = device.run(program, shots=0).result()
     for rt in result.result_types:
         print(f"{rt.type}: {rt.value}")
+
+    print(np.abs(np.round(result.result_types[11].value, 2).astype(float)))
 
     result_types = result.result_types
 
@@ -269,6 +277,7 @@ def test_result_types_analytic(stdgates):
     assert result_types[3].type == Probability(targets=(0,))
     assert result_types[4].type == Probability(targets=(0, 1))
     assert result_types[5].type == Probability(targets=(0, 2, 1))
+    assert result_types[6].type == Amplitude(states=("001", "110"))
 
     assert np.allclose(
         result_types[0].value,
@@ -294,6 +303,43 @@ def test_result_types_analytic(stdgates):
         result_types[5].value,
         [0, 0, 0.5, 0, 0, 0.5, 0, 0],
     )
+    assert np.isclose(result_types[6].value["001"], 1 / np.sqrt(2))
+    assert np.isclose(result_types[6].value["110"], 1 / np.sqrt(2))
+    assert np.allclose(
+        result_types[7].value,
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+    )
+    assert np.allclose(
+        result_types[8].value,
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+    )
+    assert np.allclose(
+        result_types[9].value,
+        np.eye(2) * 0.5,
+    )
+    assert np.allclose(
+        result_types[10].value,
+        [[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]],
+    )
+    # todo: behavior for DensityMatrix(0, 2, 1) undetermined
 
 
 # def test_shots_equals_zero(hadamard_adder):
