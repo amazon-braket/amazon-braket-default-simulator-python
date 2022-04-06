@@ -1417,8 +1417,6 @@ def test_unsupported_pragma():
     qasm = """
     #pragma {"something_unexpected";}
     """
-    not_supported = (
-        "This pragma is not supported: something_unexpected"
-    )
+    not_supported = "This pragma is not supported: something_unexpected"
     with pytest.raises(ValueError, match=not_supported):
         Interpreter().run(qasm)

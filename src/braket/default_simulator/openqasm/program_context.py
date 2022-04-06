@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
-from braket.task_result import ResultTypeValue
 from openqasm3.ast import (
     ClassicalType,
     GateModifierName,
