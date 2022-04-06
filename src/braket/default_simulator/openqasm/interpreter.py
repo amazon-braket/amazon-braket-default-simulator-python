@@ -4,7 +4,7 @@ from logging import Logger, getLogger
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from braket.ir.jaqcd import StateVector
+from braket.ir.jaqcd import Probability, StateVector
 from openqasm3 import parse
 from openqasm3.ast import (
     ArrayType,
@@ -109,8 +109,6 @@ class Interpreter:
             program = self.visit(program)
             self.context.record_and_reset()
         self.context.serialize_output()
-
-        self.context.calculate_result_types()
 
         return self.context
 
@@ -531,3 +529,13 @@ class Interpreter:
             pragma_body = pragma[2:]
             if pragma_body == ["state_vector"]:
                 self.context.add_result(StateVector())
+            if pragma_body[0] == "probability":
+                if len(pragma_body) > 1:
+                    parsed_statement = parse(f"{' '.join(pragma_body)};")
+                    parsed_target = parsed_statement.statements[0].qubits[0]
+                    targets = self.context.get_qubits(parsed_target)
+                else:
+                    targets = None
+                self.context.add_result(Probability(targets=targets))
+        else:
+            raise ValueError(f"This pragma is not supported: {pragma_string}")

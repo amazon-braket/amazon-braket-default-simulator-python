@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from braket.devices import LocalSimulator
+from braket.ir.jaqcd import Probability, StateVector
 from braket.ir.openqasm import Program
 
 
@@ -230,6 +231,68 @@ def test_input_output_types():
     assert np.array_equal(
         result.output_variables["array_out"],
         [[1, 2, 3, 4]] * 2,
+    )
+
+
+def test_result_types_analytic(stdgates):
+    qasm = """
+    include "stdgates.inc";
+
+    qubit[3] q;
+    bit[3] c;
+
+    h q[0];
+    cx q[0], q[1];
+    cx q[1], q[2];
+    x q[2];
+
+    // { 001: .5, 110: .5 }
+
+    #pragma {"braket result state_vector";}
+    #pragma {"braket result probability";}
+    #pragma {"braket result probability q";}
+    #pragma {"braket result probability q[0]";}
+    #pragma {"braket result probability q[0:1]";}
+    #pragma {"braket result probability q[{0, 2, 1}]";}
+    """
+    device = LocalSimulator("braket_oq3_sv")
+    program = Program(source=qasm)
+    result = device.run(program, shots=0).result()
+    for rt in result.result_types:
+        print(f"{rt.type}: {rt.value}")
+
+    result_types = result.result_types
+
+    assert result_types[0].type == StateVector()
+    assert result_types[1].type == Probability()
+    assert result_types[2].type == Probability(targets=(0, 1, 2))
+    assert result_types[3].type == Probability(targets=(0,))
+    assert result_types[4].type == Probability(targets=(0, 1))
+    assert result_types[5].type == Probability(targets=(0, 2, 1))
+
+    assert np.allclose(
+        result_types[0].value,
+        [0, 1 / np.sqrt(2), 0, 0, 0, 0, 1 / np.sqrt(2), 0],
+    )
+    assert np.allclose(
+        result_types[1].value,
+        [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+    )
+    assert np.allclose(
+        result_types[2].value,
+        [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+    )
+    assert np.allclose(
+        result_types[3].value,
+        [0.5, 0.5],
+    )
+    assert np.allclose(
+        result_types[4].value,
+        [0.5, 0, 0, 0.5],
+    )
+    assert np.allclose(
+        result_types[5].value,
+        [0, 0, 0.5, 0, 0, 0.5, 0, 0],
     )
 
 

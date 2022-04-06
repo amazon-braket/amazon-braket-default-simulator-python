@@ -48,7 +48,7 @@ operator_maps = {
         getattr(BinaryOperator, "*"): lambda x, y: IntegerLiteral(x.value * y.value),
         getattr(BinaryOperator, "/"): lambda x, y: IntegerLiteral(x.value // y.value),
         getattr(BinaryOperator, "%"): lambda x, y: IntegerLiteral(x.value % y.value),
-        getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value**y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value ** y.value),
         getattr(UnaryOperator, "-"): lambda x: IntegerLiteral(-x.value),
         # returns bool
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
@@ -64,7 +64,7 @@ operator_maps = {
         getattr(BinaryOperator, "-"): lambda x, y: RealLiteral(x.value - y.value),
         getattr(BinaryOperator, "*"): lambda x, y: RealLiteral(x.value * y.value),
         getattr(BinaryOperator, "/"): lambda x, y: RealLiteral(x.value / y.value),
-        getattr(BinaryOperator, "**"): lambda x, y: RealLiteral(x.value**y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: RealLiteral(x.value ** y.value),
         getattr(UnaryOperator, "-"): lambda x: RealLiteral(-x.value),
         # returns bool
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
@@ -219,7 +219,7 @@ def _(into: IntType, variable: LiteralType):
 
 @cast_to.register
 def _(into: UintType, variable: LiteralType):
-    limit = 2**into.size.value
+    limit = 2 ** into.size.value
     value = int(variable.value) % limit
     if value != variable.value:
         warnings.warn(
@@ -617,12 +617,6 @@ def _(value: ArrayLiteral):
     if isinstance(value.values[0], BooleanLiteral):
         return convert_bool_array_to_string(value).value
     return np.array([convert_to_output(x) for x in value.values])
-
-
-@convert_to_output.register
-def _(value: np.ndarray):
-    """used for ResultTypes"""
-    return list(value)
 
 
 @singledispatch

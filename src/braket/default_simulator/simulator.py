@@ -67,15 +67,16 @@ class BaseLocalSimulator(BraketSimulator):
     def device_action_type(self):
         """DeviceActionType"""
 
+    @abstractmethod
     def run(
         self, ir: Union[JaqcdProgram, OQ3Program, Problem], *args, **kwargs
     ) -> Union[GateModelTaskResult, AnnealingTaskResult, OQ3ProgramResult]:
-        # self._validate_ir_results_compatibility(ir)
-        pass
+        """ run method """
 
     @property
+    @abstractmethod
     def properties(self) -> DeviceCapabilities:
-        pass
+        """ simulator properties """
 
     def _validate_ir_results_compatibility(self, results):
         if results:
@@ -99,14 +100,23 @@ class BaseLocalSimulator(BraketSimulator):
                 if rt.type in ["sample"]:
                     raise ValueError("sample can only be specified when shots>0")
                 if rt.type == "amplitude":
-                    BaseLocalJaqcdSimulator._validate_amplitude_states(rt.states, qubit_count)
+                    BaseLocalSimulator._validate_amplitude_states(rt.states, qubit_count)
         elif shots and results:
             for rt in results:
                 if rt.type in ["statevector", "amplitude", "densitymatrix"]:
                     raise ValueError(
-                        "statevector, amplitude and densitymatrix result"
+                        "statevector, amplitude and densitymatrix result "
                         "types not available when shots>0"
                     )
+
+    @staticmethod
+    def _validate_amplitude_states(states: List[str], qubit_count: int):
+        for state in states:
+            if len(state) != qubit_count:
+                raise ValueError(
+                    f"Length of state {state} for result type amplitude"
+                    f" must be equivalent to number of qubits {qubit_count} in circuit"
+                )
 
     @staticmethod
     def _translate_result_types(results) -> List[ResultType]:
@@ -222,15 +232,6 @@ You need to use the density matrix simulator: LocalSimulator("braket_dm").'
 Consider running this circuit on the state vector simulator: LocalSimulator("default") \
 for a better user experience.'
             )
-
-    @staticmethod
-    def _validate_amplitude_states(states: List[str], qubit_count: int):
-        for state in states:
-            if len(state) != qubit_count:
-                raise ValueError(
-                    f"Length of state {state} for result type amplitude"
-                    f" must be equivalent to number of qubits {qubit_count} in circuit"
-                )
 
     @staticmethod
     def _validate_operation_qubits(operations: List[Operation]) -> None:

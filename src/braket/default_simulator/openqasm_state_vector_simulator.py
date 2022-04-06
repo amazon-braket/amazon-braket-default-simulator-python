@@ -1,3 +1,5 @@
+import sys
+
 from braket.device_schema import (
     DeviceActionType,
     DeviceCapabilities,
@@ -21,12 +23,15 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
     def device_action_type(self):
         return DeviceActionType.OPENQASM
 
+    # def initialize_simulation(self):
+    #     # any preprocessing passes could go here
+    #     return OpenQASMStateVectorSimulation()
+
     def run(
         self,
         openqasm_ir: Program,
         shots: int = 0,
     ) -> OQ3ProgramResult:
-        super().run(openqasm_ir, shots=shots)
         if openqasm_ir.source.endswith(".qasm"):
             context = Interpreter().run_file(
                 openqasm_ir.source,
@@ -55,6 +60,7 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
 
     @property
     def properties(self) -> DeviceCapabilities:
+        max_shots = sys.maxsize
         return GateModelSimulatorDeviceCapabilities(
             action={
                 DeviceActionType.OPENQASM: OpenQASMDeviceActionProperties(
@@ -62,6 +68,7 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
                     supportedOperations=[],
                     supportedResultTypes=[
                         {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                        {"name": "Probability", "minShots": 0, "maxShots": max_shots},
                     ],
                     version=["1"],
                 ),
