@@ -76,9 +76,7 @@ def marginal_probability(
 
     # Reorder qubits to match targets
     basis_states = np.array(list(itertools.product([0, 1], repeat=len(targets))))
-    perm = np.ravel_multi_index(
-        basis_states[:, np.argsort(np.argsort(targets))].T, [2] * len(targets)
-    )
+    perm = np.ravel_multi_index(basis_states[:, np.argsort(targets)].T, [2] * len(targets))
     return marginal[perm]
 
 
@@ -104,5 +102,12 @@ def partial_trace(
     nkeep = 2 ** len(target_set)
     idx1 = [i for i in range(qubit_count)]
     idx2 = [qubit_count + i if i in target_set else i for i in range(qubit_count)]
-    tr_rho = np.einsum(density_matrix, idx1 + idx2)
-    return tr_rho.reshape(nkeep, nkeep)
+    tr_rho = np.einsum(density_matrix, idx1 + idx2).reshape(nkeep, nkeep)
+
+    # reorder qubits to match target
+    if targets:
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(targets))))
+        perm = np.ravel_multi_index(basis_states[:, np.argsort(targets)].T, [2] * len(targets))
+        tr_rho = tr_rho[:, perm]
+        tr_rho = tr_rho[perm]
+    return tr_rho
