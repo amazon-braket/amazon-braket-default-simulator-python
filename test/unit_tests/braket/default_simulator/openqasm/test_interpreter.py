@@ -1422,7 +1422,7 @@ def test_unsupported_pragma():
         Interpreter().run(qasm)
 
 
-def test_unsupported_pragma():
+def test_unsupported_result_pragma():
     qasm = """
     #pragma {"braket result something_unexpected";}
     """

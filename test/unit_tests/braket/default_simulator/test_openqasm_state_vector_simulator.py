@@ -339,7 +339,19 @@ def test_result_types_analytic(stdgates):
         result_types[10].value,
         [[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]],
     )
-    # todo: behavior for DensityMatrix(0, 2, 1) undetermined
+    assert np.allclose(
+        result_types[11].value,
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0.5, 0, 0, 0.5, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0.5, 0, 0, 0.5, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+    )
 
 
 # def test_shots_equals_zero(hadamard_adder):
