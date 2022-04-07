@@ -16,6 +16,7 @@ from openqasm3.ast import (
 
 from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.openqasm import data_manipulation as dm
+from braket.default_simulator.openqasm.braket_result_pragmas import parse_braket_pragma
 from braket.default_simulator.openqasm.data_manipulation import (
     LiteralType,
     get_elements,
@@ -377,6 +378,9 @@ class ProgramContext:
 
     def add_result(self, result: Results):
         self.results.append(result)
+
+    def parse_result_type_pragma(self, pragma_body: str):
+        return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def serialize_output(self):
         for name, val in self.shot_data.items():

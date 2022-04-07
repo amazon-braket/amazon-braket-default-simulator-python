@@ -521,7 +521,8 @@ class Interpreter:
     def _(self, node: Pragma):
         self.logger.debug(f"Pragma: {node}")
         pragma_string = node.statements[0].expression.value
-        self.handle_pragma(pragma_string)
+        self.context.add_result(self.context.parse_result_type_pragma(pragma_string))
+        # self.handle_pragma(pragma_string)
 
     def handle_pragma(self, pragma_string: str):
         pragma = pragma_string.split()
@@ -543,6 +544,14 @@ class Interpreter:
                 states = [quoted_state[1:-1] for quoted_state in states_str.split(", ")]
                 self.context.add_result(Amplitude(states=states))
             elif pragma_body[0] == "density_matrix":
+                if len(pragma_body) > 1:
+                    parsed_statement = parse(f"{' '.join(pragma_body)};")
+                    parsed_target = parsed_statement.statements[0].qubits[0]
+                    targets = self.context.get_qubits(parsed_target)
+                else:
+                    targets = None
+                self.context.add_result(DensityMatrix(targets=targets))
+            elif pragma_body[0] == "expectation":
                 if len(pragma_body) > 1:
                     parsed_statement = parse(f"{' '.join(pragma_body)};")
                     parsed_target = parsed_statement.statements[0].qubits[0]

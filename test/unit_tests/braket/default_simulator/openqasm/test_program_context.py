@@ -29,6 +29,12 @@ def test_variable_declaration():
         assert context.get_value("y") == RealLiteral(1.34)
         assert context.get_value("z") == BooleanLiteral(False)
 
+        with pytest.raises(KeyError):
+            context.get_type("a")
+
+        with pytest.raises(KeyError):
+            context.get_value("a")
+
     assert_scope_0()
 
     with context.enter_scope():

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from braket.devices import LocalSimulator
-from braket.ir.jaqcd import Amplitude, Probability, StateVector
+from braket.ir.jaqcd import Amplitude, DensityMatrix, Probability, StateVector
 from braket.ir.openqasm import Program
 
 
@@ -254,7 +254,8 @@ def test_result_types_analytic(stdgates):
     #pragma {"braket result probability q[0]";}
     #pragma {"braket result probability q[0:1]";}
     #pragma {"braket result probability q[{0, 2, 1}]";}
-    #pragma {'braket result amplitude "001", "110"';}
+    //#pragma {'braket result amplitude "001", "110"';}
+    #pragma {'braket result state_vector';}
     #pragma {"braket result density_matrix";}
     #pragma {"braket result density_matrix q";}
     #pragma {"braket result density_matrix q[0]";}
@@ -277,7 +278,12 @@ def test_result_types_analytic(stdgates):
     assert result_types[3].type == Probability(targets=(0,))
     assert result_types[4].type == Probability(targets=(0, 1))
     assert result_types[5].type == Probability(targets=(0, 2, 1))
-    assert result_types[6].type == Amplitude(states=("001", "110"))
+    # assert result_types[6].type == Amplitude(states=("001", "110"))
+    assert result_types[7].type == DensityMatrix()
+    assert result_types[8].type == DensityMatrix(targets=(0, 1, 2))
+    assert result_types[9].type == DensityMatrix(targets=(0,))
+    assert result_types[10].type == DensityMatrix(targets=(0, 1))
+    assert result_types[11].type == DensityMatrix(targets=(0, 2, 1))
 
     assert np.allclose(
         result_types[0].value,
@@ -303,8 +309,8 @@ def test_result_types_analytic(stdgates):
         result_types[5].value,
         [0, 0, 0.5, 0, 0, 0.5, 0, 0],
     )
-    assert np.isclose(result_types[6].value["001"], 1 / np.sqrt(2))
-    assert np.isclose(result_types[6].value["110"], 1 / np.sqrt(2))
+    # assert np.isclose(result_types[6].value["001"], 1 / np.sqrt(2))
+    # assert np.isclose(result_types[6].value["110"], 1 / np.sqrt(2))
     assert np.allclose(
         result_types[7].value,
         [
