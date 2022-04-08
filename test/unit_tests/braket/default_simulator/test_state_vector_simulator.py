@@ -468,6 +468,7 @@ def test_properties():
                         "cv",
                         "cy",
                         "cz",
+                        "ecr",
                         "h",
                         "i",
                         "iswap",
