@@ -50,7 +50,7 @@ class BraketPragmaNodeVisitor(BraketPragmasVisitor):
         )
         return target
 
-    def visitMultiStateResultType(self, ctx:BraketPragmasParser.MultiStateResultTypeContext):
+    def visitMultiStateResultType(self, ctx: BraketPragmasParser.MultiStateResultTypeContext):
         result_type = ctx.getChild(0).getText()
         multistate_result_type_map = {
             "amplitude": Amplitude,
@@ -58,7 +58,7 @@ class BraketPragmaNodeVisitor(BraketPragmasVisitor):
         states = self.visit(ctx.getChild(1))
         return multistate_result_type_map[result_type](states=states)
 
-    def visitMultiState(self, ctx:BraketPragmasParser.MultiStateContext):
+    def visitMultiState(self, ctx: BraketPragmasParser.MultiStateContext):
         # unquote and skip commas
         states = [x.getText()[1:-1] for x in list(ctx.getChildren())[::2]]
         return states
@@ -71,11 +71,3 @@ def parse_braket_pragma(pragma_body: str, qubit_table):
     parser = BraketPragmasParser(stream)
     tree = parser.braketPragma()
     return BraketPragmaNodeVisitor(qubit_table).visit(tree)
-
-
-# qubit_table = QubitTable()
-# qubit_table["q"] = (0, 1, 2)
-#
-# # print(parse_braket_pragma("braket result state_vector"))
-# # print(parse_braket_pragma("braket result probability"))
-# print(parse_braket_pragma("braket result probability q[0], q[2]", qubit_table))
