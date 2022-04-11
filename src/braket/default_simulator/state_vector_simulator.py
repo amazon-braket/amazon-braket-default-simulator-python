@@ -63,6 +63,7 @@ class StateVectorSimulator(BaseLocalSimulator):
                             "cv",
                             "cy",
                             "cz",
+                            "ecr",
                             "h",
                             "i",
                             "iswap",

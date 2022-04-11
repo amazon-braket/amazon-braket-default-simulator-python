@@ -65,6 +65,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                             "cy",
                             "cz",
                             "depolarizing",
+                            "ecr",
                             "generalized_amplitude_damping",
                             "h",
                             "i",
