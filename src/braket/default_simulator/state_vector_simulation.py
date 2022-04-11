@@ -59,7 +59,7 @@ class StateVectorSimulation(Simulation):
             raise ValueError(f"batch_size must be a positive integer, but {batch_size} provided")
 
         super().__init__(qubit_count=qubit_count, shots=shots)
-        initial_state = np.zeros(2**qubit_count, dtype=complex)
+        initial_state = np.zeros(2 ** qubit_count, dtype=complex)
         initial_state[0] = 1
         self._state_vector = initial_state
         self._batch_size = batch_size
@@ -106,7 +106,7 @@ class StateVectorSimulation(Simulation):
                 state_tensor, qubit_count, operations, batch_size
             )
         )
-        return np.reshape(final, 2**qubit_count)
+        return np.reshape(final, 2 ** qubit_count)
 
     def retrieve_samples(self) -> List[int]:
         return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
@@ -144,7 +144,7 @@ class StateVectorSimulation(Simulation):
         qubit_count = self._qubit_count
         with_observables = observable.apply(np.reshape(self._state_vector, [2] * qubit_count))
         return complex(
-            np.dot(self._state_vector.conj(), np.reshape(with_observables, 2**qubit_count))
+            np.dot(self._state_vector.conj(), np.reshape(with_observables, 2 ** qubit_count))
         ).real
 
     @property

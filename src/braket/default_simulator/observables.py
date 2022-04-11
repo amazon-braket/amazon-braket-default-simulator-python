@@ -343,7 +343,7 @@ class TensorProduct(Observable):
         self._factors = tuple(factors)
 
     def _pow(self, power: int) -> Observable:
-        return TensorProduct([factor**power for factor in self._factors])
+        return TensorProduct([factor ** power for factor in self._factors])
 
     @property
     def factors(self) -> Tuple[Observable]:

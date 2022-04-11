@@ -12,10 +12,16 @@ cx q[0], q[1];
 cx q[1], q[2];
 
 #pragma {"braket result state_vector";}
+#pragma {"braket result probability";}
 #pragma {"braket result probability q";}
 #pragma {"braket result probability q[1]";}
+#pragma {"braket result probability q[0:1]";}
 #pragma {"braket result amplitude '000', '111'";}
-//# pragma {"braket result expectation x(q[0]) @ z(q[1])";}
+#pragma {"braket result expectation x(q[0]) @ z(q[2]) @ h(q[1])";}
+#pragma {"braket result expectation x(q[2])";}
+#pragma {"braket result variance x(q[0]) @ z(q[2]) @ h(q[1])";}
+//#pragma {"braket result sample x(q[0]) @ z(q[2]) @ h(q[1])";}
+#pragma {"braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]";}
 """
 
 ghz = Program(source=ghz_qasm)

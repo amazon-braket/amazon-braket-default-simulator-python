@@ -61,6 +61,7 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
     @property
     def properties(self) -> DeviceCapabilities:
         max_shots = sys.maxsize
+        observables = ["x", "y", "z", "h", "i", "hermitian"]
         return GateModelSimulatorDeviceCapabilities(
             action={
                 DeviceActionType.OPENQASM: OpenQASMDeviceActionProperties(
@@ -71,6 +72,24 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
                         {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                         {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                         {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                        {
+                            "name": "Sample",
+                            "observables": observables,
+                            "minShots": 1,
+                            "maxShots": max_shots,
+                        },
+                        {
+                            "name": "Expectation",
+                            "observables": observables,
+                            "minShots": 0,
+                            "maxShots": max_shots,
+                        },
+                        {
+                            "name": "Variance",
+                            "observables": observables,
+                            "minShots": 0,
+                            "maxShots": max_shots,
+                        },
                     ],
                     version=["1"],
                 ),

@@ -1,7 +1,14 @@
 import numpy as np
 import pytest
 from braket.devices import LocalSimulator
-from braket.ir.jaqcd import Amplitude, DensityMatrix, Probability, StateVector
+from braket.ir.jaqcd import (
+    Amplitude,
+    DensityMatrix,
+    Expectation,
+    Probability,
+    StateVector,
+    Variance,
+)
 from braket.ir.openqasm import Program
 
 
@@ -254,13 +261,15 @@ def test_result_types_analytic(stdgates):
     #pragma {"braket result probability q[0]";}
     #pragma {"braket result probability q[0:1]";}
     #pragma {"braket result probability q[{0, 2, 1}]";}
-    //#pragma {'braket result amplitude "001", "110"';}
-    #pragma {'braket result state_vector';}
+    #pragma {'braket result amplitude "001", "110"';}
     #pragma {"braket result density_matrix";}
     #pragma {"braket result density_matrix q";}
     #pragma {"braket result density_matrix q[0]";}
     #pragma {"braket result density_matrix q[0:1]";}
     #pragma {"braket result density_matrix q[{0, 2, 1}]";}
+    #pragma {"braket result expectation z(q[0])";}
+    #pragma {"braket result variance x(q[0]) @ z(q[2]) @ h(q[1])";}
+    #pragma {"braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]";}
     """
     device = LocalSimulator("braket_oq3_sv")
     program = Program(source=qasm)
@@ -278,12 +287,18 @@ def test_result_types_analytic(stdgates):
     assert result_types[3].type == Probability(targets=(0,))
     assert result_types[4].type == Probability(targets=(0, 1))
     assert result_types[5].type == Probability(targets=(0, 2, 1))
-    # assert result_types[6].type == Amplitude(states=("001", "110"))
+    assert result_types[6].type == Amplitude(states=("001", "110"))
     assert result_types[7].type == DensityMatrix()
     assert result_types[8].type == DensityMatrix(targets=(0, 1, 2))
     assert result_types[9].type == DensityMatrix(targets=(0,))
     assert result_types[10].type == DensityMatrix(targets=(0, 1))
     assert result_types[11].type == DensityMatrix(targets=(0, 2, 1))
+    assert result_types[12].type == Expectation(observable=("z",), targets=(0,))
+    assert result_types[13].type == Variance(observable=("x", "z", "h"), targets=(0, 2, 1))
+    assert result_types[14].type == Expectation(
+        observable=([[[0, 0], [0, -1]], [[0, 1], [0, 0]]],),
+        targets=(0,),
+    )
 
     assert np.allclose(
         result_types[0].value,
@@ -309,8 +324,8 @@ def test_result_types_analytic(stdgates):
         result_types[5].value,
         [0, 0, 0.5, 0, 0, 0.5, 0, 0],
     )
-    # assert np.isclose(result_types[6].value["001"], 1 / np.sqrt(2))
-    # assert np.isclose(result_types[6].value["110"], 1 / np.sqrt(2))
+    assert np.isclose(result_types[6].value["001"], 1 / np.sqrt(2))
+    assert np.isclose(result_types[6].value["110"], 1 / np.sqrt(2))
     assert np.allclose(
         result_types[7].value,
         [
@@ -358,7 +373,23 @@ def test_result_types_analytic(stdgates):
             [0, 0, 0, 0, 0, 0, 0, 0],
         ],
     )
+    assert np.allclose(result_types[12].value, 0)
+    assert np.allclose(result_types[13].value, 1)
+    assert np.allclose(result_types[14].value, 0)
 
+
+def test_invalid_stanard_observable_target():
+    qasm = """
+    qubit[2] qs;
+    #pragma {"braket result variance x(qs)";}
+    """
+    device = LocalSimulator("braket_oq3_sv")
+    program = Program(source=qasm)
+
+    must_be_one_qubit = "Standard observable target must be exactly 1 qubit."
+
+    with pytest.raises(ValueError, match=must_be_one_qubit):
+        device.run(program, shots=0).result()
 
 # def test_shots_equals_zero(hadamard_adder):
 #     device = LocalSimulator("braket_oq3_sv")

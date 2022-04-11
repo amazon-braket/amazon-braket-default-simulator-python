@@ -59,6 +59,46 @@ class BraketPragmasVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by BraketPragmasParser#observableResultType.
+    def visitObservableResultType(self, ctx:BraketPragmasParser.ObservableResultTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#observable.
+    def visitObservable(self, ctx:BraketPragmasParser.ObservableContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#standardObservable.
+    def visitStandardObservable(self, ctx:BraketPragmasParser.StandardObservableContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#tensorProductObservable.
+    def visitTensorProductObservable(self, ctx:BraketPragmasParser.TensorProductObservableContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#hermitianObservable.
+    def visitHermitianObservable(self, ctx:BraketPragmasParser.HermitianObservableContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#observableResultTypeName.
+    def visitObservableResultTypeName(self, ctx:BraketPragmasParser.ObservableResultTypeNameContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#standardObservableName.
+    def visitStandardObservableName(self, ctx:BraketPragmasParser.StandardObservableNameContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#complex.
+    def visitComplex(self, ctx:BraketPragmasParser.ComplexContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by BraketPragmasParser#program.
     def visitProgram(self, ctx:BraketPragmasParser.ProgramContext):
         return self.visitChildren(ctx)

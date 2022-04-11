@@ -8,7 +8,7 @@ braketPragma
     ;
 
 braketResultPragma
-    : BRAKET RESULT (noArgResultType | optionalMultiTargetResultType | multiStateResultType)
+    : BRAKET RESULT (noArgResultType | optionalMultiTargetResultType | multiStateResultType | observableResultType)
     ;
 
 noArgResultType
@@ -44,6 +44,47 @@ multiState
     : StringLiteral (COMMA StringLiteral)
     ;
 
+observableResultType
+    : observableResultTypeName observable
+    ;
+
+observable
+    : standardObservable
+    | tensorProductObservable
+    | hermitianObservable
+    ;
+
+standardObservable
+    : standardObservableName
+    | standardObservableName LPAREN indexedIdentifier RPAREN
+    ;
+
+tensorProductObservable
+    : (standardObservable | hermitianObservable) AT observable
+    ;
+
+hermitianObservable
+    : HERMITIAN LPAREN LBRACKET LBRACKET complex COMMA complex RBRACKET COMMA LBRACKET complex COMMA complex RBRACKET RBRACKET RPAREN indexedIdentifier
+    ;
+
+observableResultTypeName
+    : EXPECTATION
+    | VARIANCE
+    | SAMPLE
+    ;
+
+standardObservableName
+    : X
+    | Y
+    | Z
+    | I
+    | H
+    ;
+
+complex
+    : neg=MINUS? value=(RealNumber | Integer | ImagNumber)
+    ;
+
 BRAKET: 'braket';
 RESULT: 'result';
 
@@ -51,3 +92,15 @@ STATE_VECTOR: 'state_vector';
 PROBABILITY: 'probability';
 DENSITY_MATRIX: 'density_matrix';
 AMPLITUDE: 'amplitude';
+EXPECTATION: 'expectation';
+VARIANCE: 'variance';
+SAMPLE: 'sample';
+
+X: 'x';
+Y: 'y';
+Z: 'z';
+I: 'i';
+H: 'h';
+HERMITIAN: 'hermitian';
+
+AT: '@';

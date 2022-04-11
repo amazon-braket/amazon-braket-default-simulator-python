@@ -2,6 +2,7 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 
+from braket.default_simulator import Observable
 from braket.default_simulator.linalg_utils import marginal_probability, multiply_matrix
 
 
@@ -206,3 +207,10 @@ class QuantumSimulator:
                 ],
             ]
         )
+
+    def expectation(self, observable: Observable) -> float:
+        qubit_count = self.num_qubits
+        with_observables = observable.apply(np.reshape(self.state_vector, [2] * qubit_count))
+        return complex(
+            np.dot(self.state_vector.conj(), np.reshape(with_observables, 2 ** qubit_count))
+        ).real

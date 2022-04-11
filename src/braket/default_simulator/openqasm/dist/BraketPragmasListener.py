@@ -98,6 +98,78 @@ class BraketPragmasListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by BraketPragmasParser#observableResultType.
+    def enterObservableResultType(self, ctx:BraketPragmasParser.ObservableResultTypeContext):
+        pass
+
+    # Exit a parse tree produced by BraketPragmasParser#observableResultType.
+    def exitObservableResultType(self, ctx:BraketPragmasParser.ObservableResultTypeContext):
+        pass
+
+
+    # Enter a parse tree produced by BraketPragmasParser#observable.
+    def enterObservable(self, ctx:BraketPragmasParser.ObservableContext):
+        pass
+
+    # Exit a parse tree produced by BraketPragmasParser#observable.
+    def exitObservable(self, ctx:BraketPragmasParser.ObservableContext):
+        pass
+
+
+    # Enter a parse tree produced by BraketPragmasParser#standardObservable.
+    def enterStandardObservable(self, ctx:BraketPragmasParser.StandardObservableContext):
+        pass
+
+    # Exit a parse tree produced by BraketPragmasParser#standardObservable.
+    def exitStandardObservable(self, ctx:BraketPragmasParser.StandardObservableContext):
+        pass
+
+
+    # Enter a parse tree produced by BraketPragmasParser#tensorProductObservable.
+    def enterTensorProductObservable(self, ctx:BraketPragmasParser.TensorProductObservableContext):
+        pass
+
+    # Exit a parse tree produced by BraketPragmasParser#tensorProductObservable.
+    def exitTensorProductObservable(self, ctx:BraketPragmasParser.TensorProductObservableContext):
+        pass
+
+
+    # Enter a parse tree produced by BraketPragmasParser#hermitianObservable.
+    def enterHermitianObservable(self, ctx:BraketPragmasParser.HermitianObservableContext):
+        pass
+
+    # Exit a parse tree produced by BraketPragmasParser#hermitianObservable.
+    def exitHermitianObservable(self, ctx:BraketPragmasParser.HermitianObservableContext):
+        pass
+
+
+    # Enter a parse tree produced by BraketPragmasParser#observableResultTypeName.
+    def enterObservableResultTypeName(self, ctx:BraketPragmasParser.ObservableResultTypeNameContext):
+        pass
+
+    # Exit a parse tree produced by BraketPragmasParser#observableResultTypeName.
+    def exitObservableResultTypeName(self, ctx:BraketPragmasParser.ObservableResultTypeNameContext):
+        pass
+
+
+    # Enter a parse tree produced by BraketPragmasParser#standardObservableName.
+    def enterStandardObservableName(self, ctx:BraketPragmasParser.StandardObservableNameContext):
+        pass
+
+    # Exit a parse tree produced by BraketPragmasParser#standardObservableName.
+    def exitStandardObservableName(self, ctx:BraketPragmasParser.StandardObservableNameContext):
+        pass
+
+
+    # Enter a parse tree produced by BraketPragmasParser#complex.
+    def enterComplex(self, ctx:BraketPragmasParser.ComplexContext):
+        pass
+
+    # Exit a parse tree produced by BraketPragmasParser#complex.
+    def exitComplex(self, ctx:BraketPragmasParser.ComplexContext):
+        pass
+
+
     # Enter a parse tree produced by BraketPragmasParser#program.
     def enterProgram(self, ctx:BraketPragmasParser.ProgramContext):
         pass
