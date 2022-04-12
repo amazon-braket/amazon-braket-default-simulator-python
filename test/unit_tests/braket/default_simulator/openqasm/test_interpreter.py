@@ -1413,19 +1413,30 @@ def test_pragma():
     Interpreter().run(qasm, shots=0)
 
 
-# def test_unsupported_pragma():
-#     qasm = """
-#     #pragma {"something_unexpected";}
-#     """
-#     not_supported = "This pragma is not supported: something_unexpected"
-#     with pytest.raises(ValueError, match=not_supported):
-#         Interpreter().run(qasm)
-#
-#
-# def test_unsupported_result_pragma():
-#     qasm = """
-#     #pragma {"braket result something_unexpected";}
-#     """
-#     invalid = "Not a valid Braket result pragma: braket result something_unexpected"
-#     with pytest.raises(ValueError, match=invalid):
-#         Interpreter().run(qasm)
+def test_subroutine():
+    qasm = """
+    const int[8] n = 4;
+    def parity(bit[n] cin) -> bit {
+      bit c = false;
+      for i in [0: n - 1] {
+        c ^= cin[i];
+      }
+      return c;
+    }
+
+    bit[4] c = "1011";
+    bit p = parity(c);
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("p") == BooleanLiteral(True)
+
+
+def test_undefined_subroutine():
+    qasm = """
+    const int[8] n = 4;
+    bit[4] c = "1011";
+    bit p = parity(c);
+    """
+    subroutine_undefined = "Subroutine parity is not defined."
+    with pytest.raises(NameError, match=subroutine_undefined):
+        Interpreter().run(qasm)

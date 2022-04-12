@@ -391,6 +391,7 @@ def test_invalid_stanard_observable_target():
     with pytest.raises(ValueError, match=must_be_one_qubit):
         device.run(program, shots=0).result()
 
+
 # def test_shots_equals_zero(hadamard_adder):
 #     device = LocalSimulator("braket_oq3_sv")
 #     # result = device.run(

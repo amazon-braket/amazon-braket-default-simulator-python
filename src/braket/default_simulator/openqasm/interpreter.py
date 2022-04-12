@@ -7,6 +7,7 @@ import numpy as np
 from braket.ir.jaqcd import Amplitude, DensityMatrix, Probability, StateVector
 from openqasm3 import parse
 from openqasm3.ast import (
+    AccessControl,
     ArrayType,
     AssignmentOperator,
     BinaryExpression,
@@ -20,6 +21,7 @@ from openqasm3.ast import (
     ConstantDeclaration,
     DiscreteSet,
     ForInLoop,
+    FunctionCall,
     GateModifierName,
     Identifier,
     Include,
@@ -42,7 +44,9 @@ from openqasm3.ast import (
     QubitDeclaration,
     RangeDefinition,
     RealLiteral,
+    ReturnStatement,
     StringLiteral,
+    SubroutineDefinition,
     UnaryExpression,
     WhileLoop,
 )
@@ -271,7 +275,7 @@ class Interpreter:
         self.logger.debug(f"Index expression: {node}")
         type_width = None
         if isinstance(node.collection, Identifier):
-            if not isinstance(self.context.get_type(node.collection.name), ArrayType):
+            if not isinstance(self.context.get_type(node.collection.name), (ArrayType, BitType)):
                 type_width = self.context.get_type(node.collection.name).size.value
         collection = self.visit(node.collection)
         index = self.visit(node.index)
@@ -522,3 +526,34 @@ class Interpreter:
         self.logger.debug(f"Pragma: {node}")
         pragma_string = node.statements[0].expression.value
         self.context.add_result(self.context.parse_result_type_pragma(pragma_string))
+
+    @visit.register
+    def _(self, node: SubroutineDefinition):
+        # todo: explicitly handle references to existing variables
+        # either by throwing an error or evaluating the closure
+        self.logger.debug(f"Subroutine definition: {node}")
+        self.context.add_subroutine(node.name.name, node)
+
+    @visit.register
+    def _(self, node: FunctionCall):
+        self.logger.debug(f"Function call: {node}")
+        function_def = self.context.get_subroutine_definition(node.name.name)
+        with self.context.enter_scope():
+            arguments_passed = self.visit(node.arguments)
+
+            for arg_passed, arg_defined in zip(arguments_passed, function_def.arguments):
+                arg_name = arg_defined.name.name
+                arg_type = arg_defined.type
+                arg_const = arg_defined.access == AccessControl.CONST
+
+                self.context.declare_variable(arg_name, arg_type, arg_passed, arg_const)
+
+            for statement in deepcopy(function_def.body):
+                visited = self.visit(statement)
+                if isinstance(statement, ReturnStatement):
+                    return visited
+
+    @visit.register
+    def _(self, node: ReturnStatement):
+        self.logger.debug(f"Return statement: {node}")
+        return self.visit(node.expression)

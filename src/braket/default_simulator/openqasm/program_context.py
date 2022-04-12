@@ -12,6 +12,7 @@ from openqasm3.ast import (
     QuantumGateDefinition,
     QuantumGateModifier,
     RangeDefinition,
+    SubroutineDefinition,
 )
 
 from braket.default_simulator.linalg_utils import controlled_unitary
@@ -143,7 +144,10 @@ class ScopedTable(Table):
         """
         Set value of item in current scope.
         """
-        self.current_scope[key] = value
+        try:
+            self.get_scope(key)[key] = value
+        except KeyError:
+            self.current_scope[key] = value
 
     def __delitem__(self, key):
         """
@@ -153,6 +157,12 @@ class ScopedTable(Table):
             if key in scope:
                 del scope[key]
                 return
+        raise KeyError(f"Undefined key: {key}")
+
+    def get_scope(self, key):
+        for scope in reversed(self._scopes):
+            if key in scope:
+                return scope
         raise KeyError(f"Undefined key: {key}")
 
     def items(self):
@@ -209,7 +219,7 @@ class SymbolTable(ScopedTable):
                 literal loop variable.
             const (bool): Whether the variable is immutable.
         """
-        self[name] = SymbolTable.Symbol(symbol_type, const)
+        self.current_scope[name] = SymbolTable.Symbol(symbol_type, const)
 
     def get_symbol(self, name: str):
         """
@@ -258,7 +268,7 @@ class VariableTable(ScopedTable):
         super().__init__("Data")
 
     def add_variable(self, name: str, value: Any):
-        self[name] = value
+        self.current_scope[name] = value
 
     def get_value(self, name: str):
         return self[name]
@@ -308,6 +318,17 @@ class GateTable(ScopedTable):
         return self[name]
 
 
+class SubroutineTable(ScopedTable):
+    def __init__(self):
+        super().__init__("Subroutines")
+
+    def add_subroutine(self, name: str, definition: SubroutineDefinition):
+        self[name] = definition
+
+    def get_subroutine_definition(self, name: str):
+        return self[name]
+
+
 class ScopeManager:
     """
     Allows ProgramContext to manage scope with `with` keyword.
@@ -328,6 +349,7 @@ class ProgramContext:
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
         self.gate_table = GateTable()
+        self.subroutine_table = SubroutineTable()
         self.quantum_simulator = QuantumSimulator()
         self.qubit_mapping = QubitTable()
         self.scope_manager = ScopeManager(self)
@@ -490,6 +512,15 @@ class ProgramContext:
             return self.gate_table.get_gate_definition(name)
         except KeyError:
             raise ValueError(f"Gate {name} is not defined.")
+
+    def add_subroutine(self, name: str, definition: SubroutineDefinition):
+        self.subroutine_table.add_subroutine(name, definition)
+
+    def get_subroutine_definition(self, name: str):
+        try:
+            return self.subroutine_table.get_subroutine_definition(name)
+        except KeyError:
+            raise NameError(f"Subroutine {name} is not defined.")
 
     def execute_builtin_unitary(
         self,

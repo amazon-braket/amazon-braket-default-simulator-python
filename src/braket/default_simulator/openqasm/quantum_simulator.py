@@ -212,5 +212,5 @@ class QuantumSimulator:
         qubit_count = self.num_qubits
         with_observables = observable.apply(np.reshape(self.state_vector, [2] * qubit_count))
         return complex(
-            np.dot(self.state_vector.conj(), np.reshape(with_observables, 2 ** qubit_count))
+            np.dot(self.state_vector.conj(), np.reshape(with_observables, 2**qubit_count))
         ).real

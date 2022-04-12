@@ -48,7 +48,7 @@ operator_maps = {
         getattr(BinaryOperator, "*"): lambda x, y: IntegerLiteral(x.value * y.value),
         getattr(BinaryOperator, "/"): lambda x, y: IntegerLiteral(x.value // y.value),
         getattr(BinaryOperator, "%"): lambda x, y: IntegerLiteral(x.value % y.value),
-        getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value ** y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value**y.value),
         getattr(UnaryOperator, "-"): lambda x: IntegerLiteral(-x.value),
         # returns bool
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
@@ -64,7 +64,7 @@ operator_maps = {
         getattr(BinaryOperator, "-"): lambda x, y: RealLiteral(x.value - y.value),
         getattr(BinaryOperator, "*"): lambda x, y: RealLiteral(x.value * y.value),
         getattr(BinaryOperator, "/"): lambda x, y: RealLiteral(x.value / y.value),
-        getattr(BinaryOperator, "**"): lambda x, y: RealLiteral(x.value ** y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: RealLiteral(x.value**y.value),
         getattr(UnaryOperator, "-"): lambda x: RealLiteral(-x.value),
         # returns bool
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
@@ -76,6 +76,9 @@ operator_maps = {
     },
     BooleanLiteral: {
         # returns bool
+        getattr(BinaryOperator, "&"): lambda x, y: BooleanLiteral(x.value and y.value),
+        getattr(BinaryOperator, "|"): lambda x, y: BooleanLiteral(x.value or y.value),
+        getattr(BinaryOperator, "^"): lambda x, y: BooleanLiteral(x.value ^ y.value),
         getattr(BinaryOperator, "&&"): lambda x, y: BooleanLiteral(x.value and y.value),
         getattr(BinaryOperator, "||"): lambda x, y: BooleanLiteral(x.value or y.value),
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
@@ -219,7 +222,7 @@ def _(into: IntType, variable: LiteralType):
 
 @cast_to.register
 def _(into: UintType, variable: LiteralType):
-    limit = 2 ** into.size.value
+    limit = 2**into.size.value
     value = int(variable.value) % limit
     if value != variable.value:
         warnings.warn(
