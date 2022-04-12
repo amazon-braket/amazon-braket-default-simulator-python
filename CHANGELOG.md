@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.0 (2022-04-12)
+
+### Features
+
+ * add ECR gate (#5)
+
 ## v1.5.0 (2022-02-01)
 
 ### Features
