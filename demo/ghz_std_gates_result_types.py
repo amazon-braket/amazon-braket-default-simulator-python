@@ -5,6 +5,7 @@ device = LocalSimulator("braket_oq3_sv")
 
 ghz_qasm = """
 include "stdgates.inc";
+qubit p;
 qubit[3] q;
 
 h q[0];

@@ -15,6 +15,7 @@ from openqasm3.ast import (
     BooleanLiteral,
     BranchingStatement,
     Cast,
+    ClassicalArgument,
     ClassicalAssignment,
     ClassicalDeclaration,
     Constant,
@@ -62,6 +63,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     evaluate_unary_expression,
     get_ctrl_modifiers,
     get_elements,
+    get_identifier_name,
     get_operator_of_assignment_operator,
     invert,
     is_controlled,
@@ -275,6 +277,9 @@ class Interpreter:
         self.logger.debug(f"Index expression: {node}")
         type_width = None
         if isinstance(node.collection, Identifier):
+            # indexed QuantumArgument
+            if isinstance(self.context.get_type(node.collection.name), type(Identifier)):
+                return IndexedIdentifier(node.collection, [node.index])
             if not isinstance(self.context.get_type(node.collection.name), (ArrayType, BitType)):
                 type_width = self.context.get_type(node.collection.name).size.value
         collection = self.visit(node.collection)
@@ -286,10 +291,10 @@ class Interpreter:
         self.logger.debug(f"Quantum gate definition: {node}")
         with self.context.enter_scope():
             for qubit in node.qubits:
-                self.context.declare_alias(qubit.name, qubit)
+                self.context.declare_qubit_alias(qubit.name, qubit)
 
             for param in node.arguments:
-                self.context.declare_alias(param.name, param)
+                self.context.declare_variable(param.name, Identifier, param)
 
             node.body = self.inline_gate_def_body(node.body)  # , node.qubits)
         self.context.add_gate(node.name.name, node)
@@ -326,12 +331,14 @@ class Interpreter:
                         gate_qubits = statement.qubits[num_ctrl:]
 
                         for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
-                            self.context.declare_alias(qubit_defined.name, qubit_called)
+                            self.context.declare_qubit_alias(qubit_defined.name, qubit_called)
 
                         for param_called, param_defined in zip(
                             statement.arguments, gate_def.arguments
                         ):
-                            self.context.declare_alias(param_defined.name, param_called)
+                            self.context.declare_variable(
+                                param_defined.name, Identifier, param_called
+                            )
 
                         inlined_copy = self.inline_gate_def_body(deepcopy(gate_def.body))
 
@@ -405,10 +412,10 @@ class Interpreter:
                 gate_qubits = qubits[num_ctrl:]
 
                 for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
-                    self.context.declare_alias(qubit_defined.name, qubit_called)
+                    self.context.declare_qubit_alias(qubit_defined.name, qubit_called)
 
                 for param_called, param_defined in zip(arguments, gate_def.arguments):
-                    self.context.declare_alias(param_defined.name, param_called)
+                    self.context.declare_variable(param_defined.name, RealLiteral, param_called)
 
                 for statement in deepcopy(gate_def.body):
                     if isinstance(statement, QuantumGate):
@@ -539,14 +546,19 @@ class Interpreter:
         self.logger.debug(f"Function call: {node}")
         function_def = self.context.get_subroutine_definition(node.name.name)
         with self.context.enter_scope():
-            arguments_passed = self.visit(node.arguments)
+            for arg_passed, arg_defined in zip(node.arguments, function_def.arguments):
+                if isinstance(arg_defined, ClassicalArgument):
+                    arg_name = arg_defined.name.name
+                    arg_type = arg_defined.type
+                    arg_const = arg_defined.access == AccessControl.CONST
+                    arg_value = self.visit(arg_passed)
 
-            for arg_passed, arg_defined in zip(arguments_passed, function_def.arguments):
-                arg_name = arg_defined.name.name
-                arg_type = arg_defined.type
-                arg_const = arg_defined.access == AccessControl.CONST
+                    self.context.declare_variable(arg_name, arg_type, arg_value, arg_const)
 
-                self.context.declare_variable(arg_name, arg_type, arg_passed, arg_const)
+                else:  # QuantumArgument
+                    qubit_name = get_identifier_name(arg_defined.qubit)
+                    qubit_value = self.visit(arg_passed)
+                    self.context.declare_qubit_alias(qubit_name, qubit_value)
 
             for statement in deepcopy(function_def.body):
                 visited = self.visit(statement)

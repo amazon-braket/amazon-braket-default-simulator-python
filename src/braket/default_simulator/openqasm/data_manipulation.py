@@ -1,7 +1,7 @@
 import warnings
 from copy import deepcopy
 from functools import singledispatch, update_wrapper
-from typing import List, Union
+from typing import List, Type, Union
 
 import numpy as np
 from openqasm3.ast import (
@@ -180,7 +180,7 @@ Casting values
 """
 
 
-LiteralType = Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral, ArrayLiteral]
+LiteralType = Type[Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral, ArrayLiteral]]
 
 
 @singledispatch

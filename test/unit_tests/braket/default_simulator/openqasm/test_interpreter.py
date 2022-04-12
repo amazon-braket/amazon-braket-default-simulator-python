@@ -1440,3 +1440,21 @@ def test_undefined_subroutine():
     subroutine_undefined = "Subroutine parity is not defined."
     with pytest.raises(NameError, match=subroutine_undefined):
         Interpreter().run(qasm)
+
+
+def test_void_subroutine(stdgates):
+    qasm = """
+    include "stdgates.inc";
+
+    def flip(qubit q) {
+      x q;
+    }
+
+    qubit[2] qs;
+    flip(qs[0]);
+    """
+    context = Interpreter().run(qasm)
+    assert np.allclose(
+        context.quantum_simulator.state_vector,
+        [0, 0, 1, 0],
+    )

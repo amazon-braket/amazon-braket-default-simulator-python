@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
@@ -206,7 +206,7 @@ class SymbolTable(ScopedTable):
     def add_symbol(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, LiteralType],
+        symbol_type: Union[ClassicalType, LiteralType, Type[Identifier]],
         const: bool = False,
     ):
         """
@@ -422,14 +422,14 @@ class ProgramContext:
     def declare_variable(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, LiteralType],
+        symbol_type: Union[ClassicalType, LiteralType, Type[Identifier]],
         value: Optional[Any] = None,
         const: bool = False,
     ):
         self.symbol_table.add_symbol(name, symbol_type, const)
         self.variable_table.add_variable(name, value)
 
-    def declare_alias(
+    def declare_qubit_alias(
         self,
         name: str,
         value: Identifier,
@@ -474,7 +474,7 @@ class ProgramContext:
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.quantum_simulator.add_qubits(num_qubits)
-        self.declare_alias(name, Identifier(name))
+        self.declare_qubit_alias(name, Identifier(name))
 
     def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
         return self.qubit_mapping.get_by_identifier(qubits)
