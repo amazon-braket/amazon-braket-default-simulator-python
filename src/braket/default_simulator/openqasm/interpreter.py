@@ -276,14 +276,14 @@ class Interpreter:
     def _(self, node: IndexExpression):
         self.logger.debug(f"Index expression: {node}")
         type_width = None
+        index = self.visit(node.index)
         if isinstance(node.collection, Identifier):
             # indexed QuantumArgument
             if isinstance(self.context.get_type(node.collection.name), type(Identifier)):
-                return IndexedIdentifier(node.collection, [node.index])
+                return IndexedIdentifier(node.collection, [index])
             if not isinstance(self.context.get_type(node.collection.name), (ArrayType, BitType)):
                 type_width = self.context.get_type(node.collection.name).size.value
         collection = self.visit(node.collection)
-        index = self.visit(node.index)
         return get_elements(collection, index, type_width)
 
     @visit.register
