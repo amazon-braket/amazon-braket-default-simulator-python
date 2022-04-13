@@ -6,6 +6,7 @@ from typing import List, Type, Union
 import numpy as np
 from openqasm3.ast import (
     ArrayLiteral,
+    ArrayReferenceType,
     ArrayType,
     AssignmentOperator,
     BinaryOperator,
@@ -377,9 +378,15 @@ def flatten_indices(indices):
 
 
 def unwrap_var_type(var_type):
-    if isinstance(var_type, ArrayType):
-        if len(var_type.dimensions) > 1:
-            return ArrayType(var_type.base_type, var_type.dimensions[1:])
+    if isinstance(var_type, (ArrayType, ArrayReferenceType)):
+        if isinstance(var_type.dimensions, Expression):
+            num_dimensions = var_type.dimensions.value
+            new_dimensions = num_dimensions - 1
+        else:
+            num_dimensions = len(var_type.dimensions)
+            new_dimensions = var_type.dimensions[1:]
+        if num_dimensions > 1:
+            return type(var_type)(var_type.base_type, new_dimensions)
         else:
             return var_type.base_type
     else:  # isinstance(var_type, BitType):

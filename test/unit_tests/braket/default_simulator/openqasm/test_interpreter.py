@@ -144,6 +144,16 @@ def test_constant_declaration():
     assert context.get_const("const_one")
 
 
+def test_constant_immutability():
+    qasm = """
+    const int[8] const_one = 1;
+    const_one = 2;
+    """
+    cannot_update = "Cannot update const value const_one"
+    with pytest.raises(TypeError, match=cannot_update):
+        Interpreter().run(qasm)
+
+
 @pytest.mark.parametrize("index", ("", "[:]"))
 def test_uninitialized_identifier(index):
     qasm = f"""
@@ -1489,3 +1499,25 @@ def test_array_ref_subroutine(stdgates):
             "total_2": [55],
         },
     )
+
+
+def test_subroutine_array_reference_mutation(stdgates):
+    qasm = """
+    include "stdgates.inc";
+
+    def mutate_array(mutable array[int[8], #dim = 1] arr) {
+        int[16] size = sizeof(arr);
+        for i in [0:size - 1] {
+            arr[i] = 0;
+        }
+    }
+    
+    array[int[8], 5] array_1 = {1, 2, 3, 4, 5};
+    array[int[8], 10] array_2 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    
+    mutate_array(array_1);
+    mutate_array(array_2);
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("array_1") == ArrayLiteral([IntegerLiteral(0)] * 5)
+    assert context.get_value("array_2") == ArrayLiteral([IntegerLiteral(0)] * 10)

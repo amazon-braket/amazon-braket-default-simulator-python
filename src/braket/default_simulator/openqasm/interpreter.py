@@ -478,6 +478,9 @@ class Interpreter:
     @visit.register
     def _(self, node: ClassicalAssignment):
         self.logger.debug(f"Classical assignment: {node}")
+        lvalue_name = get_identifier_name(node.lvalue)
+        if self.context.get_const(lvalue_name):
+            raise TypeError(f"Cannot update const value {lvalue_name}")
         if node.op == getattr(AssignmentOperator, "="):
             rvalue = self.visit(node.rvalue)
         else:
