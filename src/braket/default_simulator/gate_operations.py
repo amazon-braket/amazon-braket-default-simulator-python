@@ -216,6 +216,33 @@ def _cz(instruction) -> CZ:
     return CZ([instruction.control, instruction.target])
 
 
+class ECR(GateOperation):
+    """ECR gate"""
+
+    def __init__(self, targets):
+        self._targets = tuple(targets)
+
+    @property
+    def matrix(self) -> np.ndarray:
+        return (
+            1
+            / np.sqrt(2)
+            * np.array(
+                [[0, 1, 0, 1.0j], [1, 0, -1.0j, 0], [0, 1.0j, 0, 1], [-1.0j, 0, 1, 0]],
+                dtype=complex,
+            )
+        )
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+@_from_braket_instruction.register(braket_instruction.ECR)
+def _ecr(instruction) -> ECR:
+    return ECR(instruction.targets)
+
+
 class S(GateOperation):
     """S gate"""
 

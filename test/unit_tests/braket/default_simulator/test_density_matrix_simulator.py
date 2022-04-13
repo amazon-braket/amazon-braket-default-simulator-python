@@ -363,6 +363,7 @@ def test_properties():
                         "cy",
                         "cz",
                         "depolarizing",
+                        "ecr",
                         "generalized_amplitude_damping",
                         "h",
                         "i",
