@@ -146,6 +146,30 @@ constant_map = {
     ConstantName.euler: np.e,
 }
 
+builtin_functions = {
+    "sizeof": lambda array, dim=IntegerLiteral(0): (
+        IntegerLiteral(len(array.values))
+        if dim.value == 0
+        else builtin_functions["sizeof"](array.values[0], IntegerLiteral(dim.value - 1))
+    ),
+    "arccos": lambda x: x,
+    "arcsin": lambda x: x,
+    "arctan": lambda x: x,
+    "ceiling": lambda x: x,
+    "cos": lambda x: x,
+    "exp": lambda x: x,
+    "floor": lambda x: x,
+    "log": lambda x: x,
+    "mod": lambda x: x,
+    "popcount": lambda x: x,
+    "pow": lambda x: x,
+    "rotl": lambda x: x,
+    "rotr": lambda x: x,
+    "sin": lambda x: x,
+    "sqrt": lambda x: x,
+    "tan": lambda x: x,
+}
+
 
 def resolve_type_hierarchy(x: Expression, y: Expression):
     return max(type(x), type(y), key=type_hierarchy.index)

@@ -1458,3 +1458,34 @@ def test_void_subroutine(stdgates):
         context.quantum_simulator.state_vector,
         [0, 0, 1, 0],
     )
+
+
+def test_array_ref_subroutine(stdgates):
+    qasm = """
+    include "stdgates.inc";
+    output int[16] total_1;
+    output int[16] total_2;
+
+    def sum(const array[int[8], #dim = 1] arr) -> int[16] {
+        int[16] size = sizeof(arr);
+        int[16] x = 0;
+        for i in [0:size - 1] {
+            x += arr[i];
+        }
+        return x;
+    }
+    
+    array[int[8], 5] array_1 = {1, 2, 3, 4, 5};
+    array[int[8], 10] array_2 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    
+    total_1 = sum(array_1);
+    total_2 = sum(array_2);
+    """
+    context = Interpreter().run(qasm, shots=1)
+    assert shot_data_is_equal(
+        context.shot_data,
+        {
+            "total_1": [15],
+            "total_2": [55],
+        },
+    )

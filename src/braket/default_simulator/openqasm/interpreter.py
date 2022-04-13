@@ -8,6 +8,7 @@ from braket.ir.jaqcd import Amplitude, DensityMatrix, Probability, StateVector
 from openqasm3 import parse
 from openqasm3.ast import (
     AccessControl,
+    ArrayReferenceType,
     ArrayType,
     AssignmentOperator,
     BinaryExpression,
@@ -53,6 +54,7 @@ from openqasm3.ast import (
 )
 
 from braket.default_simulator.openqasm.data_manipulation import (
+    builtin_functions,
     cast_to,
     convert_range_def_to_range,
     convert_string_to_bool_array,
@@ -281,7 +283,10 @@ class Interpreter:
             # indexed QuantumArgument
             if isinstance(self.context.get_type(node.collection.name), type(Identifier)):
                 return IndexedIdentifier(node.collection, [index])
-            if not isinstance(self.context.get_type(node.collection.name), (ArrayType, BitType)):
+            if not isinstance(
+                self.context.get_type(node.collection.name),
+                (ArrayType, ArrayReferenceType, BitType),
+            ):
                 type_width = self.context.get_type(node.collection.name).size.value
         collection = self.visit(node.collection)
         return get_elements(collection, index, type_width)
@@ -544,21 +549,23 @@ class Interpreter:
     @visit.register
     def _(self, node: FunctionCall):
         self.logger.debug(f"Function call: {node}")
-        function_def = self.context.get_subroutine_definition(node.name.name)
+        function_name = node.name.name
+        arguments = self.visit(node.arguments)
+        if function_name in builtin_functions:
+            return builtin_functions[function_name](*arguments)
+        function_def = self.context.get_subroutine_definition(function_name)
         with self.context.enter_scope():
-            for arg_passed, arg_defined in zip(node.arguments, function_def.arguments):
+            for arg_passed, arg_defined in zip(arguments, function_def.arguments):
                 if isinstance(arg_defined, ClassicalArgument):
                     arg_name = arg_defined.name.name
                     arg_type = arg_defined.type
                     arg_const = arg_defined.access == AccessControl.CONST
-                    arg_value = self.visit(arg_passed)
 
-                    self.context.declare_variable(arg_name, arg_type, arg_value, arg_const)
+                    self.context.declare_variable(arg_name, arg_type, arg_passed, arg_const)
 
                 else:  # QuantumArgument
                     qubit_name = get_identifier_name(arg_defined.qubit)
-                    qubit_value = self.visit(arg_passed)
-                    self.context.declare_qubit_alias(qubit_name, qubit_value)
+                    self.context.declare_qubit_alias(qubit_name, arg_passed)
 
             for statement in deepcopy(function_def.body):
                 visited = self.visit(statement)
