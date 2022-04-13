@@ -76,7 +76,9 @@ def marginal_probability(
 
     # Reorder qubits to match targets
     basis_states = np.array(list(itertools.product([0, 1], repeat=len(targets))))
-    perm = np.ravel_multi_index(basis_states[:, np.argsort(targets)].T, [2] * len(targets))
+    perm = np.ravel_multi_index(
+        basis_states[:, np.argsort(np.argsort(targets))].T, [2] * len(targets)
+    )
     return marginal[perm]
 
 
