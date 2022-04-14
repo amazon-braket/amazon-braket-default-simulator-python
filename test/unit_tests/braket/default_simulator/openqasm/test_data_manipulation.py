@@ -1,18 +1,21 @@
 import pytest
 from openqasm3.ast import (
+    ArrayLiteral,
     BooleanLiteral,
     DiscreteSet,
     Identifier,
     IndexedIdentifier,
+    IndexExpression,
     IntegerLiteral,
-    RealLiteral, IndexExpression, ArrayLiteral,
+    RealLiteral,
 )
 
 from braket.default_simulator.openqasm.data_manipulation import (
     cast_to,
     convert_to_output,
     get_identifier_string,
-    wrap_value_into_literal, index_expression_to_indexed_identifier,
+    index_expression_to_indexed_identifier,
+    wrap_value_into_literal,
 )
 
 
