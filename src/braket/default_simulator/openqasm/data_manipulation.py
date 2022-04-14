@@ -23,6 +23,7 @@ from openqasm3.ast import (
     Identifier,
     IndexedIdentifier,
     IndexElement,
+    IndexExpression,
     IntegerLiteral,
     IntType,
     QuantumGate,
@@ -33,7 +34,7 @@ from openqasm3.ast import (
     RealLiteral,
     StringLiteral,
     UintType,
-    UnaryOperator, IndexExpression,
+    UnaryOperator,
 )
 
 """

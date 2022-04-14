@@ -1545,3 +1545,22 @@ def test_subroutine_array_reference_const_mutation(stdgates):
     cannot_mutate = "Cannot update const value arr"
     with pytest.raises(TypeError, match=cannot_mutate):
         Interpreter().run(qasm)
+
+
+def test_subroutine_classical_passed_by_value():
+    qasm = """
+    def classical(bit[4] bits) {
+        bits[0] = 1;
+        return bits;
+    }
+
+    bit[4] before = "0000";
+    bit[4] after = classical(before);
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("before") == ArrayLiteral(
+        [BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False)]
+    )
+    assert context.get_value("after") == ArrayLiteral(
+        [BooleanLiteral(True), BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False)]
+    )

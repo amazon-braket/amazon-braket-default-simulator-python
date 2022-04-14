@@ -67,13 +67,14 @@ from braket.default_simulator.openqasm.data_manipulation import (
     get_elements,
     get_identifier_name,
     get_operator_of_assignment_operator,
+    index_expression_to_indexed_identifier,
     invert,
     is_controlled,
     is_inverted,
     is_literal,
     modify_body,
     singledispatchmethod,
-    wrap_value_into_literal, index_expression_to_indexed_identifier,
+    wrap_value_into_literal,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext
 
@@ -563,8 +564,9 @@ class Interpreter:
                     arg_name = arg_defined.name.name
                     arg_type = arg_defined.type
                     arg_const = arg_defined.access == AccessControl.CONST
+                    arg_value = deepcopy(arg_passed)
 
-                    self.context.declare_variable(arg_name, arg_type, arg_passed, arg_const)
+                    self.context.declare_variable(arg_name, arg_type, arg_value, arg_const)
 
                 else:  # QuantumArgument
                     qubit_name = get_identifier_name(arg_defined.qubit)
@@ -581,9 +583,7 @@ class Interpreter:
                 if isinstance(arg_defined, ClassicalArgument):
                     if isinstance(arg_defined.type, ArrayReferenceType):
                         if isinstance(arg_passed, IndexExpression):
-                            identifier = index_expression_to_indexed_identifier(
-                                arg_passed
-                            )
+                            identifier = index_expression_to_indexed_identifier(arg_passed)
                             identifier.indices = self.visit(identifier.indices)
                         else:
                             identifier = arg_passed

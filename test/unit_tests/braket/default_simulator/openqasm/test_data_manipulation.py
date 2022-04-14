@@ -5,14 +5,14 @@ from openqasm3.ast import (
     Identifier,
     IndexedIdentifier,
     IntegerLiteral,
-    RealLiteral,
+    RealLiteral, IndexExpression, ArrayLiteral,
 )
 
 from braket.default_simulator.openqasm.data_manipulation import (
     cast_to,
     convert_to_output,
     get_identifier_string,
-    wrap_value_into_literal,
+    wrap_value_into_literal, index_expression_to_indexed_identifier,
 )
 
 
@@ -70,3 +70,10 @@ def test_undefined_wrap():
 
 def test_wrap_bool():
     assert wrap_value_into_literal(True) == BooleanLiteral(True)
+
+
+def test_convert_index_expression_wrong_type():
+    index_expression = IndexExpression(ArrayLiteral([IntegerLiteral(1)]), [IntegerLiteral(0)])
+    wrong_type = "Can only transform index expressions of an identifier into an IndexedIdentifier"
+    with pytest.raises(TypeError, match=wrong_type):
+        index_expression_to_indexed_identifier(index_expression)
