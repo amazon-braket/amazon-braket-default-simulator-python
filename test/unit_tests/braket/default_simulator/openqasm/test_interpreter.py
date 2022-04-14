@@ -1514,10 +1514,34 @@ def test_subroutine_array_reference_mutation(stdgates):
     
     array[int[8], 5] array_1 = {1, 2, 3, 4, 5};
     array[int[8], 10] array_2 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    array[int[8], 10] array_3 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     
     mutate_array(array_1);
     mutate_array(array_2);
+    mutate_array(array_3[4:2:-1]);
     """
     context = Interpreter().run(qasm)
     assert context.get_value("array_1") == ArrayLiteral([IntegerLiteral(0)] * 5)
     assert context.get_value("array_2") == ArrayLiteral([IntegerLiteral(0)] * 10)
+    assert context.get_value("array_3") == ArrayLiteral(
+        [IntegerLiteral(x) for x in (1, 2, 3, 4, 0, 6, 0, 8, 0, 10)]
+    )
+
+
+def test_subroutine_array_reference_const_mutation(stdgates):
+    qasm = """
+    include "stdgates.inc";
+
+    def mutate_array(const array[int[8], #dim = 1] arr) {
+        int[16] size = sizeof(arr);
+        for i in [0:size - 1] {
+            arr[i] = 0;
+        }
+    }
+    
+    array[int[8], 5] array_1 = {1, 2, 3, 4, 5};
+    mutate_array(array_1);
+    """
+    cannot_mutate = "Cannot update const value arr"
+    with pytest.raises(TypeError, match=cannot_mutate):
+        Interpreter().run(qasm)

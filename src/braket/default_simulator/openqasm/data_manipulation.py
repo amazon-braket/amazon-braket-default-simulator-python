@@ -33,7 +33,7 @@ from openqasm3.ast import (
     RealLiteral,
     StringLiteral,
     UintType,
-    UnaryOperator,
+    UnaryOperator, IndexExpression,
 )
 
 """
@@ -375,6 +375,15 @@ def convert_index(index):
 
 def flatten_indices(indices):
     return sum((index for index in indices), [])
+
+
+def index_expression_to_indexed_identifier(index_expression: IndexExpression) -> IndexedIdentifier:
+    collection = index_expression.collection
+    if not isinstance(collection, Identifier):
+        raise TypeError(
+            "Can only transform index expressions of an identifier into an IndexedIdentifier"
+        )
+    return IndexedIdentifier(index_expression.collection, [index_expression.index])
 
 
 def unwrap_var_type(var_type):

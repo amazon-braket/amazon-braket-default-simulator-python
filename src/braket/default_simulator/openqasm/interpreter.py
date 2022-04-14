@@ -73,7 +73,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     is_literal,
     modify_body,
     singledispatchmethod,
-    wrap_value_into_literal,
+    wrap_value_into_literal, index_expression_to_indexed_identifier,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext
 
@@ -570,10 +570,27 @@ class Interpreter:
                     qubit_name = get_identifier_name(arg_defined.qubit)
                     self.context.declare_qubit_alias(qubit_name, arg_passed)
 
+            return_value = None
             for statement in deepcopy(function_def.body):
                 visited = self.visit(statement)
                 if isinstance(statement, ReturnStatement):
-                    return visited
+                    return_value = visited
+                    break
+
+            for arg_passed, arg_defined in zip(node.arguments, function_def.arguments):
+                if isinstance(arg_defined, ClassicalArgument):
+                    if isinstance(arg_defined.type, ArrayReferenceType):
+                        if isinstance(arg_passed, IndexExpression):
+                            identifier = index_expression_to_indexed_identifier(
+                                arg_passed
+                            )
+                            identifier.indices = self.visit(identifier.indices)
+                        else:
+                            identifier = arg_passed
+                        reference_value = self.context.get_value(arg_defined.name.name)
+                        self.context.update_value(identifier, reference_value)
+
+            return return_value
 
     @visit.register
     def _(self, node: ReturnStatement):
