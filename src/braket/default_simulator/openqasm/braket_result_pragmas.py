@@ -1,4 +1,3 @@
-import numpy as np
 from antlr4 import CommonTokenStream, InputStream
 from braket.ir.jaqcd import (
     Amplitude,
@@ -11,9 +10,9 @@ from braket.ir.jaqcd import (
 )
 from openqasm3.parser import parse
 
-from braket.default_simulator.openqasm.dist.BraketPragmasVisitor import BraketPragmasVisitor
-from src.braket.default_simulator.openqasm.dist.BraketPragmasLexer import BraketPragmasLexer
-from src.braket.default_simulator.openqasm.dist.BraketPragmasParser import BraketPragmasParser
+from .dist.BraketPragmasVisitor import BraketPragmasVisitor
+from .dist.BraketPragmasLexer import BraketPragmasLexer
+from .dist.BraketPragmasParser import BraketPragmasParser
 
 
 class BraketPragmaNodeVisitor(BraketPragmasVisitor):

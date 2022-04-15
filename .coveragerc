@@ -8,6 +8,7 @@ omit =
     **/braket/device_schema/*
     **/braket/schema_common/*
     **/braket/task_result/*
+    **/braket/default_simulator/openqasm/dist/*
 
 [paths]
 source =

@@ -1484,10 +1484,10 @@ def test_array_ref_subroutine(stdgates):
         }
         return x;
     }
-    
+
     array[int[8], 5] array_1 = {1, 2, 3, 4, 5};
     array[int[8], 10] array_2 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    
+
     total_1 = sum(array_1);
     total_2 = sum(array_2);
     """
@@ -1511,11 +1511,11 @@ def test_subroutine_array_reference_mutation(stdgates):
             arr[i] = 0;
         }
     }
-    
+
     array[int[8], 5] array_1 = {1, 2, 3, 4, 5};
     array[int[8], 10] array_2 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     array[int[8], 10] array_3 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    
+
     mutate_array(array_1);
     mutate_array(array_2);
     mutate_array(array_3[4:2:-1]);
@@ -1538,7 +1538,7 @@ def test_subroutine_array_reference_const_mutation(stdgates):
             arr[i] = 0;
         }
     }
-    
+
     array[int[8], 5] array_1 = {1, 2, 3, 4, 5};
     mutate_array(array_1);
     """

@@ -4,7 +4,6 @@ from logging import Logger, getLogger
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from braket.ir.jaqcd import Amplitude, DensityMatrix, Probability, StateVector
 from openqasm3 import parse
 from openqasm3.ast import (
     AccessControl,
