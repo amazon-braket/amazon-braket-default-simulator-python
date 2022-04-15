@@ -6,7 +6,7 @@ from braket.default_simulator import Observable
 from braket.default_simulator.linalg_utils import marginal_probability, multiply_matrix
 
 
-class QuantumSimulator:
+class QuantumSimulation:
     """
     Qubits are initially in a ground state.
     Qubit indexing is as follows: |0123...n> (same as BDK, opposite from Qiskit)

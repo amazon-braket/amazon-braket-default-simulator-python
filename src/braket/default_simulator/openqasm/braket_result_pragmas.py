@@ -102,7 +102,7 @@ class BraketPragmaNodeVisitor(BraketPragmasVisitor):
         target = self.qubit_table.get_by_identifier(identifier)
         return target
 
-    def visitComplex(self, ctx: BraketPragmasParser.ComplexContext):
+    def visitComplexNumber(self, ctx: BraketPragmasParser.ComplexNumberContext):
         sign = -1 if ctx.neg else 1
         value = ctx.value.text
         imag = False

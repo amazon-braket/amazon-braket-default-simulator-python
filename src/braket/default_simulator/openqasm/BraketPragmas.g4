@@ -64,7 +64,7 @@ tensorProductObservable
     ;
 
 hermitianObservable
-    : HERMITIAN LPAREN LBRACKET LBRACKET complex COMMA complex RBRACKET COMMA LBRACKET complex COMMA complex RBRACKET RBRACKET RPAREN indexedIdentifier
+    : HERMITIAN LPAREN LBRACKET LBRACKET complexNumber COMMA complexNumber RBRACKET COMMA LBRACKET complexNumber COMMA complexNumber RBRACKET RBRACKET RPAREN indexedIdentifier
     ;
 
 observableResultTypeName
@@ -81,7 +81,7 @@ standardObservableName
     | H
     ;
 
-complex
+complexNumber
     : neg=MINUS? value=(RealNumber | Integer | ImagNumber)
     ;
 

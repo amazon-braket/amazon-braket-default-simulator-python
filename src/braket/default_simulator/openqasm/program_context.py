@@ -24,7 +24,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     get_identifier_string,
     singledispatchmethod,
 )
-from braket.default_simulator.openqasm.quantum_simulator import QuantumSimulator
+from braket.default_simulator.openqasm.quantum_simulation import QuantumSimulation
 
 
 class Table:
@@ -350,7 +350,7 @@ class ProgramContext:
         self.variable_table = VariableTable()
         self.gate_table = GateTable()
         self.subroutine_table = SubroutineTable()
-        self.quantum_simulator = QuantumSimulator()
+        self.quantum_simulation = QuantumSimulation()
         self.qubit_mapping = QubitTable()
         self.scope_manager = ScopeManager(self)
         self.shot_data = {}
@@ -395,7 +395,7 @@ class ProgramContext:
                 )
 
         if self.num_qubits:
-            self.quantum_simulator.reset_qubits()
+            self.quantum_simulation.reset_qubits()
         self.clear_classical_variables()
 
     def add_result(self, result: Results):
@@ -417,7 +417,7 @@ class ProgramContext:
 
     @property
     def num_qubits(self):
-        return self.quantum_simulator.num_qubits
+        return self.quantum_simulation.num_qubits
 
     def declare_variable(
         self,
@@ -473,7 +473,7 @@ class ProgramContext:
 
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
-        self.quantum_simulator.add_qubits(num_qubits)
+        self.quantum_simulation.add_qubits(num_qubits)
         self.declare_qubit_alias(name, Identifier(name))
 
     def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
@@ -486,23 +486,23 @@ class ProgramContext:
                 f"Cannot reset qubit(s) '{get_identifier_string(qubits)}' since "
                 "doing so would collapse the wave function in a shots=0 simulation."
             )
-        self.quantum_simulator.reset_qubits(target)
+        self.quantum_simulation.reset_qubits(target)
 
     def measure_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
         if self.is_analytic:
             raise ValueError("Measurement operation not supported for analytic shots=0 simulation.")
         target = self.get_qubits(qubits)
-        return "".join("01"[int(m)] for m in self.quantum_simulator.measure_qubits(target))
+        return "".join("01"[int(m)] for m in self.quantum_simulation.measure_qubits(target))
 
     def apply_phase(
         self, phase: float, qubits: Optional[Union[Identifier, IndexedIdentifier]] = None
     ):
         if qubits is None:
-            self.quantum_simulator.apply_phase(phase, range(self.num_qubits))
+            self.quantum_simulation.apply_phase(phase, range(self.num_qubits))
         else:
             for qubit in qubits:
                 target = self.get_qubits(qubit)
-                self.quantum_simulator.apply_phase(phase, target)
+                self.quantum_simulation.apply_phase(phase, target)
 
     def add_gate(self, name: str, definition: QuantumGateDefinition):
         self.gate_table.add_gate(name, definition)
@@ -535,7 +535,7 @@ class ProgramContext:
         if num_inv_modifiers % 2:
             # inv @ U(θ, ϕ, λ) == U(-θ, -λ, -ϕ)
             params = -params[[0, 2, 1]]
-        unitary = QuantumSimulator.generate_u(*params)
+        unitary = QuantumSimulation.generate_u(*params)
         for mod in modifiers:
             if mod.modifier == GateModifierName.ctrl:
                 for _ in range(mod.argument.value):
@@ -543,4 +543,4 @@ class ProgramContext:
             if mod.modifier == GateModifierName.negctrl:
                 for _ in range(mod.argument.value):
                     unitary = controlled_unitary(unitary, neg=True)
-        self.quantum_simulator.execute_unitary(unitary, target)
+        self.quantum_simulation.execute_unitary(unitary, target)

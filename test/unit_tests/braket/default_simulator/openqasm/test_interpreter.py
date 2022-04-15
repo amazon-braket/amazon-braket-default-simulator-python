@@ -409,7 +409,7 @@ def test_reset_qubit():
     """
     mocked_context = ProgramContext()
     reset_qubits_mock = Mock()
-    mocked_context.quantum_simulator.reset_qubits = reset_qubits_mock
+    mocked_context.quantum_simulation.reset_qubits = reset_qubits_mock
     Interpreter(mocked_context).run(qasm)
 
     reset_qubits_mock.assert_has_calls(
@@ -738,7 +738,7 @@ def test_gate_call():
     context = Interpreter().run(qasm)
 
     assert np.allclose(
-        context.quantum_simulator.state_vector, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+        context.quantum_simulation.state_vector, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
     )
 
 
@@ -787,7 +787,7 @@ def test_gate_inv():
     """
     context = Interpreter().run(qasm)
 
-    assert np.allclose(context.quantum_simulator.state_vector, [1, 0])
+    assert np.allclose(context.quantum_simulation.state_vector, [1, 0])
 
 
 def test_gate_ctrl():
@@ -836,7 +836,7 @@ def test_gate_ctrl():
     """
     context = Interpreter().run(qasm)
     assert np.allclose(
-        context.quantum_simulator.state_vector,
+        context.quantum_simulation.state_vector,
         [0] * 31 + [1],
     )
 
@@ -893,7 +893,7 @@ def test_neg_gate_ctrl():
     """
     context = Interpreter().run(qasm)
     assert np.allclose(
-        context.quantum_simulator.state_vector,
+        context.quantum_simulation.state_vector,
         [1] + [0] * 31,
     )
 
@@ -970,9 +970,9 @@ def test_gphase():
     negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
     """
     context = Interpreter().run(qasm)
-    print(context.quantum_simulator.state_vector)
+    print(context.quantum_simulation.state_vector)
     assert np.allclose(
-        context.quantum_simulator.state_vector, [-1j / np.sqrt(2), 0, 0, 1j / np.sqrt(2)]
+        context.quantum_simulation.state_vector, [-1j / np.sqrt(2), 0, 0, 1j / np.sqrt(2)]
     )
 
 
@@ -1360,7 +1360,7 @@ def test_gate_qubit_reg(stdgates):
     """
     context = Interpreter().run(qasm, shots=0)
     assert np.allclose(
-        context.quantum_simulator.state_vector,
+        context.quantum_simulation.state_vector,
         [
             0,
             0,
@@ -1465,7 +1465,7 @@ def test_void_subroutine(stdgates):
     """
     context = Interpreter().run(qasm)
     assert np.allclose(
-        context.quantum_simulator.state_vector,
+        context.quantum_simulation.state_vector,
         [0, 0, 1, 0],
     )
 

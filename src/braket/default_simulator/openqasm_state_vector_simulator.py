@@ -53,7 +53,7 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
             results = BaseLocalSimulator._generate_results(
                 context.results,
                 result_types,
-                context.quantum_simulator,
+                context.quantum_simulation,
             )
 
         return self._create_results_obj(results, openqasm_ir, shots, context)

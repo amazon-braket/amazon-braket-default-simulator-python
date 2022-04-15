@@ -43,18 +43,31 @@ class InstallOQ3Command(distutils.cmd.Command):
     def run(self):
         """Run command."""
         curdir = os.getcwd()
-        if not Path("antlr-4.9-complete.jar").is_file():
+        if not Path("antlr-4.10-complete.jar").is_file():
             subprocess.check_call(
-                ["curl", "-O", "https://www.antlr.org/download/antlr-4.9-complete.jar"]
+                ["curl", "-O", "https://www.antlr.org/download/antlr-4.10-complete.jar"]
             )
         classpath = Path(
             f".:{curdir}",
-            f"antlr-4.9-complete.jar:{os.environ.get('CLASSPATH', '')}",
+            f"antlr-4.10-complete.jar:{os.environ.get('CLASSPATH', '')}",
         )
         antlr4 = (
-            f'java -Xmx500M -cp "{Path(curdir, f"antlr-4.9-complete.jar:{classpath}")}" '
+            f'java -Xmx500M -cp "{Path(curdir, f"antlr-4.10-complete.jar:{classpath}")}" '
             f"org.antlr.v4.Tool"
         )
+
+        os.chdir(Path("src", "braket", "default_simulator", "openqasm"))
+        subprocess.check_call(
+            [
+                *antlr4.split(),
+                "-Dlanguage=Python3",
+                "-visitor",
+                "BraketPragmas.g4",
+                "-o",
+                "dist",
+            ]
+        )
+        os.chdir(Path("..", "..", "..", ".."))
 
         if not Path("openqasm").is_dir():
             subprocess.check_call(["git", "clone", "https://github.com/Qiskit/openqasm.git"])
@@ -64,7 +77,7 @@ class InstallOQ3Command(distutils.cmd.Command):
             [
                 *antlr4.split(),
                 "-o",
-                "openwasm_reference_parser",
+                "openqasm_reference_parser",
                 "-Dlanguage=Python3",
                 "-visitor",
                 "qasm3.g4",
@@ -77,7 +90,7 @@ class InstallOQ3Command(distutils.cmd.Command):
             [
                 *antlr4.split(),
                 "-o",
-                Path(*"../openqasm/openqasm3/antlr".split("/")),
+                Path("..", "openqasm", "openqasm3", "antlr"),
                 "-Dlanguage=Python3",
                 "-visitor",
                 "qasm3.g4",
@@ -86,7 +99,7 @@ class InstallOQ3Command(distutils.cmd.Command):
         os.chdir(Path("..", "openqasm"))
         subprocess.check_call(["pip", "install", "-e", "."])
         subprocess.check_call(["pip", "install", "-e", ".[tests]"])
-        os.chdir(Path(*"../../..".split("/")))
+        os.chdir(Path("..", "..", ".."))
 
 
 class BuildPyCommand(build_py):
@@ -110,6 +123,7 @@ setup(
         "opt_einsum",
         "openqasm3",
         "amazon-braket-sdk",
+        "antlr4-python3-runtime==4.10",
     ],
     entry_points={
         "braket.simulators": [
