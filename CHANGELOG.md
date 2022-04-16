@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.1 (2022-04-15)
+
+### Bug Fixes and Other Changes
+
+ * ensure correct behavior for target ordering with DensityMatrix r…
+
 ## v1.6.0 (2022-04-12)
 
 ### Features
