@@ -119,12 +119,14 @@ setup(
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     install_requires=[
-        "amazon-braket-schemas",
+        # "amazon-braket-schemas",
         "numpy",
         "opt_einsum",
         "openqasm3",
-        "amazon-braket-sdk",
+        # "amazon-braket-sdk",
         "antlr4-python3-runtime==4.10",
+        'amazon-braket-schemas @ git+ssh://git@github.com/aws/amazon-braket-schemas-python-staging@openqasm-local-sim',
+        'amazon-braket-sdk @ git+ssh://git@github.com/aws/amazon-braket-sdk-python-staging@openqasm-local-sim'
     ],
     entry_points={
         "braket.simulators": [
