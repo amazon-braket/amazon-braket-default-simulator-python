@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.2 (2022-04-19)
+
+### Bug Fixes and Other Changes
+
+ * align ECR gate definition with OQC
+
 ## v1.6.1 (2022-04-15)
 
 ### Bug Fixes and Other Changes
