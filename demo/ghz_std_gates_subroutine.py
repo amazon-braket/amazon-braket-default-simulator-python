@@ -23,5 +23,16 @@ c = measure qs;
 """
 
 ghz = Program(source=ghz_qasm)
-result = device.run(ghz, shots=100).result()
+result = device.run(ghz, shots=1000).result()
 print(result.output_variables)
+
+
+# TODO:
+"""
+CircuitBuilder(Interpreter)
+ProgramContext -> InterpreterContext
+CircuitBuilder gets CircuitBuilderContext
+circuit builder does not allow classical uncertainty between shots,
+builds a circuit which will then be executed at the end.
+This fits cleanly with the simulator/simulation paradigm.
+"""

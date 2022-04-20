@@ -1,5 +1,6 @@
 from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
+from braket.tasks.oq3_quantum_program_result import OQ3QuantumProgramResult
 
 device = LocalSimulator("braket_oq3_sv")
 
@@ -26,9 +27,9 @@ cx q[1], q[2];
 """
 
 ghz = Program(source=ghz_qasm)
-result = device.run(ghz, shots=10).result()
-# print(result.result_types)
-# print(result.result_types[0])
+result = device.run(ghz, shots=0).result()
+print(result.result_types)
+print(result.result_types[0])
 for rt in result.result_types:
     print(f"{rt.type}: {rt.value}")
 # print(np.round(result.result_types[0].value, 4))
