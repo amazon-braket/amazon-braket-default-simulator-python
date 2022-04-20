@@ -119,4 +119,5 @@ def parse_braket_pragma(pragma_body: str, qubit_table):
     stream = CommonTokenStream(lexer)
     parser = BraketPragmasParser(stream)
     tree = parser.braketPragma()
-    return BraketPragmaNodeVisitor(qubit_table).visit(tree)
+    visited = BraketPragmaNodeVisitor(qubit_table).visit(tree)
+    return visited

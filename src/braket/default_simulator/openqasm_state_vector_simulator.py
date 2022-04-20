@@ -19,6 +19,8 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 
 
 class OpenQASMStateVectorSimulator(BaseLocalSimulator):
+    DEVICE_ID = "braket_oq3_sv"
+
     @property
     def device_action_type(self):
         return DeviceActionType.OPENQASM

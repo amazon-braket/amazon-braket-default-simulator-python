@@ -41,7 +41,7 @@ multiStateResultTypeName
     ;
 
 multiState
-    : StringLiteral (COMMA StringLiteral)
+    : StringLiteral (COMMA StringLiteral)*
     ;
 
 observableResultType

@@ -33,6 +33,7 @@ from braket.task_result import (
 from braket.task_result.oq3_program_result_v1 import OQ3ProgramResult
 
 from braket.default_simulator.observables import Hermitian, TensorProduct
+from braket.default_simulator.openqasm.circuit_builder import CircuitBuilder
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
@@ -62,6 +63,7 @@ _NOISE_INSTRUCTIONS = frozenset(
 
 
 class BaseLocalSimulator(BraketSimulator):
+
     @property
     @abstractmethod
     def device_action_type(self):
@@ -136,6 +138,207 @@ class BaseLocalSimulator(BraketSimulator):
             for index in range(len(results))
         ]
 
+    @staticmethod
+    def _validate_operation_qubits(operations: List[Operation]) -> None:
+        qubits_referenced = {target for operation in operations for target in operation.targets}
+        if max(qubits_referenced) >= len(qubits_referenced):
+            raise ValueError(
+                "Non-contiguous qubit indices supplied; "
+                "qubit indices in a circuit must be contiguous."
+            )
+
+    @staticmethod
+    def _validate_result_types_qubits_exist(
+        targeted_result_types: List[TargetedResultType], qubit_count: int
+    ):
+        for result_type in targeted_result_types:
+            targets = result_type.targets
+            if targets and max(targets) >= qubit_count:
+                raise ValueError(
+                    f"Result type ({result_type.__class__.__name__})"
+                    f" references invalid qubits {targets}"
+                )
+
+    def _validate_ir_instructions_compatibility(self, circuit_ir):
+        circuit_instruction_names = [
+            instr.__class__.__name__.lower().replace("_", "") for instr in circuit_ir.instructions
+        ]
+        supported_instructions = frozenset(
+            op.lower().replace("_", "")
+            for op in self.properties.action[self.device_action_type].supportedOperations
+        )
+        no_noise = True
+        for name in circuit_instruction_names:
+            if name in _NOISE_INSTRUCTIONS:
+                no_noise = False
+                if name not in supported_instructions:
+                    raise TypeError(
+                        'Noise instructions are not supported by the state vector simulator (by default). '
+                        'You need to use the density matrix simulator: LocalSimulator("braket_dm").'
+                    )
+        if no_noise and _NOISE_INSTRUCTIONS.intersection(supported_instructions):
+            warnings.warn(
+                'You are running a noise-free circuit on the density matrix simulator. '
+                'Consider running this circuit on the state vector simulator: LocalSimulator("default") '
+                'for a better user experience.'
+            )
+
+    @staticmethod
+    def _get_measured_qubits(qubit_count: int) -> List[int]:
+        return list(range(qubit_count))
+
+    @staticmethod
+    def _tensor_product_index_dict(
+            observable: TensorProduct, callable: Callable[[Observable], Any]
+    ) -> Dict[int, Any]:
+        obj_dict = {}
+        i = 0
+        factors = list(observable.factors)
+        total = len(factors[0].measured_qubits)
+        while factors:
+            if i >= total:
+                factors.pop(0)
+                if factors:
+                    total += len(factors[0].measured_qubits)
+            if factors:
+                obj_dict[i] = callable(factors[0])
+            i += 1
+        return obj_dict
+
+    @staticmethod
+    def _observable_hash(observable: Observable) -> Union[str, Dict[int, str]]:
+        if isinstance(observable, Hermitian):
+            return str(hash(str(observable.matrix.tostring())))
+        elif isinstance(observable, TensorProduct):
+            # Dict of target index to observable hash
+            return BaseLocalJaqcdSimulator._tensor_product_index_dict(
+                observable, BaseLocalJaqcdSimulator._observable_hash
+            )
+        else:
+            return str(observable.__class__.__name__)
+
+    @staticmethod
+    def _formatted_measurements(simulation: Simulation) -> List[List[str]]:
+        """Retrieves formatted measurements obtained from the specified simulation.
+
+        Args:
+            simulation (Simulation): Simulation to use for obtaining the measurements.
+
+        Returns:
+            List[List[str]]: List containing the measurements, where each measurement consists
+            of a list of measured values of qubits.
+        """
+        return [
+            list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
+            for sample in simulation.retrieve_samples()
+        ]
+
+
+class BaseLocalOQ3Simulator(BaseLocalSimulator):
+
+    @property
+    def device_action_type(self):
+        return DeviceActionType.OPENQASM
+
+    def run(
+        self,
+        openqasm_ir: OQ3Program,
+        shots: int = 0,
+        batch_size: int = 1,
+    ) -> OQ3ProgramResult:
+        """Executes the circuit specified by the supplied `circuit_ir` on the simulator.
+
+        Args:
+            openqasm_ir (Program): ir representation of a braket circuit specifying the
+                instructions to execute.
+            shots (int): The number of times to run the circuit.
+            batch_size (int): The size of the circuit partitions to contract,
+                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
+                Must be a positive integer.
+                Defaults to 1, which means gates are applied one at a time without any
+                optimized contraction.
+        Returns:
+            GateModelTaskResult: object that represents the result
+
+        Raises:
+            ValueError: If result types are not specified in the IR or sample is specified
+                as a result type when shots=0. Or, if StateVector and Amplitude result types
+                are requested when shots>0.
+        """
+        is_file = openqasm_ir.source.endswith(".qasm")
+        circuit = CircuitBuilder().build_circuit(
+            source=openqasm_ir.source,
+            inputs=openqasm_ir.inputs,
+            is_file=is_file,
+        )
+        qubit_count = circuit.num_qubits
+
+        self._validate_ir_results_compatibility(circuit.results)
+        self._validate_ir_instructions_compatibility(circuit)
+        BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit.results, qubit_count)
+
+        operations = circuit.instructions
+        BaseLocalSimulator._validate_operation_qubits(operations)
+
+        simulation = self.initialize_simulation(
+            qubit_count=qubit_count, shots=shots, batch_size=batch_size
+        )
+        simulation.evolve(operations)
+
+        results = []
+
+        if not shots and circuit.results:
+            result_types = BaseLocalSimulator._translate_result_types(circuit.results)
+            BaseLocalSimulator._validate_result_types_qubits_exist(
+                [
+                    result_type
+                    for result_type in result_types
+                    if isinstance(result_type, TargetedResultType)
+                ],
+                qubit_count,
+            )
+            results = BaseLocalOQ3Simulator._generate_results(
+                circuit.results,
+                result_types,
+                simulation,
+            )
+
+        return self._create_results_obj(results, openqasm_ir, simulation)
+
+    def _create_results_obj(
+        self,
+        results: List[Dict[str, Any]],
+        openqasm_ir: OQ3Program,
+        simulation: Simulation,
+    ) -> OQ3ProgramResult:
+        # return OQ3ProgramResult.construct(
+        return GateModelTaskResult.construct(
+            taskMetadata=TaskMetadata(
+                id="task-id-here",
+                shots=simulation.shots,
+                deviceId=self.DEVICE_ID,
+            ),
+            additionalMetadata=AdditionalMetadata(
+                action=openqasm_ir,
+            ),
+            # outputVariables={key: list(vals) for key, vals in context.shot_data.items()},
+            # outputVariables={},
+            resultTypes=results,
+            measurements=BaseLocalJaqcdSimulator._formatted_measurements(
+                simulation
+            ),
+            measuredQubits=BaseLocalJaqcdSimulator._get_measured_qubits(
+                simulation.qubit_count
+            )
+        )
+
+    @property
+    def properties(self) -> GateModelSimulatorDeviceCapabilities:
+        """GateModelSimulatorDeviceCapabilities: Properties of simulator such as supported IR types,
+        quantum operations, and result types.
+        """
+        raise NotImplementedError("properties has not been implemented.")
+
 
 class BaseLocalJaqcdSimulator(BaseLocalSimulator):
     @property
@@ -208,101 +411,6 @@ class BaseLocalJaqcdSimulator(BaseLocalSimulator):
             )
 
         return self._create_results_obj(results, circuit_ir, simulation)
-
-    def _validate_ir_instructions_compatibility(self, circuit_ir):
-        circuit_instruction_names = [
-            instr.__class__.__name__.lower().replace("_", "") for instr in circuit_ir.instructions
-        ]
-        supported_instructions = frozenset(
-            op.lower().replace("_", "")
-            for op in self.properties.action[DeviceActionType.JAQCD].supportedOperations
-        )
-        no_noise = True
-        for name in circuit_instruction_names:
-            if name in _NOISE_INSTRUCTIONS:
-                no_noise = False
-                if name not in supported_instructions:
-                    raise TypeError(
-                        'Noise instructions are not supported by the state vector simulator (by default). \
-You need to use the density matrix simulator: LocalSimulator("braket_dm").'
-                    )
-        if no_noise and _NOISE_INSTRUCTIONS.intersection(supported_instructions):
-            warnings.warn(
-                'You are running a noise-free circuit on the density matrix simulator. \
-Consider running this circuit on the state vector simulator: LocalSimulator("default") \
-for a better user experience.'
-            )
-
-    @staticmethod
-    def _validate_operation_qubits(operations: List[Operation]) -> None:
-        qubits_referenced = {target for operation in operations for target in operation.targets}
-        if max(qubits_referenced) >= len(qubits_referenced):
-            raise ValueError(
-                "Non-contiguous qubit indices supplied; "
-                "qubit indices in a circuit must be contiguous."
-            )
-
-    @staticmethod
-    def _get_measured_qubits(qubit_count: int) -> List[int]:
-        return list(range(qubit_count))
-
-    @staticmethod
-    def _validate_result_types_qubits_exist(
-        targeted_result_types: List[TargetedResultType], qubit_count: int
-    ):
-        for result_type in targeted_result_types:
-            targets = result_type.targets
-            if targets and max(targets) >= qubit_count:
-                raise ValueError(
-                    f"Result type ({result_type.__class__.__name__})"
-                    f" references invalid qubits {targets}"
-                )
-
-    @staticmethod
-    def _tensor_product_index_dict(
-        observable: TensorProduct, callable: Callable[[Observable], Any]
-    ) -> Dict[int, Any]:
-        obj_dict = {}
-        i = 0
-        factors = list(observable.factors)
-        total = len(factors[0].measured_qubits)
-        while factors:
-            if i >= total:
-                factors.pop(0)
-                if factors:
-                    total += len(factors[0].measured_qubits)
-            if factors:
-                obj_dict[i] = callable(factors[0])
-            i += 1
-        return obj_dict
-
-    @staticmethod
-    def _observable_hash(observable: Observable) -> Union[str, Dict[int, str]]:
-        if isinstance(observable, Hermitian):
-            return str(hash(str(observable.matrix.tostring())))
-        elif isinstance(observable, TensorProduct):
-            # Dict of target index to observable hash
-            return BaseLocalJaqcdSimulator._tensor_product_index_dict(
-                observable, BaseLocalJaqcdSimulator._observable_hash
-            )
-        else:
-            return str(observable.__class__.__name__)
-
-    @staticmethod
-    def _formatted_measurements(simulation: Simulation) -> List[List[str]]:
-        """Retrieves formatted measurements obtained from the specified simulation.
-
-        Args:
-            simulation (Simulation): Simulation to use for obtaining the measurements.
-
-        Returns:
-            List[List[str]]: List containing the measurements, where each measurement consists
-            of a list of measured values of qubits.
-        """
-        return [
-            list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
-            for sample in simulation.retrieve_samples()
-        ]
 
     def _create_results_obj(
         self,

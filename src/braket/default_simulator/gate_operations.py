@@ -20,6 +20,7 @@ from typing import Tuple
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
 
+from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.operation_helpers import (
     _from_braket_instruction,
@@ -833,3 +834,58 @@ class Unitary(GateOperation):
 @_from_braket_instruction.register(braket_instruction.Unitary)
 def _unitary(instruction) -> Unitary:
     return Unitary(instruction.targets, ir_matrix_to_ndarray(instruction.matrix))
+
+
+"""
+OpenQASM gate operations
+"""
+
+
+class U(GateOperation):
+    """
+    Parameterized primitive gate for OpenQASM simulator
+    """
+
+    def __init__(self, targets, theta, phi, lambda_, ctrl_modifiers):
+        self._targets = tuple(targets)
+        self._theta = theta
+        self._phi = phi
+        self._lambda = lambda_
+        self._ctrl_modifiers = ctrl_modifiers
+
+    @property
+    def matrix(self) -> np.ndarray:
+        unitary = np.array(
+            [
+                [math.cos(self._theta / 2), -cmath.exp(1j * self._lambda) * math.sin(self._theta / 2)],
+                [
+                    cmath.exp(1j * self._phi) * math.sin(self._theta / 2),
+                    cmath.exp(1j * (self._phi + self._lambda)) * math.cos(self._theta / 2),
+                ],
+            ]
+        )
+        for mod in self._ctrl_modifiers:
+            unitary = controlled_unitary(unitary, neg=mod)
+        return unitary
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+class GPhase(GateOperation):
+    """
+    Global phase operation for OpenQASM simulator
+    """
+
+    def __init__(self, targets, angle):
+        self._targets = tuple(targets)
+        self._angle = angle
+
+    @property
+    def matrix(self) -> np.ndarray:
+        return cmath.exp(self._angle * 1j) * np.eye(2 ** len(self._targets))
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
