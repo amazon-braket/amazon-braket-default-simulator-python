@@ -11,12 +11,10 @@ from openqasm3.ast import (
 
 from braket.default_simulator.openqasm.circuit_builder_context import CircuitBuilderContext
 from braket.default_simulator.openqasm.data_manipulation import singledispatchmethod
-
 from braket.default_simulator.openqasm.interpreter import Interpreter
 
 
 class CircuitBuilder(Interpreter):
-
     def __init__(
         self, context: Optional[CircuitBuilderContext] = None, logger: Optional[Logger] = None
     ):
@@ -57,10 +55,4 @@ class CircuitBuilder(Interpreter):
 
     @visit.register
     def _(self, node: QuantumMeasurement):
-        self.logger.debug(f"Quantum measurement: {node}")
-        qubits = self.visit(node.qubit)
-        return StringLiteral(self.context.measure_qubits(qubits))
-
-    @visit.register
-    def _(self, node: QuantumMeasurementAssignment):
         raise NotImplementedError("Measurements not implemented")

@@ -26,14 +26,12 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
     def device_action_type(self):
         return DeviceActionType.OPENQASM
 
-    # def initialize_simulation(self):
-    #     # any preprocessing passes could go here
-    #     return OpenQASMStateVectorSimulation()
-
     def run(
         self,
         openqasm_ir: Program,
         shots: int = 0,
+        *args,
+        **kwargs,
     ) -> OQ3ProgramResult:
         if openqasm_ir.source.endswith(".qasm"):
             context = Interpreter().run_file(
@@ -128,4 +126,4 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
         )
 
     def initialize_simulation(self, **kwargs):
-        pass
+        """this method is not used"""

@@ -338,11 +338,11 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
         )
 
     @property
+    @abstractmethod
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
         """GateModelSimulatorDeviceCapabilities: Properties of simulator such as supported IR types,
         quantum operations, and result types.
         """
-        raise NotImplementedError("properties has not been implemented.")
 
 
 class BaseLocalJaqcdSimulator(BaseLocalSimulator):

@@ -1,8 +1,8 @@
-import numpy as np
-from typing import Union, Optional, List
+from typing import List, Optional, Union
 
+import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
-from openqasm3.ast import Identifier, IndexedIdentifier, QuantumGateModifier, GateModifierName
+from openqasm3.ast import GateModifierName, Identifier, IndexedIdentifier, QuantumGateModifier
 
 from braket.default_simulator.gate_operations import GPhase, U
 from braket.default_simulator.openqasm.data_manipulation import LiteralType
@@ -25,9 +25,6 @@ class Circuit:
     @property
     def num_qubits(self):
         return len(self.qubit_set)
-
-    def __repr__(self):
-        print("Instructions\n" + "\n".join(str(u) for u in self.instructions))
 
 
 class CircuitBuilderContext(ProgramContext):
@@ -73,6 +70,8 @@ class CircuitBuilderContext(ProgramContext):
             GateModifierName.ctrl: 0,
             GateModifierName.negctrl: 1,
         }
-        ctrl_modifiers = [ctrl_mod_map[mod.modifier] for mod in modifiers]
+        ctrl_modifiers = [
+            mod for mod in [ctrl_mod_map.get(mod.modifier) for mod in modifiers] if mod is not None
+        ]
         instruction = U(target, *params, ctrl_modifiers)
         self.circuit.add_instruction(instruction)
