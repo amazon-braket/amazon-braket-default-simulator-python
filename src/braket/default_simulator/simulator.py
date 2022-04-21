@@ -64,7 +64,6 @@ _NOISE_INSTRUCTIONS = frozenset(
 
 
 class BaseLocalSimulator(BraketSimulator):
-
     @property
     @abstractmethod
     def device_action_type(self):
@@ -104,8 +103,7 @@ class BaseLocalSimulator(BraketSimulator):
     def _validate_shots_and_ir_results(shots: int, results, qubit_count: int) -> None:
         if not shots:
             if not results:
-                pass
-                # raise ValueError("Result types must be specified in the IR when shots=0")
+                raise ValueError("Result types must be specified in the IR when shots=0")
             for rt in results:
                 if rt.type in ["sample"]:
                     raise ValueError("sample can only be specified when shots>0")
@@ -181,14 +179,14 @@ class BaseLocalSimulator(BraketSimulator):
                 no_noise = False
                 if name not in supported_instructions:
                     raise TypeError(
-                        'Noise instructions are not supported by the state vector simulator (by default). '
+                        "Noise instructions are not supported by the state vector simulator (by default). "
                         'You need to use the density matrix simulator: LocalSimulator("braket_dm").'
                     )
         if no_noise and _NOISE_INSTRUCTIONS.intersection(supported_instructions):
             warnings.warn(
-                'You are running a noise-free circuit on the density matrix simulator. '
+                "You are running a noise-free circuit on the density matrix simulator. "
                 'Consider running this circuit on the state vector simulator: LocalSimulator("default") '
-                'for a better user experience.'
+                "for a better user experience."
             )
 
     @staticmethod
@@ -197,7 +195,7 @@ class BaseLocalSimulator(BraketSimulator):
 
     @staticmethod
     def _tensor_product_index_dict(
-            observable: TensorProduct, callable: Callable[[Observable], Any]
+        observable: TensorProduct, callable: Callable[[Observable], Any]
     ) -> Dict[int, Any]:
         obj_dict = {}
         i = 0
@@ -243,7 +241,6 @@ class BaseLocalSimulator(BraketSimulator):
 
 
 class BaseLocalOQ3Simulator(BaseLocalSimulator):
-
     @property
     def device_action_type(self):
         return DeviceActionType.OPENQASM
@@ -253,7 +250,7 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
         openqasm_ir: OQ3Program,
         shots: int = 0,
         batch_size: int = 1,
-    ) -> OQ3ProgramResult:
+    ) -> GateModelTaskResult:
         """Executes the circuit specified by the supplied `circuit_ir` on the simulator.
 
         Args:
@@ -294,9 +291,9 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
         )
         simulation.evolve(operations)
 
-        results = []
+        results = circuit.results
 
-        if not shots and circuit.results:
+        if not shots:
             result_types = BaseLocalSimulator._translate_result_types(circuit.results)
             BaseLocalSimulator._validate_result_types_qubits_exist(
                 [
@@ -319,41 +316,26 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
         # in the future, perhaps it will be possible to expand this strategy to allow for recursive monte
         # carlo simulation where qubits are reused.
 
-        results = self._create_results_obj(results, openqasm_ir, simulation)
-        # print(circuit_builder.context.shot_data)
-        # print(results)
-        #
-        # for measurement in results.measurements:
-        #     post_processor = PostProcessor.from_circuit_builder(circuit_builder, measurement)
-        #     post_processor.context.record_outputs()
-        #     print(post_processor.context.shot_data)
-        return results
+        return self._create_results_obj(results, openqasm_ir, simulation)
 
     def _create_results_obj(
         self,
         results: List[Dict[str, Any]],
         openqasm_ir: OQ3Program,
         simulation: Simulation,
-    ) -> OQ3ProgramResult:
-        # return OQ3ProgramResult.construct(
+    ) -> GateModelTaskResult:
         return GateModelTaskResult.construct(
             taskMetadata=TaskMetadata(
-                id="task-id-here",
+                id=str(uuid.uuid4()),
                 shots=simulation.shots,
                 deviceId=self.DEVICE_ID,
             ),
             additionalMetadata=AdditionalMetadata(
                 action=openqasm_ir,
             ),
-            # outputVariables={key: list(vals) for key, vals in context.shot_data.items()},
-            # outputVariables={},
             resultTypes=results,
-            measurements=BaseLocalJaqcdSimulator._formatted_measurements(
-                simulation
-            ),
-            measuredQubits=BaseLocalJaqcdSimulator._get_measured_qubits(
-                simulation.qubit_count
-            )
+            measurements=BaseLocalSimulator._formatted_measurements(simulation),
+            measuredQubits=BaseLocalSimulator._get_measured_qubits(simulation.qubit_count),
         )
 
     @property

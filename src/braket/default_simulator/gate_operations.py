@@ -857,7 +857,10 @@ class U(GateOperation):
     def matrix(self) -> np.ndarray:
         unitary = np.array(
             [
-                [math.cos(self._theta / 2), -cmath.exp(1j * self._lambda) * math.sin(self._theta / 2)],
+                [
+                    math.cos(self._theta / 2),
+                    -cmath.exp(1j * self._lambda) * math.sin(self._theta / 2),
+                ],
                 [
                     cmath.exp(1j * self._phi) * math.sin(self._theta / 2),
                     cmath.exp(1j * (self._phi + self._lambda)) * math.cos(self._theta / 2),

@@ -96,7 +96,9 @@ class CircuitBuilder:
     non-trivial for the shots=0 case, but worth exploring if we can optimize in general.
     """
 
-    def __init__(self, context: Optional[CircuitBuilderContext] = None, logger: Optional[Logger] = None):
+    def __init__(
+        self, context: Optional[CircuitBuilderContext] = None, logger: Optional[Logger] = None
+    ):
         # context keeps track of all state
         self.context = context or CircuitBuilderContext()
         self.logger = logger or getLogger(__name__)

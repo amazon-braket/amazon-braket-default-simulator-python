@@ -158,7 +158,7 @@ def hadamard_adder(pytester, stdgates):
 
 @pytest.mark.parametrize("shots", (1, 2, 10))
 def test_ghz(ghz, shots):
-    device = LocalSimulator("braket_oq3_sv")
+    device = LocalSimulator("braket_oq3_native_sv")
     program = Program(source="ghz.qasm")
     result = device.run(program, shots=shots).result()
 
@@ -169,7 +169,7 @@ def test_ghz(ghz, shots):
 
 def test_adder(adder):
     for _ in range(3):
-        device = LocalSimulator("braket_oq3_sv")
+        device = LocalSimulator("braket_oq3_native_sv")
         a, b = np.random.randint(0, 16, 2)
         inputs = {"a_in": a, "b_in": b}
         program = Program(source="adder.qasm", inputs=inputs)
@@ -179,7 +179,7 @@ def test_adder(adder):
 
 
 def test_input_output_types():
-    device = LocalSimulator("braket_oq3_sv")
+    device = LocalSimulator("braket_oq3_native_sv")
     result = device.run(
         Program(
             source="""
@@ -271,7 +271,7 @@ def test_result_types_analytic(stdgates):
     #pragma {"braket result variance x(q[0]) @ z(q[2]) @ h(q[1])";}
     #pragma {"braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]";}
     """
-    device = LocalSimulator("braket_oq3_sv")
+    device = LocalSimulator("braket_oq3_native_sv")
     program = Program(source=qasm)
     result = device.run(program, shots=0).result()
     for rt in result.result_types:
@@ -383,7 +383,7 @@ def test_invalid_stanard_observable_target():
     qubit[2] qs;
     #pragma {"braket result variance x(qs)";}
     """
-    device = LocalSimulator("braket_oq3_sv")
+    device = LocalSimulator("braket_oq3_native_sv")
     program = Program(source=qasm)
 
     must_be_one_qubit = "Standard observable target must be exactly 1 qubit."

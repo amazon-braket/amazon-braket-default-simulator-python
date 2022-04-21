@@ -16,7 +16,7 @@ from openqasm3.ast import (
     SubroutineDefinition,
 )
 
-from braket.default_simulator.gate_operations import U, Unitary, GPhase
+from braket.default_simulator.gate_operations import GPhase, U, Unitary
 from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.openqasm import data_manipulation as dm
 from braket.default_simulator.openqasm.braket_result_pragmas import parse_braket_pragma
@@ -347,7 +347,6 @@ class ScopeManager:
 
 
 class Circuit:
-
     def __init__(self):
         self.instructions = []
         self.results = []
@@ -365,7 +364,7 @@ class Circuit:
         return len(self.qubit_set)
 
     def __repr__(self):
-        print("Instructions\n" + '\n'.join(str(u) for u in self.instructions))
+        print("Instructions\n" + "\n".join(str(u) for u in self.instructions))
 
 
 class CircuitBuilderContext:
@@ -418,7 +417,6 @@ class CircuitBuilderContext:
                 self.shot_data[name] = np.append(
                     self.shot_data[name], current_shot_data[name], axis=0
                 )
-
 
     def add_result(self, result: Results):
         # self.results.append(result)
@@ -563,13 +561,9 @@ class CircuitBuilderContext:
             GateModifierName.ctrl: 0,
             GateModifierName.negctrl: 1,
         }
-        ctrl_modifiers = [
-            ctrl_mod_map[mod.modifier] for mod in modifiers
-        ]
+        ctrl_modifiers = [ctrl_mod_map[mod.modifier] for mod in modifiers]
         instruction = U(target, *params, ctrl_modifiers)
         self.circuit.add_instruction(instruction)
-
-
 
 
 class PostProcessorContext:
@@ -749,7 +743,9 @@ class PostProcessorContext:
         raise ValueError("gates not allowed in post")
 
     @classmethod
-    def from_circuit_builder_context(cls, context: CircuitBuilderContext, measured_state: np.ndarray):
+    def from_circuit_builder_context(
+        cls, context: CircuitBuilderContext, measured_state: np.ndarray
+    ):
         post_processor_context = PostProcessorContext(measured_state)
         post_processor_context.symbol_table = context.symbol_table
         post_processor_context.variable_table = context.variable_table
@@ -764,4 +760,3 @@ class PostProcessorContext:
         post_processor_context.num_qubits = context.num_qubits
         # post_processor_context.measurements = {}
         return post_processor_context
-

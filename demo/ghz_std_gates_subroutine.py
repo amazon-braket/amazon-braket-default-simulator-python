@@ -1,7 +1,7 @@
 from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 
-device = LocalSimulator("braket_oq3_sv")
+device = LocalSimulator("braket_oq3_native_sv")
 
 ghz_qasm = """
 include "stdgates.inc";
@@ -23,16 +23,5 @@ c = measure qs;
 """
 
 ghz = Program(source=ghz_qasm)
-result = device.run(ghz, shots=1000).result()
+result = device.run(ghz, shots=100).result()
 print(result.output_variables)
-
-
-# TODO:
-"""
-CircuitBuilder(Interpreter)
-ProgramContext -> InterpreterContext
-CircuitBuilder gets CircuitBuilderContext
-circuit builder does not allow classical uncertainty between shots,
-builds a circuit which will then be executed at the end.
-This fits cleanly with the simulator/simulation paradigm.
-"""

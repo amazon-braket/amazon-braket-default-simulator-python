@@ -57,13 +57,12 @@ ans[1:4] = measure b[0:3];
 """
 
 
-device = LocalSimulator("braket_oq3_sv")
+device = LocalSimulator("braket_oq3_native_sv")
 
 for _ in range(10):
     a, b = np.random.randint(0, 16, 2)
     inputs = {"a_in": a, "b_in": b}
     adder = Program(source=adder_qasm, inputs=inputs)
     result = device.run(adder, shots=1).result()
-    print(result)
     ans = result.output_variables["ans"][0]
     print(f"{a} + {b} = {int(ans, base=2)}")

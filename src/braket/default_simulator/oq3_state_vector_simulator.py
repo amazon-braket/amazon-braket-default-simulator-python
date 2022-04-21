@@ -23,7 +23,7 @@ from braket.default_simulator.state_vector_simulation import StateVectorSimulati
 
 
 class OQ3StateVectorSimulator(BaseLocalOQ3Simulator):
-    DEVICE_ID = "oq3_sv"
+    DEVICE_ID = "braket_oq3_sv"
 
     def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
         qubit_count = kwargs.get("qubit_count")

@@ -1,7 +1,7 @@
 from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 
-device = LocalSimulator("oq3_sv")
+device = LocalSimulator("braket_oq3_sv")
 
 ghz_qasm = """
 include "stdgates.inc";
@@ -17,6 +17,4 @@ cx q[1], q[2];
 
 ghz = Program(source=ghz_qasm)
 result = device.run(ghz).result()
-print(result)
 print(result.result_types)
-print(result.measurement_counts)

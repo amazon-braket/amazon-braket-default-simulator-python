@@ -10,9 +10,9 @@ from braket.ir.jaqcd import (
 )
 from openqasm3.parser import parse
 
-from .dist.BraketPragmasVisitor import BraketPragmasVisitor
 from .dist.BraketPragmasLexer import BraketPragmasLexer
 from .dist.BraketPragmasParser import BraketPragmasParser
+from .dist.BraketPragmasVisitor import BraketPragmasVisitor
 
 
 class BraketPragmaNodeVisitor(BraketPragmasVisitor):

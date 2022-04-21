@@ -61,7 +61,7 @@ ans[1:4] = measure b[0:3];
 """
 
 
-device = LocalSimulator("braket_oq3_sv")
+device = LocalSimulator("braket_oq3_native_sv")
 
 adder = Program(source=adder_qasm)
 num_shots = 10

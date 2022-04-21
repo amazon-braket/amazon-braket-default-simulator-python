@@ -1,5 +1,4 @@
 import numpy as np
-
 from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 
@@ -28,7 +27,7 @@ def test_gphase():
     
     #pragma {"braket result amplitude '00', '01', '10', '11'";}
     """
-    device = LocalSimulator("oq3_sv")
+    device = LocalSimulator("braket_oq3_sv")
     result = device.run(Program(source=qasm)).result()
     sv = [result.result_types[0].value[state] for state in ("00", "01", "10", "11")]
     assert np.allclose(sv, [-1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])

@@ -58,15 +58,10 @@ def test_observable_hash_tensor_product():
     assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
 
 
-def test_base_local_simulator_instance_braket_simulator():
-    assert isinstance(BaseLocalJaqcdSimulator(), BraketSimulator)
-
-
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_base_local_simulator_properties():
-    BaseLocalJaqcdSimulator().properties
-
-
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_base_local_simulator_initialize_simulation():
-    BaseLocalJaqcdSimulator().initialize_simulation()
+def test_base_local_simulator_abstract():
+    abstract_methods = (
+        "Can't instantiate abstract class BaseLocalJaqcdSimulator with "
+        "abstract methods initialize_simulation, properties"
+    )
+    with pytest.raises(TypeError, match=abstract_methods):
+        BaseLocalJaqcdSimulator()

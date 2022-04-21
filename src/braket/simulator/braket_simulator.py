@@ -39,6 +39,8 @@ class BraketSimulator(ABC):
     >>> }
     """
 
+    DEVICE_ID = None
+
     @abstractmethod
     def run(
         self, ir: Union[JaqcdProgram, OQ3Program, Problem], *args, **kwargs

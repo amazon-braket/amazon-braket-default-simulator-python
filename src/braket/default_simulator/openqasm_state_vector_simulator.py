@@ -1,4 +1,5 @@
 import sys
+import uuid
 
 from braket.device_schema import (
     DeviceActionType,
@@ -19,7 +20,7 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 
 
 class OpenQASMStateVectorSimulator(BaseLocalSimulator):
-    DEVICE_ID = "braket_oq3_sv"
+    DEVICE_ID = "braket_oq3_native_sv"
 
     @property
     def device_action_type(self):
@@ -115,9 +116,9 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
     ) -> OQ3ProgramResult:
         return OQ3ProgramResult(
             taskMetadata=TaskMetadata(
-                id="task-id-here",
+                id=str(uuid.uuid4()),
                 shots=shots,
-                deviceId="braket_oq3_sv",
+                deviceId=self.DEVICE_ID,
             ),
             additionalMetadata=AdditionalMetadata(
                 action=openqasm_ir,

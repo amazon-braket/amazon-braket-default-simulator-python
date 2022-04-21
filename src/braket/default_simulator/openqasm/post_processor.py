@@ -52,7 +52,10 @@ from openqasm3.ast import (
     WhileLoop,
 )
 
-from braket.default_simulator.openqasm.circuit_builder_context import CircuitBuilderContext, PostProcessorContext
+from braket.default_simulator.openqasm.circuit_builder_context import (
+    CircuitBuilderContext,
+    PostProcessorContext,
+)
 from braket.default_simulator.openqasm.data_manipulation import (
     builtin_functions,
     cast_to,
@@ -611,4 +614,8 @@ class PostProcessor:
 
     @classmethod
     def from_circuit_builder(cls, circuit_builder, measured_state):
-        return cls(PostProcessorContext.from_circuit_builder_context(circuit_builder.context, measured_state))
+        return cls(
+            PostProcessorContext.from_circuit_builder_context(
+                circuit_builder.context, measured_state
+            )
+        )
