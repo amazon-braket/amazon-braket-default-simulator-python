@@ -355,6 +355,16 @@ class Interpreter:
                     )
         return inlined_body
 
+    def handle_builtin_unitary(self, arguments, qubits, modifiers):
+        self.context.execute_builtin_unitary(
+            arguments,
+            qubits,
+            modifiers,
+        )
+
+    def handle_phase(self, phase, qubits=None):
+        self.context.apply_phase(phase, qubits)
+
     @visit.register
     def _(self, node: QuantumGate):
         self.logger.debug(f"Quantum gate: {node}")
@@ -402,7 +412,7 @@ class Interpreter:
         if gate_name == "U":
             # to simplify indices
             qubits = self.visit(qubits)
-            self.context.execute_builtin_unitary(
+            self.handle_builtin_unitary(
                 arguments,
                 qubits,
                 modifiers,
@@ -427,7 +437,7 @@ class Interpreter:
                         self.visit(statement)
                     else:  # QuantumPhase
                         phase = self.visit(statement.argument).value
-                        self.context.apply_phase(phase, qubits)
+                        self.handle_phase(phase, qubits)
                 return QuantumGate(modifiers, node.name, arguments, qubits)
 
     @visit.register
@@ -441,7 +451,7 @@ class Interpreter:
             node = convert_to_gate(node)
             self.visit(node)
         else:
-            self.context.apply_phase(node.argument.value)
+            self.handle_phase(node.argument.value)
         return node
 
     @visit.register
