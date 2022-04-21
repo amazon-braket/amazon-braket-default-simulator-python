@@ -18,7 +18,7 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceParameters,
 )
 
-from braket.default_simulator.simulator import BaseLocalJaqcdSimulator
+from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 

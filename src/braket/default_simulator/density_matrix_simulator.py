@@ -19,7 +19,7 @@ from braket.device_schema.simulators import (
 )
 
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
-from braket.default_simulator.simulator import BaseLocalJaqcdSimulator
+from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
 
 
 class DensityMatrixSimulator(BaseLocalJaqcdSimulator):
