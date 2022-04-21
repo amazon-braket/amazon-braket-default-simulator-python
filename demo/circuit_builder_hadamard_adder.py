@@ -12,9 +12,12 @@ adder_qasm = """
 OPENQASM 3;
 include "stdgates.inc";
 
-output bit[4] a_in;
+/*output bit[4] a_in;
 output bit[4] b_in;
-output bit[5] ans;
+output bit[5] ans;*/
+output int[8] test_output;
+
+test_output = 17;
 
 gate majority a, b, c {
     cx c, b;
@@ -70,7 +73,7 @@ ans[1:4] = measure b[0:3];
 device = LocalSimulator("oq3_sv")
 
 adder = Program(source=adder_qasm)
-num_shots = 1000
+num_shots = 10000
 result = device.run(adder, shots=num_shots).result()
 
 

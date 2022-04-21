@@ -400,7 +400,7 @@ class CircuitBuilderContext:
         for key, value in inputs.items():
             self.inputs[key] = value
 
-    def record_and_reset(self):
+    def record_outputs(self):
         current_shot_data = {}
 
         for name, symbol in self.symbol_table.items():
@@ -419,9 +419,6 @@ class CircuitBuilderContext:
                     self.shot_data[name], current_shot_data[name], axis=0
                 )
 
-        if self.num_qubits:
-            self.quantum_simulation.reset_qubits()
-        self.clear_classical_variables()
 
     def add_result(self, result: Results):
         # self.results.append(result)
@@ -571,4 +568,200 @@ class CircuitBuilderContext:
         ]
         instruction = U(target, *params, ctrl_modifiers)
         self.circuit.add_instruction(instruction)
+
+
+
+
+class PostProcessorContext:
+    def __init__(self, measured_state):
+        self.measured_state = measured_state
+        self.symbol_table = SymbolTable()
+        self.variable_table = VariableTable()
+        self.gate_table = GateTable()
+        self.subroutine_table = SubroutineTable()
+        self.qubit_mapping = QubitTable()
+        self.scope_manager = ScopeManager(self)
+        self.shot_data = {}
+        self.is_analytic = None
+        self.outputs = set()
+        self.inputs = {}
+        self.circuit = Circuit()
+        self.num_qubits = 0
+        self.measurements = {}
+
+    def __repr__(self):
+        return "\n\n".join(
+            repr(x)
+            for x in (self.symbol_table, self.variable_table, self.gate_table, self.qubit_mapping)
+        )
+
+    def specify_output(self, name: str):
+        self.outputs.add(name)
+
+    def is_output(self, name: str):
+        return name in self.outputs
+
+    def load_inputs(self, inputs: Dict[str, Any]):
+        for key, value in inputs.items():
+            self.inputs[key] = value
+
+    def record_outputs(self):
+        shot_data = {}
+
+        for name, symbol in self.symbol_table.items():
+            var_type = symbol.type
+
+            if dm.is_supported_output_type(var_type) and (not self.outputs or self.is_output(name)):
+                value = self.get_value(name)
+                output = dm.convert_to_output(value)
+                shot_data[name] = np.array([output])
+
+        return shot_data
+        # else:
+        #     for name, val in self.shot_data.items():
+        #         self.shot_data[name] = np.append(
+        #             self.shot_data[name], current_shot_data[name], axis=0
+        #         )
+
+    def add_result(self, result: Results):
+        # self.results.append(result)
+        self.circuit.add_result(result)
+
+    def parse_result_type_pragma(self, pragma_body: str):
+        return parse_braket_pragma(pragma_body, self.qubit_mapping)
+
+    def serialize_output(self):
+        for name, val in self.shot_data.items():
+            self.shot_data[name] = self.shot_data[name].tolist()
+
+    def clear_classical_variables(self):
+        symbol_names = [name for name, _ in self.symbol_table.items()]
+        for name in symbol_names:
+            if not self.get_const(name) and name not in self.qubit_mapping:
+                del self.symbol_table[name]
+                del self.variable_table[name]
+
+    def declare_variable(
+        self,
+        name: str,
+        symbol_type: Union[ClassicalType, LiteralType, Type[Identifier]],
+        value: Optional[Any] = None,
+        const: bool = False,
+    ):
+        self.symbol_table.add_symbol(name, symbol_type, const)
+        self.variable_table.add_variable(name, value)
+
+    def declare_qubit_alias(
+        self,
+        name: str,
+        value: Identifier,
+    ):
+        self.symbol_table.add_symbol(name, Identifier)
+        self.variable_table.add_variable(name, value)
+
+    def enter_scope(self):
+        return self.scope_manager
+
+    def push_scope(self):
+        self.symbol_table.push_scope()
+        self.variable_table.push_scope()
+        self.gate_table.push_scope()
+
+    def pop_scope(self):
+        self.symbol_table.pop_scope()
+        self.variable_table.pop_scope()
+        self.gate_table.pop_scope()
+
+    def get_type(self, name: str):
+        return self.symbol_table.get_type(name)
+
+    def get_const(self, name: str):
+        return self.symbol_table.get_const(name)
+
+    def get_value(self, name: str):
+        return self.variable_table.get_value(name)
+
+    def get_value_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]):
+        return self.variable_table.get_value_by_identifier(identifier)
+
+    def is_initialized(self, name: str):
+        return self.variable_table.is_initalized(name)
+
+    def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any):
+        name = dm.get_identifier_name(variable)
+        var_type = self.get_type(name)
+        indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
+        return self.variable_table.update_value(name, value, var_type, indices)
+
+    def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
+        self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
+        self.num_qubits += num_qubits
+        # self.quantum_simulation.add_qubits(num_qubits)
+        self.declare_qubit_alias(name, Identifier(name))
+
+    def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
+        return self.qubit_mapping.get_by_identifier(qubits)
+
+    def reset_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
+        target = self.get_qubits(qubits)
+        if self.is_analytic and self.qubit_mapping.qubits_used(target):
+            raise ValueError(
+                f"Cannot reset qubit(s) '{get_identifier_string(qubits)}' since "
+                "doing so would collapse the wave function in a shots=0 simulation."
+            )
+        self.quantum_simulation.reset_qubits(target)
+
+    def measure_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
+        if self.is_analytic:
+            raise ValueError("Measurement operation not supported for analytic shots=0 simulation.")
+        target = self.get_qubits(qubits)
+        return "".join("01"[int(m)] for m in self.measured_state[target])
+
+    def add_phase(
+        self, phase: float, qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None
+    ):
+        raise ValueError("Phases not allowed in post")
+
+    def add_gate(self, name: str, definition: QuantumGateDefinition):
+        self.gate_table.add_gate(name, definition)
+
+    def get_gate_definition(self, name: str):
+        try:
+            return self.gate_table.get_gate_definition(name)
+        except KeyError:
+            raise ValueError(f"Gate {name} is not defined.")
+
+    def add_subroutine(self, name: str, definition: SubroutineDefinition):
+        self.subroutine_table.add_subroutine(name, definition)
+
+    def get_subroutine_definition(self, name: str):
+        try:
+            return self.subroutine_table.get_subroutine_definition(name)
+        except KeyError:
+            raise NameError(f"Subroutine {name} is not defined.")
+
+    def add_builtin_unitary(
+        self,
+        parameters: List[LiteralType],
+        qubits: List[Identifier],
+        modifiers: Optional[List[QuantumGateModifier]] = None,
+    ):
+        raise ValueError("gates not allowed in post")
+
+    @classmethod
+    def from_circuit_builder_context(cls, context: CircuitBuilderContext, measured_state: np.ndarray):
+        post_processor_context = PostProcessorContext(measured_state)
+        post_processor_context.symbol_table = context.symbol_table
+        post_processor_context.variable_table = context.variable_table
+        post_processor_context.gate_table = context.gate_table
+        post_processor_context.subroutine_table = context.subroutine_table
+        post_processor_context.qubit_mapping = context.qubit_mapping
+        post_processor_context.scope_manager = context.scope_manager
+        post_processor_context.shot_data = {}
+        post_processor_context.is_analytic = None
+        post_processor_context.outputs = context.outputs
+        post_processor_context.inputs = context.inputs
+        post_processor_context.num_qubits = context.num_qubits
+        # post_processor_context.measurements = {}
+        return post_processor_context
 

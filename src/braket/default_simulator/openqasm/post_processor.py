@@ -52,7 +52,7 @@ from openqasm3.ast import (
     WhileLoop,
 )
 
-from braket.default_simulator.openqasm.circuit_builder_context import CircuitBuilderContext
+from braket.default_simulator.openqasm.circuit_builder_context import CircuitBuilderContext, PostProcessorContext
 from braket.default_simulator.openqasm.data_manipulation import (
     builtin_functions,
     cast_to,
@@ -80,7 +80,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
 # from braket.default_simulator.result_types import StateVector
 
 
-class CircuitBuilder:
+class PostProcessor:
     """
     Shots=0 (sv implementation) will not support using measured values,
     resetting active qubits, using measured qubits. In other words, it will
@@ -96,9 +96,9 @@ class CircuitBuilder:
     non-trivial for the shots=0 case, but worth exploring if we can optimize in general.
     """
 
-    def __init__(self, context: Optional[CircuitBuilderContext] = None, logger: Optional[Logger] = None):
+    def __init__(self, context: PostProcessorContext, logger: Optional[Logger] = None):
         # context keeps track of all state
-        self.context = context or CircuitBuilderContext()
+        self.context = context
         self.logger = logger or getLogger(__name__)
 
     def run(self, string: str, shots: int = 0, inputs: Dict[str, Any] = None):
@@ -134,8 +134,6 @@ class CircuitBuilder:
 
         program = parse(source)
         self.visit(program)
-        self.context.record_outputs()
-        self.context.serialize_output()
         return self.context.circuit
 
     @singledispatchmethod
@@ -610,3 +608,7 @@ class CircuitBuilder:
     def _(self, node: ReturnStatement):
         self.logger.debug(f"Return statement: {node}")
         return self.visit(node.expression)
+
+    @classmethod
+    def from_circuit_builder(cls, circuit_builder, measured_state):
+        return cls(PostProcessorContext.from_circuit_builder_context(circuit_builder.context, measured_state))

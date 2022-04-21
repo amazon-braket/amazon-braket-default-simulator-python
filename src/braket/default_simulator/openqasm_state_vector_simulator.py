@@ -125,3 +125,6 @@ class OpenQASMStateVectorSimulator(BaseLocalSimulator):
             outputVariables={key: list(vals) for key, vals in context.shot_data.items()},
             resultTypes=results,
         )
+
+    def initialize_simulation(self, **kwargs):
+        pass

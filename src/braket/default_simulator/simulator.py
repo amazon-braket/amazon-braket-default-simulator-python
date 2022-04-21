@@ -34,6 +34,7 @@ from braket.task_result.oq3_program_result_v1 import OQ3ProgramResult
 
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit_builder import CircuitBuilder
+from braket.default_simulator.openqasm.post_processor import PostProcessor
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
@@ -80,6 +81,12 @@ class BaseLocalSimulator(BraketSimulator):
     def properties(self) -> DeviceCapabilities:
         """simulator properties"""
 
+    @abstractmethod
+    def initialize_simulation(self, **kwargs) -> Simulation:
+        """
+        Initializes simulation with keyword arguments
+        """
+
     def _validate_ir_results_compatibility(self, results):
         if results:
             circuit_result_types_name = [result.__class__.__name__ for result in results]
@@ -97,7 +104,8 @@ class BaseLocalSimulator(BraketSimulator):
     def _validate_shots_and_ir_results(shots: int, results, qubit_count: int) -> None:
         if not shots:
             if not results:
-                raise ValueError("Result types must be specified in the IR when shots=0")
+                pass
+                # raise ValueError("Result types must be specified in the IR when shots=0")
             for rt in results:
                 if rt.type in ["sample"]:
                     raise ValueError("sample can only be specified when shots>0")
@@ -266,7 +274,8 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
                 are requested when shots>0.
         """
         is_file = openqasm_ir.source.endswith(".qasm")
-        circuit = CircuitBuilder().build_circuit(
+        circuit_builder = CircuitBuilder()
+        circuit = circuit_builder.build_circuit(
             source=openqasm_ir.source,
             inputs=openqasm_ir.inputs,
             is_file=is_file,
@@ -284,13 +293,6 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
         )
         simulation.evolve(operations)
-
-        # here, load the quantum state into a post-processor that has access to output variables and
-        # circuit builder context. this post-processor will run n_shots iterations of evaluation of all
-        # statements that take in measurements as input. this will start just as classical computation
-        # only. For example, assignments and casts of measured outcomes will be evaluated in this step.
-        # in the future, perhaps it will be possible to expand this strategy to allow for recursive monte
-        # carlo simulation where qubits are reused.
 
         results = []
 
@@ -310,7 +312,22 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
                 simulation,
             )
 
-        return self._create_results_obj(results, openqasm_ir, simulation)
+        # here, load the quantum state into a post-processor that has access to output variables and
+        # circuit builder context. this post-processor will run n_shots iterations of evaluation of all
+        # statements that take in measurements as input. this will start just as classical computation
+        # only. For example, assignments and casts of measured outcomes will be evaluated in this step.
+        # in the future, perhaps it will be possible to expand this strategy to allow for recursive monte
+        # carlo simulation where qubits are reused.
+
+        results = self._create_results_obj(results, openqasm_ir, simulation)
+        # print(circuit_builder.context.shot_data)
+        # print(results)
+        #
+        # for measurement in results.measurements:
+        #     post_processor = PostProcessor.from_circuit_builder(circuit_builder, measurement)
+        #     post_processor.context.record_outputs()
+        #     print(post_processor.context.shot_data)
+        return results
 
     def _create_results_obj(
         self,
@@ -442,16 +459,3 @@ class BaseLocalJaqcdSimulator(BaseLocalSimulator):
             )
 
         return GateModelTaskResult.construct(**result_dict)
-
-    @property
-    def properties(self) -> GateModelSimulatorDeviceCapabilities:
-        """GateModelSimulatorDeviceCapabilities: Properties of simulator such as supported IR types,
-        quantum operations, and result types.
-        """
-        raise NotImplementedError("properties has not been implemented.")
-
-    def initialize_simulation(self, **kwargs) -> Simulation:
-        """
-        Initializes simulation with keyword arguments
-        """
-        raise NotImplementedError("initialize_simulation has not been implemented.")
