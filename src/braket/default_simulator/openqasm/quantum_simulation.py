@@ -2,8 +2,8 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 
-from braket.default_simulator.operation import Observable
 from braket.default_simulator.linalg_utils import marginal_probability, multiply_matrix
+from braket.default_simulator.operation import Observable
 
 
 class QuantumSimulation:

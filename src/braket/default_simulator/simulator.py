@@ -19,11 +19,7 @@ from braket.device_schema import DeviceCapabilities
 from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.openqasm import Program as OQ3Program
-from braket.task_result import (
-    AnnealingTaskResult,
-    GateModelTaskResult,
-    ResultTypeValue,
-)
+from braket.task_result import AnnealingTaskResult, GateModelTaskResult, ResultTypeValue
 from braket.task_result.oq3_program_result_v1 import OQ3ProgramResult
 
 from braket.default_simulator.observables import Hermitian, TensorProduct

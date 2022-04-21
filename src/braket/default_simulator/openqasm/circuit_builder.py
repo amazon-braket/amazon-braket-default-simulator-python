@@ -2,10 +2,7 @@ from logging import Logger, getLogger
 from typing import Optional
 
 from openqasm3 import parse
-from openqasm3.ast import (
-    QuantumMeasurement,
-    QuantumReset,
-)
+from openqasm3.ast import QuantumMeasurement, QuantumReset
 
 from braket.default_simulator.openqasm.circuit_builder_context import CircuitBuilderContext
 from braket.default_simulator.openqasm.data_manipulation import singledispatchmethod

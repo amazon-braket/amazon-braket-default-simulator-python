@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 
 from braket.default_simulator import observables
-from braket.default_simulator.result_types import DensityMatrix, Expectation, Probability, Variance
 from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
+from braket.default_simulator.result_types import DensityMatrix, Expectation, Probability, Variance
 
 
 @pytest.mark.parametrize(

@@ -17,13 +17,8 @@ from typing import Any, Dict, List
 
 from braket.device_schema.device_action_properties import DeviceActionType
 from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
-from braket.ir.jaqcd import Program
-from braket.ir.openqasm import Program as OQ3Program
-from braket.task_result import (
-    AdditionalMetadata,
-    GateModelTaskResult,
-    TaskMetadata,
-)
+from braket.ir.openqasm import Program
+from braket.task_result import AdditionalMetadata, GateModelTaskResult, TaskMetadata
 
 from braket.default_simulator.openqasm.circuit_builder import CircuitBuilder
 from braket.default_simulator.result_types import TargetedResultType
@@ -38,7 +33,7 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
 
     def run(
         self,
-        openqasm_ir: OQ3Program,
+        openqasm_ir: Program,
         shots: int = 0,
         batch_size: int = 1,
     ) -> GateModelTaskResult:
@@ -105,7 +100,7 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
     def _create_results_obj(
         self,
         results: List[Dict[str, Any]],
-        openqasm_ir: OQ3Program,
+        openqasm_ir: Program,
         simulation: Simulation,
     ) -> GateModelTaskResult:
         return GateModelTaskResult.construct(

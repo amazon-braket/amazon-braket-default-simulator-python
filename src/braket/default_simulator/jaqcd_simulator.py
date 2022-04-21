@@ -16,16 +16,12 @@ from typing import Any, Dict, List
 
 from braket.device_schema.device_action_properties import DeviceActionType
 from braket.ir.jaqcd import Program
-from braket.task_result import (
-    AdditionalMetadata,
-    GateModelTaskResult,
-    TaskMetadata,
-)
+from braket.task_result import AdditionalMetadata, GateModelTaskResult, TaskMetadata
+
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import TargetedResultType
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
-
 
 
 class BaseLocalJaqcdSimulator(BaseLocalSimulator):
