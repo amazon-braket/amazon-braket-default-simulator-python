@@ -17,7 +17,6 @@ import pytest
 from braket.default_simulator import observables
 from braket.default_simulator.result_types import DensityMatrix, Expectation, Probability, Variance
 from braket.default_simulator.simulator import BaseLocalJaqcdSimulator
-from braket.simulator import BraketSimulator
 
 
 @pytest.mark.parametrize(

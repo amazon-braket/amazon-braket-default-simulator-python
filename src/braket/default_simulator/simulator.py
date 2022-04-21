@@ -178,14 +178,15 @@ class BaseLocalSimulator(BraketSimulator):
                 no_noise = False
                 if name not in supported_instructions:
                     raise TypeError(
-                        "Noise instructions are not supported by the state vector simulator (by default). "
-                        'You need to use the density matrix simulator: LocalSimulator("braket_dm").'
+                        "Noise instructions are not supported by the state vector simulator "
+                        "(by default). You need to use the density matrix simulator: "
+                        'LocalSimulator("braket_dm").'
                     )
         if no_noise and _NOISE_INSTRUCTIONS.intersection(supported_instructions):
             warnings.warn(
                 "You are running a noise-free circuit on the density matrix simulator. "
-                'Consider running this circuit on the state vector simulator: LocalSimulator("default") '
-                "for a better user experience."
+                "Consider running this circuit on the state vector simulator: "
+                'LocalSimulator("default") for a better user experience.'
             )
 
     @staticmethod
@@ -307,13 +308,6 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
                 result_types,
                 simulation,
             )
-
-        # here, load the quantum state into a post-processor that has access to output variables and
-        # circuit builder context. this post-processor will run n_shots iterations of evaluation of all
-        # statements that take in measurements as input. this will start just as classical computation
-        # only. For example, assignments and casts of measured outcomes will be evaluated in this step.
-        # in the future, perhaps it will be possible to expand this strategy to allow for recursive monte
-        # carlo simulation where qubits are reused.
 
         return self._create_results_obj(results, openqasm_ir, simulation)
 

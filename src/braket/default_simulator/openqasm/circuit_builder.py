@@ -4,9 +4,7 @@ from typing import Optional
 from openqasm3 import parse
 from openqasm3.ast import (
     QuantumMeasurement,
-    QuantumMeasurementAssignment,
     QuantumReset,
-    StringLiteral,
 )
 
 from braket.default_simulator.openqasm.circuit_builder_context import CircuitBuilderContext

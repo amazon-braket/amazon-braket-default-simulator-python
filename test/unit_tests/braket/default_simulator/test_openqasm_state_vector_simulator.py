@@ -18,7 +18,6 @@ def test_gphase():
     }
     gate h a { U(π/2, 0, π) a; }
 
-    
     inv @ U(π/2, 0, π) qs[0];
     cx qs[0], qs[1];
     phase qs[0], qs[1];
@@ -26,7 +25,7 @@ def test_gphase():
     gphase(π);
     inv @ gphase(π / 2);
     negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
-    
+
     #pragma {"braket result amplitude '00', '01', '10', '11'";}
     """
     device = LocalSimulator("braket_oq3_sv")
@@ -80,7 +79,7 @@ def sv_adder(pytester, stdgates):
             cx a[0], cout;
             for i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
             unmaj cin, b[3], a[3];
-            
+
             // todo: subtle bug when trying to get a result type for both at once
             #pragma {"braket result probability cout, b";}
             #pragma {"braket result probability cout";}

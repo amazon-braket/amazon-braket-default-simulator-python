@@ -119,25 +119,32 @@ setup(
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     install_requires=[
-        # "amazon-braket-schemas",
         "numpy",
         "opt_einsum",
         "openqasm3",
-        # "amazon-braket-sdk",
         "antlr4-python3-runtime==4.10",
-        "amazon-braket-schemas @ git+ssh://git@github.com/aws/amazon-braket-schemas-python-staging@openqasm-local-sim",
-        "amazon-braket-sdk @ git+ssh://git@github.com/aws/amazon-braket-sdk-python-staging@openqasm-local-sim",
+        (
+            "amazon-braket-schemas @ "
+            "git+ssh://git@github.com/aws/amazon-braket-schemas-python-staging@openqasm-local-sim"
+        ),
+        (
+            "amazon-braket-sdk @ "
+            "git+ssh://git@github.com/aws/amazon-braket-sdk-python-staging@openqasm-local-sim"
+        ),
     ],
     entry_points={
         "braket.simulators": [
             "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
-            "braket_oq3_sv = braket.default_simulator.oq3_state_vector_simulator:OQ3StateVectorSimulator",
+            (
+                "braket_oq3_sv = "
+                "braket.default_simulator.oq3_state_vector_simulator:OQ3StateVectorSimulator"
+            ),
             (
                 "braket_oq3_native_sv = "
                 "braket.default_simulator.openqasm_state_vector_simulator:"
-                "OpenQASMStateVectorSimulator",
+                "OpenQASMStateVectorSimulator"
             ),
         ]
     },
