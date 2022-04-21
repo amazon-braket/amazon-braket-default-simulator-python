@@ -285,6 +285,13 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
         )
         simulation.evolve(operations)
 
+        # here, load the quantum state into a post-processor that has access to output variables and
+        # circuit builder context. this post-processor will run n_shots iterations of evaluation of all
+        # statements that take in measurements as input. this will start just as classical computation
+        # only. For example, assignments and casts of measured outcomes will be evaluated in this step.
+        # in the future, perhaps it will be possible to expand this strategy to allow for recursive monte
+        # carlo simulation where qubits are reused.
+
         results = []
 
         if not shots and circuit.results:
