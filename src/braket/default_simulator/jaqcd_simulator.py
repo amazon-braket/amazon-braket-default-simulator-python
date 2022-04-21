@@ -22,9 +22,7 @@ from braket.task_result import (
     TaskMetadata,
 )
 from braket.default_simulator.operation_helpers import from_braket_instruction
-from braket.default_simulator.result_types import (
-    TargetedResultType,
-)
+from braket.default_simulator.result_types import TargetedResultType
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
 
