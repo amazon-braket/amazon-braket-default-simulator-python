@@ -17,5 +17,5 @@ c = measure q;
 """
 
 ghz = Program(source=ghz_qasm)
-result = device.run(ghz, shots=1000).result()
+result = device.run(ghz, shots=100).result()
 print(result.output_variables)

@@ -3,11 +3,6 @@ from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 
 adder_qasm = """
-/*
- * quantum ripple-carry adder
- * Cuccaro et al, quant-ph/0410184
- * (adjusted for Braket)
- */
 OPENQASM 3;
 include "stdgates.inc";
 
@@ -48,7 +43,7 @@ unmaj cin, b[3], a[3];
 device = LocalSimulator("braket_oq3_sv")
 
 adder = Program(source=adder_qasm)
-num_shots = 10000
+num_shots = 10_000
 result = device.run(adder, shots=num_shots).result()
 
 

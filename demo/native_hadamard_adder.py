@@ -2,11 +2,6 @@ from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 
 adder_qasm = """
-/*
- * quantum ripple-carry adder
- * Cuccaro et al, quant-ph/0410184
- * (adjusted for Braket)
- */
 OPENQASM 3;
 include "stdgates.inc";
 
