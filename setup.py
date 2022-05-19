@@ -81,7 +81,8 @@ class InstallOQ3Command(distutils.cmd.Command):
                 "openqasm_reference_parser",
                 "-Dlanguage=Python3",
                 "-visitor",
-                "qasm3.g4",
+                "qasm3Lexer.g4",
+                "qasm3Parser.g4",
             ]
         )
         subprocess.check_call(["python", "-m", "pip", "install", "-e", "."])
@@ -125,15 +126,6 @@ setup(
         "antlr4-python3-runtime==4.10",
         "amazon-braket-schemas",
         "amazon-braket-sdk",
-        # replace the two lines above with the dependencies below to build locally
-        # (
-        #     "amazon-braket-schemas @ "
-        #     "git+ssh://git@github.com/aws/amazon-braket-schemas-python-staging@openqasm-local-sim"
-        # ),
-        # (
-        #     "amazon-braket-sdk @ "
-        #     "git+ssh://git@github.com/aws/amazon-braket-sdk-python-staging@openqasm-local-sim"
-        # ),
     ],
     entry_points={
         "braket.simulators": [
