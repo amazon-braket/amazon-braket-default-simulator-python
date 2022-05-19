@@ -95,7 +95,8 @@ class InstallOQ3Command(distutils.cmd.Command):
                 Path("..", "openqasm", "openqasm3", "antlr"),
                 "-Dlanguage=Python3",
                 "-visitor",
-                "qasm3.g4",
+                "qasm3Lexer.g4",
+                "qasm3Parser.g4",
             ]
         )
         os.chdir(Path("..", "openqasm"))
