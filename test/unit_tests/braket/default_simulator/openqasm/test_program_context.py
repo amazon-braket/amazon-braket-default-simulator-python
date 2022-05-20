@@ -1,5 +1,5 @@
 import pytest
-from openqasm3.ast import BooleanLiteral, BoolType, FloatType, IntegerLiteral, IntType, RealLiteral
+from openqasm3.ast import BooleanLiteral, BoolType, FloatType, IntegerLiteral, IntType, FloatLiteral
 
 from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
 
@@ -13,7 +13,7 @@ float_16 = FloatType(IntegerLiteral(16))
 def test_variable_declaration():
     context = ProgramContext()
     context.declare_variable("x", int_8, IntegerLiteral(10), True)
-    context.declare_variable("y", float_16, RealLiteral(1.34), False)
+    context.declare_variable("y", float_16, FloatLiteral(1.34), False)
     context.declare_variable("z", boolean, BooleanLiteral(False), False)
 
     def assert_scope_0():
@@ -26,7 +26,7 @@ def test_variable_declaration():
         assert not context.get_const("z")
 
         assert context.get_value("x") == IntegerLiteral(10)
-        assert context.get_value("y") == RealLiteral(1.34)
+        assert context.get_value("y") == FloatLiteral(1.34)
         assert context.get_value("z") == BooleanLiteral(False)
 
         with pytest.raises(KeyError):
@@ -39,7 +39,7 @@ def test_variable_declaration():
 
     with context.enter_scope():
         context.declare_variable("x", int_16, IntegerLiteral(20), False)
-        context.declare_variable("y", float_8, RealLiteral(2.68), True)
+        context.declare_variable("y", float_8, FloatLiteral(2.68), True)
         context.declare_variable("a", boolean, BooleanLiteral(True), False)
 
         assert context.get_type("x") == int_16
@@ -53,7 +53,7 @@ def test_variable_declaration():
         assert not context.get_const("a")
 
         assert context.get_value("x") == IntegerLiteral(20)
-        assert context.get_value("y") == RealLiteral(2.68)
+        assert context.get_value("y") == FloatLiteral(2.68)
         assert context.get_value("z") == BooleanLiteral(False)
         assert context.get_value("a") == BooleanLiteral(True)
 
@@ -63,14 +63,14 @@ def test_variable_declaration():
 def test_repr():
     context = ProgramContext()
     context.declare_variable("x", int_8, IntegerLiteral(10), True)
-    context.declare_variable("y", float_16, RealLiteral(1.34), False)
+    context.declare_variable("y", float_16, FloatLiteral(1.34), False)
     context.declare_variable("z", boolean, BooleanLiteral(False), False)
 
     context.add_qubits("q")
 
     with context.enter_scope():
         context.declare_variable("x", int_16, IntegerLiteral(20), False)
-        context.declare_variable("y", float_8, RealLiteral(2.68), True)
+        context.declare_variable("y", float_8, FloatLiteral(2.68), True)
         context.declare_variable("a", boolean, BooleanLiteral(True), False)
 
         assert repr(context) == (
@@ -88,12 +88,12 @@ a	Symbol<BoolType(span=None), const=False>
 Data
 SCOPE LEVEL 0
 x	IntegerLiteral(span=None, value=10)
-y	RealLiteral(span=None, value=1.34)
+y	FloatLiteral(span=None, value=1.34)
 z	BooleanLiteral(span=None, value=False)
 q	Identifier(span=None, name='q')
 SCOPE LEVEL 1
 x	IntegerLiteral(span=None, value=20)
-y	RealLiteral(span=None, value=2.68)
+y	FloatLiteral(span=None, value=2.68)
 a	BooleanLiteral(span=None, value=True)
 
 Gates

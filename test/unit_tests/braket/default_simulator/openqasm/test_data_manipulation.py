@@ -7,7 +7,7 @@ from openqasm3.ast import (
     IndexedIdentifier,
     IndexExpression,
     IntegerLiteral,
-    RealLiteral,
+    FloatLiteral,
 )
 
 from braket.default_simulator.openqasm.data_manipulation import (
@@ -20,8 +20,8 @@ from braket.default_simulator.openqasm.data_manipulation import (
 
 
 def test_cast():
-    assert cast_to(IntegerLiteral, RealLiteral(1.5)) == IntegerLiteral(1)
-    assert cast_to(RealLiteral, IntegerLiteral(5)) == RealLiteral(5)
+    assert cast_to(IntegerLiteral, FloatLiteral(1.5)) == IntegerLiteral(1)
+    assert cast_to(FloatLiteral, IntegerLiteral(5)) == FloatLiteral(5)
 
 
 def test_undefined_cast():

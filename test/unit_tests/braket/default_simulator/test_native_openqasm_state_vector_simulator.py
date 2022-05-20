@@ -11,6 +11,8 @@ from braket.ir.jaqcd import (
 )
 from braket.ir.openqasm import Program
 
+from braket.default_simulator.openqasm.data_manipulation import string_to_bin
+
 
 @pytest.fixture
 def ghz(pytester, stdgates):
@@ -242,7 +244,7 @@ def test_input_output_types():
 
 
 def test_result_types_analytic(stdgates):
-    qasm = """
+    qasm = f"""
     include "stdgates.inc";
 
     qubit[3] q;
@@ -253,23 +255,23 @@ def test_result_types_analytic(stdgates):
     cx q[1], q[2];
     x q[2];
 
-    // { 001: .5, 110: .5 }
+    // {{ 001: .5, 110: .5 }}
 
-    #pragma {"braket result state_vector";}
-    #pragma {"braket result probability";}
-    #pragma {"braket result probability q";}
-    #pragma {"braket result probability q[0]";}
-    #pragma {"braket result probability q[0:1]";}
-    #pragma {"braket result probability q[{0, 2, 1}]";}
-    #pragma {'braket result amplitude "001", "110"';}
-    #pragma {"braket result density_matrix";}
-    #pragma {"braket result density_matrix q";}
-    #pragma {"braket result density_matrix q[0]";}
-    #pragma {"braket result density_matrix q[0:1]";}
-    #pragma {"braket result density_matrix q[{0, 2, 1}]";}
-    #pragma {"braket result expectation z(q[0])";}
-    #pragma {"braket result variance x(q[0]) @ z(q[2]) @ h(q[1])";}
-    #pragma {"braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]";}
+    #pragma {{"{string_to_bin("braket result state_vector")}";}}
+    #pragma {{"{string_to_bin("braket result probability")}";}}
+    #pragma {{"{string_to_bin("braket result probability q")}";}}
+    #pragma {{"{string_to_bin("braket result probability q[0]")}";}}
+    #pragma {{"{string_to_bin("braket result probability q[0:1]")}";}}
+    #pragma {{"{string_to_bin("braket result probability q[{0, 2, 1}]")}";}}
+    #pragma {{"{string_to_bin('braket result amplitude "001", "110"')}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix")}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix q")}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix q[0]")}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix q[0:1]")}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix q[{0, 2, 1}]")}";}}
+    #pragma {{"{string_to_bin("braket result expectation z(q[0])")}";}}
+    #pragma {{"{string_to_bin("braket result variance x(q[0]) @ z(q[2]) @ h(q[1])")}";}}
+    #pragma {{"{string_to_bin("braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]")}";}}
     """
     device = LocalSimulator("braket_oq3_native_sv")
     program = Program(source=qasm)
@@ -379,9 +381,9 @@ def test_result_types_analytic(stdgates):
 
 
 def test_invalid_stanard_observable_target():
-    qasm = """
+    qasm = f"""
     qubit[2] qs;
-    #pragma {"braket result variance x(qs)";}
+    #pragma {{"{string_to_bin("braket result variance x(qs)")}";}}
     """
     device = LocalSimulator("braket_oq3_native_sv")
     program = Program(source=qasm)

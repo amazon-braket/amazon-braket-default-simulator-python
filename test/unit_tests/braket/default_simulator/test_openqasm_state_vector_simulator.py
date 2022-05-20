@@ -3,20 +3,22 @@ import pytest
 from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 
+from braket.default_simulator.openqasm.data_manipulation import string_to_bin
+
 
 def test_gphase():
-    qasm = """
+    qasm = f"""
     qubit[2] qs;
 
     int[8] two = 2;
 
-    gate x a { U(π, 0, π) a; }
-    gate cx c, a { ctrl @ x c, a; }
-    gate phase c, a {
+    gate x a {{ U(π, 0, π) a; }}
+    gate cx c, a {{ ctrl @ x c, a; }}
+    gate phase c, a {{
         gphase(π/2);
         pow(1) @ ctrl(two) @ gphase(π) c, a;
-    }
-    gate h a { U(π/2, 0, π) a; }
+    }}
+    gate h a {{ U(π/2, 0, π) a; }}
 
     inv @ U(π/2, 0, π) qs[0];
     cx qs[0], qs[1];
@@ -26,7 +28,7 @@ def test_gphase():
     inv @ gphase(π / 2);
     negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
 
-    #pragma {"braket result amplitude '00', '01', '10', '11'";}
+    #pragma {{"{string_to_bin("braket result amplitude '00', '01', '10', '11'")}";}}
     """
     device = LocalSimulator("braket_oq3_sv")
     result = device.run(Program(source=qasm)).result()
@@ -38,7 +40,7 @@ def test_gphase():
 def sv_adder(pytester, stdgates):
     pytester.makefile(
         ".qasm",
-        adder="""
+        adder=f"""
             /*
              * quantum ripple-carry adder
              * Cuccaro et al, quant-ph/0410184
@@ -50,17 +52,17 @@ def sv_adder(pytester, stdgates):
             input uint[4] a_in;
             input uint[4] b_in;
 
-            gate majority a, b, c {
+            gate majority a, b, c {{
                 cx c, b;
                 cx c, a;
                 ccx a, b, c;
-            }
+            }}
 
-            gate unmaj a, b, c {
+            gate unmaj a, b, c {{
                 ccx a, b, c;
                 cx c, a;
                 cx a, b;
-            }
+            }}
 
             qubit cin;
             qubit[4] a;
@@ -68,22 +70,22 @@ def sv_adder(pytester, stdgates):
             qubit cout;
 
             // set input states
-            for i in [0: 3] {
+            for i in [0: 3] {{
               if(bool(a_in[i])) x a[i];
               if(bool(b_in[i])) x b[i];
-            }
+            }}
 
             // add a to b, storing result in b
             majority cin, b[3], a[3];
-            for i in [3: -1: 1] { majority a[i], b[i - 1], a[i - 1]; }
+            for i in [3: -1: 1] {{ majority a[i], b[i - 1], a[i - 1]; }}
             cx a[0], cout;
-            for i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
+            for i in [1: 3] {{ unmaj a[i], b[i - 1], a[i - 1]; }}
             unmaj cin, b[3], a[3];
 
             // todo: subtle bug when trying to get a result type for both at once
-            #pragma {"braket result probability cout, b";}
-            #pragma {"braket result probability cout";}
-            #pragma {"braket result probability b";}
+            #pragma {{"{string_to_bin("braket result probability cout, b")}";}}
+            #pragma {{"{string_to_bin("braket result probability cout")}";}}
+            #pragma {{"{string_to_bin("braket result probability b")}";}}
         """,
     )
 

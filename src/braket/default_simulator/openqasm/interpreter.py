@@ -44,7 +44,7 @@ from openqasm3.ast import (
     QuantumStatement,
     QubitDeclaration,
     RangeDefinition,
-    RealLiteral,
+    FloatLiteral,
     ReturnStatement,
     StringLiteral,
     SubroutineDefinition,
@@ -225,7 +225,7 @@ class Interpreter:
 
     @visit.register(BooleanLiteral)
     @visit.register(IntegerLiteral)
-    @visit.register(RealLiteral)
+    @visit.register(FloatLiteral)
     def _(self, node):
         self.logger.debug(f"Literal: {node}")
         return node
@@ -430,7 +430,7 @@ class Interpreter:
                     self.context.declare_qubit_alias(qubit_defined.name, qubit_called)
 
                 for param_called, param_defined in zip(arguments, gate_def.arguments):
-                    self.context.declare_variable(param_defined.name, RealLiteral, param_called)
+                    self.context.declare_variable(param_defined.name, FloatLiteral, param_called)
 
                 for statement in deepcopy(gate_def.body):
                     if isinstance(statement, QuantumGate):
@@ -549,7 +549,10 @@ class Interpreter:
     @visit.register
     def _(self, node: Pragma):
         self.logger.debug(f"Pragma: {node}")
-        pragma_string = node.statements[0].expression.value
+        # pragma parsing not implemented, workaround by casting as bitstring
+        pragma_bitstring = node.statements[0].expression
+        pragma_bin = np.binary_repr(pragma_bitstring.value, pragma_bitstring.width)
+        pragma_string = ''.join(chr(int(pragma_bin[i:i+8], base=2)) for i in range(0, pragma_bitstring.width, 8))
         self.context.add_result(self.context.parse_result_type_pragma(pragma_string))
 
     @visit.register

@@ -126,7 +126,7 @@ setup(
         "openqasm3",
         "antlr4-python3-runtime==4.10",
         "amazon-braket-schemas",
-        "amazon-braket-sdk",
+        "amazon-braket-sdk @ git+https://github.com/aws/amazon-braket-sdk-python.git@openqasm-local-simulator",
     ],
     entry_points={
         "braket.simulators": [

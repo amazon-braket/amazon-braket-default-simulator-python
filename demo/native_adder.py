@@ -14,6 +14,7 @@ include "stdgates.inc";
 input uint[4] a_in;
 input uint[4] b_in;
 output bit[5] ans;
+output uint[5] ans_int;
 
 gate majority a, b, c {
     cx c, b;
@@ -54,6 +55,8 @@ unmaj cin, b[3], a[3];
 // measure results
 ans[0] = measure cout;
 ans[1:4] = measure b[0:3];
+
+ans_int = uint[5](ans);
 """
 
 
@@ -64,5 +67,6 @@ for _ in range(10):
     inputs = {"a_in": a, "b_in": b}
     adder = Program(source=adder_qasm, inputs=inputs)
     result = device.run(adder, shots=1).result()
-    ans = result.output_variables["ans"][0]
-    print(f"{a} + {b} = {int(ans, base=2)}")
+    print(result.output_variables)
+    ans = result.output_variables["ans_int"][0]
+    print(f"{a} + {b} = {ans}")

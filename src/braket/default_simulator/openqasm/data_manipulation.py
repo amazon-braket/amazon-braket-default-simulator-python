@@ -11,6 +11,7 @@ from openqasm3.ast import (
     AssignmentOperator,
     BinaryOperator,
     BitType,
+    BitstringLiteral,
     BooleanLiteral,
     BoolType,
     ClassicalType,
@@ -31,7 +32,7 @@ from openqasm3.ast import (
     QuantumPhase,
     QuantumStatement,
     RangeDefinition,
-    RealLiteral,
+    FloatLiteral,
     StringLiteral,
     UintType,
     UnaryOperator,
@@ -60,14 +61,14 @@ operator_maps = {
         getattr(BinaryOperator, "=="): lambda x, y: BooleanLiteral(x.value == y.value),
         getattr(BinaryOperator, "!="): lambda x, y: BooleanLiteral(x.value != y.value),
     },
-    RealLiteral: {
+    FloatLiteral: {
         # returns real
-        getattr(BinaryOperator, "+"): lambda x, y: RealLiteral(x.value + y.value),
-        getattr(BinaryOperator, "-"): lambda x, y: RealLiteral(x.value - y.value),
-        getattr(BinaryOperator, "*"): lambda x, y: RealLiteral(x.value * y.value),
-        getattr(BinaryOperator, "/"): lambda x, y: RealLiteral(x.value / y.value),
-        getattr(BinaryOperator, "**"): lambda x, y: RealLiteral(x.value**y.value),
-        getattr(UnaryOperator, "-"): lambda x: RealLiteral(-x.value),
+        getattr(BinaryOperator, "+"): lambda x, y: FloatLiteral(x.value + y.value),
+        getattr(BinaryOperator, "-"): lambda x, y: FloatLiteral(x.value - y.value),
+        getattr(BinaryOperator, "*"): lambda x, y: FloatLiteral(x.value * y.value),
+        getattr(BinaryOperator, "/"): lambda x, y: FloatLiteral(x.value / y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: FloatLiteral(x.value**y.value),
+        getattr(UnaryOperator, "-"): lambda x: FloatLiteral(-x.value),
         # returns bool
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(x.value > y.value),
         getattr(BinaryOperator, "<"): lambda x, y: BooleanLiteral(x.value < y.value),
@@ -138,7 +139,7 @@ operator_maps = {
 type_hierarchy = (
     BooleanLiteral,
     IntegerLiteral,
-    RealLiteral,
+    FloatLiteral,
     ArrayLiteral,
 )
 
@@ -194,7 +195,7 @@ def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
 
 
 def evaluate_constant(constant: Constant):
-    return RealLiteral(constant_map.get(constant.name))
+    return FloatLiteral(constant_map.get(constant.name))
 
 
 def get_operator_of_assignment_operator(assignment_operator: AssignmentOperator):
@@ -206,7 +207,7 @@ Casting values
 """
 
 
-LiteralType = Type[Union[BooleanLiteral, IntegerLiteral, RealLiteral, StringLiteral, ArrayLiteral]]
+LiteralType = Type[Union[BooleanLiteral, IntegerLiteral, FloatLiteral, StringLiteral, ArrayLiteral]]
 
 
 @singledispatch
@@ -219,16 +220,19 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
         return BooleanLiteral(bool(variable.value))
     if into == IntegerLiteral:
         return IntegerLiteral(int(variable.value))
-    if into == RealLiteral:
-        return RealLiteral(float(variable.value))
+    if into == FloatLiteral:
+        return FloatLiteral(float(variable.value))
     raise TypeError(f"Cannot cast {type(variable).__name__} into {into.__name__}.")
 
 
 @cast_to.register
-def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral]):
+def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLiteral]):
     if not into.size:
         return cast_to(BooleanLiteral, variable)
     size = into.size.value
+    if isinstance(variable, BitstringLiteral):
+        bin_rep = np.binary_repr(variable.value, variable.width)
+        return convert_string_to_bool_array(StringLiteral(bin_rep))
     if (
         not all(isinstance(x, BooleanLiteral) for x in variable.values)
         or len(variable.values) != size
@@ -248,6 +252,8 @@ def _(into: IntType, variable: LiteralType):
 
 @cast_to.register
 def _(into: UintType, variable: LiteralType):
+    if isinstance(variable, ArrayLiteral):
+        return IntegerLiteral(int(''.join('01'[x.value] for x in variable.values), base=2))
     limit = 2**into.size.value
     value = int(variable.value) % limit
     if value != variable.value:
@@ -262,7 +268,7 @@ def _(into: FloatType, variable: LiteralType):
     if into.size.value not in (16, 32, 64, 128):
         raise ValueError("Float size must be one of {16, 32, 64, 128}.")
     value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
-    return RealLiteral(value)
+    return FloatLiteral(value)
 
 
 @cast_to.register
@@ -286,7 +292,7 @@ def is_literal(expression: Expression):
         (
             BooleanLiteral,
             IntegerLiteral,
-            RealLiteral,
+            FloatLiteral,
             StringLiteral,
             ArrayLiteral,
         ),
@@ -305,6 +311,10 @@ def is_none_like(value):
     if isinstance(value, ArrayLiteral):
         return all(is_none_like(v) for v in value.values)
     return value is None
+
+def string_to_bin(string):
+    """ workaround for unsupported pragmas """
+    return ''.join(np.binary_repr(ord(x), 8) for x in string)
 
 
 """
@@ -405,6 +415,9 @@ def unwrap_var_type(var_type):
 
 def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
     # current value will be an ArrayLiteral or StringLiteral
+    if isinstance(value, BitstringLiteral):
+        bin_rep = np.binary_repr(value.value, value.width)
+        value = convert_string_to_bool_array(StringLiteral(bin_rep))
     if isinstance(current_value, ArrayLiteral):
         first_ix = convert_index(update_indices[0])
 
@@ -505,7 +518,7 @@ def invert(quantum_op: Union[QuantumGate, QuantumPhase]):
     assert quantum_op.name.name == "U", "This shouldn't be visiting non-U gates"
     param_values = np.array([arg.value for arg in quantum_op.arguments])
     new_param_values = -param_values[[0, 2, 1]]
-    new_params = [RealLiteral(value) for value in new_param_values]
+    new_params = [FloatLiteral(value) for value in new_param_values]
     return QuantumGate(new_modifiers, Identifier("U"), new_params, quantum_op.qubits)
 
 
@@ -514,7 +527,7 @@ def _(quantum_op: QuantumPhase):
     new_modifiers = [
         mod for mod in get_modifiers(quantum_op) if mod.modifier != GateModifierName.inv
     ]
-    new_param = RealLiteral(-quantum_op.argument.value)
+    new_param = FloatLiteral(-quantum_op.argument.value)
     return QuantumPhase(new_modifiers, new_param, quantum_op.qubits)
 
 
@@ -649,7 +662,7 @@ def convert_to_output(value):
 
 
 @convert_to_output.register(IntegerLiteral)
-@convert_to_output.register(RealLiteral)
+@convert_to_output.register(FloatLiteral)
 @convert_to_output.register(BooleanLiteral)
 @convert_to_output.register(StringLiteral)
 def _(value):
@@ -680,7 +693,7 @@ def _(value: int):
 
 @wrap_value_into_literal.register
 def _(value: float):
-    return RealLiteral(value)
+    return FloatLiteral(value)
 
 
 @wrap_value_into_literal.register
