@@ -1,5 +1,5 @@
 import pytest
-from openqasm3.ast import BooleanLiteral, BoolType, FloatType, IntegerLiteral, IntType, FloatLiteral
+from openqasm3.ast import BooleanLiteral, BoolType, FloatLiteral, FloatType, IntegerLiteral, IntType
 
 from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
 

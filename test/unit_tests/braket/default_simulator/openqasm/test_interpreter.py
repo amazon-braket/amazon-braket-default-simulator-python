@@ -9,6 +9,7 @@ from openqasm3.ast import (
     ArrayType,
     BitType,
     BooleanLiteral,
+    FloatLiteral,
     FloatType,
     Identifier,
     IndexedIdentifier,
@@ -16,7 +17,6 @@ from openqasm3.ast import (
     IntType,
     QuantumGate,
     QuantumGateDefinition,
-    FloatLiteral,
     StringLiteral,
     UintType,
 )

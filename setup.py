@@ -125,8 +125,16 @@ setup(
         "opt_einsum",
         "openqasm3",
         "antlr4-python3-runtime==4.10",
-        "amazon-braket-schemas",
-        "amazon-braket-sdk @ git+https://github.com/aws/amazon-braket-sdk-python.git@openqasm-local-simulator",
+        (
+            "amazon-braket-schemas "
+            "@ git+https://github.com/aws/amazon-braket-schemas-python.git"
+            "@feature/openqasm-local-simulator"
+        ),
+        (
+            "amazon-braket-sdk "
+            "@ git+https://github.com/aws/amazon-braket-sdk-python.git"
+            "@openqasm-local-simulator"
+        ),
     ],
     entry_points={
         "braket.simulators": [

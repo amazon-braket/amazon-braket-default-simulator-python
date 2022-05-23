@@ -10,8 +10,8 @@ from openqasm3.ast import (
     ArrayType,
     AssignmentOperator,
     BinaryOperator,
-    BitType,
     BitstringLiteral,
+    BitType,
     BooleanLiteral,
     BoolType,
     ClassicalType,
@@ -19,6 +19,7 @@ from openqasm3.ast import (
     ConstantName,
     DiscreteSet,
     Expression,
+    FloatLiteral,
     FloatType,
     GateModifierName,
     Identifier,
@@ -32,7 +33,6 @@ from openqasm3.ast import (
     QuantumPhase,
     QuantumStatement,
     RangeDefinition,
-    FloatLiteral,
     StringLiteral,
     UintType,
     UnaryOperator,
@@ -253,7 +253,7 @@ def _(into: IntType, variable: LiteralType):
 @cast_to.register
 def _(into: UintType, variable: LiteralType):
     if isinstance(variable, ArrayLiteral):
-        return IntegerLiteral(int(''.join('01'[x.value] for x in variable.values), base=2))
+        return IntegerLiteral(int("".join("01"[x.value] for x in variable.values), base=2))
     limit = 2**into.size.value
     value = int(variable.value) % limit
     if value != variable.value:
@@ -312,9 +312,10 @@ def is_none_like(value):
         return all(is_none_like(v) for v in value.values)
     return value is None
 
+
 def string_to_bin(string):
-    """ workaround for unsupported pragmas """
-    return ''.join(np.binary_repr(ord(x), 8) for x in string)
+    """workaround for unsupported pragmas"""
+    return "".join(np.binary_repr(ord(x), 8) for x in string)
 
 
 """

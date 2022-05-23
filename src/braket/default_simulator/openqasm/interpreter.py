@@ -21,6 +21,7 @@ from openqasm3.ast import (
     Constant,
     ConstantDeclaration,
     DiscreteSet,
+    FloatLiteral,
     ForInLoop,
     FunctionCall,
     GateModifierName,
@@ -44,7 +45,6 @@ from openqasm3.ast import (
     QuantumStatement,
     QubitDeclaration,
     RangeDefinition,
-    FloatLiteral,
     ReturnStatement,
     StringLiteral,
     SubroutineDefinition,
@@ -552,7 +552,9 @@ class Interpreter:
         # pragma parsing not implemented, workaround by casting as bitstring
         pragma_bitstring = node.statements[0].expression
         pragma_bin = np.binary_repr(pragma_bitstring.value, pragma_bitstring.width)
-        pragma_string = ''.join(chr(int(pragma_bin[i:i+8], base=2)) for i in range(0, pragma_bitstring.width, 8))
+        pragma_string = "".join(
+            chr(int(pragma_bin[i : i + 8], base=2)) for i in range(0, pragma_bitstring.width, 8)
+        )
         self.context.add_result(self.context.parse_result_type_pragma(pragma_string))
 
     @visit.register

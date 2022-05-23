@@ -271,7 +271,9 @@ def test_result_types_analytic(stdgates):
     #pragma {{"{string_to_bin("braket result density_matrix q[{0, 2, 1}]")}";}}
     #pragma {{"{string_to_bin("braket result expectation z(q[0])")}";}}
     #pragma {{"{string_to_bin("braket result variance x(q[0]) @ z(q[2]) @ h(q[1])")}";}}
-    #pragma {{"{string_to_bin("braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]")}";}}
+    #pragma {{"{string_to_bin(
+        "braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]"
+    )}";}}
     """
     device = LocalSimulator("braket_oq3_native_sv")
     program = Program(source=qasm)
