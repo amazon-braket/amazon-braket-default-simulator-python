@@ -10,7 +10,9 @@ from braket.ir.jaqcd import (
 )
 from braket.ir.openqasm import Program
 
-from braket.default_simulator.openqasm_native_state_vector_simulator import OpenQASMNativeStateVectorSimulator
+from braket.default_simulator.openqasm_native_state_vector_simulator import (
+    OpenQASMNativeStateVectorSimulator,
+)
 
 
 def string_to_bin(string):
@@ -419,5 +421,6 @@ def test_invalid_stanard_observable_target():
 #
 #     #pragma {"braket result state_vector";}
 #     """
-#     not_supported = "result type FakeStateVector is not supported by OpenQASMNativeStateVectorSimulator"
+#     not_supported = "result type FakeStateVector is not
+#     supported by OpenQASMNativeStateVectorSimulator"
 #     with pytest.raises(TypeError, match=not_supported)
