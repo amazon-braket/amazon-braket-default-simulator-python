@@ -1,129 +1,87 @@
-import sys
-import uuid
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
 
-from braket.device_schema import (
-    DeviceActionType,
-    DeviceCapabilities,
-    DeviceServiceProperties,
-    OpenQASMDeviceActionProperties,
-)
+import sys
+
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
-    GateModelSimulatorParadigmProperties,
+    GateModelSimulatorDeviceParameters,
 )
-from braket.ir.openqasm import Program
-from braket.task_result import AdditionalMetadata, TaskMetadata
-from braket.task_result.oq3_program_result_v1 import OQ3ProgramResult
 
-from braket.default_simulator.openqasm.interpreter import Interpreter
-from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.default_simulator.openqasm_simulator import BaseLocalOQ3Simulator
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class OpenQASMStateVectorSimulator(BaseLocalSimulator):
-    DEVICE_ID = "braket_oq3_native_sv"
+class OpenQASMStateVectorSimulator(BaseLocalOQ3Simulator):
+    DEVICE_ID = "braket_oq3_sv"
 
-    @property
-    def device_action_type(self):
-        return DeviceActionType.OPENQASM
-
-    def run(
-        self,
-        openqasm_ir: Program,
-        shots: int = 0,
-        *args,
-        **kwargs,
-    ) -> OQ3ProgramResult:
-        if openqasm_ir.source.endswith(".qasm"):
-            context = Interpreter().run_file(
-                openqasm_ir.source,
-                shots=shots,
-                inputs=openqasm_ir.inputs,
-            )
-        else:
-            context = Interpreter().run(
-                openqasm_ir.source,
-                shots=shots,
-                inputs=openqasm_ir.inputs,
-            )
-        self._validate_ir_results_compatibility(context.results)
-        self._validate_shots_and_ir_results(shots, context.results, context.num_qubits)
-
-        results = []
-        if not shots and context.results:
-            result_types = BaseLocalSimulator._translate_result_types(context.results)
-            results = BaseLocalSimulator._generate_results(
-                context.results,
-                result_types,
-                context.quantum_simulation,
-            )
-
-        return self._create_results_obj(results, openqasm_ir, shots, context)
+    def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
+        qubit_count = kwargs.get("qubit_count")
+        shots = kwargs.get("shots")
+        batch_size = kwargs.get("batch_size")
+        return StateVectorSimulation(qubit_count, shots, batch_size)
 
     @property
-    def properties(self) -> DeviceCapabilities:
-        max_shots = sys.maxsize
+    def properties(self) -> GateModelSimulatorDeviceCapabilities:
         observables = ["x", "y", "z", "h", "i", "hermitian"]
-        return GateModelSimulatorDeviceCapabilities(
-            action={
-                DeviceActionType.OPENQASM: OpenQASMDeviceActionProperties(
-                    actionType="braket.ir.openqasm.program",
-                    supportedOperations=[],
-                    supportedResultTypes=[
-                        {"name": "StateVector", "minShots": 0, "maxShots": 0},
-                        {"name": "Amplitude", "minShots": 0, "maxShots": 0},
-                        {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
-                        {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+        max_shots = sys.maxsize
+        qubit_count = 26
+        return GateModelSimulatorDeviceCapabilities.parse_obj(
+            {
+                "service": {
+                    "executionWindows": [
                         {
-                            "name": "Sample",
-                            "observables": observables,
-                            "minShots": 1,
-                            "maxShots": max_shots,
-                        },
-                        {
-                            "name": "Expectation",
-                            "observables": observables,
-                            "minShots": 0,
-                            "maxShots": max_shots,
-                        },
-                        {
-                            "name": "Variance",
-                            "observables": observables,
-                            "minShots": 0,
-                            "maxShots": max_shots,
-                        },
+                            "executionDay": "Everyday",
+                            "windowStartHour": "00:00",
+                            "windowEndHour": "23:59:59",
+                        }
                     ],
-                    version=["1"],
-                ),
-            },
-            service=DeviceServiceProperties(
-                executionWindows=[],
-                shotsRange=(0, 50),
-            ),
-            deviceParameters={},
-            paradigm=GateModelSimulatorParadigmProperties(
-                qubitCount=50,
-            ),
+                    "shotsRange": [0, max_shots],
+                },
+                "action": {
+                    "braket.ir.openqasm.program": {
+                        "actionType": "braket.ir.openqasm.program",
+                        "version": ["1"],
+                        "supportedOperations": [
+                            "U",
+                        ],
+                        "supportedResultTypes": [
+                            {
+                                "name": "Sample",
+                                "observables": observables,
+                                "minShots": 1,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Expectation",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Variance",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                            {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
+                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+                        ],
+                    }
+                },
+                "paradigm": {"qubitCount": qubit_count},
+                "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
+            }
         )
-
-    def _create_results_obj(
-        self,
-        results,
-        openqasm_ir,
-        shots,
-        context,
-    ) -> OQ3ProgramResult:
-        return OQ3ProgramResult(
-            taskMetadata=TaskMetadata(
-                id=str(uuid.uuid4()),
-                shots=shots,
-                deviceId=self.DEVICE_ID,
-            ),
-            additionalMetadata=AdditionalMetadata(
-                action=openqasm_ir,
-            ),
-            outputVariables={key: list(vals) for key, vals in context.shot_data.items()},
-            resultTypes=results,
-        )
-
-    def initialize_simulation(self, **kwargs):
-        """this method is not used"""
