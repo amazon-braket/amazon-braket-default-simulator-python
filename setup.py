@@ -130,11 +130,6 @@ setup(
             "@ git+https://github.com/aws/amazon-braket-schemas-python.git"
             "@feature/openqasm-local-simulator"
         ),
-        (
-            "amazon-braket-sdk "
-            "@ git+https://github.com/aws/amazon-braket-sdk-python.git"
-            "@openqasm-local-simulator"
-        ),
     ],
     entry_points={
         "braket.simulators": [
