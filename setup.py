@@ -70,10 +70,7 @@ class InstallWithOQ3Command(distutils.cmd.Command):
 
         if not Path("openqasm").is_dir():
             subprocess.check_call(["git", "clone", "https://github.com/Qiskit/openqasm.git"])
-        os.chdir(Path("openqasm", "source", "openqasm"))
-        subprocess.check_call(["python", "-m", "pip", "install", "."])
-        os.chdir(Path("..", "grammar"))
-
+        os.chdir(Path("openqasm", "source", "grammar"))
         subprocess.check_call(
             [
                 *antlr4.split(),
@@ -85,9 +82,6 @@ class InstallWithOQ3Command(distutils.cmd.Command):
                 "qasm3Parser.g4",
             ]
         )
-
-        subprocess.check_call(["pip", "install", "."])
-
         subprocess.check_call(
             [
                 *antlr4.split(),
@@ -99,6 +93,9 @@ class InstallWithOQ3Command(distutils.cmd.Command):
                 "qasm3Parser.g4",
             ]
         )
+        subprocess.check_call(["pip", "install", "."])
+        os.chdir(Path("..", "openqasm"))
+        subprocess.check_call(["pip", "install", "."])
         os.chdir(Path("..", "..", ".."))
 
 
