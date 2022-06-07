@@ -4,7 +4,7 @@ from functools import singledispatch, update_wrapper
 from typing import List, Type, Union
 
 import numpy as np
-from openqasm3.ast import (
+from openqasm3.ast import (  # Constant,; ConstantName,; StringLiteral,
     ArrayLiteral,
     ArrayReferenceType,
     ArrayType,
@@ -15,8 +15,6 @@ from openqasm3.ast import (
     BooleanLiteral,
     BoolType,
     ClassicalType,
-    Constant,
-    ConstantName,
     DiscreteSet,
     Expression,
     FloatLiteral,
@@ -33,7 +31,6 @@ from openqasm3.ast import (
     QuantumPhase,
     QuantumStatement,
     RangeDefinition,
-    StringLiteral,
     UintType,
     UnaryOperator,
 )
@@ -115,22 +112,22 @@ operator_maps = {
         ),
         # returns bool
         getattr(BinaryOperator, ">"): lambda x, y: BooleanLiteral(
-            convert_bool_array_to_string(x).value > convert_bool_array_to_string(y).value
+            convert_bool_array_to_string(x) > convert_bool_array_to_string(y)
         ),
         getattr(BinaryOperator, "<"): lambda x, y: BooleanLiteral(
-            convert_bool_array_to_string(x).value < convert_bool_array_to_string(y).value
+            convert_bool_array_to_string(x) < convert_bool_array_to_string(y)
         ),
         getattr(BinaryOperator, ">="): lambda x, y: BooleanLiteral(
-            convert_bool_array_to_string(x).value >= convert_bool_array_to_string(y).value
+            convert_bool_array_to_string(x) >= convert_bool_array_to_string(y)
         ),
         getattr(BinaryOperator, "<="): lambda x, y: BooleanLiteral(
-            convert_bool_array_to_string(x).value <= convert_bool_array_to_string(y).value
+            convert_bool_array_to_string(x) <= convert_bool_array_to_string(y)
         ),
         getattr(BinaryOperator, "=="): lambda x, y: BooleanLiteral(
-            convert_bool_array_to_string(x).value == convert_bool_array_to_string(y).value
+            convert_bool_array_to_string(x) == convert_bool_array_to_string(y)
         ),
         getattr(BinaryOperator, "!="): lambda x, y: BooleanLiteral(
-            convert_bool_array_to_string(x).value != convert_bool_array_to_string(y).value
+            convert_bool_array_to_string(x) != convert_bool_array_to_string(y)
         ),
         getattr(UnaryOperator, "!"): lambda x: BooleanLiteral(not any(v.value for v in x.values)),
     },
@@ -144,15 +141,15 @@ type_hierarchy = (
 )
 
 constant_map = {
-    ConstantName.pi: np.pi,
-    ConstantName.tau: 2 * np.pi,
-    ConstantName.euler: np.e,
+    "pi": np.pi,
+    "tau": 2 * np.pi,
+    "euler": np.e,
 }
 
 builtin_functions = {
-    "sizeof": lambda array, dim=IntegerLiteral(0): (
+    "sizeof": lambda array, dim: (
         IntegerLiteral(len(array.values))
-        if dim.value == 0
+        if dim is None or dim.value == 0
         else builtin_functions["sizeof"](array.values[0], IntegerLiteral(dim.value - 1))
     ),
     "arccos": lambda x: x,
@@ -194,8 +191,8 @@ def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
     return func(expression)
 
 
-def evaluate_constant(constant: Constant):
-    return FloatLiteral(constant_map.get(constant.name))
+def evaluate_constant(constant: str):
+    return FloatLiteral(constant_map.get(constant))
 
 
 def get_operator_of_assignment_operator(assignment_operator: AssignmentOperator):
@@ -207,7 +204,7 @@ Casting values
 """
 
 
-LiteralType = Type[Union[BooleanLiteral, IntegerLiteral, FloatLiteral, StringLiteral, ArrayLiteral]]
+LiteralType = Type[Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral]]
 
 
 @singledispatch
@@ -215,8 +212,8 @@ def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
     if type(variable) == into:
         return variable
     if into == BooleanLiteral or isinstance(into, BoolType):
-        if isinstance(variable, StringLiteral):
-            return BooleanLiteral(variable.value == "1")
+        if isinstance(variable, ArrayLiteral):
+            return BooleanLiteral(variable.values[0].value)
         return BooleanLiteral(bool(variable.value))
     if into == IntegerLiteral:
         return IntegerLiteral(int(variable.value))
@@ -231,8 +228,7 @@ def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLite
         return cast_to(BooleanLiteral, variable)
     size = into.size.value
     if isinstance(variable, BitstringLiteral):
-        bin_rep = np.binary_repr(variable.value, variable.width)
-        return convert_string_to_bool_array(StringLiteral(bin_rep))
+        return convert_string_to_bool_array(variable)
     if (
         not all(isinstance(x, BooleanLiteral) for x in variable.values)
         or len(variable.values) != size
@@ -293,18 +289,20 @@ def is_literal(expression: Expression):
             BooleanLiteral,
             IntegerLiteral,
             FloatLiteral,
-            StringLiteral,
+            # StringLiteral,
             ArrayLiteral,
         ),
     )
 
 
-def convert_string_to_bool_array(bit_string: StringLiteral) -> ArrayLiteral:
-    return ArrayLiteral([BooleanLiteral(x == "1") for x in bit_string.value])
+def convert_string_to_bool_array(bit_string: BitstringLiteral) -> ArrayLiteral:
+    return ArrayLiteral(
+        [BooleanLiteral(x == "1") for x in np.binary_repr(bit_string.value, bit_string.width)]
+    )
 
 
-def convert_bool_array_to_string(bit_string: ArrayLiteral) -> StringLiteral:
-    return StringLiteral("".join(("1" if x.value else "0") for x in bit_string.values))
+def convert_bool_array_to_string(bit_string: ArrayLiteral):
+    return "".join(("1" if x.value else "0") for x in bit_string.values)
 
 
 def is_none_like(value):
@@ -417,8 +415,7 @@ def unwrap_var_type(var_type):
 def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
     # current value will be an ArrayLiteral or StringLiteral
     if isinstance(value, BitstringLiteral):
-        bin_rep = np.binary_repr(value.value, value.width)
-        value = convert_string_to_bool_array(StringLiteral(bin_rep))
+        value = convert_string_to_bool_array(value)
     if isinstance(current_value, ArrayLiteral):
         first_ix = convert_index(update_indices[0])
 
@@ -430,8 +427,8 @@ def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
                 unwrap_var_type(var_type),
             )
         else:
-            if isinstance(value, StringLiteral):
-                value = convert_string_to_bool_array(value)
+            # if isinstance(value, StringLiteral):
+            #     value = convert_string_to_bool_array(value)
             if not isinstance(value, ArrayLiteral):
                 raise ValueError("Must assign Array type to slice")
             index_as_range = range(len(current_value.values))[first_ix]
@@ -508,7 +505,7 @@ def get_modifiers(quantum_op: Union[QuantumGate, QuantumPhase]):
 
 @get_modifiers.register
 def _(quantum_op: QuantumPhase):
-    return quantum_op.quantum_gate_modifiers
+    return quantum_op.modifiers
 
 
 @singledispatch
@@ -539,7 +536,7 @@ def is_inverted(quantum_op: Union[QuantumGate, QuantumPhase]):
 
 
 def is_controlled(phase: QuantumPhase):
-    for mod in phase.quantum_gate_modifiers:
+    for mod in phase.modifiers:
         if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
             return True
     return False
@@ -548,7 +545,7 @@ def is_controlled(phase: QuantumPhase):
 def convert_to_gate(controlled_phase: QuantumPhase):
     ctrl_modifiers = [
         mod
-        for mod in controlled_phase.quantum_gate_modifiers
+        for mod in controlled_phase.modifiers
         if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
     ]
     first_ctrl_modifier = ctrl_modifiers[-1]
@@ -665,15 +662,20 @@ def convert_to_output(value):
 @convert_to_output.register(IntegerLiteral)
 @convert_to_output.register(FloatLiteral)
 @convert_to_output.register(BooleanLiteral)
-@convert_to_output.register(StringLiteral)
+@convert_to_output.register(BitstringLiteral)
 def _(value):
     return value.value
+
+
+@convert_to_output.register(BitstringLiteral)
+def _(value):
+    return np.array(np.binary_repr(value.value, value.width))
 
 
 @convert_to_output.register
 def _(value: ArrayLiteral):
     if isinstance(value.values[0], BooleanLiteral):
-        return convert_bool_array_to_string(value).value
+        return convert_bool_array_to_string(value)
     return np.array([convert_to_output(x) for x in value.values])
 
 
@@ -682,9 +684,9 @@ def wrap_value_into_literal(value):
     raise TypeError(f"Cannot wrap {value} into literal type")
 
 
-@wrap_value_into_literal.register
-def _(value: str):
-    return StringLiteral(value)
+# @wrap_value_into_literal.register
+# def _(value: str):
+#     return StringLiteral(value)
 
 
 @wrap_value_into_literal.register

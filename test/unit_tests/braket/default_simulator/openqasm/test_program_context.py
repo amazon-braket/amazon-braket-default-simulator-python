@@ -76,25 +76,37 @@ def test_repr():
         assert repr(context) == (
             """Symbols
 SCOPE LEVEL 0
-x	Symbol<IntType(span=None, size=IntegerLiteral(span=None, value=8)), const=True>
-y	Symbol<FloatType(span=None, size=IntegerLiteral(span=None, value=16)), const=False>
-z	Symbol<BoolType(span=None), const=False>
-q	Symbol<<class 'openqasm3.ast.Identifier'>, const=False>
+pi   	Symbol<<class 'openqasm3.ast.FloatLiteral'>, const=False>
+π    	Symbol<<class 'openqasm3.ast.FloatLiteral'>, const=False>
+tau  	Symbol<<class 'openqasm3.ast.FloatLiteral'>, const=False>
+τ    	Symbol<<class 'openqasm3.ast.FloatLiteral'>, const=False>
+euler	Symbol<<class 'openqasm3.ast.FloatLiteral'>, const=False>
+ℇ    	Symbol<<class 'openqasm3.ast.FloatLiteral'>, const=False>
+x    	Symbol<IntType(span=None, size=IntegerLiteral(span=None, value=8)), const=True>
+y    	Symbol<FloatType(span=None, size=IntegerLiteral(span=None, value=16)), const=False>
+z    	Symbol<BoolType(span=None), const=False>
+q    	Symbol<<class 'openqasm3.ast.Identifier'>, const=False>
 SCOPE LEVEL 1
-x	Symbol<IntType(span=None, size=IntegerLiteral(span=None, value=16)), const=False>
-y	Symbol<FloatType(span=None, size=IntegerLiteral(span=None, value=8)), const=True>
-a	Symbol<BoolType(span=None), const=False>
+x    	Symbol<IntType(span=None, size=IntegerLiteral(span=None, value=16)), const=False>
+y    	Symbol<FloatType(span=None, size=IntegerLiteral(span=None, value=8)), const=True>
+a    	Symbol<BoolType(span=None), const=False>
 
 Data
 SCOPE LEVEL 0
-x	IntegerLiteral(span=None, value=10)
-y	FloatLiteral(span=None, value=1.34)
-z	BooleanLiteral(span=None, value=False)
-q	Identifier(span=None, name='q')
+pi   	FloatLiteral(span=None, value=3.141592653589793)
+π    	FloatLiteral(span=None, value=3.141592653589793)
+tau  	FloatLiteral(span=None, value=6.283185307179586)
+τ    	FloatLiteral(span=None, value=6.283185307179586)
+euler	FloatLiteral(span=None, value=2.718281828459045)
+ℇ    	FloatLiteral(span=None, value=2.718281828459045)
+x    	IntegerLiteral(span=None, value=10)
+y    	FloatLiteral(span=None, value=1.34)
+z    	BooleanLiteral(span=None, value=False)
+q    	Identifier(span=None, name='q')
 SCOPE LEVEL 1
-x	IntegerLiteral(span=None, value=20)
-y	FloatLiteral(span=None, value=2.68)
-a	BooleanLiteral(span=None, value=True)
+x    	IntegerLiteral(span=None, value=20)
+y    	FloatLiteral(span=None, value=2.68)
+a    	BooleanLiteral(span=None, value=True)
 
 Gates
 SCOPE LEVEL 0

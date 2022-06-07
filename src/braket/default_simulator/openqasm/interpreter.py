@@ -5,12 +5,13 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 from openqasm3 import parse
-from openqasm3.ast import (
+from openqasm3.ast import (  # Constant,; StringLiteral,
     AccessControl,
     ArrayReferenceType,
     ArrayType,
     AssignmentOperator,
     BinaryExpression,
+    BitstringLiteral,
     BitType,
     BooleanLiteral,
     BranchingStatement,
@@ -18,7 +19,6 @@ from openqasm3.ast import (
     ClassicalArgument,
     ClassicalAssignment,
     ClassicalDeclaration,
-    Constant,
     ConstantDeclaration,
     DiscreteSet,
     FloatLiteral,
@@ -39,14 +39,14 @@ from openqasm3.ast import (
     QuantumGateDefinition,
     QuantumGateModifier,
     QuantumMeasurement,
-    QuantumMeasurementAssignment,
+    QuantumMeasurementStatement,
     QuantumPhase,
     QuantumReset,
     QuantumStatement,
     QubitDeclaration,
     RangeDefinition,
     ReturnStatement,
-    StringLiteral,
+    SizeOf,
     SubroutineDefinition,
     UnaryExpression,
     WhileLoop,
@@ -144,11 +144,11 @@ class Interpreter:
     @visit.register
     def _(self, node: Program):
         self.logger.debug(f"Program: {node}")
-        self.visit(node.includes)
-        io = self.visit(node.io_variables)
+        # self.visit(node.includes)
+        # io = self.visit(node.io_variables)
         statements = self.visit(node.statements)
         new_node = Program(statements)
-        new_node.io_variables = io
+        # new_node.io_variables = io
         return new_node
 
     @visit.register
@@ -174,7 +174,6 @@ class Interpreter:
             declaration = ClassicalDeclaration(
                 node.type,
                 node.identifier,
-                node.init_expression,
             )
             self.context.specify_output(node.identifier.name)
         else:  # IOKeyword.input:
@@ -215,13 +214,7 @@ class Interpreter:
     @visit.register
     def _(self, node: Cast):
         self.logger.debug(f"Cast: {node}")
-        casted = [cast_to(node.type, self.visit(arg)) for arg in node.arguments]
-        return casted[0] if len(casted) == 1 else casted
-
-    @visit.register
-    def _(self, node: Constant):
-        self.logger.debug(f"Constant: {node}")
-        return evaluate_constant(node)
+        return cast_to(node.type, self.visit(node.argument))
 
     @visit.register(BooleanLiteral)
     @visit.register(IntegerLiteral)
@@ -309,7 +302,7 @@ class Interpreter:
         for statement in body:
             if isinstance(statement, QuantumPhase):
                 statement.argument = self.visit(statement.argument)
-                statement.modifiers = self.visit(statement.quantum_gate_modifiers)
+                statement.modifiers = self.visit(statement.modifiers)
                 if is_inverted(statement):
                     statement = invert(statement)
                 if is_controlled(statement):
@@ -444,7 +437,7 @@ class Interpreter:
     def _(self, node: QuantumPhase):
         self.logger.debug(f"Quantum phase: {node}")
         node.argument = self.visit(node.argument)
-        node.modifiers = self.visit(node.quantum_gate_modifiers)
+        node.modifiers = self.visit(node.modifiers)
         if is_inverted(node):
             node = invert(node)
         if is_controlled(node):
@@ -468,22 +461,23 @@ class Interpreter:
     def _(self, node: QuantumMeasurement):
         self.logger.debug(f"Quantum measurement: {node}")
         qubits = self.visit(node.qubit)
-        return StringLiteral(self.context.measure_qubits(qubits))
+        measurement = self.context.measure_qubits(qubits)
+        return BitstringLiteral(int(measurement, base=2), len(measurement))
 
     @visit.register
-    def _(self, node: QuantumMeasurementAssignment):
+    def _(self, node: QuantumMeasurementStatement):
         self.logger.debug(f"Quantum measurement assignment: {node}")
-        measurement = self.visit(node.measure_instruction)
+        measurement = self.visit(node.measure)
         if isinstance(node.target, IndexedIdentifier):
             node.target.indices = self.visit(node.target.indices)
         if node.target is not None:
             self.context.update_value(node.target, measurement)
         return node
 
-    @visit.register
-    def _(self, node: StringLiteral):
-        self.logger.debug(f"String Literal: {node}")
-        return convert_string_to_bool_array(node)
+    # @visit.register
+    # def _(self, node: StringLiteral):
+    #     self.logger.debug(f"String Literal: {node}")
+    #     return convert_string_to_bool_array(node)
 
     @visit.register
     def _(self, node: ClassicalAssignment):
@@ -577,13 +571,13 @@ class Interpreter:
                 if isinstance(arg_defined, ClassicalArgument):
                     arg_name = arg_defined.name.name
                     arg_type = arg_defined.type
-                    arg_const = arg_defined.access == AccessControl.CONST
+                    arg_const = arg_defined.access == AccessControl.const
                     arg_value = deepcopy(arg_passed)
 
                     self.context.declare_variable(arg_name, arg_type, arg_value, arg_const)
 
                 else:  # QuantumArgument
-                    qubit_name = get_identifier_name(arg_defined.qubit)
+                    qubit_name = get_identifier_name(arg_defined.name)
                     self.context.declare_qubit_alias(qubit_name, arg_passed)
 
             return_value = None
@@ -610,3 +604,10 @@ class Interpreter:
     def _(self, node: ReturnStatement):
         self.logger.debug(f"Return statement: {node}")
         return self.visit(node.expression)
+
+    @visit.register
+    def _(self, node: SizeOf):
+        self.logger.debug(f"Size of: {node}")
+        target = self.visit(node.target)
+        index = self.visit(node.index)
+        return builtin_functions["sizeof"](target, index)

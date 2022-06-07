@@ -60,6 +60,7 @@ class CircuitBuilderContext(ProgramContext):
     ):
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         self.qubit_mapping.record_qubit_use(target)
+        print(parameters)
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         if num_inv_modifiers % 2:

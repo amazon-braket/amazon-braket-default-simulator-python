@@ -4,9 +4,10 @@ from unittest.mock import Mock, call
 
 import numpy as np
 import pytest
-from openqasm3.ast import (
+from openqasm3.ast import (  # StringLiteral,
     ArrayLiteral,
     ArrayType,
+    BitstringLiteral,
     BitType,
     BooleanLiteral,
     FloatLiteral,
@@ -17,7 +18,6 @@ from openqasm3.ast import (
     IntType,
     QuantumGate,
     QuantumGateDefinition,
-    StringLiteral,
     UintType,
 )
 
@@ -188,7 +188,7 @@ def test_assign_variable():
     assert context.get_type("copy_float") == FloatType(IntegerLiteral(16))
 
     assert context.get_value("copy_bit") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("10001000")
+        BitstringLiteral(0b_10001000, 8)
     )
     assert context.get_value("copy_int") == IntegerLiteral(100)
     assert context.get_value("copy_uint") == IntegerLiteral(8)
@@ -371,22 +371,22 @@ def test_indexed_expression():
     assert context.get_type("neg_one_b") == BitType(IntegerLiteral(5))
     assert context.get_type("bit_slice") == BitType(IntegerLiteral(3))
     assert context.get_value("fifteen_b") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("1111")
+        BitstringLiteral(0b_1111, 4)
     )
     assert context.get_value("one_b") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("0001")
+        BitstringLiteral(0b_0001, 4)
     )
     assert context.get_value("trunc_b") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("000")
+        BitstringLiteral(0b_000, 3)
     )
     assert context.get_value("neg_fifteen_b") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("10001")
+        BitstringLiteral(0b_10001, 5)
     )
     assert context.get_value("neg_one_b") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("11111")
+        BitstringLiteral(0b_11111, 5)
     )
     assert context.get_value("bit_slice") == data_manipulation.convert_string_to_bool_array(
-        StringLiteral("101")
+        BitstringLiteral(0b_101, 3)
     )
     assert context.get_value("one_three") == ArrayLiteral(
         values=[IntegerLiteral(1), IntegerLiteral(3)]
@@ -502,11 +502,11 @@ def test_while_loop():
 
 def test_indexed_identifier():
     qasm = """
-    output uint[8] one;
-    output uint[8] another_one;
-    output array[uint[8], 2] twos;
-    output array[uint[8], 2] threes;
-    output bit[4] fz;
+    uint[8] one;
+    uint[8] another_one;
+    array[uint[8], 2] twos;
+    array[uint[8], 2] threes;
+    bit[4] fz;
 
     array[uint[8], 2, 2] empty;
 
