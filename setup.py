@@ -67,6 +67,7 @@ class InstallWithOQ3Command(distutils.cmd.Command):
             ]
         )
         os.chdir(Path("..", "..", "..", ".."))
+        subprocess.check_call(["pip", "install", "-e", "."])
 
         if not Path("openqasm").is_dir():
             subprocess.check_call(["git", "clone", "https://github.com/Qiskit/openqasm.git"])
