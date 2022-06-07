@@ -14,7 +14,6 @@
 import distutils.cmd
 import os
 import subprocess
-from distutils.command.install import install
 from pathlib import Path
 
 from setuptools import find_namespace_packages, setup
