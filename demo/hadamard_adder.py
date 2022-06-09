@@ -1,4 +1,5 @@
 import numpy as np
+
 # from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 

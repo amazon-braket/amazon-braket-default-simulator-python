@@ -53,6 +53,7 @@ from openqasm3.ast import (  # Constant,; StringLiteral,
 )
 
 from braket.default_simulator.openqasm.data_manipulation import (
+    builtin_constants,
     builtin_functions,
     cast_to,
     convert_range_def_to_range,
@@ -73,7 +74,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     is_literal,
     modify_body,
     singledispatchmethod,
-    wrap_value_into_literal, builtin_constants,
+    wrap_value_into_literal,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext
 

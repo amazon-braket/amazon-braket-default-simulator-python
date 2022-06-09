@@ -184,9 +184,9 @@ builtin_functions = {
     ),
     "popcount": lambda x: popcount(x),
     "pow": lambda x, y: (
-        IntegerLiteral(x.value ** y.value)
+        IntegerLiteral(x.value**y.value)
         if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
-        else FloatLiteral(x.value ** y.value)
+        else FloatLiteral(x.value**y.value)
     ),
     "rotl": lambda x: NotImplementedError(),
     "rotr": lambda x: NotImplementedError(),
