@@ -360,9 +360,6 @@ class ProgramContext:
         self.inputs = {}
         self.results = []
 
-        self.populate_built_in_constants()
-        self.populate_built_in_functions()
-
     def __repr__(self):
         return "\n\n".join(
             repr(x)
@@ -426,7 +423,7 @@ class ProgramContext:
     def declare_variable(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, LiteralType, Type[Identifier]],
+        symbol_type: Union[ClassicalType, Type[LiteralType], Type[Identifier]],
         value: Optional[Any] = None,
         const: bool = False,
     ):
@@ -548,14 +545,3 @@ class ProgramContext:
                 for _ in range(mod.argument.value):
                     unitary = controlled_unitary(unitary, neg=True)
         self.quantum_simulation.execute_unitary(unitary, target)
-
-    def populate_built_in_constants(self):
-        self.declare_variable("pi", FloatLiteral, FloatLiteral(np.pi))
-        self.declare_variable("π", FloatLiteral, FloatLiteral(np.pi))
-        self.declare_variable("tau", FloatLiteral, FloatLiteral(2 * np.pi))
-        self.declare_variable("τ", FloatLiteral, FloatLiteral(2 * np.pi))
-        self.declare_variable("euler", FloatLiteral, FloatLiteral(np.e))
-        self.declare_variable("ℇ", FloatLiteral, FloatLiteral(np.e))
-
-    def populate_built_in_functions(self):
-        pass

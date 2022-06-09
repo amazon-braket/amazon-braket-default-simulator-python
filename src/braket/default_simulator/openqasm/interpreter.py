@@ -73,7 +73,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     is_literal,
     modify_body,
     singledispatchmethod,
-    wrap_value_into_literal,
+    wrap_value_into_literal, builtin_constants,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext
 
@@ -225,6 +225,8 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Identifier):
+        if node.name in builtin_constants:
+            return builtin_constants[node.name]
         if not self.context.is_initialized(node.name):
             raise NameError(f"Identifier '{node.name}' is not initialized.")
         return self.context.get_value_by_identifier(node)

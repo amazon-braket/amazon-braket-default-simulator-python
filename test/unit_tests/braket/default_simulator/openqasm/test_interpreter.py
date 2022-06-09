@@ -1308,7 +1308,6 @@ def test_invalid_op(bad_op):
         Interpreter().run(qasm, shots=1)
 
 
-@pytest.mark.xfail(reason="pending bitstring refactor")
 def test_bad_bit_declaration():
     qasm = """
     bit[4] x = "00010";

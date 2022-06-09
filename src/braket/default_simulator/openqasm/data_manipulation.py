@@ -1,10 +1,11 @@
+import math
 import warnings
 from copy import deepcopy
 from functools import singledispatch, update_wrapper
 from typing import List, Type, Union
 
 import numpy as np
-from openqasm3.ast import (  # Constant,; ConstantName,; StringLiteral,
+from openqasm3.ast import (
     ArrayLiteral,
     ArrayReferenceType,
     ArrayType,
@@ -146,28 +147,52 @@ constant_map = {
     "euler": np.e,
 }
 
+
+def popcount(x: Union[ArrayLiteral, IntegerLiteral]):
+    x = cast_to(UintType(), x)
+    return IntegerLiteral(np.binary_repr(x.value).count("1"))
+
+
+builtin_constants = {
+    "pi": FloatLiteral(np.pi),
+    "π": FloatLiteral(np.pi),
+    "tau": FloatLiteral(2 * np.pi),
+    "τ": FloatLiteral(2 * np.pi),
+    "euler": FloatLiteral(np.e),
+    "ℇ": FloatLiteral(np.e),
+}
+
+
 builtin_functions = {
     "sizeof": lambda array, dim: (
         IntegerLiteral(len(array.values))
         if dim is None or dim.value == 0
         else builtin_functions["sizeof"](array.values[0], IntegerLiteral(dim.value - 1))
     ),
-    "arccos": lambda x: x,
-    "arcsin": lambda x: x,
-    "arctan": lambda x: x,
-    "ceiling": lambda x: x,
-    "cos": lambda x: x,
-    "exp": lambda x: x,
-    "floor": lambda x: x,
-    "log": lambda x: x,
-    "mod": lambda x: x,
-    "popcount": lambda x: x,
-    "pow": lambda x: x,
-    "rotl": lambda x: x,
-    "rotr": lambda x: x,
-    "sin": lambda x: x,
-    "sqrt": lambda x: x,
-    "tan": lambda x: x,
+    "arccos": lambda x: FloatLiteral(np.arccos(x.value)),
+    "arcsin": lambda x: FloatLiteral(np.arcsin(x.value)),
+    "arctan": lambda x: FloatLiteral(np.arctan(x.value)),
+    "ceiling": lambda x: IntegerLiteral(math.ceil(x.value)),
+    "cos": lambda x: FloatLiteral(np.cos(x.value)),
+    "exp": lambda x: FloatLiteral(np.exp(x.value)),
+    "floor": lambda x: IntegerLiteral(math.floor(x.value)),
+    "log": lambda x: FloatLiteral(np.log(x.value)),
+    "mod": lambda x, y: (
+        IntegerLiteral(x.value % y.value)
+        if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
+        else FloatLiteral(x.value % y.value)
+    ),
+    "popcount": lambda x: popcount(x),
+    "pow": lambda x, y: (
+        IntegerLiteral(x.value ** y.value)
+        if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
+        else FloatLiteral(x.value ** y.value)
+    ),
+    "rotl": lambda x: NotImplementedError(),
+    "rotr": lambda x: NotImplementedError(),
+    "sin": lambda x: FloatLiteral(np.sin(x.value)),
+    "sqrt": lambda x: FloatLiteral(np.sin(x.value)),
+    "tan": lambda x: FloatLiteral(np.tan(x.value)),
 }
 
 
@@ -204,7 +229,7 @@ Casting values
 """
 
 
-LiteralType = Type[Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral]]
+LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral]
 
 
 @singledispatch
@@ -228,7 +253,7 @@ def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLite
         return cast_to(BooleanLiteral, variable)
     size = into.size.value
     if isinstance(variable, BitstringLiteral):
-        return convert_string_to_bool_array(variable)
+        variable = convert_string_to_bool_array(variable)
     if (
         not all(isinstance(x, BooleanLiteral) for x in variable.values)
         or len(variable.values) != size
@@ -250,8 +275,11 @@ def _(into: IntType, variable: LiteralType):
 def _(into: UintType, variable: LiteralType):
     if isinstance(variable, ArrayLiteral):
         return IntegerLiteral(int("".join("01"[x.value] for x in variable.values), base=2))
-    limit = 2**into.size.value
-    value = int(variable.value) % limit
+    if into.size is not None:
+        limit = 2**into.size.value
+        value = int(variable.value) % limit
+    else:
+        value = int(variable.value)
     if value != variable.value:
         warnings.warn(
             f"Unsigned integer overflow for value {variable.value} and size {into.size.value}."

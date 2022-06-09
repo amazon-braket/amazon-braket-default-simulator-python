@@ -25,7 +25,7 @@ with open("src/braket/default_simulator/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 
-class InstallWithOQ3Command(distutils.cmd.Command):
+class InstallOQ3Command(distutils.cmd.Command):
     """A custom command to install OpenQASM 3 and build grammars"""
 
     description = "install OQ3"
@@ -175,6 +175,6 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     cmdclass={
-        "install_oq3": InstallWithOQ3Command,
+        "install_oq3": InstallOQ3Command,
     },
 )

@@ -101,7 +101,7 @@ def test_adder(sv_adder):
     result = simulator.run(Program(source="adder.qasm", inputs=inputs), shots=100)
     expected_probs = np.zeros(2**5)
     expected_probs[10] = 1
-    assert np.array_equal(result.resultTypes[0].value, expected_probs)
+    assert np.allclose(result.resultTypes[0].value, expected_probs)
 
 
 def test_adder_analytic(sv_adder):
