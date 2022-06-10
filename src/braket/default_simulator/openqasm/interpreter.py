@@ -1,3 +1,4 @@
+from abc import abstractmethod, ABC
 from copy import deepcopy
 from dataclasses import fields
 from logging import Logger, getLogger
@@ -5,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 from openqasm3 import parse
-from openqasm3.ast import (  # Constant,; StringLiteral,
+from openqasm3.ast import (
     AccessControl,
     ArrayReferenceType,
     ArrayType,
@@ -57,11 +58,9 @@ from braket.default_simulator.openqasm.data_manipulation import (
     builtin_functions,
     cast_to,
     convert_range_def_to_range,
-    convert_string_to_bool_array,
     convert_to_gate,
     create_empty_array,
     evaluate_binary_expression,
-    evaluate_constant,
     evaluate_unary_expression,
     get_ctrl_modifiers,
     get_elements,
@@ -78,10 +77,8 @@ from braket.default_simulator.openqasm.data_manipulation import (
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext
 
-# from braket.default_simulator.result_types import StateVector
 
-
-class Interpreter:
+class Interpreter(ABC):
     """
     Shots=0 (sv implementation) will not support using measured values,
     resetting active qubits, using measured qubits. In other words, it will
@@ -101,29 +98,6 @@ class Interpreter:
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
-
-    def run(self, string: str, shots: int = 0, inputs: Dict[str, Any] = None):
-        program = parse(string)
-        return self.run_program(program, shots, inputs)
-
-    def run_program(self, program: Program, shots: int = 0, inputs: Dict[str, Any] = None):
-        self.context.is_analytic = not shots
-        if inputs:
-            self.context.load_inputs(inputs)
-
-        if self.context.is_analytic:
-            self.visit(program)
-
-        for _ in range(shots):
-            program = self.visit(program)
-            self.context.record_and_reset()
-        self.context.serialize_output()
-
-        return self.context
-
-    def run_file(self, filename: str, shots: int = 0, inputs: Dict[str, Any] = None):
-        with open(filename, "r") as f:
-            return self.run(f.read(), shots, inputs)
 
     @singledispatchmethod
     def visit(self, node):
@@ -351,16 +325,6 @@ class Interpreter:
                     )
         return inlined_body
 
-    def handle_builtin_unitary(self, arguments, qubits, modifiers):
-        self.context.execute_builtin_unitary(
-            arguments,
-            qubits,
-            modifiers,
-        )
-
-    def handle_phase(self, phase, qubits=None):
-        self.context.apply_phase(phase, qubits)
-
     @visit.register
     def _(self, node: QuantumGate):
         self.logger.debug(f"Quantum gate: {node}")
@@ -476,11 +440,6 @@ class Interpreter:
         if node.target is not None:
             self.context.update_value(node.target, measurement)
         return node
-
-    # @visit.register
-    # def _(self, node: StringLiteral):
-    #     self.logger.debug(f"String Literal: {node}")
-    #     return convert_string_to_bool_array(node)
 
     @visit.register
     def _(self, node: ClassicalAssignment):
@@ -614,3 +573,11 @@ class Interpreter:
         target = self.visit(node.target)
         index = self.visit(node.index)
         return builtin_functions["sizeof"](target, index)
+
+    @abstractmethod
+    def handle_builtin_unitary(self, arguments, qubits, modifiers):
+        pass
+
+    @abstractmethod
+    def handle_phase(self, phase, qubits=None):
+        pass

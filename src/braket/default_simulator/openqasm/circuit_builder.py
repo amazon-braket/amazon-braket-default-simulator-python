@@ -10,6 +10,10 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
 
 
 class CircuitBuilder(Interpreter):
+    """
+    Extension of Interpreter to handle building a circuit.
+    """
+
     def __init__(
         self, context: Optional[CircuitBuilderContext] = None, logger: Optional[Logger] = None
     ):

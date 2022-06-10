@@ -4,6 +4,7 @@ import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 from openqasm3.ast import GateModifierName, Identifier, IndexedIdentifier, QuantumGateModifier
 
+from braket.default_simulator import GateOperation
 from braket.default_simulator.gate_operations import GPhase, U
 from braket.default_simulator.openqasm.data_manipulation import LiteralType
 from braket.default_simulator.openqasm.program_context import ProgramContext
@@ -15,11 +16,11 @@ class Circuit:
         self.results = []
         self.qubit_set = set()
 
-    def add_instruction(self, instruction):
+    def add_instruction(self, instruction: GateOperation):
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
 
-    def add_result(self, result):
+    def add_result(self, result: Results):
         self.results.append(result)
 
     @property
@@ -28,18 +29,16 @@ class Circuit:
 
 
 class CircuitBuilderContext(ProgramContext):
+    """
+    Extension of ProgramContext to handle actually building the circuit.
+    """
+
     def __init__(self):
         self.circuit = Circuit()
         super().__init__()
 
     def add_result(self, result: Results):
         self.circuit.add_result(result)
-
-    def reset_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
-        raise NotImplementedError("Qubit reset not implemented")
-
-    def measure_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
-        raise NotImplementedError("Qubit measurement not implemented")
 
     def add_phase(
         self, phase: float, qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None
@@ -60,7 +59,6 @@ class CircuitBuilderContext(ProgramContext):
     ):
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         self.qubit_mapping.record_qubit_use(target)
-        print(parameters)
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         if num_inv_modifiers % 2:

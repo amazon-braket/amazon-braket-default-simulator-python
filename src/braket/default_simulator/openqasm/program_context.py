@@ -4,7 +4,6 @@ import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 from openqasm3.ast import (
     ClassicalType,
-    FloatLiteral,
     GateModifierName,
     Identifier,
     IndexedIdentifier,
@@ -25,7 +24,6 @@ from braket.default_simulator.openqasm.data_manipulation import (
     get_identifier_string,
     singledispatchmethod,
 )
-from braket.default_simulator.openqasm.quantum_simulation import QuantumSimulation
 
 
 class Table:
@@ -64,14 +62,6 @@ class Table:
 class QubitTable(Table):
     def __init__(self):
         super().__init__("Qubits")
-        self._used_indices = set()
-        self._measured_indices = set()
-
-    def record_qubit_use(self, indices: Sequence[int]):
-        self._used_indices |= set(indices)
-
-    def qubits_used(self, indices: Sequence[int]):
-        return set(indices) & self._used_indices
 
     @singledispatchmethod
     def get_by_identifier(self, identifier: Identifier):
@@ -351,14 +341,12 @@ class ProgramContext:
         self.variable_table = VariableTable()
         self.gate_table = GateTable()
         self.subroutine_table = SubroutineTable()
-        self.quantum_simulation = QuantumSimulation()
         self.qubit_mapping = QubitTable()
         self.scope_manager = ScopeManager(self)
         self.shot_data = {}
         self.is_analytic = None
-        self.outputs = set()
         self.inputs = {}
-        self.results = []
+        self.num_qubits = 0
 
     def __repr__(self):
         return "\n\n".join(
@@ -366,59 +354,12 @@ class ProgramContext:
             for x in (self.symbol_table, self.variable_table, self.gate_table, self.qubit_mapping)
         )
 
-    def specify_output(self, name: str):
-        self.outputs.add(name)
-
-    def is_output(self, name: str):
-        return name in self.outputs
-
     def load_inputs(self, inputs: Dict[str, Any]):
         for key, value in inputs.items():
             self.inputs[key] = value
 
-    def record_and_reset(self):
-        current_shot_data = {}
-
-        for name, symbol in self.symbol_table.items():
-            var_type = symbol.type
-
-            if dm.is_supported_output_type(var_type) and (not self.outputs or self.is_output(name)):
-                value = self.get_value(name)
-                output = dm.convert_to_output(value)
-                current_shot_data[name] = np.array([output])
-
-        if not self.shot_data:
-            self.shot_data = current_shot_data
-        else:
-            for name, val in self.shot_data.items():
-                self.shot_data[name] = np.append(
-                    self.shot_data[name], current_shot_data[name], axis=0
-                )
-
-        if self.num_qubits:
-            self.quantum_simulation.reset_qubits()
-        self.clear_classical_variables()
-
-    def add_result(self, result: Results):
-        self.results.append(result)
-
     def parse_result_type_pragma(self, pragma_body: str):
         return parse_braket_pragma(pragma_body, self.qubit_mapping)
-
-    def serialize_output(self):
-        for name, val in self.shot_data.items():
-            self.shot_data[name] = self.shot_data[name].tolist()
-
-    def clear_classical_variables(self):
-        symbol_names = [name for name, _ in self.symbol_table.items()]
-        for name in symbol_names:
-            if not self.get_const(name) and name not in self.qubit_mapping:
-                del self.symbol_table[name]
-                del self.variable_table[name]
-
-    @property
-    def num_qubits(self):
-        return self.quantum_simulation.num_qubits
 
     def declare_variable(
         self,
@@ -474,36 +415,11 @@ class ProgramContext:
 
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
-        self.quantum_simulation.add_qubits(num_qubits)
+        self.num_qubits += num_qubits
         self.declare_qubit_alias(name, Identifier(name))
 
     def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
         return self.qubit_mapping.get_by_identifier(qubits)
-
-    def reset_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
-        target = self.get_qubits(qubits)
-        if self.is_analytic and self.qubit_mapping.qubits_used(target):
-            raise ValueError(
-                f"Cannot reset qubit(s) '{get_identifier_string(qubits)}' since "
-                "doing so would collapse the wave function in a shots=0 simulation."
-            )
-        self.quantum_simulation.reset_qubits(target)
-
-    def measure_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
-        if self.is_analytic:
-            raise ValueError("Measurement operation not supported for analytic shots=0 simulation.")
-        target = self.get_qubits(qubits)
-        return "".join("01"[int(m)] for m in self.quantum_simulation.measure_qubits(target))
-
-    def apply_phase(
-        self, phase: float, qubits: Optional[Union[Identifier, IndexedIdentifier]] = None
-    ):
-        if qubits is None:
-            self.quantum_simulation.apply_phase(phase, range(self.num_qubits))
-        else:
-            for qubit in qubits:
-                target = self.get_qubits(qubit)
-                self.quantum_simulation.apply_phase(phase, target)
 
     def add_gate(self, name: str, definition: QuantumGateDefinition):
         self.gate_table.add_gate(name, definition)
@@ -522,26 +438,3 @@ class ProgramContext:
             return self.subroutine_table.get_subroutine_definition(name)
         except KeyError:
             raise NameError(f"Subroutine {name} is not defined.")
-
-    def execute_builtin_unitary(
-        self,
-        parameters: List[LiteralType],
-        qubits: List[Identifier],
-        modifiers: Optional[List[QuantumGateModifier]] = None,
-    ):
-        target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
-        self.qubit_mapping.record_qubit_use(target)
-        params = np.array([param.value for param in parameters])
-        num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
-        if num_inv_modifiers % 2:
-            # inv @ U(θ, ϕ, λ) == U(-θ, -λ, -ϕ)
-            params = -params[[0, 2, 1]]
-        unitary = QuantumSimulation.generate_u(*params)
-        for mod in modifiers:
-            if mod.modifier == GateModifierName.ctrl:
-                for _ in range(mod.argument.value):
-                    unitary = controlled_unitary(unitary)
-            if mod.modifier == GateModifierName.negctrl:
-                for _ in range(mod.argument.value):
-                    unitary = controlled_unitary(unitary, neg=True)
-        self.quantum_simulation.execute_unitary(unitary, target)
