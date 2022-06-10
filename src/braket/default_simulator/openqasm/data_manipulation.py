@@ -455,8 +455,8 @@ def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
                 unwrap_var_type(var_type),
             )
         else:
-            # if isinstance(value, StringLiteral):
-            #     value = convert_string_to_bool_array(value)
+            if isinstance(value, BitstringLiteral):
+                value = convert_string_to_bool_array(value)
             if not isinstance(value, ArrayLiteral):
                 raise ValueError("Must assign Array type to slice")
             index_as_range = range(len(current_value.values))[first_ix]

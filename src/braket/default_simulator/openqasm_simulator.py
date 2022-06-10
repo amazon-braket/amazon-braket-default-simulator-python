@@ -20,7 +20,7 @@ from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
 from braket.ir.openqasm import Program
 from braket.task_result import AdditionalMetadata, GateModelTaskResult, TaskMetadata
 
-from braket.default_simulator.openqasm.circuit_builder import CircuitBuilder
+from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.result_types import TargetedResultType
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
@@ -57,8 +57,8 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
                 are requested when shots>0.
         """
         is_file = openqasm_ir.source.endswith(".qasm")
-        circuit_builder = CircuitBuilder()
-        circuit = circuit_builder.build_circuit(
+        interpreter = Interpreter()
+        circuit = interpreter.build_circuit(
             source=openqasm_ir.source,
             inputs=openqasm_ir.inputs,
             is_file=is_file,

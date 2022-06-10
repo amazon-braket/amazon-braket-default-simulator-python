@@ -15,15 +15,15 @@ from openqasm3.ast import (
     SubroutineDefinition,
 )
 
-from braket.default_simulator.linalg_utils import controlled_unitary
+from braket.default_simulator.gate_operations import U, GPhase
 from braket.default_simulator.openqasm import data_manipulation as dm
 from braket.default_simulator.openqasm.braket_result_pragmas import parse_braket_pragma
 from braket.default_simulator.openqasm.data_manipulation import (
     LiteralType,
     get_elements,
-    get_identifier_string,
     singledispatchmethod,
 )
+from braket.default_simulator.openqasm.circuit import Circuit
 
 
 class Table:
@@ -64,7 +64,7 @@ class QubitTable(Table):
         super().__init__("Qubits")
 
     @singledispatchmethod
-    def get_by_identifier(self, identifier: Identifier):
+    def get_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]):
         """
         Convenience method to get an element with a possibly indexed identifier.
         """
@@ -347,6 +347,7 @@ class ProgramContext:
         self.is_analytic = None
         self.inputs = {}
         self.num_qubits = 0
+        self.circuit = Circuit()
 
     def __repr__(self):
         return "\n\n".join(
@@ -438,3 +439,42 @@ class ProgramContext:
             return self.subroutine_table.get_subroutine_definition(name)
         except KeyError:
             raise NameError(f"Subroutine {name} is not defined.")
+
+    def add_result(self, result: Results):
+        self.circuit.add_result(result)
+
+    def add_phase(
+        self, phase: float, qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None
+    ):
+        # if targets overlap, duplicates will be ignored
+        if not qubits:
+            target = range(self.num_qubits)
+        else:
+            target = set(sum((self.get_qubits(q) for q in qubits), ()))
+        phase_instruction = GPhase(target, phase)
+        self.circuit.add_instruction(phase_instruction)
+
+    def add_builtin_unitary(
+        self,
+        parameters: List[LiteralType],
+        qubits: List[Identifier],
+        modifiers: Optional[List[QuantumGateModifier]] = None,
+    ):
+        target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
+        params = np.array([param.value for param in parameters])
+        num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
+        if num_inv_modifiers % 2:
+            # inv @ U(θ, ϕ, λ) == U(-θ, -λ, -ϕ)
+            params = -params[[0, 2, 1]]
+
+        ctrl_mod_map = {
+            GateModifierName.ctrl: 0,
+            GateModifierName.negctrl: 1,
+        }
+        ctrl_modifiers = []
+        for mod in modifiers:
+            ctrl_mod_ix = ctrl_mod_map.get(mod.modifier)
+            if ctrl_mod_ix is not None:
+                ctrl_modifiers += [ctrl_mod_ix] * mod.argument.value
+        instruction = U(target, *params, ctrl_modifiers)
+        self.circuit.add_instruction(instruction)

@@ -1,10 +1,11 @@
 import re
+from functools import reduce
 from typing import Dict
 from unittest.mock import Mock, call
 
 import numpy as np
 import pytest
-from openqasm3.ast import (  # StringLiteral,
+from openqasm3.ast import (
     ArrayLiteral,
     ArrayType,
     BitstringLiteral,
@@ -21,8 +22,11 @@ from openqasm3.ast import (  # StringLiteral,
     UintType,
 )
 
+from braket.default_simulator import StateVectorSimulation
+from braket.default_simulator.gate_operations import U, PauliX
 from braket.default_simulator.openqasm import data_manipulation
-from braket.default_simulator.openqasm.data_manipulation import string_to_bin
+from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm.data_manipulation import string_to_bin, convert_bool_array_to_string
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.program_context import ProgramContext, QubitTable
 
@@ -396,108 +400,45 @@ def test_indexed_expression():
 def test_reset_qubit():
     qasm = """
     qubit q;
-    qubit[2] qs;
-    qubit[2] qs2;
-    qubit[5] qs5;
-
-    int[8] two = 2;
-
     reset q;
-    reset qs;
-    reset qs2[0];
-    reset qs5[:two:4];
-    reset qs5[{4, 1, 0}];
     """
-    mocked_context = ProgramContext()
-    reset_qubits_mock = Mock()
-    mocked_context.quantum_simulation.reset_qubits = reset_qubits_mock
-    Interpreter(mocked_context).run(qasm)
-
-    reset_qubits_mock.assert_has_calls(
-        (
-            call((0,)),
-            call((1, 2)),
-            call((3,)),
-            call((5, 7, 9)),
-            call((9, 6, 5)),
-        )
-    )
+    no_reset = "Reset not supported"
+    with pytest.raises(NotImplementedError, match=no_reset):
+        Interpreter().run(qasm)
 
 
 def test_for_loop():
     qasm = """
-    gate x a { U(π, 0, π) a; }
-    qubit[8] q;
-
+    int[8] x = 0;
+    int[8] y = 0;
     int[8] ten = 10;
-    bit[8] m1;
-    bit[8] m2;
-
-    reset q;
-
+    
     for i in [0:2:ten - 3] {
-        x q[i];
+        x += i;
     }
-    m1 = measure q;
 
     for i in {2, 4, 6} {
-        reset q[i];
-    }
-    m2 = measure q;
-    """
-    context = Interpreter().run(qasm, shots=1)
-
-    assert np.array_equal(
-        context.shot_data["m1"],
-        ("10101010",),
-    )
-    assert np.array_equal(
-        context.shot_data["m2"],
-        ("10000000",),
-    )
-
-
-def test_for_loop_shots():
-    qasm = """
-    output bit[10] b;
-    int[8] ten = 10;
-
-    for i in [0:ten - 1] {
-        b[i] = 1;
-    }
-
-    for i in [4: -1: 0] {
-        b[i] = 0;
+        y += i;
     }
     """
-    context = Interpreter().run(qasm, shots=10)
-    assert shot_data_is_equal(
-        context.shot_data,
-        {
-            "b": np.full(10, "0000011111"),
-        },
-    )
+    context = Interpreter().run(qasm)
+
+    assert context.get_value("x") == IntegerLiteral(sum((0, 2, 4, 6)))
+    assert context.get_value("y") == IntegerLiteral(sum((2, 4, 6)))
 
 
 def test_while_loop():
     qasm = """
-    output bit[10] b;
-    b = "0000000000";
-    int[8] ten = 10;
+    int[8] x = 0;
     int[8] i = 0;
 
     while (i < 7) {
-        b[i] = 1;
-        i = i + 1;
+        x += i;
+        i += 1;
     }
     """
-    context = Interpreter().run(qasm, shots=10)
-    assert shot_data_is_equal(
-        context.shot_data,
-        {
-            "b": np.full(10, "1111111000"),
-        },
-    )
+    context = Interpreter().run(qasm)
+    assert context.get_value("x") == IntegerLiteral(sum(range(7)))
 
 
 def test_indexed_identifier():
@@ -536,7 +477,7 @@ def test_indexed_identifier():
     multi_dim_bit[:, 0, 1:2:3] = two_elevens;
     multi_dim_bit[0][1][0] = true;
     """
-    context = Interpreter().run(qasm, shots=0)
+    context = Interpreter().run(qasm)
     assert context.get_value("one") == IntegerLiteral(1)
     assert context.get_value("another_one") == IntegerLiteral(1)
     assert context.get_value("twos") == ArrayLiteral(
@@ -728,19 +669,19 @@ def test_gate_call():
     qubit q2;
     qubit[2] qs;
 
-    reset q1;
-    reset q2;
-    reset qs;
-
     U(π, 0, my_pi) q1;
     x q2;
     x2(my_pi) qs[0];
     """
-    context = Interpreter().run(qasm)
-
-    assert np.allclose(
-        context.quantum_simulation.state_vector, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+    circuit = Interpreter().build_circuit(qasm)
+    expected_circuit = Circuit(
+        instructions=[
+            U((0,), np.pi, 0, np.pi, ()),
+            U((1,), np.pi, 0, np.pi, ()),
+            U((2,), np.pi, 0, np.pi, ()),
+        ]
     )
+    assert circuit == expected_circuit
 
 
 def test_gate_inv():
@@ -775,8 +716,6 @@ def test_gate_inv():
 
     qubit q;
 
-    reset q;
-
     both q;
     both_inv q;
 
@@ -786,9 +725,9 @@ def test_gate_inv():
     apply_phase q;
     apply_phase_inv q;
     """
-    context = Interpreter().run(qasm)
-
-    assert np.allclose(context.quantum_simulation.state_vector, [1, 0])
+    circuit = Interpreter().build_circuit(qasm)
+    collapsed = np.linalg.multi_dot([instruction.matrix for instruction in circuit.instructions])
+    assert np.allclose(collapsed, np.eye(2 ** circuit.num_qubits))
 
 
 def test_gate_ctrl():
@@ -814,12 +753,6 @@ def test_gate_ctrl():
     qubit q4;
     qubit q5;
 
-    reset q1;
-    reset q2;
-    reset q3;
-    reset q4;
-    reset q5;
-
     // doesn't flip q2
     cx q1, q2;
     // flip q1
@@ -835,11 +768,10 @@ def test_gate_ctrl():
     ccx_2 q1, q2, q4;
     ccx_2 q1, q2, q5;
     """
-    context = Interpreter().run(qasm)
-    assert np.allclose(
-        context.quantum_simulation.state_vector,
-        [0] * 31 + [1],
-    )
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(5, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, np.array([0] * 31 + [1]))
 
 
 def test_neg_gate_ctrl():
@@ -865,12 +797,6 @@ def test_neg_gate_ctrl():
     qubit q4;
     qubit q5;
 
-    reset q1;
-    reset q2;
-    reset q3;
-    reset q4;
-    reset q5;
-
     x q1;
     x q2;
     x q3;
@@ -890,60 +816,22 @@ def test_neg_gate_ctrl():
     // flip q3, q4, q5;
     ccx_1 q1, q2, q3;
     ccx_2 q1, q2, q4;
-    ccx_2 q1, q2, q5;
+    ccx_3 q1, q2, q5;
     """
-    context = Interpreter().run(qasm)
-    assert np.allclose(
-        context.quantum_simulation.state_vector,
-        [1] + [0] * 31,
-    )
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(5, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, np.array([1] + [0] * 31))
 
 
 def test_measurement():
     qasm = """
     qubit q;
-    qubit[2] qs;
-    qubit[2] qs2;
-    qubit[5] qs5;
-
-    int[8] two = 2;
-
-    gate x a { U(π, 0, π) a; }
-
-    reset q;
-    reset qs;
-    reset qs2;
-    reset qs5;
-
-    x q;
-    x qs[0];
-    x qs5[0];
-    x qs5[2];
-
-    bit mq;
-    bit[2] mqs;
-    bit[1] mqs2_0;
-    bit[two] mqs5;
-
-    mq = measure q;
-    mqs = measure qs;
-    mqs2_0 = measure qs2[0];
-    mqs5 = measure qs5[:two:3];
+    measure q;
     """
-    context = Interpreter().run(qasm, shots=1)
-
-    measurements = {
-        "mq": "1",
-        "mqs": "10",
-        "mqs2_0": "0",
-        "mqs5": "11",
-    }
-
-    for bit, result in measurements.items():
-        assert np.array_equal(
-            context.shot_data[bit],
-            [result],
-        )
+    cannot_measure = "Measurement not supported"
+    with pytest.raises(NotImplementedError, match=cannot_measure):
+        Interpreter().run(qasm)
 
 
 def test_gphase():
@@ -960,8 +848,6 @@ def test_gphase():
     }
     gate h a { U(π/2, 0, π) a; }
 
-    reset qs;
-
     h qs[0];
     cx qs[0], qs[1];
     phase qs[0], qs[1];
@@ -970,11 +856,11 @@ def test_gphase():
     inv @ gphase(π / 2);
     negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
     """
-    context = Interpreter().run(qasm)
-    print(context.quantum_simulation.state_vector)
-    assert np.allclose(
-        context.quantum_simulation.state_vector, [-1j / np.sqrt(2), 0, 0, 1j / np.sqrt(2)]
-    )
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    print(simulation.state_vector)
+    assert np.allclose(simulation.state_vector, [-1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
 
 
 def test_no_neg_ctrl_phase():
@@ -991,30 +877,20 @@ def test_no_neg_ctrl_phase():
 def test_if():
     qasm = """
     int[8] two = 2;
-    bit[3] m;
-
-    qubit[3] qs;
-    reset qs;
-
-    gate x a { U(π, 0, π) a; }
+    bit[3] m = "000";
 
     if (two + 1) {
-        x qs[0];
+        m[0] = 1;
     } else {
-        x qs[1];
+        m[1] = 1;
     }
 
     if (!bool(two - 2)) {
-        x qs[2];
+        m[2] = 1;
     }
-
-    m = measure qs;
     """
-    context = Interpreter().run(qasm, shots=1)
-    assert np.array_equal(
-        context.shot_data["m"],
-        ["101"],
-    )
+    context = Interpreter().run(qasm)
+    assert convert_bool_array_to_string(context.get_value("m")) == "101"
 
 
 def test_include_stdgates(stdgates):
@@ -1063,114 +939,38 @@ def test_include_stdgates(stdgates):
     )
 
 
-def shot_data_is_equal(s1: Dict, s2: Dict):
-    assert set(s1.keys()) == set(s2.keys())
-    for key in s1.keys():
-        if not np.array_equal(s1[key], s2[key]):
-            return False
-    return True
-
-
 def test_adder(adder):
-    context = Interpreter().run_file("adder.qasm", 10, {"a_in": 1, "b_in": 15})
-
-    assert shot_data_is_equal(
-        context.shot_data,
-        {"ans": np.full(10, "10000")},
-    )
+    circuit = Interpreter().build_circuit("adder.qasm", {"a_in": 1, "b_in": 15}, is_file=True)
+    simulation = StateVectorSimulation(10, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert simulation.probabilities[0b_0_0001_0000_1] == 1
 
 
-def test_shots(stdgates):
-    bell_qasm = """
-    include "stdgates.inc";
-
-    qubit[3] q;
-    bit[3] c;
-    bit d = true;
-
-    h q[0];
-    cx q[0], q[1];
-    cx q[1], q[2];
-
-    c = measure q;
-    """
-    context = Interpreter().run(bell_qasm, shots=10)
-
-    assert len(context.shot_data["c"]) == 10
-    for result in context.shot_data["c"]:
-        assert result in ("000", "111")
-
-
-@pytest.mark.parametrize(
-    "used_qubit",
-    ("qs", "qs[0]", "qs[:]", "qs[0:]", "qs[:-1]", "qs[-2]", "qs[0:1:1]", "qs[-2:1:-1]"),
-)
-def test_cannot_reset_used_analytic(stdgates, used_qubit):
-    qasm = f"""
-    include "stdgates.inc";
-
-    qubit[2] qs;
-
-    reset qs;
-
-    h qs[0];
-    reset qs[1];
-    reset {used_qubit};
-    """
-    Interpreter().run(qasm, shots=2)
-    cannot_reset_qubit = re.escape(
-        f"Cannot reset qubit(s) '{used_qubit}' since doing so would collapse "
-        "the wave function in a shots=0 simulation."
-    )
-    with pytest.raises(ValueError, match=cannot_reset_qubit):
-        Interpreter().run(qasm)
-
-
-def test_cannot_measure_analytic():
-    qasm = """
-    qubit q;
-    reset q;
-    measure q;
-    """
-    Interpreter().run(qasm, shots=2)
-    cannot_measure_analytic = re.escape(
-        "Measurement operation not supported for analytic shots=0 simulation."
-    )
-    with pytest.raises(ValueError, match=cannot_measure_analytic):
-        Interpreter().run(qasm)
-
-
-# pending refactor of bits to BitstringLiteral
 def test_assignment_operators():
     qasm = """
-    output int[16] x;
-    // output bit[4] xs;
+    int[16] x;
+    bit[4] xs;
 
     x = 0;
-    // xs = "0000";
+    xs = "0000";
 
     x += 1; // 1
     x *= 2; // 2
     x /= 2; // 1
     x -= 5; // -4
 
-    // xs[2:] |= "11";
+    xs[2:] |= "11";
     """
-    context = Interpreter().run(qasm, shots=1)
-    assert shot_data_is_equal(
-        context.shot_data,
-        {
-            "x": [-4],
-            # "xs": ["0011"],
-        },
-    )
+    context = Interpreter().run(qasm)
+    assert context.get_value("x") == IntegerLiteral(-4)
+    assert convert_bool_array_to_string(context.get_value("xs")) == "0011"
 
 
 def test_resolve_result_type():
     qasm = """
-    output float[16] small_pi;
-    output float[16] one_point_five;
-    output int[8] int_not_bool;
+    float[16] small_pi;
+    float[16] one_point_five;
+    int[8] int_not_bool;
 
     int[8] one = 1;
     float[16] half = 0.5;
@@ -1180,33 +980,28 @@ def test_resolve_result_type():
     one_point_five = one + half;
     int_not_bool = t + 1;
     """
-    context = Interpreter().run(qasm, shots=1)
-    assert shot_data_is_equal(
-        context.shot_data,
-        {
-            "small_pi": [3.140625],
-            "one_point_five": [1.5],
-            "int_not_bool": [2],
-        },
-    )
+    context = Interpreter().run(qasm)
+    assert context.get_value("small_pi") == FloatLiteral(3.140625)
+    assert context.get_value("one_point_five") == FloatLiteral(1.5)
+    assert context.get_value("int_not_bool") == IntegerLiteral(2)
 
 
 def test_bit_operators():
     qasm = """
-    output bit[4] and;
-    output bit[4] or;
-    output bit[4] xor;
-    output bit[4] lshift;
-    output bit[4] rshift;
-    output bit[4] flip;
-    output bit gt;
-    output bit lt;
-    output bit ge;
-    output bit le;
-    output bit eq;
-    output bit neq;
-    output bit not;
-    output bit not_zero;
+    bit[4] and;
+    bit[4] or;
+    bit[4] xor;
+    bit[4] lshift;
+    bit[4] rshift;
+    bit[4] flip;
+    bit gt;
+    bit lt;
+    bit ge;
+    bit le;
+    bit eq;
+    bit neq;
+    bit not;
+    bit not_zero;
 
     bit[4] x = "0101";
     bit[4] y = "1100";
@@ -1226,57 +1021,52 @@ def test_bit_operators():
     not = !x;
     not_zero = !(x << 4);
     """
-    context = Interpreter().run(qasm, shots=1)
-    assert shot_data_is_equal(
-        context.shot_data,
-        {
-            "and": ["0100"],
-            "or": ["1101"],
-            "xor": ["1001"],
-            "lshift": ["0100"],
-            "rshift": ["0011"],
-            "flip": ["1010"],
-            "gt": [False],
-            "lt": [True],
-            "ge": [False],
-            "le": [True],
-            "eq": [False],
-            "neq": [True],
-            "not": [False],
-            "not_zero": [True],
-        },
-    )
+    context = Interpreter().run(qasm)
+    assert convert_bool_array_to_string(context.get_value("and")) == "0100"
+    assert convert_bool_array_to_string(context.get_value("or")) == "1101"
+    assert convert_bool_array_to_string(context.get_value("xor")) == "1001"
+    assert convert_bool_array_to_string(context.get_value("lshift")) == "0100"
+    assert convert_bool_array_to_string(context.get_value("rshift")) == "0011"
+    assert convert_bool_array_to_string(context.get_value("flip")) == "1010"
+    assert context.get_value("gt") == BooleanLiteral(False)
+    assert context.get_value("lt") == BooleanLiteral(True)
+    assert context.get_value("ge") == BooleanLiteral(False)
+    assert context.get_value("le") == BooleanLiteral(True)
+    assert context.get_value("eq") == BooleanLiteral(False)
+    assert context.get_value("neq") == BooleanLiteral(True)
+    assert context.get_value("not") == BooleanLiteral(False)
+    assert context.get_value("not_zero") == BooleanLiteral(True)
 
 
 @pytest.mark.parametrize("in_int", (0, 1, -2, 5))
 def test_input(in_int):
     qasm = """
     input int[8] in_int;
-    output int[8] doubled;
+    int[8] doubled;
 
     doubled = in_int * 2;
     """
-    context = Interpreter().run(qasm, shots=1, inputs={"in_int": in_int})
-    assert shot_data_is_equal(context.shot_data, {"doubled": [in_int * 2]})
+    context = Interpreter().run(qasm, inputs={"in_int": in_int})
+    assert context.get_value("doubled") == IntegerLiteral(in_int * 2)
 
 
 def test_missing_input():
     qasm = """
     input int[8] in_int;
-    output int[8] doubled;
+    int[8] doubled;
 
     doubled = in_int * 2;
     """
     missing_input = "Missing input variable 'in_int'."
     with pytest.raises(NameError, match=missing_input):
-        Interpreter().run(qasm, shots=1)
+        Interpreter().run(qasm)
 
 
 @pytest.mark.parametrize("bad_index", ("[0:1][0][0]", "[0][0][1]", "[0, 1][0]", "[0:1, 1][0]"))
 def test_qubit_multidim(bad_index):
     qasm = f"""
     qubit q;
-    reset q{bad_index};
+    U(1, 0, 1) q{bad_index};
     """
     multi_dim_qubit = "Cannot index multiple dimensions for qubits."
     with pytest.raises(IndexError, match=multi_dim_qubit):
@@ -1305,7 +1095,7 @@ def test_invalid_op(bad_op):
     """
     invalid_op = "Invalid operator - for ArrayLiteral"
     with pytest.raises(TypeError, match=invalid_op):
-        Interpreter().run(qasm, shots=1)
+        Interpreter().run(qasm)
 
 
 def test_bad_bit_declaration():
@@ -1319,7 +1109,7 @@ def test_bad_bit_declaration():
         "BooleanLiteral(span=None, value=True), BooleanLiteral(span=None, value=False)])."
     )
     with pytest.raises(ValueError, match=invalid_op):
-        Interpreter().run(qasm, shots=1)
+        Interpreter().run(qasm)
 
 
 def test_bad_float_declaration():
@@ -1328,7 +1118,7 @@ def test_bad_float_declaration():
     """
     invalid_float = "Float size must be one of {16, 32, 64, 128}."
     with pytest.raises(ValueError, match=invalid_float):
-        Interpreter().run(qasm, shots=1)
+        Interpreter().run(qasm)
 
 
 def test_bad_update_values_declaration_non_array():
@@ -1338,7 +1128,7 @@ def test_bad_update_values_declaration_non_array():
     """
     invalid_value = "Must assign Array type to slice"
     with pytest.raises(ValueError, match=invalid_value):
-        Interpreter().run(qasm, shots=1)
+        Interpreter().run(qasm)
 
 
 def test_bad_update_values_declaration_size_mismatch():
@@ -1348,7 +1138,7 @@ def test_bad_update_values_declaration_size_mismatch():
     """
     invalid_value = "Dimensions do not match: 2, 3"
     with pytest.raises(ValueError, match=invalid_value):
-        Interpreter().run(qasm, shots=1)
+        Interpreter().run(qasm)
 
 
 def test_gate_qubit_reg(stdgates):
@@ -1360,9 +1150,11 @@ def test_gate_qubit_reg(stdgates):
     x qs[{0, 2}];
     ctrl @ rx(π/2) qs, q;
     """
-    context = Interpreter().run(qasm, shots=0)
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(4, 1, 1)
+    simulation.evolve(circuit.instructions)
     assert np.allclose(
-        context.quantum_simulation.state_vector,
+        simulation.state_vector,
         [
             0,
             0,
@@ -1395,26 +1187,7 @@ def test_gate_qubit_reg_size_mismatch(stdgates):
     """
     size_mismatch = "Qubit registers must all be the same length."
     with pytest.raises(ValueError, match=size_mismatch):
-        Interpreter().run(qasm, shots=0)
-
-
-def test_gate_qubit_reg_shots(stdgates):
-    qasm = """
-    include "stdgates.inc";
-    output bit[4] x;
-
-    qubit[3] qs;
-    qubit q;
-
-    h q;
-    cx q, qs;
-
-    x[0] = measure q;
-    x[1:] = measure qs;
-    """
-    context = Interpreter().run(qasm, shots=10)
-    for outcome in context.shot_data["x"]:
-        assert outcome in ("0000", "1111")
+        Interpreter().run(qasm)
 
 
 def test_pragma():
@@ -1422,7 +1195,7 @@ def test_pragma():
     qubit q;
     #pragma {{"{string_to_bin("braket result state_vector")}";}}
     """
-    Interpreter().run(qasm, shots=0)
+    Interpreter().run(qasm)
 
 
 def test_subroutine():
@@ -1465,9 +1238,11 @@ def test_void_subroutine(stdgates):
     qubit[2] qs;
     flip(qs[0]);
     """
-    context = Interpreter().run(qasm)
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
     assert np.allclose(
-        context.quantum_simulation.state_vector,
+        simulation.state_vector,
         [0, 0, 1, 0],
     )
 
@@ -1475,8 +1250,8 @@ def test_void_subroutine(stdgates):
 def test_array_ref_subroutine(stdgates):
     qasm = """
     include "stdgates.inc";
-    output int[16] total_1;
-    output int[16] total_2;
+    int[16] total_1;
+    int[16] total_2;
 
     def sum(const array[int[8], #dim = 1] arr) -> int[16] {
         int[16] size = sizeof(arr);
@@ -1493,14 +1268,9 @@ def test_array_ref_subroutine(stdgates):
     total_1 = sum(array_1);
     total_2 = sum(array_2);
     """
-    context = Interpreter().run(qasm, shots=1)
-    assert shot_data_is_equal(
-        context.shot_data,
-        {
-            "total_1": [15],
-            "total_2": [55],
-        },
-    )
+    context = Interpreter().run(qasm)
+    assert context.get_value("total_1") == IntegerLiteral(15)
+    assert context.get_value("total_2") == IntegerLiteral(55)
 
 
 def test_subroutine_array_reference_mutation(stdgates):

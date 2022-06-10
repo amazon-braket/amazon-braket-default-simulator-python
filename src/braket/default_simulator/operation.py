@@ -47,6 +47,9 @@ class GateOperation(Operation, ABC):
     def matrix(self) -> np.ndarray:
         """np.ndarray: The matrix representation of the operation."""
 
+    def __eq__(self, other):
+        return self.targets == other.targets and np.allclose(self.matrix, other.matrix)
+
 
 class KrausOperation(Operation, ABC):
     """

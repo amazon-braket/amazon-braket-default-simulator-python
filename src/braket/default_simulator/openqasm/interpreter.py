@@ -1,8 +1,7 @@
-from abc import abstractmethod, ABC
 from copy import deepcopy
 from dataclasses import fields
 from logging import Logger, getLogger
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import numpy as np
 from openqasm3 import parse
@@ -78,7 +77,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
 from braket.default_simulator.openqasm.program_context import ProgramContext
 
 
-class Interpreter(ABC):
+class Interpreter:
     """
     Shots=0 (sv implementation) will not support using measured values,
     resetting active qubits, using measured qubits. In other words, it will
@@ -98,6 +97,22 @@ class Interpreter(ABC):
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
+
+    def build_circuit(self, source, inputs=None, is_file=False):
+        if inputs:
+            self.context.load_inputs(inputs)
+
+        if is_file:
+            with open(source, "r") as f:
+                source = f.read()
+
+        program = parse(source)
+        self.visit(program)
+        return self.context.circuit
+
+    def run(self, source, inputs=None, is_file=False):
+        self.build_circuit(source, inputs, is_file)
+        return self.context
 
     @singledispatchmethod
     def visit(self, node):
@@ -215,9 +230,7 @@ class Interpreter(ABC):
     @visit.register
     def _(self, node: QuantumReset):
         self.logger.debug(f"Quantum reset: {node}")
-        qubits = self.visit(node.qubits)
-        self.context.reset_qubits(qubits)
-        return QuantumReset(qubits)
+        raise NotImplementedError("Reset not supported")
 
     @visit.register
     def _(self, node: IndexedIdentifier):
@@ -427,9 +440,7 @@ class Interpreter(ABC):
     @visit.register
     def _(self, node: QuantumMeasurement):
         self.logger.debug(f"Quantum measurement: {node}")
-        qubits = self.visit(node.qubit)
-        measurement = self.context.measure_qubits(qubits)
-        return BitstringLiteral(int(measurement, base=2), len(measurement))
+        raise NotImplementedError("Measurement not supported")
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement):
@@ -460,6 +471,11 @@ class Interpreter(ABC):
             rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)
         return node
+
+    @visit.register
+    def _(self, node: BitstringLiteral):
+        self.logger.debug(f"Bitstring literal: {node}")
+        return cast_to(BitType(IntegerLiteral(node.width)), node)
 
     @visit.register
     def _(self, node: BranchingStatement):
@@ -574,10 +590,12 @@ class Interpreter(ABC):
         index = self.visit(node.index)
         return builtin_functions["sizeof"](target, index)
 
-    @abstractmethod
     def handle_builtin_unitary(self, arguments, qubits, modifiers):
-        pass
+        self.context.add_builtin_unitary(
+            arguments,
+            qubits,
+            modifiers,
+        )
 
-    @abstractmethod
     def handle_phase(self, phase, qubits=None):
-        pass
+        self.context.add_phase(phase, qubits)

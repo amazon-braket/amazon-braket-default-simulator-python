@@ -112,25 +112,3 @@ def test_adder_analytic(sv_adder):
     expected_probs[10] = 1
     probs = np.outer(result.resultTypes[1].value, result.resultTypes[2].value).flatten()
     assert np.allclose(probs, expected_probs)
-
-
-def test_no_reset():
-    qasm = """
-    qubit[2] qs;
-    reset qs;
-    """
-    simulator = OpenQASMStateVectorSimulator()
-    no_reset = "Quantum reset not implemented"
-    with pytest.raises(NotImplementedError, match=no_reset):
-        simulator.run(Program(source=qasm))
-
-
-def test_no_measure():
-    qasm = """
-    qubit[2] qs;
-    measure qs;
-    """
-    simulator = OpenQASMStateVectorSimulator()
-    no_measure = "Measurements not implemented"
-    with pytest.raises(NotImplementedError, match=no_measure):
-        simulator.run(Program(source=qasm))

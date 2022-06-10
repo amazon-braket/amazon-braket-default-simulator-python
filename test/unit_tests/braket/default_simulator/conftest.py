@@ -99,7 +99,6 @@ include "stdgates.inc";
 
 input uint[4] a_in;
 input uint[4] b_in;
-output bit[5] ans;
 
 gate majority a, b, c {
     cx c, b;
@@ -118,12 +117,6 @@ qubit[4] a;
 qubit[4] b;
 qubit cout;
 
-// initialize qubits
-reset cin;
-reset a;
-reset b;
-reset cout;
-
 // set input states
 for i in [0: 3] {
   if(bool(a_in[i])) x a[i];
@@ -138,7 +131,7 @@ for i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
 unmaj cin, b[3], a[3];
 
 // measure results
-ans[0] = measure cout;
-ans[1:4] = measure b[0:3];
+//ans[0] = measure cout;
+//ans[1:4] = measure b[0:3];
 """,
     )
