@@ -15,15 +15,15 @@ from openqasm3.ast import (
     SubroutineDefinition,
 )
 
-from braket.default_simulator.gate_operations import U, GPhase
+from braket.default_simulator.gate_operations import GPhase, U
 from braket.default_simulator.openqasm import data_manipulation as dm
 from braket.default_simulator.openqasm.braket_result_pragmas import parse_braket_pragma
+from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.data_manipulation import (
     LiteralType,
     get_elements,
     singledispatchmethod,
 )
-from braket.default_simulator.openqasm.circuit import Circuit
 
 
 class Table:

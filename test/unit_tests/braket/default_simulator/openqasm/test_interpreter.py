@@ -23,10 +23,13 @@ from openqasm3.ast import (
 )
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.gate_operations import U, PauliX
+from braket.default_simulator.gate_operations import PauliX, U
 from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm.data_manipulation import string_to_bin, convert_bool_array_to_string
+from braket.default_simulator.openqasm.data_manipulation import (
+    convert_bool_array_to_string,
+    string_to_bin,
+)
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.program_context import ProgramContext, QubitTable
 
@@ -727,7 +730,7 @@ def test_gate_inv():
     """
     circuit = Interpreter().build_circuit(qasm)
     collapsed = np.linalg.multi_dot([instruction.matrix for instruction in circuit.instructions])
-    assert np.allclose(collapsed, np.eye(2 ** circuit.num_qubits))
+    assert np.allclose(collapsed, np.eye(2**circuit.num_qubits))
 
 
 def test_gate_ctrl():

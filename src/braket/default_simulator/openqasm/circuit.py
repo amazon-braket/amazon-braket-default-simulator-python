@@ -1,4 +1,5 @@
 from braket.ir.jaqcd.program_v1 import Results
+
 from braket.default_simulator import GateOperation
 
 
@@ -29,4 +30,3 @@ class Circuit:
 
     def __eq__(self, other):
         return (self.instructions, self.results) == (other.instructions, other.results)
-
