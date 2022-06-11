@@ -416,11 +416,11 @@ def test_for_loop():
     int[8] y = 0;
     int[8] ten = 10;
     
-    for i in [0:2:ten - 3] {
+    for uint[8] i in [0:2:ten - 3] {
         x += i;
     }
 
-    for i in {2, 4, 6} {
+    for int[8] i in {2, 4, 6} {
         y += i;
     }
     """
@@ -1206,7 +1206,7 @@ def test_subroutine():
     const int[8] n = 4;
     def parity(bit[n] cin) -> bit {
       bit c = false;
-      for i in [0: n - 1] {
+      for int[8] i in [0: n - 1] {
         c ^= cin[i];
       }
       return c;
@@ -1259,7 +1259,7 @@ def test_array_ref_subroutine(stdgates):
     def sum(const array[int[8], #dim = 1] arr) -> int[16] {
         int[16] size = sizeof(arr);
         int[16] x = 0;
-        for i in [0:size - 1] {
+        for int[8] i in [0:size - 1] {
             x += arr[i];
         }
         return x;
@@ -1282,7 +1282,7 @@ def test_subroutine_array_reference_mutation(stdgates):
 
     def mutate_array(mutable array[int[8], #dim = 1] arr) {
         int[16] size = sizeof(arr);
-        for i in [0:size - 1] {
+        for int[8] i in [0:size - 1] {
             arr[i] = 0;
         }
     }
@@ -1309,7 +1309,7 @@ def test_subroutine_array_reference_const_mutation(stdgates):
 
     def mutate_array(const array[int[8], #dim = 1] arr) {
         int[16] size = sizeof(arr);
-        for i in [0:size - 1] {
+        for int[8] i in [0:size - 1] {
             arr[i] = 0;
         }
     }

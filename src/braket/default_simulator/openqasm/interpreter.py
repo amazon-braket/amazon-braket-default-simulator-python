@@ -499,9 +499,9 @@ class Interpreter:
         for i in index_values:
             block_copy = deepcopy(block)
             with self.context.enter_scope():
-                self.context.declare_variable(node.loop_variable.name, IntegerLiteral, i)
+                self.context.declare_variable(node.identifier.name, node.type, i)
                 self.visit(block_copy)
-        return ForInLoop(node.loop_variable, index, block)
+        return ForInLoop(node.type, node.identifier, index, block)
 
     @visit.register
     def _(self, node: WhileLoop):

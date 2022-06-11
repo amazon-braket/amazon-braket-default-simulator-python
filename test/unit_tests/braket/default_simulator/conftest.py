@@ -118,16 +118,16 @@ qubit[4] b;
 qubit cout;
 
 // set input states
-for i in [0: 3] {
+for int[8] i in [0: 3] {
   if(bool(a_in[i])) x a[i];
   if(bool(b_in[i])) x b[i];
 }
 
 // add a to b, storing result in b
 majority cin, b[3], a[3];
-for i in [3: -1: 1] { majority a[i], b[i - 1], a[i - 1]; }
+for int[8] i in [3: -1: 1] { majority a[i], b[i - 1], a[i - 1]; }
 cx a[0], cout;
-for i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
+for int[8] i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
 unmaj cin, b[3], a[3];
 
 // measure results
