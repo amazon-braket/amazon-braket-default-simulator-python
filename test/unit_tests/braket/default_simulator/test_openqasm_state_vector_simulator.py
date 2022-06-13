@@ -1,5 +1,13 @@
 import numpy as np
 import pytest
+from braket.ir.jaqcd import (
+    Amplitude,
+    DensityMatrix,
+    Expectation,
+    Probability,
+    StateVector,
+    Variance,
+)
 from braket.ir.openqasm import Program
 
 from braket.default_simulator.openqasm_state_vector_simulator import OpenQASMStateVectorSimulator
@@ -112,3 +120,156 @@ def test_adder_analytic(sv_adder):
     expected_probs[10] = 1
     probs = np.outer(result.resultTypes[1].value, result.resultTypes[2].value).flatten()
     assert np.allclose(probs, expected_probs)
+
+
+def test_result_types_analytic(stdgates):
+    simulator = OpenQASMStateVectorSimulator()
+    qasm = f"""
+    include "stdgates.inc";
+
+    qubit[3] q;
+    bit[3] c;
+
+    h q[0];
+    cx q[0], q[1];
+    cx q[1], q[2];
+    x q[2];
+
+    // {{ 001: .5, 110: .5 }}
+
+    #pragma {{"{string_to_bin("braket result state_vector")}";}}
+    #pragma {{"{string_to_bin("braket result probability")}";}}
+    #pragma {{"{string_to_bin("braket result probability q")}";}}
+    #pragma {{"{string_to_bin("braket result probability q[0]")}";}}
+    #pragma {{"{string_to_bin("braket result probability q[0:1]")}";}}
+    #pragma {{"{string_to_bin("braket result probability q[{0, 2, 1}]")}";}}
+    #pragma {{"{string_to_bin('braket result amplitude "001", "110"')}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix")}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix q")}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix q[0]")}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix q[0:1]")}";}}
+    #pragma {{"{string_to_bin("braket result density_matrix q[{0, 2, 1}]")}";}}
+    #pragma {{"{string_to_bin("braket result expectation z(q[0])")}";}}
+    #pragma {{"{string_to_bin("braket result variance x(q[0]) @ z(q[2]) @ h(q[1])")}";}}
+    #pragma {{"{string_to_bin(
+        "braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]"
+    )}";}}
+    """
+    program = Program(source=qasm)
+    result = simulator.run(program, shots=0)
+    for rt in result.resultTypes:
+        print(f"{rt.type}: {rt.value}")
+
+    print(np.abs(np.round(result.resultTypes[11].value, 2).astype(float)))
+
+    result_types = result.resultTypes
+
+    assert result_types[0].type == StateVector()
+    assert result_types[1].type == Probability()
+    assert result_types[2].type == Probability(targets=(0, 1, 2))
+    assert result_types[3].type == Probability(targets=(0,))
+    assert result_types[4].type == Probability(targets=(0, 1))
+    assert result_types[5].type == Probability(targets=(0, 2, 1))
+    assert result_types[6].type == Amplitude(states=("001", "110"))
+    assert result_types[7].type == DensityMatrix()
+    assert result_types[8].type == DensityMatrix(targets=(0, 1, 2))
+    assert result_types[9].type == DensityMatrix(targets=(0,))
+    assert result_types[10].type == DensityMatrix(targets=(0, 1))
+    assert result_types[11].type == DensityMatrix(targets=(0, 2, 1))
+    assert result_types[12].type == Expectation(observable=("z",), targets=(0,))
+    assert result_types[13].type == Variance(observable=("x", "z", "h"), targets=(0, 2, 1))
+    assert result_types[14].type == Expectation(
+        observable=([[[0, 0], [0, -1]], [[0, 1], [0, 0]]],),
+        targets=(0,),
+    )
+
+    assert np.allclose(
+        result_types[0].value,
+        [0, 1 / np.sqrt(2), 0, 0, 0, 0, 1 / np.sqrt(2), 0],
+    )
+    assert np.allclose(
+        result_types[1].value,
+        [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+    )
+    assert np.allclose(
+        result_types[2].value,
+        [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+    )
+    assert np.allclose(
+        result_types[3].value,
+        [0.5, 0.5],
+    )
+    assert np.allclose(
+        result_types[4].value,
+        [0.5, 0, 0, 0.5],
+    )
+    assert np.allclose(
+        result_types[5].value,
+        [0, 0, 0.5, 0, 0, 0.5, 0, 0],
+    )
+    assert np.isclose(result_types[6].value["001"], 1 / np.sqrt(2))
+    assert np.isclose(result_types[6].value["110"], 1 / np.sqrt(2))
+    assert np.allclose(
+        result_types[7].value,
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+    )
+    assert np.allclose(
+        result_types[8].value,
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+    )
+    assert np.allclose(
+        result_types[9].value,
+        np.eye(2) * 0.5,
+    )
+    assert np.allclose(
+        result_types[10].value,
+        [[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]],
+    )
+    assert np.allclose(
+        result_types[11].value,
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0.5, 0, 0, 0.5, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0.5, 0, 0, 0.5, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+    )
+    assert np.allclose(result_types[12].value, 0)
+    assert np.allclose(result_types[13].value, 1)
+    assert np.allclose(result_types[14].value, 0)
+
+
+def test_invalid_stanard_observable_target():
+    qasm = f"""
+    qubit[2] qs;
+    #pragma {{"{string_to_bin("braket result variance x(qs)")}";}}
+    """
+    simulator = OpenQASMStateVectorSimulator()
+    program = Program(source=qasm)
+
+    must_be_one_qubit = "Standard observable target must be exactly 1 qubit."
+
+    with pytest.raises(ValueError, match=must_be_one_qubit):
+        simulator.run(program, shots=0)

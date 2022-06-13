@@ -39,7 +39,6 @@ from openqasm3.ast import (
     QuantumGateDefinition,
     QuantumGateModifier,
     QuantumMeasurement,
-    QuantumMeasurementStatement,
     QuantumPhase,
     QuantumReset,
     QuantumStatement,

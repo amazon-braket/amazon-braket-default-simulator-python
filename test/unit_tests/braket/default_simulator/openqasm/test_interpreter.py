@@ -1,7 +1,4 @@
 import re
-from functools import reduce
-from typing import Dict
-from unittest.mock import Mock, call
 
 import numpy as np
 import pytest
@@ -1362,7 +1359,8 @@ def test_builtin_functions():
         const float[64] log_result = log(ℇ);
         const int[64] mod_int_result = mod(4, 3);
         const float[64] mod_float_result = mod(5.2, 2.5);
-        const int[64] popcount_result = popcount("1001110");
+        const int[64] popcount_bit_result = popcount("1001110");
+        const int[64] popcount_int_result = popcount(78);
         // parser gets confused by pow
         // const int[64] pow_int_result = pow(3, 3);
         // const float[64] pow_float_result = pow(2.5, 2.5);
@@ -1382,7 +1380,8 @@ def test_builtin_functions():
     assert context.get_value("log_result") == FloatLiteral(1)
     assert context.get_value("mod_int_result") == IntegerLiteral(1)
     assert context.get_value("mod_float_result") == FloatLiteral(5.2 % 2.5)
-    assert context.get_value("popcount_result") == IntegerLiteral(4)
+    assert context.get_value("popcount_bit_result") == IntegerLiteral(4)
+    assert context.get_value("popcount_int_result") == IntegerLiteral(4)
     assert context.get_value("sin_result") == FloatLiteral(np.sin(1))
     assert context.get_value("sqrt_result") == FloatLiteral(np.sqrt(2))
     assert context.get_value("tan_result") == FloatLiteral(np.tan(1))

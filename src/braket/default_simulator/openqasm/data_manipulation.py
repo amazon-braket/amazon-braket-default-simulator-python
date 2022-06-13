@@ -149,7 +149,10 @@ constant_map = {
 
 
 def popcount(x: Union[ArrayLiteral, IntegerLiteral]):
-    x = cast_to(UintType(), x)
+    width = IntegerLiteral(
+        len(x.values) if isinstance(x, ArrayLiteral) else math.ceil(np.log2(x.value))
+    )
+    x = cast_to(UintType(width), x)
     return IntegerLiteral(np.binary_repr(x.value).count("1"))
 
 
@@ -217,10 +220,6 @@ def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
     return func(expression)
 
 
-def evaluate_constant(constant: str):
-    return FloatLiteral(constant_map.get(constant))
-
-
 def get_operator_of_assignment_operator(assignment_operator: AssignmentOperator):
     return getattr(BinaryOperator, assignment_operator.name[:-1])
 
@@ -230,16 +229,14 @@ Casting values
 """
 
 
-LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral]
+LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, BitstringLiteral]
 
 
 @singledispatch
-def cast_to(into: Union[ClassicalType, LiteralType], variable: LiteralType):
+def cast_to(into: Union[ClassicalType, Type[LiteralType]], variable: LiteralType):
     if type(variable) == into:
         return variable
     if into == BooleanLiteral or isinstance(into, BoolType):
-        if isinstance(variable, ArrayLiteral):
-            return BooleanLiteral(variable.values[0].value)
         return BooleanLiteral(bool(variable.value))
     if into == IntegerLiteral:
         return IntegerLiteral(int(variable.value))
@@ -276,11 +273,8 @@ def _(into: IntType, variable: LiteralType):
 def _(into: UintType, variable: LiteralType):
     if isinstance(variable, ArrayLiteral):
         return IntegerLiteral(int("".join("01"[x.value] for x in variable.values), base=2))
-    if into.size is not None:
-        limit = 2**into.size.value
-        value = int(variable.value) % limit
-    else:
-        value = int(variable.value)
+    limit = 2**into.size.value
+    value = int(variable.value) % limit
     if value != variable.value:
         warnings.warn(
             f"Unsigned integer overflow for value {variable.value} and size {into.size.value}."
@@ -443,8 +437,6 @@ def unwrap_var_type(var_type):
 
 def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
     # current value will be an ArrayLiteral or StringLiteral
-    if isinstance(value, BitstringLiteral):
-        value = convert_string_to_bool_array(value)
     if isinstance(current_value, ArrayLiteral):
         first_ix = convert_index(update_indices[0])
 
@@ -456,8 +448,6 @@ def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
                 unwrap_var_type(var_type),
             )
         else:
-            if isinstance(value, BitstringLiteral):
-                value = convert_string_to_bool_array(value)
             if not isinstance(value, ArrayLiteral):
                 raise ValueError("Must assign Array type to slice")
             index_as_range = range(len(current_value.values))[first_ix]
@@ -476,51 +466,6 @@ def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
     else:
         return cast_to(var_type, value)
 
-
-#
-# def get_elements_(value: ArrayLiteral, update_indices):
-#     # current value will be an ArrayLiteral or StringLiteral
-#     if isinstance(value, ArrayLiteral):
-#         first_ix = convert_index(update_indices[0])
-#
-#         if isinstance(first_ix, int):
-#             return get_elements(
-#                 value.values[first_ix],
-#                 update_indices[1:],
-#             )
-#         else:
-#             index_as_range = range(len(value.values))[first_ix]
-#             elements = []
-#             for ix, sub_value in zip(index_as_range, value.values):
-#                 elements.append(get_elements(
-#                     value.values[ix],
-#                     update_indices[1:],
-#                 ))
-#         return elements
-#     else:
-#         raise NotImplementedError("get_elements")
-#
-#
-# def get_elements(value: ArrayLiteral, indices: List[IndexElement], type_width=None):
-#     if not indices:
-#         return value
-#     index = indices[0]
-#     if isinstance(index, DiscreteSet):
-#         new_value = ArrayLiteral([get_elements(value, [i]) for i in index.values])
-#         new_indices = indices[1:]
-#     else:
-#         first_index = convert_index(index[0])
-#         if isinstance(first_index, int):
-#             new_value = ArrayLiteral(value.values[first_index])
-#         else:  # slice
-#             index_as_range = range(len(value.values))[first_index]
-#             new_value = ArrayLiteral([value.values[ix] for ix in index_as_range])
-#         if not index[1:]:
-#             new_indices = indices[1:]
-#         else:
-#             new_indices = [index[1:]] + indices[1:]
-#     return get_elements(new_value, new_indices)
-#
 
 """
 Helper functions for working with OpenQASM quantum directives
@@ -637,85 +582,8 @@ def _(identifier: IndexedIdentifier):
 
 
 @singledispatch
-def get_identifier_string(identifier: Identifier):
-    return identifier.name
-
-
-@get_identifier_string.register
-def _(identifier: IndexedIdentifier):
-    name = identifier.name.name
-    indices = identifier.indices
-
-    if len(indices) > 1:
-        raise NotImplementedError("nested indices string conversion")
-
-    index = indices[0]
-
-    if isinstance(index, DiscreteSet):
-        raise NotImplementedError("Discrete set indexed identifier string")
-    else:
-        index = index[0]
-
-    if len(indices[0]) > 1:
-        raise NotImplementedError("nested indices string conversion")
-
-    if isinstance(index, IntegerLiteral):
-        index_string = index.value
-    else:  # RangeDefinition
-        start = index.start
-        stop = index.end
-        start_string = start.value if start is not None else ""
-        stop_string = stop.value if stop is not None else ""
-        if index.step is not None:
-            index_string = f"{start_string}:{index.step.value}:{stop_string}"
-        else:
-            index_string = f"{start_string}:{stop_string}"
-
-    return f"{name}[{index_string}]"
-
-
-"""
-Input/Output
-"""
-
-
-def is_supported_output_type(var_type):
-    return isinstance(var_type, (IntType, FloatType, BoolType, BitType, ArrayType))
-
-
-@singledispatch
-def convert_to_output(value):
-    raise TypeError(f"converting {value} to output")
-
-
-@convert_to_output.register(IntegerLiteral)
-@convert_to_output.register(FloatLiteral)
-@convert_to_output.register(BooleanLiteral)
-@convert_to_output.register(BitstringLiteral)
-def _(value):
-    return value.value
-
-
-@convert_to_output.register(BitstringLiteral)
-def _(value):
-    return np.array(np.binary_repr(value.value, value.width))
-
-
-@convert_to_output.register
-def _(value: ArrayLiteral):
-    if isinstance(value.values[0], BooleanLiteral):
-        return convert_bool_array_to_string(value)
-    return np.array([convert_to_output(x) for x in value.values])
-
-
-@singledispatch
 def wrap_value_into_literal(value):
     raise TypeError(f"Cannot wrap {value} into literal type")
-
-
-# @wrap_value_into_literal.register
-# def _(value: str):
-#     return StringLiteral(value)
 
 
 @wrap_value_into_literal.register
