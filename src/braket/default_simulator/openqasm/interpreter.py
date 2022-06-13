@@ -161,11 +161,7 @@ class Interpreter:
     def _(self, node: IODeclaration):
         self.logger.debug(f"IO Declaration: {node}")
         if node.io_identifier == IOKeyword.output:
-            declaration = ClassicalDeclaration(
-                node.type,
-                node.identifier,
-            )
-            self.context.specify_output(node.identifier.name)
+            raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
             if node.identifier.name not in self.context.inputs:
                 raise NameError(f"Missing input variable '{node.identifier.name}'.")
@@ -441,16 +437,6 @@ class Interpreter:
     def _(self, node: QuantumMeasurement):
         self.logger.debug(f"Quantum measurement: {node}")
         raise NotImplementedError("Measurement not supported")
-
-    @visit.register
-    def _(self, node: QuantumMeasurementStatement):
-        self.logger.debug(f"Quantum measurement assignment: {node}")
-        measurement = self.visit(node.measure)
-        if isinstance(node.target, IndexedIdentifier):
-            node.target.indices = self.visit(node.target.indices)
-        if node.target is not None:
-            self.context.update_value(node.target, measurement)
-        return node
 
     @visit.register
     def _(self, node: ClassicalAssignment):

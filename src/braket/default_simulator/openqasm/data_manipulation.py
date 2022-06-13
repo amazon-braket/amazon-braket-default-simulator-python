@@ -183,6 +183,7 @@ builtin_functions = {
         else FloatLiteral(x.value % y.value)
     ),
     "popcount": lambda x: popcount(x),
+    # parser gets confused by pow, mistaking for quantum modifier
     "pow": lambda x, y: (
         IntegerLiteral(x.value**y.value)
         if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
@@ -191,7 +192,7 @@ builtin_functions = {
     "rotl": lambda x: NotImplementedError(),
     "rotr": lambda x: NotImplementedError(),
     "sin": lambda x: FloatLiteral(np.sin(x.value)),
-    "sqrt": lambda x: FloatLiteral(np.sin(x.value)),
+    "sqrt": lambda x: FloatLiteral(np.sqrt(x.value)),
     "tan": lambda x: FloatLiteral(np.tan(x.value)),
 }
 

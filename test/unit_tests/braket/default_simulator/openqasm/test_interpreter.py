@@ -1053,6 +1053,15 @@ def test_input(in_int):
     assert context.get_value("doubled") == IntegerLiteral(in_int * 2)
 
 
+def test_output():
+    qasm = """
+    output int[8] out_int;
+    """
+    output_not_supported = "Output not supported"
+    with pytest.raises(NotImplementedError, match=output_not_supported):
+        Interpreter().run(qasm)
+
+
 def test_missing_input():
     qasm = """
     input int[8] in_int;
@@ -1339,3 +1348,41 @@ def test_subroutine_classical_passed_by_value():
     assert context.get_value("after") == ArrayLiteral(
         [BooleanLiteral(True), BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False)]
     )
+
+
+def test_builtin_functions():
+    qasm = """
+        const float[64] arccos_result = arccos(1);
+        const float[64] arcsin_result = arcsin(1);
+        const float[64] arctan_result = arctan(1);
+        const int[64] ceiling_result = ceiling(π);
+        const float[64] cos_result = cos(1);
+        const float[64] exp_result = exp(2);
+        const int[64] floor_result = floor(π);
+        const float[64] log_result = log(ℇ);
+        const int[64] mod_int_result = mod(4, 3);
+        const float[64] mod_float_result = mod(5.2, 2.5);
+        const int[64] popcount_result = popcount("1001110");
+        // parser gets confused by pow
+        // const int[64] pow_int_result = pow(3, 3);
+        // const float[64] pow_float_result = pow(2.5, 2.5);
+        // add rotl, rotr
+        const float[64] sin_result = sin(1);
+        const float[64] sqrt_result = sqrt(2);
+        const float[64] tan_result = tan(1);
+        """
+    context = Interpreter().run(qasm)
+    assert context.get_value("arccos_result") == FloatLiteral(np.arccos(1))
+    assert context.get_value("arcsin_result") == FloatLiteral(np.arcsin(1))
+    assert context.get_value("arctan_result") == FloatLiteral(np.arctan(1))
+    assert context.get_value("ceiling_result") == IntegerLiteral(4)
+    assert context.get_value("cos_result") == FloatLiteral(np.cos(1))
+    assert context.get_value("exp_result") == FloatLiteral(np.exp(2))
+    assert context.get_value("floor_result") == IntegerLiteral(3)
+    assert context.get_value("log_result") == FloatLiteral(1)
+    assert context.get_value("mod_int_result") == IntegerLiteral(1)
+    assert context.get_value("mod_float_result") == FloatLiteral(5.2 % 2.5)
+    assert context.get_value("popcount_result") == IntegerLiteral(4)
+    assert context.get_value("sin_result") == FloatLiteral(np.sin(1))
+    assert context.get_value("sqrt_result") == FloatLiteral(np.sqrt(2))
+    assert context.get_value("tan_result") == FloatLiteral(np.tan(1))
