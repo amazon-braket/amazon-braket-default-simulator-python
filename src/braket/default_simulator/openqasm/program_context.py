@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results

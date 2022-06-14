@@ -20,7 +20,7 @@ from openqasm3.ast import (
 )
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.gate_operations import PauliX, U
+from braket.default_simulator.gate_operations import U
 from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.data_manipulation import (
@@ -28,7 +28,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     string_to_bin,
 )
 from braket.default_simulator.openqasm.interpreter import Interpreter
-from braket.default_simulator.openqasm.program_context import ProgramContext, QubitTable
+from braket.default_simulator.openqasm.program_context import QubitTable
 
 
 def test_bit_declaration():
@@ -412,7 +412,7 @@ def test_for_loop():
     int[8] x = 0;
     int[8] y = 0;
     int[8] ten = 10;
-    
+
     for uint[8] i in [0:2:ten - 3] {
         x += i;
     }
