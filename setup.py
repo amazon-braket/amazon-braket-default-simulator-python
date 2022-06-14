@@ -130,11 +130,6 @@ setup(
                 "braket_oq3_sv = "
                 "braket.default_simulator.oq3_state_vector_simulator:OQ3StateVectorSimulator"
             ),
-            (
-                "braket_oq3_native_sv = "
-                "braket.default_simulator.openqasm_state_vector_simulator:"
-                "OpenQASMStateVectorSimulator"
-            ),
         ]
     },
     extras_require={
