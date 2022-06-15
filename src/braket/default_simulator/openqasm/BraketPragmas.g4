@@ -1,4 +1,5 @@
-
+// This is a grammar for Braket result types. It will be replaced when the parser
+// is updated. Feel free to skim during review.
 grammar BraketPragmas;
 
 import qasm3;

@@ -1,10 +1,24 @@
+from typing import List, Optional
+
 from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator import GateOperation
 
 
 class Circuit:
-    def __init__(self, instructions=None, results=None):
+    """
+    This is a lightweight analog to braket.ir.jaqcd.program_v1.Program.
+    The Interpreter compiles to an IR to hand off to the simulator,
+    braket.default_simulator.state_vector_simulator.StateVectorSimulator, for example.
+    Our simulator module takes in a circuit specification that satisfies the interface
+    implemented by this class.
+    """
+
+    def __init__(
+        self,
+        instructions: Optional[List[GateOperation]] = None,
+        results: Optional[List[Results]] = None,
+    ):
         self.instructions = []
         self.results = []
         self.qubit_set = set()
@@ -25,7 +39,7 @@ class Circuit:
         self.results.append(result)
 
     @property
-    def num_qubits(self):
+    def num_qubits(self) -> int:
         return len(self.qubit_set)
 
     def __eq__(self, other):

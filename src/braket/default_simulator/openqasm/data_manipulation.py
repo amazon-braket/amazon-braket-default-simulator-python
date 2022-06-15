@@ -148,14 +148,6 @@ constant_map = {
 }
 
 
-def popcount(x: Union[ArrayLiteral, IntegerLiteral]):
-    width = IntegerLiteral(
-        len(x.values) if isinstance(x, ArrayLiteral) else math.ceil(np.log2(x.value))
-    )
-    x = cast_to(UintType(width), x)
-    return IntegerLiteral(np.binary_repr(x.value).count("1"))
-
-
 builtin_constants = {
     "pi": FloatLiteral(np.pi),
     "π": FloatLiteral(np.pi),
@@ -164,6 +156,14 @@ builtin_constants = {
     "euler": FloatLiteral(np.e),
     "ℇ": FloatLiteral(np.e),
 }
+
+
+def popcount(x: Union[ArrayLiteral, IntegerLiteral]):
+    width = IntegerLiteral(
+        len(x.values) if isinstance(x, ArrayLiteral) else math.ceil(np.log2(x.value))
+    )
+    x = cast_to(UintType(width), x)
+    return IntegerLiteral(np.binary_repr(x.value).count("1"))
 
 
 builtin_functions = {
@@ -201,6 +201,7 @@ builtin_functions = {
 
 
 def resolve_type_hierarchy(x: Expression, y: Expression):
+    """Determine output type of expression, for example: 1 + 1.0 == 2.0"""
     return max(type(x), type(y), key=type_hierarchy.index)
 
 
@@ -234,6 +235,7 @@ LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, 
 
 @singledispatch
 def cast_to(into: Union[ClassicalType, Type[LiteralType]], variable: LiteralType):
+    """Cast a variable into a given type. Order of parameters is to enable singledispatch"""
     if type(variable) == into:
         return variable
     if into == BooleanLiteral or isinstance(into, BoolType):
@@ -247,6 +249,10 @@ def cast_to(into: Union[ClassicalType, Type[LiteralType]], variable: LiteralType
 
 @cast_to.register
 def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLiteral]):
+    """
+    Bit types can be sized or not, represented as Boolean literals or Array literals.
+    Sized bit types can be instantiated with a Bitstring literal or Array literal.
+    """
     if not into.size:
         return cast_to(BooleanLiteral, variable)
     size = into.size.value
@@ -262,6 +268,7 @@ def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLite
 
 @cast_to.register
 def _(into: IntType, variable: LiteralType):
+    """Cast to int with overflow warnings"""
     limit = 2 ** (into.size.value - 1)
     value = int(np.sign(variable.value) * (np.abs(int(variable.value)) % limit))
     if value != variable.value:
@@ -271,6 +278,7 @@ def _(into: IntType, variable: LiteralType):
 
 @cast_to.register
 def _(into: UintType, variable: LiteralType):
+    """Cast to uint with overflow warnings. Bit registers can be cast to uint."""
     if isinstance(variable, ArrayLiteral):
         return IntegerLiteral(int("".join("01"[x.value] for x in variable.values), base=2))
     limit = 2**into.size.value
@@ -284,6 +292,7 @@ def _(into: UintType, variable: LiteralType):
 
 @cast_to.register
 def _(into: FloatType, variable: LiteralType):
+    """Cast to float"""
     if into.size.value not in (16, 32, 64, 128):
         raise ValueError("Float size must be one of {16, 32, 64, 128}.")
     value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
@@ -292,6 +301,7 @@ def _(into: FloatType, variable: LiteralType):
 
 @cast_to.register
 def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]):
+    """Cast to Array and enforce dimensions"""
     if len(variable.values) != into.dimensions[0].value:
         raise ValueError(
             f"Size mismatch between dimension of size {into.dimensions[0].value} "
@@ -312,28 +322,33 @@ def is_literal(expression: Expression):
             BooleanLiteral,
             IntegerLiteral,
             FloatLiteral,
-            # StringLiteral,
+            BitstringLiteral,
             ArrayLiteral,
         ),
     )
 
 
 def convert_string_to_bool_array(bit_string: BitstringLiteral) -> ArrayLiteral:
+    """Convert BitstringLiteral to Boolean ArrayLiteral"""
     return ArrayLiteral(
         [BooleanLiteral(x == "1") for x in np.binary_repr(bit_string.value, bit_string.width)]
     )
 
 
 def convert_bool_array_to_string(bit_string: ArrayLiteral):
+    """Convert Boolean ArrayLiteral into a binary string"""
     return "".join(("1" if x.value else "0") for x in bit_string.values)
 
 
 def is_none_like(value):
+    """Returns whether value is None or an Array of Nones"""
     if isinstance(value, ArrayLiteral):
         return all(is_none_like(v) for v in value.values)
     return value is None
 
 
+# waiting on pragma support from this PR being merged:
+# https://github.com/openqasm/openqasm/pull/364
 def string_to_bin(string):
     """workaround for unsupported pragmas"""
     return "".join(np.binary_repr(ord(x), 8) for x in string)
@@ -345,6 +360,7 @@ Helper functions for working with indexed values
 
 
 def convert_range_def_to_slice(range_def: RangeDefinition):
+    """Convert AST node into Python slice object"""
     buffer = np.sign(range_def.step.value) if range_def.step is not None else 1
     start = range_def.start.value if range_def.start is not None else None
     stop = (
@@ -357,6 +373,7 @@ def convert_range_def_to_slice(range_def: RangeDefinition):
 
 
 def convert_range_def_to_range(range_def: RangeDefinition):
+    """Convert AST node into Python range object"""
     buffer = np.sign(range_def.step.value) if range_def.step is not None else 1
     start = range_def.start.value if range_def.start is not None else 0
     stop = range_def.end.value + buffer
@@ -365,11 +382,13 @@ def convert_range_def_to_range(range_def: RangeDefinition):
 
 
 def convert_discrete_set_to_list(discrete_set: DiscreteSet):
+    """Convert AST node into Python list object"""
     return [x.value for x in discrete_set.values]
 
 
 @singledispatch
 def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
+    """Get elements of an Array, given an index."""
     if isinstance(index, DiscreteSet):
         return DiscreteSet([get_elements(value, [i]) for i in index.values])
     first_index = convert_index(index[0])
@@ -387,30 +406,35 @@ def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
 
 @get_elements.register
 def _(value: IntegerLiteral, index: IndexElement, type_width: int):
+    """Get elements of an integer's boolean representation, given an index"""
     binary_rep = ArrayLiteral(
         [BooleanLiteral(x == "1") for x in np.binary_repr(value.value, type_width)]
     )
     return get_elements(binary_rep, index)
 
 
-def create_empty_array(dims):
+def create_empty_array(dims: List[IntegerLiteral]) -> ArrayLiteral:
+    """Create an empty Array of given dimensions"""
     if len(dims) == 1:
         return ArrayLiteral([None] * dims[0].value)
     return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
 
 
-def convert_index(index):
+def convert_index(index: Union[RangeDefinition, IntegerLiteral]):
+    """Convert unspecified index type to Python object"""
     if isinstance(index, RangeDefinition):
         return convert_range_def_to_slice(index)
     else:  # IntegerLiteral:
         return index.value
 
 
-def flatten_indices(indices):
+def flatten_indices(indices: List[IndexElement]):
+    """Convert a[i][j][k] to the equivalent a[i, j, k]"""
     return sum((index for index in indices), [])
 
 
 def index_expression_to_indexed_identifier(index_expression: IndexExpression) -> IndexedIdentifier:
+    """Convert between an IndexExpression (rvalue) to an IndexedIdentifier (lvalue)"""
     collection = index_expression.collection
     if not isinstance(collection, Identifier):
         raise TypeError(
@@ -419,7 +443,12 @@ def index_expression_to_indexed_identifier(index_expression: IndexExpression) ->
     return IndexedIdentifier(index_expression.collection, [index_expression.index])
 
 
-def unwrap_var_type(var_type):
+def unwrap_var_type(var_type: ClassicalType):
+    """
+    Return the type that comprises the given type. For example,
+    the type Array(dims=[2, 3, 4]) has elements of type Array(dims=[3, 4]).
+    Sized bit types are Arrays whose elements have type BoolType.
+    """
     if isinstance(var_type, (ArrayType, ArrayReferenceType)):
         if isinstance(var_type.dimensions, Expression):
             num_dimensions = var_type.dimensions.value
@@ -435,7 +464,13 @@ def unwrap_var_type(var_type):
         return BoolType()
 
 
-def update_value(current_value: ArrayLiteral, value, update_indices, var_type):
+def update_value(
+    current_value: ArrayLiteral,
+    value: LiteralType,
+    update_indices: List[IndexElement],
+    var_type: ClassicalType,
+):
+    """Update an Array, for example: a[4, 1:] = {1, 2, 3}"""
     # current value will be an ArrayLiteral or StringLiteral
     if isinstance(current_value, ArrayLiteral):
         first_ix = convert_index(update_indices[0])
@@ -473,21 +508,9 @@ Helper functions for working with OpenQASM quantum directives
 
 
 @singledispatch
-def get_modifiers(quantum_op: Union[QuantumGate, QuantumPhase]):
-    return quantum_op.modifiers
-
-
-@get_modifiers.register
-def _(quantum_op: QuantumPhase):
-    return quantum_op.modifiers
-
-
-@singledispatch
-def invert(quantum_op: Union[QuantumGate, QuantumPhase]):
-    new_modifiers = [
-        mod for mod in get_modifiers(quantum_op) if mod.modifier != GateModifierName.inv
-    ]
-    assert quantum_op.name.name == "U", "This shouldn't be visiting non-U gates"
+def invert(quantum_op: Union[QuantumGate, QuantumPhase]) -> Union[QuantumGate, QuantumPhase]:
+    """Invert a quantum gate"""
+    new_modifiers = [mod for mod in quantum_op.modifiers if mod.modifier != GateModifierName.inv]
     param_values = np.array([arg.value for arg in quantum_op.arguments])
     new_param_values = -param_values[[0, 2, 1]]
     new_params = [FloatLiteral(value) for value in new_param_values]
@@ -495,33 +518,38 @@ def invert(quantum_op: Union[QuantumGate, QuantumPhase]):
 
 
 @invert.register
-def _(quantum_op: QuantumPhase):
-    new_modifiers = [
-        mod for mod in get_modifiers(quantum_op) if mod.modifier != GateModifierName.inv
-    ]
+def _(quantum_op: QuantumPhase) -> QuantumPhase:
+    """Invert a quantum phase"""
+    new_modifiers = [mod for mod in quantum_op.modifiers if mod.modifier != GateModifierName.inv]
     new_param = FloatLiteral(-quantum_op.argument.value)
     return QuantumPhase(new_modifiers, new_param, quantum_op.qubits)
 
 
 def is_inverted(quantum_op: Union[QuantumGate, QuantumPhase]):
+    """
+    Tell whether a gate with modifiers is inverted, or if the inverse modifiers
+    cancel out. Since inv @ ctrl U == ctrl @ inv U, we can accomplish this by
+    only counting the inverse modifiers.
+    """
     inv_modifier = QuantumGateModifier(GateModifierName.inv, None)
-    num_inv_modifiers = get_modifiers(quantum_op).count(inv_modifier)
+    num_inv_modifiers = quantum_op.modifiers.count(inv_modifier)
     return num_inv_modifiers % 2
 
 
 def is_controlled(phase: QuantumPhase):
+    """
+    Returns whether a quantum phase has any control modifiers. If it does, then
+    it will be transformed by the interpreter into a controlled global phase gate.
+    """
     for mod in phase.modifiers:
         if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
             return True
     return False
 
 
-def convert_to_gate(controlled_phase: QuantumPhase):
-    ctrl_modifiers = [
-        mod
-        for mod in controlled_phase.modifiers
-        if mod.modifier in (GateModifierName.ctrl, GateModifierName.negctrl)
-    ]
+def convert_to_gate(controlled_phase: QuantumPhase) -> QuantumGate:
+    """Convert a controlled quantum phase into a quantum gate"""
+    ctrl_modifiers = get_ctrl_modifiers(controlled_phase.modifiers)
     first_ctrl_modifier = ctrl_modifiers[-1]
     if first_ctrl_modifier.modifier == GateModifierName.negctrl:
         raise ValueError("negctrl modifier undefined for gphase operation")
@@ -542,6 +570,7 @@ def convert_to_gate(controlled_phase: QuantumPhase):
 
 
 def get_ctrl_modifiers(modifiers: List[QuantumGateModifier]) -> List[QuantumGateModifier]:
+    """Get the control modifiers from a list of quantum gate modifiers"""
     return [
         mod
         for mod in modifiers
@@ -555,6 +584,7 @@ def modify_body(
     ctrl_modifiers: List[QuantumGateModifier],
     ctrl_qubits: List[Identifier],
 ):
+    """Apply modifiers information to the definition body of a quantum gate"""
     if do_invert:
         body = list(reversed(body))
         for s in body:
@@ -572,17 +602,20 @@ Helper functions for printing identifiers
 
 
 @singledispatch
-def get_identifier_name(identifier: Identifier):
+def get_identifier_name(identifier: Union[Identifier, IndexedIdentifier]):
+    """Get name of an identifier"""
     return identifier.name
 
 
 @get_identifier_name.register
 def _(identifier: IndexedIdentifier):
+    """Get name of an indexed identifier"""
     return identifier.name.name
 
 
 @singledispatch
 def wrap_value_into_literal(value):
+    """Wrap a primitive variable into an AST node"""
     raise TypeError(f"Cannot wrap {value} into literal type")
 
 
@@ -612,6 +645,7 @@ Python 3.7 compatibility
 
 
 def singledispatchmethod(func):
+    """Implement singledispatchmethod for Python 3.7"""
     dispatcher = singledispatch(func)
 
     def wrapper(*args, **kw):

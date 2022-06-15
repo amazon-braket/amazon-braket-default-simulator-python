@@ -16,6 +16,11 @@ from .dist.BraketPragmasVisitor import BraketPragmasVisitor
 
 
 class BraketPragmaNodeVisitor(BraketPragmasVisitor):
+    """
+    This is a visitor for the BraketPragmas grammar. This class will be replaced
+    when the parser is updated. Feel free to skim over in review.
+    """
+
     def __init__(self, qubit_table):
         self.qubit_table = qubit_table
 

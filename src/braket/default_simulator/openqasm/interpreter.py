@@ -1,9 +1,10 @@
 from copy import deepcopy
 from dataclasses import fields
 from logging import Logger, getLogger
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 
 import numpy as np
+from braket.ir.openqasm.program_v1 import io_type
 from openqasm3 import parse
 from openqasm3.ast import (
     AccessControl,
@@ -78,18 +79,13 @@ from braket.default_simulator.openqasm.program_context import ProgramContext
 
 class Interpreter:
     """
-    Shots=0 (sv implementation) will not support using measured values,
-    resetting active qubits, using measured qubits. In other words, it will
-    only support 'classically deterministic' programs. Initially will implement
-    with a runtime guard against prohibited behavior. Next iteration will involve
-    a static analysis pass to ensure prohibited behavior is not present. Once this
-    is implemented, it can optionally be used on shots=n simulations to determine
-    whether to use a shots=0 simulation and then sample.
+    The interpreter is responsible for visiting the AST of an OpenQASM program, as created
+    by the parser, and building a braket.default_simulator.openqasm.circuit.Circuit to hand
+    off to a simulator e.g. braket.default_simulator.state_vector_simulator.StateVectorSimulator.
 
-    We also want to support casting measured values to other types. This will involve
-    checking whether the value of a cast is a measured value, and if so deferring
-    computation until the value is sampled, similar to a js promise. This is mainly
-    non-trivial for the shots=0 case, but worth exploring if we can optimize in general.
+    The interpreter keeps track of all state using a ProgramContext object. The main entry point
+    is build_circuit(), which returns the built circuit. An alternative entry poitn, run() returns
+    the ProgramContext object, which can be used for debugging or other customizability.
     """
 
     def __init__(self, context: Optional[ProgramContext] = None, logger: Optional[Logger] = None):
@@ -97,7 +93,10 @@ class Interpreter:
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
 
-    def build_circuit(self, source, inputs=None, is_file=False):
+    def build_circuit(
+        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+    ):
+        """Interpret an OpenQASM program and build a Circuit IR."""
         if inputs:
             self.context.load_inputs(inputs)
 
@@ -110,11 +109,13 @@ class Interpreter:
         return self.context.circuit
 
     def run(self, source, inputs=None, is_file=False):
+        """Interpret an OpenQASM program and return the program state"""
         self.build_circuit(source, inputs, is_file)
         return self.context
 
     @singledispatchmethod
-    def visit(self, node):
+    def visit(self, node: Union[QASMNode, List[QASMNode]]):
+        """Generic visit function for an AST node"""
         self.logger.debug(f"Node: {node}")
         if node is None:
             return
@@ -127,17 +128,15 @@ class Interpreter:
 
     @visit.register
     def _(self, node_list: list):
+        """Generic visit function for a list of AST nodes"""
         self.logger.debug(f"list: {node_list}")
         return [n for n in [self.visit(node) for node in node_list] if n is not None]
 
     @visit.register
     def _(self, node: Program):
         self.logger.debug(f"Program: {node}")
-        # self.visit(node.includes)
-        # io = self.visit(node.io_variables)
         statements = self.visit(node.statements)
         new_node = Program(statements)
-        # new_node.io_variables = io
         return new_node
 
     @visit.register
@@ -404,7 +403,7 @@ class Interpreter:
                     if isinstance(statement, QuantumGate):
                         self.visit(statement)
                     else:  # QuantumPhase
-                        phase = self.visit(statement.argument).value
+                        phase = self.visit(statement.argument)
                         self.handle_phase(phase, qubits)
                 return QuantumGate(modifiers, node.name, arguments, qubits)
 
@@ -419,7 +418,7 @@ class Interpreter:
             node = convert_to_gate(node)
             self.visit(node)
         else:
-            self.handle_phase(node.argument.value)
+            self.handle_phase(node.argument)
         return node
 
     @visit.register
@@ -507,6 +506,8 @@ class Interpreter:
     def _(self, node: Pragma):
         self.logger.debug(f"Pragma: {node}")
         # pragma parsing not implemented, workaround by casting as bitstring
+        # this should change very soon, once https://github.com/openqasm/openqasm/pull/364
+        # is merged
         pragma_bitstring = node.statements[0].expression
         pragma_bin = np.binary_repr(pragma_bitstring.value, pragma_bitstring.width)
         pragma_string = "".join(
@@ -517,7 +518,13 @@ class Interpreter:
     @visit.register
     def _(self, node: SubroutineDefinition):
         # todo: explicitly handle references to existing variables
-        # either by throwing an error or evaluating the closure
+        # either by throwing an error or evaluating the closure.
+        # currently, the implementation does not consider the values
+        # of current-scope variables used inside of the function
+        # at the time of function definition, and relies on their values
+        # at the time of execution. This is incorrect, but currently an
+        # edge case and known limitation. More effort can be invested here
+        # if this functionality is prioritized.
         self.logger.debug(f"Subroutine definition: {node}")
         self.context.add_subroutine(node.name.name, node)
 
@@ -575,12 +582,19 @@ class Interpreter:
         index = self.visit(node.index)
         return builtin_functions["sizeof"](target, index)
 
-    def handle_builtin_unitary(self, arguments, qubits, modifiers):
+    def handle_builtin_unitary(
+        self,
+        arguments: List[FloatLiteral],
+        qubits: List[Union[Identifier, IndexedIdentifier]],
+        modifiers: List[QuantumGateModifier],
+    ):
+        """Add unitary operation to the circuit"""
         self.context.add_builtin_unitary(
             arguments,
             qubits,
             modifiers,
         )
 
-    def handle_phase(self, phase, qubits=None):
+    def handle_phase(self, phase: FloatLiteral, qubits=None):
+        """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)

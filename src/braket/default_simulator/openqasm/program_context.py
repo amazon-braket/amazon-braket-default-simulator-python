@@ -1,9 +1,10 @@
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 from openqasm3.ast import (
     ClassicalType,
+    FloatLiteral,
     GateModifierName,
     Identifier,
     IndexedIdentifier,
@@ -16,13 +17,18 @@ from openqasm3.ast import (
 )
 
 from braket.default_simulator.gate_operations import GPhase, U
-from braket.default_simulator.openqasm import data_manipulation as dm
 from braket.default_simulator.openqasm.braket_result_pragmas import parse_braket_pragma
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.data_manipulation import (
     LiteralType,
+    convert_discrete_set_to_list,
+    convert_range_def_to_slice,
+    flatten_indices,
     get_elements,
+    get_identifier_name,
+    is_none_like,
     singledispatchmethod,
+    update_value,
 )
 
 
@@ -64,14 +70,14 @@ class QubitTable(Table):
         super().__init__("Qubits")
 
     @singledispatchmethod
-    def get_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]):
+    def get_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]) -> Tuple[int]:
         """
         Convenience method to get an element with a possibly indexed identifier.
         """
         return self[identifier.name]
 
     @get_by_identifier.register
-    def _(self, identifier: IndexedIdentifier):
+    def _(self, identifier: IndexedIdentifier) -> Tuple[int]:
         """
         When identifier is an IndexedIdentifier, function returns a tuple
         corresponding to the elements referenced by the indexed identifier.
@@ -85,10 +91,10 @@ class QubitTable(Table):
         if isinstance(primary_index, IntegerLiteral):
             target = (self[name][primary_index.value],)
         elif isinstance(primary_index, RangeDefinition):
-            target = tuple(np.array(self[name])[dm.convert_range_def_to_slice(primary_index)])
+            target = tuple(np.array(self[name])[convert_range_def_to_slice(primary_index)])
         # Discrete set
         else:
-            target = tuple(np.array(self[name])[dm.convert_discrete_set_to_list(primary_index)])
+            target = tuple(np.array(self[name])[convert_discrete_set_to_list(primary_index)])
 
         if len(identifier.indices) == 1:
             return target
@@ -99,7 +105,7 @@ class QubitTable(Table):
         else:
             raise IndexError("Cannot index multiple dimensions for qubits.")
 
-    def get_qubit_size(self, identifier: Union[Identifier, IndexedIdentifier]):
+    def get_qubit_size(self, identifier: Union[Identifier, IndexedIdentifier]) -> int:
         return len(self.get_by_identifier(identifier))
 
 
@@ -151,6 +157,7 @@ class ScopedTable(Table):
         raise KeyError(f"Undefined key: {key}")
 
     def get_scope(self, key):
+        """Get the smallest scope containing the given key"""
         for scope in reversed(self._scopes):
             if key in scope:
                 return scope
@@ -212,7 +219,7 @@ class SymbolTable(ScopedTable):
         """
         self.current_scope[name] = SymbolTable.Symbol(symbol_type, const)
 
-    def get_symbol(self, name: str):
+    def get_symbol(self, name: str) -> Symbol:
         """
         Get a symbol from the symbol table by name.
 
@@ -224,7 +231,7 @@ class SymbolTable(ScopedTable):
         """
         return self[name]
 
-    def get_type(self, name: str):
+    def get_type(self, name: str) -> Union[ClassicalType, Type[LiteralType]]:
         """
         Get the type of a symbol by name.
 
@@ -236,7 +243,7 @@ class SymbolTable(ScopedTable):
         """
         return self.get_symbol(name).type
 
-    def get_const(self, name: str):
+    def get_const(self, name: str) -> bool:
         """
         Get const status of a symbol by name.
 
@@ -261,25 +268,25 @@ class VariableTable(ScopedTable):
     def add_variable(self, name: str, value: Any):
         self.current_scope[name] = value
 
-    def get_value(self, name: str):
+    def get_value(self, name: str) -> LiteralType:
         return self[name]
 
     @singledispatchmethod
-    def get_value_by_identifier(self, identifier: Identifier):
+    def get_value_by_identifier(self, identifier: Identifier) -> LiteralType:
         """
         Convenience method to get value with a possibly indexed identifier.
         """
         return self[identifier.name]
 
     @get_value_by_identifier.register
-    def _(self, identifier: IndexedIdentifier):
+    def _(self, identifier: IndexedIdentifier) -> LiteralType:
         """
         When identifier is an IndexedIdentifier, function returns an ArrayLiteral
         corresponding to the elements referenced by the indexed identifier.
         """
         name = identifier.name.name
         value = self[name]
-        indices = dm.flatten_indices(identifier.indices)
+        indices = flatten_indices(identifier.indices)
         return get_elements(value, indices)
 
     def update_value(
@@ -289,34 +296,44 @@ class VariableTable(ScopedTable):
         var_type: ClassicalType,
         indices: Optional[List[IndexElement]] = None,
     ):
+        """Update value of a variable, optionally providing an index"""
         current_value = self[name]
         if indices:
-            value = dm.update_value(current_value, value, dm.flatten_indices(indices), var_type)
+            value = update_value(current_value, value, flatten_indices(indices), var_type)
         self[name] = value
 
-    def is_initalized(self, name: str):
-        return not dm.is_none_like(self[name])
+    def is_initalized(self, name: str) -> bool:
+        """Determine whether a declared variable is initialized"""
+        return not is_none_like(self[name])
 
 
 class GateTable(ScopedTable):
+    """
+    Scoped table to implement gates.
+    """
+
     def __init__(self):
         super().__init__("Gates")
 
     def add_gate(self, name: str, definition: QuantumGateDefinition):
         self[name] = definition
 
-    def get_gate_definition(self, name: str):
+    def get_gate_definition(self, name: str) -> QuantumGateDefinition:
         return self[name]
 
 
 class SubroutineTable(ScopedTable):
+    """
+    Scoped table to implement subroutines.
+    """
+
     def __init__(self):
         super().__init__("Subroutines")
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition):
         self[name] = definition
 
-    def get_subroutine_definition(self, name: str):
+    def get_subroutine_definition(self, name: str) -> SubroutineDefinition:
         return self[name]
 
 
@@ -336,6 +353,19 @@ class ScopeManager:
 
 
 class ProgramContext:
+    """
+    Interpreter state.
+
+    Symbol table - symbols in scope
+    Variable table - variable values
+    Gate table - gate definitions
+    Subroutine table - subroutine definitions
+    Qubit mapping - mapping from logical qubits to qubit indices
+
+    Circuit - IR build to hand off to the simulator
+
+    """
+
     def __init__(self):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
@@ -343,8 +373,6 @@ class ProgramContext:
         self.subroutine_table = SubroutineTable()
         self.qubit_mapping = QubitTable()
         self.scope_manager = ScopeManager(self)
-        self.shot_data = {}
-        self.is_analytic = None
         self.inputs = {}
         self.num_qubits = 0
         self.circuit = Circuit()
@@ -356,10 +384,12 @@ class ProgramContext:
         )
 
     def load_inputs(self, inputs: Dict[str, Any]):
+        """Load inputs for the program"""
         for key, value in inputs.items():
             self.inputs[key] = value
 
     def parse_result_type_pragma(self, pragma_body: str):
+        """Parse result type pragma"""
         return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def declare_variable(
@@ -369,6 +399,7 @@ class ProgramContext:
         value: Optional[Any] = None,
         const: bool = False,
     ):
+        """Declare variable in current scope"""
         self.symbol_table.add_symbol(name, symbol_type, const)
         self.variable_table.add_variable(name, value)
 
@@ -377,89 +408,125 @@ class ProgramContext:
         name: str,
         value: Identifier,
     ):
+        """Declare qubit alias in current scope"""
         self.symbol_table.add_symbol(name, Identifier)
         self.variable_table.add_variable(name, value)
 
     def enter_scope(self):
+        """
+        Allows pushing/popping scope with indentation and the `with` keyword.
+
+        Usage:
+        # inside the original scope
+        ...
+        with program_context.enter_scope():
+            # inside a new scope
+            ...
+        # exited new scope, back in the original scope
+        """
         return self.scope_manager
 
     def push_scope(self):
+        """Enter a new scope"""
         self.symbol_table.push_scope()
         self.variable_table.push_scope()
         self.gate_table.push_scope()
 
     def pop_scope(self):
+        """Exit current scope"""
         self.symbol_table.pop_scope()
         self.variable_table.pop_scope()
         self.gate_table.pop_scope()
 
-    def get_type(self, name: str):
+    def get_type(self, name: str) -> Union[ClassicalType, Type[LiteralType]]:
+        """Get symbol type by name"""
         return self.symbol_table.get_type(name)
 
-    def get_const(self, name: str):
+    def get_const(self, name: str) -> bool:
+        """Get whether a symbol is const by name"""
         return self.symbol_table.get_const(name)
 
-    def get_value(self, name: str):
+    def get_value(self, name: str) -> LiteralType:
+        """Get value of a variable by name"""
         return self.variable_table.get_value(name)
 
-    def get_value_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]):
+    def get_value_by_identifier(
+        self, identifier: Union[Identifier, IndexedIdentifier]
+    ) -> LiteralType:
+        """Get value of a variable by identifier"""
         return self.variable_table.get_value_by_identifier(identifier)
 
-    def is_initialized(self, name: str):
+    def is_initialized(self, name: str) -> bool:
+        """Check whether variable is initialized by name"""
         return self.variable_table.is_initalized(name)
 
     def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any):
-        name = dm.get_identifier_name(variable)
+        """Update value by identifier, possible only a sub-index of a variable"""
+        name = get_identifier_name(variable)
         var_type = self.get_type(name)
         indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
-        return self.variable_table.update_value(name, value, var_type, indices)
+        self.variable_table.update_value(name, value, var_type, indices)
 
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
+        """Allocate additional qubits for the program"""
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.num_qubits += num_qubits
         self.declare_qubit_alias(name, Identifier(name))
 
-    def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]):
+    def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]) -> Tuple[int]:
+        """
+        Get qubit indices from a qubit identifier, possibly referring to a sub-index of
+        a qubit register
+        """
         return self.qubit_mapping.get_by_identifier(qubits)
 
     def add_gate(self, name: str, definition: QuantumGateDefinition):
+        """Add a gate definition"""
         self.gate_table.add_gate(name, definition)
 
-    def get_gate_definition(self, name: str):
+    def get_gate_definition(self, name: str) -> QuantumGateDefinition:
+        """Get a gate definition by name"""
         try:
             return self.gate_table.get_gate_definition(name)
         except KeyError:
             raise ValueError(f"Gate {name} is not defined.")
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition):
+        """Add a subroutine definition"""
         self.subroutine_table.add_subroutine(name, definition)
 
-    def get_subroutine_definition(self, name: str):
+    def get_subroutine_definition(self, name: str) -> SubroutineDefinition:
+        """Get a subroutine definition by name"""
         try:
             return self.subroutine_table.get_subroutine_definition(name)
         except KeyError:
             raise NameError(f"Subroutine {name} is not defined.")
 
     def add_result(self, result: Results):
+        """Add a result type to the circuit"""
         self.circuit.add_result(result)
 
     def add_phase(
-        self, phase: float, qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None
+        self,
+        phase: FloatLiteral,
+        qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None,
     ):
+        """Add quantum phase instruction to the circuit"""
         # if targets overlap, duplicates will be ignored
         if not qubits:
             target = range(self.num_qubits)
         else:
             target = set(sum((self.get_qubits(q) for q in qubits), ()))
-        phase_instruction = GPhase(target, phase)
+        phase_instruction = GPhase(target, phase.value)
         self.circuit.add_instruction(phase_instruction)
 
     def add_builtin_unitary(
         self,
-        parameters: List[LiteralType],
-        qubits: List[Identifier],
+        parameters: List[FloatLiteral],
+        qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ):
+        """Add a builtin Unitary (U) instruction to the circuit"""
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
