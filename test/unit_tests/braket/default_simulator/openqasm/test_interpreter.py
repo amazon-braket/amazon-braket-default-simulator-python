@@ -1197,7 +1197,7 @@ def test_gate_qubit_reg_size_mismatch(stdgates):
 
 
 def test_pragma():
-    qasm = f"""
+    qasm = """
     qubit q;
     #pragma braket result state_vector
     """
