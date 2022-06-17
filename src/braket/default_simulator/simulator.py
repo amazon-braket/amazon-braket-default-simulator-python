@@ -88,7 +88,9 @@ class BaseLocalSimulator(BraketSimulator):
                     )
 
     @staticmethod
-    def _validate_shots_and_ir_results(shots: int, results: List[Results], qubit_count: int) -> None:
+    def _validate_shots_and_ir_results(
+        shots: int, results: List[Results], qubit_count: int
+    ) -> None:
         if not shots:
             if not results:
                 raise ValueError("Result types must be specified in the IR when shots=0")
