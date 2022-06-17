@@ -18,6 +18,7 @@ from typing import Any, Callable, Dict, List, Union
 from braket.device_schema import DeviceCapabilities
 from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program as JaqcdProgram
+from braket.ir.jaqcd.program_v1 import Results
 from braket.ir.openqasm import Program as OQ3Program
 from braket.task_result import AnnealingTaskResult, GateModelTaskResult, ResultTypeValue
 from braket.task_result.oq3_program_result_v1 import OQ3ProgramResult
@@ -73,7 +74,7 @@ class BaseLocalSimulator(BraketSimulator):
         Initializes simulation with keyword arguments
         """
 
-    def _validate_ir_results_compatibility(self, results):
+    def _validate_ir_results_compatibility(self, results: List[Results]):
         if results:
             circuit_result_types_name = [result.__class__.__name__ for result in results]
             supported_result_types = self.properties.action[
@@ -87,7 +88,7 @@ class BaseLocalSimulator(BraketSimulator):
                     )
 
     @staticmethod
-    def _validate_shots_and_ir_results(shots: int, results, qubit_count: int) -> None:
+    def _validate_shots_and_ir_results(shots: int, results: List[Results], qubit_count: int) -> None:
         if not shots:
             if not results:
                 raise ValueError("Result types must be specified in the IR when shots=0")
