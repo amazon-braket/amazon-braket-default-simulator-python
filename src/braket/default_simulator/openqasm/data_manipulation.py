@@ -347,13 +347,6 @@ def is_none_like(value):
     return value is None
 
 
-# waiting on pragma support from this PR being merged:
-# https://github.com/openqasm/openqasm/pull/364
-def string_to_bin(string):
-    """workaround for unsupported pragmas"""
-    return "".join(np.binary_repr(ord(x), 8) for x in string)
-
-
 """
 Helper functions for working with indexed values
 """
@@ -597,7 +590,7 @@ def modify_body(
 
 
 """
-Helper functions for printing identifiers
+OpenQASM <-> Python convenience wrappers
 """
 
 

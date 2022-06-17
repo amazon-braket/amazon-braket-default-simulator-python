@@ -23,10 +23,7 @@ from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.gate_operations import U
 from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm.data_manipulation import (
-    convert_bool_array_to_string,
-    string_to_bin,
-)
+from braket.default_simulator.openqasm.data_manipulation import convert_bool_array_to_string
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.program_context import QubitTable
 
@@ -1202,7 +1199,7 @@ def test_gate_qubit_reg_size_mismatch(stdgates):
 def test_pragma():
     qasm = f"""
     qubit q;
-    #pragma {{"{string_to_bin("braket result state_vector")}";}}
+    #pragma braket result state_vector
     """
     Interpreter().run(qasm)
 

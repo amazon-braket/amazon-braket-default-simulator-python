@@ -13,24 +13,19 @@ from braket.ir.openqasm import Program
 from braket.default_simulator.openqasm_state_vector_simulator import OpenQASMStateVectorSimulator
 
 
-def string_to_bin(string):
-    """workaround for unsupported pragmas"""
-    return "".join(np.binary_repr(ord(x), 8) for x in string)
-
-
 def test_gphase():
-    qasm = f"""
+    qasm = """
     qubit[2] qs;
 
     int[8] two = 2;
 
-    gate x a {{ U(π, 0, π) a; }}
-    gate cx c, a {{ ctrl @ x c, a; }}
-    gate phase c, a {{
+    gate x a { U(π, 0, π) a; }
+    gate cx c, a { ctrl @ x c, a; }
+    gate phase c, a {
         gphase(π/2);
         pow(1) @ ctrl(two) @ gphase(π) c, a;
-    }}
-    gate h a {{ U(π/2, 0, π) a; }}
+    }
+    gate h a { U(π/2, 0, π) a; }
 
     inv @ U(π/2, 0, π) qs[0];
     cx qs[0], qs[1];
@@ -40,7 +35,7 @@ def test_gphase():
     inv @ gphase(π / 2);
     negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
 
-    #pragma {{"{string_to_bin("braket result amplitude '00', '01', '10', '11'")}";}}
+    #pragma braket result amplitude '00', '01', '10', '11'
     """
     simulator = OpenQASMStateVectorSimulator()
     result = simulator.run(Program(source=qasm))
@@ -52,7 +47,7 @@ def test_gphase():
 def sv_adder(pytester, stdgates):
     pytester.makefile(
         ".qasm",
-        adder=f"""
+        adder="""
             /*
              * quantum ripple-carry adder
              * Cuccaro et al, quant-ph/0410184
@@ -64,17 +59,17 @@ def sv_adder(pytester, stdgates):
             input uint[4] a_in;
             input uint[4] b_in;
 
-            gate majority a, b, c {{
+            gate majority a, b, c {
                 cx c, b;
                 cx c, a;
                 ccx a, b, c;
-            }}
+            }
 
-            gate unmaj a, b, c {{
+            gate unmaj a, b, c {
                 ccx a, b, c;
                 cx c, a;
                 cx a, b;
-            }}
+            }
 
             qubit cin;
             qubit[4] a;
@@ -82,22 +77,22 @@ def sv_adder(pytester, stdgates):
             qubit cout;
 
             // set input states
-            for int[8] i in [0: 3] {{
+            for int[8] i in [0: 3] {
               if(bool(a_in[i])) x a[i];
               if(bool(b_in[i])) x b[i];
-            }}
+            }
 
             // add a to b, storing result in b
             majority cin, b[3], a[3];
-            for int[8] i in [3: -1: 1] {{ majority a[i], b[i - 1], a[i - 1]; }}
+            for int[8] i in [3: -1: 1] { majority a[i], b[i - 1], a[i - 1]; }
             cx a[0], cout;
-            for int[8] i in [1: 3] {{ unmaj a[i], b[i - 1], a[i - 1]; }}
+            for int[8] i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
             unmaj cin, b[3], a[3];
 
             // todo: subtle bug when trying to get a result type for both at once
-            #pragma {{"{string_to_bin("braket result probability cout, b")}";}}
-            #pragma {{"{string_to_bin("braket result probability cout")}";}}
-            #pragma {{"{string_to_bin("braket result probability b")}";}}
+            #pragma braket result probability cout, b
+            #pragma braket result probability cout
+            #pragma braket result probability b
         """,
     )
 
@@ -124,7 +119,7 @@ def test_adder_analytic(sv_adder):
 
 def test_result_types_analytic(stdgates):
     simulator = OpenQASMStateVectorSimulator()
-    qasm = f"""
+    qasm = """
     include "stdgates.inc";
 
     qubit[3] q;
@@ -137,30 +132,26 @@ def test_result_types_analytic(stdgates):
 
     // {{ 001: .5, 110: .5 }}
 
-    #pragma {{"{string_to_bin("braket result state_vector")}";}}
-    #pragma {{"{string_to_bin("braket result probability")}";}}
-    #pragma {{"{string_to_bin("braket result probability q")}";}}
-    #pragma {{"{string_to_bin("braket result probability q[0]")}";}}
-    #pragma {{"{string_to_bin("braket result probability q[0:1]")}";}}
-    #pragma {{"{string_to_bin("braket result probability q[{0, 2, 1}]")}";}}
-    #pragma {{"{string_to_bin('braket result amplitude "001", "110"')}";}}
-    #pragma {{"{string_to_bin("braket result density_matrix")}";}}
-    #pragma {{"{string_to_bin("braket result density_matrix q")}";}}
-    #pragma {{"{string_to_bin("braket result density_matrix q[0]")}";}}
-    #pragma {{"{string_to_bin("braket result density_matrix q[0:1]")}";}}
-    #pragma {{"{string_to_bin("braket result density_matrix q[{0, 2, 1}]")}";}}
-    #pragma {{"{string_to_bin("braket result expectation z(q[0])")}";}}
-    #pragma {{"{string_to_bin("braket result variance x(q[0]) @ z(q[2]) @ h(q[1])")}";}}
-    #pragma {{"{string_to_bin(
-        "braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]"
-    )}";}}
+    #pragma braket result state_vector
+    #pragma braket result probability
+    #pragma braket result probability q
+    #pragma braket result probability q[0]
+    #pragma braket result probability q[0:1]
+    #pragma braket result probability q[{0, 2, 1}]
+    #pragma braket result amplitude "001", "110"
+    #pragma braket result density_matrix
+    #pragma braket result density_matrix q
+    #pragma braket result density_matrix q[0]
+    #pragma braket result density_matrix q[0:1]
+    #pragma braket result density_matrix q[{0, 2, 1}]
+    #pragma braket result expectation z(q[0])
+    #pragma braket result variance x(q[0]) @ z(q[2]) @ h(q[1])
+    #pragma braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]
     """
     program = Program(source=qasm)
     result = simulator.run(program, shots=0)
     for rt in result.resultTypes:
         print(f"{rt.type}: {rt.value}")
-
-    print(np.abs(np.round(result.resultTypes[11].value, 2).astype(float)))
 
     result_types = result.resultTypes
 
@@ -261,10 +252,10 @@ def test_result_types_analytic(stdgates):
     assert np.allclose(result_types[14].value, 0)
 
 
-def test_invalid_stanard_observable_target():
-    qasm = f"""
+def test_invalid_standard_observable_target():
+    qasm = """
     qubit[2] qs;
-    #pragma {{"{string_to_bin("braket result variance x(qs)")}";}}
+    #pragma braket result variance x(qs)
     """
     simulator = OpenQASMStateVectorSimulator()
     program = Program(source=qasm)

@@ -508,12 +508,7 @@ class Interpreter:
         # pragma parsing not implemented, workaround by casting as bitstring
         # this should change very soon, once https://github.com/openqasm/openqasm/pull/364
         # is merged
-        pragma_bitstring = node.statements[0].expression
-        pragma_bin = np.binary_repr(pragma_bitstring.value, pragma_bitstring.width)
-        pragma_string = "".join(
-            chr(int(pragma_bin[i : i + 8], base=2)) for i in range(0, pragma_bitstring.width, 8)
-        )
-        self.context.add_result(self.context.parse_result_type_pragma(pragma_string))
+        self.context.add_result(self.context.parse_result_type_pragma(node.command))
 
     @visit.register
     def _(self, node: SubroutineDefinition):
