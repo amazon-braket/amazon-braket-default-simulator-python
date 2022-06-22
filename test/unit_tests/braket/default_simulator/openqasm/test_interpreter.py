@@ -648,10 +648,10 @@ def test_gate_def():
 
 def test_gate_undef():
     qasm = """
-    gate x a { y a; }
-    gate y a { U(π, π/2, π/2) a; }
+    gate x a { undef_y a; }
+    gate undef_y a { U(π, π/2, π/2) a; }
     """
-    undefined_gate = "Gate y is not defined."
+    undefined_gate = "Gate undef_y is not defined."
     with pytest.raises(ValueError, match=undefined_gate):
         Interpreter().run(qasm)
 
@@ -897,43 +897,40 @@ def test_include_stdgates(stdgates):
     """
     context = Interpreter().run(qasm)
 
-    assert np.array_equal(
-        list(context.gate_table.current_scope.keys()),
-        [
-            "p",
-            "x",
-            "y",
-            "z",
-            "h",
-            "s",
-            "sdg",
-            "t",
-            "tdg",
-            "sx",
-            "rx",
-            "ry",
-            "rz",
-            "cx",
-            "cy",
-            "cz",
-            "cp",
-            "crx",
-            "cry",
-            "crz",
-            "ch",
-            "swap",
-            "ccx",
-            "cswap",
-            "cu",
-            "CX",
-            "phase",
-            "cphase",
-            "id",
-            "u1",
-            "u2",
-            "u3",
-        ],
-    )
+    assert {
+        "p",
+        "x",
+        "y",
+        "z",
+        "h",
+        "s",
+        "sdg",
+        "t",
+        "tdg",
+        "sx",
+        "rx",
+        "ry",
+        "rz",
+        "cx",
+        "cy",
+        "cz",
+        "cp",
+        "crx",
+        "cry",
+        "crz",
+        "ch",
+        "swap",
+        "ccx",
+        "cswap",
+        "cu",
+        "CX",
+        "phase",
+        "cphase",
+        "id",
+        "u1",
+        "u2",
+        "u3",
+    }.issubset(context.gate_table.current_scope.keys())
 
 
 def test_adder(adder):

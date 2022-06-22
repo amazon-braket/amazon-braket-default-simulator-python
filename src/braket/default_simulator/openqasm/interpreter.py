@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import fields
 from logging import Logger, getLogger
+from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import numpy as np
@@ -105,6 +106,7 @@ class Interpreter:
                 source = f.read()
 
         program = parse(source)
+        self.visit(Include(Path(Path(__file__).parent, "braket_gates.inc")))
         self.visit(program)
         return self.context.circuit
 
