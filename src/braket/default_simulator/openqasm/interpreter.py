@@ -436,7 +436,6 @@ class Interpreter:
     @visit.register
     def _(self, node: QuantumMeasurement):
         self.logger.debug(f"Quantum measurement: {node}")
-        raise NotImplementedError("Measurement not supported")
 
     @visit.register
     def _(self, node: ClassicalAssignment):

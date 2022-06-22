@@ -826,9 +826,7 @@ def test_measurement():
     qubit q;
     measure q;
     """
-    cannot_measure = "Measurement not supported"
-    with pytest.raises(NotImplementedError, match=cannot_measure):
-        Interpreter().run(qasm)
+    Interpreter().run(qasm)
 
 
 def test_gphase():
