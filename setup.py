@@ -128,7 +128,7 @@ setup(
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
             (
                 "braket_oq3_sv = "
-                "braket.default_simulator.oq3_state_vector_simulator:OQ3StateVectorSimulator"
+                "braket.default_simulator.openqasm_state_vector_simulator:OpenQASMStateVectorSimulator"
             ),
         ]
     },
