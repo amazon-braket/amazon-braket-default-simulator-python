@@ -112,6 +112,7 @@ setup(
     install_requires=[
         "numpy",
         "opt_einsum",
+        "scipy",
         "antlr4-python3-runtime==4.9.2",
         "amazon_braket_schemas",
         # uncomment to build locally

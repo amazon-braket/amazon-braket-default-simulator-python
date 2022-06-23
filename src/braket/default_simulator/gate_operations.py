@@ -19,6 +19,7 @@ from typing import Tuple
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
+from scipy.linalg import fractional_matrix_power
 
 from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.operation import GateOperation
@@ -846,12 +847,13 @@ class U(GateOperation):
     Parameterized primitive gate for OpenQASM simulator
     """
 
-    def __init__(self, targets, theta, phi, lambda_, ctrl_modifiers):
+    def __init__(self, targets, theta, phi, lambda_, ctrl_modifiers, power=1):
         self._targets = tuple(targets)
         self._theta = theta
         self._phi = phi
         self._lambda = lambda_
         self._ctrl_modifiers = ctrl_modifiers
+        self._power = power
 
     @property
     def matrix(self) -> np.ndarray:
@@ -867,6 +869,11 @@ class U(GateOperation):
                 ],
             ]
         )
+        if int(self._power) == self._power:
+            unitary = np.linalg.matrix_power(unitary, int(self._power))
+        else:
+            unitary = fractional_matrix_power(unitary, self._power)
+
         for mod in self._ctrl_modifiers:
             unitary = controlled_unitary(unitary, neg=mod)
         return unitary

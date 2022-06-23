@@ -539,9 +539,12 @@ class ProgramContext:
             GateModifierName.negctrl: 1,
         }
         ctrl_modifiers = []
+        power = 1
         for mod in modifiers:
             ctrl_mod_ix = ctrl_mod_map.get(mod.modifier)
             if ctrl_mod_ix is not None:
                 ctrl_modifiers += [ctrl_mod_ix] * mod.argument.value
-        instruction = U(target, *params, ctrl_modifiers)
+            if mod.modifier == GateModifierName.pow:
+                power *= mod.argument.value
+        instruction = U(target, *params, ctrl_modifiers, power)
         self.circuit.add_instruction(instruction)

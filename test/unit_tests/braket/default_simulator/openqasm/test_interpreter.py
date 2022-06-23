@@ -821,6 +821,47 @@ def test_neg_gate_ctrl():
     assert np.allclose(simulation.state_vector, np.array([1] + [0] * 31))
 
 
+def test_pow():
+    qasm = """
+    int[8] two = 2;
+    gate x a { U(π, 0, π) a; }
+    gate cx c, a {
+        pow(1) @ ctrl @ x c, a;
+    }
+    gate cxx_1 c, a {
+        pow(two) @ cx c, a;
+    }
+    gate cxx_2 c, a {
+        pow(1/2) @ pow(4) @ cx c, a;
+    }
+    gate cxxx c, a {
+        pow(1) @ pow(two) @ cx c, a;
+    }
+
+    qubit q1;
+    qubit q2;
+    qubit q3;
+    qubit q4;
+    qubit q5;
+
+    x q1;       // flip
+    cx q1, q2;   // flip
+    cxx_1 q1, q3;    // don't flip
+    cxx_2 q1, q4;    // don't flip
+    cnot q1, q5;    // flip
+    x q3;       // flip
+    x q4;       // flip
+
+    s q1;   // sqrt z
+    s q1;   // again
+    inv @ z q1; // inv z
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(5, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, np.array([0] * 31 + [1]))
+
+
 def test_measurement():
     qasm = """
     qubit q;

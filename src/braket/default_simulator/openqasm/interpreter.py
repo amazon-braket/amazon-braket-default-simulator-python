@@ -66,8 +66,9 @@ from braket.default_simulator.openqasm.data_manipulation import (
     get_elements,
     get_identifier_name,
     get_operator_of_assignment_operator,
+    get_pow_modifiers,
     index_expression_to_indexed_identifier,
-    invert,
+    invert_phase,
     is_controlled,
     is_inverted,
     is_literal,
@@ -290,7 +291,7 @@ class Interpreter:
                 statement.argument = self.visit(statement.argument)
                 statement.modifiers = self.visit(statement.modifiers)
                 if is_inverted(statement):
-                    statement = invert(statement)
+                    statement = invert_phase(statement)
                 if is_controlled(statement):
                     statement = convert_to_gate(statement)
                 # statement is a quantum phase instruction
@@ -303,13 +304,12 @@ class Interpreter:
                 statement.modifiers = self.visit(statement.modifiers)
                 statement.qubits = self.visit(statement.qubits)
                 if gate_name == "U":
-                    if is_inverted(statement):
-                        statement = invert(statement)
                     inlined_body.append(statement)
                 else:
                     with self.context.enter_scope():
                         gate_def = self.context.get_gate_definition(gate_name)
                         ctrl_modifiers = get_ctrl_modifiers(statement.modifiers)
+                        pow_modifiers = get_pow_modifiers(statement.modifiers)
                         num_ctrl = sum(mod.argument.value for mod in ctrl_modifiers)
                         ctrl_qubits = statement.qubits[:num_ctrl]
                         gate_qubits = statement.qubits[num_ctrl:]
@@ -331,6 +331,7 @@ class Interpreter:
                         is_inverted(statement),
                         ctrl_modifiers,
                         ctrl_qubits,
+                        pow_modifiers,
                     )
         return inlined_body
 
@@ -415,7 +416,7 @@ class Interpreter:
         node.argument = self.visit(node.argument)
         node.modifiers = self.visit(node.modifiers)
         if is_inverted(node):
-            node = invert(node)
+            node = invert_phase(node)
         if is_controlled(node):
             node = convert_to_gate(node)
             self.visit(node)
@@ -431,6 +432,8 @@ class Interpreter:
                 node.argument = IntegerLiteral(1)
             else:
                 node.argument = self.visit(node.argument)
+        elif node.modifier == GateModifierName.pow:
+            node.argument = self.visit(node.argument)
         return node
 
     @visit.register

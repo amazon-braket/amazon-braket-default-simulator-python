@@ -47,7 +47,7 @@ operator_maps = {
         getattr(BinaryOperator, "+"): lambda x, y: IntegerLiteral(x.value + y.value),
         getattr(BinaryOperator, "-"): lambda x, y: IntegerLiteral(x.value - y.value),
         getattr(BinaryOperator, "*"): lambda x, y: IntegerLiteral(x.value * y.value),
-        getattr(BinaryOperator, "/"): lambda x, y: IntegerLiteral(x.value // y.value),
+        getattr(BinaryOperator, "/"): lambda x, y: IntegerLiteral(x.value / y.value),
         getattr(BinaryOperator, "%"): lambda x, y: IntegerLiteral(x.value % y.value),
         getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value**y.value),
         getattr(UnaryOperator, "-"): lambda x: IntegerLiteral(-x.value),
@@ -500,22 +500,11 @@ Helper functions for working with OpenQASM quantum directives
 """
 
 
-@singledispatch
-def invert(quantum_op: Union[QuantumGate, QuantumPhase]) -> Union[QuantumGate, QuantumPhase]:
-    """Invert a quantum gate"""
-    new_modifiers = [mod for mod in quantum_op.modifiers if mod.modifier != GateModifierName.inv]
-    param_values = np.array([arg.value for arg in quantum_op.arguments])
-    new_param_values = -param_values[[0, 2, 1]]
-    new_params = [FloatLiteral(value) for value in new_param_values]
-    return QuantumGate(new_modifiers, Identifier("U"), new_params, quantum_op.qubits)
-
-
-@invert.register
-def _(quantum_op: QuantumPhase) -> QuantumPhase:
+def invert_phase(phase: QuantumPhase) -> QuantumPhase:
     """Invert a quantum phase"""
-    new_modifiers = [mod for mod in quantum_op.modifiers if mod.modifier != GateModifierName.inv]
-    new_param = FloatLiteral(-quantum_op.argument.value)
-    return QuantumPhase(new_modifiers, new_param, quantum_op.qubits)
+    new_modifiers = [mod for mod in phase.modifiers if mod.modifier != GateModifierName.inv]
+    new_param = FloatLiteral(-phase.argument.value)
+    return QuantumPhase(new_modifiers, new_param, phase.qubits)
 
 
 def is_inverted(quantum_op: Union[QuantumGate, QuantumPhase]):
@@ -571,11 +560,17 @@ def get_ctrl_modifiers(modifiers: List[QuantumGateModifier]) -> List[QuantumGate
     ]
 
 
+def get_pow_modifiers(modifiers: List[QuantumGateModifier]) -> List[QuantumGateModifier]:
+    """Get the power modifiers from a list of quantum gate modifiers"""
+    return [mod for mod in modifiers if mod.modifier == GateModifierName.pow]
+
+
 def modify_body(
     body: List[QuantumStatement],
     do_invert: bool,
     ctrl_modifiers: List[QuantumGateModifier],
     ctrl_qubits: List[Identifier],
+    pow_modifiers: List[QuantumGateModifier],
 ):
     """Apply modifiers information to the definition body of a quantum gate"""
     if do_invert:
@@ -584,7 +579,7 @@ def modify_body(
             s.modifiers.insert(0, QuantumGateModifier(GateModifierName.inv, None))
     for s in body:
         if isinstance(s, QuantumGate) or is_controlled(s):
-            s.modifiers = ctrl_modifiers + s.modifiers
+            s.modifiers = ctrl_modifiers + pow_modifiers + s.modifiers
             s.qubits = ctrl_qubits + s.qubits
     return body
 
