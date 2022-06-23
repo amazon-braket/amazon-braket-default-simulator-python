@@ -513,7 +513,7 @@ class Interpreter:
 
         if node.command.startswith("braket result"):
             self.context.add_result(parsed)
-        else:   # node.command.startswith("braket unitary"):
+        else:  # node.command.startswith("braket unitary"):
             unitary, target = parsed
             self.context.add_custom_unitary(unitary, target)
 
