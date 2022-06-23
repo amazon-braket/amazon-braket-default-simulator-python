@@ -1243,7 +1243,7 @@ def test_unitary_pragma():
     ti q[0];
 
     // unitary pragma for ccnot gate
-    #pragma braket unitary([[1.0, 0, 0, 0, 0, 0, 0, 0], [0, 1.0, 0, 0, 0, 0, 0, 0], [0, 0, 1.0, 0, 0, 0, 0, 0], [0, 0, 0, 1.0, 0, 0, 0, 0], [0, 0, 0, 0, 1.0, 0, 0, 0], [0, 0, 0, 0, 0, 1.0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1.0], [0, 0, 0, 0, 0, 0, 1.0, 0]]) q
+    #pragma braket unitary([[1.0, 0, 0, 0, 0, 0, 0, 0], [0, 1.0, 0, 0, 0, 0, 0, 0], [0, 0, 1.0, 0, 0, 0, 0, 0], [0, 0, 0, 1.0, 0, 0, 0, 0], [0, 0, 0, 0, 1.0, 0, 0, 0], [0, 0, 0, 0, 0, 1.0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1.0], [0, 0, 0, 0, 0, 0, 1.0, 0]]) q  # noqa: E501
     """
     circuit = Interpreter().build_circuit(qasm)
     simulation = StateVectorSimulation(3, 1, 1)
@@ -1256,7 +1256,7 @@ def test_unitary_pragma():
 
 def test_bad_unitary_pragma():
     qasm = """
-    qubit q;    
+    qubit q;
     #pragma braket unitary([[1.0, 0, 1], [0, 0.70710678 + 0.70710678im]]) q
     """
     invalid_matrix = "Not a valid square matrix"
