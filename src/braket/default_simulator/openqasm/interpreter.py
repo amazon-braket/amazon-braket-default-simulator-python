@@ -393,8 +393,18 @@ class Interpreter:
                 gate_def = self.context.get_gate_definition(gate_name)
 
                 ctrl_modifiers = get_ctrl_modifiers(modifiers)
+                pow_modifiers = get_pow_modifiers(modifiers)
                 num_ctrl = sum(mod.argument.value for mod in ctrl_modifiers)
+                ctrl_qubits = qubits[:num_ctrl]
                 gate_qubits = qubits[num_ctrl:]
+
+                modified_gate_body = modify_body(
+                    gate_def.body,
+                    is_inverted(node),
+                    ctrl_modifiers,
+                    ctrl_qubits,
+                    pow_modifiers,
+                )
 
                 for qubit_called, qubit_defined in zip(gate_qubits, gate_def.qubits):
                     self.context.declare_qubit_alias(qubit_defined.name, qubit_called)
@@ -402,7 +412,7 @@ class Interpreter:
                 for param_called, param_defined in zip(arguments, gate_def.arguments):
                     self.context.declare_variable(param_defined.name, FloatLiteral, param_called)
 
-                for statement in deepcopy(gate_def.body):
+                for statement in deepcopy(modified_gate_body):
                     if isinstance(statement, QuantumGate):
                         self.visit(statement)
                     else:  # QuantumPhase

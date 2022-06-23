@@ -721,6 +721,15 @@ def test_gate_inv():
 
     apply_phase q;
     apply_phase_inv q;
+
+    U(1, 2, 3) q;
+    inv @ U(1, 2, 3) q;
+
+    s q;
+    inv @ s q;
+
+    t q;
+    inv @ t q;
     """
     circuit = Interpreter().build_circuit(qasm)
     collapsed = np.linalg.multi_dot([instruction.matrix for instruction in circuit.instructions])
@@ -769,6 +778,24 @@ def test_gate_ctrl():
     simulation = StateVectorSimulation(5, 1, 1)
     simulation.evolve(circuit.instructions)
     assert np.allclose(simulation.state_vector, np.array([0] * 31 + [1]))
+
+
+def test_gate_ctrl_global():
+    qasm = """
+    qubit q1;
+    qubit q2;
+
+    h q1;
+    h q2;
+    ctrl @ s q1, q2;
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(
+        simulation.state_vector,
+        [0.5, 0.5, 0.5, 0.5j],
+    )
 
 
 def test_neg_gate_ctrl():
@@ -1190,7 +1217,9 @@ def test_gate_qubit_reg(stdgates):
     qubit q;
 
     x qs[{0, 2}];
-    ctrl @ rx(π/2) qs, q;
+    h q;
+    cphaseshift(1) qs, q;
+    phaseshift(-2) q;
     """
     circuit = Interpreter().build_circuit(qasm)
     simulation = StateVectorSimulation(4, 1, 1)
@@ -1208,8 +1237,8 @@ def test_gate_qubit_reg(stdgates):
             0,
             0,
             0,
-            -1 / np.sqrt(2),
-            -1j / np.sqrt(2),
+            1 / np.sqrt(2),
+            1 / np.sqrt(2),
             0,
             0,
             0,
