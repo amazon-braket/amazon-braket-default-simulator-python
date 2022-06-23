@@ -1,12 +1,42 @@
+import numpy as np
 import pytest
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.gate_operations import Hadamard, Identity, PauliX, PauliY, PauliZ, S, Si, T, Ti, V, Vi, \
-    RotX, RotY, RotZ, PhaseShift, CX, ISwap, PSwap, XY, CPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, CV, \
-    CZ, CY, ECR, XX, ZZ, YY, CCNot, CSwap
+from braket.default_simulator.gate_operations import (
+    CV,
+    CX,
+    CY,
+    CZ,
+    ECR,
+    XX,
+    XY,
+    YY,
+    ZZ,
+    CCNot,
+    CPhaseShift,
+    CPhaseShift00,
+    CPhaseShift01,
+    CPhaseShift10,
+    CSwap,
+    Hadamard,
+    Identity,
+    ISwap,
+    PauliX,
+    PauliY,
+    PauliZ,
+    PhaseShift,
+    PSwap,
+    RotX,
+    RotY,
+    RotZ,
+    S,
+    Si,
+    T,
+    Ti,
+    V,
+    Vi,
+)
 from braket.default_simulator.openqasm.interpreter import Interpreter
-
-import numpy as np
 
 
 @pytest.mark.parametrize(
@@ -44,7 +74,7 @@ import numpy as np
         ("zz", ZZ, 2, (2,)),
         ("ccnot", CCNot, 3, ()),
         ("cswap", CSwap, 3, ()),
-    )
+    ),
 )
 def test_gates(gate_name, gate_class, num_qubits, params):
     param_string = f"({', '.join(str(x) for x in params)})" if params else ""
