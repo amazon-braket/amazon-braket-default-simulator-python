@@ -509,10 +509,13 @@ class Interpreter:
     @visit.register
     def _(self, node: Pragma):
         self.logger.debug(f"Pragma: {node}")
-        # pragma parsing not implemented, workaround by casting as bitstring
-        # this should change very soon, once https://github.com/openqasm/openqasm/pull/364
-        # is merged
-        self.context.add_result(self.context.parse_result_type_pragma(node.command))
+        parsed = self.context.parse_pragma(node.command)
+
+        if node.command.startswith("braket result"):
+            self.context.add_result(parsed)
+        else:   # node.command.startswith("braket unitary"):
+            unitary, target = parsed
+            self.context.add_custom_unitary(unitary, target)
 
     @visit.register
     def _(self, node: SubroutineDefinition):

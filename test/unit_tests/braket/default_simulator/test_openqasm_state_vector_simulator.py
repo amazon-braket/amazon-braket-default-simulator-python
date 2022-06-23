@@ -146,7 +146,7 @@ def test_result_types_analytic(stdgates):
     #pragma braket result density_matrix q[{0, 2, 1}]
     #pragma braket result expectation z(q[0])
     #pragma braket result variance x(q[0]) @ z(q[2]) @ h(q[1])
-    #pragma braket result expectation hermitian([[0, -1im], [1im, 0]]) q[0]
+    #pragma braket result expectation hermitian([[0, -1im], [0 + 1im, 0]]) q[0]
     """
     program = Program(source=qasm)
     result = simulator.run(program, shots=0)

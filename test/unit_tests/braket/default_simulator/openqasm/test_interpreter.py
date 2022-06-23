@@ -1232,12 +1232,36 @@ def test_gate_qubit_reg_size_mismatch(stdgates):
         Interpreter().run(qasm)
 
 
-def test_pragma():
+def test_unitary_pragma():
     qasm = """
-    qubit q;
-    #pragma braket result state_vector
+    qubit[3] q;
+    x q[0];
+    h q[1];
+
+    // unitary pragma for t gate
+    #pragma braket unitary([[1.0, 0], [0, 0.70710678 + 0.70710678im]]) q[0]
+    ti q[0];
+
+    // unitary pragma for ccnot gate
+    #pragma braket unitary([[1.0, 0, 0, 0, 0, 0, 0, 0], [0, 1.0, 0, 0, 0, 0, 0, 0], [0, 0, 1.0, 0, 0, 0, 0, 0], [0, 0, 0, 1.0, 0, 0, 0, 0], [0, 0, 0, 0, 1.0, 0, 0, 0], [0, 0, 0, 0, 0, 1.0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1.0], [0, 0, 0, 0, 0, 0, 1.0, 0]]) q
     """
-    Interpreter().run(qasm)
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(3, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(
+        simulation.state_vector,
+        [0, 0, 0, 0, 0.70710678, 0, 0, 0.70710678],
+    )
+
+
+def test_bad_unitary_pragma():
+    qasm = """
+    qubit q;    
+    #pragma braket unitary([[1.0, 0, 1], [0, 0.70710678 + 0.70710678im]]) q
+    """
+    invalid_matrix = "Not a valid square matrix"
+    with pytest.raises(TypeError, match=invalid_matrix):
+        Interpreter().run(qasm)
 
 
 def test_subroutine():

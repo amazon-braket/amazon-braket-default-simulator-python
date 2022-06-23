@@ -6,6 +6,19 @@ import qasm3;
 
 braketPragma
     : braketResultPragma
+    | braketUnitaryPragma
+    ;
+
+braketUnitaryPragma
+    : BRAKET UNITARY LPAREN twoDimMatrix RPAREN multiTarget
+    ;
+
+twoDimMatrix
+    : LBRACKET row (COMMA row)* RBRACKET
+    ;
+
+row
+    : LBRACKET complexNumber (COMMA complexNumber)* RBRACKET
     ;
 
 braketResultPragma
@@ -83,10 +96,12 @@ standardObservableName
     ;
 
 complexNumber
-    : neg=MINUS? value=(RealNumber | Integer | ImagNumber)
+    : neg=MINUS? value=(RealNumber | Integer | ImagNumber)                      # complexOneValue
+    | neg=MINUS? real=(RealNumber | Integer) sign=(PLUS|MINUS) imag=ImagNumber  # complexTwoValues
     ;
 
 BRAKET: 'braket';
+UNITARY: 'unitary';
 RESULT: 'result';
 
 STATE_VECTOR: 'state_vector';

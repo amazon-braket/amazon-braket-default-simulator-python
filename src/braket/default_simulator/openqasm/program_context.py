@@ -16,8 +16,8 @@ from openqasm3.ast import (
     SubroutineDefinition,
 )
 
-from braket.default_simulator.gate_operations import GPhase, U
-from braket.default_simulator.openqasm.braket_result_pragmas import parse_braket_pragma
+from braket.default_simulator.gate_operations import GPhase, U, Unitary
+from braket.default_simulator.openqasm.braket_pragmas import parse_braket_pragma
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.data_manipulation import (
     LiteralType,
@@ -388,8 +388,8 @@ class ProgramContext:
         for key, value in inputs.items():
             self.inputs[key] = value
 
-    def parse_result_type_pragma(self, pragma_body: str):
-        """Parse result type pragma"""
+    def parse_pragma(self, pragma_body: str):
+        """Parse pragma"""
         return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def declare_variable(
@@ -547,4 +547,13 @@ class ProgramContext:
             if mod.modifier == GateModifierName.pow:
                 power *= mod.argument.value
         instruction = U(target, *params, ctrl_modifiers, power)
+        self.circuit.add_instruction(instruction)
+
+    def add_custom_unitary(
+        self,
+        unitary: np.ndarray,
+        target: Tuple[int],
+    ):
+        """Add a custom Unitary instruction to the circuit"""
+        instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)

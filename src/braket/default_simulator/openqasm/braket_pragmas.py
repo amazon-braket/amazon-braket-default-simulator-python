@@ -1,3 +1,4 @@
+import numpy as np
 from antlr4 import CommonTokenStream, InputStream
 from braket.ir.jaqcd import (
     Amplitude,
@@ -106,7 +107,7 @@ class BraketPragmaNodeVisitor(BraketPragmasVisitor):
         target = self.qubit_table.get_by_identifier(identifier)
         return target
 
-    def visitComplexNumber(self, ctx: BraketPragmasParser.ComplexNumberContext):
+    def visitComplexOneValue(self, ctx: BraketPragmasParser.ComplexOneValueContext):
         sign = -1 if ctx.neg else 1
         value = ctx.value.text
         imag = False
@@ -116,6 +117,27 @@ class BraketPragmaNodeVisitor(BraketPragmasVisitor):
         complex_array = [0, 0]
         complex_array[imag] = sign * float(value)
         return complex_array
+
+    def visitComplexTwoValues(self, ctx: BraketPragmasParser.ComplexTwoValuesContext):
+        real = float(ctx.real.text)
+        imag = float(ctx.imag.text[:-2])  # exclude "im"
+        return [real, imag]
+
+    def visitBraketUnitaryPragma(self, ctx: BraketPragmasParser.BraketUnitaryPragmaContext):
+        target = self.visit(ctx.multiTarget())
+        matrix = self.visit(ctx.twoDimMatrix())
+        return matrix, target
+
+    def visitRow(self, ctx: BraketPragmasParser.RowContext):
+        numbers = ctx.children[1::2]
+        return [x[0] + x[1] * 1j for x in [self.visit(number) for number in numbers]]
+
+    def visitTwoDimMatrix(self, ctx: BraketPragmasParser.TwoDimMatrixContext):
+        rows = [self.visit(row) for row in ctx.children[1::2]]
+        if not all(len(r) == len(rows) for r in rows):
+            raise TypeError("Not a valid square matrix")
+        matrix = np.array(rows)
+        return matrix
 
 
 def parse_braket_pragma(pragma_body: str, qubit_table):
