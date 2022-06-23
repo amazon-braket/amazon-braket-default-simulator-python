@@ -1,6 +1,9 @@
 // OpenQASM 3 Braket Standard Gates
 
 
+// identity gate
+gate i a {}
+
 // phase gate
 gate phaseshift(λ) a { ctrl @ gphase(λ) a; }
 
@@ -59,43 +62,69 @@ gate cswap a, b, c { ctrl @ swap a, b, c; }
 // Toffoli
 gate ccnot a, b, c { ctrl @ ctrl @ x a, b, c; }
 
+// Ising gates
+gate xx(θ) a, b {
+  h a; h b;
+  cnot a, b;
+  rz(θ) b;
+  cnot a, b;
+  h a; h b;
+}
+gate yy(θ) a, b {
+  rx(π/2) a; rx(π/2) b;
+  cnot a, b;
+  rz(θ) b;
+  cnot a, b;
+  rx(-π/2) a; rx(-π/2) b;
+}
+gate zz(θ) a, b {
+  cnot a, b;
+  rz(θ) b;
+  cnot a, b;
+}
+gate xy(θ) a, b {
+  negctrl @ x a, b; // 01 -> 00
+  cnot a, b;        // 10 -> 11
+  cnot b, a;        // 11 -> 01
+  // apply non-trivial transform to (00, 01)
+  negctrl @ U(θ, π/2, 3*π/2) a, b;
+  cnot b, a;        // 11 -> 01
+  cnot a, b;        // 10 -> 11
+  negctrl @ x a, b; // 01 -> 00
+}
 
-/*
-DONE:
-gate ccnot {}
-gate cnot {}
-gate cphaseshift {}
-gate cphaseshift00 {}
-gate cphaseshift01 {}
-gate cphaseshift10 {}
-gate cswap {}
-gate cv {}
-gate cy {}
-gate cz {}
-gate h {}
-gate phaseshift {}
-gate rx {}
-gate ry {}
-gate rz {}
-gate s {}
-gate si {}
-gate swap {}
-gate t {}
-gate ti {}
-gate v {}
-gate vi {}
-gate x {}
-gate y {}
-gate z {}
+// ECR
+gate ecr a, b {
+  // rzx(π/4) a, b
+  h b;
+  cnot a, b;
+  rz(π/4) b;
+  cnot a, b;
+  h b;
 
-TODO:
-gate ecr {}
-gate i {}
-gate iswap {}
-gate pswap {}
-gate unitary {}
-gate xx {}
-gate xy {}
-gate yy {}
-gate zz {}
-*/
+  // rx(π) a
+  x a;
+
+  // rzx(-π/4) a, b
+  h b;
+  cnot a, b;
+  rz(-π/4) b;
+  cnot a, b;
+  h b;
+}
+
+// Iswap
+gate iswap a, b {
+  s a; s b;
+  h a; cnot a, b;
+  cnot b, a; h b;
+}
+//Pswap
+gate pswap(θ) a, b {
+  cphaseshift01(θ) a, b;
+  cphaseshift10(θ) a, b;
+  swap a, b;
+}
+
+// not in this file: unitary
+// #pragma braket unitary(<matrix>) target
