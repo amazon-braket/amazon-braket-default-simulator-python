@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import cmath
 import math
-from typing import Tuple
+from typing import List, Sequence, Tuple
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
@@ -847,7 +847,15 @@ class U(GateOperation):
     Parameterized primitive gate for OpenQASM simulator
     """
 
-    def __init__(self, targets, theta, phi, lambda_, ctrl_modifiers, power=1):
+    def __init__(
+        self,
+        targets: Sequence[int],
+        theta: float,
+        phi: float,
+        lambda_: float,
+        ctrl_modifiers: List[int],
+        power: float = 1,
+    ):
         self._targets = tuple(targets)
         self._theta = theta
         self._phi = phi
@@ -857,6 +865,13 @@ class U(GateOperation):
 
     @property
     def matrix(self) -> np.ndarray:
+        """
+        Generate parameterized Unitary matrix.
+        https://openqasm.com/language/gates.html#built-in-gates
+
+        Returns:
+            np.ndarray: U Matrix
+        """
         unitary = np.array(
             [
                 [
@@ -875,7 +890,7 @@ class U(GateOperation):
             unitary = fractional_matrix_power(unitary, self._power)
 
         for mod in self._ctrl_modifiers:
-            unitary = controlled_unitary(unitary, neg=mod)
+            unitary = controlled_unitary(unitary, negctrl=mod)
         return unitary
 
     @property
@@ -888,7 +903,7 @@ class GPhase(GateOperation):
     Global phase operation for OpenQASM simulator
     """
 
-    def __init__(self, targets, angle):
+    def __init__(self, targets: Sequence[int], angle: float):
         self._targets = tuple(targets)
         self._angle = angle
 

@@ -52,7 +52,7 @@ class BraketSimulator(ABC):
         such as number of qubits.
 
         Args:
-            ir (Union[Program, Problem]): The IR representation of the program
+            ir (Union[JaqcdProgram, OQ3Program, Problem]): The IR representation of the program
 
         Returns:
             Union[GateModelTaskResult, AnnealingTaskResult]: An object representing

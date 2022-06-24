@@ -28,13 +28,14 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 
 class BaseLocalOQ3Simulator(BaseLocalSimulator):
     @property
-    def device_action_type(self):
+    def device_action_type(self) -> DeviceActionType:
         return DeviceActionType.OPENQASM
 
     def run(
         self,
         openqasm_ir: Program,
         shots: int = 0,
+        *,
         batch_size: int = 1,
     ) -> GateModelTaskResult:
         """Executes the circuit specified by the supplied `circuit_ir` on the simulator.

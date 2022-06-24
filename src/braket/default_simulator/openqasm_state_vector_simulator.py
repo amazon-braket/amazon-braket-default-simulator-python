@@ -26,6 +26,15 @@ class OpenQASMStateVectorSimulator(BaseLocalOQ3Simulator):
     DEVICE_ID = "braket_oq3_sv"
 
     def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
+        """
+        Initialize state vector simulation.
+
+        Args:
+            **kwargs: qubit_count, shots, batch_size
+
+        Returns:
+            StateVectorSimulation: Initialized simulation.
+        """
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         batch_size = kwargs.get("batch_size")
@@ -33,6 +42,12 @@ class OpenQASMStateVectorSimulator(BaseLocalOQ3Simulator):
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
+        """
+        Device properties for the OpenQASMStateVectorSimulator.
+
+        Returns:
+            GateModelSimulatorDeviceCapabilities: Device capabilities for this simulator.
+        """
         observables = ["x", "y", "z", "h", "i", "hermitian"]
         max_shots = sys.maxsize
         qubit_count = 26

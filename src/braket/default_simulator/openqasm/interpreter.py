@@ -2,13 +2,14 @@ from copy import deepcopy
 from dataclasses import fields
 from logging import Logger, getLogger
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
 from braket.ir.openqasm.program_v1 import io_type
 from openqasm3 import parse
 from openqasm3.ast import (
     AccessControl,
+    ArrayLiteral,
     ArrayReferenceType,
     ArrayType,
     AssignmentOperator,
@@ -53,7 +54,9 @@ from openqasm3.ast import (
     WhileLoop,
 )
 
+from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.data_manipulation import (
+    LiteralType,
     builtin_constants,
     builtin_functions,
     cast_to,
@@ -97,7 +100,7 @@ class Interpreter:
 
     def build_circuit(
         self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
-    ):
+    ) -> Circuit:
         """Interpret an OpenQASM program and build a Circuit IR."""
         if inputs:
             self.context.load_inputs(inputs)
@@ -111,13 +114,15 @@ class Interpreter:
         self.visit(program)
         return self.context.circuit
 
-    def run(self, source, inputs=None, is_file=False):
+    def run(
+        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+    ) -> ProgramContext:
         """Interpret an OpenQASM program and return the program state"""
         self.build_circuit(source, inputs, is_file)
         return self.context
 
     @singledispatchmethod
-    def visit(self, node: Union[QASMNode, List[QASMNode]]):
+    def visit(self, node: Union[QASMNode, List[QASMNode]]) -> Optional[QASMNode]:
         """Generic visit function for an AST node"""
         self.logger.debug(f"Node: {node}")
         if node is None:
@@ -130,20 +135,18 @@ class Interpreter:
         return node
 
     @visit.register
-    def _(self, node_list: list):
+    def _(self, node_list: list) -> List[QASMNode]:
         """Generic visit function for a list of AST nodes"""
         self.logger.debug(f"list: {node_list}")
         return [n for n in [self.visit(node) for node in node_list] if n is not None]
 
     @visit.register
-    def _(self, node: Program):
+    def _(self, node: Program) -> None:
         self.logger.debug(f"Program: {node}")
-        statements = self.visit(node.statements)
-        new_node = Program(statements)
-        return new_node
+        self.visit(node.statements)
 
     @visit.register
-    def _(self, node: ClassicalDeclaration):
+    def _(self, node: ClassicalDeclaration) -> None:
         self.logger.debug(f"Classical declaration: {node}")
         node_type = self.visit(node.type)
         if node.init_expression is not None:
@@ -156,10 +159,9 @@ class Interpreter:
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
-        return ClassicalDeclaration(node_type, node.identifier, node.init_expression)
 
     @visit.register
-    def _(self, node: IODeclaration):
+    def _(self, node: IODeclaration) -> None:
         self.logger.debug(f"IO Declaration: {node}")
         if node.io_identifier == IOKeyword.output:
             raise NotImplementedError("Output not supported")
@@ -169,10 +171,9 @@ class Interpreter:
             init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
             declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
         self.visit(declaration)
-        return declaration
 
     @visit.register
-    def _(self, node: ConstantDeclaration):
+    def _(self, node: ConstantDeclaration) -> None:
         self.logger.debug(f"Constant declaration: {node}")
         node_type = self.visit(node.type)
         init_expression = self.visit(node.init_expression)
@@ -180,7 +181,7 @@ class Interpreter:
         self.context.declare_variable(node.identifier.name, node_type, init_value, const=True)
 
     @visit.register
-    def _(self, node: BinaryExpression):
+    def _(self, node: BinaryExpression) -> Union[BinaryExpression, LiteralType]:
         self.logger.debug(f"Binary expression: {node}")
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
@@ -190,7 +191,7 @@ class Interpreter:
             return BinaryExpression(node.op, lhs, rhs)
 
     @visit.register
-    def _(self, node: UnaryExpression):
+    def _(self, node: UnaryExpression) -> Union[UnaryExpression, LiteralType]:
         self.logger.debug(f"Unary expression: {node}")
         expression = self.visit(node.expression)
         if is_literal(expression):
@@ -199,19 +200,19 @@ class Interpreter:
             return UnaryExpression(node.op, expression)
 
     @visit.register
-    def _(self, node: Cast):
+    def _(self, node: Cast) -> LiteralType:
         self.logger.debug(f"Cast: {node}")
         return cast_to(node.type, self.visit(node.argument))
 
     @visit.register(BooleanLiteral)
     @visit.register(IntegerLiteral)
     @visit.register(FloatLiteral)
-    def _(self, node):
+    def _(self, node: LiteralType) -> LiteralType:
         self.logger.debug(f"Literal: {node}")
         return node
 
     @visit.register
-    def _(self, node: Identifier):
+    def _(self, node: Identifier) -> LiteralType:
         if node.name in builtin_constants:
             return builtin_constants[node.name]
         if not self.context.is_initialized(node.name):
@@ -219,18 +220,19 @@ class Interpreter:
         return self.context.get_value_by_identifier(node)
 
     @visit.register
-    def _(self, node: QubitDeclaration):
+    def _(self, node: QubitDeclaration) -> None:
         self.logger.debug(f"Qubit declaration: {node}")
         size = self.visit(node.size).value if node.size else 1
         self.context.add_qubits(node.qubit.name, size)
 
     @visit.register
-    def _(self, node: QuantumReset):
+    def _(self, node: QuantumReset) -> None:
         self.logger.debug(f"Quantum reset: {node}")
         raise NotImplementedError("Reset not supported")
 
     @visit.register
-    def _(self, node: IndexedIdentifier):
+    def _(self, node: IndexedIdentifier) -> Union[IndexedIdentifier, LiteralType]:
+        """Returns an identifier for qubits, value for classical identifier"""
         self.logger.debug(f"Indexed identifier: {node}")
         name = node.name
         indices = []
@@ -247,7 +249,7 @@ class Interpreter:
         return updated
 
     @visit.register
-    def _(self, node: RangeDefinition):
+    def _(self, node: RangeDefinition) -> RangeDefinition:
         self.logger.debug(f"Range definition: {node}")
         start = self.visit(node.start) if node.start else None
         end = self.visit(node.end)
@@ -255,7 +257,8 @@ class Interpreter:
         return RangeDefinition(start, end, step)
 
     @visit.register
-    def _(self, node: IndexExpression):
+    def _(self, node: IndexExpression) -> Union[IndexedIdentifier, ArrayLiteral]:
+        """Returns an identifier for qubits, values for classical identifier"""
         self.logger.debug(f"Index expression: {node}")
         type_width = None
         index = self.visit(node.index)
@@ -272,7 +275,7 @@ class Interpreter:
         return get_elements(collection, index, type_width)
 
     @visit.register
-    def _(self, node: QuantumGateDefinition):
+    def _(self, node: QuantumGateDefinition) -> None:
         self.logger.debug(f"Quantum gate definition: {node}")
         with self.context.enter_scope():
             for qubit in node.qubits:
@@ -281,10 +284,10 @@ class Interpreter:
             for param in node.arguments:
                 self.context.declare_variable(param.name, Identifier, param)
 
-            node.body = self.inline_gate_def_body(node.body)  # , node.qubits)
+            node.body = self.inline_gate_def_body(node.body)
         self.context.add_gate(node.name.name, node)
 
-    def inline_gate_def_body(self, body: List[QuantumStatement]):  # , qubit_map):
+    def inline_gate_def_body(self, body: List[QuantumStatement]) -> List[QuantumStatement]:
         inlined_body = []
         for statement in body:
             if isinstance(statement, QuantumPhase):
@@ -336,7 +339,7 @@ class Interpreter:
         return inlined_body
 
     @visit.register
-    def _(self, node: QuantumGate):
+    def _(self, node: QuantumGate) -> None:
         self.logger.debug(f"Quantum gate: {node}")
         gate_name = node.name.name
         arguments = self.visit(node.arguments)
@@ -377,7 +380,7 @@ class Interpreter:
                     indexed_qubits,
                 )
                 self.visit(gate_call)
-            return node
+            return
 
         if gate_name == "U":
             # to simplify indices
@@ -387,7 +390,6 @@ class Interpreter:
                 qubits,
                 modifiers,
             )
-            return QuantumGate(modifiers, node.name, arguments, qubits)
         else:
             with self.context.enter_scope():
                 gate_def = self.context.get_gate_definition(gate_name)
@@ -418,10 +420,9 @@ class Interpreter:
                     else:  # QuantumPhase
                         phase = self.visit(statement.argument)
                         self.handle_phase(phase, qubits)
-                return QuantumGate(modifiers, node.name, arguments, qubits)
 
     @visit.register
-    def _(self, node: QuantumPhase):
+    def _(self, node: QuantumPhase) -> None:
         self.logger.debug(f"Quantum phase: {node}")
         node.argument = self.visit(node.argument)
         node.modifiers = self.visit(node.modifiers)
@@ -432,10 +433,9 @@ class Interpreter:
             self.visit(node)
         else:
             self.handle_phase(node.argument)
-        return node
 
     @visit.register
-    def _(self, node: QuantumGateModifier):
+    def _(self, node: QuantumGateModifier) -> QuantumGateModifier:
         self.logger.debug(f"Quantum gate modifier: {node}")
         if node.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
             if node.argument is None:
@@ -447,11 +447,12 @@ class Interpreter:
         return node
 
     @visit.register
-    def _(self, node: QuantumMeasurement):
+    def _(self, node: QuantumMeasurement) -> None:
+        """Doesn't do anything, but may add more functionality in the future"""
         self.logger.debug(f"Quantum measurement: {node}")
 
     @visit.register
-    def _(self, node: ClassicalAssignment):
+    def _(self, node: ClassicalAssignment) -> None:
         self.logger.debug(f"Classical assignment: {node}")
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
@@ -468,24 +469,22 @@ class Interpreter:
         else:
             rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)
-        return node
 
     @visit.register
-    def _(self, node: BitstringLiteral):
+    def _(self, node: BitstringLiteral) -> ArrayLiteral:
         self.logger.debug(f"Bitstring literal: {node}")
         return cast_to(BitType(IntegerLiteral(node.width)), node)
 
     @visit.register
-    def _(self, node: BranchingStatement):
+    def _(self, node: BranchingStatement) -> None:
         self.logger.debug(f"Branching statement: {node}")
         condition = cast_to(BooleanLiteral, self.visit(node.condition))
         block = node.if_block if condition.value else node.else_block
         for statement in block:
             self.visit(statement)
-        return BranchingStatement(BooleanLiteral(True), block, [])
 
     @visit.register
-    def _(self, node: ForInLoop):
+    def _(self, node: ForInLoop) -> None:
         self.logger.debug(f"For in loop: {node}")
         index = self.visit(node.set_declaration)
         if isinstance(index, RangeDefinition):
@@ -499,17 +498,15 @@ class Interpreter:
             with self.context.enter_scope():
                 self.context.declare_variable(node.identifier.name, node.type, i)
                 self.visit(block_copy)
-        return ForInLoop(node.type, node.identifier, index, block)
 
     @visit.register
-    def _(self, node: WhileLoop):
+    def _(self, node: WhileLoop) -> None:
         self.logger.debug(f"While loop: {node}")
         while cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
             self.visit(deepcopy(node.block))
-        return node
 
     @visit.register
-    def _(self, node: Include):
+    def _(self, node: Include) -> None:
         self.logger.debug(f"Include: {node}")
         with open(node.filename, "r") as f:
             included = f.read()
@@ -517,7 +514,7 @@ class Interpreter:
             self.visit(parsed)
 
     @visit.register
-    def _(self, node: Pragma):
+    def _(self, node: Pragma) -> None:
         self.logger.debug(f"Pragma: {node}")
         parsed = self.context.parse_pragma(node.command)
 
@@ -528,7 +525,7 @@ class Interpreter:
             self.context.add_custom_unitary(unitary, target)
 
     @visit.register
-    def _(self, node: SubroutineDefinition):
+    def _(self, node: SubroutineDefinition) -> None:
         # todo: explicitly handle references to existing variables
         # either by throwing an error or evaluating the closure.
         # currently, the implementation does not consider the values
@@ -541,7 +538,7 @@ class Interpreter:
         self.context.add_subroutine(node.name.name, node)
 
     @visit.register
-    def _(self, node: FunctionCall):
+    def _(self, node: FunctionCall) -> Optional[QASMNode]:
         self.logger.debug(f"Function call: {node}")
         function_name = node.name.name
         arguments = self.visit(node.arguments)
@@ -583,12 +580,12 @@ class Interpreter:
             return return_value
 
     @visit.register
-    def _(self, node: ReturnStatement):
+    def _(self, node: ReturnStatement) -> Optional[QASMNode]:
         self.logger.debug(f"Return statement: {node}")
         return self.visit(node.expression)
 
     @visit.register
-    def _(self, node: SizeOf):
+    def _(self, node: SizeOf) -> IntegerLiteral:
         self.logger.debug(f"Size of: {node}")
         target = self.visit(node.target)
         index = self.visit(node.index)
@@ -599,7 +596,7 @@ class Interpreter:
         arguments: List[FloatLiteral],
         qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: List[QuantumGateModifier],
-    ):
+    ) -> None:
         """Add unitary operation to the circuit"""
         self.context.add_builtin_unitary(
             arguments,
@@ -607,6 +604,6 @@ class Interpreter:
             modifiers,
         )
 
-    def handle_phase(self, phase: FloatLiteral, qubits=None):
+    def handle_phase(self, phase: FloatLiteral, qubits: Optional[Iterable[int]] = None) -> None:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)

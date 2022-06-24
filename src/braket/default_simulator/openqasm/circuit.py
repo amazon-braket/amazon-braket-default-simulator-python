@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from typing import List, Optional
 
 from braket.ir.jaqcd.program_v1 import Results
 
-from braket.default_simulator import GateOperation
+from braket.default_simulator.operation import GateOperation
 
 
 class Circuit:
@@ -31,16 +33,28 @@ class Circuit:
             for result in results:
                 self.add_result(result)
 
-    def add_instruction(self, instruction: GateOperation):
+    def add_instruction(self, instruction: GateOperation) -> None:
+        """
+        Add instruction to the circuit.
+
+        Args:
+            instruction (GateOperation): Instruction to add.
+        """
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
 
-    def add_result(self, result: Results):
+    def add_result(self, result: Results) -> None:
+        """
+        Add result type to the circuit.
+
+        Args:
+            result (Results): Result type to add.
+        """
         self.results.append(result)
 
     @property
     def num_qubits(self) -> int:
         return len(self.qubit_set)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Circuit):
         return (self.instructions, self.results) == (other.instructions, other.results)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Hashable, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
@@ -37,23 +37,23 @@ class Table:
     Utility class for storing and displaying items.
     """
 
-    def __init__(self, title):
+    def __init__(self, title: str):
         self._title = title
         self._dict = {}
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str):
         return self._dict[item]
 
-    def __contains__(self, item):
+    def __contains__(self, item: str):
         return item in self._dict
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any):
         self._dict[key] = value
 
-    def items(self):
+    def items(self) -> Iterable[Tuple[str, Any]]:
         return self._dict.items()
 
-    def _longest_key_length(self):
+    def _longest_key_length(self) -> int:
         items = self.items()
         return max(len(key) for key, value in items) if items else None
 
@@ -118,17 +118,17 @@ class ScopedTable(Table):
         super().__init__(title)
         self._scopes = [{}]
 
-    def push_scope(self):
+    def push_scope(self) -> None:
         self._scopes.append({})
 
-    def pop_scope(self):
+    def pop_scope(self) -> None:
         self._scopes.pop()
 
     @property
-    def current_scope(self):
+    def current_scope(self) -> Dict[str, Any]:
         return self._scopes[-1]
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str):
         """
         Resolve scope of item and return its value.
         """
@@ -137,7 +137,7 @@ class ScopedTable(Table):
                 return scope[item]
         raise KeyError(f"Undefined key: {item}")
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any):
         """
         Set value of item in current scope.
         """
@@ -146,7 +146,7 @@ class ScopedTable(Table):
         except KeyError:
             self.current_scope[key] = value
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str):
         """
         Delete item from first scope in which it exists.
         """
@@ -156,14 +156,14 @@ class ScopedTable(Table):
                 return
         raise KeyError(f"Undefined key: {key}")
 
-    def get_scope(self, key):
+    def get_scope(self, key: str) -> Dict[str, Any]:
         """Get the smallest scope containing the given key"""
         for scope in reversed(self._scopes):
             if key in scope:
                 return scope
         raise KeyError(f"Undefined key: {key}")
 
-    def items(self):
+    def items(self) -> Iterable[Tuple[str, Any]]:
         items = {}
         for scope in reversed(self._scopes):
             for key, value in scope.items():
@@ -206,7 +206,7 @@ class SymbolTable(ScopedTable):
         name: str,
         symbol_type: Union[ClassicalType, LiteralType, Type[Identifier]],
         const: bool = False,
-    ):
+    ) -> None:
         """
         Add a symbol to the symbol table.
 
@@ -265,7 +265,7 @@ class VariableTable(ScopedTable):
     def __init__(self):
         super().__init__("Data")
 
-    def add_variable(self, name: str, value: Any):
+    def add_variable(self, name: str, value: Any) -> None:
         self.current_scope[name] = value
 
     def get_value(self, name: str) -> LiteralType:
@@ -295,7 +295,7 @@ class VariableTable(ScopedTable):
         value: Any,
         var_type: ClassicalType,
         indices: Optional[List[IndexElement]] = None,
-    ):
+    ) -> None:
         """Update value of a variable, optionally providing an index"""
         current_value = self[name]
         if indices:
@@ -315,7 +315,7 @@ class GateTable(ScopedTable):
     def __init__(self):
         super().__init__("Gates")
 
-    def add_gate(self, name: str, definition: QuantumGateDefinition):
+    def add_gate(self, name: str, definition: QuantumGateDefinition) -> None:
         self[name] = definition
 
     def get_gate_definition(self, name: str) -> QuantumGateDefinition:
@@ -330,7 +330,7 @@ class SubroutineTable(ScopedTable):
     def __init__(self):
         super().__init__("Subroutines")
 
-    def add_subroutine(self, name: str, definition: SubroutineDefinition):
+    def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         self[name] = definition
 
     def get_subroutine_definition(self, name: str) -> SubroutineDefinition:
@@ -383,7 +383,7 @@ class ProgramContext:
             for x in (self.symbol_table, self.variable_table, self.gate_table, self.qubit_mapping)
         )
 
-    def load_inputs(self, inputs: Dict[str, Any]):
+    def load_inputs(self, inputs: Dict[str, Any]) -> None:
         """Load inputs for the program"""
         for key, value in inputs.items():
             self.inputs[key] = value
@@ -398,7 +398,7 @@ class ProgramContext:
         symbol_type: Union[ClassicalType, Type[LiteralType], Type[Identifier]],
         value: Optional[Any] = None,
         const: bool = False,
-    ):
+    ) -> None:
         """Declare variable in current scope"""
         self.symbol_table.add_symbol(name, symbol_type, const)
         self.variable_table.add_variable(name, value)
@@ -407,12 +407,12 @@ class ProgramContext:
         self,
         name: str,
         value: Identifier,
-    ):
+    ) -> None:
         """Declare qubit alias in current scope"""
         self.symbol_table.add_symbol(name, Identifier)
         self.variable_table.add_variable(name, value)
 
-    def enter_scope(self):
+    def enter_scope(self) -> ScopeManager:
         """
         Allows pushing/popping scope with indentation and the `with` keyword.
 
@@ -426,13 +426,13 @@ class ProgramContext:
         """
         return self.scope_manager
 
-    def push_scope(self):
+    def push_scope(self) -> None:
         """Enter a new scope"""
         self.symbol_table.push_scope()
         self.variable_table.push_scope()
         self.gate_table.push_scope()
 
-    def pop_scope(self):
+    def pop_scope(self) -> None:
         """Exit current scope"""
         self.symbol_table.pop_scope()
         self.variable_table.pop_scope()
@@ -460,14 +460,14 @@ class ProgramContext:
         """Check whether variable is initialized by name"""
         return self.variable_table.is_initalized(name)
 
-    def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any):
+    def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any) -> None:
         """Update value by identifier, possible only a sub-index of a variable"""
         name = get_identifier_name(variable)
         var_type = self.get_type(name)
         indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
         self.variable_table.update_value(name, value, var_type, indices)
 
-    def add_qubits(self, name: str, num_qubits: Optional[int] = 1):
+    def add_qubits(self, name: str, num_qubits: Optional[int] = 1) -> None:
         """Allocate additional qubits for the program"""
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.num_qubits += num_qubits
@@ -480,7 +480,7 @@ class ProgramContext:
         """
         return self.qubit_mapping.get_by_identifier(qubits)
 
-    def add_gate(self, name: str, definition: QuantumGateDefinition):
+    def add_gate(self, name: str, definition: QuantumGateDefinition) -> None:
         """Add a gate definition"""
         self.gate_table.add_gate(name, definition)
 
@@ -491,7 +491,7 @@ class ProgramContext:
         except KeyError:
             raise ValueError(f"Gate {name} is not defined.")
 
-    def add_subroutine(self, name: str, definition: SubroutineDefinition):
+    def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """Add a subroutine definition"""
         self.subroutine_table.add_subroutine(name, definition)
 
@@ -502,7 +502,7 @@ class ProgramContext:
         except KeyError:
             raise NameError(f"Subroutine {name} is not defined.")
 
-    def add_result(self, result: Results):
+    def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
         self.circuit.add_result(result)
 
@@ -510,7 +510,7 @@ class ProgramContext:
         self,
         phase: FloatLiteral,
         qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None,
-    ):
+    ) -> None:
         """Add quantum phase instruction to the circuit"""
         # if targets overlap, duplicates will be ignored
         if not qubits:
@@ -525,7 +525,7 @@ class ProgramContext:
         parameters: List[FloatLiteral],
         qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: Optional[List[QuantumGateModifier]] = None,
-    ):
+    ) -> None:
         """Add a builtin Unitary (U) instruction to the circuit"""
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
@@ -553,7 +553,7 @@ class ProgramContext:
         self,
         unitary: np.ndarray,
         target: Tuple[int],
-    ):
+    ) -> None:
         """Add a custom Unitary instruction to the circuit"""
         instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)

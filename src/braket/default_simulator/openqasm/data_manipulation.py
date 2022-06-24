@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import math
 import warnings
 from copy import deepcopy
 from functools import singledispatch, update_wrapper
-from typing import List, Type, Union
+from typing import Any, Iterable, List, Optional, Type, Union
 
 import numpy as np
 from openqasm3.ast import (
@@ -158,7 +160,8 @@ builtin_constants = {
 }
 
 
-def popcount(x: Union[ArrayLiteral, IntegerLiteral]):
+def popcount(x: Union[ArrayLiteral, IntegerLiteral]) -> IntegerLiteral:
+    """Calculate popcount/hamming weight of a bit register or integer"""
     width = IntegerLiteral(
         len(x.values) if isinstance(x, ArrayLiteral) else math.ceil(np.log2(x.value))
     )
@@ -199,13 +202,18 @@ builtin_functions = {
     "tan": lambda x: FloatLiteral(np.tan(x.value)),
 }
 
+LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, BitstringLiteral]
 
-def resolve_type_hierarchy(x: Expression, y: Expression):
+
+def resolve_type_hierarchy(x: LiteralType, y: LiteralType) -> Type[LiteralType]:
     """Determine output type of expression, for example: 1 + 1.0 == 2.0"""
     return max(type(x), type(y), key=type_hierarchy.index)
 
 
-def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOperator):
+def evaluate_binary_expression(
+    lhs: LiteralType, rhs: LiteralType, op: BinaryOperator
+) -> LiteralType:
+    """Evaluate a binary expression between two literals"""
     result_type = resolve_type_hierarchy(lhs, rhs)
     func = operator_maps[result_type].get(op)
     if not func:
@@ -213,7 +221,8 @@ def evaluate_binary_expression(lhs: Expression, rhs: Expression, op: BinaryOpera
     return func(lhs, rhs)
 
 
-def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
+def evaluate_unary_expression(expression: LiteralType, op: BinaryOperator) -> LiteralType:
+    """Evaluate a unary expression on a literal"""
     expression_type = type(expression)
     func = operator_maps[expression_type].get(op)
     if not func:
@@ -221,7 +230,8 @@ def evaluate_unary_expression(expression: Expression, op: BinaryOperator):
     return func(expression)
 
 
-def get_operator_of_assignment_operator(assignment_operator: AssignmentOperator):
+def get_operator_of_assignment_operator(assignment_operator: AssignmentOperator) -> BinaryOperator:
+    """Extract the binary operator related to an assignment operator, for example: += -> +"""
     return getattr(BinaryOperator, assignment_operator.name[:-1])
 
 
@@ -230,11 +240,8 @@ Casting values
 """
 
 
-LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, BitstringLiteral]
-
-
 @singledispatch
-def cast_to(into: Union[ClassicalType, Type[LiteralType]], variable: LiteralType):
+def cast_to(into: Union[ClassicalType, Type[LiteralType]], variable: LiteralType) -> LiteralType:
     """Cast a variable into a given type. Order of parameters is to enable singledispatch"""
     if type(variable) == into:
         return variable
@@ -248,7 +255,9 @@ def cast_to(into: Union[ClassicalType, Type[LiteralType]], variable: LiteralType
 
 
 @cast_to.register
-def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLiteral]):
+def _(
+    into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLiteral]
+) -> ArrayLiteral:
     """
     Bit types can be sized or not, represented as Boolean literals or Array literals.
     Sized bit types can be instantiated with a Bitstring literal or Array literal.
@@ -267,7 +276,7 @@ def _(into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLite
 
 
 @cast_to.register
-def _(into: IntType, variable: LiteralType):
+def _(into: IntType, variable: LiteralType) -> IntegerLiteral:
     """Cast to int with overflow warnings"""
     limit = 2 ** (into.size.value - 1)
     value = int(np.sign(variable.value) * (np.abs(int(variable.value)) % limit))
@@ -277,7 +286,7 @@ def _(into: IntType, variable: LiteralType):
 
 
 @cast_to.register
-def _(into: UintType, variable: LiteralType):
+def _(into: UintType, variable: LiteralType) -> IntegerLiteral:
     """Cast to uint with overflow warnings. Bit registers can be cast to uint."""
     if isinstance(variable, ArrayLiteral):
         return IntegerLiteral(int("".join("01"[x.value] for x in variable.values), base=2))
@@ -291,7 +300,7 @@ def _(into: UintType, variable: LiteralType):
 
 
 @cast_to.register
-def _(into: FloatType, variable: LiteralType):
+def _(into: FloatType, variable: LiteralType) -> FloatLiteral:
     """Cast to float"""
     if into.size.value not in (16, 32, 64, 128):
         raise ValueError("Float size must be one of {16, 32, 64, 128}.")
@@ -300,7 +309,7 @@ def _(into: FloatType, variable: LiteralType):
 
 
 @cast_to.register
-def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]):
+def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]) -> ArrayLiteral:
     """Cast to Array and enforce dimensions"""
     if len(variable.values) != into.dimensions[0].value:
         raise ValueError(
@@ -315,7 +324,7 @@ def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]):
     return ArrayLiteral([cast_to(subtype, v) for v in variable.values])
 
 
-def is_literal(expression: Expression):
+def is_literal(expression: Expression) -> bool:
     return isinstance(
         expression,
         (
@@ -335,12 +344,12 @@ def convert_string_to_bool_array(bit_string: BitstringLiteral) -> ArrayLiteral:
     )
 
 
-def convert_bool_array_to_string(bit_string: ArrayLiteral):
+def convert_bool_array_to_string(bit_string: ArrayLiteral) -> str:
     """Convert Boolean ArrayLiteral into a binary string"""
     return "".join(("1" if x.value else "0") for x in bit_string.values)
 
 
-def is_none_like(value):
+def is_none_like(value: Any) -> bool:
     """Returns whether value is None or an Array of Nones"""
     if isinstance(value, ArrayLiteral):
         return all(is_none_like(v) for v in value.values)
@@ -352,7 +361,7 @@ Helper functions for working with indexed values
 """
 
 
-def convert_range_def_to_slice(range_def: RangeDefinition):
+def convert_range_def_to_slice(range_def: RangeDefinition) -> slice:
     """Convert AST node into Python slice object"""
     buffer = np.sign(range_def.step.value) if range_def.step is not None else 1
     start = range_def.start.value if range_def.start is not None else None
@@ -365,7 +374,7 @@ def convert_range_def_to_slice(range_def: RangeDefinition):
     return slice(start, stop, step)
 
 
-def convert_range_def_to_range(range_def: RangeDefinition):
+def convert_range_def_to_range(range_def: RangeDefinition) -> range:
     """Convert AST node into Python range object"""
     buffer = np.sign(range_def.step.value) if range_def.step is not None else 1
     start = range_def.start.value if range_def.start is not None else 0
@@ -374,21 +383,24 @@ def convert_range_def_to_range(range_def: RangeDefinition):
     return range(start, stop, step)
 
 
-def convert_discrete_set_to_list(discrete_set: DiscreteSet):
+def convert_discrete_set_to_list(discrete_set: DiscreteSet) -> list:
     """Convert AST node into Python list object"""
     return [x.value for x in discrete_set.values]
 
 
 @singledispatch
-def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
+def get_elements(
+    value: ArrayLiteral, index: IndexElement, type_width: Optional[int] = None
+) -> ArrayLiteral:
     """Get elements of an Array, given an index."""
     if isinstance(index, DiscreteSet):
-        return DiscreteSet([get_elements(value, [i]) for i in index.values])
+        return ArrayLiteral([get_elements(value, [i]) for i in index.values])
     first_index = convert_index(index[0])
     if isinstance(first_index, int):
         if not index[1:]:
             return value.values[first_index]
         return get_elements(value.values[first_index], index[1:], type_width)
+    # first_index is a slice
     index_as_range = range(len(value.values))[first_index]
     if not index[1:]:
         return ArrayLiteral([value.values[ix] for ix in index_as_range])
@@ -398,7 +410,7 @@ def get_elements(value: ArrayLiteral, index: IndexElement, type_width=None):
 
 
 @get_elements.register
-def _(value: IntegerLiteral, index: IndexElement, type_width: int):
+def _(value: IntegerLiteral, index: IndexElement, type_width: int) -> ArrayLiteral:
     """Get elements of an integer's boolean representation, given an index"""
     binary_rep = ArrayLiteral(
         [BooleanLiteral(x == "1") for x in np.binary_repr(value.value, type_width)]
@@ -413,7 +425,7 @@ def create_empty_array(dims: List[IntegerLiteral]) -> ArrayLiteral:
     return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
 
 
-def convert_index(index: Union[RangeDefinition, IntegerLiteral]):
+def convert_index(index: Union[RangeDefinition, IntegerLiteral]) -> Union[int, slice]:
     """Convert unspecified index type to Python object"""
     if isinstance(index, RangeDefinition):
         return convert_range_def_to_slice(index)
@@ -421,7 +433,7 @@ def convert_index(index: Union[RangeDefinition, IntegerLiteral]):
         return index.value
 
 
-def flatten_indices(indices: List[IndexElement]):
+def flatten_indices(indices: List[IndexElement]) -> list:
     """Convert a[i][j][k] to the equivalent a[i, j, k]"""
     return sum((index for index in indices), [])
 
@@ -436,7 +448,7 @@ def index_expression_to_indexed_identifier(index_expression: IndexExpression) ->
     return IndexedIdentifier(index_expression.collection, [index_expression.index])
 
 
-def unwrap_var_type(var_type: ClassicalType):
+def unwrap_var_type(var_type: ClassicalType) -> ClassicalType:
     """
     Return the type that comprises the given type. For example,
     the type Array(dims=[2, 3, 4]) has elements of type Array(dims=[3, 4]).
@@ -462,7 +474,7 @@ def update_value(
     value: LiteralType,
     update_indices: List[IndexElement],
     var_type: ClassicalType,
-):
+) -> None:
     """Update an Array, for example: a[4, 1:] = {1, 2, 3}"""
     # current value will be an ArrayLiteral or StringLiteral
     if isinstance(current_value, ArrayLiteral):
@@ -507,7 +519,7 @@ def invert_phase(phase: QuantumPhase) -> QuantumPhase:
     return QuantumPhase(new_modifiers, new_param, phase.qubits)
 
 
-def is_inverted(quantum_op: Union[QuantumGate, QuantumPhase]):
+def is_inverted(quantum_op: Union[QuantumGate, QuantumPhase]) -> bool:
     """
     Tell whether a gate with modifiers is inverted, or if the inverse modifiers
     cancel out. Since inv @ ctrl U == ctrl @ inv U, we can accomplish this by
@@ -515,10 +527,10 @@ def is_inverted(quantum_op: Union[QuantumGate, QuantumPhase]):
     """
     inv_modifier = QuantumGateModifier(GateModifierName.inv, None)
     num_inv_modifiers = quantum_op.modifiers.count(inv_modifier)
-    return num_inv_modifiers % 2
+    return bool(num_inv_modifiers % 2)
 
 
-def is_controlled(phase: QuantumPhase):
+def is_controlled(phase: QuantumPhase) -> bool:
     """
     Returns whether a quantum phase has any control modifiers. If it does, then
     it will be transformed by the interpreter into a controlled global phase gate.
@@ -571,7 +583,7 @@ def modify_body(
     ctrl_modifiers: List[QuantumGateModifier],
     ctrl_qubits: List[Identifier],
     pow_modifiers: List[QuantumGateModifier],
-):
+) -> List[QuantumStatement]:
     """Apply modifiers information to the definition body of a quantum gate"""
     if do_invert:
         body = list(reversed(body))
@@ -590,40 +602,40 @@ OpenQASM <-> Python convenience wrappers
 
 
 @singledispatch
-def get_identifier_name(identifier: Union[Identifier, IndexedIdentifier]):
+def get_identifier_name(identifier: Union[Identifier, IndexedIdentifier]) -> str:
     """Get name of an identifier"""
     return identifier.name
 
 
 @get_identifier_name.register
-def _(identifier: IndexedIdentifier):
+def _(identifier: IndexedIdentifier) -> str:
     """Get name of an indexed identifier"""
     return identifier.name.name
 
 
 @singledispatch
-def wrap_value_into_literal(value):
+def wrap_value_into_literal(value: Any) -> LiteralType:
     """Wrap a primitive variable into an AST node"""
     raise TypeError(f"Cannot wrap {value} into literal type")
 
 
 @wrap_value_into_literal.register
-def _(value: int):
+def _(value: int) -> IntegerLiteral:
     return IntegerLiteral(value)
 
 
 @wrap_value_into_literal.register
-def _(value: float):
+def _(value: float) -> FloatLiteral:
     return FloatLiteral(value)
 
 
 @wrap_value_into_literal.register
-def _(value: bool):
+def _(value: bool) -> BooleanLiteral:
     return BooleanLiteral(value)
 
 
 @wrap_value_into_literal.register(list)
-def _(value):
+def _(value: Iterable[Any]) -> ArrayLiteral:
     return ArrayLiteral([wrap_value_into_literal(v) for v in value])
 
 

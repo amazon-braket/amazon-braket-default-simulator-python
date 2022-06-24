@@ -15,7 +15,7 @@ import warnings
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Union
 
-from braket.device_schema import DeviceCapabilities
+from braket.device_schema import DeviceActionType, DeviceCapabilities
 from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
@@ -24,6 +24,7 @@ from braket.task_result import AnnealingTaskResult, GateModelTaskResult, ResultT
 from braket.task_result.oq3_program_result_v1 import OQ3ProgramResult
 
 from braket.default_simulator.observables import Hermitian, TensorProduct
+from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.result_types import (
     ResultType,
@@ -54,7 +55,7 @@ _NOISE_INSTRUCTIONS = frozenset(
 class BaseLocalSimulator(BraketSimulator):
     @property
     @abstractmethod
-    def device_action_type(self):
+    def device_action_type(self) -> DeviceActionType:
         """DeviceActionType"""
 
     @abstractmethod
@@ -70,11 +71,18 @@ class BaseLocalSimulator(BraketSimulator):
 
     @abstractmethod
     def initialize_simulation(self, **kwargs) -> Simulation:
-        """
-        Initializes simulation with keyword arguments
-        """
+        """Initializes simulation with keyword arguments"""
 
-    def _validate_ir_results_compatibility(self, results: List[Results]):
+    def _validate_ir_results_compatibility(self, results: List[Results]) -> None:
+        """
+        Validate that requested result types are valid for the simulator.
+
+        Args:
+            results (List[Results]): Requested result types.
+
+        Raises:
+            TypeError: If any the specified result types are not supported
+        """
         if results:
             circuit_result_types_name = [result.__class__.__name__ for result in results]
             supported_result_types = self.properties.action[
@@ -91,6 +99,18 @@ class BaseLocalSimulator(BraketSimulator):
     def _validate_shots_and_ir_results(
         shots: int, results: List[Results], qubit_count: int
     ) -> None:
+        """
+        Validated that requested result types are valid for given shots and qubit count.
+
+        Args:
+            shots (int): Shots for the simulation.
+            results (List[Results]): Specified result types.
+            qubit_count (int): Number of qubits for the simulation.
+
+        Raises:
+            ValueError: If any of the requested result types are incompatible with the
+                qubit count or number of shots.
+        """
         if not shots:
             if not results:
                 raise ValueError("Result types must be specified in the IR when shots=0")
@@ -108,7 +128,17 @@ class BaseLocalSimulator(BraketSimulator):
                     )
 
     @staticmethod
-    def _validate_amplitude_states(states: List[str], qubit_count: int):
+    def _validate_amplitude_states(states: List[str], qubit_count: int) -> None:
+        """
+        Validate states in an amplitude result type are valid.
+
+        Args:
+            states (List[str]): List of binary strings representing quantum states.
+            qubit_count (int): Number of qubits for the simulation.
+
+        Raises:
+            ValueError: If any of the states is not the correct size for the number of qubits.
+        """
         for state in states:
             if len(state) != qubit_count:
                 raise ValueError(
@@ -117,14 +147,14 @@ class BaseLocalSimulator(BraketSimulator):
                 )
 
     @staticmethod
-    def _translate_result_types(results) -> List[ResultType]:
+    def _translate_result_types(results: List[Results]) -> List[ResultType]:
         return [from_braket_result_type(result) for result in results]
 
     @staticmethod
     def _generate_results(
-        results,
+        results: List[Results],
         result_types: List[ResultType],
-        simulation,
+        simulation: Simulation,
     ) -> List[ResultTypeValue]:
         return [
             ResultTypeValue.construct(
@@ -146,7 +176,7 @@ class BaseLocalSimulator(BraketSimulator):
     @staticmethod
     def _validate_result_types_qubits_exist(
         targeted_result_types: List[TargetedResultType], qubit_count: int
-    ):
+    ) -> None:
         for result_type in targeted_result_types:
             targets = result_type.targets
             if targets and max(targets) >= qubit_count:
@@ -155,7 +185,18 @@ class BaseLocalSimulator(BraketSimulator):
                     f" references invalid qubits {targets}"
                 )
 
-    def _validate_ir_instructions_compatibility(self, circuit_ir):
+    def _validate_ir_instructions_compatibility(
+        self, circuit_ir: Union[JaqcdProgram, Circuit]
+    ) -> None:
+        """
+        Validate that requested IR instructions are valid for the simulator.
+
+        Args:
+            circuit_ir (Union[JaqcdProgram, Circuit]): IR for the simulator.
+
+        Raises:
+            TypeError: If any the specified result types are not supported
+        """
         circuit_instruction_names = [
             instr.__class__.__name__.lower().replace("_", "") for instr in circuit_ir.instructions
         ]

@@ -26,7 +26,7 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 
 class BaseLocalJaqcdSimulator(BaseLocalSimulator):
     @property
-    def device_action_type(self):
+    def device_action_type(self) -> DeviceActionType:
         return DeviceActionType.JAQCD
 
     def run(
