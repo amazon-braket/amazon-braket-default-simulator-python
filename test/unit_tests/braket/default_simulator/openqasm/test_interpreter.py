@@ -1463,7 +1463,7 @@ def test_builtin_functions():
     assert context.get_value("cos_result") == FloatLiteral(np.cos(1))
     assert context.get_value("exp_result") == FloatLiteral(np.exp(2))
     assert context.get_value("floor_result") == IntegerLiteral(3)
-    assert context.get_value("log_result") == FloatLiteral(1)
+    assert context.get_value("log_result") == FloatLiteral(np.log(np.e))
     assert context.get_value("mod_int_result") == IntegerLiteral(1)
     assert context.get_value("mod_float_result") == FloatLiteral(5.2 % 2.5)
     assert context.get_value("popcount_bit_result") == IntegerLiteral(4)
