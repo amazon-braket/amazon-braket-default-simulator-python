@@ -83,14 +83,12 @@ gate zz(θ) a, b {
   cnot a, b;
 }
 gate xy(θ) a, b {
-  negctrl @ x a, b; // 01 -> 00
-  cnot a, b;        // 10 -> 11
-  cnot b, a;        // 11 -> 01
-  // apply non-trivial transform to (00, 01)
-  negctrl @ U(θ, π/2, 3*π/2) a, b;
-  cnot b, a;        // 11 -> 01
-  cnot a, b;        // 10 -> 11
-  negctrl @ x a, b; // 01 -> 00
+  h a;
+  cy a, b;
+  ry(θ/2) a;
+  rx(-θ/2) b;
+  cy a, b;
+  h a;
 }
 
 // ECR

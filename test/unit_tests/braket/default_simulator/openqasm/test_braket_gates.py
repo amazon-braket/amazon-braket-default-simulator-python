@@ -37,6 +37,9 @@ from braket.default_simulator.gate_operations import (
     Vi,
 )
 from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.simulation_strategies.single_operation_strategy import (
+    apply_operations,
+)
 
 
 @pytest.mark.parametrize(
@@ -83,16 +86,12 @@ def test_gates(gate_name, gate_class, num_qubits, params):
     qubit[{num_qubits}] q;
     {gate_name}{param_string} {qubit_string};
     """
-    print(qasm)
     circuit = Interpreter().build_circuit(qasm)
-    oq3_simulation = StateVectorSimulation(num_qubits, 1, 1)
-    oq3_simulation.evolve(circuit.instructions)
-    oq3_sv = oq3_simulation.state_vector
-
-    other_simulation = StateVectorSimulation(num_qubits, 1, 1)
-    gate_params = (range(num_qubits),) + params
-    print(gate_params)
-    other_simulation.evolve([gate_class(*gate_params)])
-    other_sv = other_simulation.state_vector
-
-    assert np.allclose(oq3_sv, other_sv)
+    # assert correctness for each basis vector
+    for i in range(2**num_qubits):
+        state = np.zeros([2] * num_qubits)
+        state[np.unravel_index(i, state.shape)] = 1
+        oq3_state = apply_operations(state, num_qubits, circuit.instructions)
+        gate_params = (range(num_qubits),) + params
+        other_state = apply_operations(state, num_qubits, [gate_class(*gate_params)])
+        assert np.allclose(oq3_state, other_state)
