@@ -143,6 +143,7 @@ def test_result_types_analytic(stdgates):
     #pragma braket result density_matrix q
     #pragma braket result density_matrix q[0]
     #pragma braket result density_matrix q[0:1]
+    #pragma braket result density_matrix q[0], q[1]
     #pragma braket result density_matrix q[{0, 2, 1}]
     #pragma braket result expectation z(q[0])
     #pragma braket result variance x(q[0]) @ z(q[2]) @ h(q[1])
@@ -166,10 +167,11 @@ def test_result_types_analytic(stdgates):
     assert result_types[8].type == DensityMatrix(targets=(0, 1, 2))
     assert result_types[9].type == DensityMatrix(targets=(0,))
     assert result_types[10].type == DensityMatrix(targets=(0, 1))
-    assert result_types[11].type == DensityMatrix(targets=(0, 2, 1))
-    assert result_types[12].type == Expectation(observable=("z",), targets=(0,))
-    assert result_types[13].type == Variance(observable=("x", "z", "h"), targets=(0, 2, 1))
-    assert result_types[14].type == Expectation(
+    assert result_types[11].type == DensityMatrix(targets=(0, 1))
+    assert result_types[12].type == DensityMatrix(targets=(0, 2, 1))
+    assert result_types[13].type == Expectation(observable=("z",), targets=(0,))
+    assert result_types[14].type == Variance(observable=("x", "z", "h"), targets=(0, 2, 1))
+    assert result_types[15].type == Expectation(
         observable=([[[0, 0], [0, -1]], [[0, 1], [0, 0]]],),
         targets=(0,),
     )
@@ -236,6 +238,10 @@ def test_result_types_analytic(stdgates):
     )
     assert np.allclose(
         result_types[11].value,
+        [[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]],
+    )
+    assert np.allclose(
+        result_types[12].value,
         [
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
@@ -247,9 +253,9 @@ def test_result_types_analytic(stdgates):
             [0, 0, 0, 0, 0, 0, 0, 0],
         ],
     )
-    assert np.allclose(result_types[12].value, 0)
-    assert np.allclose(result_types[13].value, 1)
-    assert np.allclose(result_types[14].value, 0)
+    assert np.allclose(result_types[13].value, 0)
+    assert np.allclose(result_types[14].value, 1)
+    assert np.allclose(result_types[15].value, 0)
 
 
 def test_invalid_standard_observable_target():
