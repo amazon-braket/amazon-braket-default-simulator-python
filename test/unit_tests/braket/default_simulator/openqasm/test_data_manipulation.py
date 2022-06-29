@@ -1,6 +1,7 @@
 import pytest
 from openqasm3.ast import (
     ArrayLiteral,
+    BitstringLiteral,
     BooleanLiteral,
     FloatLiteral,
     IndexExpression,
@@ -9,6 +10,7 @@ from openqasm3.ast import (
 
 from braket.default_simulator.openqasm.data_manipulation import (
     cast_to,
+    convert_string_to_bool_array,
     index_expression_to_indexed_identifier,
     wrap_value_into_literal,
 )
@@ -26,6 +28,37 @@ def test_undefined_cast():
     cannot_cast = "Cannot cast IntegerLiteral into UndefinedType."
     with pytest.raises(TypeError, match=cannot_cast):
         cast_to(UndefinedType, IntegerLiteral(1))
+
+
+@pytest.mark.parametrize(
+    "string, bool_array",
+    (
+        (
+            BitstringLiteral(0b110, 5),
+            ArrayLiteral(
+                [
+                    BooleanLiteral(False),
+                    BooleanLiteral(False),
+                    BooleanLiteral(True),
+                    BooleanLiteral(True),
+                    BooleanLiteral(False),
+                ]
+            ),
+        ),
+        (
+            BitstringLiteral(0b110, 3),
+            ArrayLiteral(
+                [
+                    BooleanLiteral(True),
+                    BooleanLiteral(True),
+                    BooleanLiteral(False),
+                ]
+            ),
+        ),
+    ),
+)
+def test_convert_string_to_bool_array(string, bool_array):
+    assert convert_string_to_bool_array(string) == bool_array
 
 
 def test_undefined_wrap():

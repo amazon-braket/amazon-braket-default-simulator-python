@@ -13,36 +13,6 @@ from braket.ir.openqasm import Program
 from braket.default_simulator.openqasm_state_vector_simulator import OpenQASMStateVectorSimulator
 
 
-def test_gphase():
-    qasm = """
-    qubit[2] qs;
-
-    int[8] two = 2;
-
-    gate x a { U(π, 0, π) a; }
-    gate cx c, a { ctrl @ x c, a; }
-    gate phase c, a {
-        gphase(π/2);
-        pow(1) @ ctrl(two) @ gphase(π) c, a;
-    }
-    gate h a { U(π/2, 0, π) a; }
-
-    inv @ U(π/2, 0, π) qs[0];
-    cx qs[0], qs[1];
-    phase qs[0], qs[1];
-
-    gphase(π);
-    inv @ gphase(π / 2);
-    negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
-
-    #pragma braket result amplitude '00', '01', '10', '11'
-    """
-    simulator = OpenQASMStateVectorSimulator()
-    result = simulator.run(Program(source=qasm))
-    sv = [result.resultTypes[0].value[state] for state in ("00", "01", "10", "11")]
-    assert np.allclose(sv, [-1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
-
-
 @pytest.fixture
 def sv_adder(pytester, stdgates):
     pytester.makefile(
@@ -97,14 +67,41 @@ def sv_adder(pytester, stdgates):
     )
 
 
-@pytest.mark.xfail(reason="result types not translated for shots simulation until bdk")
+def test_gphase():
+    qasm = """
+    qubit[2] qs;
+
+    int[8] two = 2;
+
+    gate x a { U(π, 0, π) a; }
+    gate cx c, a { ctrl @ x c, a; }
+    gate phase c, a {
+        gphase(π/2);
+        pow(1) @ ctrl(two) @ gphase(π) c, a;
+    }
+    gate h a { U(π/2, 0, π) a; }
+
+    inv @ U(π/2, 0, π) qs[0];
+    cx qs[0], qs[1];
+    phase qs[0], qs[1];
+
+    gphase(π);
+    inv @ gphase(π / 2);
+    negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
+
+    #pragma braket result amplitude '00', '01', '10', '11'
+    """
+    simulator = OpenQASMStateVectorSimulator()
+    result = simulator.run(Program(source=qasm))
+    sv = [result.resultTypes[0].value[state] for state in ("00", "01", "10", "11")]
+    assert np.allclose(sv, [-1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
+
+
 def test_adder(sv_adder):
     simulator = OpenQASMStateVectorSimulator()
     inputs = {"a_in": 7, "b_in": 3}
     result = simulator.run(Program(source="adder.qasm", inputs=inputs), shots=100)
-    expected_probs = np.zeros(2**5)
-    expected_probs[10] = 1
-    assert np.allclose(result.resultTypes[0].value, expected_probs)
+    assert result.resultTypes[0] == Probability(targets=[9, 5, 6, 7, 8])
 
 
 def test_adder_analytic(sv_adder):

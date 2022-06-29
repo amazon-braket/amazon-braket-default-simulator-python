@@ -92,6 +92,7 @@ def test_uint_declaration():
     uint[8] pos = 10;
     uint[3] pos_not_overflow = 5;
     uint[3] pos_overflow = 8;
+    uint[3] neg_overflow = -1;
     """
     pos_overflow = "Unsigned integer overflow for value 8 and size 3."
 
@@ -102,18 +103,20 @@ def test_uint_declaration():
     assert context.get_type("pos") == UintType(IntegerLiteral(8))
     assert context.get_type("pos_not_overflow") == UintType(IntegerLiteral(3))
     assert context.get_type("pos_overflow") == UintType(IntegerLiteral(3))
+    assert context.get_type("neg_overflow") == UintType(IntegerLiteral(3))
 
     assert context.get_value("uninitialized") is None
     assert context.get_value("pos") == IntegerLiteral(10)
     assert context.get_value("pos_not_overflow") == IntegerLiteral(5)
     assert context.get_value("pos_overflow") == IntegerLiteral(0)
+    assert context.get_value("neg_overflow") == IntegerLiteral(7)
 
 
 def test_float_declaration():
     qasm = """
     float[16] uninitialized;
     float[32] pos = 10;
-    float[64] neg = -4.;
+    float[64] neg = -4.2;
     float[128] precise = π;
     """
     context = Interpreter().run(qasm)
@@ -125,7 +128,7 @@ def test_float_declaration():
 
     assert context.get_value("uninitialized") is None
     assert context.get_value("pos") == FloatLiteral(10)
-    assert context.get_value("neg") == FloatLiteral(-4)
+    assert context.get_value("neg") == FloatLiteral(-4.2)
     assert context.get_value("precise") == FloatLiteral(np.pi)
 
 
@@ -668,14 +671,14 @@ def test_gate_call():
 
     U(π, 0, my_pi) q1;
     x q2;
-    x2(my_pi) qs[0];
+    x2(my_pi) qs[1];
     """
     circuit = Interpreter().build_circuit(qasm)
     expected_circuit = Circuit(
         instructions=[
             U((0,), np.pi, 0, np.pi, ()),
             U((1,), np.pi, 0, np.pi, ()),
-            U((2,), np.pi, 0, np.pi, ()),
+            U((3,), np.pi, 0, np.pi, ()),
         ]
     )
     assert circuit == expected_circuit
