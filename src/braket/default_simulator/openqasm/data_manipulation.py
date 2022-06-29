@@ -160,15 +160,6 @@ builtin_constants = {
 }
 
 
-def popcount(x: Union[ArrayLiteral, IntegerLiteral]) -> IntegerLiteral:
-    """Calculate popcount/hamming weight of a bit register or integer"""
-    width = IntegerLiteral(
-        len(x.values) if isinstance(x, ArrayLiteral) else math.ceil(np.log2(x.value))
-    )
-    x = cast_to(UintType(width), x)
-    return IntegerLiteral(np.binary_repr(x.value).count("1"))
-
-
 builtin_functions = {
     "sizeof": lambda array, dim: (
         IntegerLiteral(len(array.values))
@@ -188,7 +179,7 @@ builtin_functions = {
         if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
         else FloatLiteral(x.value % y.value)
     ),
-    "popcount": lambda x: popcount(x),
+    "popcount": lambda x: IntegerLiteral(np.binary_repr(cast_to(UintType(), x).value).count("1")),
     # parser gets confused by pow, mistaking for quantum modifier
     "pow": lambda x, y: (
         IntegerLiteral(x.value**y.value)
@@ -278,10 +269,19 @@ def _(
 @cast_to.register
 def _(into: IntType, variable: LiteralType) -> IntegerLiteral:
     """Cast to int with overflow warnings"""
-    limit = 2 ** (into.size.value - 1)
-    value = int(np.sign(variable.value) * (np.abs(int(variable.value)) % limit))
-    if value != variable.value:
-        warnings.warn(f"Integer overflow for value {variable.value} and size {into.size.value}.")
+    if isinstance(variable, ArrayLiteral):
+        value = int("".join("01"[x.value] for x in variable.values[1:]), base=2)
+        if variable.values[0].value:
+            value *= -1
+    else:
+        value = variable.value
+        if into.size is not None:
+            limit = 2 ** (into.size.value - 1)
+            value = int(np.sign(value) * (np.abs(int(value)) % limit))
+            if value != variable.value:
+                warnings.warn(
+                    f"Integer overflow for value {variable.value} and size {into.size.value}."
+                )
     return IntegerLiteral(value)
 
 
@@ -290,12 +290,14 @@ def _(into: UintType, variable: LiteralType) -> IntegerLiteral:
     """Cast to uint with overflow warnings. Bit registers can be cast to uint."""
     if isinstance(variable, ArrayLiteral):
         return IntegerLiteral(int("".join("01"[x.value] for x in variable.values), base=2))
-    limit = 2**into.size.value
-    value = int(variable.value) % limit
-    if value != variable.value:
-        warnings.warn(
-            f"Unsigned integer overflow for value {variable.value} and size {into.size.value}."
-        )
+    value = variable.value
+    if into.size is not None:
+        limit = 2**into.size.value
+        value = int(value) % limit
+        if value != variable.value:
+            warnings.warn(
+                f"Unsigned integer overflow for value {variable.value} and size {into.size.value}."
+            )
     return IntegerLiteral(value)
 
 
@@ -388,9 +390,16 @@ def convert_discrete_set_to_list(discrete_set: DiscreteSet) -> list:
     return [x.value for x in discrete_set.values]
 
 
+def get_type_width(var_type: ClassicalType):
+    if isinstance(var_type, ArrayType):
+        return var_type.base_type.size
+    elif isinstance(var_type, (IntType, UintType, FloatLiteral, BitType)):
+        return var_type.size
+
+
 @singledispatch
 def get_elements(
-    value: ArrayLiteral, index: IndexElement, type_width: Optional[int] = None
+    value: ArrayLiteral, index: IndexElement, type_width: Optional[IntegerLiteral] = None
 ) -> ArrayLiteral:
     """Get elements of an Array, given an index."""
     if isinstance(index, DiscreteSet):
@@ -410,10 +419,12 @@ def get_elements(
 
 
 @get_elements.register
-def _(value: IntegerLiteral, index: IndexElement, type_width: int) -> ArrayLiteral:
+def _(value: IntegerLiteral, index: IndexElement, type_width: IntegerLiteral) -> ArrayLiteral:
     """Get elements of an integer's boolean representation, given an index"""
+    if type_width is None:
+        raise TypeError("Cannot perform bit operations on an unsized integer")
     binary_rep = ArrayLiteral(
-        [BooleanLiteral(x == "1") for x in np.binary_repr(value.value, type_width)]
+        [BooleanLiteral(x == "1") for x in np.binary_repr(value.value, type_width.value)]
     )
     return get_elements(binary_rep, index)
 
@@ -469,14 +480,15 @@ def unwrap_var_type(var_type: ClassicalType) -> ClassicalType:
         return BoolType()
 
 
+@singledispatch
 def update_value(
-    current_value: ArrayLiteral,
+    current_value: Union[ArrayLiteral, BitstringLiteral],
     value: LiteralType,
     update_indices: List[IndexElement],
-    var_type: ClassicalType,
-) -> None:
+    var_type: Union[ClassicalType, Type[LiteralType]],
+) -> LiteralType:
     """Update an Array, for example: a[4, 1:] = {1, 2, 3}"""
-    # current value will be an ArrayLiteral or StringLiteral
+    # current value will be an ArrayLiteral or BitstringLiteral
     if isinstance(current_value, ArrayLiteral):
         first_ix = convert_index(update_indices[0])
 
@@ -505,6 +517,31 @@ def update_value(
         return current_value
     else:
         return cast_to(var_type, value)
+
+
+@update_value.register
+def _(
+    current_value: IntegerLiteral,
+    value: LiteralType,
+    update_indices: List[IndexElement],
+    var_type: Union[IntType, UintType],
+):
+    # called recursively, replacing the whole integer
+    if not update_indices:
+        return value
+    if var_type.size is None:
+        raise TypeError("Cannot perform bit operations on an unsized integer")
+    if isinstance(var_type, UintType):
+        bool_array = convert_string_to_bool_array(
+            BitstringLiteral(current_value.value, var_type.size.value)
+        )
+    else:  # IntType
+        sign_bit = BooleanLiteral(current_value.value < 0)
+        magnitude_bits = convert_string_to_bool_array(
+            BitstringLiteral(np.abs(current_value.value), var_type.size.value - 1)
+        )
+        bool_array = ArrayLiteral([sign_bit, *magnitude_bits.values])
+    return cast_to(var_type, update_value(bool_array, value, update_indices, var_type))
 
 
 """

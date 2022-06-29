@@ -60,6 +60,7 @@ def test_int_declaration():
     int[5] neg = -4;
     int[3] pos_overflow = 5;
     int[3] neg_overflow = -6;
+    int no_size = 1e9;
     """
     pos_overflow = "Integer overflow for value 5 and size 3."
     neg_overflow = "Integer overflow for value -6 and size 3."
@@ -72,12 +73,14 @@ def test_int_declaration():
     assert context.get_type("neg") == IntType(IntegerLiteral(5))
     assert context.get_type("pos_overflow") == IntType(IntegerLiteral(3))
     assert context.get_type("neg_overflow") == IntType(IntegerLiteral(3))
+    assert context.get_type("no_size") == IntType(None)
 
     assert context.get_value("uninitialized") is None
     assert context.get_value("pos") == IntegerLiteral(10)
     assert context.get_value("neg") == IntegerLiteral(-4)
     assert context.get_value("pos_overflow") == IntegerLiteral(1)
     assert context.get_value("neg_overflow") == IntegerLiteral(-2)
+    assert context.get_value("no_size") == IntegerLiteral(1_000_000_000)
 
     warnings = {(warn.category, warn.message.args[0]) for warn in warn_info}
     assert warnings == {
@@ -93,6 +96,7 @@ def test_uint_declaration():
     uint[3] pos_not_overflow = 5;
     uint[3] pos_overflow = 8;
     uint[3] neg_overflow = -1;
+    uint no_size = 1e9;
     """
     pos_overflow = "Unsigned integer overflow for value 8 and size 3."
 
@@ -104,12 +108,14 @@ def test_uint_declaration():
     assert context.get_type("pos_not_overflow") == UintType(IntegerLiteral(3))
     assert context.get_type("pos_overflow") == UintType(IntegerLiteral(3))
     assert context.get_type("neg_overflow") == UintType(IntegerLiteral(3))
+    assert context.get_type("no_size") == UintType(None)
 
     assert context.get_value("uninitialized") is None
     assert context.get_value("pos") == IntegerLiteral(10)
     assert context.get_value("pos_not_overflow") == IntegerLiteral(5)
     assert context.get_value("pos_overflow") == IntegerLiteral(0)
     assert context.get_value("neg_overflow") == IntegerLiteral(7)
+    assert context.get_value("no_size") == IntegerLiteral(1_000_000_000)
 
 
 def test_float_declaration():
@@ -476,6 +482,9 @@ def test_indexed_identifier():
     array[bit[2], 2] two_elevens = {"11", "11"};
     multi_dim_bit[:, 0, 1:2:3] = two_elevens;
     multi_dim_bit[0][1][0] = true;
+    
+    array[uint[4], 2, 2] range_4 = {{1, 2}, {3, 4}};
+    bit[4] two = range_4[0, 1, :];
     """
     context = Interpreter().run(qasm)
     assert context.get_value("one") == IntegerLiteral(1)
@@ -550,6 +559,44 @@ def test_indexed_identifier():
             ArrayLiteral([None, None]),
         ]
     )
+    assert context.get_value("two") == ArrayLiteral(
+        [BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(True), BooleanLiteral(False)]
+    )
+
+
+def test_get_bits_unsized_int():
+    qasm = """
+    int x = 2;
+    bit from_x = x[0];
+    """
+    no_bit_ops = "Cannot perform bit operations on an unsized integer"
+    with pytest.raises(TypeError, match=no_bit_ops):
+        Interpreter().run(qasm)
+
+
+def test_update_bits_int():
+    qasm = """
+    int[4] x = 2;
+    x[3] = 1;
+    int[4] y = 2;
+    y[0] = 1;
+    uint[4] z = 2;
+    z[0] = 1;
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("x") == IntegerLiteral(3)
+    assert context.get_value("y") == IntegerLiteral(-2)
+    assert context.get_value("z") == IntegerLiteral(10)
+
+
+def test_update_bits_int_unsized():
+    qasm = """
+    int x = 2;
+    x[3] = 1;
+    """
+    no_bit_ops = "Cannot perform bit operations on an unsized integer"
+    with pytest.raises(TypeError, match=no_bit_ops):
+        Interpreter().run(qasm)
 
 
 def test_gate_def():

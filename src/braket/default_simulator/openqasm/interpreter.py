@@ -70,6 +70,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     get_identifier_name,
     get_operator_of_assignment_operator,
     get_pow_modifiers,
+    get_type_width,
     index_expression_to_indexed_identifier,
     invert_phase,
     is_controlled,
@@ -266,11 +267,8 @@ class Interpreter:
             # indexed QuantumArgument
             if isinstance(self.context.get_type(node.collection.name), type(Identifier)):
                 return IndexedIdentifier(node.collection, [index])
-            if not isinstance(
-                self.context.get_type(node.collection.name),
-                (ArrayType, ArrayReferenceType, BitType),
-            ):
-                type_width = self.context.get_type(node.collection.name).size.value
+            var_type = self.context.get_type(get_identifier_name(node.collection))
+            type_width = get_type_width(var_type)
         collection = self.visit(node.collection)
         return get_elements(collection, index, type_width)
 

@@ -3,6 +3,7 @@ from typing import Any, Dict, Hashable, Iterable, List, Optional, Tuple, Type, U
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 from openqasm3.ast import (
+    ArrayType,
     ClassicalType,
     FloatLiteral,
     GateModifierName,
@@ -10,10 +11,12 @@ from openqasm3.ast import (
     IndexedIdentifier,
     IndexElement,
     IntegerLiteral,
+    IntType,
     QuantumGateDefinition,
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
+    UintType,
 )
 
 from braket.default_simulator.gate_operations import GPhase, U, Unitary
@@ -26,6 +29,7 @@ from braket.default_simulator.openqasm.data_manipulation import (
     flatten_indices,
     get_elements,
     get_identifier_name,
+    get_type_width,
     is_none_like,
     singledispatchmethod,
     update_value,
@@ -272,14 +276,18 @@ class VariableTable(ScopedTable):
         return self[name]
 
     @singledispatchmethod
-    def get_value_by_identifier(self, identifier: Identifier) -> LiteralType:
+    def get_value_by_identifier(
+        self, identifier: Identifier, type_width: Optional[IntegerLiteral] = None
+    ) -> LiteralType:
         """
         Convenience method to get value with a possibly indexed identifier.
         """
         return self[identifier.name]
 
     @get_value_by_identifier.register
-    def _(self, identifier: IndexedIdentifier) -> LiteralType:
+    def _(
+        self, identifier: IndexedIdentifier, type_width: Optional[IntegerLiteral] = None
+    ) -> LiteralType:
         """
         When identifier is an IndexedIdentifier, function returns an ArrayLiteral
         corresponding to the elements referenced by the indexed identifier.
@@ -287,7 +295,7 @@ class VariableTable(ScopedTable):
         name = identifier.name.name
         value = self[name]
         indices = flatten_indices(identifier.indices)
-        return get_elements(value, indices)
+        return get_elements(value, indices, type_width)
 
     def update_value(
         self,
@@ -454,7 +462,10 @@ class ProgramContext:
         self, identifier: Union[Identifier, IndexedIdentifier]
     ) -> LiteralType:
         """Get value of a variable by identifier"""
-        return self.variable_table.get_value_by_identifier(identifier)
+        # find type width for the purpose of bitwise operations
+        var_type = self.get_type(get_identifier_name(identifier))
+        type_width = get_type_width(var_type)
+        return self.variable_table.get_value_by_identifier(identifier, type_width)
 
     def is_initialized(self, name: str) -> bool:
         """Check whether variable is initialized by name"""

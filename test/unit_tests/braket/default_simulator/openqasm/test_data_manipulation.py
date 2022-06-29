@@ -11,6 +11,7 @@ from openqasm3.ast import (
 from braket.default_simulator.openqasm.data_manipulation import (
     cast_to,
     convert_string_to_bool_array,
+    get_type_width,
     index_expression_to_indexed_identifier,
     wrap_value_into_literal,
 )
