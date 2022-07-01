@@ -66,12 +66,6 @@ class StateVectorSimulation(Simulation):
         self._post_observables = None
 
     def evolve(self, operations: List[GateOperation]) -> None:
-        """
-        Evolve simulation by applying the provided operations.
-
-        Args:
-            operations (List[GateOperation]): Operations to apply.
-        """
         self._state_vector = StateVectorSimulation._apply_operations(
             self._state_vector, self._qubit_count, operations, self._batch_size
         )
@@ -137,28 +131,16 @@ class StateVectorSimulation(Simulation):
     @property
     def state_with_observables(self) -> np.ndarray:
         """
-        State vector with observables applied.
+        np.ndarray: The state vector diagonalized in the basis of the measured observables.
 
         Raises:
             RuntimeError: If observables have not been applied
-
-        Returns:
-            np.ndarray: The state vector diagonalized in the basis of the measured observables.
         """
         if self._post_observables is None:
             raise RuntimeError("No observables applied")
         return self._post_observables
 
     def expectation(self, observable: Observable) -> float:
-        """
-        Expectation of a given observable.
-
-        Args:
-            observable (Observable): A provided observable.
-
-        Returns:
-            float: Expectation of observable.
-        """
         qubit_count = self._qubit_count
         with_observables = observable.apply(np.reshape(self._state_vector, [2] * qubit_count))
         return complex(

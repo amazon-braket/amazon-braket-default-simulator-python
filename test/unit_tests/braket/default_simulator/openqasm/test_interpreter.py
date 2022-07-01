@@ -21,9 +21,11 @@ from openqasm3.ast import (
 
 from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.gate_operations import U
-from braket.default_simulator.openqasm import data_manipulation
 from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm.data_manipulation import convert_bool_array_to_string
+from braket.default_simulator.openqasm._helpers.casting import (
+    convert_bool_array_to_string,
+    convert_string_to_bool_array,
+)
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.program_context import QubitTable
 
@@ -197,7 +199,7 @@ def test_assign_variable():
     assert context.get_type("copy_uint") == UintType(IntegerLiteral(5))
     assert context.get_type("copy_float") == FloatType(IntegerLiteral(16))
 
-    assert context.get_value("copy_bit") == data_manipulation.convert_string_to_bool_array(
+    assert context.get_value("copy_bit") == convert_string_to_bool_array(
         BitstringLiteral(0b_10001000, 8)
     )
     assert context.get_value("copy_int") == IntegerLiteral(100)
@@ -380,22 +382,18 @@ def test_indexed_expression():
     assert context.get_type("neg_fifteen_b") == BitType(IntegerLiteral(5))
     assert context.get_type("neg_one_b") == BitType(IntegerLiteral(5))
     assert context.get_type("bit_slice") == BitType(IntegerLiteral(3))
-    assert context.get_value("fifteen_b") == data_manipulation.convert_string_to_bool_array(
+    assert context.get_value("fifteen_b") == convert_string_to_bool_array(
         BitstringLiteral(0b_1111, 4)
     )
-    assert context.get_value("one_b") == data_manipulation.convert_string_to_bool_array(
-        BitstringLiteral(0b_0001, 4)
-    )
-    assert context.get_value("trunc_b") == data_manipulation.convert_string_to_bool_array(
-        BitstringLiteral(0b_000, 3)
-    )
-    assert context.get_value("neg_fifteen_b") == data_manipulation.convert_string_to_bool_array(
+    assert context.get_value("one_b") == convert_string_to_bool_array(BitstringLiteral(0b_0001, 4))
+    assert context.get_value("trunc_b") == convert_string_to_bool_array(BitstringLiteral(0b_000, 3))
+    assert context.get_value("neg_fifteen_b") == convert_string_to_bool_array(
         BitstringLiteral(0b_10001, 5)
     )
-    assert context.get_value("neg_one_b") == data_manipulation.convert_string_to_bool_array(
+    assert context.get_value("neg_one_b") == convert_string_to_bool_array(
         BitstringLiteral(0b_11111, 5)
     )
-    assert context.get_value("bit_slice") == data_manipulation.convert_string_to_bool_array(
+    assert context.get_value("bit_slice") == convert_string_to_bool_array(
         BitstringLiteral(0b_101, 3)
     )
     assert context.get_value("one_three") == ArrayLiteral(
@@ -416,7 +414,7 @@ def test_reset_qubit():
 def test_for_loop():
     qasm = """
     int[8] x = 0;
-    int[8] y = 0;
+    int[8] y = -100;
     int[8] ten = 10;
 
     for uint[8] i in [0:2:ten - 3] {
@@ -430,7 +428,7 @@ def test_for_loop():
     context = Interpreter().run(qasm)
 
     assert context.get_value("x") == IntegerLiteral(sum((0, 2, 4, 6)))
-    assert context.get_value("y") == IntegerLiteral(sum((2, 4, 6)))
+    assert context.get_value("y") == IntegerLiteral(sum((-100, 2, 4, 6)))
 
 
 def test_while_loop():
@@ -939,7 +937,7 @@ def test_pow():
     assert np.allclose(simulation.state_vector, np.array([0] * 31 + [1]))
 
 
-def test_measurement():
+def test_measurement_noop_does_not_raise_exceptions():
     qasm = """
     qubit q;
     measure q;

@@ -54,33 +54,38 @@ from openqasm3.ast import (
     WhileLoop,
 )
 
-from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm.data_manipulation import (
+from ._helpers.arrays import (
+    convert_range_def_to_range,
+    create_empty_array,
+    get_elements,
+    get_type_width,
+)
+from ._helpers.casting import (
     LiteralType,
+    cast_to,
+    get_identifier_name,
+    is_literal,
+    wrap_value_into_literal,
+)
+from ._helpers.functions import (
     builtin_constants,
     builtin_functions,
-    cast_to,
-    convert_range_def_to_range,
-    convert_to_gate,
-    create_empty_array,
     evaluate_binary_expression,
     evaluate_unary_expression,
-    get_ctrl_modifiers,
-    get_elements,
-    get_identifier_name,
     get_operator_of_assignment_operator,
+)
+from ._helpers.quantum import (
+    convert_phase_to_gate,
+    get_ctrl_modifiers,
     get_pow_modifiers,
-    get_type_width,
-    index_expression_to_indexed_identifier,
     invert_phase,
     is_controlled,
     is_inverted,
-    is_literal,
     modify_body,
-    singledispatchmethod,
-    wrap_value_into_literal,
 )
-from braket.default_simulator.openqasm.program_context import ProgramContext
+from ._helpers.utils import singledispatchmethod
+from .circuit import Circuit
+from .program_context import ProgramContext
 
 
 class Interpreter:
@@ -294,7 +299,7 @@ class Interpreter:
                 if is_inverted(statement):
                     statement = invert_phase(statement)
                 if is_controlled(statement):
-                    statement = convert_to_gate(statement)
+                    statement = convert_phase_to_gate(statement)
                 # statement is a quantum phase instruction
                 else:
                     inlined_body.append(statement)
@@ -427,7 +432,7 @@ class Interpreter:
         if is_inverted(node):
             node = invert_phase(node)
         if is_controlled(node):
-            node = convert_to_gate(node)
+            node = convert_phase_to_gate(node)
             self.visit(node)
         else:
             self.handle_phase(node.argument)
@@ -568,7 +573,9 @@ class Interpreter:
                 if isinstance(arg_defined, ClassicalArgument):
                     if isinstance(arg_defined.type, ArrayReferenceType):
                         if isinstance(arg_passed, IndexExpression):
-                            identifier = index_expression_to_indexed_identifier(arg_passed)
+                            identifier = IndexedIdentifier(
+                                arg_passed.collection, [arg_passed.index]
+                            )
                             identifier.indices = self.visit(identifier.indices)
                         else:
                             identifier = arg_passed

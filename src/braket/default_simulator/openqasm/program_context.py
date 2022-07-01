@@ -1,9 +1,8 @@
-from typing import Any, Dict, Hashable, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 from openqasm3.ast import (
-    ArrayType,
     ClassicalType,
     FloatLiteral,
     GateModifierName,
@@ -11,29 +10,26 @@ from openqasm3.ast import (
     IndexedIdentifier,
     IndexElement,
     IntegerLiteral,
-    IntType,
     QuantumGateDefinition,
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
-    UintType,
 )
 
 from braket.default_simulator.gate_operations import GPhase, U, Unitary
-from braket.default_simulator.openqasm.braket_pragmas import parse_braket_pragma
-from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm.data_manipulation import (
-    LiteralType,
+
+from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
     flatten_indices,
     get_elements,
-    get_identifier_name,
     get_type_width,
-    is_none_like,
-    singledispatchmethod,
     update_value,
 )
+from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
+from ._helpers.utils import singledispatchmethod
+from .braket_pragmas import parse_braket_pragma
+from .circuit import Circuit
 
 
 class Table:
