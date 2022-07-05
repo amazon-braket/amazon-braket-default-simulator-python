@@ -45,7 +45,7 @@ def multiply_matrix(state: np.ndarray, matrix: np.ndarray, targets: Tuple[int, .
 
 def marginal_probability(
     probabilities: np.ndarray,
-    targets: List[int] = None,
+    targets: Sequence[int] = None,
 ) -> np.ndarray:
     """Return the marginal probability of the computational basis states.
 
@@ -63,7 +63,7 @@ def marginal_probability(
     """
     qubit_count = int(np.log2(len(probabilities)))
 
-    if targets is None or targets == list(range(qubit_count)):
+    if targets is None or np.array_equal(targets, range(qubit_count)):
         # All qubits targeted, no need to marginalize
         return probabilities
 
@@ -118,4 +118,27 @@ def _get_target_permutation(targets: Sequence[int]) -> Sequence[int]:
     basis_states = np.array(list(itertools.product([0, 1], repeat=len(targets))))
     return np.ravel_multi_index(
         basis_states[:, np.argsort(np.argsort(targets))].T, [2] * len(targets)
+    )
+
+
+def controlled_unitary(unitary: np.ndarray, negctrl: bool = False) -> np.ndarray:
+    """
+    Transform unitary matrix into a controlled unitary matrix.
+
+    Args:
+        unitary (np.ndarray): Unitary matrix operation.
+        negctrl (bool): Whether to control the operation on the |0⟩ state,
+            instead of the |1⟩ state.
+
+    Returns:
+        np.ndarray: A controlled version of the provided unitary matrix.
+    """
+    upper_left, bottom_right = np.eye(unitary.shape[0]), unitary
+    if negctrl:
+        upper_left, bottom_right = bottom_right, upper_left
+    return np.block(
+        [
+            [upper_left, np.zeros_like(unitary)],
+            [np.zeros_like(unitary), bottom_right],
+        ]
     )

@@ -19,10 +19,10 @@ from braket.device_schema.simulators import (
 )
 
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
-from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
 
 
-class DensityMatrixSimulator(BaseLocalSimulator):
+class DensityMatrixSimulator(BaseLocalJaqcdSimulator):
     DEVICE_ID = "braket_dm"
 
     def initialize_simulation(self, **kwargs) -> DensityMatrixSimulation:

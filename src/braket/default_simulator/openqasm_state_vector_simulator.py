@@ -18,19 +18,19 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceParameters,
 )
 
-from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
+from braket.default_simulator.openqasm_simulator import BaseLocalOQ3Simulator
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class StateVectorSimulator(BaseLocalJaqcdSimulator):
-    DEVICE_ID = "braket_sv"
+class OpenQASMStateVectorSimulator(BaseLocalOQ3Simulator):
+    DEVICE_ID = "braket_oq3_sv"
 
     def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
         """
         Initialize state vector simulation.
 
-        Kwargs:
-            qubit_count (int), shots (int), batch_size (int)
+        Args:
+            **kwargs: qubit_count, shots, batch_size
 
         Returns:
             StateVectorSimulation: Initialized simulation.
@@ -43,7 +43,7 @@ class StateVectorSimulator(BaseLocalJaqcdSimulator):
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
         """
-        Device properties for the StateVectorSimulator.
+        Device properties for the OpenQASMStateVectorSimulator.
 
         Returns:
             GateModelSimulatorDeviceCapabilities: Device capabilities for this simulator.
@@ -64,44 +64,11 @@ class StateVectorSimulator(BaseLocalJaqcdSimulator):
                     "shotsRange": [0, max_shots],
                 },
                 "action": {
-                    "braket.ir.jaqcd.program": {
-                        "actionType": "braket.ir.jaqcd.program",
+                    "braket.ir.openqasm.program": {
+                        "actionType": "braket.ir.openqasm.program",
                         "version": ["1"],
                         "supportedOperations": [
-                            "ccnot",
-                            "cnot",
-                            "cphaseshift",
-                            "cphaseshift00",
-                            "cphaseshift01",
-                            "cphaseshift10",
-                            "cswap",
-                            "cv",
-                            "cy",
-                            "cz",
-                            "ecr",
-                            "h",
-                            "i",
-                            "iswap",
-                            "pswap",
-                            "phaseshift",
-                            "rx",
-                            "ry",
-                            "rz",
-                            "s",
-                            "si",
-                            "swap",
-                            "t",
-                            "ti",
-                            "unitary",
-                            "v",
-                            "vi",
-                            "x",
-                            "xx",
-                            "xy",
-                            "y",
-                            "yy",
-                            "z",
-                            "zz",
+                            "U",
                         ],
                         "supportedResultTypes": [
                             {
@@ -133,6 +100,3 @@ class StateVectorSimulator(BaseLocalJaqcdSimulator):
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
             }
         )
-
-
-DefaultSimulator = StateVectorSimulator

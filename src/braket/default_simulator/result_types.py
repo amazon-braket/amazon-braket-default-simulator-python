@@ -203,7 +203,7 @@ class DensityMatrix(TargetedResultType):
         Returns:
             np.ndarray: The density matrix (before observables) of the simulation
         """
-        if self._targets is None or len(self._targets) == simulation.qubit_count:
+        if self._targets is None or np.array_equal(self._targets, range(simulation.qubit_count)):
             return simulation.density_matrix
         else:
             if not all(ta in list(range(simulation.qubit_count)) for ta in self._targets):

@@ -15,9 +15,8 @@ import numpy as np
 import pytest
 
 from braket.default_simulator import observables
+from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
 from braket.default_simulator.result_types import DensityMatrix, Expectation, Probability, Variance
-from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.simulator import BraketSimulator
 
 
 @pytest.mark.parametrize(
@@ -37,7 +36,7 @@ from braket.simulator import BraketSimulator
     ],
 )
 def test_validate_result_types_qubits_exist(result_type):
-    BaseLocalSimulator._validate_result_types_qubits_exist([result_type], 2)
+    BaseLocalJaqcdSimulator._validate_result_types_qubits_exist([result_type], 2)
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -45,7 +44,7 @@ def test_validate_result_types_qubits_exist(result_type):
     "result_type", [Expectation(observables.PauliX([1])), DensityMatrix([1]), Probability([1])]
 )
 def test_validate_result_types_qubits_exist_error(result_type):
-    BaseLocalSimulator._validate_result_types_qubits_exist([result_type], 1)
+    BaseLocalJaqcdSimulator._validate_result_types_qubits_exist([result_type], 1)
 
 
 def test_observable_hash_tensor_product():
@@ -53,20 +52,15 @@ def test_observable_hash_tensor_product():
     obs = observables.TensorProduct(
         [observables.PauliX([0]), observables.Hermitian(matrix, [1, 2]), observables.PauliY([1])]
     )
-    hash_dict = BaseLocalSimulator._observable_hash(obs)
+    hash_dict = BaseLocalJaqcdSimulator._observable_hash(obs)
     matrix_hash = hash_dict[1]
     assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
 
 
-def test_base_local_simulator_instance_braket_simulator():
-    assert isinstance(BaseLocalSimulator(), BraketSimulator)
-
-
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_base_local_simulator_properties():
-    BaseLocalSimulator().properties
-
-
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_base_local_simulator_initialize_simulation():
-    BaseLocalSimulator().initialize_simulation()
+def test_base_local_simulator_abstract():
+    abstract_methods = (
+        "Can't instantiate abstract class BaseLocalJaqcdSimulator with "
+        "abstract methods initialize_simulation, properties"
+    )
+    with pytest.raises(TypeError, match=abstract_methods):
+        BaseLocalJaqcdSimulator()
