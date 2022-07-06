@@ -2,7 +2,8 @@ from functools import singledispatch
 from typing import List, Optional, Type, Union
 
 import numpy as np
-from openqasm3.ast import (
+
+from ..parser.openqasm_ast import (
     ArrayLiteral,
     ArrayReferenceType,
     ArrayType,
@@ -14,16 +15,12 @@ from openqasm3.ast import (
     DiscreteSet,
     Expression,
     FloatLiteral,
-    Identifier,
-    IndexedIdentifier,
     IndexElement,
-    IndexExpression,
     IntegerLiteral,
     IntType,
     RangeDefinition,
     UintType,
 )
-
 from .casting import LiteralType, cast_to, convert_string_to_bool_array
 
 

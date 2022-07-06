@@ -6,8 +6,39 @@ from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
 from braket.ir.openqasm.program_v1 import io_type
-from openqasm3 import parse
-from openqasm3.ast import (
+
+from ._helpers.arrays import (
+    convert_range_def_to_range,
+    create_empty_array,
+    get_elements,
+    get_type_width,
+)
+from ._helpers.casting import (
+    LiteralType,
+    cast_to,
+    get_identifier_name,
+    is_literal,
+    wrap_value_into_literal,
+)
+from ._helpers.functions import (
+    builtin_constants,
+    builtin_functions,
+    evaluate_binary_expression,
+    evaluate_unary_expression,
+    get_operator_of_assignment_operator,
+)
+from ._helpers.quantum import (
+    convert_phase_to_gate,
+    get_ctrl_modifiers,
+    get_pow_modifiers,
+    invert_phase,
+    is_controlled,
+    is_inverted,
+    modify_body,
+)
+from ._helpers.utils import singledispatchmethod
+from .circuit import Circuit
+from .parser.openqasm_ast import (
     AccessControl,
     ArrayLiteral,
     ArrayReferenceType,
@@ -53,38 +84,7 @@ from openqasm3.ast import (
     UnaryExpression,
     WhileLoop,
 )
-
-from ._helpers.arrays import (
-    convert_range_def_to_range,
-    create_empty_array,
-    get_elements,
-    get_type_width,
-)
-from ._helpers.casting import (
-    LiteralType,
-    cast_to,
-    get_identifier_name,
-    is_literal,
-    wrap_value_into_literal,
-)
-from ._helpers.functions import (
-    builtin_constants,
-    builtin_functions,
-    evaluate_binary_expression,
-    evaluate_unary_expression,
-    get_operator_of_assignment_operator,
-)
-from ._helpers.quantum import (
-    convert_phase_to_gate,
-    get_ctrl_modifiers,
-    get_pow_modifiers,
-    invert_phase,
-    is_controlled,
-    is_inverted,
-    modify_body,
-)
-from ._helpers.utils import singledispatchmethod
-from .circuit import Circuit
+from .parser.openqasm_parser import parse
 from .program_context import ProgramContext
 
 

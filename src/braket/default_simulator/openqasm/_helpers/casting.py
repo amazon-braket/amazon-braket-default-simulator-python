@@ -4,7 +4,8 @@ from functools import singledispatch
 from typing import Any, Iterable, Type, Union
 
 import numpy as np
-from openqasm3.ast import (
+
+from ..parser.openqasm_ast import (
     ArrayLiteral,
     ArrayType,
     BitstringLiteral,

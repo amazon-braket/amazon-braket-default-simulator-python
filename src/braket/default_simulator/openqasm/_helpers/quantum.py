@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from openqasm3.ast import (
+from ..parser.openqasm_ast import (
     FloatLiteral,
     GateModifierName,
     Identifier,

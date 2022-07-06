@@ -1,8 +1,12 @@
 // This is a grammar for Braket result types. It will be replaced when the parser
 // is updated. Feel free to skim during review.
-grammar BraketPragmas;
+parser grammar braketPragmasParser;
 
-import qasm3;
+options {
+    tokenVocab = braketPragmasLexer;
+}
+
+import qasm3Parser;
 
 braketPragma
     : braketResultPragma
@@ -96,27 +100,6 @@ standardObservableName
     ;
 
 complexNumber
-    : neg=MINUS? value=(RealNumber | Integer | ImagNumber)                      # complexOneValue
-    | neg=MINUS? real=(RealNumber | Integer) sign=(PLUS|MINUS) imag=ImagNumber  # complexTwoValues
+    : neg=MINUS? value=(DecimalIntegerLiteral | FloatLiteral | ImaginaryLiteral)                        # complexOneValue
+    | neg=MINUS? real=(DecimalIntegerLiteral | FloatLiteral) sign=(PLUS|MINUS) imag=ImaginaryLiteral    # complexTwoValues
     ;
-
-BRAKET: 'braket';
-UNITARY: 'unitary';
-RESULT: 'result';
-
-STATE_VECTOR: 'state_vector';
-PROBABILITY: 'probability';
-DENSITY_MATRIX: 'density_matrix';
-AMPLITUDE: 'amplitude';
-EXPECTATION: 'expectation';
-VARIANCE: 'variance';
-SAMPLE: 'sample';
-
-X: 'x';
-Y: 'y';
-Z: 'z';
-I: 'i';
-H: 'h';
-HERMITIAN: 'hermitian';
-
-AT: '@';

@@ -1,16 +1,16 @@
 import pytest
-from openqasm3.ast import (
-    ArrayLiteral,
-    BitstringLiteral,
-    BooleanLiteral,
-    FloatLiteral,
-    IntegerLiteral,
-)
 
 from braket.default_simulator.openqasm._helpers.casting import (
     cast_to,
     convert_string_to_bool_array,
     wrap_value_into_literal,
+)
+from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    ArrayLiteral,
+    BitstringLiteral,
+    BooleanLiteral,
+    FloatLiteral,
+    IntegerLiteral,
 )
 
 

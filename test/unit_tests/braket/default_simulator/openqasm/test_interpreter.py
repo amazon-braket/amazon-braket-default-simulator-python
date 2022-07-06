@@ -2,7 +2,16 @@ import re
 
 import numpy as np
 import pytest
-from openqasm3.ast import (
+
+from braket.default_simulator import StateVectorSimulation
+from braket.default_simulator.gate_operations import U
+from braket.default_simulator.openqasm._helpers.casting import (
+    convert_bool_array_to_string,
+    convert_string_to_bool_array,
+)
+from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.parser.openqasm_ast import (
     ArrayLiteral,
     ArrayType,
     BitstringLiteral,
@@ -18,15 +27,6 @@ from openqasm3.ast import (
     QuantumGateDefinition,
     UintType,
 )
-
-from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.gate_operations import U
-from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm._helpers.casting import (
-    convert_bool_array_to_string,
-    convert_string_to_bool_array,
-)
-from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.program_context import QubitTable
 
 
