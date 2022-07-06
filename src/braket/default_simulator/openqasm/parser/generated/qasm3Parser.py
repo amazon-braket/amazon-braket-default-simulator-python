@@ -1,14 +1,12 @@
 # Generated from qasm3Parser.g4 by ANTLR 4.9
 # encoding: utf-8
-import sys
-from io import StringIO
-
 from antlr4 import *
-
+from io import StringIO
+import sys
 if sys.version_info[1] > 5:
-    from typing import TextIO
+	from typing import TextIO
 else:
-    from typing.io import TextIO
+	from typing.io import TextIO
 
 
 def serializedATN():
@@ -19,8 +17,8 @@ def serializedATN():
         buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
         buf.write("\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31")
         buf.write("\t\31\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36")
-        buf.write('\4\37\t\37\4 \t \4!\t!\4"\t"\4#\t#\4$\t$\4%\t%\4&\t')
-        buf.write("&\4'\t'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
+        buf.write("\4\37\t\37\4 \t \4!\t!\4\"\t\"\4#\t#\4$\t$\4%\t%\4&\t")
+        buf.write("&\4\'\t\'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
         buf.write("/\t/\4\60\t\60\4\61\t\61\4\62\t\62\4\63\t\63\4\64\t\64")
         buf.write("\4\65\t\65\4\66\t\66\4\67\t\67\48\t8\49\t9\4:\t:\4;\t")
         buf.write(";\4<\t<\4=\t=\3\2\5\2|\n\2\3\2\7\2\177\n\2\f\2\16\2\u0082")
@@ -52,14 +50,14 @@ def serializedATN():
         buf.write("\36\3\36\3\37\3\37\3\37\3\37\5\37\u017d\n\37\3\37\3\37")
         buf.write("\5\37\u0181\n\37\3\37\3\37\3 \3 \3 \3 \5 \u0189\n \3 ")
         buf.write("\5 \u018c\n \3 \3 \3 \3!\3!\3!\3!\5!\u0195\n!\3!\3!\3")
-        buf.write('"\3"\3"\3#\3#\3#\3#\5#\u01a0\n#\3#\5#\u01a3\n#\3#\3')
+        buf.write("\"\3\"\3\"\3#\3#\3#\3#\5#\u01a0\n#\3#\5#\u01a3\n#\3#\3")
         buf.write("#\5#\u01a7\n#\3#\3#\7#\u01ab\n#\f#\16#\u01ae\13#\3#\3")
         buf.write("#\3$\3$\3$\3$\3$\3$\3$\3$\3$\5$\u01bb\n$\3$\3$\3$\3$\3")
         buf.write("$\3$\3$\3$\3$\3$\3$\3$\5$\u01c9\n$\3$\3$\5$\u01cd\n$\3")
         buf.write("$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3")
         buf.write("$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\3$\7$\u01f2")
         buf.write("\n$\f$\16$\u01f5\13$\3%\3%\3%\7%\u01fa\n%\f%\16%\u01fd")
-        buf.write("\13%\3&\3&\3&\5&\u0202\n&\3'\3'\3'\3(\5(\u0208\n(\3")
+        buf.write("\13%\3&\3&\3&\5&\u0202\n&\3\'\3\'\3\'\3(\5(\u0208\n(\3")
         buf.write("(\3(\5(\u020c\n(\3(\3(\5(\u0210\n(\3)\3)\3)\3)\7)\u0216")
         buf.write("\n)\f)\16)\u0219\13)\3)\5)\u021c\n)\3)\3)\3*\3*\3*\5*")
         buf.write("\u0223\n*\3*\3*\3*\5*\u0228\n*\7*\u022a\n*\f*\16*\u022d")
@@ -83,14 +81,14 @@ def serializedATN():
         buf.write("\n;\3<\3<\3<\7<\u02ef\n<\f<\16<\u02f2\13<\3<\5<\u02f5")
         buf.write("\n<\3=\3=\3=\7=\u02fa\n=\f=\16=\u02fd\13=\3=\5=\u0300")
         buf.write("\n=\3=\3\u01ac\3F>\2\4\6\b\n\f\16\20\22\24\26\30\32\34")
-        buf.write('\36 "$&(*,.\60\62\64\668:<>@BDFHJLNPRTVXZ\\^`bdfhjln')
+        buf.write("\36 \"$&(*,.\60\62\64\668:<>@BDFHJLNPRTVXZ\\^`bdfhjln")
         buf.write("prtvx\2\f\3\2\27\30\4\2\33\33\35\35\4\2>>PP\4\2BBMN\4")
         buf.write("\2\63\63T]\4\2CCEF\4\2@@BB\3\2+,\3\2\31\32\3\2YZ\2\u0354")
         buf.write("\2{\3\2\2\2\4\u0085\3\2\2\2\6\u00ad\3\2\2\2\b\u00af\3")
         buf.write("\2\2\2\n\u00b3\3\2\2\2\f\u00bc\3\2\2\2\16\u00c1\3\2\2")
         buf.write("\2\20\u00c3\3\2\2\2\22\u00c7\3\2\2\2\24\u00cb\3\2\2\2")
         buf.write("\26\u00ce\3\2\2\2\30\u00d1\3\2\2\2\32\u00d4\3\2\2\2\34")
-        buf.write('\u00e2\3\2\2\2\36\u00eb\3\2\2\2 \u00f2\3\2\2\2"\u00f8')
+        buf.write("\u00e2\3\2\2\2\36\u00eb\3\2\2\2 \u00f2\3\2\2\2\"\u00f8")
         buf.write("\3\2\2\2$\u00fe\3\2\2\2&\u0104\3\2\2\2(\u0134\3\2\2\2")
         buf.write("*\u0136\3\2\2\2,\u013d\3\2\2\2.\u0141\3\2\2\2\60\u0149")
         buf.write("\3\2\2\2\62\u0152\3\2\2\2\64\u0159\3\2\2\2\66\u0161\3")
@@ -112,11 +110,11 @@ def serializedATN():
         buf.write("\u008a\3\2\2\2\u008c\u008f\3\2\2\2\u008d\u008b\3\2\2\2")
         buf.write("\u008d\u008e\3\2\2\2\u008e\u00ab\3\2\2\2\u008f\u008d\3")
         buf.write("\2\2\2\u0090\u00ac\5.\30\2\u0091\u00ac\5@!\2\u0092\u00ac")
-        buf.write('\5"\22\2\u0093\u00ac\5$\23\2\u0094\u00ac\5\24\13\2\u0095')
+        buf.write("\5\"\22\2\u0093\u00ac\5$\23\2\u0094\u00ac\5\24\13\2\u0095")
         buf.write("\u00ac\5\20\t\2\u0096\u00ac\5\60\31\2\u0097\u00ac\5\62")
         buf.write("\32\2\u0098\u00ac\5\26\f\2\u0099\u00ac\5:\36\2\u009a\u00ac")
         buf.write("\5D#\2\u009b\u00ac\5&\24\2\u009c\u00ac\5\30\r\2\u009d")
-        buf.write('\u00ac\5B"\2\u009e\u00ac\5<\37\2\u009f\u00ac\5\32\16')
+        buf.write("\u00ac\5B\"\2\u009e\u00ac\5<\37\2\u009f\u00ac\5\32\16")
         buf.write("\2\u00a0\u00ac\5(\25\2\u00a1\u00ac\5> \2\u00a2\u00ac\5")
         buf.write("\34\17\2\u00a3\u00ac\5\22\n\2\u00a4\u00ac\5\64\33\2\u00a5")
         buf.write("\u00ac\5*\26\2\u00a6\u00ac\5\66\34\2\u00a7\u00ac\58\35")
@@ -156,7 +154,7 @@ def serializedATN():
         buf.write("\79\2\2\u00e6\u00e9\5\16\b\2\u00e7\u00e8\7\17\2\2\u00e8")
         buf.write("\u00ea\5\16\b\2\u00e9\u00e7\3\2\2\2\u00e9\u00ea\3\2\2")
         buf.write("\2\u00ea\35\3\2\2\2\u00eb\u00ee\7\21\2\2\u00ec\u00ef\5")
-        buf.write("F$\2\u00ed\u00ef\5L'\2\u00ee\u00ec\3\2\2\2\u00ee\u00ed")
+        buf.write("F$\2\u00ed\u00ef\5L\'\2\u00ee\u00ec\3\2\2\2\u00ee\u00ed")
         buf.write("\3\2\2\2\u00ee\u00ef\3\2\2\2\u00ef\u00f0\3\2\2\2\u00f0")
         buf.write("\u00f1\7;\2\2\u00f1\37\3\2\2\2\u00f2\u00f3\7\23\2\2\u00f3")
         buf.write("\u00f4\78\2\2\u00f4\u00f5\5F$\2\u00f5\u00f6\79\2\2\u00f6")
@@ -168,7 +166,7 @@ def serializedATN():
         buf.write("\n\6\2\u0103%\3\2\2\2\u0104\u0105\7/\2\2\u0105\u0107\5")
         buf.write("d\63\2\u0106\u0108\5v<\2\u0107\u0106\3\2\2\2\u0107\u0108")
         buf.write("\3\2\2\2\u0108\u0109\3\2\2\2\u0109\u010a\7;\2\2\u010a")
-        buf.write("'\3\2\2\2\u010b\u010d\5Z.\2\u010c\u010b\3\2\2\2\u010d")
+        buf.write("\'\3\2\2\2\u010b\u010d\5Z.\2\u010c\u010b\3\2\2\2\u010d")
         buf.write("\u0110\3\2\2\2\u010e\u010c\3\2\2\2\u010e\u010f\3\2\2\2")
         buf.write("\u010f\u0111\3\2\2\2\u0110\u010e\3\2\2\2\u0111\u0117\7")
         buf.write("Y\2\2\u0112\u0114\78\2\2\u0113\u0115\5p9\2\u0114\u0113")
@@ -187,7 +185,7 @@ def serializedATN():
         buf.write("\3\2\2\2\u0130\u0132\5v<\2\u0131\u0130\3\2\2\2\u0131\u0132")
         buf.write("\3\2\2\2\u0132\u0133\3\2\2\2\u0133\u0135\7;\2\2\u0134")
         buf.write("\u010e\3\2\2\2\u0134\u0122\3\2\2\2\u0135)\3\2\2\2\u0136")
-        buf.write("\u0139\5L'\2\u0137\u0138\7?\2\2\u0138\u013a\5V,\2\u0139")
+        buf.write("\u0139\5L\'\2\u0137\u0138\7?\2\2\u0138\u013a\5V,\2\u0139")
         buf.write("\u0137\3\2\2\2\u0139\u013a\3\2\2\2\u013a\u013b\3\2\2\2")
         buf.write("\u013b\u013c\7;\2\2\u013c+\3\2\2\2\u013d\u013e\7\60\2")
         buf.write("\2\u013e\u013f\5f\64\2\u013f\u0140\7;\2\2\u0140-\3\2\2")
@@ -223,7 +221,7 @@ def serializedATN():
         buf.write("\u018c\79\2\2\u018b\u0186\3\2\2\2\u018b\u018c\3\2\2\2")
         buf.write("\u018c\u018d\3\2\2\2\u018d\u018e\5t;\2\u018e\u018f\5\n")
         buf.write("\6\2\u018f?\3\2\2\2\u0190\u0191\5V,\2\u0191\u0194\t\4")
-        buf.write("\2\2\u0192\u0195\5F$\2\u0193\u0195\5L'\2\u0194\u0192")
+        buf.write("\2\2\u0192\u0195\5F$\2\u0193\u0195\5L\'\2\u0194\u0192")
         buf.write("\3\2\2\2\u0194\u0193\3\2\2\2\u0195\u0196\3\2\2\2\u0196")
         buf.write("\u0197\7;\2\2\u0197A\3\2\2\2\u0198\u0199\5F$\2\u0199\u019a")
         buf.write("\7;\2\2\u019aC\3\2\2\2\u019b\u019c\7\7\2\2\u019c\u01a2")
@@ -270,7 +268,7 @@ def serializedATN():
         buf.write("\5F$\2\u01f7\u01f8\7A\2\2\u01f8\u01fa\5F$\2\u01f9\u01f7")
         buf.write("\3\2\2\2\u01fa\u01fd\3\2\2\2\u01fb\u01f9\3\2\2\2\u01fb")
         buf.write("\u01fc\3\2\2\2\u01fcI\3\2\2\2\u01fd\u01fb\3\2\2\2\u01fe")
-        buf.write("\u0202\5R*\2\u01ff\u0202\5F$\2\u0200\u0202\5L'\2\u0201")
+        buf.write("\u0202\5R*\2\u01ff\u0202\5F$\2\u0200\u0202\5L\'\2\u0201")
         buf.write("\u01fe\3\2\2\2\u0201\u01ff\3\2\2\2\u0201\u0200\3\2\2\2")
         buf.write("\u0202K\3\2\2\2\u0203\u0204\7\61\2\2\u0204\u0205\5f\64")
         buf.write("\2\u0205M\3\2\2\2\u0206\u0208\5F$\2\u0207\u0206\3\2\2")
@@ -318,12 +316,12 @@ def serializedATN():
         buf.write("\u0269\u026b\7 \2\2\u026a\u026c\5d\63\2\u026b\u026a\3")
         buf.write("\2\2\2\u026b\u026c\3\2\2\2\u026c\u0284\3\2\2\2\u026d\u026f")
         buf.write("\7!\2\2\u026e\u0270\5d\63\2\u026f\u026e\3\2\2\2\u026f")
-        buf.write('\u0270\3\2\2\2\u0270\u0284\3\2\2\2\u0271\u0273\7"\2\2')
+        buf.write("\u0270\3\2\2\2\u0270\u0284\3\2\2\2\u0271\u0273\7\"\2\2")
         buf.write("\u0272\u0274\5d\63\2\u0273\u0272\3\2\2\2\u0273\u0274\3")
         buf.write("\2\2\2\u0274\u0284\3\2\2\2\u0275\u0277\7#\2\2\u0276\u0278")
         buf.write("\5d\63\2\u0277\u0276\3\2\2\2\u0277\u0278\3\2\2\2\u0278")
         buf.write("\u0284\3\2\2\2\u0279\u0284\7\36\2\2\u027a\u0284\7&\2\2")
-        buf.write("\u027b\u0284\7'\2\2\u027c\u0281\7$\2\2\u027d\u027e\7")
+        buf.write("\u027b\u0284\7\'\2\2\u027c\u0281\7$\2\2\u027d\u027e\7")
         buf.write("\64\2\2\u027e\u027f\5\\/\2\u027f\u0280\7\65\2\2\u0280")
         buf.write("\u0282\3\2\2\2\u0281\u027d\3\2\2\2\u0281\u0282\3\2\2\2")
         buf.write("\u0282\u0284\3\2\2\2\u0283\u0265\3\2\2\2\u0283\u0269\3")
@@ -395,205 +393,55 @@ def serializedATN():
         return buf.getvalue()
 
 
-class qasm3Parser(Parser):
+class qasm3Parser ( Parser ):
 
     grammarFileName = "qasm3Parser.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
+    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [
-        "<INVALID>",
-        "'OPENQASM'",
-        "'include'",
-        "'defcalgrammar'",
-        "'def'",
-        "'defcal'",
-        "'gate'",
-        "'extern'",
-        "'box'",
-        "'let'",
-        "'break'",
-        "'continue'",
-        "'if'",
-        "'else'",
-        "'end'",
-        "'return'",
-        "'for'",
-        "'while'",
-        "'in'",
-        "<INVALID>",
-        "<INVALID>",
-        "'input'",
-        "'output'",
-        "'const'",
-        "'mutable'",
-        "'qreg'",
-        "'qubit'",
-        "'creg'",
-        "'bool'",
-        "'bit'",
-        "'int'",
-        "'uint'",
-        "'float'",
-        "'angle'",
-        "'complex'",
-        "'array'",
-        "'duration'",
-        "'stretch'",
-        "'gphase'",
-        "'inv'",
-        "'pow'",
-        "'ctrl'",
-        "'negctrl'",
-        "'#dim'",
-        "'durationof'",
-        "'delay'",
-        "'reset'",
-        "'measure'",
-        "'barrier'",
-        "<INVALID>",
-        "'['",
-        "']'",
-        "'{'",
-        "'}'",
-        "'('",
-        "')'",
-        "':'",
-        "';'",
-        "'.'",
-        "','",
-        "'='",
-        "'->'",
-        "'+'",
-        "'++'",
-        "'-'",
-        "'*'",
-        "'**'",
-        "'/'",
-        "'%'",
-        "'|'",
-        "'||'",
-        "'&'",
-        "'&&'",
-        "'^'",
-        "'@'",
-        "'~'",
-        "'!'",
-        "<INVALID>",
-        "<INVALID>",
-        "<INVALID>",
-        "<INVALID>",
-        "'im'",
-    ]
+    literalNames = [ "<INVALID>", "'OPENQASM'", "'include'", "'defcalgrammar'", 
+                     "'def'", "'defcal'", "'gate'", "'extern'", "'box'", 
+                     "'let'", "'break'", "'continue'", "'if'", "'else'", 
+                     "'end'", "'return'", "'for'", "'while'", "'in'", "<INVALID>", 
+                     "<INVALID>", "'input'", "'output'", "'const'", "'mutable'", 
+                     "'qreg'", "'qubit'", "'creg'", "'bool'", "'bit'", "'int'", 
+                     "'uint'", "'float'", "'angle'", "'complex'", "'array'", 
+                     "'duration'", "'stretch'", "'gphase'", "'inv'", "'pow'", 
+                     "'ctrl'", "'negctrl'", "'#dim'", "'durationof'", "'delay'", 
+                     "'reset'", "'measure'", "'barrier'", "<INVALID>", "'['", 
+                     "']'", "'{'", "'}'", "'('", "')'", "':'", "';'", "'.'", 
+                     "','", "'='", "'->'", "'+'", "'++'", "'-'", "'*'", 
+                     "'**'", "'/'", "'%'", "'|'", "'||'", "'&'", "'&&'", 
+                     "'^'", "'@'", "'~'", "'!'", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "'im'" ]
 
-    symbolicNames = [
-        "<INVALID>",
-        "OPENQASM",
-        "INCLUDE",
-        "DEFCALGRAMMAR",
-        "DEF",
-        "DEFCAL",
-        "GATE",
-        "EXTERN",
-        "BOX",
-        "LET",
-        "BREAK",
-        "CONTINUE",
-        "IF",
-        "ELSE",
-        "END",
-        "RETURN",
-        "FOR",
-        "WHILE",
-        "IN",
-        "PRAGMA",
-        "AnnotationKeyword",
-        "INPUT",
-        "OUTPUT",
-        "CONST",
-        "MUTABLE",
-        "QREG",
-        "QUBIT",
-        "CREG",
-        "BOOL",
-        "BIT",
-        "INT",
-        "UINT",
-        "FLOAT",
-        "ANGLE",
-        "COMPLEX",
-        "ARRAY",
-        "DURATION",
-        "STRETCH",
-        "GPHASE",
-        "INV",
-        "POW",
-        "CTRL",
-        "NEGCTRL",
-        "DIM",
-        "DURATIONOF",
-        "DELAY",
-        "RESET",
-        "MEASURE",
-        "BARRIER",
-        "BooleanLiteral",
-        "LBRACKET",
-        "RBRACKET",
-        "LBRACE",
-        "RBRACE",
-        "LPAREN",
-        "RPAREN",
-        "COLON",
-        "SEMICOLON",
-        "DOT",
-        "COMMA",
-        "EQUALS",
-        "ARROW",
-        "PLUS",
-        "DOUBLE_PLUS",
-        "MINUS",
-        "ASTERISK",
-        "DOUBLE_ASTERISK",
-        "SLASH",
-        "PERCENT",
-        "PIPE",
-        "DOUBLE_PIPE",
-        "AMPERSAND",
-        "DOUBLE_AMPERSAND",
-        "CARET",
-        "AT",
-        "TILDE",
-        "EXCLAMATION_POINT",
-        "EqualityOperator",
-        "CompoundAssignmentOperator",
-        "ComparisonOperator",
-        "BitshiftOperator",
-        "IMAG",
-        "ImaginaryLiteral",
-        "BinaryIntegerLiteral",
-        "OctalIntegerLiteral",
-        "DecimalIntegerLiteral",
-        "HexIntegerLiteral",
-        "Identifier",
-        "HardwareQubit",
-        "FloatLiteral",
-        "TimingLiteral",
-        "BitstringLiteral",
-        "StringLiteral",
-        "Whitespace",
-        "Newline",
-        "LineComment",
-        "BlockComment",
-        "VERSION_IDENTIFER_WHITESPACE",
-        "VersionSpecifier",
-        "EAT_INITIAL_SPACE",
-        "EAT_LINE_END",
-        "RemainingLineContent",
-    ]
+    symbolicNames = [ "<INVALID>", "OPENQASM", "INCLUDE", "DEFCALGRAMMAR", 
+                      "DEF", "DEFCAL", "GATE", "EXTERN", "BOX", "LET", "BREAK", 
+                      "CONTINUE", "IF", "ELSE", "END", "RETURN", "FOR", 
+                      "WHILE", "IN", "PRAGMA", "AnnotationKeyword", "INPUT", 
+                      "OUTPUT", "CONST", "MUTABLE", "QREG", "QUBIT", "CREG", 
+                      "BOOL", "BIT", "INT", "UINT", "FLOAT", "ANGLE", "COMPLEX", 
+                      "ARRAY", "DURATION", "STRETCH", "GPHASE", "INV", "POW", 
+                      "CTRL", "NEGCTRL", "DIM", "DURATIONOF", "DELAY", "RESET", 
+                      "MEASURE", "BARRIER", "BooleanLiteral", "LBRACKET", 
+                      "RBRACKET", "LBRACE", "RBRACE", "LPAREN", "RPAREN", 
+                      "COLON", "SEMICOLON", "DOT", "COMMA", "EQUALS", "ARROW", 
+                      "PLUS", "DOUBLE_PLUS", "MINUS", "ASTERISK", "DOUBLE_ASTERISK", 
+                      "SLASH", "PERCENT", "PIPE", "DOUBLE_PIPE", "AMPERSAND", 
+                      "DOUBLE_AMPERSAND", "CARET", "AT", "TILDE", "EXCLAMATION_POINT", 
+                      "EqualityOperator", "CompoundAssignmentOperator", 
+                      "ComparisonOperator", "BitshiftOperator", "IMAG", 
+                      "ImaginaryLiteral", "BinaryIntegerLiteral", "OctalIntegerLiteral", 
+                      "DecimalIntegerLiteral", "HexIntegerLiteral", "Identifier", 
+                      "HardwareQubit", "FloatLiteral", "TimingLiteral", 
+                      "BitstringLiteral", "StringLiteral", "Whitespace", 
+                      "Newline", "LineComment", "BlockComment", "VERSION_IDENTIFER_WHITESPACE", 
+                      "VersionSpecifier", "EAT_INITIAL_SPACE", "EAT_LINE_END", 
+                      "RemainingLineContent" ]
 
     RULE_program = 0
     RULE_version = 1
@@ -656,182 +504,141 @@ class qasm3Parser(Parser):
     RULE_gateOperandList = 58
     RULE_externArgumentList = 59
 
-    ruleNames = [
-        "program",
-        "version",
-        "statement",
-        "annotation",
-        "scope",
-        "pragma",
-        "statementOrScope",
-        "calibrationGrammarStatement",
-        "includeStatement",
-        "breakStatement",
-        "continueStatement",
-        "endStatement",
-        "forStatement",
-        "ifStatement",
-        "returnStatement",
-        "whileStatement",
-        "barrierStatement",
-        "boxStatement",
-        "delayStatement",
-        "gateCallStatement",
-        "measureArrowAssignmentStatement",
-        "resetStatement",
-        "aliasDeclarationStatement",
-        "classicalDeclarationStatement",
-        "constDeclarationStatement",
-        "ioDeclarationStatement",
-        "oldStyleDeclarationStatement",
-        "quantumDeclarationStatement",
-        "defStatement",
-        "externStatement",
-        "gateStatement",
-        "assignmentStatement",
-        "expressionStatement",
-        "defcalStatement",
-        "expression",
-        "aliasExpression",
-        "declarationExpression",
-        "measureExpression",
-        "rangeExpression",
-        "setExpression",
-        "arrayLiteral",
-        "indexOperator",
-        "indexedIdentifier",
-        "returnSignature",
-        "gateModifier",
-        "scalarType",
-        "qubitType",
-        "arrayType",
-        "arrayReferenceType",
-        "designator",
-        "gateOperand",
-        "externArgument",
-        "defcalArgument",
-        "argumentDefinition",
-        "argumentDefinitionList",
-        "expressionList",
-        "defcalArgumentList",
-        "identifierList",
-        "gateOperandList",
-        "externArgumentList",
-    ]
+    ruleNames =  [ "program", "version", "statement", "annotation", "scope", 
+                   "pragma", "statementOrScope", "calibrationGrammarStatement", 
+                   "includeStatement", "breakStatement", "continueStatement", 
+                   "endStatement", "forStatement", "ifStatement", "returnStatement", 
+                   "whileStatement", "barrierStatement", "boxStatement", 
+                   "delayStatement", "gateCallStatement", "measureArrowAssignmentStatement", 
+                   "resetStatement", "aliasDeclarationStatement", "classicalDeclarationStatement", 
+                   "constDeclarationStatement", "ioDeclarationStatement", 
+                   "oldStyleDeclarationStatement", "quantumDeclarationStatement", 
+                   "defStatement", "externStatement", "gateStatement", "assignmentStatement", 
+                   "expressionStatement", "defcalStatement", "expression", 
+                   "aliasExpression", "declarationExpression", "measureExpression", 
+                   "rangeExpression", "setExpression", "arrayLiteral", "indexOperator", 
+                   "indexedIdentifier", "returnSignature", "gateModifier", 
+                   "scalarType", "qubitType", "arrayType", "arrayReferenceType", 
+                   "designator", "gateOperand", "externArgument", "defcalArgument", 
+                   "argumentDefinition", "argumentDefinitionList", "expressionList", 
+                   "defcalArgumentList", "identifierList", "gateOperandList", 
+                   "externArgumentList" ]
 
     EOF = Token.EOF
-    OPENQASM = 1
-    INCLUDE = 2
-    DEFCALGRAMMAR = 3
-    DEF = 4
-    DEFCAL = 5
-    GATE = 6
-    EXTERN = 7
-    BOX = 8
-    LET = 9
-    BREAK = 10
-    CONTINUE = 11
-    IF = 12
-    ELSE = 13
-    END = 14
-    RETURN = 15
-    FOR = 16
-    WHILE = 17
-    IN = 18
-    PRAGMA = 19
-    AnnotationKeyword = 20
-    INPUT = 21
-    OUTPUT = 22
-    CONST = 23
-    MUTABLE = 24
-    QREG = 25
-    QUBIT = 26
-    CREG = 27
-    BOOL = 28
-    BIT = 29
-    INT = 30
-    UINT = 31
-    FLOAT = 32
-    ANGLE = 33
-    COMPLEX = 34
-    ARRAY = 35
-    DURATION = 36
-    STRETCH = 37
-    GPHASE = 38
-    INV = 39
-    POW = 40
-    CTRL = 41
-    NEGCTRL = 42
-    DIM = 43
-    DURATIONOF = 44
-    DELAY = 45
-    RESET = 46
-    MEASURE = 47
-    BARRIER = 48
-    BooleanLiteral = 49
-    LBRACKET = 50
-    RBRACKET = 51
-    LBRACE = 52
-    RBRACE = 53
-    LPAREN = 54
-    RPAREN = 55
-    COLON = 56
-    SEMICOLON = 57
-    DOT = 58
-    COMMA = 59
-    EQUALS = 60
-    ARROW = 61
-    PLUS = 62
-    DOUBLE_PLUS = 63
-    MINUS = 64
-    ASTERISK = 65
-    DOUBLE_ASTERISK = 66
-    SLASH = 67
-    PERCENT = 68
-    PIPE = 69
-    DOUBLE_PIPE = 70
-    AMPERSAND = 71
-    DOUBLE_AMPERSAND = 72
-    CARET = 73
-    AT = 74
-    TILDE = 75
-    EXCLAMATION_POINT = 76
-    EqualityOperator = 77
-    CompoundAssignmentOperator = 78
-    ComparisonOperator = 79
-    BitshiftOperator = 80
-    IMAG = 81
-    ImaginaryLiteral = 82
-    BinaryIntegerLiteral = 83
-    OctalIntegerLiteral = 84
-    DecimalIntegerLiteral = 85
-    HexIntegerLiteral = 86
-    Identifier = 87
-    HardwareQubit = 88
-    FloatLiteral = 89
-    TimingLiteral = 90
-    BitstringLiteral = 91
-    StringLiteral = 92
-    Whitespace = 93
-    Newline = 94
-    LineComment = 95
-    BlockComment = 96
-    VERSION_IDENTIFER_WHITESPACE = 97
-    VersionSpecifier = 98
-    EAT_INITIAL_SPACE = 99
-    EAT_LINE_END = 100
-    RemainingLineContent = 101
+    OPENQASM=1
+    INCLUDE=2
+    DEFCALGRAMMAR=3
+    DEF=4
+    DEFCAL=5
+    GATE=6
+    EXTERN=7
+    BOX=8
+    LET=9
+    BREAK=10
+    CONTINUE=11
+    IF=12
+    ELSE=13
+    END=14
+    RETURN=15
+    FOR=16
+    WHILE=17
+    IN=18
+    PRAGMA=19
+    AnnotationKeyword=20
+    INPUT=21
+    OUTPUT=22
+    CONST=23
+    MUTABLE=24
+    QREG=25
+    QUBIT=26
+    CREG=27
+    BOOL=28
+    BIT=29
+    INT=30
+    UINT=31
+    FLOAT=32
+    ANGLE=33
+    COMPLEX=34
+    ARRAY=35
+    DURATION=36
+    STRETCH=37
+    GPHASE=38
+    INV=39
+    POW=40
+    CTRL=41
+    NEGCTRL=42
+    DIM=43
+    DURATIONOF=44
+    DELAY=45
+    RESET=46
+    MEASURE=47
+    BARRIER=48
+    BooleanLiteral=49
+    LBRACKET=50
+    RBRACKET=51
+    LBRACE=52
+    RBRACE=53
+    LPAREN=54
+    RPAREN=55
+    COLON=56
+    SEMICOLON=57
+    DOT=58
+    COMMA=59
+    EQUALS=60
+    ARROW=61
+    PLUS=62
+    DOUBLE_PLUS=63
+    MINUS=64
+    ASTERISK=65
+    DOUBLE_ASTERISK=66
+    SLASH=67
+    PERCENT=68
+    PIPE=69
+    DOUBLE_PIPE=70
+    AMPERSAND=71
+    DOUBLE_AMPERSAND=72
+    CARET=73
+    AT=74
+    TILDE=75
+    EXCLAMATION_POINT=76
+    EqualityOperator=77
+    CompoundAssignmentOperator=78
+    ComparisonOperator=79
+    BitshiftOperator=80
+    IMAG=81
+    ImaginaryLiteral=82
+    BinaryIntegerLiteral=83
+    OctalIntegerLiteral=84
+    DecimalIntegerLiteral=85
+    HexIntegerLiteral=86
+    Identifier=87
+    HardwareQubit=88
+    FloatLiteral=89
+    TimingLiteral=90
+    BitstringLiteral=91
+    StringLiteral=92
+    Whitespace=93
+    Newline=94
+    LineComment=95
+    BlockComment=96
+    VERSION_IDENTIFER_WHITESPACE=97
+    VersionSpecifier=98
+    EAT_INITIAL_SPACE=99
+    EAT_LINE_END=100
+    RemainingLineContent=101
 
-    def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
+    def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.9")
-        self._interp = ParserATNSimulator(
-            self, self.atn, self.decisionsToDFA, self.sharedContextCache
-        )
+        self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
+
+
+
     class ProgramContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -839,123 +646,55 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.EOF, 0)
 
         def version(self):
-            return self.getTypedRuleContext(qasm3Parser.VersionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.VersionContext,0)
 
-        def statement(self, i: int = None):
+
+        def statement(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.StatementContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.StatementContext, i)
+                return self.getTypedRuleContext(qasm3Parser.StatementContext,i)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_program
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterProgram"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterProgram" ):
                 listener.enterProgram(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitProgram"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitProgram" ):
                 listener.exitProgram(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitProgram"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitProgram" ):
                 return visitor.visitProgram(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def program(self):
 
         localctx = qasm3Parser.ProgramContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_program)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 121
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.OPENQASM:
+            if _la==qasm3Parser.OPENQASM:
                 self.state = 120
                 self.version()
+
 
             self.state = 126
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (
-                ((_la) & ~0x3F) == 0
-                and (
-                    (1 << _la)
-                    & (
-                        (1 << qasm3Parser.INCLUDE)
-                        | (1 << qasm3Parser.DEFCALGRAMMAR)
-                        | (1 << qasm3Parser.DEF)
-                        | (1 << qasm3Parser.DEFCAL)
-                        | (1 << qasm3Parser.GATE)
-                        | (1 << qasm3Parser.EXTERN)
-                        | (1 << qasm3Parser.BOX)
-                        | (1 << qasm3Parser.LET)
-                        | (1 << qasm3Parser.BREAK)
-                        | (1 << qasm3Parser.CONTINUE)
-                        | (1 << qasm3Parser.IF)
-                        | (1 << qasm3Parser.END)
-                        | (1 << qasm3Parser.RETURN)
-                        | (1 << qasm3Parser.FOR)
-                        | (1 << qasm3Parser.WHILE)
-                        | (1 << qasm3Parser.PRAGMA)
-                        | (1 << qasm3Parser.AnnotationKeyword)
-                        | (1 << qasm3Parser.INPUT)
-                        | (1 << qasm3Parser.OUTPUT)
-                        | (1 << qasm3Parser.CONST)
-                        | (1 << qasm3Parser.QREG)
-                        | (1 << qasm3Parser.QUBIT)
-                        | (1 << qasm3Parser.CREG)
-                        | (1 << qasm3Parser.BOOL)
-                        | (1 << qasm3Parser.BIT)
-                        | (1 << qasm3Parser.INT)
-                        | (1 << qasm3Parser.UINT)
-                        | (1 << qasm3Parser.FLOAT)
-                        | (1 << qasm3Parser.ANGLE)
-                        | (1 << qasm3Parser.COMPLEX)
-                        | (1 << qasm3Parser.ARRAY)
-                        | (1 << qasm3Parser.DURATION)
-                        | (1 << qasm3Parser.STRETCH)
-                        | (1 << qasm3Parser.GPHASE)
-                        | (1 << qasm3Parser.INV)
-                        | (1 << qasm3Parser.POW)
-                        | (1 << qasm3Parser.CTRL)
-                        | (1 << qasm3Parser.NEGCTRL)
-                        | (1 << qasm3Parser.DURATIONOF)
-                        | (1 << qasm3Parser.DELAY)
-                        | (1 << qasm3Parser.RESET)
-                        | (1 << qasm3Parser.MEASURE)
-                        | (1 << qasm3Parser.BARRIER)
-                        | (1 << qasm3Parser.BooleanLiteral)
-                        | (1 << qasm3Parser.LPAREN)
-                    )
-                )
-                != 0
-            ) or (
-                (((_la - 64)) & ~0x3F) == 0
-                and (
-                    (1 << (_la - 64))
-                    & (
-                        (1 << (qasm3Parser.MINUS - 64))
-                        | (1 << (qasm3Parser.TILDE - 64))
-                        | (1 << (qasm3Parser.EXCLAMATION_POINT - 64))
-                        | (1 << (qasm3Parser.ImaginaryLiteral - 64))
-                        | (1 << (qasm3Parser.BinaryIntegerLiteral - 64))
-                        | (1 << (qasm3Parser.OctalIntegerLiteral - 64))
-                        | (1 << (qasm3Parser.DecimalIntegerLiteral - 64))
-                        | (1 << (qasm3Parser.HexIntegerLiteral - 64))
-                        | (1 << (qasm3Parser.Identifier - 64))
-                        | (1 << (qasm3Parser.HardwareQubit - 64))
-                        | (1 << (qasm3Parser.FloatLiteral - 64))
-                        | (1 << (qasm3Parser.TimingLiteral - 64))
-                        | (1 << (qasm3Parser.BitstringLiteral - 64))
-                    )
-                )
-                != 0
-            ):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << qasm3Parser.INCLUDE) | (1 << qasm3Parser.DEFCALGRAMMAR) | (1 << qasm3Parser.DEF) | (1 << qasm3Parser.DEFCAL) | (1 << qasm3Parser.GATE) | (1 << qasm3Parser.EXTERN) | (1 << qasm3Parser.BOX) | (1 << qasm3Parser.LET) | (1 << qasm3Parser.BREAK) | (1 << qasm3Parser.CONTINUE) | (1 << qasm3Parser.IF) | (1 << qasm3Parser.END) | (1 << qasm3Parser.RETURN) | (1 << qasm3Parser.FOR) | (1 << qasm3Parser.WHILE) | (1 << qasm3Parser.PRAGMA) | (1 << qasm3Parser.AnnotationKeyword) | (1 << qasm3Parser.INPUT) | (1 << qasm3Parser.OUTPUT) | (1 << qasm3Parser.CONST) | (1 << qasm3Parser.QREG) | (1 << qasm3Parser.QUBIT) | (1 << qasm3Parser.CREG) | (1 << qasm3Parser.BOOL) | (1 << qasm3Parser.BIT) | (1 << qasm3Parser.INT) | (1 << qasm3Parser.UINT) | (1 << qasm3Parser.FLOAT) | (1 << qasm3Parser.ANGLE) | (1 << qasm3Parser.COMPLEX) | (1 << qasm3Parser.ARRAY) | (1 << qasm3Parser.DURATION) | (1 << qasm3Parser.STRETCH) | (1 << qasm3Parser.GPHASE) | (1 << qasm3Parser.INV) | (1 << qasm3Parser.POW) | (1 << qasm3Parser.CTRL) | (1 << qasm3Parser.NEGCTRL) | (1 << qasm3Parser.DURATIONOF) | (1 << qasm3Parser.DELAY) | (1 << qasm3Parser.RESET) | (1 << qasm3Parser.MEASURE) | (1 << qasm3Parser.BARRIER) | (1 << qasm3Parser.BooleanLiteral) | (1 << qasm3Parser.LPAREN))) != 0) or ((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & ((1 << (qasm3Parser.MINUS - 64)) | (1 << (qasm3Parser.TILDE - 64)) | (1 << (qasm3Parser.EXCLAMATION_POINT - 64)) | (1 << (qasm3Parser.ImaginaryLiteral - 64)) | (1 << (qasm3Parser.BinaryIntegerLiteral - 64)) | (1 << (qasm3Parser.OctalIntegerLiteral - 64)) | (1 << (qasm3Parser.DecimalIntegerLiteral - 64)) | (1 << (qasm3Parser.HexIntegerLiteral - 64)) | (1 << (qasm3Parser.Identifier - 64)) | (1 << (qasm3Parser.HardwareQubit - 64)) | (1 << (qasm3Parser.FloatLiteral - 64)) | (1 << (qasm3Parser.TimingLiteral - 64)) | (1 << (qasm3Parser.BitstringLiteral - 64)))) != 0):
                 self.state = 123
                 self.statement()
                 self.state = 128
@@ -972,8 +711,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class VersionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -989,19 +730,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_version
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterVersion"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterVersion" ):
                 listener.enterVersion(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitVersion"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitVersion" ):
                 listener.exitVersion(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitVersion"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitVersion" ):
                 return visitor.visitVersion(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def version(self):
 
@@ -1023,123 +767,157 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class StatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def pragma(self):
-            return self.getTypedRuleContext(qasm3Parser.PragmaContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.PragmaContext,0)
+
 
         def aliasDeclarationStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.AliasDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.AliasDeclarationStatementContext,0)
+
 
         def assignmentStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.AssignmentStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.AssignmentStatementContext,0)
+
 
         def barrierStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.BarrierStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.BarrierStatementContext,0)
+
 
         def boxStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.BoxStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.BoxStatementContext,0)
+
 
         def breakStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.BreakStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.BreakStatementContext,0)
+
 
         def calibrationGrammarStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.CalibrationGrammarStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.CalibrationGrammarStatementContext,0)
+
 
         def classicalDeclarationStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.ClassicalDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ClassicalDeclarationStatementContext,0)
+
 
         def constDeclarationStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.ConstDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ConstDeclarationStatementContext,0)
+
 
         def continueStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.ContinueStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ContinueStatementContext,0)
+
 
         def defStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.DefStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DefStatementContext,0)
+
 
         def defcalStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.DefcalStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DefcalStatementContext,0)
+
 
         def delayStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.DelayStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DelayStatementContext,0)
+
 
         def endStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.EndStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.EndStatementContext,0)
+
 
         def expressionStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionStatementContext,0)
+
 
         def externStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.ExternStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExternStatementContext,0)
+
 
         def forStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.ForStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ForStatementContext,0)
+
 
         def gateCallStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.GateCallStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.GateCallStatementContext,0)
+
 
         def gateStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.GateStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.GateStatementContext,0)
+
 
         def ifStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.IfStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.IfStatementContext,0)
+
 
         def includeStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.IncludeStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.IncludeStatementContext,0)
+
 
         def ioDeclarationStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.IoDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.IoDeclarationStatementContext,0)
+
 
         def measureArrowAssignmentStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.MeasureArrowAssignmentStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.MeasureArrowAssignmentStatementContext,0)
+
 
         def oldStyleDeclarationStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.OldStyleDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.OldStyleDeclarationStatementContext,0)
+
 
         def quantumDeclarationStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.QuantumDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.QuantumDeclarationStatementContext,0)
+
 
         def resetStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.ResetStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ResetStatementContext,0)
+
 
         def returnStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.ReturnStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ReturnStatementContext,0)
+
 
         def whileStatement(self):
-            return self.getTypedRuleContext(qasm3Parser.WhileStatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.WhileStatementContext,0)
 
-        def annotation(self, i: int = None):
+
+        def annotation(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.AnnotationContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.AnnotationContext, i)
+                return self.getTypedRuleContext(qasm3Parser.AnnotationContext,i)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_statement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterStatement" ):
                 listener.enterStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitStatement" ):
                 listener.exitStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitStatement" ):
                 return visitor.visitStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def statement(self):
 
         localctx = qasm3Parser.StatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 4, self.RULE_statement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 171
             self._errHandler.sync(self)
@@ -1149,70 +927,12 @@ class qasm3Parser(Parser):
                 self.state = 135
                 self.pragma()
                 pass
-            elif token in [
-                qasm3Parser.INCLUDE,
-                qasm3Parser.DEFCALGRAMMAR,
-                qasm3Parser.DEF,
-                qasm3Parser.DEFCAL,
-                qasm3Parser.GATE,
-                qasm3Parser.EXTERN,
-                qasm3Parser.BOX,
-                qasm3Parser.LET,
-                qasm3Parser.BREAK,
-                qasm3Parser.CONTINUE,
-                qasm3Parser.IF,
-                qasm3Parser.END,
-                qasm3Parser.RETURN,
-                qasm3Parser.FOR,
-                qasm3Parser.WHILE,
-                qasm3Parser.AnnotationKeyword,
-                qasm3Parser.INPUT,
-                qasm3Parser.OUTPUT,
-                qasm3Parser.CONST,
-                qasm3Parser.QREG,
-                qasm3Parser.QUBIT,
-                qasm3Parser.CREG,
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.ARRAY,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-                qasm3Parser.GPHASE,
-                qasm3Parser.INV,
-                qasm3Parser.POW,
-                qasm3Parser.CTRL,
-                qasm3Parser.NEGCTRL,
-                qasm3Parser.DURATIONOF,
-                qasm3Parser.DELAY,
-                qasm3Parser.RESET,
-                qasm3Parser.MEASURE,
-                qasm3Parser.BARRIER,
-                qasm3Parser.BooleanLiteral,
-                qasm3Parser.LPAREN,
-                qasm3Parser.MINUS,
-                qasm3Parser.TILDE,
-                qasm3Parser.EXCLAMATION_POINT,
-                qasm3Parser.ImaginaryLiteral,
-                qasm3Parser.BinaryIntegerLiteral,
-                qasm3Parser.OctalIntegerLiteral,
-                qasm3Parser.DecimalIntegerLiteral,
-                qasm3Parser.HexIntegerLiteral,
-                qasm3Parser.Identifier,
-                qasm3Parser.HardwareQubit,
-                qasm3Parser.FloatLiteral,
-                qasm3Parser.TimingLiteral,
-                qasm3Parser.BitstringLiteral,
-            ]:
+            elif token in [qasm3Parser.INCLUDE, qasm3Parser.DEFCALGRAMMAR, qasm3Parser.DEF, qasm3Parser.DEFCAL, qasm3Parser.GATE, qasm3Parser.EXTERN, qasm3Parser.BOX, qasm3Parser.LET, qasm3Parser.BREAK, qasm3Parser.CONTINUE, qasm3Parser.IF, qasm3Parser.END, qasm3Parser.RETURN, qasm3Parser.FOR, qasm3Parser.WHILE, qasm3Parser.AnnotationKeyword, qasm3Parser.INPUT, qasm3Parser.OUTPUT, qasm3Parser.CONST, qasm3Parser.QREG, qasm3Parser.QUBIT, qasm3Parser.CREG, qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.GPHASE, qasm3Parser.INV, qasm3Parser.POW, qasm3Parser.CTRL, qasm3Parser.NEGCTRL, qasm3Parser.DURATIONOF, qasm3Parser.DELAY, qasm3Parser.RESET, qasm3Parser.MEASURE, qasm3Parser.BARRIER, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 139
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la == qasm3Parser.AnnotationKeyword:
+                while _la==qasm3Parser.AnnotationKeyword:
                     self.state = 136
                     self.annotation()
                     self.state = 141
@@ -1221,7 +941,7 @@ class qasm3Parser(Parser):
 
                 self.state = 169
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input, 3, self._ctx)
+                la_ = self._interp.adaptivePredict(self._input,3,self._ctx)
                 if la_ == 1:
                     self.state = 142
                     self.aliasDeclarationStatement()
@@ -1357,6 +1077,7 @@ class qasm3Parser(Parser):
                     self.whileStatement()
                     pass
 
+
                 pass
             else:
                 raise NoViableAltException(self)
@@ -1369,8 +1090,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class AnnotationContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1383,25 +1106,28 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_annotation
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAnnotation"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAnnotation" ):
                 listener.enterAnnotation(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAnnotation"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAnnotation" ):
                 listener.exitAnnotation(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAnnotation"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAnnotation" ):
                 return visitor.visitAnnotation(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def annotation(self):
 
         localctx = qasm3Parser.AnnotationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_annotation)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 173
@@ -1409,9 +1135,10 @@ class qasm3Parser(Parser):
             self.state = 175
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.RemainingLineContent:
+            if _la==qasm3Parser.RemainingLineContent:
                 self.state = 174
                 self.match(qasm3Parser.RemainingLineContent)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -1421,8 +1148,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ScopeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1432,34 +1161,38 @@ class qasm3Parser(Parser):
         def RBRACE(self):
             return self.getToken(qasm3Parser.RBRACE, 0)
 
-        def statement(self, i: int = None):
+        def statement(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.StatementContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.StatementContext, i)
+                return self.getTypedRuleContext(qasm3Parser.StatementContext,i)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_scope
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterScope"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterScope" ):
                 listener.enterScope(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitScope"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitScope" ):
                 listener.exitScope(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitScope"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitScope" ):
                 return visitor.visitScope(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def scope(self):
 
         localctx = qasm3Parser.ScopeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 8, self.RULE_scope)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 177
@@ -1467,81 +1200,7 @@ class qasm3Parser(Parser):
             self.state = 181
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (
-                ((_la) & ~0x3F) == 0
-                and (
-                    (1 << _la)
-                    & (
-                        (1 << qasm3Parser.INCLUDE)
-                        | (1 << qasm3Parser.DEFCALGRAMMAR)
-                        | (1 << qasm3Parser.DEF)
-                        | (1 << qasm3Parser.DEFCAL)
-                        | (1 << qasm3Parser.GATE)
-                        | (1 << qasm3Parser.EXTERN)
-                        | (1 << qasm3Parser.BOX)
-                        | (1 << qasm3Parser.LET)
-                        | (1 << qasm3Parser.BREAK)
-                        | (1 << qasm3Parser.CONTINUE)
-                        | (1 << qasm3Parser.IF)
-                        | (1 << qasm3Parser.END)
-                        | (1 << qasm3Parser.RETURN)
-                        | (1 << qasm3Parser.FOR)
-                        | (1 << qasm3Parser.WHILE)
-                        | (1 << qasm3Parser.PRAGMA)
-                        | (1 << qasm3Parser.AnnotationKeyword)
-                        | (1 << qasm3Parser.INPUT)
-                        | (1 << qasm3Parser.OUTPUT)
-                        | (1 << qasm3Parser.CONST)
-                        | (1 << qasm3Parser.QREG)
-                        | (1 << qasm3Parser.QUBIT)
-                        | (1 << qasm3Parser.CREG)
-                        | (1 << qasm3Parser.BOOL)
-                        | (1 << qasm3Parser.BIT)
-                        | (1 << qasm3Parser.INT)
-                        | (1 << qasm3Parser.UINT)
-                        | (1 << qasm3Parser.FLOAT)
-                        | (1 << qasm3Parser.ANGLE)
-                        | (1 << qasm3Parser.COMPLEX)
-                        | (1 << qasm3Parser.ARRAY)
-                        | (1 << qasm3Parser.DURATION)
-                        | (1 << qasm3Parser.STRETCH)
-                        | (1 << qasm3Parser.GPHASE)
-                        | (1 << qasm3Parser.INV)
-                        | (1 << qasm3Parser.POW)
-                        | (1 << qasm3Parser.CTRL)
-                        | (1 << qasm3Parser.NEGCTRL)
-                        | (1 << qasm3Parser.DURATIONOF)
-                        | (1 << qasm3Parser.DELAY)
-                        | (1 << qasm3Parser.RESET)
-                        | (1 << qasm3Parser.MEASURE)
-                        | (1 << qasm3Parser.BARRIER)
-                        | (1 << qasm3Parser.BooleanLiteral)
-                        | (1 << qasm3Parser.LPAREN)
-                    )
-                )
-                != 0
-            ) or (
-                (((_la - 64)) & ~0x3F) == 0
-                and (
-                    (1 << (_la - 64))
-                    & (
-                        (1 << (qasm3Parser.MINUS - 64))
-                        | (1 << (qasm3Parser.TILDE - 64))
-                        | (1 << (qasm3Parser.EXCLAMATION_POINT - 64))
-                        | (1 << (qasm3Parser.ImaginaryLiteral - 64))
-                        | (1 << (qasm3Parser.BinaryIntegerLiteral - 64))
-                        | (1 << (qasm3Parser.OctalIntegerLiteral - 64))
-                        | (1 << (qasm3Parser.DecimalIntegerLiteral - 64))
-                        | (1 << (qasm3Parser.HexIntegerLiteral - 64))
-                        | (1 << (qasm3Parser.Identifier - 64))
-                        | (1 << (qasm3Parser.HardwareQubit - 64))
-                        | (1 << (qasm3Parser.FloatLiteral - 64))
-                        | (1 << (qasm3Parser.TimingLiteral - 64))
-                        | (1 << (qasm3Parser.BitstringLiteral - 64))
-                    )
-                )
-                != 0
-            ):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << qasm3Parser.INCLUDE) | (1 << qasm3Parser.DEFCALGRAMMAR) | (1 << qasm3Parser.DEF) | (1 << qasm3Parser.DEFCAL) | (1 << qasm3Parser.GATE) | (1 << qasm3Parser.EXTERN) | (1 << qasm3Parser.BOX) | (1 << qasm3Parser.LET) | (1 << qasm3Parser.BREAK) | (1 << qasm3Parser.CONTINUE) | (1 << qasm3Parser.IF) | (1 << qasm3Parser.END) | (1 << qasm3Parser.RETURN) | (1 << qasm3Parser.FOR) | (1 << qasm3Parser.WHILE) | (1 << qasm3Parser.PRAGMA) | (1 << qasm3Parser.AnnotationKeyword) | (1 << qasm3Parser.INPUT) | (1 << qasm3Parser.OUTPUT) | (1 << qasm3Parser.CONST) | (1 << qasm3Parser.QREG) | (1 << qasm3Parser.QUBIT) | (1 << qasm3Parser.CREG) | (1 << qasm3Parser.BOOL) | (1 << qasm3Parser.BIT) | (1 << qasm3Parser.INT) | (1 << qasm3Parser.UINT) | (1 << qasm3Parser.FLOAT) | (1 << qasm3Parser.ANGLE) | (1 << qasm3Parser.COMPLEX) | (1 << qasm3Parser.ARRAY) | (1 << qasm3Parser.DURATION) | (1 << qasm3Parser.STRETCH) | (1 << qasm3Parser.GPHASE) | (1 << qasm3Parser.INV) | (1 << qasm3Parser.POW) | (1 << qasm3Parser.CTRL) | (1 << qasm3Parser.NEGCTRL) | (1 << qasm3Parser.DURATIONOF) | (1 << qasm3Parser.DELAY) | (1 << qasm3Parser.RESET) | (1 << qasm3Parser.MEASURE) | (1 << qasm3Parser.BARRIER) | (1 << qasm3Parser.BooleanLiteral) | (1 << qasm3Parser.LPAREN))) != 0) or ((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & ((1 << (qasm3Parser.MINUS - 64)) | (1 << (qasm3Parser.TILDE - 64)) | (1 << (qasm3Parser.EXCLAMATION_POINT - 64)) | (1 << (qasm3Parser.ImaginaryLiteral - 64)) | (1 << (qasm3Parser.BinaryIntegerLiteral - 64)) | (1 << (qasm3Parser.OctalIntegerLiteral - 64)) | (1 << (qasm3Parser.DecimalIntegerLiteral - 64)) | (1 << (qasm3Parser.HexIntegerLiteral - 64)) | (1 << (qasm3Parser.Identifier - 64)) | (1 << (qasm3Parser.HardwareQubit - 64)) | (1 << (qasm3Parser.FloatLiteral - 64)) | (1 << (qasm3Parser.TimingLiteral - 64)) | (1 << (qasm3Parser.BitstringLiteral - 64)))) != 0):
                 self.state = 178
                 self.statement()
                 self.state = 183
@@ -1558,8 +1217,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class PragmaContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1572,19 +1233,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_pragma
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPragma"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterPragma" ):
                 listener.enterPragma(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPragma"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitPragma" ):
                 listener.exitPragma(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPragma"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitPragma" ):
                 return visitor.visitPragma(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def pragma(self):
 
@@ -1604,33 +1268,40 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class StatementOrScopeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def statement(self):
-            return self.getTypedRuleContext(qasm3Parser.StatementContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.StatementContext,0)
+
 
         def scope(self):
-            return self.getTypedRuleContext(qasm3Parser.ScopeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScopeContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_statementOrScope
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterStatementOrScope"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterStatementOrScope" ):
                 listener.enterStatementOrScope(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitStatementOrScope"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitStatementOrScope" ):
                 listener.exitStatementOrScope(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitStatementOrScope"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitStatementOrScope" ):
                 return visitor.visitStatementOrScope(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def statementOrScope(self):
 
@@ -1640,66 +1311,7 @@ class qasm3Parser(Parser):
             self.state = 191
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.INCLUDE,
-                qasm3Parser.DEFCALGRAMMAR,
-                qasm3Parser.DEF,
-                qasm3Parser.DEFCAL,
-                qasm3Parser.GATE,
-                qasm3Parser.EXTERN,
-                qasm3Parser.BOX,
-                qasm3Parser.LET,
-                qasm3Parser.BREAK,
-                qasm3Parser.CONTINUE,
-                qasm3Parser.IF,
-                qasm3Parser.END,
-                qasm3Parser.RETURN,
-                qasm3Parser.FOR,
-                qasm3Parser.WHILE,
-                qasm3Parser.PRAGMA,
-                qasm3Parser.AnnotationKeyword,
-                qasm3Parser.INPUT,
-                qasm3Parser.OUTPUT,
-                qasm3Parser.CONST,
-                qasm3Parser.QREG,
-                qasm3Parser.QUBIT,
-                qasm3Parser.CREG,
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.ARRAY,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-                qasm3Parser.GPHASE,
-                qasm3Parser.INV,
-                qasm3Parser.POW,
-                qasm3Parser.CTRL,
-                qasm3Parser.NEGCTRL,
-                qasm3Parser.DURATIONOF,
-                qasm3Parser.DELAY,
-                qasm3Parser.RESET,
-                qasm3Parser.MEASURE,
-                qasm3Parser.BARRIER,
-                qasm3Parser.BooleanLiteral,
-                qasm3Parser.LPAREN,
-                qasm3Parser.MINUS,
-                qasm3Parser.TILDE,
-                qasm3Parser.EXCLAMATION_POINT,
-                qasm3Parser.ImaginaryLiteral,
-                qasm3Parser.BinaryIntegerLiteral,
-                qasm3Parser.OctalIntegerLiteral,
-                qasm3Parser.DecimalIntegerLiteral,
-                qasm3Parser.HexIntegerLiteral,
-                qasm3Parser.Identifier,
-                qasm3Parser.HardwareQubit,
-                qasm3Parser.FloatLiteral,
-                qasm3Parser.TimingLiteral,
-                qasm3Parser.BitstringLiteral,
-            ]:
+            if token in [qasm3Parser.INCLUDE, qasm3Parser.DEFCALGRAMMAR, qasm3Parser.DEF, qasm3Parser.DEFCAL, qasm3Parser.GATE, qasm3Parser.EXTERN, qasm3Parser.BOX, qasm3Parser.LET, qasm3Parser.BREAK, qasm3Parser.CONTINUE, qasm3Parser.IF, qasm3Parser.END, qasm3Parser.RETURN, qasm3Parser.FOR, qasm3Parser.WHILE, qasm3Parser.PRAGMA, qasm3Parser.AnnotationKeyword, qasm3Parser.INPUT, qasm3Parser.OUTPUT, qasm3Parser.CONST, qasm3Parser.QREG, qasm3Parser.QUBIT, qasm3Parser.CREG, qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.GPHASE, qasm3Parser.INV, qasm3Parser.POW, qasm3Parser.CTRL, qasm3Parser.NEGCTRL, qasm3Parser.DURATIONOF, qasm3Parser.DELAY, qasm3Parser.RESET, qasm3Parser.MEASURE, qasm3Parser.BARRIER, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 189
                 self.statement()
@@ -1720,8 +1332,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class CalibrationGrammarStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1737,19 +1351,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_calibrationGrammarStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCalibrationGrammarStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCalibrationGrammarStatement" ):
                 listener.enterCalibrationGrammarStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCalibrationGrammarStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCalibrationGrammarStatement" ):
                 listener.exitCalibrationGrammarStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCalibrationGrammarStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCalibrationGrammarStatement" ):
                 return visitor.visitCalibrationGrammarStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def calibrationGrammarStatement(self):
 
@@ -1771,8 +1388,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class IncludeStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1788,19 +1407,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_includeStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIncludeStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIncludeStatement" ):
                 listener.enterIncludeStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIncludeStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIncludeStatement" ):
                 listener.exitIncludeStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIncludeStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIncludeStatement" ):
                 return visitor.visitIncludeStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def includeStatement(self):
 
@@ -1822,8 +1444,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class BreakStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1836,19 +1460,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_breakStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBreakStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBreakStatement" ):
                 listener.enterBreakStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBreakStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBreakStatement" ):
                 listener.exitBreakStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBreakStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBreakStatement" ):
                 return visitor.visitBreakStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def breakStatement(self):
 
@@ -1868,8 +1495,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ContinueStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1882,19 +1511,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_continueStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterContinueStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterContinueStatement" ):
                 listener.enterContinueStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitContinueStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitContinueStatement" ):
                 listener.exitContinueStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitContinueStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitContinueStatement" ):
                 return visitor.visitContinueStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def continueStatement(self):
 
@@ -1914,8 +1546,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class EndStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1928,19 +1562,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_endStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterEndStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEndStatement" ):
                 listener.enterEndStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitEndStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEndStatement" ):
                 listener.exitEndStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitEndStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitEndStatement" ):
                 return visitor.visitEndStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def endStatement(self):
 
@@ -1960,19 +1597,22 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ForStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.body = None  # StatementOrScopeContext
+            self.body = None # StatementOrScopeContext
 
         def FOR(self):
             return self.getToken(qasm3Parser.FOR, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
 
-        def Identifier(self, i: int = None):
+
+        def Identifier(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.Identifier)
             else:
@@ -1982,16 +1622,19 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.IN, 0)
 
         def statementOrScope(self):
-            return self.getTypedRuleContext(qasm3Parser.StatementOrScopeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.StatementOrScopeContext,0)
+
 
         def setExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.SetExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.SetExpressionContext,0)
+
 
         def LBRACKET(self):
             return self.getToken(qasm3Parser.LBRACKET, 0)
 
         def rangeExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.RangeExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.RangeExpressionContext,0)
+
 
         def RBRACKET(self):
             return self.getToken(qasm3Parser.RBRACKET, 0)
@@ -1999,19 +1642,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_forStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterForStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterForStatement" ):
                 listener.enterForStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitForStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitForStatement" ):
                 listener.exitForStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitForStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitForStatement" ):
                 return visitor.visitForStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def forStatement(self):
 
@@ -2059,12 +1705,14 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class IfStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.if_body = None  # StatementOrScopeContext
-            self.else_body = None  # StatementOrScopeContext
+            self.if_body = None # StatementOrScopeContext
+            self.else_body = None # StatementOrScopeContext
 
         def IF(self):
             return self.getToken(qasm3Parser.IF, 0)
@@ -2073,16 +1721,18 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.LPAREN, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def RPAREN(self):
             return self.getToken(qasm3Parser.RPAREN, 0)
 
-        def statementOrScope(self, i: int = None):
+        def statementOrScope(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.StatementOrScopeContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.StatementOrScopeContext, i)
+                return self.getTypedRuleContext(qasm3Parser.StatementOrScopeContext,i)
+
 
         def ELSE(self):
             return self.getToken(qasm3Parser.ELSE, 0)
@@ -2090,19 +1740,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_ifStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIfStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIfStatement" ):
                 listener.enterIfStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIfStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIfStatement" ):
                 listener.exitIfStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIfStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIfStatement" ):
                 return visitor.visitIfStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def ifStatement(self):
 
@@ -2122,12 +1775,13 @@ class qasm3Parser(Parser):
             localctx.if_body = self.statementOrScope()
             self.state = 231
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 9, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,9,self._ctx)
             if la_ == 1:
                 self.state = 229
                 self.match(qasm3Parser.ELSE)
                 self.state = 230
                 localctx.else_body = self.statementOrScope()
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -2137,8 +1791,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ReturnStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2149,27 +1805,32 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def measureExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.MeasureExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.MeasureExpressionContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_returnStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterReturnStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterReturnStatement" ):
                 listener.enterReturnStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitReturnStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitReturnStatement" ):
                 listener.exitReturnStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitReturnStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitReturnStatement" ):
                 return visitor.visitReturnStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def returnStatement(self):
 
@@ -2182,34 +1843,7 @@ class qasm3Parser(Parser):
             self.state = 236
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.ARRAY,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-                qasm3Parser.DURATIONOF,
-                qasm3Parser.BooleanLiteral,
-                qasm3Parser.LPAREN,
-                qasm3Parser.MINUS,
-                qasm3Parser.TILDE,
-                qasm3Parser.EXCLAMATION_POINT,
-                qasm3Parser.ImaginaryLiteral,
-                qasm3Parser.BinaryIntegerLiteral,
-                qasm3Parser.OctalIntegerLiteral,
-                qasm3Parser.DecimalIntegerLiteral,
-                qasm3Parser.HexIntegerLiteral,
-                qasm3Parser.Identifier,
-                qasm3Parser.HardwareQubit,
-                qasm3Parser.FloatLiteral,
-                qasm3Parser.TimingLiteral,
-                qasm3Parser.BitstringLiteral,
-            ]:
+            if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.DURATIONOF, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                 self.state = 234
                 self.expression(0)
                 pass
@@ -2231,11 +1865,13 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class WhileStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.body = None  # StatementOrScopeContext
+            self.body = None # StatementOrScopeContext
 
         def WHILE(self):
             return self.getToken(qasm3Parser.WHILE, 0)
@@ -2244,30 +1880,35 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.LPAREN, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def RPAREN(self):
             return self.getToken(qasm3Parser.RPAREN, 0)
 
         def statementOrScope(self):
-            return self.getTypedRuleContext(qasm3Parser.StatementOrScopeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.StatementOrScopeContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_whileStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterWhileStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterWhileStatement" ):
                 listener.enterWhileStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitWhileStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitWhileStatement" ):
                 listener.exitWhileStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitWhileStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitWhileStatement" ):
                 return visitor.visitWhileStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def whileStatement(self):
 
@@ -2293,8 +1934,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class BarrierStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2305,30 +1948,34 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
 
         def gateOperandList(self):
-            return self.getTypedRuleContext(qasm3Parser.GateOperandListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.GateOperandListContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_barrierStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBarrierStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBarrierStatement" ):
                 listener.enterBarrierStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBarrierStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBarrierStatement" ):
                 listener.exitBarrierStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBarrierStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBarrierStatement" ):
                 return visitor.visitBarrierStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def barrierStatement(self):
 
         localctx = qasm3Parser.BarrierStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 32, self.RULE_barrierStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 246
@@ -2336,9 +1983,10 @@ class qasm3Parser(Parser):
             self.state = 248
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.Identifier or _la == qasm3Parser.HardwareQubit:
+            if _la==qasm3Parser.Identifier or _la==qasm3Parser.HardwareQubit:
                 self.state = 247
                 self.gateOperandList()
+
 
             self.state = 250
             self.match(qasm3Parser.SEMICOLON)
@@ -2350,8 +1998,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class BoxStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2359,33 +2009,38 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.BOX, 0)
 
         def scope(self):
-            return self.getTypedRuleContext(qasm3Parser.ScopeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScopeContext,0)
+
 
         def designator(self):
-            return self.getTypedRuleContext(qasm3Parser.DesignatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DesignatorContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_boxStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBoxStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBoxStatement" ):
                 listener.enterBoxStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBoxStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBoxStatement" ):
                 listener.exitBoxStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBoxStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBoxStatement" ):
                 return visitor.visitBoxStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def boxStatement(self):
 
         localctx = qasm3Parser.BoxStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 34, self.RULE_boxStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 252
@@ -2393,9 +2048,10 @@ class qasm3Parser(Parser):
             self.state = 254
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.LBRACKET:
+            if _la==qasm3Parser.LBRACKET:
                 self.state = 253
                 self.designator()
+
 
             self.state = 256
             self.scope()
@@ -2407,8 +2063,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class DelayStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2416,36 +2074,41 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.DELAY, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(qasm3Parser.DesignatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DesignatorContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
 
         def gateOperandList(self):
-            return self.getTypedRuleContext(qasm3Parser.GateOperandListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.GateOperandListContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_delayStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDelayStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDelayStatement" ):
                 listener.enterDelayStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDelayStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDelayStatement" ):
                 listener.exitDelayStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDelayStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDelayStatement" ):
                 return visitor.visitDelayStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def delayStatement(self):
 
         localctx = qasm3Parser.DelayStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 36, self.RULE_delayStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 258
@@ -2455,9 +2118,10 @@ class qasm3Parser(Parser):
             self.state = 261
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.Identifier or _la == qasm3Parser.HardwareQubit:
+            if _la==qasm3Parser.Identifier or _la==qasm3Parser.HardwareQubit:
                 self.state = 260
                 self.gateOperandList()
+
 
             self.state = 263
             self.match(qasm3Parser.SEMICOLON)
@@ -2469,8 +2133,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateCallStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2478,16 +2144,18 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.Identifier, 0)
 
         def gateOperandList(self):
-            return self.getTypedRuleContext(qasm3Parser.GateOperandListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.GateOperandListContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
 
-        def gateModifier(self, i: int = None):
+        def gateModifier(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.GateModifierContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.GateModifierContext, i)
+                return self.getTypedRuleContext(qasm3Parser.GateModifierContext,i)
+
 
         def LPAREN(self):
             return self.getToken(qasm3Parser.LPAREN, 0)
@@ -2496,10 +2164,12 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.RPAREN, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(qasm3Parser.DesignatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DesignatorContext,0)
+
 
         def expressionList(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionListContext,0)
+
 
         def GPHASE(self):
             return self.getToken(qasm3Parser.GPHASE, 0)
@@ -2507,43 +2177,38 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_gateCallStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateCallStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateCallStatement" ):
                 listener.enterGateCallStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateCallStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateCallStatement" ):
                 listener.exitGateCallStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateCallStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateCallStatement" ):
                 return visitor.visitGateCallStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateCallStatement(self):
 
         localctx = qasm3Parser.GateCallStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 38, self.RULE_gateCallStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 306
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 23, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,23,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 268
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while ((_la) & ~0x3F) == 0 and (
-                    (1 << _la)
-                    & (
-                        (1 << qasm3Parser.INV)
-                        | (1 << qasm3Parser.POW)
-                        | (1 << qasm3Parser.CTRL)
-                        | (1 << qasm3Parser.NEGCTRL)
-                    )
-                ) != 0:
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << qasm3Parser.INV) | (1 << qasm3Parser.POW) | (1 << qasm3Parser.CTRL) | (1 << qasm3Parser.NEGCTRL))) != 0):
                     self.state = 265
                     self.gateModifier()
                     self.state = 270
@@ -2555,55 +2220,28 @@ class qasm3Parser(Parser):
                 self.state = 277
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LPAREN:
+                if _la==qasm3Parser.LPAREN:
                     self.state = 272
                     self.match(qasm3Parser.LPAREN)
                     self.state = 274
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if (((_la - 28)) & ~0x3F) == 0 and (
-                        (1 << (_la - 28))
-                        & (
-                            (1 << (qasm3Parser.BOOL - 28))
-                            | (1 << (qasm3Parser.BIT - 28))
-                            | (1 << (qasm3Parser.INT - 28))
-                            | (1 << (qasm3Parser.UINT - 28))
-                            | (1 << (qasm3Parser.FLOAT - 28))
-                            | (1 << (qasm3Parser.ANGLE - 28))
-                            | (1 << (qasm3Parser.COMPLEX - 28))
-                            | (1 << (qasm3Parser.ARRAY - 28))
-                            | (1 << (qasm3Parser.DURATION - 28))
-                            | (1 << (qasm3Parser.STRETCH - 28))
-                            | (1 << (qasm3Parser.DURATIONOF - 28))
-                            | (1 << (qasm3Parser.BooleanLiteral - 28))
-                            | (1 << (qasm3Parser.LPAREN - 28))
-                            | (1 << (qasm3Parser.MINUS - 28))
-                            | (1 << (qasm3Parser.TILDE - 28))
-                            | (1 << (qasm3Parser.EXCLAMATION_POINT - 28))
-                            | (1 << (qasm3Parser.ImaginaryLiteral - 28))
-                            | (1 << (qasm3Parser.BinaryIntegerLiteral - 28))
-                            | (1 << (qasm3Parser.OctalIntegerLiteral - 28))
-                            | (1 << (qasm3Parser.DecimalIntegerLiteral - 28))
-                            | (1 << (qasm3Parser.HexIntegerLiteral - 28))
-                            | (1 << (qasm3Parser.Identifier - 28))
-                            | (1 << (qasm3Parser.HardwareQubit - 28))
-                            | (1 << (qasm3Parser.FloatLiteral - 28))
-                            | (1 << (qasm3Parser.TimingLiteral - 28))
-                            | (1 << (qasm3Parser.BitstringLiteral - 28))
-                        )
-                    ) != 0:
+                    if ((((_la - 28)) & ~0x3f) == 0 and ((1 << (_la - 28)) & ((1 << (qasm3Parser.BOOL - 28)) | (1 << (qasm3Parser.BIT - 28)) | (1 << (qasm3Parser.INT - 28)) | (1 << (qasm3Parser.UINT - 28)) | (1 << (qasm3Parser.FLOAT - 28)) | (1 << (qasm3Parser.ANGLE - 28)) | (1 << (qasm3Parser.COMPLEX - 28)) | (1 << (qasm3Parser.ARRAY - 28)) | (1 << (qasm3Parser.DURATION - 28)) | (1 << (qasm3Parser.STRETCH - 28)) | (1 << (qasm3Parser.DURATIONOF - 28)) | (1 << (qasm3Parser.BooleanLiteral - 28)) | (1 << (qasm3Parser.LPAREN - 28)) | (1 << (qasm3Parser.MINUS - 28)) | (1 << (qasm3Parser.TILDE - 28)) | (1 << (qasm3Parser.EXCLAMATION_POINT - 28)) | (1 << (qasm3Parser.ImaginaryLiteral - 28)) | (1 << (qasm3Parser.BinaryIntegerLiteral - 28)) | (1 << (qasm3Parser.OctalIntegerLiteral - 28)) | (1 << (qasm3Parser.DecimalIntegerLiteral - 28)) | (1 << (qasm3Parser.HexIntegerLiteral - 28)) | (1 << (qasm3Parser.Identifier - 28)) | (1 << (qasm3Parser.HardwareQubit - 28)) | (1 << (qasm3Parser.FloatLiteral - 28)) | (1 << (qasm3Parser.TimingLiteral - 28)) | (1 << (qasm3Parser.BitstringLiteral - 28)))) != 0):
                         self.state = 273
                         self.expressionList()
+
 
                     self.state = 276
                     self.match(qasm3Parser.RPAREN)
 
+
                 self.state = 280
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 279
                     self.designator()
+
 
                 self.state = 282
                 self.gateOperandList()
@@ -2616,15 +2254,7 @@ class qasm3Parser(Parser):
                 self.state = 288
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while ((_la) & ~0x3F) == 0 and (
-                    (1 << _la)
-                    & (
-                        (1 << qasm3Parser.INV)
-                        | (1 << qasm3Parser.POW)
-                        | (1 << qasm3Parser.CTRL)
-                        | (1 << qasm3Parser.NEGCTRL)
-                    )
-                ) != 0:
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << qasm3Parser.INV) | (1 << qasm3Parser.POW) | (1 << qasm3Parser.CTRL) | (1 << qasm3Parser.NEGCTRL))) != 0):
                     self.state = 285
                     self.gateModifier()
                     self.state = 290
@@ -2636,66 +2266,41 @@ class qasm3Parser(Parser):
                 self.state = 297
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LPAREN:
+                if _la==qasm3Parser.LPAREN:
                     self.state = 292
                     self.match(qasm3Parser.LPAREN)
                     self.state = 294
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if (((_la - 28)) & ~0x3F) == 0 and (
-                        (1 << (_la - 28))
-                        & (
-                            (1 << (qasm3Parser.BOOL - 28))
-                            | (1 << (qasm3Parser.BIT - 28))
-                            | (1 << (qasm3Parser.INT - 28))
-                            | (1 << (qasm3Parser.UINT - 28))
-                            | (1 << (qasm3Parser.FLOAT - 28))
-                            | (1 << (qasm3Parser.ANGLE - 28))
-                            | (1 << (qasm3Parser.COMPLEX - 28))
-                            | (1 << (qasm3Parser.ARRAY - 28))
-                            | (1 << (qasm3Parser.DURATION - 28))
-                            | (1 << (qasm3Parser.STRETCH - 28))
-                            | (1 << (qasm3Parser.DURATIONOF - 28))
-                            | (1 << (qasm3Parser.BooleanLiteral - 28))
-                            | (1 << (qasm3Parser.LPAREN - 28))
-                            | (1 << (qasm3Parser.MINUS - 28))
-                            | (1 << (qasm3Parser.TILDE - 28))
-                            | (1 << (qasm3Parser.EXCLAMATION_POINT - 28))
-                            | (1 << (qasm3Parser.ImaginaryLiteral - 28))
-                            | (1 << (qasm3Parser.BinaryIntegerLiteral - 28))
-                            | (1 << (qasm3Parser.OctalIntegerLiteral - 28))
-                            | (1 << (qasm3Parser.DecimalIntegerLiteral - 28))
-                            | (1 << (qasm3Parser.HexIntegerLiteral - 28))
-                            | (1 << (qasm3Parser.Identifier - 28))
-                            | (1 << (qasm3Parser.HardwareQubit - 28))
-                            | (1 << (qasm3Parser.FloatLiteral - 28))
-                            | (1 << (qasm3Parser.TimingLiteral - 28))
-                            | (1 << (qasm3Parser.BitstringLiteral - 28))
-                        )
-                    ) != 0:
+                    if ((((_la - 28)) & ~0x3f) == 0 and ((1 << (_la - 28)) & ((1 << (qasm3Parser.BOOL - 28)) | (1 << (qasm3Parser.BIT - 28)) | (1 << (qasm3Parser.INT - 28)) | (1 << (qasm3Parser.UINT - 28)) | (1 << (qasm3Parser.FLOAT - 28)) | (1 << (qasm3Parser.ANGLE - 28)) | (1 << (qasm3Parser.COMPLEX - 28)) | (1 << (qasm3Parser.ARRAY - 28)) | (1 << (qasm3Parser.DURATION - 28)) | (1 << (qasm3Parser.STRETCH - 28)) | (1 << (qasm3Parser.DURATIONOF - 28)) | (1 << (qasm3Parser.BooleanLiteral - 28)) | (1 << (qasm3Parser.LPAREN - 28)) | (1 << (qasm3Parser.MINUS - 28)) | (1 << (qasm3Parser.TILDE - 28)) | (1 << (qasm3Parser.EXCLAMATION_POINT - 28)) | (1 << (qasm3Parser.ImaginaryLiteral - 28)) | (1 << (qasm3Parser.BinaryIntegerLiteral - 28)) | (1 << (qasm3Parser.OctalIntegerLiteral - 28)) | (1 << (qasm3Parser.DecimalIntegerLiteral - 28)) | (1 << (qasm3Parser.HexIntegerLiteral - 28)) | (1 << (qasm3Parser.Identifier - 28)) | (1 << (qasm3Parser.HardwareQubit - 28)) | (1 << (qasm3Parser.FloatLiteral - 28)) | (1 << (qasm3Parser.TimingLiteral - 28)) | (1 << (qasm3Parser.BitstringLiteral - 28)))) != 0):
                         self.state = 293
                         self.expressionList()
+
 
                     self.state = 296
                     self.match(qasm3Parser.RPAREN)
 
+
                 self.state = 300
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 299
                     self.designator()
+
 
                 self.state = 303
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.Identifier or _la == qasm3Parser.HardwareQubit:
+                if _la==qasm3Parser.Identifier or _la==qasm3Parser.HardwareQubit:
                     self.state = 302
                     self.gateOperandList()
+
 
                 self.state = 305
                 self.match(qasm3Parser.SEMICOLON)
                 pass
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -2705,13 +2310,16 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class MeasureArrowAssignmentStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def measureExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.MeasureExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.MeasureExpressionContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
@@ -2720,30 +2328,34 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.ARROW, 0)
 
         def indexedIdentifier(self):
-            return self.getTypedRuleContext(qasm3Parser.IndexedIdentifierContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.IndexedIdentifierContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_measureArrowAssignmentStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMeasureArrowAssignmentStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMeasureArrowAssignmentStatement" ):
                 listener.enterMeasureArrowAssignmentStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMeasureArrowAssignmentStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMeasureArrowAssignmentStatement" ):
                 listener.exitMeasureArrowAssignmentStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMeasureArrowAssignmentStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMeasureArrowAssignmentStatement" ):
                 return visitor.visitMeasureArrowAssignmentStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def measureArrowAssignmentStatement(self):
 
         localctx = qasm3Parser.MeasureArrowAssignmentStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 40, self.RULE_measureArrowAssignmentStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 308
@@ -2751,11 +2363,12 @@ class qasm3Parser(Parser):
             self.state = 311
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.ARROW:
+            if _la==qasm3Parser.ARROW:
                 self.state = 309
                 self.match(qasm3Parser.ARROW)
                 self.state = 310
                 self.indexedIdentifier()
+
 
             self.state = 313
             self.match(qasm3Parser.SEMICOLON)
@@ -2767,8 +2380,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ResetStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2776,7 +2391,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.RESET, 0)
 
         def gateOperand(self):
-            return self.getTypedRuleContext(qasm3Parser.GateOperandContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.GateOperandContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
@@ -2784,19 +2400,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_resetStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterResetStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterResetStatement" ):
                 listener.enterResetStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitResetStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitResetStatement" ):
                 listener.exitResetStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitResetStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitResetStatement" ):
                 return visitor.visitResetStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def resetStatement(self):
 
@@ -2818,8 +2437,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class AliasDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2833,7 +2454,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.EQUALS, 0)
 
         def aliasExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.AliasExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.AliasExpressionContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
@@ -2841,19 +2463,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_aliasDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAliasDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAliasDeclarationStatement" ):
                 listener.enterAliasDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAliasDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAliasDeclarationStatement" ):
                 listener.exitAliasDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAliasDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAliasDeclarationStatement" ):
                 return visitor.visitAliasDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def aliasDeclarationStatement(self):
 
@@ -2879,8 +2504,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ClassicalDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2891,55 +2518,51 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def arrayType(self):
-            return self.getTypedRuleContext(qasm3Parser.ArrayTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ArrayTypeContext,0)
+
 
         def EQUALS(self):
             return self.getToken(qasm3Parser.EQUALS, 0)
 
         def declarationExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.DeclarationExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DeclarationExpressionContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_classicalDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterClassicalDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterClassicalDeclarationStatement" ):
                 listener.enterClassicalDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitClassicalDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitClassicalDeclarationStatement" ):
                 listener.exitClassicalDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitClassicalDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitClassicalDeclarationStatement" ):
                 return visitor.visitClassicalDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def classicalDeclarationStatement(self):
 
         localctx = qasm3Parser.ClassicalDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_classicalDeclarationStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 327
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-            ]:
+            if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.DURATION, qasm3Parser.STRETCH]:
                 self.state = 325
                 self.scalarType()
                 pass
@@ -2955,11 +2578,12 @@ class qasm3Parser(Parser):
             self.state = 332
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.EQUALS:
+            if _la==qasm3Parser.EQUALS:
                 self.state = 330
                 self.match(qasm3Parser.EQUALS)
                 self.state = 331
                 self.declarationExpression()
+
 
             self.state = 334
             self.match(qasm3Parser.SEMICOLON)
@@ -2971,8 +2595,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ConstDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2980,7 +2606,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.CONST, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def Identifier(self):
             return self.getToken(qasm3Parser.Identifier, 0)
@@ -2989,7 +2616,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.EQUALS, 0)
 
         def declarationExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.DeclarationExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DeclarationExpressionContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
@@ -2997,19 +2625,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_constDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterConstDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterConstDeclarationStatement" ):
                 listener.enterConstDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitConstDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitConstDeclarationStatement" ):
                 listener.exitConstDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitConstDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitConstDeclarationStatement" ):
                 return visitor.visitConstDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def constDeclarationStatement(self):
 
@@ -3037,8 +2668,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class IoDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3055,38 +2688,43 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.OUTPUT, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def arrayType(self):
-            return self.getTypedRuleContext(qasm3Parser.ArrayTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ArrayTypeContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_ioDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIoDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIoDeclarationStatement" ):
                 listener.enterIoDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIoDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIoDeclarationStatement" ):
                 listener.exitIoDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIoDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIoDeclarationStatement" ):
                 return visitor.visitIoDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def ioDeclarationStatement(self):
 
         localctx = qasm3Parser.IoDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_ioDeclarationStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 343
             _la = self._input.LA(1)
-            if not (_la == qasm3Parser.INPUT or _la == qasm3Parser.OUTPUT):
+            if not(_la==qasm3Parser.INPUT or _la==qasm3Parser.OUTPUT):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -3094,17 +2732,7 @@ class qasm3Parser(Parser):
             self.state = 346
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-            ]:
+            if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.DURATION, qasm3Parser.STRETCH]:
                 self.state = 344
                 self.scalarType()
                 pass
@@ -3127,8 +2755,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class OldStyleDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3145,35 +2775,39 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.QREG, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(qasm3Parser.DesignatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DesignatorContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_oldStyleDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterOldStyleDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterOldStyleDeclarationStatement" ):
                 listener.enterOldStyleDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitOldStyleDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitOldStyleDeclarationStatement" ):
                 listener.exitOldStyleDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitOldStyleDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitOldStyleDeclarationStatement" ):
                 return visitor.visitOldStyleDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def oldStyleDeclarationStatement(self):
 
         localctx = qasm3Parser.OldStyleDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 52, self.RULE_oldStyleDeclarationStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 351
             _la = self._input.LA(1)
-            if not (_la == qasm3Parser.QREG or _la == qasm3Parser.CREG):
+            if not(_la==qasm3Parser.QREG or _la==qasm3Parser.CREG):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -3183,9 +2817,10 @@ class qasm3Parser(Parser):
             self.state = 354
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.LBRACKET:
+            if _la==qasm3Parser.LBRACKET:
                 self.state = 353
                 self.designator()
+
 
             self.state = 356
             self.match(qasm3Parser.SEMICOLON)
@@ -3197,13 +2832,16 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class QuantumDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def qubitType(self):
-            return self.getTypedRuleContext(qasm3Parser.QubitTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.QubitTypeContext,0)
+
 
         def Identifier(self):
             return self.getToken(qasm3Parser.Identifier, 0)
@@ -3214,19 +2852,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_quantumDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterQuantumDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterQuantumDeclarationStatement" ):
                 listener.enterQuantumDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitQuantumDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitQuantumDeclarationStatement" ):
                 listener.exitQuantumDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitQuantumDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitQuantumDeclarationStatement" ):
                 return visitor.visitQuantumDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def quantumDeclarationStatement(self):
 
@@ -3248,8 +2889,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class DefStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3266,36 +2909,42 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.RPAREN, 0)
 
         def scope(self):
-            return self.getTypedRuleContext(qasm3Parser.ScopeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScopeContext,0)
+
 
         def argumentDefinitionList(self):
-            return self.getTypedRuleContext(qasm3Parser.ArgumentDefinitionListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ArgumentDefinitionListContext,0)
+
 
         def returnSignature(self):
-            return self.getTypedRuleContext(qasm3Parser.ReturnSignatureContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ReturnSignatureContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_defStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDefStatement" ):
                 listener.enterDefStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDefStatement" ):
                 listener.exitDefStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDefStatement" ):
                 return visitor.visitDefStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def defStatement(self):
 
         localctx = qasm3Parser.DefStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_defStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 362
@@ -3307,36 +2956,20 @@ class qasm3Parser(Parser):
             self.state = 366
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la) & ~0x3F) == 0 and (
-                (1 << _la)
-                & (
-                    (1 << qasm3Parser.CONST)
-                    | (1 << qasm3Parser.MUTABLE)
-                    | (1 << qasm3Parser.QREG)
-                    | (1 << qasm3Parser.QUBIT)
-                    | (1 << qasm3Parser.CREG)
-                    | (1 << qasm3Parser.BOOL)
-                    | (1 << qasm3Parser.BIT)
-                    | (1 << qasm3Parser.INT)
-                    | (1 << qasm3Parser.UINT)
-                    | (1 << qasm3Parser.FLOAT)
-                    | (1 << qasm3Parser.ANGLE)
-                    | (1 << qasm3Parser.COMPLEX)
-                    | (1 << qasm3Parser.DURATION)
-                    | (1 << qasm3Parser.STRETCH)
-                )
-            ) != 0:
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << qasm3Parser.CONST) | (1 << qasm3Parser.MUTABLE) | (1 << qasm3Parser.QREG) | (1 << qasm3Parser.QUBIT) | (1 << qasm3Parser.CREG) | (1 << qasm3Parser.BOOL) | (1 << qasm3Parser.BIT) | (1 << qasm3Parser.INT) | (1 << qasm3Parser.UINT) | (1 << qasm3Parser.FLOAT) | (1 << qasm3Parser.ANGLE) | (1 << qasm3Parser.COMPLEX) | (1 << qasm3Parser.DURATION) | (1 << qasm3Parser.STRETCH))) != 0):
                 self.state = 365
                 self.argumentDefinitionList()
+
 
             self.state = 368
             self.match(qasm3Parser.RPAREN)
             self.state = 370
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.ARROW:
+            if _la==qasm3Parser.ARROW:
                 self.state = 369
                 self.returnSignature()
+
 
             self.state = 372
             self.scope()
@@ -3348,8 +2981,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExternStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3369,33 +3004,38 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
 
         def externArgumentList(self):
-            return self.getTypedRuleContext(qasm3Parser.ExternArgumentListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExternArgumentListContext,0)
+
 
         def returnSignature(self):
-            return self.getTypedRuleContext(qasm3Parser.ReturnSignatureContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ReturnSignatureContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_externStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExternStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExternStatement" ):
                 listener.enterExternStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExternStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExternStatement" ):
                 listener.exitExternStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExternStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExternStatement" ):
                 return visitor.visitExternStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def externStatement(self):
 
         localctx = qasm3Parser.ExternStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 58, self.RULE_externStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 374
@@ -3407,34 +3047,20 @@ class qasm3Parser(Parser):
             self.state = 378
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la) & ~0x3F) == 0 and (
-                (1 << _la)
-                & (
-                    (1 << qasm3Parser.CONST)
-                    | (1 << qasm3Parser.MUTABLE)
-                    | (1 << qasm3Parser.CREG)
-                    | (1 << qasm3Parser.BOOL)
-                    | (1 << qasm3Parser.BIT)
-                    | (1 << qasm3Parser.INT)
-                    | (1 << qasm3Parser.UINT)
-                    | (1 << qasm3Parser.FLOAT)
-                    | (1 << qasm3Parser.ANGLE)
-                    | (1 << qasm3Parser.COMPLEX)
-                    | (1 << qasm3Parser.DURATION)
-                    | (1 << qasm3Parser.STRETCH)
-                )
-            ) != 0:
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << qasm3Parser.CONST) | (1 << qasm3Parser.MUTABLE) | (1 << qasm3Parser.CREG) | (1 << qasm3Parser.BOOL) | (1 << qasm3Parser.BIT) | (1 << qasm3Parser.INT) | (1 << qasm3Parser.UINT) | (1 << qasm3Parser.FLOAT) | (1 << qasm3Parser.ANGLE) | (1 << qasm3Parser.COMPLEX) | (1 << qasm3Parser.DURATION) | (1 << qasm3Parser.STRETCH))) != 0):
                 self.state = 377
                 self.externArgumentList()
+
 
             self.state = 380
             self.match(qasm3Parser.RPAREN)
             self.state = 382
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.ARROW:
+            if _la==qasm3Parser.ARROW:
                 self.state = 381
                 self.returnSignature()
+
 
             self.state = 384
             self.match(qasm3Parser.SEMICOLON)
@@ -3446,12 +3072,14 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.params = None  # IdentifierListContext
-            self.qubits = None  # IdentifierListContext
+            self.params = None # IdentifierListContext
+            self.qubits = None # IdentifierListContext
 
         def GATE(self):
             return self.getToken(qasm3Parser.GATE, 0)
@@ -3460,13 +3088,15 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.Identifier, 0)
 
         def scope(self):
-            return self.getTypedRuleContext(qasm3Parser.ScopeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScopeContext,0)
 
-        def identifierList(self, i: int = None):
+
+        def identifierList(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.IdentifierListContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.IdentifierListContext, i)
+                return self.getTypedRuleContext(qasm3Parser.IdentifierListContext,i)
+
 
         def LPAREN(self):
             return self.getToken(qasm3Parser.LPAREN, 0)
@@ -3477,25 +3107,28 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_gateStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateStatement" ):
                 listener.enterGateStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateStatement" ):
                 listener.exitGateStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateStatement" ):
                 return visitor.visitGateStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateStatement(self):
 
         localctx = qasm3Parser.GateStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 60, self.RULE_gateStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 386
@@ -3505,18 +3138,20 @@ class qasm3Parser(Parser):
             self.state = 393
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.LPAREN:
+            if _la==qasm3Parser.LPAREN:
                 self.state = 388
                 self.match(qasm3Parser.LPAREN)
                 self.state = 390
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.Identifier:
+                if _la==qasm3Parser.Identifier:
                     self.state = 389
                     localctx.params = self.identifierList()
 
+
                 self.state = 392
                 self.match(qasm3Parser.RPAREN)
+
 
             self.state = 395
             localctx.qubits = self.identifierList()
@@ -3530,14 +3165,17 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class AssignmentStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.op = None  # Token
+            self.op = None # Token
 
         def indexedIdentifier(self):
-            return self.getTypedRuleContext(qasm3Parser.IndexedIdentifierContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.IndexedIdentifierContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
@@ -3549,33 +3187,38 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.CompoundAssignmentOperator, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def measureExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.MeasureExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.MeasureExpressionContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_assignmentStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAssignmentStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAssignmentStatement" ):
                 listener.enterAssignmentStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAssignmentStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAssignmentStatement" ):
                 listener.exitAssignmentStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAssignmentStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAssignmentStatement" ):
                 return visitor.visitAssignmentStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def assignmentStatement(self):
 
         localctx = qasm3Parser.AssignmentStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 62, self.RULE_assignmentStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 398
@@ -3583,7 +3226,7 @@ class qasm3Parser(Parser):
             self.state = 399
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
-            if not (_la == qasm3Parser.EQUALS or _la == qasm3Parser.CompoundAssignmentOperator):
+            if not(_la==qasm3Parser.EQUALS or _la==qasm3Parser.CompoundAssignmentOperator):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -3591,34 +3234,7 @@ class qasm3Parser(Parser):
             self.state = 402
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.ARRAY,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-                qasm3Parser.DURATIONOF,
-                qasm3Parser.BooleanLiteral,
-                qasm3Parser.LPAREN,
-                qasm3Parser.MINUS,
-                qasm3Parser.TILDE,
-                qasm3Parser.EXCLAMATION_POINT,
-                qasm3Parser.ImaginaryLiteral,
-                qasm3Parser.BinaryIntegerLiteral,
-                qasm3Parser.OctalIntegerLiteral,
-                qasm3Parser.DecimalIntegerLiteral,
-                qasm3Parser.HexIntegerLiteral,
-                qasm3Parser.Identifier,
-                qasm3Parser.HardwareQubit,
-                qasm3Parser.FloatLiteral,
-                qasm3Parser.TimingLiteral,
-                qasm3Parser.BitstringLiteral,
-            ]:
+            if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.DURATIONOF, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                 self.state = 400
                 self.expression(0)
                 pass
@@ -3639,13 +3255,16 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExpressionStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(qasm3Parser.SEMICOLON, 0)
@@ -3653,19 +3272,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_expressionStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExpressionStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExpressionStatement" ):
                 listener.enterExpressionStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExpressionStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExpressionStatement" ):
                 listener.exitExpressionStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExpressionStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionStatement" ):
                 return visitor.visitExpressionStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def expressionStatement(self):
 
@@ -3685,8 +3307,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class DefcalStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3697,7 +3321,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.Identifier, 0)
 
         def defcalArgumentList(self):
-            return self.getTypedRuleContext(qasm3Parser.DefcalArgumentListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DefcalArgumentListContext,0)
+
 
         def LBRACE(self):
             return self.getToken(qasm3Parser.LBRACE, 0)
@@ -3712,33 +3337,38 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.RPAREN, 0)
 
         def returnSignature(self):
-            return self.getTypedRuleContext(qasm3Parser.ReturnSignatureContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ReturnSignatureContext,0)
+
 
         def argumentDefinitionList(self):
-            return self.getTypedRuleContext(qasm3Parser.ArgumentDefinitionListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ArgumentDefinitionListContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_defcalStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefcalStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDefcalStatement" ):
                 listener.enterDefcalStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefcalStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDefcalStatement" ):
                 listener.exitDefcalStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefcalStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDefcalStatement" ):
                 return visitor.visitDefcalStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def defcalStatement(self):
 
         localctx = qasm3Parser.DefcalStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 66, self.RULE_defcalStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 409
@@ -3748,58 +3378,43 @@ class qasm3Parser(Parser):
             self.state = 416
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.LPAREN:
+            if _la==qasm3Parser.LPAREN:
                 self.state = 411
                 self.match(qasm3Parser.LPAREN)
                 self.state = 413
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((_la) & ~0x3F) == 0 and (
-                    (1 << _la)
-                    & (
-                        (1 << qasm3Parser.CONST)
-                        | (1 << qasm3Parser.MUTABLE)
-                        | (1 << qasm3Parser.QREG)
-                        | (1 << qasm3Parser.QUBIT)
-                        | (1 << qasm3Parser.CREG)
-                        | (1 << qasm3Parser.BOOL)
-                        | (1 << qasm3Parser.BIT)
-                        | (1 << qasm3Parser.INT)
-                        | (1 << qasm3Parser.UINT)
-                        | (1 << qasm3Parser.FLOAT)
-                        | (1 << qasm3Parser.ANGLE)
-                        | (1 << qasm3Parser.COMPLEX)
-                        | (1 << qasm3Parser.DURATION)
-                        | (1 << qasm3Parser.STRETCH)
-                    )
-                ) != 0:
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << qasm3Parser.CONST) | (1 << qasm3Parser.MUTABLE) | (1 << qasm3Parser.QREG) | (1 << qasm3Parser.QUBIT) | (1 << qasm3Parser.CREG) | (1 << qasm3Parser.BOOL) | (1 << qasm3Parser.BIT) | (1 << qasm3Parser.INT) | (1 << qasm3Parser.UINT) | (1 << qasm3Parser.FLOAT) | (1 << qasm3Parser.ANGLE) | (1 << qasm3Parser.COMPLEX) | (1 << qasm3Parser.DURATION) | (1 << qasm3Parser.STRETCH))) != 0):
                     self.state = 412
                     self.argumentDefinitionList()
 
+
                 self.state = 415
                 self.match(qasm3Parser.RPAREN)
+
 
             self.state = 418
             self.defcalArgumentList()
             self.state = 420
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.ARROW:
+            if _la==qasm3Parser.ARROW:
                 self.state = 419
                 self.returnSignature()
+
 
             self.state = 422
             self.match(qasm3Parser.LBRACE)
             self.state = 426
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 39, self._ctx)
-            while _alt != 1 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1 + 1:
+            _alt = self._interp.adaptivePredict(self._input,39,self._ctx)
+            while _alt!=1 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1+1:
                     self.state = 423
-                    self.matchWildcard()
+                    self.matchWildcard() 
                 self.state = 428
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 39, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,39,self._ctx)
 
             self.state = 429
             self.match(qasm3Parser.RBRACE)
@@ -3811,627 +3426,613 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_expression
 
-        def copyFrom(self, ctx: ParserRuleContext):
+     
+        def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
+
     class BitwiseXorExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def CARET(self):
             return self.getToken(qasm3Parser.CARET, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBitwiseXorExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBitwiseXorExpression" ):
                 listener.enterBitwiseXorExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBitwiseXorExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBitwiseXorExpression" ):
                 listener.exitBitwiseXorExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBitwiseXorExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBitwiseXorExpression" ):
                 return visitor.visitBitwiseXorExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class AdditiveExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def PLUS(self):
             return self.getToken(qasm3Parser.PLUS, 0)
-
         def MINUS(self):
             return self.getToken(qasm3Parser.MINUS, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAdditiveExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAdditiveExpression" ):
                 listener.enterAdditiveExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAdditiveExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAdditiveExpression" ):
                 listener.exitAdditiveExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAdditiveExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAdditiveExpression" ):
                 return visitor.visitAdditiveExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class DurationofExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def DURATIONOF(self):
             return self.getToken(qasm3Parser.DURATIONOF, 0)
-
         def LPAREN(self):
             return self.getToken(qasm3Parser.LPAREN, 0)
-
         def scope(self):
-            return self.getTypedRuleContext(qasm3Parser.ScopeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScopeContext,0)
 
         def RPAREN(self):
             return self.getToken(qasm3Parser.RPAREN, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDurationofExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDurationofExpression" ):
                 listener.enterDurationofExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDurationofExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDurationofExpression" ):
                 listener.exitDurationofExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDurationofExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDurationofExpression" ):
                 return visitor.visitDurationofExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class ParenthesisExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(qasm3Parser.LPAREN, 0)
-
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
 
         def RPAREN(self):
             return self.getToken(qasm3Parser.RPAREN, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterParenthesisExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterParenthesisExpression" ):
                 listener.enterParenthesisExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitParenthesisExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitParenthesisExpression" ):
                 listener.exitParenthesisExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitParenthesisExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitParenthesisExpression" ):
                 return visitor.visitParenthesisExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class ComparisonExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def ComparisonOperator(self):
             return self.getToken(qasm3Parser.ComparisonOperator, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterComparisonExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterComparisonExpression" ):
                 listener.enterComparisonExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitComparisonExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitComparisonExpression" ):
                 listener.exitComparisonExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitComparisonExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComparisonExpression" ):
                 return visitor.visitComparisonExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class MultiplicativeExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def ASTERISK(self):
             return self.getToken(qasm3Parser.ASTERISK, 0)
-
         def SLASH(self):
             return self.getToken(qasm3Parser.SLASH, 0)
-
         def PERCENT(self):
             return self.getToken(qasm3Parser.PERCENT, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMultiplicativeExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMultiplicativeExpression" ):
                 listener.enterMultiplicativeExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMultiplicativeExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMultiplicativeExpression" ):
                 listener.exitMultiplicativeExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMultiplicativeExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMultiplicativeExpression" ):
                 return visitor.visitMultiplicativeExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class LogicalOrExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def DOUBLE_PIPE(self):
             return self.getToken(qasm3Parser.DOUBLE_PIPE, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterLogicalOrExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalOrExpression" ):
                 listener.enterLogicalOrExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitLogicalOrExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalOrExpression" ):
                 listener.exitLogicalOrExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitLogicalOrExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitLogicalOrExpression" ):
                 return visitor.visitLogicalOrExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class CastExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(qasm3Parser.LPAREN, 0)
-
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
 
         def RPAREN(self):
             return self.getToken(qasm3Parser.RPAREN, 0)
-
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
 
         def arrayType(self):
-            return self.getTypedRuleContext(qasm3Parser.ArrayTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ArrayTypeContext,0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCastExpression"):
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCastExpression" ):
                 listener.enterCastExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCastExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCastExpression" ):
                 listener.exitCastExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCastExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCastExpression" ):
                 return visitor.visitCastExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class PowerExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def DOUBLE_ASTERISK(self):
             return self.getToken(qasm3Parser.DOUBLE_ASTERISK, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPowerExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterPowerExpression" ):
                 listener.enterPowerExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPowerExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitPowerExpression" ):
                 listener.exitPowerExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPowerExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitPowerExpression" ):
                 return visitor.visitPowerExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class BitwiseOrExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def PIPE(self):
             return self.getToken(qasm3Parser.PIPE, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBitwiseOrExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBitwiseOrExpression" ):
                 listener.enterBitwiseOrExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBitwiseOrExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBitwiseOrExpression" ):
                 listener.exitBitwiseOrExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBitwiseOrExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBitwiseOrExpression" ):
                 return visitor.visitBitwiseOrExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class CallExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def Identifier(self):
             return self.getToken(qasm3Parser.Identifier, 0)
-
         def LPAREN(self):
             return self.getToken(qasm3Parser.LPAREN, 0)
-
         def RPAREN(self):
             return self.getToken(qasm3Parser.RPAREN, 0)
-
         def expressionList(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionListContext,0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCallExpression"):
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCallExpression" ):
                 listener.enterCallExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCallExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCallExpression" ):
                 listener.exitCallExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCallExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCallExpression" ):
                 return visitor.visitCallExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class BitshiftExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def BitshiftOperator(self):
             return self.getToken(qasm3Parser.BitshiftOperator, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBitshiftExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBitshiftExpression" ):
                 listener.enterBitshiftExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBitshiftExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBitshiftExpression" ):
                 listener.exitBitshiftExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBitshiftExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBitshiftExpression" ):
                 return visitor.visitBitshiftExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class BitwiseAndExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def AMPERSAND(self):
             return self.getToken(qasm3Parser.AMPERSAND, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBitwiseAndExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBitwiseAndExpression" ):
                 listener.enterBitwiseAndExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBitwiseAndExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBitwiseAndExpression" ):
                 listener.exitBitwiseAndExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBitwiseAndExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBitwiseAndExpression" ):
                 return visitor.visitBitwiseAndExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class EqualityExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def EqualityOperator(self):
             return self.getToken(qasm3Parser.EqualityOperator, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterEqualityExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEqualityExpression" ):
                 listener.enterEqualityExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitEqualityExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEqualityExpression" ):
                 listener.exitEqualityExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitEqualityExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitEqualityExpression" ):
                 return visitor.visitEqualityExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class LogicalAndExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
         def DOUBLE_AMPERSAND(self):
             return self.getToken(qasm3Parser.DOUBLE_AMPERSAND, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterLogicalAndExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalAndExpression" ):
                 listener.enterLogicalAndExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitLogicalAndExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalAndExpression" ):
                 listener.exitLogicalAndExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitLogicalAndExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitLogicalAndExpression" ):
                 return visitor.visitLogicalAndExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class IndexExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
 
         def indexOperator(self):
-            return self.getTypedRuleContext(qasm3Parser.IndexOperatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.IndexOperatorContext,0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIndexExpression"):
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIndexExpression" ):
                 listener.enterIndexExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIndexExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIndexExpression" ):
                 listener.exitIndexExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIndexExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIndexExpression" ):
                 return visitor.visitIndexExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class UnaryExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
 
         def TILDE(self):
             return self.getToken(qasm3Parser.TILDE, 0)
-
         def EXCLAMATION_POINT(self):
             return self.getToken(qasm3Parser.EXCLAMATION_POINT, 0)
-
         def MINUS(self):
             return self.getToken(qasm3Parser.MINUS, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterUnaryExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterUnaryExpression" ):
                 listener.enterUnaryExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitUnaryExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitUnaryExpression" ):
                 listener.exitUnaryExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitUnaryExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitUnaryExpression" ):
                 return visitor.visitUnaryExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class LiteralExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a qasm3Parser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a qasm3Parser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def Identifier(self):
             return self.getToken(qasm3Parser.Identifier, 0)
-
         def BinaryIntegerLiteral(self):
             return self.getToken(qasm3Parser.BinaryIntegerLiteral, 0)
-
         def OctalIntegerLiteral(self):
             return self.getToken(qasm3Parser.OctalIntegerLiteral, 0)
-
         def DecimalIntegerLiteral(self):
             return self.getToken(qasm3Parser.DecimalIntegerLiteral, 0)
-
         def HexIntegerLiteral(self):
             return self.getToken(qasm3Parser.HexIntegerLiteral, 0)
-
         def FloatLiteral(self):
             return self.getToken(qasm3Parser.FloatLiteral, 0)
-
         def ImaginaryLiteral(self):
             return self.getToken(qasm3Parser.ImaginaryLiteral, 0)
-
         def BooleanLiteral(self):
             return self.getToken(qasm3Parser.BooleanLiteral, 0)
-
         def BitstringLiteral(self):
             return self.getToken(qasm3Parser.BitstringLiteral, 0)
-
         def TimingLiteral(self):
             return self.getToken(qasm3Parser.TimingLiteral, 0)
-
         def HardwareQubit(self):
             return self.getToken(qasm3Parser.HardwareQubit, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterLiteralExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLiteralExpression" ):
                 listener.enterLiteralExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitLiteralExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLiteralExpression" ):
                 listener.exitLiteralExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitLiteralExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitLiteralExpression" ):
                 return visitor.visitLiteralExpression(self)
             else:
                 return visitor.visitChildren(self)
 
-    def expression(self, _p: int = 0):
+
+
+    def expression(self, _p:int=0):
         _parentctx = self._ctx
         _parentState = self.state
         localctx = qasm3Parser.ExpressionContext(self, self._ctx, _parentState)
         _prevctx = localctx
         _startState = 68
         self.enterRecursionRule(localctx, 68, self.RULE_expression, _p)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 458
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 42, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,42,self._ctx)
             if la_ == 1:
                 localctx = qasm3Parser.ParenthesisExpressionContext(self, localctx)
                 self._ctx = localctx
@@ -4452,20 +4053,7 @@ class qasm3Parser(Parser):
                 self.state = 436
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (
-                    (
-                        (((_la - 64)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 64))
-                            & (
-                                (1 << (qasm3Parser.MINUS - 64))
-                                | (1 << (qasm3Parser.TILDE - 64))
-                                | (1 << (qasm3Parser.EXCLAMATION_POINT - 64))
-                            )
-                        )
-                        != 0
-                    )
-                ):
+                if not(((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & ((1 << (qasm3Parser.MINUS - 64)) | (1 << (qasm3Parser.TILDE - 64)) | (1 << (qasm3Parser.EXCLAMATION_POINT - 64)))) != 0)):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -4481,17 +4069,7 @@ class qasm3Parser(Parser):
                 self.state = 440
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [
-                    qasm3Parser.BOOL,
-                    qasm3Parser.BIT,
-                    qasm3Parser.INT,
-                    qasm3Parser.UINT,
-                    qasm3Parser.FLOAT,
-                    qasm3Parser.ANGLE,
-                    qasm3Parser.COMPLEX,
-                    qasm3Parser.DURATION,
-                    qasm3Parser.STRETCH,
-                ]:
+                if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.DURATION, qasm3Parser.STRETCH]:
                     self.state = 438
                     self.scalarType()
                     pass
@@ -4535,39 +4113,10 @@ class qasm3Parser(Parser):
                 self.state = 454
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la - 28)) & ~0x3F) == 0 and (
-                    (1 << (_la - 28))
-                    & (
-                        (1 << (qasm3Parser.BOOL - 28))
-                        | (1 << (qasm3Parser.BIT - 28))
-                        | (1 << (qasm3Parser.INT - 28))
-                        | (1 << (qasm3Parser.UINT - 28))
-                        | (1 << (qasm3Parser.FLOAT - 28))
-                        | (1 << (qasm3Parser.ANGLE - 28))
-                        | (1 << (qasm3Parser.COMPLEX - 28))
-                        | (1 << (qasm3Parser.ARRAY - 28))
-                        | (1 << (qasm3Parser.DURATION - 28))
-                        | (1 << (qasm3Parser.STRETCH - 28))
-                        | (1 << (qasm3Parser.DURATIONOF - 28))
-                        | (1 << (qasm3Parser.BooleanLiteral - 28))
-                        | (1 << (qasm3Parser.LPAREN - 28))
-                        | (1 << (qasm3Parser.MINUS - 28))
-                        | (1 << (qasm3Parser.TILDE - 28))
-                        | (1 << (qasm3Parser.EXCLAMATION_POINT - 28))
-                        | (1 << (qasm3Parser.ImaginaryLiteral - 28))
-                        | (1 << (qasm3Parser.BinaryIntegerLiteral - 28))
-                        | (1 << (qasm3Parser.OctalIntegerLiteral - 28))
-                        | (1 << (qasm3Parser.DecimalIntegerLiteral - 28))
-                        | (1 << (qasm3Parser.HexIntegerLiteral - 28))
-                        | (1 << (qasm3Parser.Identifier - 28))
-                        | (1 << (qasm3Parser.HardwareQubit - 28))
-                        | (1 << (qasm3Parser.FloatLiteral - 28))
-                        | (1 << (qasm3Parser.TimingLiteral - 28))
-                        | (1 << (qasm3Parser.BitstringLiteral - 28))
-                    )
-                ) != 0:
+                if ((((_la - 28)) & ~0x3f) == 0 and ((1 << (_la - 28)) & ((1 << (qasm3Parser.BOOL - 28)) | (1 << (qasm3Parser.BIT - 28)) | (1 << (qasm3Parser.INT - 28)) | (1 << (qasm3Parser.UINT - 28)) | (1 << (qasm3Parser.FLOAT - 28)) | (1 << (qasm3Parser.ANGLE - 28)) | (1 << (qasm3Parser.COMPLEX - 28)) | (1 << (qasm3Parser.ARRAY - 28)) | (1 << (qasm3Parser.DURATION - 28)) | (1 << (qasm3Parser.STRETCH - 28)) | (1 << (qasm3Parser.DURATIONOF - 28)) | (1 << (qasm3Parser.BooleanLiteral - 28)) | (1 << (qasm3Parser.LPAREN - 28)) | (1 << (qasm3Parser.MINUS - 28)) | (1 << (qasm3Parser.TILDE - 28)) | (1 << (qasm3Parser.EXCLAMATION_POINT - 28)) | (1 << (qasm3Parser.ImaginaryLiteral - 28)) | (1 << (qasm3Parser.BinaryIntegerLiteral - 28)) | (1 << (qasm3Parser.OctalIntegerLiteral - 28)) | (1 << (qasm3Parser.DecimalIntegerLiteral - 28)) | (1 << (qasm3Parser.HexIntegerLiteral - 28)) | (1 << (qasm3Parser.Identifier - 28)) | (1 << (qasm3Parser.HardwareQubit - 28)) | (1 << (qasm3Parser.FloatLiteral - 28)) | (1 << (qasm3Parser.TimingLiteral - 28)) | (1 << (qasm3Parser.BitstringLiteral - 28)))) != 0):
                     self.state = 453
                     self.expressionList()
+
 
                 self.state = 456
                 self.match(qasm3Parser.RPAREN)
@@ -4579,55 +4128,32 @@ class qasm3Parser(Parser):
                 _prevctx = localctx
                 self.state = 457
                 _la = self._input.LA(1)
-                if not (
-                    (
-                        (((_la - 49)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 49))
-                            & (
-                                (1 << (qasm3Parser.BooleanLiteral - 49))
-                                | (1 << (qasm3Parser.ImaginaryLiteral - 49))
-                                | (1 << (qasm3Parser.BinaryIntegerLiteral - 49))
-                                | (1 << (qasm3Parser.OctalIntegerLiteral - 49))
-                                | (1 << (qasm3Parser.DecimalIntegerLiteral - 49))
-                                | (1 << (qasm3Parser.HexIntegerLiteral - 49))
-                                | (1 << (qasm3Parser.Identifier - 49))
-                                | (1 << (qasm3Parser.HardwareQubit - 49))
-                                | (1 << (qasm3Parser.FloatLiteral - 49))
-                                | (1 << (qasm3Parser.TimingLiteral - 49))
-                                | (1 << (qasm3Parser.BitstringLiteral - 49))
-                            )
-                        )
-                        != 0
-                    )
-                ):
+                if not(((((_la - 49)) & ~0x3f) == 0 and ((1 << (_la - 49)) & ((1 << (qasm3Parser.BooleanLiteral - 49)) | (1 << (qasm3Parser.ImaginaryLiteral - 49)) | (1 << (qasm3Parser.BinaryIntegerLiteral - 49)) | (1 << (qasm3Parser.OctalIntegerLiteral - 49)) | (1 << (qasm3Parser.DecimalIntegerLiteral - 49)) | (1 << (qasm3Parser.HexIntegerLiteral - 49)) | (1 << (qasm3Parser.Identifier - 49)) | (1 << (qasm3Parser.HardwareQubit - 49)) | (1 << (qasm3Parser.FloatLiteral - 49)) | (1 << (qasm3Parser.TimingLiteral - 49)) | (1 << (qasm3Parser.BitstringLiteral - 49)))) != 0)):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
                 pass
 
+
             self._ctx.stop = self._input.LT(-1)
             self.state = 497
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 44, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,44,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
                     self.state = 495
                     self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input, 43, self._ctx)
+                    la_ = self._interp.adaptivePredict(self._input,43,self._ctx)
                     if la_ == 1:
-                        localctx = qasm3Parser.PowerExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.PowerExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 460
                         if not self.precpred(self._ctx, 16):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 16)")
                         self.state = 461
                         localctx.op = self.match(qasm3Parser.DOUBLE_ASTERISK)
@@ -4636,32 +4162,16 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 2:
-                        localctx = qasm3Parser.MultiplicativeExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.MultiplicativeExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 463
                         if not self.precpred(self._ctx, 14):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 14)")
                         self.state = 464
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (
-                            (
-                                (((_la - 65)) & ~0x3F) == 0
-                                and (
-                                    (1 << (_la - 65))
-                                    & (
-                                        (1 << (qasm3Parser.ASTERISK - 65))
-                                        | (1 << (qasm3Parser.SLASH - 65))
-                                        | (1 << (qasm3Parser.PERCENT - 65))
-                                    )
-                                )
-                                != 0
-                            )
-                        ):
+                        if not(((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (qasm3Parser.ASTERISK - 65)) | (1 << (qasm3Parser.SLASH - 65)) | (1 << (qasm3Parser.PERCENT - 65)))) != 0)):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -4671,19 +4181,16 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 3:
-                        localctx = qasm3Parser.AdditiveExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.AdditiveExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 466
                         if not self.precpred(self._ctx, 13):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 13)")
                         self.state = 467
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (_la == qasm3Parser.PLUS or _la == qasm3Parser.MINUS):
+                        if not(_la==qasm3Parser.PLUS or _la==qasm3Parser.MINUS):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -4693,14 +4200,11 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 4:
-                        localctx = qasm3Parser.BitshiftExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.BitshiftExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 469
                         if not self.precpred(self._ctx, 12):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 12)")
                         self.state = 470
                         localctx.op = self.match(qasm3Parser.BitshiftOperator)
@@ -4709,14 +4213,11 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 5:
-                        localctx = qasm3Parser.ComparisonExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.ComparisonExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 472
                         if not self.precpred(self._ctx, 11):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 11)")
                         self.state = 473
                         localctx.op = self.match(qasm3Parser.ComparisonOperator)
@@ -4725,14 +4226,11 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 6:
-                        localctx = qasm3Parser.EqualityExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.EqualityExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 475
                         if not self.precpred(self._ctx, 10):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 10)")
                         self.state = 476
                         localctx.op = self.match(qasm3Parser.EqualityOperator)
@@ -4741,14 +4239,11 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 7:
-                        localctx = qasm3Parser.BitwiseAndExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.BitwiseAndExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 478
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 479
                         localctx.op = self.match(qasm3Parser.AMPERSAND)
@@ -4757,14 +4252,11 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 8:
-                        localctx = qasm3Parser.BitwiseXorExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.BitwiseXorExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 481
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 482
                         localctx.op = self.match(qasm3Parser.CARET)
@@ -4773,14 +4265,11 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 9:
-                        localctx = qasm3Parser.BitwiseOrExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.BitwiseOrExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 484
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 485
                         localctx.op = self.match(qasm3Parser.PIPE)
@@ -4789,14 +4278,11 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 10:
-                        localctx = qasm3Parser.LogicalAndExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.LogicalAndExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 487
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 488
                         localctx.op = self.match(qasm3Parser.DOUBLE_AMPERSAND)
@@ -4805,14 +4291,11 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 11:
-                        localctx = qasm3Parser.LogicalOrExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.LogicalOrExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 490
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 491
                         localctx.op = self.match(qasm3Parser.DOUBLE_PIPE)
@@ -4821,22 +4304,20 @@ class qasm3Parser(Parser):
                         pass
 
                     elif la_ == 12:
-                        localctx = qasm3Parser.IndexExpressionContext(
-                            self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState)
-                        )
+                        localctx = qasm3Parser.IndexExpressionContext(self, qasm3Parser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 493
                         if not self.precpred(self._ctx, 17):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 17)")
                         self.state = 494
                         self.indexOperator()
                         pass
 
+             
                 self.state = 499
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 44, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,44,self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -4846,18 +4327,21 @@ class qasm3Parser(Parser):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
+
     class AliasExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
-        def DOUBLE_PLUS(self, i: int = None):
+
+        def DOUBLE_PLUS(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.DOUBLE_PLUS)
             else:
@@ -4866,25 +4350,28 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_aliasExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAliasExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAliasExpression" ):
                 listener.enterAliasExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAliasExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAliasExpression" ):
                 listener.exitAliasExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAliasExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAliasExpression" ):
                 return visitor.visitAliasExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def aliasExpression(self):
 
         localctx = qasm3Parser.AliasExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 70, self.RULE_aliasExpression)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 500
@@ -4892,7 +4379,7 @@ class qasm3Parser(Parser):
             self.state = 505
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == qasm3Parser.DOUBLE_PLUS:
+            while _la==qasm3Parser.DOUBLE_PLUS:
                 self.state = 501
                 self.match(qasm3Parser.DOUBLE_PLUS)
                 self.state = 502
@@ -4909,36 +4396,44 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class DeclarationExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def arrayLiteral(self):
-            return self.getTypedRuleContext(qasm3Parser.ArrayLiteralContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ArrayLiteralContext,0)
+
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def measureExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.MeasureExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.MeasureExpressionContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_declarationExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDeclarationExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDeclarationExpression" ):
                 listener.enterDeclarationExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDeclarationExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDeclarationExpression" ):
                 listener.exitDeclarationExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDeclarationExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDeclarationExpression" ):
                 return visitor.visitDeclarationExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def declarationExpression(self):
 
@@ -4953,34 +4448,7 @@ class qasm3Parser(Parser):
                 self.state = 508
                 self.arrayLiteral()
                 pass
-            elif token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.ARRAY,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-                qasm3Parser.DURATIONOF,
-                qasm3Parser.BooleanLiteral,
-                qasm3Parser.LPAREN,
-                qasm3Parser.MINUS,
-                qasm3Parser.TILDE,
-                qasm3Parser.EXCLAMATION_POINT,
-                qasm3Parser.ImaginaryLiteral,
-                qasm3Parser.BinaryIntegerLiteral,
-                qasm3Parser.OctalIntegerLiteral,
-                qasm3Parser.DecimalIntegerLiteral,
-                qasm3Parser.HexIntegerLiteral,
-                qasm3Parser.Identifier,
-                qasm3Parser.HardwareQubit,
-                qasm3Parser.FloatLiteral,
-                qasm3Parser.TimingLiteral,
-                qasm3Parser.BitstringLiteral,
-            ]:
+            elif token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.DURATIONOF, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 509
                 self.expression(0)
@@ -5001,8 +4469,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class MeasureExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5010,24 +4480,28 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.MEASURE, 0)
 
         def gateOperand(self):
-            return self.getTypedRuleContext(qasm3Parser.GateOperandContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.GateOperandContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_measureExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMeasureExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMeasureExpression" ):
                 listener.enterMeasureExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMeasureExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMeasureExpression" ):
                 listener.exitMeasureExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMeasureExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMeasureExpression" ):
                 return visitor.visitMeasureExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def measureExpression(self):
 
@@ -5047,131 +4521,80 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class RangeExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def COLON(self, i: int = None):
+        def COLON(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COLON)
             else:
                 return self.getToken(qasm3Parser.COLON, i)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_rangeExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterRangeExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterRangeExpression" ):
                 listener.enterRangeExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitRangeExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitRangeExpression" ):
                 listener.exitRangeExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitRangeExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitRangeExpression" ):
                 return visitor.visitRangeExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def rangeExpression(self):
 
         localctx = qasm3Parser.RangeExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 76, self.RULE_rangeExpression)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 517
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 28)) & ~0x3F) == 0 and (
-                (1 << (_la - 28))
-                & (
-                    (1 << (qasm3Parser.BOOL - 28))
-                    | (1 << (qasm3Parser.BIT - 28))
-                    | (1 << (qasm3Parser.INT - 28))
-                    | (1 << (qasm3Parser.UINT - 28))
-                    | (1 << (qasm3Parser.FLOAT - 28))
-                    | (1 << (qasm3Parser.ANGLE - 28))
-                    | (1 << (qasm3Parser.COMPLEX - 28))
-                    | (1 << (qasm3Parser.ARRAY - 28))
-                    | (1 << (qasm3Parser.DURATION - 28))
-                    | (1 << (qasm3Parser.STRETCH - 28))
-                    | (1 << (qasm3Parser.DURATIONOF - 28))
-                    | (1 << (qasm3Parser.BooleanLiteral - 28))
-                    | (1 << (qasm3Parser.LPAREN - 28))
-                    | (1 << (qasm3Parser.MINUS - 28))
-                    | (1 << (qasm3Parser.TILDE - 28))
-                    | (1 << (qasm3Parser.EXCLAMATION_POINT - 28))
-                    | (1 << (qasm3Parser.ImaginaryLiteral - 28))
-                    | (1 << (qasm3Parser.BinaryIntegerLiteral - 28))
-                    | (1 << (qasm3Parser.OctalIntegerLiteral - 28))
-                    | (1 << (qasm3Parser.DecimalIntegerLiteral - 28))
-                    | (1 << (qasm3Parser.HexIntegerLiteral - 28))
-                    | (1 << (qasm3Parser.Identifier - 28))
-                    | (1 << (qasm3Parser.HardwareQubit - 28))
-                    | (1 << (qasm3Parser.FloatLiteral - 28))
-                    | (1 << (qasm3Parser.TimingLiteral - 28))
-                    | (1 << (qasm3Parser.BitstringLiteral - 28))
-                )
-            ) != 0:
+            if ((((_la - 28)) & ~0x3f) == 0 and ((1 << (_la - 28)) & ((1 << (qasm3Parser.BOOL - 28)) | (1 << (qasm3Parser.BIT - 28)) | (1 << (qasm3Parser.INT - 28)) | (1 << (qasm3Parser.UINT - 28)) | (1 << (qasm3Parser.FLOAT - 28)) | (1 << (qasm3Parser.ANGLE - 28)) | (1 << (qasm3Parser.COMPLEX - 28)) | (1 << (qasm3Parser.ARRAY - 28)) | (1 << (qasm3Parser.DURATION - 28)) | (1 << (qasm3Parser.STRETCH - 28)) | (1 << (qasm3Parser.DURATIONOF - 28)) | (1 << (qasm3Parser.BooleanLiteral - 28)) | (1 << (qasm3Parser.LPAREN - 28)) | (1 << (qasm3Parser.MINUS - 28)) | (1 << (qasm3Parser.TILDE - 28)) | (1 << (qasm3Parser.EXCLAMATION_POINT - 28)) | (1 << (qasm3Parser.ImaginaryLiteral - 28)) | (1 << (qasm3Parser.BinaryIntegerLiteral - 28)) | (1 << (qasm3Parser.OctalIntegerLiteral - 28)) | (1 << (qasm3Parser.DecimalIntegerLiteral - 28)) | (1 << (qasm3Parser.HexIntegerLiteral - 28)) | (1 << (qasm3Parser.Identifier - 28)) | (1 << (qasm3Parser.HardwareQubit - 28)) | (1 << (qasm3Parser.FloatLiteral - 28)) | (1 << (qasm3Parser.TimingLiteral - 28)) | (1 << (qasm3Parser.BitstringLiteral - 28)))) != 0):
                 self.state = 516
                 self.expression(0)
+
 
             self.state = 519
             self.match(qasm3Parser.COLON)
             self.state = 521
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 28)) & ~0x3F) == 0 and (
-                (1 << (_la - 28))
-                & (
-                    (1 << (qasm3Parser.BOOL - 28))
-                    | (1 << (qasm3Parser.BIT - 28))
-                    | (1 << (qasm3Parser.INT - 28))
-                    | (1 << (qasm3Parser.UINT - 28))
-                    | (1 << (qasm3Parser.FLOAT - 28))
-                    | (1 << (qasm3Parser.ANGLE - 28))
-                    | (1 << (qasm3Parser.COMPLEX - 28))
-                    | (1 << (qasm3Parser.ARRAY - 28))
-                    | (1 << (qasm3Parser.DURATION - 28))
-                    | (1 << (qasm3Parser.STRETCH - 28))
-                    | (1 << (qasm3Parser.DURATIONOF - 28))
-                    | (1 << (qasm3Parser.BooleanLiteral - 28))
-                    | (1 << (qasm3Parser.LPAREN - 28))
-                    | (1 << (qasm3Parser.MINUS - 28))
-                    | (1 << (qasm3Parser.TILDE - 28))
-                    | (1 << (qasm3Parser.EXCLAMATION_POINT - 28))
-                    | (1 << (qasm3Parser.ImaginaryLiteral - 28))
-                    | (1 << (qasm3Parser.BinaryIntegerLiteral - 28))
-                    | (1 << (qasm3Parser.OctalIntegerLiteral - 28))
-                    | (1 << (qasm3Parser.DecimalIntegerLiteral - 28))
-                    | (1 << (qasm3Parser.HexIntegerLiteral - 28))
-                    | (1 << (qasm3Parser.Identifier - 28))
-                    | (1 << (qasm3Parser.HardwareQubit - 28))
-                    | (1 << (qasm3Parser.FloatLiteral - 28))
-                    | (1 << (qasm3Parser.TimingLiteral - 28))
-                    | (1 << (qasm3Parser.BitstringLiteral - 28))
-                )
-            ) != 0:
+            if ((((_la - 28)) & ~0x3f) == 0 and ((1 << (_la - 28)) & ((1 << (qasm3Parser.BOOL - 28)) | (1 << (qasm3Parser.BIT - 28)) | (1 << (qasm3Parser.INT - 28)) | (1 << (qasm3Parser.UINT - 28)) | (1 << (qasm3Parser.FLOAT - 28)) | (1 << (qasm3Parser.ANGLE - 28)) | (1 << (qasm3Parser.COMPLEX - 28)) | (1 << (qasm3Parser.ARRAY - 28)) | (1 << (qasm3Parser.DURATION - 28)) | (1 << (qasm3Parser.STRETCH - 28)) | (1 << (qasm3Parser.DURATIONOF - 28)) | (1 << (qasm3Parser.BooleanLiteral - 28)) | (1 << (qasm3Parser.LPAREN - 28)) | (1 << (qasm3Parser.MINUS - 28)) | (1 << (qasm3Parser.TILDE - 28)) | (1 << (qasm3Parser.EXCLAMATION_POINT - 28)) | (1 << (qasm3Parser.ImaginaryLiteral - 28)) | (1 << (qasm3Parser.BinaryIntegerLiteral - 28)) | (1 << (qasm3Parser.OctalIntegerLiteral - 28)) | (1 << (qasm3Parser.DecimalIntegerLiteral - 28)) | (1 << (qasm3Parser.HexIntegerLiteral - 28)) | (1 << (qasm3Parser.Identifier - 28)) | (1 << (qasm3Parser.HardwareQubit - 28)) | (1 << (qasm3Parser.FloatLiteral - 28)) | (1 << (qasm3Parser.TimingLiteral - 28)) | (1 << (qasm3Parser.BitstringLiteral - 28)))) != 0):
                 self.state = 520
                 self.expression(0)
+
 
             self.state = 525
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COLON:
+            if _la==qasm3Parser.COLON:
                 self.state = 523
                 self.match(qasm3Parser.COLON)
                 self.state = 524
                 self.expression(0)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -5181,24 +4604,27 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class SetExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def LBRACE(self):
             return self.getToken(qasm3Parser.LBRACE, 0)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
+
 
         def RBRACE(self):
             return self.getToken(qasm3Parser.RBRACE, 0)
 
-        def COMMA(self, i: int = None):
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -5207,25 +4633,28 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_setExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterSetExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterSetExpression" ):
                 listener.enterSetExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitSetExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitSetExpression" ):
                 listener.exitSetExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitSetExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitSetExpression" ):
                 return visitor.visitSetExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def setExpression(self):
 
         localctx = qasm3Parser.SetExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 78, self.RULE_setExpression)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 527
@@ -5234,23 +4663,24 @@ class qasm3Parser(Parser):
             self.expression(0)
             self.state = 533
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 50, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,50,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 529
                     self.match(qasm3Parser.COMMA)
                     self.state = 530
-                    self.expression(0)
+                    self.expression(0) 
                 self.state = 535
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 50, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,50,self._ctx)
 
             self.state = 537
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COMMA:
+            if _la==qasm3Parser.COMMA:
                 self.state = 536
                 self.match(qasm3Parser.COMMA)
+
 
             self.state = 539
             self.match(qasm3Parser.RBRACE)
@@ -5262,8 +4692,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArrayLiteralContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5273,19 +4705,21 @@ class qasm3Parser(Parser):
         def RBRACE(self):
             return self.getToken(qasm3Parser.RBRACE, 0)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
-        def arrayLiteral(self, i: int = None):
+
+        def arrayLiteral(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ArrayLiteralContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ArrayLiteralContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ArrayLiteralContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -5294,25 +4728,28 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_arrayLiteral
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArrayLiteral"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArrayLiteral" ):
                 listener.enterArrayLiteral(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArrayLiteral"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArrayLiteral" ):
                 listener.exitArrayLiteral(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArrayLiteral"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArrayLiteral" ):
                 return visitor.visitArrayLiteral(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def arrayLiteral(self):
 
         localctx = qasm3Parser.ArrayLiteralContext(self, self._ctx, self.state)
         self.enterRule(localctx, 80, self.RULE_arrayLiteral)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 541
@@ -5320,34 +4757,7 @@ class qasm3Parser(Parser):
             self.state = 544
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.ARRAY,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-                qasm3Parser.DURATIONOF,
-                qasm3Parser.BooleanLiteral,
-                qasm3Parser.LPAREN,
-                qasm3Parser.MINUS,
-                qasm3Parser.TILDE,
-                qasm3Parser.EXCLAMATION_POINT,
-                qasm3Parser.ImaginaryLiteral,
-                qasm3Parser.BinaryIntegerLiteral,
-                qasm3Parser.OctalIntegerLiteral,
-                qasm3Parser.DecimalIntegerLiteral,
-                qasm3Parser.HexIntegerLiteral,
-                qasm3Parser.Identifier,
-                qasm3Parser.HardwareQubit,
-                qasm3Parser.FloatLiteral,
-                qasm3Parser.TimingLiteral,
-                qasm3Parser.BitstringLiteral,
-            ]:
+            if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.DURATIONOF, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                 self.state = 542
                 self.expression(0)
                 pass
@@ -5360,42 +4770,15 @@ class qasm3Parser(Parser):
 
             self.state = 553
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 54, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,54,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 546
                     self.match(qasm3Parser.COMMA)
                     self.state = 549
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [
-                        qasm3Parser.BOOL,
-                        qasm3Parser.BIT,
-                        qasm3Parser.INT,
-                        qasm3Parser.UINT,
-                        qasm3Parser.FLOAT,
-                        qasm3Parser.ANGLE,
-                        qasm3Parser.COMPLEX,
-                        qasm3Parser.ARRAY,
-                        qasm3Parser.DURATION,
-                        qasm3Parser.STRETCH,
-                        qasm3Parser.DURATIONOF,
-                        qasm3Parser.BooleanLiteral,
-                        qasm3Parser.LPAREN,
-                        qasm3Parser.MINUS,
-                        qasm3Parser.TILDE,
-                        qasm3Parser.EXCLAMATION_POINT,
-                        qasm3Parser.ImaginaryLiteral,
-                        qasm3Parser.BinaryIntegerLiteral,
-                        qasm3Parser.OctalIntegerLiteral,
-                        qasm3Parser.DecimalIntegerLiteral,
-                        qasm3Parser.HexIntegerLiteral,
-                        qasm3Parser.Identifier,
-                        qasm3Parser.HardwareQubit,
-                        qasm3Parser.FloatLiteral,
-                        qasm3Parser.TimingLiteral,
-                        qasm3Parser.BitstringLiteral,
-                    ]:
+                    if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.DURATIONOF, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                         self.state = 547
                         self.expression(0)
                         pass
@@ -5405,17 +4788,18 @@ class qasm3Parser(Parser):
                         pass
                     else:
                         raise NoViableAltException(self)
-
+             
                 self.state = 555
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 54, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,54,self._ctx)
 
             self.state = 557
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COMMA:
+            if _la==qasm3Parser.COMMA:
                 self.state = 556
                 self.match(qasm3Parser.COMMA)
+
 
             self.state = 559
             self.match(qasm3Parser.RBRACE)
@@ -5427,8 +4811,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class IndexOperatorContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5439,21 +4825,24 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.RBRACKET, 0)
 
         def setExpression(self):
-            return self.getTypedRuleContext(qasm3Parser.SetExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.SetExpressionContext,0)
 
-        def expression(self, i: int = None):
+
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
-        def rangeExpression(self, i: int = None):
+
+        def rangeExpression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.RangeExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.RangeExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.RangeExpressionContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -5462,25 +4851,28 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_indexOperator
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIndexOperator"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIndexOperator" ):
                 listener.enterIndexOperator(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIndexOperator"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIndexOperator" ):
                 listener.exitIndexOperator(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIndexOperator"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIndexOperator" ):
                 return visitor.visitIndexOperator(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def indexOperator(self):
 
         localctx = qasm3Parser.IndexOperatorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 82, self.RULE_indexOperator)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 561
@@ -5492,38 +4884,10 @@ class qasm3Parser(Parser):
                 self.state = 562
                 self.setExpression()
                 pass
-            elif token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.ARRAY,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-                qasm3Parser.DURATIONOF,
-                qasm3Parser.BooleanLiteral,
-                qasm3Parser.LPAREN,
-                qasm3Parser.COLON,
-                qasm3Parser.MINUS,
-                qasm3Parser.TILDE,
-                qasm3Parser.EXCLAMATION_POINT,
-                qasm3Parser.ImaginaryLiteral,
-                qasm3Parser.BinaryIntegerLiteral,
-                qasm3Parser.OctalIntegerLiteral,
-                qasm3Parser.DecimalIntegerLiteral,
-                qasm3Parser.HexIntegerLiteral,
-                qasm3Parser.Identifier,
-                qasm3Parser.HardwareQubit,
-                qasm3Parser.FloatLiteral,
-                qasm3Parser.TimingLiteral,
-                qasm3Parser.BitstringLiteral,
-            ]:
+            elif token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.DURATIONOF, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.COLON, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                 self.state = 565
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input, 56, self._ctx)
+                la_ = self._interp.adaptivePredict(self._input,56,self._ctx)
                 if la_ == 1:
                     self.state = 563
                     self.expression(0)
@@ -5534,16 +4898,17 @@ class qasm3Parser(Parser):
                     self.rangeExpression()
                     pass
 
+
                 self.state = 574
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 58, self._ctx)
-                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                    if _alt == 1:
+                _alt = self._interp.adaptivePredict(self._input,58,self._ctx)
+                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                    if _alt==1:
                         self.state = 567
                         self.match(qasm3Parser.COMMA)
                         self.state = 570
                         self._errHandler.sync(self)
-                        la_ = self._interp.adaptivePredict(self._input, 57, self._ctx)
+                        la_ = self._interp.adaptivePredict(self._input,57,self._ctx)
                         if la_ == 1:
                             self.state = 568
                             self.expression(0)
@@ -5554,16 +4919,18 @@ class qasm3Parser(Parser):
                             self.rangeExpression()
                             pass
 
+                 
                     self.state = 576
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input, 58, self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input,58,self._ctx)
 
                 self.state = 578
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.COMMA:
+                if _la==qasm3Parser.COMMA:
                     self.state = 577
                     self.match(qasm3Parser.COMMA)
+
 
                 pass
             else:
@@ -5579,42 +4946,48 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class IndexedIdentifierContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def Identifier(self):
             return self.getToken(qasm3Parser.Identifier, 0)
 
-        def indexOperator(self, i: int = None):
+        def indexOperator(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.IndexOperatorContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.IndexOperatorContext, i)
+                return self.getTypedRuleContext(qasm3Parser.IndexOperatorContext,i)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_indexedIdentifier
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIndexedIdentifier"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIndexedIdentifier" ):
                 listener.enterIndexedIdentifier(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIndexedIdentifier"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIndexedIdentifier" ):
                 listener.exitIndexedIdentifier(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIndexedIdentifier"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIndexedIdentifier" ):
                 return visitor.visitIndexedIdentifier(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def indexedIdentifier(self):
 
         localctx = qasm3Parser.IndexedIdentifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 84, self.RULE_indexedIdentifier)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 584
@@ -5622,7 +4995,7 @@ class qasm3Parser(Parser):
             self.state = 588
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == qasm3Parser.LBRACKET:
+            while _la==qasm3Parser.LBRACKET:
                 self.state = 585
                 self.indexOperator()
                 self.state = 590
@@ -5637,8 +5010,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ReturnSignatureContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5646,24 +5021,28 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.ARROW, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_returnSignature
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterReturnSignature"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterReturnSignature" ):
                 listener.enterReturnSignature(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitReturnSignature"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitReturnSignature" ):
                 listener.exitReturnSignature(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitReturnSignature"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitReturnSignature" ):
                 return visitor.visitReturnSignature(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def returnSignature(self):
 
@@ -5683,8 +5062,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateModifierContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5701,7 +5082,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.LPAREN, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def RPAREN(self):
             return self.getToken(qasm3Parser.RPAREN, 0)
@@ -5715,25 +5097,28 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_gateModifier
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateModifier"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateModifier" ):
                 listener.enterGateModifier(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateModifier"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateModifier" ):
                 listener.exitGateModifier(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateModifier"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateModifier" ):
                 return visitor.visitGateModifier(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateModifier(self):
 
         localctx = qasm3Parser.GateModifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 88, self.RULE_gateModifier)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 607
@@ -5756,7 +5141,7 @@ class qasm3Parser(Parser):
             elif token in [qasm3Parser.CTRL, qasm3Parser.NEGCTRL]:
                 self.state = 600
                 _la = self._input.LA(1)
-                if not (_la == qasm3Parser.CTRL or _la == qasm3Parser.NEGCTRL):
+                if not(_la==qasm3Parser.CTRL or _la==qasm3Parser.NEGCTRL):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -5764,13 +5149,14 @@ class qasm3Parser(Parser):
                 self.state = 605
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LPAREN:
+                if _la==qasm3Parser.LPAREN:
                     self.state = 601
                     self.match(qasm3Parser.LPAREN)
                     self.state = 602
                     self.expression(0)
                     self.state = 603
                     self.match(qasm3Parser.RPAREN)
+
 
                 pass
             else:
@@ -5786,8 +5172,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ScalarTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5795,7 +5183,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.BIT, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(qasm3Parser.DesignatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DesignatorContext,0)
+
 
         def INT(self):
             return self.getToken(qasm3Parser.INT, 0)
@@ -5825,7 +5214,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.LBRACKET, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def RBRACKET(self):
             return self.getToken(qasm3Parser.RBRACKET, 0)
@@ -5833,25 +5223,28 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_scalarType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterScalarType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterScalarType" ):
                 listener.enterScalarType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitScalarType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitScalarType" ):
                 listener.exitScalarType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitScalarType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitScalarType" ):
                 return visitor.visitScalarType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def scalarType(self):
 
         localctx = qasm3Parser.ScalarTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 90, self.RULE_scalarType)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 641
             self._errHandler.sync(self)
@@ -5863,9 +5256,10 @@ class qasm3Parser(Parser):
                 self.state = 613
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 612
                     self.designator()
+
 
                 pass
             elif token in [qasm3Parser.INT]:
@@ -5875,9 +5269,10 @@ class qasm3Parser(Parser):
                 self.state = 617
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 616
                     self.designator()
+
 
                 pass
             elif token in [qasm3Parser.UINT]:
@@ -5887,9 +5282,10 @@ class qasm3Parser(Parser):
                 self.state = 621
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 620
                     self.designator()
+
 
                 pass
             elif token in [qasm3Parser.FLOAT]:
@@ -5899,9 +5295,10 @@ class qasm3Parser(Parser):
                 self.state = 625
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 624
                     self.designator()
+
 
                 pass
             elif token in [qasm3Parser.ANGLE]:
@@ -5911,9 +5308,10 @@ class qasm3Parser(Parser):
                 self.state = 629
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 628
                     self.designator()
+
 
                 pass
             elif token in [qasm3Parser.BOOL]:
@@ -5938,13 +5336,14 @@ class qasm3Parser(Parser):
                 self.state = 639
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 635
                     self.match(qasm3Parser.LBRACKET)
                     self.state = 636
                     self.scalarType()
                     self.state = 637
                     self.match(qasm3Parser.RBRACKET)
+
 
                 pass
             else:
@@ -5958,8 +5357,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class QubitTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5967,30 +5368,34 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.QUBIT, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(qasm3Parser.DesignatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DesignatorContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_qubitType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterQubitType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterQubitType" ):
                 listener.enterQubitType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitQubitType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitQubitType" ):
                 listener.exitQubitType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitQubitType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitQubitType" ):
                 return visitor.visitQubitType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def qubitType(self):
 
         localctx = qasm3Parser.QubitTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 92, self.RULE_qubitType)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 643
@@ -5998,9 +5403,10 @@ class qasm3Parser(Parser):
             self.state = 645
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.LBRACKET:
+            if _la==qasm3Parser.LBRACKET:
                 self.state = 644
                 self.designator()
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6010,8 +5416,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArrayTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6022,13 +5430,15 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.LBRACKET, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def COMMA(self):
             return self.getToken(qasm3Parser.COMMA, 0)
 
         def expressionList(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionListContext,0)
+
 
         def RBRACKET(self):
             return self.getToken(qasm3Parser.RBRACKET, 0)
@@ -6036,19 +5446,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_arrayType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArrayType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArrayType" ):
                 listener.enterArrayType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArrayType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArrayType" ):
                 listener.exitArrayType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArrayType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArrayType" ):
                 return visitor.visitArrayType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def arrayType(self):
 
@@ -6076,8 +5489,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArrayReferenceTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6088,7 +5503,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.LBRACKET, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def COMMA(self):
             return self.getToken(qasm3Parser.COMMA, 0)
@@ -6103,7 +5519,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.MUTABLE, 0)
 
         def expressionList(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionListContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionListContext,0)
+
 
         def DIM(self):
             return self.getToken(qasm3Parser.DIM, 0)
@@ -6112,35 +5529,39 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.EQUALS, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_arrayReferenceType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArrayReferenceType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArrayReferenceType" ):
                 listener.enterArrayReferenceType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArrayReferenceType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArrayReferenceType" ):
                 listener.exitArrayReferenceType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArrayReferenceType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArrayReferenceType" ):
                 return visitor.visitArrayReferenceType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def arrayReferenceType(self):
 
         localctx = qasm3Parser.ArrayReferenceTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 96, self.RULE_arrayReferenceType)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 654
             _la = self._input.LA(1)
-            if not (_la == qasm3Parser.CONST or _la == qasm3Parser.MUTABLE):
+            if not(_la==qasm3Parser.CONST or _la==qasm3Parser.MUTABLE):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -6156,34 +5577,7 @@ class qasm3Parser(Parser):
             self.state = 663
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.ARRAY,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-                qasm3Parser.DURATIONOF,
-                qasm3Parser.BooleanLiteral,
-                qasm3Parser.LPAREN,
-                qasm3Parser.MINUS,
-                qasm3Parser.TILDE,
-                qasm3Parser.EXCLAMATION_POINT,
-                qasm3Parser.ImaginaryLiteral,
-                qasm3Parser.BinaryIntegerLiteral,
-                qasm3Parser.OctalIntegerLiteral,
-                qasm3Parser.DecimalIntegerLiteral,
-                qasm3Parser.HexIntegerLiteral,
-                qasm3Parser.Identifier,
-                qasm3Parser.HardwareQubit,
-                qasm3Parser.FloatLiteral,
-                qasm3Parser.TimingLiteral,
-                qasm3Parser.BitstringLiteral,
-            ]:
+            if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.ARRAY, qasm3Parser.DURATION, qasm3Parser.STRETCH, qasm3Parser.DURATIONOF, qasm3Parser.BooleanLiteral, qasm3Parser.LPAREN, qasm3Parser.MINUS, qasm3Parser.TILDE, qasm3Parser.EXCLAMATION_POINT, qasm3Parser.ImaginaryLiteral, qasm3Parser.BinaryIntegerLiteral, qasm3Parser.OctalIntegerLiteral, qasm3Parser.DecimalIntegerLiteral, qasm3Parser.HexIntegerLiteral, qasm3Parser.Identifier, qasm3Parser.HardwareQubit, qasm3Parser.FloatLiteral, qasm3Parser.TimingLiteral, qasm3Parser.BitstringLiteral]:
                 self.state = 659
                 self.expressionList()
                 pass
@@ -6208,8 +5602,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class DesignatorContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6217,7 +5613,8 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.LBRACKET, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(qasm3Parser.ExpressionContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ExpressionContext,0)
+
 
         def RBRACKET(self):
             return self.getToken(qasm3Parser.RBRACKET, 0)
@@ -6225,19 +5622,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_designator
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDesignator"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDesignator" ):
                 listener.enterDesignator(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDesignator"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDesignator" ):
                 listener.exitDesignator(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDesignator"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDesignator" ):
                 return visitor.visitDesignator(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def designator(self):
 
@@ -6259,13 +5659,16 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateOperandContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def indexedIdentifier(self):
-            return self.getTypedRuleContext(qasm3Parser.IndexedIdentifierContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.IndexedIdentifierContext,0)
+
 
         def HardwareQubit(self):
             return self.getToken(qasm3Parser.HardwareQubit, 0)
@@ -6273,19 +5676,22 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_gateOperand
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateOperand"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateOperand" ):
                 listener.enterGateOperand(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateOperand"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateOperand" ):
                 listener.exitGateOperand(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateOperand"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateOperand" ):
                 return visitor.visitGateOperand(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateOperand(self):
 
@@ -6316,60 +5722,58 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExternArgumentContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def arrayReferenceType(self):
-            return self.getTypedRuleContext(qasm3Parser.ArrayReferenceTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ArrayReferenceTypeContext,0)
+
 
         def CREG(self):
             return self.getToken(qasm3Parser.CREG, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(qasm3Parser.DesignatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DesignatorContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_externArgument
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExternArgument"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExternArgument" ):
                 listener.enterExternArgument(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExternArgument"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExternArgument" ):
                 listener.exitExternArgument(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExternArgument"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExternArgument" ):
                 return visitor.visitExternArgument(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def externArgument(self):
 
         localctx = qasm3Parser.ExternArgumentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 102, self.RULE_externArgument)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 681
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-            ]:
+            if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.DURATION, qasm3Parser.STRETCH]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 675
                 self.scalarType()
@@ -6386,9 +5790,10 @@ class qasm3Parser(Parser):
                 self.state = 679
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 678
                     self.designator()
+
 
                 pass
             else:
@@ -6402,8 +5807,10 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class DefcalArgumentContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6416,30 +5823,33 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_defcalArgument
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefcalArgument"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDefcalArgument" ):
                 listener.enterDefcalArgument(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefcalArgument"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDefcalArgument" ):
                 listener.exitDefcalArgument(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefcalArgument"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDefcalArgument" ):
                 return visitor.visitDefcalArgument(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def defcalArgument(self):
 
         localctx = qasm3Parser.DefcalArgumentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 104, self.RULE_defcalArgument)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 683
             _la = self._input.LA(1)
-            if not (_la == qasm3Parser.Identifier or _la == qasm3Parser.HardwareQubit):
+            if not(_la==qasm3Parser.Identifier or _la==qasm3Parser.HardwareQubit):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -6452,19 +5862,23 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArgumentDefinitionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def scalarType(self):
-            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ScalarTypeContext,0)
+
 
         def Identifier(self):
             return self.getToken(qasm3Parser.Identifier, 0)
 
         def qubitType(self):
-            return self.getTypedRuleContext(qasm3Parser.QubitTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.QubitTypeContext,0)
+
 
         def CREG(self):
             return self.getToken(qasm3Parser.CREG, 0)
@@ -6473,48 +5887,43 @@ class qasm3Parser(Parser):
             return self.getToken(qasm3Parser.QREG, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(qasm3Parser.DesignatorContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.DesignatorContext,0)
+
 
         def arrayReferenceType(self):
-            return self.getTypedRuleContext(qasm3Parser.ArrayReferenceTypeContext, 0)
+            return self.getTypedRuleContext(qasm3Parser.ArrayReferenceTypeContext,0)
+
 
         def getRuleIndex(self):
             return qasm3Parser.RULE_argumentDefinition
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArgumentDefinition"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArgumentDefinition" ):
                 listener.enterArgumentDefinition(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArgumentDefinition"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArgumentDefinition" ):
                 listener.exitArgumentDefinition(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArgumentDefinition"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArgumentDefinition" ):
                 return visitor.visitArgumentDefinition(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def argumentDefinition(self):
 
         localctx = qasm3Parser.ArgumentDefinitionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 106, self.RULE_argumentDefinition)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 699
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                qasm3Parser.BOOL,
-                qasm3Parser.BIT,
-                qasm3Parser.INT,
-                qasm3Parser.UINT,
-                qasm3Parser.FLOAT,
-                qasm3Parser.ANGLE,
-                qasm3Parser.COMPLEX,
-                qasm3Parser.DURATION,
-                qasm3Parser.STRETCH,
-            ]:
+            if token in [qasm3Parser.BOOL, qasm3Parser.BIT, qasm3Parser.INT, qasm3Parser.UINT, qasm3Parser.FLOAT, qasm3Parser.ANGLE, qasm3Parser.COMPLEX, qasm3Parser.DURATION, qasm3Parser.STRETCH]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 685
                 self.scalarType()
@@ -6532,7 +5941,7 @@ class qasm3Parser(Parser):
                 self.enterOuterAlt(localctx, 3)
                 self.state = 691
                 _la = self._input.LA(1)
-                if not (_la == qasm3Parser.QREG or _la == qasm3Parser.CREG):
+                if not(_la==qasm3Parser.QREG or _la==qasm3Parser.CREG):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6542,9 +5951,10 @@ class qasm3Parser(Parser):
                 self.state = 694
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == qasm3Parser.LBRACKET:
+                if _la==qasm3Parser.LBRACKET:
                     self.state = 693
                     self.designator()
+
 
                 pass
             elif token in [qasm3Parser.CONST, qasm3Parser.MUTABLE]:
@@ -6565,18 +5975,21 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArgumentDefinitionListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def argumentDefinition(self, i: int = None):
+        def argumentDefinition(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ArgumentDefinitionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ArgumentDefinitionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ArgumentDefinitionContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -6585,48 +5998,52 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_argumentDefinitionList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArgumentDefinitionList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArgumentDefinitionList" ):
                 listener.enterArgumentDefinitionList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArgumentDefinitionList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArgumentDefinitionList" ):
                 listener.exitArgumentDefinitionList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArgumentDefinitionList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArgumentDefinitionList" ):
                 return visitor.visitArgumentDefinitionList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def argumentDefinitionList(self):
 
         localctx = qasm3Parser.ArgumentDefinitionListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 108, self.RULE_argumentDefinitionList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 701
             self.argumentDefinition()
             self.state = 706
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 78, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,78,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 702
                     self.match(qasm3Parser.COMMA)
                     self.state = 703
-                    self.argumentDefinition()
+                    self.argumentDefinition() 
                 self.state = 708
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 78, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,78,self._ctx)
 
             self.state = 710
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COMMA:
+            if _la==qasm3Parser.COMMA:
                 self.state = 709
                 self.match(qasm3Parser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6636,18 +6053,21 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExpressionListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExpressionContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExpressionContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -6656,48 +6076,52 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_expressionList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExpressionList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExpressionList" ):
                 listener.enterExpressionList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExpressionList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExpressionList" ):
                 listener.exitExpressionList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExpressionList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionList" ):
                 return visitor.visitExpressionList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def expressionList(self):
 
         localctx = qasm3Parser.ExpressionListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 110, self.RULE_expressionList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 712
             self.expression(0)
             self.state = 717
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 80, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,80,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 713
                     self.match(qasm3Parser.COMMA)
                     self.state = 714
-                    self.expression(0)
+                    self.expression(0) 
                 self.state = 719
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 80, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,80,self._ctx)
 
             self.state = 721
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COMMA:
+            if _la==qasm3Parser.COMMA:
                 self.state = 720
                 self.match(qasm3Parser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6707,18 +6131,21 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class DefcalArgumentListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def defcalArgument(self, i: int = None):
+        def defcalArgument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.DefcalArgumentContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.DefcalArgumentContext, i)
+                return self.getTypedRuleContext(qasm3Parser.DefcalArgumentContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -6727,48 +6154,52 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_defcalArgumentList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefcalArgumentList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDefcalArgumentList" ):
                 listener.enterDefcalArgumentList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefcalArgumentList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDefcalArgumentList" ):
                 listener.exitDefcalArgumentList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefcalArgumentList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDefcalArgumentList" ):
                 return visitor.visitDefcalArgumentList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def defcalArgumentList(self):
 
         localctx = qasm3Parser.DefcalArgumentListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 112, self.RULE_defcalArgumentList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 723
             self.defcalArgument()
             self.state = 728
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 82, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,82,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 724
                     self.match(qasm3Parser.COMMA)
                     self.state = 725
-                    self.defcalArgument()
+                    self.defcalArgument() 
                 self.state = 730
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 82, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,82,self._ctx)
 
             self.state = 732
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COMMA:
+            if _la==qasm3Parser.COMMA:
                 self.state = 731
                 self.match(qasm3Parser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6778,18 +6209,20 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class IdentifierListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def Identifier(self, i: int = None):
+        def Identifier(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.Identifier)
             else:
                 return self.getToken(qasm3Parser.Identifier, i)
 
-        def COMMA(self, i: int = None):
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -6798,48 +6231,52 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_identifierList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIdentifierList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIdentifierList" ):
                 listener.enterIdentifierList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIdentifierList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIdentifierList" ):
                 listener.exitIdentifierList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIdentifierList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIdentifierList" ):
                 return visitor.visitIdentifierList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def identifierList(self):
 
         localctx = qasm3Parser.IdentifierListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 114, self.RULE_identifierList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 734
             self.match(qasm3Parser.Identifier)
             self.state = 739
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 84, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,84,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 735
                     self.match(qasm3Parser.COMMA)
                     self.state = 736
-                    self.match(qasm3Parser.Identifier)
+                    self.match(qasm3Parser.Identifier) 
                 self.state = 741
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 84, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,84,self._ctx)
 
             self.state = 743
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COMMA:
+            if _la==qasm3Parser.COMMA:
                 self.state = 742
                 self.match(qasm3Parser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6849,18 +6286,21 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateOperandListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def gateOperand(self, i: int = None):
+        def gateOperand(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.GateOperandContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.GateOperandContext, i)
+                return self.getTypedRuleContext(qasm3Parser.GateOperandContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -6869,48 +6309,52 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_gateOperandList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateOperandList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateOperandList" ):
                 listener.enterGateOperandList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateOperandList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateOperandList" ):
                 listener.exitGateOperandList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateOperandList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateOperandList" ):
                 return visitor.visitGateOperandList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateOperandList(self):
 
         localctx = qasm3Parser.GateOperandListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 116, self.RULE_gateOperandList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 745
             self.gateOperand()
             self.state = 750
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 86, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,86,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 746
                     self.match(qasm3Parser.COMMA)
                     self.state = 747
-                    self.gateOperand()
+                    self.gateOperand() 
                 self.state = 752
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 86, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,86,self._ctx)
 
             self.state = 754
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COMMA:
+            if _la==qasm3Parser.COMMA:
                 self.state = 753
                 self.match(qasm3Parser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6920,18 +6364,21 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExternArgumentListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def externArgument(self, i: int = None):
+        def externArgument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(qasm3Parser.ExternArgumentContext)
             else:
-                return self.getTypedRuleContext(qasm3Parser.ExternArgumentContext, i)
+                return self.getTypedRuleContext(qasm3Parser.ExternArgumentContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(qasm3Parser.COMMA)
             else:
@@ -6940,48 +6387,52 @@ class qasm3Parser(Parser):
         def getRuleIndex(self):
             return qasm3Parser.RULE_externArgumentList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExternArgumentList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExternArgumentList" ):
                 listener.enterExternArgumentList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExternArgumentList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExternArgumentList" ):
                 listener.exitExternArgumentList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExternArgumentList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExternArgumentList" ):
                 return visitor.visitExternArgumentList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def externArgumentList(self):
 
         localctx = qasm3Parser.ExternArgumentListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 118, self.RULE_externArgumentList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 756
             self.externArgument()
             self.state = 761
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 88, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,88,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 757
                     self.match(qasm3Parser.COMMA)
                     self.state = 758
-                    self.externArgument()
+                    self.externArgument() 
                 self.state = 763
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 88, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,88,self._ctx)
 
             self.state = 765
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == qasm3Parser.COMMA:
+            if _la==qasm3Parser.COMMA:
                 self.state = 764
                 self.match(qasm3Parser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6991,7 +6442,9 @@ class qasm3Parser(Parser):
             self.exitRule()
         return localctx
 
-    def sempred(self, localctx: RuleContext, ruleIndex: int, predIndex: int):
+
+
+    def sempred(self, localctx:RuleContext, ruleIndex:int, predIndex:int):
         if self._predicates == None:
             self._predicates = dict()
         self._predicates[34] = self.expression_sempred
@@ -7001,39 +6454,55 @@ class qasm3Parser(Parser):
         else:
             return pred(localctx, predIndex)
 
-    def expression_sempred(self, localctx: ExpressionContext, predIndex: int):
-        if predIndex == 0:
-            return self.precpred(self._ctx, 16)
+    def expression_sempred(self, localctx:ExpressionContext, predIndex:int):
+            if predIndex == 0:
+                return self.precpred(self._ctx, 16)
+         
 
-        if predIndex == 1:
-            return self.precpred(self._ctx, 14)
+            if predIndex == 1:
+                return self.precpred(self._ctx, 14)
+         
 
-        if predIndex == 2:
-            return self.precpred(self._ctx, 13)
+            if predIndex == 2:
+                return self.precpred(self._ctx, 13)
+         
 
-        if predIndex == 3:
-            return self.precpred(self._ctx, 12)
+            if predIndex == 3:
+                return self.precpred(self._ctx, 12)
+         
 
-        if predIndex == 4:
-            return self.precpred(self._ctx, 11)
+            if predIndex == 4:
+                return self.precpred(self._ctx, 11)
+         
 
-        if predIndex == 5:
-            return self.precpred(self._ctx, 10)
+            if predIndex == 5:
+                return self.precpred(self._ctx, 10)
+         
 
-        if predIndex == 6:
-            return self.precpred(self._ctx, 9)
+            if predIndex == 6:
+                return self.precpred(self._ctx, 9)
+         
 
-        if predIndex == 7:
-            return self.precpred(self._ctx, 8)
+            if predIndex == 7:
+                return self.precpred(self._ctx, 8)
+         
 
-        if predIndex == 8:
-            return self.precpred(self._ctx, 7)
+            if predIndex == 8:
+                return self.precpred(self._ctx, 7)
+         
 
-        if predIndex == 9:
-            return self.precpred(self._ctx, 6)
+            if predIndex == 9:
+                return self.precpred(self._ctx, 6)
+         
 
-        if predIndex == 10:
-            return self.precpred(self._ctx, 5)
+            if predIndex == 10:
+                return self.precpred(self._ctx, 5)
+         
 
-        if predIndex == 11:
-            return self.precpred(self._ctx, 17)
+            if predIndex == 11:
+                return self.precpred(self._ctx, 17)
+         
+
+
+
+

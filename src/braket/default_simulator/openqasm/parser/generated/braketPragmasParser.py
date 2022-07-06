@@ -1,14 +1,12 @@
 # Generated from braketPragmasParser.g4 by ANTLR 4.9
 # encoding: utf-8
-import sys
-from io import StringIO
-
 from antlr4 import *
-
+from io import StringIO
+import sys
 if sys.version_info[1] > 5:
-    from typing import TextIO
+	from typing import TextIO
 else:
-    from typing.io import TextIO
+	from typing.io import TextIO
 
 
 def serializedATN():
@@ -19,8 +17,8 @@ def serializedATN():
         buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
         buf.write("\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31")
         buf.write("\t\31\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36")
-        buf.write('\4\37\t\37\4 \t \4!\t!\4"\t"\4#\t#\4$\t$\4%\t%\4&\t')
-        buf.write("&\4'\t'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
+        buf.write("\4\37\t\37\4 \t \4!\t!\4\"\t\"\4#\t#\4$\t$\4%\t%\4&\t")
+        buf.write("&\4\'\t\'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
         buf.write("/\t/\4\60\t\60\4\61\t\61\4\62\t\62\4\63\t\63\4\64\t\64")
         buf.write("\4\65\t\65\4\66\t\66\4\67\t\67\48\t8\49\t9\4:\t:\4;\t")
         buf.write(";\4<\t<\4=\t=\4>\t>\4?\t?\4@\t@\4A\tA\4B\tB\4C\tC\4D\t")
@@ -47,10 +45,10 @@ def serializedATN():
         buf.write("\31\u0159\n\31\3\32\3\32\5\32\u015d\n\32\3\33\3\33\7\33")
         buf.write("\u0161\n\33\f\33\16\33\u0164\13\33\3\33\3\33\3\34\3\34")
         buf.write("\3\34\3\35\3\35\5\35\u016d\n\35\3\36\3\36\3\36\3\36\3")
-        buf.write('\37\3\37\3\37\3\37\3 \3 \3 \3!\3!\3!\3"\3"\3"\3#\3')
+        buf.write("\37\3\37\3\37\3\37\3 \3 \3 \3!\3!\3!\3\"\3\"\3\"\3#\3")
         buf.write("#\3#\3#\3#\3#\3#\3#\3#\3#\5#\u018a\n#\3#\3#\3$\3$\3$\3")
         buf.write("$\3$\3$\3$\5$\u0195\n$\3%\3%\3%\5%\u019a\n%\3%\3%\3&\3")
-        buf.write("&\3&\3&\3&\3&\3'\3'\5'\u01a6\n'\3'\3'\3(\3(\5(\u01ac")
+        buf.write("&\3&\3&\3&\3&\3\'\3\'\5\'\u01a6\n\'\3\'\3\'\3(\3(\5(\u01ac")
         buf.write("\n(\3(\3(\3)\3)\3)\5)\u01b3\n)\3)\3)\3*\7*\u01b8\n*\f")
         buf.write("*\16*\u01bb\13*\3*\3*\3*\5*\u01c0\n*\3*\5*\u01c3\n*\3")
         buf.write("*\5*\u01c6\n*\3*\3*\3*\3*\7*\u01cc\n*\f*\16*\u01cf\13")
@@ -93,7 +91,7 @@ def serializedATN():
         buf.write("\nP\fP\16P\u0392\13P\3P\5P\u0395\nP\3Q\3Q\3Q\7Q\u039a")
         buf.write("\nQ\fQ\16Q\u039d\13Q\3Q\5Q\u03a0\nQ\3R\3R\3R\7R\u03a5")
         buf.write("\nR\fR\16R\u03a8\13R\3R\5R\u03ab\nR\3R\3\u0257\3pS\2\4")
-        buf.write('\6\b\n\f\16\20\22\24\26\30\32\34\36 "$&(*,.\60\62\64')
+        buf.write("\6\b\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\60\62\64")
         buf.write("\668:<>@BDFHJLNPRTVXZ\\^`bdfhjlnprtvxz|~\u0080\u0082\u0084")
         buf.write("\u0086\u0088\u008a\u008c\u008e\u0090\u0092\u0094\u0096")
         buf.write("\u0098\u009a\u009c\u009e\u00a0\u00a2\2\21\3\2\7\b\3\2")
@@ -103,7 +101,7 @@ def serializedATN():
         buf.write("\3\2\2\2\n\u00c5\3\2\2\2\f\u00cd\3\2\2\2\16\u00cf\3\2")
         buf.write("\2\2\20\u00d1\3\2\2\2\22\u00d5\3\2\2\2\24\u00d7\3\2\2")
         buf.write("\2\26\u00df\3\2\2\2\30\u00e2\3\2\2\2\32\u00e4\3\2\2\2")
-        buf.write('\34\u00ec\3\2\2\2\36\u00f2\3\2\2\2 \u00fa\3\2\2\2"\u00fe')
+        buf.write("\34\u00ec\3\2\2\2\36\u00f2\3\2\2\2 \u00fa\3\2\2\2\"\u00fe")
         buf.write("\3\2\2\2$\u0103\3\2\2\2&\u0115\3\2\2\2(\u0117\3\2\2\2")
         buf.write("*\u0123\3\2\2\2,\u0126\3\2\2\2.\u0130\3\2\2\2\60\u0158")
         buf.write("\3\2\2\2\62\u015a\3\2\2\2\64\u015e\3\2\2\2\66\u0167\3")
@@ -154,7 +152,7 @@ def serializedATN():
         buf.write("\3\2\2\2\u00e9\u00e7\3\2\2\2\u00e9\u00ea\3\2\2\2\u00ea")
         buf.write("\33\3\2\2\2\u00eb\u00e9\3\2\2\2\u00ec\u00ed\5&\24\2\u00ed")
         buf.write("\u00ee\5\36\20\2\u00ee\35\3\2\2\2\u00ef\u00f3\5 \21\2")
-        buf.write('\u00f0\u00f3\5"\22\2\u00f1\u00f3\5$\23\2\u00f2\u00ef')
+        buf.write("\u00f0\u00f3\5\"\22\2\u00f1\u00f3\5$\23\2\u00f2\u00ef")
         buf.write("\3\2\2\2\u00f2\u00f0\3\2\2\2\u00f2\u00f1\3\2\2\2\u00f3")
         buf.write("\37\3\2\2\2\u00f4\u00fb\5(\25\2\u00f5\u00f6\5(\25\2\u00f6")
         buf.write("\u00f7\7I\2\2\u00f7\u00f8\5\u0080A\2\u00f8\u00f9\7J\2")
@@ -169,7 +167,7 @@ def serializedATN():
         buf.write("\u010e\5*\26\2\u010e\u010f\7N\2\2\u010f\u0110\5*\26\2")
         buf.write("\u0110\u0111\7F\2\2\u0111\u0112\7F\2\2\u0112\u0113\7J")
         buf.write("\2\2\u0113\u0114\5\u0080A\2\u0114%\3\2\2\2\u0115\u0116")
-        buf.write("\t\3\2\2\u0116'\3\2\2\2\u0117\u0118\t\4\2\2\u0118)\3")
+        buf.write("\t\3\2\2\u0116\'\3\2\2\2\u0117\u0118\t\4\2\2\u0118)\3")
         buf.write("\2\2\2\u0119\u011b\7S\2\2\u011a\u0119\3\2\2\2\u011a\u011b")
         buf.write("\3\2\2\2\u011b\u011c\3\2\2\2\u011c\u0124\t\5\2\2\u011d")
         buf.write("\u011f\7S\2\2\u011e\u011d\3\2\2\2\u011e\u011f\3\2\2\2")
@@ -185,10 +183,10 @@ def serializedATN():
         buf.write("\u0137\5\62\32\2\u0136\u0135\3\2\2\2\u0137\u013a\3\2\2")
         buf.write("\2\u0138\u0136\3\2\2\2\u0138\u0139\3\2\2\2\u0139\u0156")
         buf.write("\3\2\2\2\u013a\u0138\3\2\2\2\u013b\u0157\5X-\2\u013c\u0157")
-        buf.write("\5j\66\2\u013d\u0157\5L'\2\u013e\u0157\5N(\2\u013f\u0157")
+        buf.write("\5j\66\2\u013d\u0157\5L\'\2\u013e\u0157\5N(\2\u013f\u0157")
         buf.write("\5> \2\u0140\u0157\5:\36\2\u0141\u0157\5Z.\2\u0142\u0157")
         buf.write("\5\\/\2\u0143\u0157\5@!\2\u0144\u0157\5d\63\2\u0145\u0157")
-        buf.write('\5n8\2\u0146\u0157\5P)\2\u0147\u0157\5B"\2\u0148\u0157')
+        buf.write("\5n8\2\u0146\u0157\5P)\2\u0147\u0157\5B\"\2\u0148\u0157")
         buf.write("\5l\67\2\u0149\u0157\5f\64\2\u014a\u0157\5D#\2\u014b\u0157")
         buf.write("\5R*\2\u014c\u0157\5h\65\2\u014d\u0157\5F$\2\u014e\u0157")
         buf.write("\5<\37\2\u014f\u0157\5^\60\2\u0150\u0157\5T+\2\u0151\u0157")
@@ -204,7 +202,7 @@ def serializedATN():
         buf.write("\2\2\2\u0156\u0150\3\2\2\2\u0156\u0151\3\2\2\2\u0156\u0152")
         buf.write("\3\2\2\2\u0156\u0153\3\2\2\2\u0156\u0154\3\2\2\2\u0156")
         buf.write("\u0155\3\2\2\2\u0157\u0159\3\2\2\2\u0158\u0134\3\2\2\2")
-        buf.write("\u0158\u0138\3\2\2\2\u0159\61\3\2\2\2\u015a\u015c\7'")
+        buf.write("\u0158\u0138\3\2\2\2\u0159\61\3\2\2\2\u015a\u015c\7\'")
         buf.write("\2\2\u015b\u015d\7w\2\2\u015c\u015b\3\2\2\2\u015c\u015d")
         buf.write("\3\2\2\2\u015d\63\3\2\2\2\u015e\u0162\7G\2\2\u015f\u0161")
         buf.write("\5\60\31\2\u0160\u015f\3\2\2\2\u0161\u0164\3\2\2\2\u0162")
@@ -228,7 +226,7 @@ def serializedATN():
         buf.write("\2\u018f\u0190\5p9\2\u0190\u0191\7J\2\2\u0191\u0194\5")
         buf.write("8\35\2\u0192\u0193\7 \2\2\u0193\u0195\58\35\2\u0194\u0192")
         buf.write("\3\2\2\2\u0194\u0195\3\2\2\2\u0195G\3\2\2\2\u0196\u0199")
-        buf.write('\7"\2\2\u0197\u019a\5p9\2\u0198\u019a\5v<\2\u0199\u0197')
+        buf.write("\7\"\2\2\u0197\u019a\5p9\2\u0198\u019a\5v<\2\u0199\u0197")
         buf.write("\3\2\2\2\u0199\u0198\3\2\2\2\u0199\u019a\3\2\2\2\u019a")
         buf.write("\u019b\3\2\2\2\u019b\u019c\7L\2\2\u019cI\3\2\2\2\u019d")
         buf.write("\u019e\7$\2\2\u019e\u019f\7I\2\2\u019f\u01a0\5p9\2\u01a0")
@@ -475,237 +473,62 @@ def serializedATN():
         return buf.getvalue()
 
 
-class braketPragmasParser(Parser):
+class braketPragmasParser ( Parser ):
 
     grammarFileName = "braketPragmasParser.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
+    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [
-        "<INVALID>",
-        "'braket'",
-        "'unitary'",
-        "'result'",
-        "'state_vector'",
-        "'probability'",
-        "'density_matrix'",
-        "'amplitude'",
-        "'expectation'",
-        "'variance'",
-        "'sample'",
-        "'x'",
-        "'y'",
-        "'z'",
-        "'i'",
-        "'h'",
-        "'hermitian'",
-        "'@'",
-        "'OPENQASM'",
-        "'include'",
-        "'defcalgrammar'",
-        "'def'",
-        "'defcal'",
-        "'gate'",
-        "'extern'",
-        "'box'",
-        "'let'",
-        "'break'",
-        "'continue'",
-        "'if'",
-        "'else'",
-        "'end'",
-        "'return'",
-        "'for'",
-        "'while'",
-        "'in'",
-        "<INVALID>",
-        "<INVALID>",
-        "'input'",
-        "'output'",
-        "'const'",
-        "'mutable'",
-        "'qreg'",
-        "'qubit'",
-        "'creg'",
-        "'bool'",
-        "'bit'",
-        "'int'",
-        "'uint'",
-        "'float'",
-        "'angle'",
-        "'complex'",
-        "'array'",
-        "'duration'",
-        "'stretch'",
-        "'gphase'",
-        "'inv'",
-        "'pow'",
-        "'ctrl'",
-        "'negctrl'",
-        "'#dim'",
-        "'durationof'",
-        "'delay'",
-        "'reset'",
-        "'measure'",
-        "'barrier'",
-        "<INVALID>",
-        "'['",
-        "']'",
-        "'{'",
-        "'}'",
-        "'('",
-        "')'",
-        "':'",
-        "';'",
-        "'.'",
-        "','",
-        "'='",
-        "'->'",
-        "'+'",
-        "'++'",
-        "'-'",
-        "'*'",
-        "'**'",
-        "'/'",
-        "'%'",
-        "'|'",
-        "'||'",
-        "'&'",
-        "'&&'",
-        "'^'",
-        "'~'",
-        "'!'",
-        "<INVALID>",
-        "<INVALID>",
-        "<INVALID>",
-        "<INVALID>",
-        "'im'",
-    ]
+    literalNames = [ "<INVALID>", "'braket'", "'unitary'", "'result'", "'state_vector'", 
+                     "'probability'", "'density_matrix'", "'amplitude'", 
+                     "'expectation'", "'variance'", "'sample'", "'x'", "'y'", 
+                     "'z'", "'i'", "'h'", "'hermitian'", "'@'", "'OPENQASM'", 
+                     "'include'", "'defcalgrammar'", "'def'", "'defcal'", 
+                     "'gate'", "'extern'", "'box'", "'let'", "'break'", 
+                     "'continue'", "'if'", "'else'", "'end'", "'return'", 
+                     "'for'", "'while'", "'in'", "<INVALID>", "<INVALID>", 
+                     "'input'", "'output'", "'const'", "'mutable'", "'qreg'", 
+                     "'qubit'", "'creg'", "'bool'", "'bit'", "'int'", "'uint'", 
+                     "'float'", "'angle'", "'complex'", "'array'", "'duration'", 
+                     "'stretch'", "'gphase'", "'inv'", "'pow'", "'ctrl'", 
+                     "'negctrl'", "'#dim'", "'durationof'", "'delay'", "'reset'", 
+                     "'measure'", "'barrier'", "<INVALID>", "'['", "']'", 
+                     "'{'", "'}'", "'('", "')'", "':'", "';'", "'.'", "','", 
+                     "'='", "'->'", "'+'", "'++'", "'-'", "'*'", "'**'", 
+                     "'/'", "'%'", "'|'", "'||'", "'&'", "'&&'", "'^'", 
+                     "'~'", "'!'", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "'im'" ]
 
-    symbolicNames = [
-        "<INVALID>",
-        "BRAKET",
-        "UNITARY",
-        "RESULT",
-        "STATE_VECTOR",
-        "PROBABILITY",
-        "DENSITY_MATRIX",
-        "AMPLITUDE",
-        "EXPECTATION",
-        "VARIANCE",
-        "SAMPLE",
-        "X",
-        "Y",
-        "Z",
-        "I",
-        "H",
-        "HERMITIAN",
-        "AT",
-        "OPENQASM",
-        "INCLUDE",
-        "DEFCALGRAMMAR",
-        "DEF",
-        "DEFCAL",
-        "GATE",
-        "EXTERN",
-        "BOX",
-        "LET",
-        "BREAK",
-        "CONTINUE",
-        "IF",
-        "ELSE",
-        "END",
-        "RETURN",
-        "FOR",
-        "WHILE",
-        "IN",
-        "PRAGMA",
-        "AnnotationKeyword",
-        "INPUT",
-        "OUTPUT",
-        "CONST",
-        "MUTABLE",
-        "QREG",
-        "QUBIT",
-        "CREG",
-        "BOOL",
-        "BIT",
-        "INT",
-        "UINT",
-        "FLOAT",
-        "ANGLE",
-        "COMPLEX",
-        "ARRAY",
-        "DURATION",
-        "STRETCH",
-        "GPHASE",
-        "INV",
-        "POW",
-        "CTRL",
-        "NEGCTRL",
-        "DIM",
-        "DURATIONOF",
-        "DELAY",
-        "RESET",
-        "MEASURE",
-        "BARRIER",
-        "BooleanLiteral",
-        "LBRACKET",
-        "RBRACKET",
-        "LBRACE",
-        "RBRACE",
-        "LPAREN",
-        "RPAREN",
-        "COLON",
-        "SEMICOLON",
-        "DOT",
-        "COMMA",
-        "EQUALS",
-        "ARROW",
-        "PLUS",
-        "DOUBLE_PLUS",
-        "MINUS",
-        "ASTERISK",
-        "DOUBLE_ASTERISK",
-        "SLASH",
-        "PERCENT",
-        "PIPE",
-        "DOUBLE_PIPE",
-        "AMPERSAND",
-        "DOUBLE_AMPERSAND",
-        "CARET",
-        "TILDE",
-        "EXCLAMATION_POINT",
-        "EqualityOperator",
-        "CompoundAssignmentOperator",
-        "ComparisonOperator",
-        "BitshiftOperator",
-        "IMAG",
-        "ImaginaryLiteral",
-        "BinaryIntegerLiteral",
-        "OctalIntegerLiteral",
-        "DecimalIntegerLiteral",
-        "HexIntegerLiteral",
-        "Identifier",
-        "HardwareQubit",
-        "FloatLiteral",
-        "TimingLiteral",
-        "BitstringLiteral",
-        "StringLiteral",
-        "Whitespace",
-        "Newline",
-        "LineComment",
-        "BlockComment",
-        "VERSION_IDENTIFER_WHITESPACE",
-        "VersionSpecifier",
-        "EAT_INITIAL_SPACE",
-        "EAT_LINE_END",
-        "RemainingLineContent",
-    ]
+    symbolicNames = [ "<INVALID>", "BRAKET", "UNITARY", "RESULT", "STATE_VECTOR", 
+                      "PROBABILITY", "DENSITY_MATRIX", "AMPLITUDE", "EXPECTATION", 
+                      "VARIANCE", "SAMPLE", "X", "Y", "Z", "I", "H", "HERMITIAN", 
+                      "AT", "OPENQASM", "INCLUDE", "DEFCALGRAMMAR", "DEF", 
+                      "DEFCAL", "GATE", "EXTERN", "BOX", "LET", "BREAK", 
+                      "CONTINUE", "IF", "ELSE", "END", "RETURN", "FOR", 
+                      "WHILE", "IN", "PRAGMA", "AnnotationKeyword", "INPUT", 
+                      "OUTPUT", "CONST", "MUTABLE", "QREG", "QUBIT", "CREG", 
+                      "BOOL", "BIT", "INT", "UINT", "FLOAT", "ANGLE", "COMPLEX", 
+                      "ARRAY", "DURATION", "STRETCH", "GPHASE", "INV", "POW", 
+                      "CTRL", "NEGCTRL", "DIM", "DURATIONOF", "DELAY", "RESET", 
+                      "MEASURE", "BARRIER", "BooleanLiteral", "LBRACKET", 
+                      "RBRACKET", "LBRACE", "RBRACE", "LPAREN", "RPAREN", 
+                      "COLON", "SEMICOLON", "DOT", "COMMA", "EQUALS", "ARROW", 
+                      "PLUS", "DOUBLE_PLUS", "MINUS", "ASTERISK", "DOUBLE_ASTERISK", 
+                      "SLASH", "PERCENT", "PIPE", "DOUBLE_PIPE", "AMPERSAND", 
+                      "DOUBLE_AMPERSAND", "CARET", "TILDE", "EXCLAMATION_POINT", 
+                      "EqualityOperator", "CompoundAssignmentOperator", 
+                      "ComparisonOperator", "BitshiftOperator", "IMAG", 
+                      "ImaginaryLiteral", "BinaryIntegerLiteral", "OctalIntegerLiteral", 
+                      "DecimalIntegerLiteral", "HexIntegerLiteral", "Identifier", 
+                      "HardwareQubit", "FloatLiteral", "TimingLiteral", 
+                      "BitstringLiteral", "StringLiteral", "Whitespace", 
+                      "Newline", "LineComment", "BlockComment", "VERSION_IDENTIFER_WHITESPACE", 
+                      "VersionSpecifier", "EAT_INITIAL_SPACE", "EAT_LINE_END", 
+                      "RemainingLineContent" ]
 
     RULE_braketPragma = 0
     RULE_braketUnitaryPragma = 1
@@ -789,244 +612,194 @@ class braketPragmasParser(Parser):
     RULE_gateOperandList = 79
     RULE_externArgumentList = 80
 
-    ruleNames = [
-        "braketPragma",
-        "braketUnitaryPragma",
-        "twoDimMatrix",
-        "row",
-        "braketResultPragma",
-        "noArgResultType",
-        "noArgResultTypeName",
-        "optionalMultiTargetResultType",
-        "optionalMultiTargetResultTypeName",
-        "multiTarget",
-        "multiStateResultType",
-        "multiStateResultTypeName",
-        "multiState",
-        "observableResultType",
-        "observable",
-        "standardObservable",
-        "tensorProductObservable",
-        "hermitianObservable",
-        "observableResultTypeName",
-        "standardObservableName",
-        "complexNumber",
-        "program",
-        "version",
-        "statement",
-        "annotation",
-        "scope",
-        "pragma",
-        "statementOrScope",
-        "calibrationGrammarStatement",
-        "includeStatement",
-        "breakStatement",
-        "continueStatement",
-        "endStatement",
-        "forStatement",
-        "ifStatement",
-        "returnStatement",
-        "whileStatement",
-        "barrierStatement",
-        "boxStatement",
-        "delayStatement",
-        "gateCallStatement",
-        "measureArrowAssignmentStatement",
-        "resetStatement",
-        "aliasDeclarationStatement",
-        "classicalDeclarationStatement",
-        "constDeclarationStatement",
-        "ioDeclarationStatement",
-        "oldStyleDeclarationStatement",
-        "quantumDeclarationStatement",
-        "defStatement",
-        "externStatement",
-        "gateStatement",
-        "assignmentStatement",
-        "expressionStatement",
-        "defcalStatement",
-        "expression",
-        "aliasExpression",
-        "declarationExpression",
-        "measureExpression",
-        "rangeExpression",
-        "setExpression",
-        "arrayLiteral",
-        "indexOperator",
-        "indexedIdentifier",
-        "returnSignature",
-        "gateModifier",
-        "scalarType",
-        "qubitType",
-        "arrayType",
-        "arrayReferenceType",
-        "designator",
-        "gateOperand",
-        "externArgument",
-        "defcalArgument",
-        "argumentDefinition",
-        "argumentDefinitionList",
-        "expressionList",
-        "defcalArgumentList",
-        "identifierList",
-        "gateOperandList",
-        "externArgumentList",
-    ]
+    ruleNames =  [ "braketPragma", "braketUnitaryPragma", "twoDimMatrix", 
+                   "row", "braketResultPragma", "noArgResultType", "noArgResultTypeName", 
+                   "optionalMultiTargetResultType", "optionalMultiTargetResultTypeName", 
+                   "multiTarget", "multiStateResultType", "multiStateResultTypeName", 
+                   "multiState", "observableResultType", "observable", "standardObservable", 
+                   "tensorProductObservable", "hermitianObservable", "observableResultTypeName", 
+                   "standardObservableName", "complexNumber", "program", 
+                   "version", "statement", "annotation", "scope", "pragma", 
+                   "statementOrScope", "calibrationGrammarStatement", "includeStatement", 
+                   "breakStatement", "continueStatement", "endStatement", 
+                   "forStatement", "ifStatement", "returnStatement", "whileStatement", 
+                   "barrierStatement", "boxStatement", "delayStatement", 
+                   "gateCallStatement", "measureArrowAssignmentStatement", 
+                   "resetStatement", "aliasDeclarationStatement", "classicalDeclarationStatement", 
+                   "constDeclarationStatement", "ioDeclarationStatement", 
+                   "oldStyleDeclarationStatement", "quantumDeclarationStatement", 
+                   "defStatement", "externStatement", "gateStatement", "assignmentStatement", 
+                   "expressionStatement", "defcalStatement", "expression", 
+                   "aliasExpression", "declarationExpression", "measureExpression", 
+                   "rangeExpression", "setExpression", "arrayLiteral", "indexOperator", 
+                   "indexedIdentifier", "returnSignature", "gateModifier", 
+                   "scalarType", "qubitType", "arrayType", "arrayReferenceType", 
+                   "designator", "gateOperand", "externArgument", "defcalArgument", 
+                   "argumentDefinition", "argumentDefinitionList", "expressionList", 
+                   "defcalArgumentList", "identifierList", "gateOperandList", 
+                   "externArgumentList" ]
 
     EOF = Token.EOF
-    BRAKET = 1
-    UNITARY = 2
-    RESULT = 3
-    STATE_VECTOR = 4
-    PROBABILITY = 5
-    DENSITY_MATRIX = 6
-    AMPLITUDE = 7
-    EXPECTATION = 8
-    VARIANCE = 9
-    SAMPLE = 10
-    X = 11
-    Y = 12
-    Z = 13
-    I = 14
-    H = 15
-    HERMITIAN = 16
-    AT = 17
-    OPENQASM = 18
-    INCLUDE = 19
-    DEFCALGRAMMAR = 20
-    DEF = 21
-    DEFCAL = 22
-    GATE = 23
-    EXTERN = 24
-    BOX = 25
-    LET = 26
-    BREAK = 27
-    CONTINUE = 28
-    IF = 29
-    ELSE = 30
-    END = 31
-    RETURN = 32
-    FOR = 33
-    WHILE = 34
-    IN = 35
-    PRAGMA = 36
-    AnnotationKeyword = 37
-    INPUT = 38
-    OUTPUT = 39
-    CONST = 40
-    MUTABLE = 41
-    QREG = 42
-    QUBIT = 43
-    CREG = 44
-    BOOL = 45
-    BIT = 46
-    INT = 47
-    UINT = 48
-    FLOAT = 49
-    ANGLE = 50
-    COMPLEX = 51
-    ARRAY = 52
-    DURATION = 53
-    STRETCH = 54
-    GPHASE = 55
-    INV = 56
-    POW = 57
-    CTRL = 58
-    NEGCTRL = 59
-    DIM = 60
-    DURATIONOF = 61
-    DELAY = 62
-    RESET = 63
-    MEASURE = 64
-    BARRIER = 65
-    BooleanLiteral = 66
-    LBRACKET = 67
-    RBRACKET = 68
-    LBRACE = 69
-    RBRACE = 70
-    LPAREN = 71
-    RPAREN = 72
-    COLON = 73
-    SEMICOLON = 74
-    DOT = 75
-    COMMA = 76
-    EQUALS = 77
-    ARROW = 78
-    PLUS = 79
-    DOUBLE_PLUS = 80
-    MINUS = 81
-    ASTERISK = 82
-    DOUBLE_ASTERISK = 83
-    SLASH = 84
-    PERCENT = 85
-    PIPE = 86
-    DOUBLE_PIPE = 87
-    AMPERSAND = 88
-    DOUBLE_AMPERSAND = 89
-    CARET = 90
-    TILDE = 91
-    EXCLAMATION_POINT = 92
-    EqualityOperator = 93
-    CompoundAssignmentOperator = 94
-    ComparisonOperator = 95
-    BitshiftOperator = 96
-    IMAG = 97
-    ImaginaryLiteral = 98
-    BinaryIntegerLiteral = 99
-    OctalIntegerLiteral = 100
-    DecimalIntegerLiteral = 101
-    HexIntegerLiteral = 102
-    Identifier = 103
-    HardwareQubit = 104
-    FloatLiteral = 105
-    TimingLiteral = 106
-    BitstringLiteral = 107
-    StringLiteral = 108
-    Whitespace = 109
-    Newline = 110
-    LineComment = 111
-    BlockComment = 112
-    VERSION_IDENTIFER_WHITESPACE = 113
-    VersionSpecifier = 114
-    EAT_INITIAL_SPACE = 115
-    EAT_LINE_END = 116
-    RemainingLineContent = 117
+    BRAKET=1
+    UNITARY=2
+    RESULT=3
+    STATE_VECTOR=4
+    PROBABILITY=5
+    DENSITY_MATRIX=6
+    AMPLITUDE=7
+    EXPECTATION=8
+    VARIANCE=9
+    SAMPLE=10
+    X=11
+    Y=12
+    Z=13
+    I=14
+    H=15
+    HERMITIAN=16
+    AT=17
+    OPENQASM=18
+    INCLUDE=19
+    DEFCALGRAMMAR=20
+    DEF=21
+    DEFCAL=22
+    GATE=23
+    EXTERN=24
+    BOX=25
+    LET=26
+    BREAK=27
+    CONTINUE=28
+    IF=29
+    ELSE=30
+    END=31
+    RETURN=32
+    FOR=33
+    WHILE=34
+    IN=35
+    PRAGMA=36
+    AnnotationKeyword=37
+    INPUT=38
+    OUTPUT=39
+    CONST=40
+    MUTABLE=41
+    QREG=42
+    QUBIT=43
+    CREG=44
+    BOOL=45
+    BIT=46
+    INT=47
+    UINT=48
+    FLOAT=49
+    ANGLE=50
+    COMPLEX=51
+    ARRAY=52
+    DURATION=53
+    STRETCH=54
+    GPHASE=55
+    INV=56
+    POW=57
+    CTRL=58
+    NEGCTRL=59
+    DIM=60
+    DURATIONOF=61
+    DELAY=62
+    RESET=63
+    MEASURE=64
+    BARRIER=65
+    BooleanLiteral=66
+    LBRACKET=67
+    RBRACKET=68
+    LBRACE=69
+    RBRACE=70
+    LPAREN=71
+    RPAREN=72
+    COLON=73
+    SEMICOLON=74
+    DOT=75
+    COMMA=76
+    EQUALS=77
+    ARROW=78
+    PLUS=79
+    DOUBLE_PLUS=80
+    MINUS=81
+    ASTERISK=82
+    DOUBLE_ASTERISK=83
+    SLASH=84
+    PERCENT=85
+    PIPE=86
+    DOUBLE_PIPE=87
+    AMPERSAND=88
+    DOUBLE_AMPERSAND=89
+    CARET=90
+    TILDE=91
+    EXCLAMATION_POINT=92
+    EqualityOperator=93
+    CompoundAssignmentOperator=94
+    ComparisonOperator=95
+    BitshiftOperator=96
+    IMAG=97
+    ImaginaryLiteral=98
+    BinaryIntegerLiteral=99
+    OctalIntegerLiteral=100
+    DecimalIntegerLiteral=101
+    HexIntegerLiteral=102
+    Identifier=103
+    HardwareQubit=104
+    FloatLiteral=105
+    TimingLiteral=106
+    BitstringLiteral=107
+    StringLiteral=108
+    Whitespace=109
+    Newline=110
+    LineComment=111
+    BlockComment=112
+    VERSION_IDENTIFER_WHITESPACE=113
+    VersionSpecifier=114
+    EAT_INITIAL_SPACE=115
+    EAT_LINE_END=116
+    RemainingLineContent=117
 
-    def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
+    def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.9")
-        self._interp = ParserATNSimulator(
-            self, self.atn, self.decisionsToDFA, self.sharedContextCache
-        )
+        self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
+
+
+
     class BraketPragmaContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def braketResultPragma(self):
-            return self.getTypedRuleContext(braketPragmasParser.BraketResultPragmaContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.BraketResultPragmaContext,0)
+
 
         def braketUnitaryPragma(self):
-            return self.getTypedRuleContext(braketPragmasParser.BraketUnitaryPragmaContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.BraketUnitaryPragmaContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_braketPragma
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBraketPragma"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBraketPragma" ):
                 listener.enterBraketPragma(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBraketPragma"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBraketPragma" ):
                 listener.exitBraketPragma(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBraketPragma"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBraketPragma" ):
                 return visitor.visitBraketPragma(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def braketPragma(self):
 
@@ -1035,7 +808,7 @@ class braketPragmasParser(Parser):
         try:
             self.state = 164
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 0, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,0,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 162
@@ -1048,6 +821,7 @@ class braketPragmasParser(Parser):
                 self.braketUnitaryPragma()
                 pass
 
+
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1056,8 +830,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class BraketUnitaryPragmaContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1071,30 +847,35 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.LPAREN, 0)
 
         def twoDimMatrix(self):
-            return self.getTypedRuleContext(braketPragmasParser.TwoDimMatrixContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.TwoDimMatrixContext,0)
+
 
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
         def multiTarget(self):
-            return self.getTypedRuleContext(braketPragmasParser.MultiTargetContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MultiTargetContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_braketUnitaryPragma
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBraketUnitaryPragma"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBraketUnitaryPragma" ):
                 listener.enterBraketUnitaryPragma(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBraketUnitaryPragma"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBraketUnitaryPragma" ):
                 listener.exitBraketUnitaryPragma(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBraketUnitaryPragma"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBraketUnitaryPragma" ):
                 return visitor.visitBraketUnitaryPragma(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def braketUnitaryPragma(self):
 
@@ -1122,24 +903,27 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class TwoDimMatrixContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def LBRACKET(self):
             return self.getToken(braketPragmasParser.LBRACKET, 0)
 
-        def row(self, i: int = None):
+        def row(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.RowContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.RowContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.RowContext,i)
+
 
         def RBRACKET(self):
             return self.getToken(braketPragmasParser.RBRACKET, 0)
 
-        def COMMA(self, i: int = None):
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -1148,25 +932,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_twoDimMatrix
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterTwoDimMatrix"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterTwoDimMatrix" ):
                 listener.enterTwoDimMatrix(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitTwoDimMatrix"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitTwoDimMatrix" ):
                 listener.exitTwoDimMatrix(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTwoDimMatrix"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitTwoDimMatrix" ):
                 return visitor.visitTwoDimMatrix(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def twoDimMatrix(self):
 
         localctx = braketPragmasParser.TwoDimMatrixContext(self, self._ctx, self.state)
         self.enterRule(localctx, 4, self.RULE_twoDimMatrix)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 173
@@ -1176,7 +963,7 @@ class braketPragmasParser(Parser):
             self.state = 179
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == braketPragmasParser.COMMA:
+            while _la==braketPragmasParser.COMMA:
                 self.state = 175
                 self.match(braketPragmasParser.COMMA)
                 self.state = 176
@@ -1195,24 +982,27 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class RowContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def LBRACKET(self):
             return self.getToken(braketPragmasParser.LBRACKET, 0)
 
-        def complexNumber(self, i: int = None):
+        def complexNumber(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ComplexNumberContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ComplexNumberContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ComplexNumberContext,i)
+
 
         def RBRACKET(self):
             return self.getToken(braketPragmasParser.RBRACKET, 0)
 
-        def COMMA(self, i: int = None):
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -1221,25 +1011,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_row
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterRow"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterRow" ):
                 listener.enterRow(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitRow"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitRow" ):
                 listener.exitRow(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitRow"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitRow" ):
                 return visitor.visitRow(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def row(self):
 
         localctx = braketPragmasParser.RowContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_row)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 184
@@ -1249,7 +1042,7 @@ class braketPragmasParser(Parser):
             self.state = 190
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == braketPragmasParser.COMMA:
+            while _la==braketPragmasParser.COMMA:
                 self.state = 186
                 self.match(braketPragmasParser.COMMA)
                 self.state = 187
@@ -1268,8 +1061,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class BraketResultPragmaContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1280,35 +1075,40 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.RESULT, 0)
 
         def noArgResultType(self):
-            return self.getTypedRuleContext(braketPragmasParser.NoArgResultTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.NoArgResultTypeContext,0)
+
 
         def optionalMultiTargetResultType(self):
-            return self.getTypedRuleContext(
-                braketPragmasParser.OptionalMultiTargetResultTypeContext, 0
-            )
+            return self.getTypedRuleContext(braketPragmasParser.OptionalMultiTargetResultTypeContext,0)
+
 
         def multiStateResultType(self):
-            return self.getTypedRuleContext(braketPragmasParser.MultiStateResultTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MultiStateResultTypeContext,0)
+
 
         def observableResultType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ObservableResultTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ObservableResultTypeContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_braketResultPragma
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBraketResultPragma"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBraketResultPragma" ):
                 listener.enterBraketResultPragma(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBraketResultPragma"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBraketResultPragma" ):
                 listener.exitBraketResultPragma(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBraketResultPragma"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBraketResultPragma" ):
                 return visitor.visitBraketResultPragma(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def braketResultPragma(self):
 
@@ -1335,11 +1135,7 @@ class braketPragmasParser(Parser):
                 self.state = 199
                 self.multiStateResultType()
                 pass
-            elif token in [
-                braketPragmasParser.EXPECTATION,
-                braketPragmasParser.VARIANCE,
-                braketPragmasParser.SAMPLE,
-            ]:
+            elif token in [braketPragmasParser.EXPECTATION, braketPragmasParser.VARIANCE, braketPragmasParser.SAMPLE]:
                 self.state = 200
                 self.observableResultType()
                 pass
@@ -1354,30 +1150,36 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class NoArgResultTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def noArgResultTypeName(self):
-            return self.getTypedRuleContext(braketPragmasParser.NoArgResultTypeNameContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.NoArgResultTypeNameContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_noArgResultType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterNoArgResultType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterNoArgResultType" ):
                 listener.enterNoArgResultType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitNoArgResultType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitNoArgResultType" ):
                 listener.exitNoArgResultType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitNoArgResultType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitNoArgResultType" ):
                 return visitor.visitNoArgResultType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def noArgResultType(self):
 
@@ -1395,8 +1197,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class NoArgResultTypeNameContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1406,19 +1210,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_noArgResultTypeName
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterNoArgResultTypeName"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterNoArgResultTypeName" ):
                 listener.enterNoArgResultTypeName(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitNoArgResultTypeName"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitNoArgResultTypeName" ):
                 listener.exitNoArgResultTypeName(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitNoArgResultTypeName"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitNoArgResultTypeName" ):
                 return visitor.visitNoArgResultTypeName(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def noArgResultTypeName(self):
 
@@ -1436,43 +1243,46 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class OptionalMultiTargetResultTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def optionalMultiTargetResultTypeName(self):
-            return self.getTypedRuleContext(
-                braketPragmasParser.OptionalMultiTargetResultTypeNameContext, 0
-            )
+            return self.getTypedRuleContext(braketPragmasParser.OptionalMultiTargetResultTypeNameContext,0)
+
 
         def multiTarget(self):
-            return self.getTypedRuleContext(braketPragmasParser.MultiTargetContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MultiTargetContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_optionalMultiTargetResultType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterOptionalMultiTargetResultType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterOptionalMultiTargetResultType" ):
                 listener.enterOptionalMultiTargetResultType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitOptionalMultiTargetResultType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitOptionalMultiTargetResultType" ):
                 listener.exitOptionalMultiTargetResultType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitOptionalMultiTargetResultType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitOptionalMultiTargetResultType" ):
                 return visitor.visitOptionalMultiTargetResultType(self)
             else:
                 return visitor.visitChildren(self)
 
+
+
+
     def optionalMultiTargetResultType(self):
 
-        localctx = braketPragmasParser.OptionalMultiTargetResultTypeContext(
-            self, self._ctx, self.state
-        )
+        localctx = braketPragmasParser.OptionalMultiTargetResultTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_optionalMultiTargetResultType)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 207
@@ -1480,9 +1290,10 @@ class braketPragmasParser(Parser):
             self.state = 209
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.Identifier:
+            if _la==braketPragmasParser.Identifier:
                 self.state = 208
                 self.multiTarget()
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -1492,8 +1303,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class OptionalMultiTargetResultTypeNameContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1506,34 +1319,33 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_optionalMultiTargetResultTypeName
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterOptionalMultiTargetResultTypeName"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterOptionalMultiTargetResultTypeName" ):
                 listener.enterOptionalMultiTargetResultTypeName(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitOptionalMultiTargetResultTypeName"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitOptionalMultiTargetResultTypeName" ):
                 listener.exitOptionalMultiTargetResultTypeName(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitOptionalMultiTargetResultTypeName"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitOptionalMultiTargetResultTypeName" ):
                 return visitor.visitOptionalMultiTargetResultTypeName(self)
             else:
                 return visitor.visitChildren(self)
 
+
+
+
     def optionalMultiTargetResultTypeName(self):
 
-        localctx = braketPragmasParser.OptionalMultiTargetResultTypeNameContext(
-            self, self._ctx, self.state
-        )
+        localctx = braketPragmasParser.OptionalMultiTargetResultTypeNameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_optionalMultiTargetResultTypeName)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 211
             _la = self._input.LA(1)
-            if not (
-                _la == braketPragmasParser.PROBABILITY or _la == braketPragmasParser.DENSITY_MATRIX
-            ):
+            if not(_la==braketPragmasParser.PROBABILITY or _la==braketPragmasParser.DENSITY_MATRIX):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1546,18 +1358,21 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class MultiTargetContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def indexedIdentifier(self, i: int = None):
+        def indexedIdentifier(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.IndexedIdentifierContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -1566,25 +1381,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_multiTarget
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMultiTarget"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMultiTarget" ):
                 listener.enterMultiTarget(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMultiTarget"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMultiTarget" ):
                 listener.exitMultiTarget(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMultiTarget"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMultiTarget" ):
                 return visitor.visitMultiTarget(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def multiTarget(self):
 
         localctx = braketPragmasParser.MultiTargetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 18, self.RULE_multiTarget)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 213
@@ -1592,7 +1410,7 @@ class braketPragmasParser(Parser):
             self.state = 218
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == braketPragmasParser.COMMA:
+            while _la==braketPragmasParser.COMMA:
                 self.state = 214
                 self.match(braketPragmasParser.COMMA)
                 self.state = 215
@@ -1609,33 +1427,40 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class MultiStateResultTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def multiStateResultTypeName(self):
-            return self.getTypedRuleContext(braketPragmasParser.MultiStateResultTypeNameContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MultiStateResultTypeNameContext,0)
+
 
         def multiState(self):
-            return self.getTypedRuleContext(braketPragmasParser.MultiStateContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MultiStateContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_multiStateResultType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMultiStateResultType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMultiStateResultType" ):
                 listener.enterMultiStateResultType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMultiStateResultType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMultiStateResultType" ):
                 listener.exitMultiStateResultType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMultiStateResultType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMultiStateResultType" ):
                 return visitor.visitMultiStateResultType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def multiStateResultType(self):
 
@@ -1655,8 +1480,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class MultiStateResultTypeNameContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1666,19 +1493,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_multiStateResultTypeName
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMultiStateResultTypeName"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMultiStateResultTypeName" ):
                 listener.enterMultiStateResultTypeName(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMultiStateResultTypeName"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMultiStateResultTypeName" ):
                 listener.exitMultiStateResultTypeName(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMultiStateResultTypeName"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMultiStateResultTypeName" ):
                 return visitor.visitMultiStateResultTypeName(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def multiStateResultTypeName(self):
 
@@ -1696,18 +1526,20 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class MultiStateContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def StringLiteral(self, i: int = None):
+        def StringLiteral(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.StringLiteral)
             else:
                 return self.getToken(braketPragmasParser.StringLiteral, i)
 
-        def COMMA(self, i: int = None):
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -1716,25 +1548,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_multiState
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMultiState"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMultiState" ):
                 listener.enterMultiState(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMultiState"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMultiState" ):
                 listener.exitMultiState(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMultiState"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMultiState" ):
                 return visitor.visitMultiState(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def multiState(self):
 
         localctx = braketPragmasParser.MultiStateContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_multiState)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 226
@@ -1742,7 +1577,7 @@ class braketPragmasParser(Parser):
             self.state = 231
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == braketPragmasParser.COMMA:
+            while _la==braketPragmasParser.COMMA:
                 self.state = 227
                 self.match(braketPragmasParser.COMMA)
                 self.state = 228
@@ -1759,33 +1594,40 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ObservableResultTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def observableResultTypeName(self):
-            return self.getTypedRuleContext(braketPragmasParser.ObservableResultTypeNameContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ObservableResultTypeNameContext,0)
+
 
         def observable(self):
-            return self.getTypedRuleContext(braketPragmasParser.ObservableContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ObservableContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_observableResultType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterObservableResultType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterObservableResultType" ):
                 listener.enterObservableResultType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitObservableResultType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitObservableResultType" ):
                 listener.exitObservableResultType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitObservableResultType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitObservableResultType" ):
                 return visitor.visitObservableResultType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def observableResultType(self):
 
@@ -1805,36 +1647,44 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ObservableContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def standardObservable(self):
-            return self.getTypedRuleContext(braketPragmasParser.StandardObservableContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.StandardObservableContext,0)
+
 
         def tensorProductObservable(self):
-            return self.getTypedRuleContext(braketPragmasParser.TensorProductObservableContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.TensorProductObservableContext,0)
+
 
         def hermitianObservable(self):
-            return self.getTypedRuleContext(braketPragmasParser.HermitianObservableContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.HermitianObservableContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_observable
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterObservable"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterObservable" ):
                 listener.enterObservable(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitObservable"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitObservable" ):
                 listener.exitObservable(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitObservable"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitObservable" ):
                 return visitor.visitObservable(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def observable(self):
 
@@ -1843,7 +1693,7 @@ class braketPragmasParser(Parser):
         try:
             self.state = 240
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 7, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,7,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 237
@@ -1862,6 +1712,7 @@ class braketPragmasParser(Parser):
                 self.hermitianObservable()
                 pass
 
+
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1870,19 +1721,23 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class StandardObservableContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def standardObservableName(self):
-            return self.getTypedRuleContext(braketPragmasParser.StandardObservableNameContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.StandardObservableNameContext,0)
+
 
         def LPAREN(self):
             return self.getToken(braketPragmasParser.LPAREN, 0)
 
         def indexedIdentifier(self):
-            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext,0)
+
 
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
@@ -1890,19 +1745,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_standardObservable
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterStandardObservable"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterStandardObservable" ):
                 listener.enterStandardObservable(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitStandardObservable"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitStandardObservable" ):
                 listener.exitStandardObservable(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitStandardObservable"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitStandardObservable" ):
                 return visitor.visitStandardObservable(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def standardObservable(self):
 
@@ -1911,7 +1769,7 @@ class braketPragmasParser(Parser):
         try:
             self.state = 248
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 8, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,8,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 242
@@ -1930,6 +1788,7 @@ class braketPragmasParser(Parser):
                 self.match(braketPragmasParser.RPAREN)
                 pass
 
+
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1938,8 +1797,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class TensorProductObservableContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1947,30 +1808,36 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.AT, 0)
 
         def observable(self):
-            return self.getTypedRuleContext(braketPragmasParser.ObservableContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ObservableContext,0)
+
 
         def standardObservable(self):
-            return self.getTypedRuleContext(braketPragmasParser.StandardObservableContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.StandardObservableContext,0)
+
 
         def hermitianObservable(self):
-            return self.getTypedRuleContext(braketPragmasParser.HermitianObservableContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.HermitianObservableContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_tensorProductObservable
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterTensorProductObservable"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterTensorProductObservable" ):
                 listener.enterTensorProductObservable(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitTensorProductObservable"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitTensorProductObservable" ):
                 listener.exitTensorProductObservable(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTensorProductObservable"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitTensorProductObservable" ):
                 return visitor.visitTensorProductObservable(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def tensorProductObservable(self):
 
@@ -1981,13 +1848,7 @@ class braketPragmasParser(Parser):
             self.state = 252
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.X,
-                braketPragmasParser.Y,
-                braketPragmasParser.Z,
-                braketPragmasParser.I,
-                braketPragmasParser.H,
-            ]:
+            if token in [braketPragmasParser.X, braketPragmasParser.Y, braketPragmasParser.Z, braketPragmasParser.I, braketPragmasParser.H]:
                 self.state = 250
                 self.standardObservable()
                 pass
@@ -2010,8 +1871,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class HermitianObservableContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2021,25 +1884,26 @@ class braketPragmasParser(Parser):
         def LPAREN(self):
             return self.getToken(braketPragmasParser.LPAREN, 0)
 
-        def LBRACKET(self, i: int = None):
+        def LBRACKET(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.LBRACKET)
             else:
                 return self.getToken(braketPragmasParser.LBRACKET, i)
 
-        def complexNumber(self, i: int = None):
+        def complexNumber(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ComplexNumberContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ComplexNumberContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ComplexNumberContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
                 return self.getToken(braketPragmasParser.COMMA, i)
 
-        def RBRACKET(self, i: int = None):
+        def RBRACKET(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.RBRACKET)
             else:
@@ -2049,24 +1913,28 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
         def indexedIdentifier(self):
-            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_hermitianObservable
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterHermitianObservable"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterHermitianObservable" ):
                 listener.enterHermitianObservable(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitHermitianObservable"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitHermitianObservable" ):
                 listener.exitHermitianObservable(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitHermitianObservable"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitHermitianObservable" ):
                 return visitor.visitHermitianObservable(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def hermitianObservable(self):
 
@@ -2116,8 +1984,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ObservableResultTypeNameContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2133,43 +2003,33 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_observableResultTypeName
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterObservableResultTypeName"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterObservableResultTypeName" ):
                 listener.enterObservableResultTypeName(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitObservableResultTypeName"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitObservableResultTypeName" ):
                 listener.exitObservableResultTypeName(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitObservableResultTypeName"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitObservableResultTypeName" ):
                 return visitor.visitObservableResultTypeName(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def observableResultTypeName(self):
 
         localctx = braketPragmasParser.ObservableResultTypeNameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 36, self.RULE_observableResultTypeName)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 275
             _la = self._input.LA(1)
-            if not (
-                (
-                    ((_la) & ~0x3F) == 0
-                    and (
-                        (1 << _la)
-                        & (
-                            (1 << braketPragmasParser.EXPECTATION)
-                            | (1 << braketPragmasParser.VARIANCE)
-                            | (1 << braketPragmasParser.SAMPLE)
-                        )
-                    )
-                    != 0
-                )
-            ):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.EXPECTATION) | (1 << braketPragmasParser.VARIANCE) | (1 << braketPragmasParser.SAMPLE))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2182,8 +2042,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class StandardObservableNameContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2205,45 +2067,33 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_standardObservableName
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterStandardObservableName"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterStandardObservableName" ):
                 listener.enterStandardObservableName(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitStandardObservableName"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitStandardObservableName" ):
                 listener.exitStandardObservableName(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitStandardObservableName"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitStandardObservableName" ):
                 return visitor.visitStandardObservableName(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def standardObservableName(self):
 
         localctx = braketPragmasParser.StandardObservableNameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 38, self.RULE_standardObservableName)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 277
             _la = self._input.LA(1)
-            if not (
-                (
-                    ((_la) & ~0x3F) == 0
-                    and (
-                        (1 << _la)
-                        & (
-                            (1 << braketPragmasParser.X)
-                            | (1 << braketPragmasParser.Y)
-                            | (1 << braketPragmasParser.Z)
-                            | (1 << braketPragmasParser.I)
-                            | (1 << braketPragmasParser.H)
-                        )
-                    )
-                    != 0
-                )
-            ):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.X) | (1 << braketPragmasParser.Y) | (1 << braketPragmasParser.Z) | (1 << braketPragmasParser.I) | (1 << braketPragmasParser.H))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2256,131 +2106,119 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ComplexNumberContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_complexNumber
 
-        def copyFrom(self, ctx: ParserRuleContext):
+     
+        def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
+
+
     class ComplexOneValueContext(ComplexNumberContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ComplexNumberContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ComplexNumberContext
             super().__init__(parser)
-            self.neg = None  # Token
-            self.value = None  # Token
+            self.neg = None # Token
+            self.value = None # Token
             self.copyFrom(ctx)
 
         def DecimalIntegerLiteral(self):
             return self.getToken(braketPragmasParser.DecimalIntegerLiteral, 0)
-
         def FloatLiteral(self):
             return self.getToken(braketPragmasParser.FloatLiteral, 0)
-
         def ImaginaryLiteral(self):
             return self.getToken(braketPragmasParser.ImaginaryLiteral, 0)
-
         def MINUS(self):
             return self.getToken(braketPragmasParser.MINUS, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterComplexOneValue"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterComplexOneValue" ):
                 listener.enterComplexOneValue(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitComplexOneValue"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitComplexOneValue" ):
                 listener.exitComplexOneValue(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitComplexOneValue"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComplexOneValue" ):
                 return visitor.visitComplexOneValue(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class ComplexTwoValuesContext(ComplexNumberContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ComplexNumberContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ComplexNumberContext
             super().__init__(parser)
-            self.neg = None  # Token
-            self.real = None  # Token
-            self.sign = None  # Token
-            self.imag = None  # Token
+            self.neg = None # Token
+            self.real = None # Token
+            self.sign = None # Token
+            self.imag = None # Token
             self.copyFrom(ctx)
 
         def ImaginaryLiteral(self):
             return self.getToken(braketPragmasParser.ImaginaryLiteral, 0)
-
         def DecimalIntegerLiteral(self):
             return self.getToken(braketPragmasParser.DecimalIntegerLiteral, 0)
-
         def FloatLiteral(self):
             return self.getToken(braketPragmasParser.FloatLiteral, 0)
-
         def PLUS(self):
             return self.getToken(braketPragmasParser.PLUS, 0)
-
-        def MINUS(self, i: int = None):
+        def MINUS(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.MINUS)
             else:
                 return self.getToken(braketPragmasParser.MINUS, i)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterComplexTwoValues"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterComplexTwoValues" ):
                 listener.enterComplexTwoValues(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitComplexTwoValues"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitComplexTwoValues" ):
                 listener.exitComplexTwoValues(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitComplexTwoValues"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComplexTwoValues" ):
                 return visitor.visitComplexTwoValues(self)
             else:
                 return visitor.visitChildren(self)
+
+
 
     def complexNumber(self):
 
         localctx = braketPragmasParser.ComplexNumberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 40, self.RULE_complexNumber)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 289
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 12, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,12,self._ctx)
             if la_ == 1:
                 localctx = braketPragmasParser.ComplexOneValueContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 280
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.MINUS:
+                if _la==braketPragmasParser.MINUS:
                     self.state = 279
                     localctx.neg = self.match(braketPragmasParser.MINUS)
+
 
                 self.state = 282
                 localctx.value = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (
-                    (
-                        (((_la - 98)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 98))
-                            & (
-                                (1 << (braketPragmasParser.ImaginaryLiteral - 98))
-                                | (1 << (braketPragmasParser.DecimalIntegerLiteral - 98))
-                                | (1 << (braketPragmasParser.FloatLiteral - 98))
-                            )
-                        )
-                        != 0
-                    )
-                ):
+                if not(((((_la - 98)) & ~0x3f) == 0 and ((1 << (_la - 98)) & ((1 << (braketPragmasParser.ImaginaryLiteral - 98)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 98)) | (1 << (braketPragmasParser.FloatLiteral - 98)))) != 0)):
                     localctx.value = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2393,17 +2231,15 @@ class braketPragmasParser(Parser):
                 self.state = 284
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.MINUS:
+                if _la==braketPragmasParser.MINUS:
                     self.state = 283
                     localctx.neg = self.match(braketPragmasParser.MINUS)
+
 
                 self.state = 286
                 localctx.real = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (
-                    _la == braketPragmasParser.DecimalIntegerLiteral
-                    or _la == braketPragmasParser.FloatLiteral
-                ):
+                if not(_la==braketPragmasParser.DecimalIntegerLiteral or _la==braketPragmasParser.FloatLiteral):
                     localctx.real = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2411,7 +2247,7 @@ class braketPragmasParser(Parser):
                 self.state = 287
                 localctx.sign = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (_la == braketPragmasParser.PLUS or _la == braketPragmasParser.MINUS):
+                if not(_la==braketPragmasParser.PLUS or _la==braketPragmasParser.MINUS):
                     localctx.sign = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2419,6 +2255,7 @@ class braketPragmasParser(Parser):
                 self.state = 288
                 localctx.imag = self.match(braketPragmasParser.ImaginaryLiteral)
                 pass
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -2428,8 +2265,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ProgramContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2437,123 +2276,55 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.EOF, 0)
 
         def version(self):
-            return self.getTypedRuleContext(braketPragmasParser.VersionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.VersionContext,0)
 
-        def statement(self, i: int = None):
+
+        def statement(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.StatementContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.StatementContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.StatementContext,i)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_program
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterProgram"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterProgram" ):
                 listener.enterProgram(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitProgram"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitProgram" ):
                 listener.exitProgram(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitProgram"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitProgram" ):
                 return visitor.visitProgram(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def program(self):
 
         localctx = braketPragmasParser.ProgramContext(self, self._ctx, self.state)
         self.enterRule(localctx, 42, self.RULE_program)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 292
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.OPENQASM:
+            if _la==braketPragmasParser.OPENQASM:
                 self.state = 291
                 self.version()
+
 
             self.state = 297
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (
-                ((_la) & ~0x3F) == 0
-                and (
-                    (1 << _la)
-                    & (
-                        (1 << braketPragmasParser.INCLUDE)
-                        | (1 << braketPragmasParser.DEFCALGRAMMAR)
-                        | (1 << braketPragmasParser.DEF)
-                        | (1 << braketPragmasParser.DEFCAL)
-                        | (1 << braketPragmasParser.GATE)
-                        | (1 << braketPragmasParser.EXTERN)
-                        | (1 << braketPragmasParser.BOX)
-                        | (1 << braketPragmasParser.LET)
-                        | (1 << braketPragmasParser.BREAK)
-                        | (1 << braketPragmasParser.CONTINUE)
-                        | (1 << braketPragmasParser.IF)
-                        | (1 << braketPragmasParser.END)
-                        | (1 << braketPragmasParser.RETURN)
-                        | (1 << braketPragmasParser.FOR)
-                        | (1 << braketPragmasParser.WHILE)
-                        | (1 << braketPragmasParser.PRAGMA)
-                        | (1 << braketPragmasParser.AnnotationKeyword)
-                        | (1 << braketPragmasParser.INPUT)
-                        | (1 << braketPragmasParser.OUTPUT)
-                        | (1 << braketPragmasParser.CONST)
-                        | (1 << braketPragmasParser.QREG)
-                        | (1 << braketPragmasParser.QUBIT)
-                        | (1 << braketPragmasParser.CREG)
-                        | (1 << braketPragmasParser.BOOL)
-                        | (1 << braketPragmasParser.BIT)
-                        | (1 << braketPragmasParser.INT)
-                        | (1 << braketPragmasParser.UINT)
-                        | (1 << braketPragmasParser.FLOAT)
-                        | (1 << braketPragmasParser.ANGLE)
-                        | (1 << braketPragmasParser.COMPLEX)
-                        | (1 << braketPragmasParser.ARRAY)
-                        | (1 << braketPragmasParser.DURATION)
-                        | (1 << braketPragmasParser.STRETCH)
-                        | (1 << braketPragmasParser.GPHASE)
-                        | (1 << braketPragmasParser.INV)
-                        | (1 << braketPragmasParser.POW)
-                        | (1 << braketPragmasParser.CTRL)
-                        | (1 << braketPragmasParser.NEGCTRL)
-                        | (1 << braketPragmasParser.DURATIONOF)
-                        | (1 << braketPragmasParser.DELAY)
-                        | (1 << braketPragmasParser.RESET)
-                    )
-                )
-                != 0
-            ) or (
-                (((_la - 64)) & ~0x3F) == 0
-                and (
-                    (1 << (_la - 64))
-                    & (
-                        (1 << (braketPragmasParser.MEASURE - 64))
-                        | (1 << (braketPragmasParser.BARRIER - 64))
-                        | (1 << (braketPragmasParser.BooleanLiteral - 64))
-                        | (1 << (braketPragmasParser.LPAREN - 64))
-                        | (1 << (braketPragmasParser.MINUS - 64))
-                        | (1 << (braketPragmasParser.TILDE - 64))
-                        | (1 << (braketPragmasParser.EXCLAMATION_POINT - 64))
-                        | (1 << (braketPragmasParser.ImaginaryLiteral - 64))
-                        | (1 << (braketPragmasParser.BinaryIntegerLiteral - 64))
-                        | (1 << (braketPragmasParser.OctalIntegerLiteral - 64))
-                        | (1 << (braketPragmasParser.DecimalIntegerLiteral - 64))
-                        | (1 << (braketPragmasParser.HexIntegerLiteral - 64))
-                        | (1 << (braketPragmasParser.Identifier - 64))
-                        | (1 << (braketPragmasParser.HardwareQubit - 64))
-                        | (1 << (braketPragmasParser.FloatLiteral - 64))
-                        | (1 << (braketPragmasParser.TimingLiteral - 64))
-                        | (1 << (braketPragmasParser.BitstringLiteral - 64))
-                    )
-                )
-                != 0
-            ):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.INCLUDE) | (1 << braketPragmasParser.DEFCALGRAMMAR) | (1 << braketPragmasParser.DEF) | (1 << braketPragmasParser.DEFCAL) | (1 << braketPragmasParser.GATE) | (1 << braketPragmasParser.EXTERN) | (1 << braketPragmasParser.BOX) | (1 << braketPragmasParser.LET) | (1 << braketPragmasParser.BREAK) | (1 << braketPragmasParser.CONTINUE) | (1 << braketPragmasParser.IF) | (1 << braketPragmasParser.END) | (1 << braketPragmasParser.RETURN) | (1 << braketPragmasParser.FOR) | (1 << braketPragmasParser.WHILE) | (1 << braketPragmasParser.PRAGMA) | (1 << braketPragmasParser.AnnotationKeyword) | (1 << braketPragmasParser.INPUT) | (1 << braketPragmasParser.OUTPUT) | (1 << braketPragmasParser.CONST) | (1 << braketPragmasParser.QREG) | (1 << braketPragmasParser.QUBIT) | (1 << braketPragmasParser.CREG) | (1 << braketPragmasParser.BOOL) | (1 << braketPragmasParser.BIT) | (1 << braketPragmasParser.INT) | (1 << braketPragmasParser.UINT) | (1 << braketPragmasParser.FLOAT) | (1 << braketPragmasParser.ANGLE) | (1 << braketPragmasParser.COMPLEX) | (1 << braketPragmasParser.ARRAY) | (1 << braketPragmasParser.DURATION) | (1 << braketPragmasParser.STRETCH) | (1 << braketPragmasParser.GPHASE) | (1 << braketPragmasParser.INV) | (1 << braketPragmasParser.POW) | (1 << braketPragmasParser.CTRL) | (1 << braketPragmasParser.NEGCTRL) | (1 << braketPragmasParser.DURATIONOF) | (1 << braketPragmasParser.DELAY) | (1 << braketPragmasParser.RESET))) != 0) or ((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & ((1 << (braketPragmasParser.MEASURE - 64)) | (1 << (braketPragmasParser.BARRIER - 64)) | (1 << (braketPragmasParser.BooleanLiteral - 64)) | (1 << (braketPragmasParser.LPAREN - 64)) | (1 << (braketPragmasParser.MINUS - 64)) | (1 << (braketPragmasParser.TILDE - 64)) | (1 << (braketPragmasParser.EXCLAMATION_POINT - 64)) | (1 << (braketPragmasParser.ImaginaryLiteral - 64)) | (1 << (braketPragmasParser.BinaryIntegerLiteral - 64)) | (1 << (braketPragmasParser.OctalIntegerLiteral - 64)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 64)) | (1 << (braketPragmasParser.HexIntegerLiteral - 64)) | (1 << (braketPragmasParser.Identifier - 64)) | (1 << (braketPragmasParser.HardwareQubit - 64)) | (1 << (braketPragmasParser.FloatLiteral - 64)) | (1 << (braketPragmasParser.TimingLiteral - 64)) | (1 << (braketPragmasParser.BitstringLiteral - 64)))) != 0):
                 self.state = 294
                 self.statement()
                 self.state = 299
@@ -2570,8 +2341,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class VersionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2587,19 +2360,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_version
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterVersion"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterVersion" ):
                 listener.enterVersion(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitVersion"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitVersion" ):
                 listener.exitVersion(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitVersion"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitVersion" ):
                 return visitor.visitVersion(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def version(self):
 
@@ -2621,133 +2397,157 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class StatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def pragma(self):
-            return self.getTypedRuleContext(braketPragmasParser.PragmaContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.PragmaContext,0)
+
 
         def aliasDeclarationStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.AliasDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.AliasDeclarationStatementContext,0)
+
 
         def assignmentStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.AssignmentStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.AssignmentStatementContext,0)
+
 
         def barrierStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.BarrierStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.BarrierStatementContext,0)
+
 
         def boxStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.BoxStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.BoxStatementContext,0)
+
 
         def breakStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.BreakStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.BreakStatementContext,0)
+
 
         def calibrationGrammarStatement(self):
-            return self.getTypedRuleContext(
-                braketPragmasParser.CalibrationGrammarStatementContext, 0
-            )
+            return self.getTypedRuleContext(braketPragmasParser.CalibrationGrammarStatementContext,0)
+
 
         def classicalDeclarationStatement(self):
-            return self.getTypedRuleContext(
-                braketPragmasParser.ClassicalDeclarationStatementContext, 0
-            )
+            return self.getTypedRuleContext(braketPragmasParser.ClassicalDeclarationStatementContext,0)
+
 
         def constDeclarationStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.ConstDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ConstDeclarationStatementContext,0)
+
 
         def continueStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.ContinueStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ContinueStatementContext,0)
+
 
         def defStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.DefStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DefStatementContext,0)
+
 
         def defcalStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.DefcalStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DefcalStatementContext,0)
+
 
         def delayStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.DelayStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DelayStatementContext,0)
+
 
         def endStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.EndStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.EndStatementContext,0)
+
 
         def expressionStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionStatementContext,0)
+
 
         def externStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExternStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExternStatementContext,0)
+
 
         def forStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.ForStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ForStatementContext,0)
+
 
         def gateCallStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.GateCallStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.GateCallStatementContext,0)
+
 
         def gateStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.GateStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.GateStatementContext,0)
+
 
         def ifStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.IfStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IfStatementContext,0)
+
 
         def includeStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.IncludeStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IncludeStatementContext,0)
+
 
         def ioDeclarationStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.IoDeclarationStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IoDeclarationStatementContext,0)
+
 
         def measureArrowAssignmentStatement(self):
-            return self.getTypedRuleContext(
-                braketPragmasParser.MeasureArrowAssignmentStatementContext, 0
-            )
+            return self.getTypedRuleContext(braketPragmasParser.MeasureArrowAssignmentStatementContext,0)
+
 
         def oldStyleDeclarationStatement(self):
-            return self.getTypedRuleContext(
-                braketPragmasParser.OldStyleDeclarationStatementContext, 0
-            )
+            return self.getTypedRuleContext(braketPragmasParser.OldStyleDeclarationStatementContext,0)
+
 
         def quantumDeclarationStatement(self):
-            return self.getTypedRuleContext(
-                braketPragmasParser.QuantumDeclarationStatementContext, 0
-            )
+            return self.getTypedRuleContext(braketPragmasParser.QuantumDeclarationStatementContext,0)
+
 
         def resetStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.ResetStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ResetStatementContext,0)
+
 
         def returnStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.ReturnStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ReturnStatementContext,0)
+
 
         def whileStatement(self):
-            return self.getTypedRuleContext(braketPragmasParser.WhileStatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.WhileStatementContext,0)
 
-        def annotation(self, i: int = None):
+
+        def annotation(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.AnnotationContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.AnnotationContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.AnnotationContext,i)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_statement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterStatement" ):
                 listener.enterStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitStatement" ):
                 listener.exitStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitStatement" ):
                 return visitor.visitStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def statement(self):
 
         localctx = braketPragmasParser.StatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_statement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 342
             self._errHandler.sync(self)
@@ -2757,70 +2557,12 @@ class braketPragmasParser(Parser):
                 self.state = 306
                 self.pragma()
                 pass
-            elif token in [
-                braketPragmasParser.INCLUDE,
-                braketPragmasParser.DEFCALGRAMMAR,
-                braketPragmasParser.DEF,
-                braketPragmasParser.DEFCAL,
-                braketPragmasParser.GATE,
-                braketPragmasParser.EXTERN,
-                braketPragmasParser.BOX,
-                braketPragmasParser.LET,
-                braketPragmasParser.BREAK,
-                braketPragmasParser.CONTINUE,
-                braketPragmasParser.IF,
-                braketPragmasParser.END,
-                braketPragmasParser.RETURN,
-                braketPragmasParser.FOR,
-                braketPragmasParser.WHILE,
-                braketPragmasParser.AnnotationKeyword,
-                braketPragmasParser.INPUT,
-                braketPragmasParser.OUTPUT,
-                braketPragmasParser.CONST,
-                braketPragmasParser.QREG,
-                braketPragmasParser.QUBIT,
-                braketPragmasParser.CREG,
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.ARRAY,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-                braketPragmasParser.GPHASE,
-                braketPragmasParser.INV,
-                braketPragmasParser.POW,
-                braketPragmasParser.CTRL,
-                braketPragmasParser.NEGCTRL,
-                braketPragmasParser.DURATIONOF,
-                braketPragmasParser.DELAY,
-                braketPragmasParser.RESET,
-                braketPragmasParser.MEASURE,
-                braketPragmasParser.BARRIER,
-                braketPragmasParser.BooleanLiteral,
-                braketPragmasParser.LPAREN,
-                braketPragmasParser.MINUS,
-                braketPragmasParser.TILDE,
-                braketPragmasParser.EXCLAMATION_POINT,
-                braketPragmasParser.ImaginaryLiteral,
-                braketPragmasParser.BinaryIntegerLiteral,
-                braketPragmasParser.OctalIntegerLiteral,
-                braketPragmasParser.DecimalIntegerLiteral,
-                braketPragmasParser.HexIntegerLiteral,
-                braketPragmasParser.Identifier,
-                braketPragmasParser.HardwareQubit,
-                braketPragmasParser.FloatLiteral,
-                braketPragmasParser.TimingLiteral,
-                braketPragmasParser.BitstringLiteral,
-            ]:
+            elif token in [braketPragmasParser.INCLUDE, braketPragmasParser.DEFCALGRAMMAR, braketPragmasParser.DEF, braketPragmasParser.DEFCAL, braketPragmasParser.GATE, braketPragmasParser.EXTERN, braketPragmasParser.BOX, braketPragmasParser.LET, braketPragmasParser.BREAK, braketPragmasParser.CONTINUE, braketPragmasParser.IF, braketPragmasParser.END, braketPragmasParser.RETURN, braketPragmasParser.FOR, braketPragmasParser.WHILE, braketPragmasParser.AnnotationKeyword, braketPragmasParser.INPUT, braketPragmasParser.OUTPUT, braketPragmasParser.CONST, braketPragmasParser.QREG, braketPragmasParser.QUBIT, braketPragmasParser.CREG, braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.GPHASE, braketPragmasParser.INV, braketPragmasParser.POW, braketPragmasParser.CTRL, braketPragmasParser.NEGCTRL, braketPragmasParser.DURATIONOF, braketPragmasParser.DELAY, braketPragmasParser.RESET, braketPragmasParser.MEASURE, braketPragmasParser.BARRIER, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 310
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la == braketPragmasParser.AnnotationKeyword:
+                while _la==braketPragmasParser.AnnotationKeyword:
                     self.state = 307
                     self.annotation()
                     self.state = 312
@@ -2829,7 +2571,7 @@ class braketPragmasParser(Parser):
 
                 self.state = 340
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input, 16, self._ctx)
+                la_ = self._interp.adaptivePredict(self._input,16,self._ctx)
                 if la_ == 1:
                     self.state = 313
                     self.aliasDeclarationStatement()
@@ -2965,6 +2707,7 @@ class braketPragmasParser(Parser):
                     self.whileStatement()
                     pass
 
+
                 pass
             else:
                 raise NoViableAltException(self)
@@ -2977,8 +2720,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class AnnotationContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2991,25 +2736,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_annotation
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAnnotation"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAnnotation" ):
                 listener.enterAnnotation(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAnnotation"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAnnotation" ):
                 listener.exitAnnotation(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAnnotation"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAnnotation" ):
                 return visitor.visitAnnotation(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def annotation(self):
 
         localctx = braketPragmasParser.AnnotationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 48, self.RULE_annotation)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 344
@@ -3017,9 +2765,10 @@ class braketPragmasParser(Parser):
             self.state = 346
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.RemainingLineContent:
+            if _la==braketPragmasParser.RemainingLineContent:
                 self.state = 345
                 self.match(braketPragmasParser.RemainingLineContent)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -3029,8 +2778,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ScopeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3040,34 +2791,38 @@ class braketPragmasParser(Parser):
         def RBRACE(self):
             return self.getToken(braketPragmasParser.RBRACE, 0)
 
-        def statement(self, i: int = None):
+        def statement(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.StatementContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.StatementContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.StatementContext,i)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_scope
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterScope"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterScope" ):
                 listener.enterScope(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitScope"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitScope" ):
                 listener.exitScope(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitScope"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitScope" ):
                 return visitor.visitScope(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def scope(self):
 
         localctx = braketPragmasParser.ScopeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_scope)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 348
@@ -3075,81 +2830,7 @@ class braketPragmasParser(Parser):
             self.state = 352
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (
-                ((_la) & ~0x3F) == 0
-                and (
-                    (1 << _la)
-                    & (
-                        (1 << braketPragmasParser.INCLUDE)
-                        | (1 << braketPragmasParser.DEFCALGRAMMAR)
-                        | (1 << braketPragmasParser.DEF)
-                        | (1 << braketPragmasParser.DEFCAL)
-                        | (1 << braketPragmasParser.GATE)
-                        | (1 << braketPragmasParser.EXTERN)
-                        | (1 << braketPragmasParser.BOX)
-                        | (1 << braketPragmasParser.LET)
-                        | (1 << braketPragmasParser.BREAK)
-                        | (1 << braketPragmasParser.CONTINUE)
-                        | (1 << braketPragmasParser.IF)
-                        | (1 << braketPragmasParser.END)
-                        | (1 << braketPragmasParser.RETURN)
-                        | (1 << braketPragmasParser.FOR)
-                        | (1 << braketPragmasParser.WHILE)
-                        | (1 << braketPragmasParser.PRAGMA)
-                        | (1 << braketPragmasParser.AnnotationKeyword)
-                        | (1 << braketPragmasParser.INPUT)
-                        | (1 << braketPragmasParser.OUTPUT)
-                        | (1 << braketPragmasParser.CONST)
-                        | (1 << braketPragmasParser.QREG)
-                        | (1 << braketPragmasParser.QUBIT)
-                        | (1 << braketPragmasParser.CREG)
-                        | (1 << braketPragmasParser.BOOL)
-                        | (1 << braketPragmasParser.BIT)
-                        | (1 << braketPragmasParser.INT)
-                        | (1 << braketPragmasParser.UINT)
-                        | (1 << braketPragmasParser.FLOAT)
-                        | (1 << braketPragmasParser.ANGLE)
-                        | (1 << braketPragmasParser.COMPLEX)
-                        | (1 << braketPragmasParser.ARRAY)
-                        | (1 << braketPragmasParser.DURATION)
-                        | (1 << braketPragmasParser.STRETCH)
-                        | (1 << braketPragmasParser.GPHASE)
-                        | (1 << braketPragmasParser.INV)
-                        | (1 << braketPragmasParser.POW)
-                        | (1 << braketPragmasParser.CTRL)
-                        | (1 << braketPragmasParser.NEGCTRL)
-                        | (1 << braketPragmasParser.DURATIONOF)
-                        | (1 << braketPragmasParser.DELAY)
-                        | (1 << braketPragmasParser.RESET)
-                    )
-                )
-                != 0
-            ) or (
-                (((_la - 64)) & ~0x3F) == 0
-                and (
-                    (1 << (_la - 64))
-                    & (
-                        (1 << (braketPragmasParser.MEASURE - 64))
-                        | (1 << (braketPragmasParser.BARRIER - 64))
-                        | (1 << (braketPragmasParser.BooleanLiteral - 64))
-                        | (1 << (braketPragmasParser.LPAREN - 64))
-                        | (1 << (braketPragmasParser.MINUS - 64))
-                        | (1 << (braketPragmasParser.TILDE - 64))
-                        | (1 << (braketPragmasParser.EXCLAMATION_POINT - 64))
-                        | (1 << (braketPragmasParser.ImaginaryLiteral - 64))
-                        | (1 << (braketPragmasParser.BinaryIntegerLiteral - 64))
-                        | (1 << (braketPragmasParser.OctalIntegerLiteral - 64))
-                        | (1 << (braketPragmasParser.DecimalIntegerLiteral - 64))
-                        | (1 << (braketPragmasParser.HexIntegerLiteral - 64))
-                        | (1 << (braketPragmasParser.Identifier - 64))
-                        | (1 << (braketPragmasParser.HardwareQubit - 64))
-                        | (1 << (braketPragmasParser.FloatLiteral - 64))
-                        | (1 << (braketPragmasParser.TimingLiteral - 64))
-                        | (1 << (braketPragmasParser.BitstringLiteral - 64))
-                    )
-                )
-                != 0
-            ):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.INCLUDE) | (1 << braketPragmasParser.DEFCALGRAMMAR) | (1 << braketPragmasParser.DEF) | (1 << braketPragmasParser.DEFCAL) | (1 << braketPragmasParser.GATE) | (1 << braketPragmasParser.EXTERN) | (1 << braketPragmasParser.BOX) | (1 << braketPragmasParser.LET) | (1 << braketPragmasParser.BREAK) | (1 << braketPragmasParser.CONTINUE) | (1 << braketPragmasParser.IF) | (1 << braketPragmasParser.END) | (1 << braketPragmasParser.RETURN) | (1 << braketPragmasParser.FOR) | (1 << braketPragmasParser.WHILE) | (1 << braketPragmasParser.PRAGMA) | (1 << braketPragmasParser.AnnotationKeyword) | (1 << braketPragmasParser.INPUT) | (1 << braketPragmasParser.OUTPUT) | (1 << braketPragmasParser.CONST) | (1 << braketPragmasParser.QREG) | (1 << braketPragmasParser.QUBIT) | (1 << braketPragmasParser.CREG) | (1 << braketPragmasParser.BOOL) | (1 << braketPragmasParser.BIT) | (1 << braketPragmasParser.INT) | (1 << braketPragmasParser.UINT) | (1 << braketPragmasParser.FLOAT) | (1 << braketPragmasParser.ANGLE) | (1 << braketPragmasParser.COMPLEX) | (1 << braketPragmasParser.ARRAY) | (1 << braketPragmasParser.DURATION) | (1 << braketPragmasParser.STRETCH) | (1 << braketPragmasParser.GPHASE) | (1 << braketPragmasParser.INV) | (1 << braketPragmasParser.POW) | (1 << braketPragmasParser.CTRL) | (1 << braketPragmasParser.NEGCTRL) | (1 << braketPragmasParser.DURATIONOF) | (1 << braketPragmasParser.DELAY) | (1 << braketPragmasParser.RESET))) != 0) or ((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & ((1 << (braketPragmasParser.MEASURE - 64)) | (1 << (braketPragmasParser.BARRIER - 64)) | (1 << (braketPragmasParser.BooleanLiteral - 64)) | (1 << (braketPragmasParser.LPAREN - 64)) | (1 << (braketPragmasParser.MINUS - 64)) | (1 << (braketPragmasParser.TILDE - 64)) | (1 << (braketPragmasParser.EXCLAMATION_POINT - 64)) | (1 << (braketPragmasParser.ImaginaryLiteral - 64)) | (1 << (braketPragmasParser.BinaryIntegerLiteral - 64)) | (1 << (braketPragmasParser.OctalIntegerLiteral - 64)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 64)) | (1 << (braketPragmasParser.HexIntegerLiteral - 64)) | (1 << (braketPragmasParser.Identifier - 64)) | (1 << (braketPragmasParser.HardwareQubit - 64)) | (1 << (braketPragmasParser.FloatLiteral - 64)) | (1 << (braketPragmasParser.TimingLiteral - 64)) | (1 << (braketPragmasParser.BitstringLiteral - 64)))) != 0):
                 self.state = 349
                 self.statement()
                 self.state = 354
@@ -3166,8 +2847,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class PragmaContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3180,19 +2863,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_pragma
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPragma"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterPragma" ):
                 listener.enterPragma(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPragma"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitPragma" ):
                 listener.exitPragma(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPragma"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitPragma" ):
                 return visitor.visitPragma(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def pragma(self):
 
@@ -3212,33 +2898,40 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class StatementOrScopeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def statement(self):
-            return self.getTypedRuleContext(braketPragmasParser.StatementContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.StatementContext,0)
+
 
         def scope(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScopeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScopeContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_statementOrScope
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterStatementOrScope"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterStatementOrScope" ):
                 listener.enterStatementOrScope(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitStatementOrScope"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitStatementOrScope" ):
                 listener.exitStatementOrScope(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitStatementOrScope"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitStatementOrScope" ):
                 return visitor.visitStatementOrScope(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def statementOrScope(self):
 
@@ -3248,66 +2941,7 @@ class braketPragmasParser(Parser):
             self.state = 362
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.INCLUDE,
-                braketPragmasParser.DEFCALGRAMMAR,
-                braketPragmasParser.DEF,
-                braketPragmasParser.DEFCAL,
-                braketPragmasParser.GATE,
-                braketPragmasParser.EXTERN,
-                braketPragmasParser.BOX,
-                braketPragmasParser.LET,
-                braketPragmasParser.BREAK,
-                braketPragmasParser.CONTINUE,
-                braketPragmasParser.IF,
-                braketPragmasParser.END,
-                braketPragmasParser.RETURN,
-                braketPragmasParser.FOR,
-                braketPragmasParser.WHILE,
-                braketPragmasParser.PRAGMA,
-                braketPragmasParser.AnnotationKeyword,
-                braketPragmasParser.INPUT,
-                braketPragmasParser.OUTPUT,
-                braketPragmasParser.CONST,
-                braketPragmasParser.QREG,
-                braketPragmasParser.QUBIT,
-                braketPragmasParser.CREG,
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.ARRAY,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-                braketPragmasParser.GPHASE,
-                braketPragmasParser.INV,
-                braketPragmasParser.POW,
-                braketPragmasParser.CTRL,
-                braketPragmasParser.NEGCTRL,
-                braketPragmasParser.DURATIONOF,
-                braketPragmasParser.DELAY,
-                braketPragmasParser.RESET,
-                braketPragmasParser.MEASURE,
-                braketPragmasParser.BARRIER,
-                braketPragmasParser.BooleanLiteral,
-                braketPragmasParser.LPAREN,
-                braketPragmasParser.MINUS,
-                braketPragmasParser.TILDE,
-                braketPragmasParser.EXCLAMATION_POINT,
-                braketPragmasParser.ImaginaryLiteral,
-                braketPragmasParser.BinaryIntegerLiteral,
-                braketPragmasParser.OctalIntegerLiteral,
-                braketPragmasParser.DecimalIntegerLiteral,
-                braketPragmasParser.HexIntegerLiteral,
-                braketPragmasParser.Identifier,
-                braketPragmasParser.HardwareQubit,
-                braketPragmasParser.FloatLiteral,
-                braketPragmasParser.TimingLiteral,
-                braketPragmasParser.BitstringLiteral,
-            ]:
+            if token in [braketPragmasParser.INCLUDE, braketPragmasParser.DEFCALGRAMMAR, braketPragmasParser.DEF, braketPragmasParser.DEFCAL, braketPragmasParser.GATE, braketPragmasParser.EXTERN, braketPragmasParser.BOX, braketPragmasParser.LET, braketPragmasParser.BREAK, braketPragmasParser.CONTINUE, braketPragmasParser.IF, braketPragmasParser.END, braketPragmasParser.RETURN, braketPragmasParser.FOR, braketPragmasParser.WHILE, braketPragmasParser.PRAGMA, braketPragmasParser.AnnotationKeyword, braketPragmasParser.INPUT, braketPragmasParser.OUTPUT, braketPragmasParser.CONST, braketPragmasParser.QREG, braketPragmasParser.QUBIT, braketPragmasParser.CREG, braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.GPHASE, braketPragmasParser.INV, braketPragmasParser.POW, braketPragmasParser.CTRL, braketPragmasParser.NEGCTRL, braketPragmasParser.DURATIONOF, braketPragmasParser.DELAY, braketPragmasParser.RESET, braketPragmasParser.MEASURE, braketPragmasParser.BARRIER, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 360
                 self.statement()
@@ -3328,8 +2962,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class CalibrationGrammarStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3345,25 +2981,26 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_calibrationGrammarStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCalibrationGrammarStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCalibrationGrammarStatement" ):
                 listener.enterCalibrationGrammarStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCalibrationGrammarStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCalibrationGrammarStatement" ):
                 listener.exitCalibrationGrammarStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCalibrationGrammarStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCalibrationGrammarStatement" ):
                 return visitor.visitCalibrationGrammarStatement(self)
             else:
                 return visitor.visitChildren(self)
 
+
+
+
     def calibrationGrammarStatement(self):
 
-        localctx = braketPragmasParser.CalibrationGrammarStatementContext(
-            self, self._ctx, self.state
-        )
+        localctx = braketPragmasParser.CalibrationGrammarStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_calibrationGrammarStatement)
         try:
             self.enterOuterAlt(localctx, 1)
@@ -3381,8 +3018,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class IncludeStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3398,19 +3037,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_includeStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIncludeStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIncludeStatement" ):
                 listener.enterIncludeStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIncludeStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIncludeStatement" ):
                 listener.exitIncludeStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIncludeStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIncludeStatement" ):
                 return visitor.visitIncludeStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def includeStatement(self):
 
@@ -3432,8 +3074,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class BreakStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3446,19 +3090,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_breakStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBreakStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBreakStatement" ):
                 listener.enterBreakStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBreakStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBreakStatement" ):
                 listener.exitBreakStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBreakStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBreakStatement" ):
                 return visitor.visitBreakStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def breakStatement(self):
 
@@ -3478,8 +3125,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ContinueStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3492,19 +3141,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_continueStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterContinueStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterContinueStatement" ):
                 listener.enterContinueStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitContinueStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitContinueStatement" ):
                 listener.exitContinueStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitContinueStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitContinueStatement" ):
                 return visitor.visitContinueStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def continueStatement(self):
 
@@ -3524,8 +3176,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class EndStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3538,19 +3192,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_endStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterEndStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEndStatement" ):
                 listener.enterEndStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitEndStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEndStatement" ):
                 listener.exitEndStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitEndStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitEndStatement" ):
                 return visitor.visitEndStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def endStatement(self):
 
@@ -3570,19 +3227,22 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ForStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.body = None  # StatementOrScopeContext
+            self.body = None # StatementOrScopeContext
 
         def FOR(self):
             return self.getToken(braketPragmasParser.FOR, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
 
-        def Identifier(self, i: int = None):
+
+        def Identifier(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.Identifier)
             else:
@@ -3592,16 +3252,19 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.IN, 0)
 
         def statementOrScope(self):
-            return self.getTypedRuleContext(braketPragmasParser.StatementOrScopeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.StatementOrScopeContext,0)
+
 
         def setExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.SetExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.SetExpressionContext,0)
+
 
         def LBRACKET(self):
             return self.getToken(braketPragmasParser.LBRACKET, 0)
 
         def rangeExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.RangeExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.RangeExpressionContext,0)
+
 
         def RBRACKET(self):
             return self.getToken(braketPragmasParser.RBRACKET, 0)
@@ -3609,19 +3272,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_forStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterForStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterForStatement" ):
                 listener.enterForStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitForStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitForStatement" ):
                 listener.exitForStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitForStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitForStatement" ):
                 return visitor.visitForStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def forStatement(self):
 
@@ -3669,12 +3335,14 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class IfStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.if_body = None  # StatementOrScopeContext
-            self.else_body = None  # StatementOrScopeContext
+            self.if_body = None # StatementOrScopeContext
+            self.else_body = None # StatementOrScopeContext
 
         def IF(self):
             return self.getToken(braketPragmasParser.IF, 0)
@@ -3683,16 +3351,18 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.LPAREN, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
-        def statementOrScope(self, i: int = None):
+        def statementOrScope(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.StatementOrScopeContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.StatementOrScopeContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.StatementOrScopeContext,i)
+
 
         def ELSE(self):
             return self.getToken(braketPragmasParser.ELSE, 0)
@@ -3700,19 +3370,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_ifStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIfStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIfStatement" ):
                 listener.enterIfStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIfStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIfStatement" ):
                 listener.exitIfStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIfStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIfStatement" ):
                 return visitor.visitIfStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def ifStatement(self):
 
@@ -3732,12 +3405,13 @@ class braketPragmasParser(Parser):
             localctx.if_body = self.statementOrScope()
             self.state = 402
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 22, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,22,self._ctx)
             if la_ == 1:
                 self.state = 400
                 self.match(braketPragmasParser.ELSE)
                 self.state = 401
                 localctx.else_body = self.statementOrScope()
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -3747,8 +3421,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ReturnStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3759,27 +3435,32 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def measureExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.MeasureExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MeasureExpressionContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_returnStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterReturnStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterReturnStatement" ):
                 listener.enterReturnStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitReturnStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitReturnStatement" ):
                 listener.exitReturnStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitReturnStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitReturnStatement" ):
                 return visitor.visitReturnStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def returnStatement(self):
 
@@ -3792,34 +3473,7 @@ class braketPragmasParser(Parser):
             self.state = 407
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.ARRAY,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-                braketPragmasParser.DURATIONOF,
-                braketPragmasParser.BooleanLiteral,
-                braketPragmasParser.LPAREN,
-                braketPragmasParser.MINUS,
-                braketPragmasParser.TILDE,
-                braketPragmasParser.EXCLAMATION_POINT,
-                braketPragmasParser.ImaginaryLiteral,
-                braketPragmasParser.BinaryIntegerLiteral,
-                braketPragmasParser.OctalIntegerLiteral,
-                braketPragmasParser.DecimalIntegerLiteral,
-                braketPragmasParser.HexIntegerLiteral,
-                braketPragmasParser.Identifier,
-                braketPragmasParser.HardwareQubit,
-                braketPragmasParser.FloatLiteral,
-                braketPragmasParser.TimingLiteral,
-                braketPragmasParser.BitstringLiteral,
-            ]:
+            if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.DURATIONOF, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                 self.state = 405
                 self.expression(0)
                 pass
@@ -3841,11 +3495,13 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class WhileStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.body = None  # StatementOrScopeContext
+            self.body = None # StatementOrScopeContext
 
         def WHILE(self):
             return self.getToken(braketPragmasParser.WHILE, 0)
@@ -3854,30 +3510,35 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.LPAREN, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
         def statementOrScope(self):
-            return self.getTypedRuleContext(braketPragmasParser.StatementOrScopeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.StatementOrScopeContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_whileStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterWhileStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterWhileStatement" ):
                 listener.enterWhileStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitWhileStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitWhileStatement" ):
                 listener.exitWhileStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitWhileStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitWhileStatement" ):
                 return visitor.visitWhileStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def whileStatement(self):
 
@@ -3903,8 +3564,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class BarrierStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3915,30 +3578,34 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
 
         def gateOperandList(self):
-            return self.getTypedRuleContext(braketPragmasParser.GateOperandListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.GateOperandListContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_barrierStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBarrierStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBarrierStatement" ):
                 listener.enterBarrierStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBarrierStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBarrierStatement" ):
                 listener.exitBarrierStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBarrierStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBarrierStatement" ):
                 return visitor.visitBarrierStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def barrierStatement(self):
 
         localctx = braketPragmasParser.BarrierStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 74, self.RULE_barrierStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 417
@@ -3946,9 +3613,10 @@ class braketPragmasParser(Parser):
             self.state = 419
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.Identifier or _la == braketPragmasParser.HardwareQubit:
+            if _la==braketPragmasParser.Identifier or _la==braketPragmasParser.HardwareQubit:
                 self.state = 418
                 self.gateOperandList()
+
 
             self.state = 421
             self.match(braketPragmasParser.SEMICOLON)
@@ -3960,8 +3628,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class BoxStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3969,33 +3639,38 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.BOX, 0)
 
         def scope(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScopeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScopeContext,0)
+
 
         def designator(self):
-            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_boxStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBoxStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBoxStatement" ):
                 listener.enterBoxStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBoxStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBoxStatement" ):
                 listener.exitBoxStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBoxStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBoxStatement" ):
                 return visitor.visitBoxStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def boxStatement(self):
 
         localctx = braketPragmasParser.BoxStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 76, self.RULE_boxStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 423
@@ -4003,9 +3678,10 @@ class braketPragmasParser(Parser):
             self.state = 425
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.LBRACKET:
+            if _la==braketPragmasParser.LBRACKET:
                 self.state = 424
                 self.designator()
+
 
             self.state = 427
             self.scope()
@@ -4017,8 +3693,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class DelayStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4026,36 +3704,41 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.DELAY, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
 
         def gateOperandList(self):
-            return self.getTypedRuleContext(braketPragmasParser.GateOperandListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.GateOperandListContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_delayStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDelayStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDelayStatement" ):
                 listener.enterDelayStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDelayStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDelayStatement" ):
                 listener.exitDelayStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDelayStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDelayStatement" ):
                 return visitor.visitDelayStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def delayStatement(self):
 
         localctx = braketPragmasParser.DelayStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 78, self.RULE_delayStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 429
@@ -4065,9 +3748,10 @@ class braketPragmasParser(Parser):
             self.state = 432
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.Identifier or _la == braketPragmasParser.HardwareQubit:
+            if _la==braketPragmasParser.Identifier or _la==braketPragmasParser.HardwareQubit:
                 self.state = 431
                 self.gateOperandList()
+
 
             self.state = 434
             self.match(braketPragmasParser.SEMICOLON)
@@ -4079,8 +3763,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateCallStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4088,16 +3774,18 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.Identifier, 0)
 
         def gateOperandList(self):
-            return self.getTypedRuleContext(braketPragmasParser.GateOperandListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.GateOperandListContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
 
-        def gateModifier(self, i: int = None):
+        def gateModifier(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.GateModifierContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.GateModifierContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.GateModifierContext,i)
+
 
         def LPAREN(self):
             return self.getToken(braketPragmasParser.LPAREN, 0)
@@ -4106,10 +3794,12 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext,0)
+
 
         def expressionList(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionListContext,0)
+
 
         def GPHASE(self):
             return self.getToken(braketPragmasParser.GPHASE, 0)
@@ -4117,43 +3807,38 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_gateCallStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateCallStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateCallStatement" ):
                 listener.enterGateCallStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateCallStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateCallStatement" ):
                 listener.exitGateCallStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateCallStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateCallStatement" ):
                 return visitor.visitGateCallStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateCallStatement(self):
 
         localctx = braketPragmasParser.GateCallStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 80, self.RULE_gateCallStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 477
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 36, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,36,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 439
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while ((_la) & ~0x3F) == 0 and (
-                    (1 << _la)
-                    & (
-                        (1 << braketPragmasParser.INV)
-                        | (1 << braketPragmasParser.POW)
-                        | (1 << braketPragmasParser.CTRL)
-                        | (1 << braketPragmasParser.NEGCTRL)
-                    )
-                ) != 0:
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.INV) | (1 << braketPragmasParser.POW) | (1 << braketPragmasParser.CTRL) | (1 << braketPragmasParser.NEGCTRL))) != 0):
                     self.state = 436
                     self.gateModifier()
                     self.state = 441
@@ -4165,55 +3850,28 @@ class braketPragmasParser(Parser):
                 self.state = 448
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LPAREN:
+                if _la==braketPragmasParser.LPAREN:
                     self.state = 443
                     self.match(braketPragmasParser.LPAREN)
                     self.state = 445
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if (((_la - 45)) & ~0x3F) == 0 and (
-                        (1 << (_la - 45))
-                        & (
-                            (1 << (braketPragmasParser.BOOL - 45))
-                            | (1 << (braketPragmasParser.BIT - 45))
-                            | (1 << (braketPragmasParser.INT - 45))
-                            | (1 << (braketPragmasParser.UINT - 45))
-                            | (1 << (braketPragmasParser.FLOAT - 45))
-                            | (1 << (braketPragmasParser.ANGLE - 45))
-                            | (1 << (braketPragmasParser.COMPLEX - 45))
-                            | (1 << (braketPragmasParser.ARRAY - 45))
-                            | (1 << (braketPragmasParser.DURATION - 45))
-                            | (1 << (braketPragmasParser.STRETCH - 45))
-                            | (1 << (braketPragmasParser.DURATIONOF - 45))
-                            | (1 << (braketPragmasParser.BooleanLiteral - 45))
-                            | (1 << (braketPragmasParser.LPAREN - 45))
-                            | (1 << (braketPragmasParser.MINUS - 45))
-                            | (1 << (braketPragmasParser.TILDE - 45))
-                            | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45))
-                            | (1 << (braketPragmasParser.ImaginaryLiteral - 45))
-                            | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45))
-                            | (1 << (braketPragmasParser.OctalIntegerLiteral - 45))
-                            | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45))
-                            | (1 << (braketPragmasParser.HexIntegerLiteral - 45))
-                            | (1 << (braketPragmasParser.Identifier - 45))
-                            | (1 << (braketPragmasParser.HardwareQubit - 45))
-                            | (1 << (braketPragmasParser.FloatLiteral - 45))
-                            | (1 << (braketPragmasParser.TimingLiteral - 45))
-                            | (1 << (braketPragmasParser.BitstringLiteral - 45))
-                        )
-                    ) != 0:
+                    if ((((_la - 45)) & ~0x3f) == 0 and ((1 << (_la - 45)) & ((1 << (braketPragmasParser.BOOL - 45)) | (1 << (braketPragmasParser.BIT - 45)) | (1 << (braketPragmasParser.INT - 45)) | (1 << (braketPragmasParser.UINT - 45)) | (1 << (braketPragmasParser.FLOAT - 45)) | (1 << (braketPragmasParser.ANGLE - 45)) | (1 << (braketPragmasParser.COMPLEX - 45)) | (1 << (braketPragmasParser.ARRAY - 45)) | (1 << (braketPragmasParser.DURATION - 45)) | (1 << (braketPragmasParser.STRETCH - 45)) | (1 << (braketPragmasParser.DURATIONOF - 45)) | (1 << (braketPragmasParser.BooleanLiteral - 45)) | (1 << (braketPragmasParser.LPAREN - 45)) | (1 << (braketPragmasParser.MINUS - 45)) | (1 << (braketPragmasParser.TILDE - 45)) | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45)) | (1 << (braketPragmasParser.ImaginaryLiteral - 45)) | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45)) | (1 << (braketPragmasParser.OctalIntegerLiteral - 45)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45)) | (1 << (braketPragmasParser.HexIntegerLiteral - 45)) | (1 << (braketPragmasParser.Identifier - 45)) | (1 << (braketPragmasParser.HardwareQubit - 45)) | (1 << (braketPragmasParser.FloatLiteral - 45)) | (1 << (braketPragmasParser.TimingLiteral - 45)) | (1 << (braketPragmasParser.BitstringLiteral - 45)))) != 0):
                         self.state = 444
                         self.expressionList()
+
 
                     self.state = 447
                     self.match(braketPragmasParser.RPAREN)
 
+
                 self.state = 451
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 450
                     self.designator()
+
 
                 self.state = 453
                 self.gateOperandList()
@@ -4226,15 +3884,7 @@ class braketPragmasParser(Parser):
                 self.state = 459
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while ((_la) & ~0x3F) == 0 and (
-                    (1 << _la)
-                    & (
-                        (1 << braketPragmasParser.INV)
-                        | (1 << braketPragmasParser.POW)
-                        | (1 << braketPragmasParser.CTRL)
-                        | (1 << braketPragmasParser.NEGCTRL)
-                    )
-                ) != 0:
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.INV) | (1 << braketPragmasParser.POW) | (1 << braketPragmasParser.CTRL) | (1 << braketPragmasParser.NEGCTRL))) != 0):
                     self.state = 456
                     self.gateModifier()
                     self.state = 461
@@ -4246,69 +3896,41 @@ class braketPragmasParser(Parser):
                 self.state = 468
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LPAREN:
+                if _la==braketPragmasParser.LPAREN:
                     self.state = 463
                     self.match(braketPragmasParser.LPAREN)
                     self.state = 465
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if (((_la - 45)) & ~0x3F) == 0 and (
-                        (1 << (_la - 45))
-                        & (
-                            (1 << (braketPragmasParser.BOOL - 45))
-                            | (1 << (braketPragmasParser.BIT - 45))
-                            | (1 << (braketPragmasParser.INT - 45))
-                            | (1 << (braketPragmasParser.UINT - 45))
-                            | (1 << (braketPragmasParser.FLOAT - 45))
-                            | (1 << (braketPragmasParser.ANGLE - 45))
-                            | (1 << (braketPragmasParser.COMPLEX - 45))
-                            | (1 << (braketPragmasParser.ARRAY - 45))
-                            | (1 << (braketPragmasParser.DURATION - 45))
-                            | (1 << (braketPragmasParser.STRETCH - 45))
-                            | (1 << (braketPragmasParser.DURATIONOF - 45))
-                            | (1 << (braketPragmasParser.BooleanLiteral - 45))
-                            | (1 << (braketPragmasParser.LPAREN - 45))
-                            | (1 << (braketPragmasParser.MINUS - 45))
-                            | (1 << (braketPragmasParser.TILDE - 45))
-                            | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45))
-                            | (1 << (braketPragmasParser.ImaginaryLiteral - 45))
-                            | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45))
-                            | (1 << (braketPragmasParser.OctalIntegerLiteral - 45))
-                            | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45))
-                            | (1 << (braketPragmasParser.HexIntegerLiteral - 45))
-                            | (1 << (braketPragmasParser.Identifier - 45))
-                            | (1 << (braketPragmasParser.HardwareQubit - 45))
-                            | (1 << (braketPragmasParser.FloatLiteral - 45))
-                            | (1 << (braketPragmasParser.TimingLiteral - 45))
-                            | (1 << (braketPragmasParser.BitstringLiteral - 45))
-                        )
-                    ) != 0:
+                    if ((((_la - 45)) & ~0x3f) == 0 and ((1 << (_la - 45)) & ((1 << (braketPragmasParser.BOOL - 45)) | (1 << (braketPragmasParser.BIT - 45)) | (1 << (braketPragmasParser.INT - 45)) | (1 << (braketPragmasParser.UINT - 45)) | (1 << (braketPragmasParser.FLOAT - 45)) | (1 << (braketPragmasParser.ANGLE - 45)) | (1 << (braketPragmasParser.COMPLEX - 45)) | (1 << (braketPragmasParser.ARRAY - 45)) | (1 << (braketPragmasParser.DURATION - 45)) | (1 << (braketPragmasParser.STRETCH - 45)) | (1 << (braketPragmasParser.DURATIONOF - 45)) | (1 << (braketPragmasParser.BooleanLiteral - 45)) | (1 << (braketPragmasParser.LPAREN - 45)) | (1 << (braketPragmasParser.MINUS - 45)) | (1 << (braketPragmasParser.TILDE - 45)) | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45)) | (1 << (braketPragmasParser.ImaginaryLiteral - 45)) | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45)) | (1 << (braketPragmasParser.OctalIntegerLiteral - 45)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45)) | (1 << (braketPragmasParser.HexIntegerLiteral - 45)) | (1 << (braketPragmasParser.Identifier - 45)) | (1 << (braketPragmasParser.HardwareQubit - 45)) | (1 << (braketPragmasParser.FloatLiteral - 45)) | (1 << (braketPragmasParser.TimingLiteral - 45)) | (1 << (braketPragmasParser.BitstringLiteral - 45)))) != 0):
                         self.state = 464
                         self.expressionList()
+
 
                     self.state = 467
                     self.match(braketPragmasParser.RPAREN)
 
+
                 self.state = 471
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 470
                     self.designator()
+
 
                 self.state = 474
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (
-                    _la == braketPragmasParser.Identifier
-                    or _la == braketPragmasParser.HardwareQubit
-                ):
+                if _la==braketPragmasParser.Identifier or _la==braketPragmasParser.HardwareQubit:
                     self.state = 473
                     self.gateOperandList()
+
 
                 self.state = 476
                 self.match(braketPragmasParser.SEMICOLON)
                 pass
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -4318,13 +3940,16 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class MeasureArrowAssignmentStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def measureExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.MeasureExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MeasureExpressionContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
@@ -4333,32 +3958,34 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.ARROW, 0)
 
         def indexedIdentifier(self):
-            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_measureArrowAssignmentStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMeasureArrowAssignmentStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMeasureArrowAssignmentStatement" ):
                 listener.enterMeasureArrowAssignmentStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMeasureArrowAssignmentStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMeasureArrowAssignmentStatement" ):
                 listener.exitMeasureArrowAssignmentStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMeasureArrowAssignmentStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMeasureArrowAssignmentStatement" ):
                 return visitor.visitMeasureArrowAssignmentStatement(self)
             else:
                 return visitor.visitChildren(self)
 
+
+
+
     def measureArrowAssignmentStatement(self):
 
-        localctx = braketPragmasParser.MeasureArrowAssignmentStatementContext(
-            self, self._ctx, self.state
-        )
+        localctx = braketPragmasParser.MeasureArrowAssignmentStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 82, self.RULE_measureArrowAssignmentStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 479
@@ -4366,11 +3993,12 @@ class braketPragmasParser(Parser):
             self.state = 482
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.ARROW:
+            if _la==braketPragmasParser.ARROW:
                 self.state = 480
                 self.match(braketPragmasParser.ARROW)
                 self.state = 481
                 self.indexedIdentifier()
+
 
             self.state = 484
             self.match(braketPragmasParser.SEMICOLON)
@@ -4382,8 +4010,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ResetStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4391,7 +4021,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.RESET, 0)
 
         def gateOperand(self):
-            return self.getTypedRuleContext(braketPragmasParser.GateOperandContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.GateOperandContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
@@ -4399,19 +4030,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_resetStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterResetStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterResetStatement" ):
                 listener.enterResetStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitResetStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitResetStatement" ):
                 listener.exitResetStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitResetStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitResetStatement" ):
                 return visitor.visitResetStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def resetStatement(self):
 
@@ -4433,8 +4067,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class AliasDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4448,7 +4084,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.EQUALS, 0)
 
         def aliasExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.AliasExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.AliasExpressionContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
@@ -4456,19 +4093,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_aliasDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAliasDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAliasDeclarationStatement" ):
                 listener.enterAliasDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAliasDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAliasDeclarationStatement" ):
                 listener.exitAliasDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAliasDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAliasDeclarationStatement" ):
                 return visitor.visitAliasDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def aliasDeclarationStatement(self):
 
@@ -4494,8 +4134,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ClassicalDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4506,57 +4148,51 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def arrayType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ArrayTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ArrayTypeContext,0)
+
 
         def EQUALS(self):
             return self.getToken(braketPragmasParser.EQUALS, 0)
 
         def declarationExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.DeclarationExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DeclarationExpressionContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_classicalDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterClassicalDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterClassicalDeclarationStatement" ):
                 listener.enterClassicalDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitClassicalDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitClassicalDeclarationStatement" ):
                 listener.exitClassicalDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitClassicalDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitClassicalDeclarationStatement" ):
                 return visitor.visitClassicalDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
 
+
+
+
     def classicalDeclarationStatement(self):
 
-        localctx = braketPragmasParser.ClassicalDeclarationStatementContext(
-            self, self._ctx, self.state
-        )
+        localctx = braketPragmasParser.ClassicalDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 88, self.RULE_classicalDeclarationStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 498
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-            ]:
+            if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.DURATION, braketPragmasParser.STRETCH]:
                 self.state = 496
                 self.scalarType()
                 pass
@@ -4572,11 +4208,12 @@ class braketPragmasParser(Parser):
             self.state = 503
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.EQUALS:
+            if _la==braketPragmasParser.EQUALS:
                 self.state = 501
                 self.match(braketPragmasParser.EQUALS)
                 self.state = 502
                 self.declarationExpression()
+
 
             self.state = 505
             self.match(braketPragmasParser.SEMICOLON)
@@ -4588,8 +4225,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ConstDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4597,7 +4236,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.CONST, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def Identifier(self):
             return self.getToken(braketPragmasParser.Identifier, 0)
@@ -4606,7 +4246,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.EQUALS, 0)
 
         def declarationExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.DeclarationExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DeclarationExpressionContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
@@ -4614,19 +4255,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_constDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterConstDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterConstDeclarationStatement" ):
                 listener.enterConstDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitConstDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitConstDeclarationStatement" ):
                 listener.exitConstDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitConstDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitConstDeclarationStatement" ):
                 return visitor.visitConstDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def constDeclarationStatement(self):
 
@@ -4654,8 +4298,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class IoDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4672,38 +4318,43 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.OUTPUT, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def arrayType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ArrayTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ArrayTypeContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_ioDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIoDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIoDeclarationStatement" ):
                 listener.enterIoDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIoDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIoDeclarationStatement" ):
                 listener.exitIoDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIoDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIoDeclarationStatement" ):
                 return visitor.visitIoDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def ioDeclarationStatement(self):
 
         localctx = braketPragmasParser.IoDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 92, self.RULE_ioDeclarationStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 514
             _la = self._input.LA(1)
-            if not (_la == braketPragmasParser.INPUT or _la == braketPragmasParser.OUTPUT):
+            if not(_la==braketPragmasParser.INPUT or _la==braketPragmasParser.OUTPUT):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -4711,17 +4362,7 @@ class braketPragmasParser(Parser):
             self.state = 517
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-            ]:
+            if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.DURATION, braketPragmasParser.STRETCH]:
                 self.state = 515
                 self.scalarType()
                 pass
@@ -4744,8 +4385,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class OldStyleDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4762,37 +4405,39 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.QREG, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_oldStyleDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterOldStyleDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterOldStyleDeclarationStatement" ):
                 listener.enterOldStyleDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitOldStyleDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitOldStyleDeclarationStatement" ):
                 listener.exitOldStyleDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitOldStyleDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitOldStyleDeclarationStatement" ):
                 return visitor.visitOldStyleDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
 
+
+
+
     def oldStyleDeclarationStatement(self):
 
-        localctx = braketPragmasParser.OldStyleDeclarationStatementContext(
-            self, self._ctx, self.state
-        )
+        localctx = braketPragmasParser.OldStyleDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 94, self.RULE_oldStyleDeclarationStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 522
             _la = self._input.LA(1)
-            if not (_la == braketPragmasParser.QREG or _la == braketPragmasParser.CREG):
+            if not(_la==braketPragmasParser.QREG or _la==braketPragmasParser.CREG):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -4802,9 +4447,10 @@ class braketPragmasParser(Parser):
             self.state = 525
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.LBRACKET:
+            if _la==braketPragmasParser.LBRACKET:
                 self.state = 524
                 self.designator()
+
 
             self.state = 527
             self.match(braketPragmasParser.SEMICOLON)
@@ -4816,13 +4462,16 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class QuantumDeclarationStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def qubitType(self):
-            return self.getTypedRuleContext(braketPragmasParser.QubitTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.QubitTypeContext,0)
+
 
         def Identifier(self):
             return self.getToken(braketPragmasParser.Identifier, 0)
@@ -4833,25 +4482,26 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_quantumDeclarationStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterQuantumDeclarationStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterQuantumDeclarationStatement" ):
                 listener.enterQuantumDeclarationStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitQuantumDeclarationStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitQuantumDeclarationStatement" ):
                 listener.exitQuantumDeclarationStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitQuantumDeclarationStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitQuantumDeclarationStatement" ):
                 return visitor.visitQuantumDeclarationStatement(self)
             else:
                 return visitor.visitChildren(self)
 
+
+
+
     def quantumDeclarationStatement(self):
 
-        localctx = braketPragmasParser.QuantumDeclarationStatementContext(
-            self, self._ctx, self.state
-        )
+        localctx = braketPragmasParser.QuantumDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 96, self.RULE_quantumDeclarationStatement)
         try:
             self.enterOuterAlt(localctx, 1)
@@ -4869,8 +4519,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class DefStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4887,36 +4539,42 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
         def scope(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScopeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScopeContext,0)
+
 
         def argumentDefinitionList(self):
-            return self.getTypedRuleContext(braketPragmasParser.ArgumentDefinitionListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ArgumentDefinitionListContext,0)
+
 
         def returnSignature(self):
-            return self.getTypedRuleContext(braketPragmasParser.ReturnSignatureContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ReturnSignatureContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_defStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDefStatement" ):
                 listener.enterDefStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDefStatement" ):
                 listener.exitDefStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDefStatement" ):
                 return visitor.visitDefStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def defStatement(self):
 
         localctx = braketPragmasParser.DefStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 98, self.RULE_defStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 533
@@ -4928,36 +4586,20 @@ class braketPragmasParser(Parser):
             self.state = 537
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la) & ~0x3F) == 0 and (
-                (1 << _la)
-                & (
-                    (1 << braketPragmasParser.CONST)
-                    | (1 << braketPragmasParser.MUTABLE)
-                    | (1 << braketPragmasParser.QREG)
-                    | (1 << braketPragmasParser.QUBIT)
-                    | (1 << braketPragmasParser.CREG)
-                    | (1 << braketPragmasParser.BOOL)
-                    | (1 << braketPragmasParser.BIT)
-                    | (1 << braketPragmasParser.INT)
-                    | (1 << braketPragmasParser.UINT)
-                    | (1 << braketPragmasParser.FLOAT)
-                    | (1 << braketPragmasParser.ANGLE)
-                    | (1 << braketPragmasParser.COMPLEX)
-                    | (1 << braketPragmasParser.DURATION)
-                    | (1 << braketPragmasParser.STRETCH)
-                )
-            ) != 0:
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.CONST) | (1 << braketPragmasParser.MUTABLE) | (1 << braketPragmasParser.QREG) | (1 << braketPragmasParser.QUBIT) | (1 << braketPragmasParser.CREG) | (1 << braketPragmasParser.BOOL) | (1 << braketPragmasParser.BIT) | (1 << braketPragmasParser.INT) | (1 << braketPragmasParser.UINT) | (1 << braketPragmasParser.FLOAT) | (1 << braketPragmasParser.ANGLE) | (1 << braketPragmasParser.COMPLEX) | (1 << braketPragmasParser.DURATION) | (1 << braketPragmasParser.STRETCH))) != 0):
                 self.state = 536
                 self.argumentDefinitionList()
+
 
             self.state = 539
             self.match(braketPragmasParser.RPAREN)
             self.state = 541
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.ARROW:
+            if _la==braketPragmasParser.ARROW:
                 self.state = 540
                 self.returnSignature()
+
 
             self.state = 543
             self.scope()
@@ -4969,8 +4611,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExternStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -4990,33 +4634,38 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
 
         def externArgumentList(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExternArgumentListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExternArgumentListContext,0)
+
 
         def returnSignature(self):
-            return self.getTypedRuleContext(braketPragmasParser.ReturnSignatureContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ReturnSignatureContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_externStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExternStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExternStatement" ):
                 listener.enterExternStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExternStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExternStatement" ):
                 listener.exitExternStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExternStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExternStatement" ):
                 return visitor.visitExternStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def externStatement(self):
 
         localctx = braketPragmasParser.ExternStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 100, self.RULE_externStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 545
@@ -5028,34 +4677,20 @@ class braketPragmasParser(Parser):
             self.state = 549
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la) & ~0x3F) == 0 and (
-                (1 << _la)
-                & (
-                    (1 << braketPragmasParser.CONST)
-                    | (1 << braketPragmasParser.MUTABLE)
-                    | (1 << braketPragmasParser.CREG)
-                    | (1 << braketPragmasParser.BOOL)
-                    | (1 << braketPragmasParser.BIT)
-                    | (1 << braketPragmasParser.INT)
-                    | (1 << braketPragmasParser.UINT)
-                    | (1 << braketPragmasParser.FLOAT)
-                    | (1 << braketPragmasParser.ANGLE)
-                    | (1 << braketPragmasParser.COMPLEX)
-                    | (1 << braketPragmasParser.DURATION)
-                    | (1 << braketPragmasParser.STRETCH)
-                )
-            ) != 0:
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.CONST) | (1 << braketPragmasParser.MUTABLE) | (1 << braketPragmasParser.CREG) | (1 << braketPragmasParser.BOOL) | (1 << braketPragmasParser.BIT) | (1 << braketPragmasParser.INT) | (1 << braketPragmasParser.UINT) | (1 << braketPragmasParser.FLOAT) | (1 << braketPragmasParser.ANGLE) | (1 << braketPragmasParser.COMPLEX) | (1 << braketPragmasParser.DURATION) | (1 << braketPragmasParser.STRETCH))) != 0):
                 self.state = 548
                 self.externArgumentList()
+
 
             self.state = 551
             self.match(braketPragmasParser.RPAREN)
             self.state = 553
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.ARROW:
+            if _la==braketPragmasParser.ARROW:
                 self.state = 552
                 self.returnSignature()
+
 
             self.state = 555
             self.match(braketPragmasParser.SEMICOLON)
@@ -5067,12 +4702,14 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.params = None  # IdentifierListContext
-            self.qubits = None  # IdentifierListContext
+            self.params = None # IdentifierListContext
+            self.qubits = None # IdentifierListContext
 
         def GATE(self):
             return self.getToken(braketPragmasParser.GATE, 0)
@@ -5081,13 +4718,15 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.Identifier, 0)
 
         def scope(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScopeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScopeContext,0)
 
-        def identifierList(self, i: int = None):
+
+        def identifierList(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.IdentifierListContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.IdentifierListContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.IdentifierListContext,i)
+
 
         def LPAREN(self):
             return self.getToken(braketPragmasParser.LPAREN, 0)
@@ -5098,25 +4737,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_gateStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateStatement" ):
                 listener.enterGateStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateStatement" ):
                 listener.exitGateStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateStatement" ):
                 return visitor.visitGateStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateStatement(self):
 
         localctx = braketPragmasParser.GateStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 102, self.RULE_gateStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 557
@@ -5126,18 +4768,20 @@ class braketPragmasParser(Parser):
             self.state = 564
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.LPAREN:
+            if _la==braketPragmasParser.LPAREN:
                 self.state = 559
                 self.match(braketPragmasParser.LPAREN)
                 self.state = 561
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.Identifier:
+                if _la==braketPragmasParser.Identifier:
                     self.state = 560
                     localctx.params = self.identifierList()
 
+
                 self.state = 563
                 self.match(braketPragmasParser.RPAREN)
+
 
             self.state = 566
             localctx.qubits = self.identifierList()
@@ -5151,14 +4795,17 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class AssignmentStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.op = None  # Token
+            self.op = None # Token
 
         def indexedIdentifier(self):
-            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
@@ -5170,33 +4817,38 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.CompoundAssignmentOperator, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def measureExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.MeasureExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MeasureExpressionContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_assignmentStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAssignmentStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAssignmentStatement" ):
                 listener.enterAssignmentStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAssignmentStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAssignmentStatement" ):
                 listener.exitAssignmentStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAssignmentStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAssignmentStatement" ):
                 return visitor.visitAssignmentStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def assignmentStatement(self):
 
         localctx = braketPragmasParser.AssignmentStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 104, self.RULE_assignmentStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 569
@@ -5204,10 +4856,7 @@ class braketPragmasParser(Parser):
             self.state = 570
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
-            if not (
-                _la == braketPragmasParser.EQUALS
-                or _la == braketPragmasParser.CompoundAssignmentOperator
-            ):
+            if not(_la==braketPragmasParser.EQUALS or _la==braketPragmasParser.CompoundAssignmentOperator):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -5215,34 +4864,7 @@ class braketPragmasParser(Parser):
             self.state = 573
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.ARRAY,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-                braketPragmasParser.DURATIONOF,
-                braketPragmasParser.BooleanLiteral,
-                braketPragmasParser.LPAREN,
-                braketPragmasParser.MINUS,
-                braketPragmasParser.TILDE,
-                braketPragmasParser.EXCLAMATION_POINT,
-                braketPragmasParser.ImaginaryLiteral,
-                braketPragmasParser.BinaryIntegerLiteral,
-                braketPragmasParser.OctalIntegerLiteral,
-                braketPragmasParser.DecimalIntegerLiteral,
-                braketPragmasParser.HexIntegerLiteral,
-                braketPragmasParser.Identifier,
-                braketPragmasParser.HardwareQubit,
-                braketPragmasParser.FloatLiteral,
-                braketPragmasParser.TimingLiteral,
-                braketPragmasParser.BitstringLiteral,
-            ]:
+            if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.DURATIONOF, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                 self.state = 571
                 self.expression(0)
                 pass
@@ -5263,13 +4885,16 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExpressionStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def SEMICOLON(self):
             return self.getToken(braketPragmasParser.SEMICOLON, 0)
@@ -5277,19 +4902,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_expressionStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExpressionStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExpressionStatement" ):
                 listener.enterExpressionStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExpressionStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExpressionStatement" ):
                 listener.exitExpressionStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExpressionStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionStatement" ):
                 return visitor.visitExpressionStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def expressionStatement(self):
 
@@ -5309,8 +4937,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class DefcalStatementContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5321,7 +4951,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.Identifier, 0)
 
         def defcalArgumentList(self):
-            return self.getTypedRuleContext(braketPragmasParser.DefcalArgumentListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DefcalArgumentListContext,0)
+
 
         def LBRACE(self):
             return self.getToken(braketPragmasParser.LBRACE, 0)
@@ -5336,33 +4967,38 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
         def returnSignature(self):
-            return self.getTypedRuleContext(braketPragmasParser.ReturnSignatureContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ReturnSignatureContext,0)
+
 
         def argumentDefinitionList(self):
-            return self.getTypedRuleContext(braketPragmasParser.ArgumentDefinitionListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ArgumentDefinitionListContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_defcalStatement
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefcalStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDefcalStatement" ):
                 listener.enterDefcalStatement(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefcalStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDefcalStatement" ):
                 listener.exitDefcalStatement(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefcalStatement"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDefcalStatement" ):
                 return visitor.visitDefcalStatement(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def defcalStatement(self):
 
         localctx = braketPragmasParser.DefcalStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 108, self.RULE_defcalStatement)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 580
@@ -5372,58 +5008,43 @@ class braketPragmasParser(Parser):
             self.state = 587
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.LPAREN:
+            if _la==braketPragmasParser.LPAREN:
                 self.state = 582
                 self.match(braketPragmasParser.LPAREN)
                 self.state = 584
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((_la) & ~0x3F) == 0 and (
-                    (1 << _la)
-                    & (
-                        (1 << braketPragmasParser.CONST)
-                        | (1 << braketPragmasParser.MUTABLE)
-                        | (1 << braketPragmasParser.QREG)
-                        | (1 << braketPragmasParser.QUBIT)
-                        | (1 << braketPragmasParser.CREG)
-                        | (1 << braketPragmasParser.BOOL)
-                        | (1 << braketPragmasParser.BIT)
-                        | (1 << braketPragmasParser.INT)
-                        | (1 << braketPragmasParser.UINT)
-                        | (1 << braketPragmasParser.FLOAT)
-                        | (1 << braketPragmasParser.ANGLE)
-                        | (1 << braketPragmasParser.COMPLEX)
-                        | (1 << braketPragmasParser.DURATION)
-                        | (1 << braketPragmasParser.STRETCH)
-                    )
-                ) != 0:
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << braketPragmasParser.CONST) | (1 << braketPragmasParser.MUTABLE) | (1 << braketPragmasParser.QREG) | (1 << braketPragmasParser.QUBIT) | (1 << braketPragmasParser.CREG) | (1 << braketPragmasParser.BOOL) | (1 << braketPragmasParser.BIT) | (1 << braketPragmasParser.INT) | (1 << braketPragmasParser.UINT) | (1 << braketPragmasParser.FLOAT) | (1 << braketPragmasParser.ANGLE) | (1 << braketPragmasParser.COMPLEX) | (1 << braketPragmasParser.DURATION) | (1 << braketPragmasParser.STRETCH))) != 0):
                     self.state = 583
                     self.argumentDefinitionList()
 
+
                 self.state = 586
                 self.match(braketPragmasParser.RPAREN)
+
 
             self.state = 589
             self.defcalArgumentList()
             self.state = 591
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.ARROW:
+            if _la==braketPragmasParser.ARROW:
                 self.state = 590
                 self.returnSignature()
+
 
             self.state = 593
             self.match(braketPragmasParser.LBRACE)
             self.state = 597
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 52, self._ctx)
-            while _alt != 1 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1 + 1:
+            _alt = self._interp.adaptivePredict(self._input,52,self._ctx)
+            while _alt!=1 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1+1:
                     self.state = 594
-                    self.matchWildcard()
+                    self.matchWildcard() 
                 self.state = 599
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 52, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,52,self._ctx)
 
             self.state = 600
             self.match(braketPragmasParser.RBRACE)
@@ -5435,627 +5056,613 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_expression
 
-        def copyFrom(self, ctx: ParserRuleContext):
+     
+        def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
+
     class BitwiseXorExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def CARET(self):
             return self.getToken(braketPragmasParser.CARET, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBitwiseXorExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBitwiseXorExpression" ):
                 listener.enterBitwiseXorExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBitwiseXorExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBitwiseXorExpression" ):
                 listener.exitBitwiseXorExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBitwiseXorExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBitwiseXorExpression" ):
                 return visitor.visitBitwiseXorExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class AdditiveExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def PLUS(self):
             return self.getToken(braketPragmasParser.PLUS, 0)
-
         def MINUS(self):
             return self.getToken(braketPragmasParser.MINUS, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAdditiveExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAdditiveExpression" ):
                 listener.enterAdditiveExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAdditiveExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAdditiveExpression" ):
                 listener.exitAdditiveExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAdditiveExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAdditiveExpression" ):
                 return visitor.visitAdditiveExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class DurationofExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def DURATIONOF(self):
             return self.getToken(braketPragmasParser.DURATIONOF, 0)
-
         def LPAREN(self):
             return self.getToken(braketPragmasParser.LPAREN, 0)
-
         def scope(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScopeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScopeContext,0)
 
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDurationofExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDurationofExpression" ):
                 listener.enterDurationofExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDurationofExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDurationofExpression" ):
                 listener.exitDurationofExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDurationofExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDurationofExpression" ):
                 return visitor.visitDurationofExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class ParenthesisExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(braketPragmasParser.LPAREN, 0)
-
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
 
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterParenthesisExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterParenthesisExpression" ):
                 listener.enterParenthesisExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitParenthesisExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitParenthesisExpression" ):
                 listener.exitParenthesisExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitParenthesisExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitParenthesisExpression" ):
                 return visitor.visitParenthesisExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class ComparisonExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def ComparisonOperator(self):
             return self.getToken(braketPragmasParser.ComparisonOperator, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterComparisonExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterComparisonExpression" ):
                 listener.enterComparisonExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitComparisonExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitComparisonExpression" ):
                 listener.exitComparisonExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitComparisonExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComparisonExpression" ):
                 return visitor.visitComparisonExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class MultiplicativeExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def ASTERISK(self):
             return self.getToken(braketPragmasParser.ASTERISK, 0)
-
         def SLASH(self):
             return self.getToken(braketPragmasParser.SLASH, 0)
-
         def PERCENT(self):
             return self.getToken(braketPragmasParser.PERCENT, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMultiplicativeExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMultiplicativeExpression" ):
                 listener.enterMultiplicativeExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMultiplicativeExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMultiplicativeExpression" ):
                 listener.exitMultiplicativeExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMultiplicativeExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMultiplicativeExpression" ):
                 return visitor.visitMultiplicativeExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class LogicalOrExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def DOUBLE_PIPE(self):
             return self.getToken(braketPragmasParser.DOUBLE_PIPE, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterLogicalOrExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalOrExpression" ):
                 listener.enterLogicalOrExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitLogicalOrExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalOrExpression" ):
                 listener.exitLogicalOrExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitLogicalOrExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitLogicalOrExpression" ):
                 return visitor.visitLogicalOrExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class CastExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def LPAREN(self):
             return self.getToken(braketPragmasParser.LPAREN, 0)
-
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
 
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
-
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
 
         def arrayType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ArrayTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ArrayTypeContext,0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCastExpression"):
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCastExpression" ):
                 listener.enterCastExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCastExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCastExpression" ):
                 listener.exitCastExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCastExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCastExpression" ):
                 return visitor.visitCastExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class PowerExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def DOUBLE_ASTERISK(self):
             return self.getToken(braketPragmasParser.DOUBLE_ASTERISK, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPowerExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterPowerExpression" ):
                 listener.enterPowerExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPowerExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitPowerExpression" ):
                 listener.exitPowerExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPowerExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitPowerExpression" ):
                 return visitor.visitPowerExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class BitwiseOrExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def PIPE(self):
             return self.getToken(braketPragmasParser.PIPE, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBitwiseOrExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBitwiseOrExpression" ):
                 listener.enterBitwiseOrExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBitwiseOrExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBitwiseOrExpression" ):
                 listener.exitBitwiseOrExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBitwiseOrExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBitwiseOrExpression" ):
                 return visitor.visitBitwiseOrExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class CallExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def Identifier(self):
             return self.getToken(braketPragmasParser.Identifier, 0)
-
         def LPAREN(self):
             return self.getToken(braketPragmasParser.LPAREN, 0)
-
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
-
         def expressionList(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionListContext,0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCallExpression"):
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCallExpression" ):
                 listener.enterCallExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCallExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCallExpression" ):
                 listener.exitCallExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCallExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCallExpression" ):
                 return visitor.visitCallExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class BitshiftExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def BitshiftOperator(self):
             return self.getToken(braketPragmasParser.BitshiftOperator, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBitshiftExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBitshiftExpression" ):
                 listener.enterBitshiftExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBitshiftExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBitshiftExpression" ):
                 listener.exitBitshiftExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBitshiftExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBitshiftExpression" ):
                 return visitor.visitBitshiftExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class BitwiseAndExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def AMPERSAND(self):
             return self.getToken(braketPragmasParser.AMPERSAND, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBitwiseAndExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBitwiseAndExpression" ):
                 listener.enterBitwiseAndExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBitwiseAndExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBitwiseAndExpression" ):
                 listener.exitBitwiseAndExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBitwiseAndExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBitwiseAndExpression" ):
                 return visitor.visitBitwiseAndExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class EqualityExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def EqualityOperator(self):
             return self.getToken(braketPragmasParser.EqualityOperator, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterEqualityExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEqualityExpression" ):
                 listener.enterEqualityExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitEqualityExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEqualityExpression" ):
                 listener.exitEqualityExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitEqualityExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitEqualityExpression" ):
                 return visitor.visitEqualityExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class LogicalAndExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
         def DOUBLE_AMPERSAND(self):
             return self.getToken(braketPragmasParser.DOUBLE_AMPERSAND, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterLogicalAndExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalAndExpression" ):
                 listener.enterLogicalAndExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitLogicalAndExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalAndExpression" ):
                 listener.exitLogicalAndExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitLogicalAndExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitLogicalAndExpression" ):
                 return visitor.visitLogicalAndExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class IndexExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
 
         def indexOperator(self):
-            return self.getTypedRuleContext(braketPragmasParser.IndexOperatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IndexOperatorContext,0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIndexExpression"):
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIndexExpression" ):
                 listener.enterIndexExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIndexExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIndexExpression" ):
                 listener.exitIndexExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIndexExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIndexExpression" ):
                 return visitor.visitIndexExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class UnaryExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
-            self.op = None  # Token
+            self.op = None # Token
             self.copyFrom(ctx)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
 
         def TILDE(self):
             return self.getToken(braketPragmasParser.TILDE, 0)
-
         def EXCLAMATION_POINT(self):
             return self.getToken(braketPragmasParser.EXCLAMATION_POINT, 0)
-
         def MINUS(self):
             return self.getToken(braketPragmasParser.MINUS, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterUnaryExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterUnaryExpression" ):
                 listener.enterUnaryExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitUnaryExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitUnaryExpression" ):
                 listener.exitUnaryExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitUnaryExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitUnaryExpression" ):
                 return visitor.visitUnaryExpression(self)
             else:
                 return visitor.visitChildren(self)
 
+
     class LiteralExpressionContext(ExpressionContext):
-        def __init__(
-            self, parser, ctx: ParserRuleContext
-        ):  # actually a braketPragmasParser.ExpressionContext
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a braketPragmasParser.ExpressionContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def Identifier(self):
             return self.getToken(braketPragmasParser.Identifier, 0)
-
         def BinaryIntegerLiteral(self):
             return self.getToken(braketPragmasParser.BinaryIntegerLiteral, 0)
-
         def OctalIntegerLiteral(self):
             return self.getToken(braketPragmasParser.OctalIntegerLiteral, 0)
-
         def DecimalIntegerLiteral(self):
             return self.getToken(braketPragmasParser.DecimalIntegerLiteral, 0)
-
         def HexIntegerLiteral(self):
             return self.getToken(braketPragmasParser.HexIntegerLiteral, 0)
-
         def FloatLiteral(self):
             return self.getToken(braketPragmasParser.FloatLiteral, 0)
-
         def ImaginaryLiteral(self):
             return self.getToken(braketPragmasParser.ImaginaryLiteral, 0)
-
         def BooleanLiteral(self):
             return self.getToken(braketPragmasParser.BooleanLiteral, 0)
-
         def BitstringLiteral(self):
             return self.getToken(braketPragmasParser.BitstringLiteral, 0)
-
         def TimingLiteral(self):
             return self.getToken(braketPragmasParser.TimingLiteral, 0)
-
         def HardwareQubit(self):
             return self.getToken(braketPragmasParser.HardwareQubit, 0)
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterLiteralExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLiteralExpression" ):
                 listener.enterLiteralExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitLiteralExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLiteralExpression" ):
                 listener.exitLiteralExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitLiteralExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitLiteralExpression" ):
                 return visitor.visitLiteralExpression(self)
             else:
                 return visitor.visitChildren(self)
 
-    def expression(self, _p: int = 0):
+
+
+    def expression(self, _p:int=0):
         _parentctx = self._ctx
         _parentState = self.state
         localctx = braketPragmasParser.ExpressionContext(self, self._ctx, _parentState)
         _prevctx = localctx
         _startState = 110
         self.enterRecursionRule(localctx, 110, self.RULE_expression, _p)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 629
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input, 55, self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,55,self._ctx)
             if la_ == 1:
                 localctx = braketPragmasParser.ParenthesisExpressionContext(self, localctx)
                 self._ctx = localctx
@@ -6076,20 +5683,7 @@ class braketPragmasParser(Parser):
                 self.state = 607
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (
-                    (
-                        (((_la - 81)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 81))
-                            & (
-                                (1 << (braketPragmasParser.MINUS - 81))
-                                | (1 << (braketPragmasParser.TILDE - 81))
-                                | (1 << (braketPragmasParser.EXCLAMATION_POINT - 81))
-                            )
-                        )
-                        != 0
-                    )
-                ):
+                if not(((((_la - 81)) & ~0x3f) == 0 and ((1 << (_la - 81)) & ((1 << (braketPragmasParser.MINUS - 81)) | (1 << (braketPragmasParser.TILDE - 81)) | (1 << (braketPragmasParser.EXCLAMATION_POINT - 81)))) != 0)):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6105,17 +5699,7 @@ class braketPragmasParser(Parser):
                 self.state = 611
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [
-                    braketPragmasParser.BOOL,
-                    braketPragmasParser.BIT,
-                    braketPragmasParser.INT,
-                    braketPragmasParser.UINT,
-                    braketPragmasParser.FLOAT,
-                    braketPragmasParser.ANGLE,
-                    braketPragmasParser.COMPLEX,
-                    braketPragmasParser.DURATION,
-                    braketPragmasParser.STRETCH,
-                ]:
+                if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.DURATION, braketPragmasParser.STRETCH]:
                     self.state = 609
                     self.scalarType()
                     pass
@@ -6159,39 +5743,10 @@ class braketPragmasParser(Parser):
                 self.state = 625
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la - 45)) & ~0x3F) == 0 and (
-                    (1 << (_la - 45))
-                    & (
-                        (1 << (braketPragmasParser.BOOL - 45))
-                        | (1 << (braketPragmasParser.BIT - 45))
-                        | (1 << (braketPragmasParser.INT - 45))
-                        | (1 << (braketPragmasParser.UINT - 45))
-                        | (1 << (braketPragmasParser.FLOAT - 45))
-                        | (1 << (braketPragmasParser.ANGLE - 45))
-                        | (1 << (braketPragmasParser.COMPLEX - 45))
-                        | (1 << (braketPragmasParser.ARRAY - 45))
-                        | (1 << (braketPragmasParser.DURATION - 45))
-                        | (1 << (braketPragmasParser.STRETCH - 45))
-                        | (1 << (braketPragmasParser.DURATIONOF - 45))
-                        | (1 << (braketPragmasParser.BooleanLiteral - 45))
-                        | (1 << (braketPragmasParser.LPAREN - 45))
-                        | (1 << (braketPragmasParser.MINUS - 45))
-                        | (1 << (braketPragmasParser.TILDE - 45))
-                        | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45))
-                        | (1 << (braketPragmasParser.ImaginaryLiteral - 45))
-                        | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45))
-                        | (1 << (braketPragmasParser.OctalIntegerLiteral - 45))
-                        | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45))
-                        | (1 << (braketPragmasParser.HexIntegerLiteral - 45))
-                        | (1 << (braketPragmasParser.Identifier - 45))
-                        | (1 << (braketPragmasParser.HardwareQubit - 45))
-                        | (1 << (braketPragmasParser.FloatLiteral - 45))
-                        | (1 << (braketPragmasParser.TimingLiteral - 45))
-                        | (1 << (braketPragmasParser.BitstringLiteral - 45))
-                    )
-                ) != 0:
+                if ((((_la - 45)) & ~0x3f) == 0 and ((1 << (_la - 45)) & ((1 << (braketPragmasParser.BOOL - 45)) | (1 << (braketPragmasParser.BIT - 45)) | (1 << (braketPragmasParser.INT - 45)) | (1 << (braketPragmasParser.UINT - 45)) | (1 << (braketPragmasParser.FLOAT - 45)) | (1 << (braketPragmasParser.ANGLE - 45)) | (1 << (braketPragmasParser.COMPLEX - 45)) | (1 << (braketPragmasParser.ARRAY - 45)) | (1 << (braketPragmasParser.DURATION - 45)) | (1 << (braketPragmasParser.STRETCH - 45)) | (1 << (braketPragmasParser.DURATIONOF - 45)) | (1 << (braketPragmasParser.BooleanLiteral - 45)) | (1 << (braketPragmasParser.LPAREN - 45)) | (1 << (braketPragmasParser.MINUS - 45)) | (1 << (braketPragmasParser.TILDE - 45)) | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45)) | (1 << (braketPragmasParser.ImaginaryLiteral - 45)) | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45)) | (1 << (braketPragmasParser.OctalIntegerLiteral - 45)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45)) | (1 << (braketPragmasParser.HexIntegerLiteral - 45)) | (1 << (braketPragmasParser.Identifier - 45)) | (1 << (braketPragmasParser.HardwareQubit - 45)) | (1 << (braketPragmasParser.FloatLiteral - 45)) | (1 << (braketPragmasParser.TimingLiteral - 45)) | (1 << (braketPragmasParser.BitstringLiteral - 45)))) != 0):
                     self.state = 624
                     self.expressionList()
+
 
                 self.state = 627
                 self.match(braketPragmasParser.RPAREN)
@@ -6203,56 +5758,32 @@ class braketPragmasParser(Parser):
                 _prevctx = localctx
                 self.state = 628
                 _la = self._input.LA(1)
-                if not (
-                    (
-                        (((_la - 66)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 66))
-                            & (
-                                (1 << (braketPragmasParser.BooleanLiteral - 66))
-                                | (1 << (braketPragmasParser.ImaginaryLiteral - 66))
-                                | (1 << (braketPragmasParser.BinaryIntegerLiteral - 66))
-                                | (1 << (braketPragmasParser.OctalIntegerLiteral - 66))
-                                | (1 << (braketPragmasParser.DecimalIntegerLiteral - 66))
-                                | (1 << (braketPragmasParser.HexIntegerLiteral - 66))
-                                | (1 << (braketPragmasParser.Identifier - 66))
-                                | (1 << (braketPragmasParser.HardwareQubit - 66))
-                                | (1 << (braketPragmasParser.FloatLiteral - 66))
-                                | (1 << (braketPragmasParser.TimingLiteral - 66))
-                                | (1 << (braketPragmasParser.BitstringLiteral - 66))
-                            )
-                        )
-                        != 0
-                    )
-                ):
+                if not(((((_la - 66)) & ~0x3f) == 0 and ((1 << (_la - 66)) & ((1 << (braketPragmasParser.BooleanLiteral - 66)) | (1 << (braketPragmasParser.ImaginaryLiteral - 66)) | (1 << (braketPragmasParser.BinaryIntegerLiteral - 66)) | (1 << (braketPragmasParser.OctalIntegerLiteral - 66)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 66)) | (1 << (braketPragmasParser.HexIntegerLiteral - 66)) | (1 << (braketPragmasParser.Identifier - 66)) | (1 << (braketPragmasParser.HardwareQubit - 66)) | (1 << (braketPragmasParser.FloatLiteral - 66)) | (1 << (braketPragmasParser.TimingLiteral - 66)) | (1 << (braketPragmasParser.BitstringLiteral - 66)))) != 0)):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
                 pass
 
+
             self._ctx.stop = self._input.LT(-1)
             self.state = 668
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 57, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,57,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
                     self.state = 666
                     self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input, 56, self._ctx)
+                    la_ = self._interp.adaptivePredict(self._input,56,self._ctx)
                     if la_ == 1:
-                        localctx = braketPragmasParser.PowerExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.PowerExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 631
                         if not self.precpred(self._ctx, 16):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 16)")
                         self.state = 632
                         localctx.op = self.match(braketPragmasParser.DOUBLE_ASTERISK)
@@ -6261,33 +5792,16 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 2:
-                        localctx = braketPragmasParser.MultiplicativeExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.MultiplicativeExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 634
                         if not self.precpred(self._ctx, 14):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 14)")
                         self.state = 635
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (
-                            (
-                                (((_la - 82)) & ~0x3F) == 0
-                                and (
-                                    (1 << (_la - 82))
-                                    & (
-                                        (1 << (braketPragmasParser.ASTERISK - 82))
-                                        | (1 << (braketPragmasParser.SLASH - 82))
-                                        | (1 << (braketPragmasParser.PERCENT - 82))
-                                    )
-                                )
-                                != 0
-                            )
-                        ):
+                        if not(((((_la - 82)) & ~0x3f) == 0 and ((1 << (_la - 82)) & ((1 << (braketPragmasParser.ASTERISK - 82)) | (1 << (braketPragmasParser.SLASH - 82)) | (1 << (braketPragmasParser.PERCENT - 82)))) != 0)):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -6297,22 +5811,16 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 3:
-                        localctx = braketPragmasParser.AdditiveExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.AdditiveExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 637
                         if not self.precpred(self._ctx, 13):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 13)")
                         self.state = 638
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (
-                            _la == braketPragmasParser.PLUS or _la == braketPragmasParser.MINUS
-                        ):
+                        if not(_la==braketPragmasParser.PLUS or _la==braketPragmasParser.MINUS):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -6322,15 +5830,11 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 4:
-                        localctx = braketPragmasParser.BitshiftExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.BitshiftExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 640
                         if not self.precpred(self._ctx, 12):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 12)")
                         self.state = 641
                         localctx.op = self.match(braketPragmasParser.BitshiftOperator)
@@ -6339,15 +5843,11 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 5:
-                        localctx = braketPragmasParser.ComparisonExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.ComparisonExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 643
                         if not self.precpred(self._ctx, 11):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 11)")
                         self.state = 644
                         localctx.op = self.match(braketPragmasParser.ComparisonOperator)
@@ -6356,15 +5856,11 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 6:
-                        localctx = braketPragmasParser.EqualityExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.EqualityExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 646
                         if not self.precpred(self._ctx, 10):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 10)")
                         self.state = 647
                         localctx.op = self.match(braketPragmasParser.EqualityOperator)
@@ -6373,15 +5869,11 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 7:
-                        localctx = braketPragmasParser.BitwiseAndExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.BitwiseAndExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 649
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 650
                         localctx.op = self.match(braketPragmasParser.AMPERSAND)
@@ -6390,15 +5882,11 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 8:
-                        localctx = braketPragmasParser.BitwiseXorExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.BitwiseXorExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 652
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 653
                         localctx.op = self.match(braketPragmasParser.CARET)
@@ -6407,15 +5895,11 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 9:
-                        localctx = braketPragmasParser.BitwiseOrExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.BitwiseOrExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 655
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 656
                         localctx.op = self.match(braketPragmasParser.PIPE)
@@ -6424,15 +5908,11 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 10:
-                        localctx = braketPragmasParser.LogicalAndExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.LogicalAndExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 658
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 659
                         localctx.op = self.match(braketPragmasParser.DOUBLE_AMPERSAND)
@@ -6441,15 +5921,11 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 11:
-                        localctx = braketPragmasParser.LogicalOrExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.LogicalOrExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 661
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 662
                         localctx.op = self.match(braketPragmasParser.DOUBLE_PIPE)
@@ -6458,23 +5934,20 @@ class braketPragmasParser(Parser):
                         pass
 
                     elif la_ == 12:
-                        localctx = braketPragmasParser.IndexExpressionContext(
-                            self,
-                            braketPragmasParser.ExpressionContext(self, _parentctx, _parentState),
-                        )
+                        localctx = braketPragmasParser.IndexExpressionContext(self, braketPragmasParser.ExpressionContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expression)
                         self.state = 664
                         if not self.precpred(self._ctx, 17):
                             from antlr4.error.Errors import FailedPredicateException
-
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 17)")
                         self.state = 665
                         self.indexOperator()
                         pass
 
+             
                 self.state = 670
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 57, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,57,self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6484,18 +5957,21 @@ class braketPragmasParser(Parser):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
+
     class AliasExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
-        def DOUBLE_PLUS(self, i: int = None):
+
+        def DOUBLE_PLUS(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.DOUBLE_PLUS)
             else:
@@ -6504,25 +5980,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_aliasExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAliasExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAliasExpression" ):
                 listener.enterAliasExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAliasExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAliasExpression" ):
                 listener.exitAliasExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAliasExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAliasExpression" ):
                 return visitor.visitAliasExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def aliasExpression(self):
 
         localctx = braketPragmasParser.AliasExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 112, self.RULE_aliasExpression)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 671
@@ -6530,7 +6009,7 @@ class braketPragmasParser(Parser):
             self.state = 676
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == braketPragmasParser.DOUBLE_PLUS:
+            while _la==braketPragmasParser.DOUBLE_PLUS:
                 self.state = 672
                 self.match(braketPragmasParser.DOUBLE_PLUS)
                 self.state = 673
@@ -6547,36 +6026,44 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class DeclarationExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def arrayLiteral(self):
-            return self.getTypedRuleContext(braketPragmasParser.ArrayLiteralContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ArrayLiteralContext,0)
+
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def measureExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.MeasureExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.MeasureExpressionContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_declarationExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDeclarationExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDeclarationExpression" ):
                 listener.enterDeclarationExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDeclarationExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDeclarationExpression" ):
                 listener.exitDeclarationExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDeclarationExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDeclarationExpression" ):
                 return visitor.visitDeclarationExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def declarationExpression(self):
 
@@ -6591,34 +6078,7 @@ class braketPragmasParser(Parser):
                 self.state = 679
                 self.arrayLiteral()
                 pass
-            elif token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.ARRAY,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-                braketPragmasParser.DURATIONOF,
-                braketPragmasParser.BooleanLiteral,
-                braketPragmasParser.LPAREN,
-                braketPragmasParser.MINUS,
-                braketPragmasParser.TILDE,
-                braketPragmasParser.EXCLAMATION_POINT,
-                braketPragmasParser.ImaginaryLiteral,
-                braketPragmasParser.BinaryIntegerLiteral,
-                braketPragmasParser.OctalIntegerLiteral,
-                braketPragmasParser.DecimalIntegerLiteral,
-                braketPragmasParser.HexIntegerLiteral,
-                braketPragmasParser.Identifier,
-                braketPragmasParser.HardwareQubit,
-                braketPragmasParser.FloatLiteral,
-                braketPragmasParser.TimingLiteral,
-                braketPragmasParser.BitstringLiteral,
-            ]:
+            elif token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.DURATIONOF, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 680
                 self.expression(0)
@@ -6639,8 +6099,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class MeasureExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6648,24 +6110,28 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.MEASURE, 0)
 
         def gateOperand(self):
-            return self.getTypedRuleContext(braketPragmasParser.GateOperandContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.GateOperandContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_measureExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMeasureExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMeasureExpression" ):
                 listener.enterMeasureExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMeasureExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMeasureExpression" ):
                 listener.exitMeasureExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMeasureExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMeasureExpression" ):
                 return visitor.visitMeasureExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def measureExpression(self):
 
@@ -6685,131 +6151,80 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class RangeExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def COLON(self, i: int = None):
+        def COLON(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COLON)
             else:
                 return self.getToken(braketPragmasParser.COLON, i)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_rangeExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterRangeExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterRangeExpression" ):
                 listener.enterRangeExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitRangeExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitRangeExpression" ):
                 listener.exitRangeExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitRangeExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitRangeExpression" ):
                 return visitor.visitRangeExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def rangeExpression(self):
 
         localctx = braketPragmasParser.RangeExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 118, self.RULE_rangeExpression)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 688
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 45)) & ~0x3F) == 0 and (
-                (1 << (_la - 45))
-                & (
-                    (1 << (braketPragmasParser.BOOL - 45))
-                    | (1 << (braketPragmasParser.BIT - 45))
-                    | (1 << (braketPragmasParser.INT - 45))
-                    | (1 << (braketPragmasParser.UINT - 45))
-                    | (1 << (braketPragmasParser.FLOAT - 45))
-                    | (1 << (braketPragmasParser.ANGLE - 45))
-                    | (1 << (braketPragmasParser.COMPLEX - 45))
-                    | (1 << (braketPragmasParser.ARRAY - 45))
-                    | (1 << (braketPragmasParser.DURATION - 45))
-                    | (1 << (braketPragmasParser.STRETCH - 45))
-                    | (1 << (braketPragmasParser.DURATIONOF - 45))
-                    | (1 << (braketPragmasParser.BooleanLiteral - 45))
-                    | (1 << (braketPragmasParser.LPAREN - 45))
-                    | (1 << (braketPragmasParser.MINUS - 45))
-                    | (1 << (braketPragmasParser.TILDE - 45))
-                    | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45))
-                    | (1 << (braketPragmasParser.ImaginaryLiteral - 45))
-                    | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45))
-                    | (1 << (braketPragmasParser.OctalIntegerLiteral - 45))
-                    | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45))
-                    | (1 << (braketPragmasParser.HexIntegerLiteral - 45))
-                    | (1 << (braketPragmasParser.Identifier - 45))
-                    | (1 << (braketPragmasParser.HardwareQubit - 45))
-                    | (1 << (braketPragmasParser.FloatLiteral - 45))
-                    | (1 << (braketPragmasParser.TimingLiteral - 45))
-                    | (1 << (braketPragmasParser.BitstringLiteral - 45))
-                )
-            ) != 0:
+            if ((((_la - 45)) & ~0x3f) == 0 and ((1 << (_la - 45)) & ((1 << (braketPragmasParser.BOOL - 45)) | (1 << (braketPragmasParser.BIT - 45)) | (1 << (braketPragmasParser.INT - 45)) | (1 << (braketPragmasParser.UINT - 45)) | (1 << (braketPragmasParser.FLOAT - 45)) | (1 << (braketPragmasParser.ANGLE - 45)) | (1 << (braketPragmasParser.COMPLEX - 45)) | (1 << (braketPragmasParser.ARRAY - 45)) | (1 << (braketPragmasParser.DURATION - 45)) | (1 << (braketPragmasParser.STRETCH - 45)) | (1 << (braketPragmasParser.DURATIONOF - 45)) | (1 << (braketPragmasParser.BooleanLiteral - 45)) | (1 << (braketPragmasParser.LPAREN - 45)) | (1 << (braketPragmasParser.MINUS - 45)) | (1 << (braketPragmasParser.TILDE - 45)) | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45)) | (1 << (braketPragmasParser.ImaginaryLiteral - 45)) | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45)) | (1 << (braketPragmasParser.OctalIntegerLiteral - 45)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45)) | (1 << (braketPragmasParser.HexIntegerLiteral - 45)) | (1 << (braketPragmasParser.Identifier - 45)) | (1 << (braketPragmasParser.HardwareQubit - 45)) | (1 << (braketPragmasParser.FloatLiteral - 45)) | (1 << (braketPragmasParser.TimingLiteral - 45)) | (1 << (braketPragmasParser.BitstringLiteral - 45)))) != 0):
                 self.state = 687
                 self.expression(0)
+
 
             self.state = 690
             self.match(braketPragmasParser.COLON)
             self.state = 692
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 45)) & ~0x3F) == 0 and (
-                (1 << (_la - 45))
-                & (
-                    (1 << (braketPragmasParser.BOOL - 45))
-                    | (1 << (braketPragmasParser.BIT - 45))
-                    | (1 << (braketPragmasParser.INT - 45))
-                    | (1 << (braketPragmasParser.UINT - 45))
-                    | (1 << (braketPragmasParser.FLOAT - 45))
-                    | (1 << (braketPragmasParser.ANGLE - 45))
-                    | (1 << (braketPragmasParser.COMPLEX - 45))
-                    | (1 << (braketPragmasParser.ARRAY - 45))
-                    | (1 << (braketPragmasParser.DURATION - 45))
-                    | (1 << (braketPragmasParser.STRETCH - 45))
-                    | (1 << (braketPragmasParser.DURATIONOF - 45))
-                    | (1 << (braketPragmasParser.BooleanLiteral - 45))
-                    | (1 << (braketPragmasParser.LPAREN - 45))
-                    | (1 << (braketPragmasParser.MINUS - 45))
-                    | (1 << (braketPragmasParser.TILDE - 45))
-                    | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45))
-                    | (1 << (braketPragmasParser.ImaginaryLiteral - 45))
-                    | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45))
-                    | (1 << (braketPragmasParser.OctalIntegerLiteral - 45))
-                    | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45))
-                    | (1 << (braketPragmasParser.HexIntegerLiteral - 45))
-                    | (1 << (braketPragmasParser.Identifier - 45))
-                    | (1 << (braketPragmasParser.HardwareQubit - 45))
-                    | (1 << (braketPragmasParser.FloatLiteral - 45))
-                    | (1 << (braketPragmasParser.TimingLiteral - 45))
-                    | (1 << (braketPragmasParser.BitstringLiteral - 45))
-                )
-            ) != 0:
+            if ((((_la - 45)) & ~0x3f) == 0 and ((1 << (_la - 45)) & ((1 << (braketPragmasParser.BOOL - 45)) | (1 << (braketPragmasParser.BIT - 45)) | (1 << (braketPragmasParser.INT - 45)) | (1 << (braketPragmasParser.UINT - 45)) | (1 << (braketPragmasParser.FLOAT - 45)) | (1 << (braketPragmasParser.ANGLE - 45)) | (1 << (braketPragmasParser.COMPLEX - 45)) | (1 << (braketPragmasParser.ARRAY - 45)) | (1 << (braketPragmasParser.DURATION - 45)) | (1 << (braketPragmasParser.STRETCH - 45)) | (1 << (braketPragmasParser.DURATIONOF - 45)) | (1 << (braketPragmasParser.BooleanLiteral - 45)) | (1 << (braketPragmasParser.LPAREN - 45)) | (1 << (braketPragmasParser.MINUS - 45)) | (1 << (braketPragmasParser.TILDE - 45)) | (1 << (braketPragmasParser.EXCLAMATION_POINT - 45)) | (1 << (braketPragmasParser.ImaginaryLiteral - 45)) | (1 << (braketPragmasParser.BinaryIntegerLiteral - 45)) | (1 << (braketPragmasParser.OctalIntegerLiteral - 45)) | (1 << (braketPragmasParser.DecimalIntegerLiteral - 45)) | (1 << (braketPragmasParser.HexIntegerLiteral - 45)) | (1 << (braketPragmasParser.Identifier - 45)) | (1 << (braketPragmasParser.HardwareQubit - 45)) | (1 << (braketPragmasParser.FloatLiteral - 45)) | (1 << (braketPragmasParser.TimingLiteral - 45)) | (1 << (braketPragmasParser.BitstringLiteral - 45)))) != 0):
                 self.state = 691
                 self.expression(0)
+
 
             self.state = 696
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COLON:
+            if _la==braketPragmasParser.COLON:
                 self.state = 694
                 self.match(braketPragmasParser.COLON)
                 self.state = 695
                 self.expression(0)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6819,24 +6234,27 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class SetExpressionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def LBRACE(self):
             return self.getToken(braketPragmasParser.LBRACE, 0)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
+
 
         def RBRACE(self):
             return self.getToken(braketPragmasParser.RBRACE, 0)
 
-        def COMMA(self, i: int = None):
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -6845,25 +6263,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_setExpression
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterSetExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterSetExpression" ):
                 listener.enterSetExpression(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitSetExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitSetExpression" ):
                 listener.exitSetExpression(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitSetExpression"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitSetExpression" ):
                 return visitor.visitSetExpression(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def setExpression(self):
 
         localctx = braketPragmasParser.SetExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 120, self.RULE_setExpression)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 698
@@ -6872,23 +6293,24 @@ class braketPragmasParser(Parser):
             self.expression(0)
             self.state = 704
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 63, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,63,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 700
                     self.match(braketPragmasParser.COMMA)
                     self.state = 701
-                    self.expression(0)
+                    self.expression(0) 
                 self.state = 706
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 63, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,63,self._ctx)
 
             self.state = 708
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COMMA:
+            if _la==braketPragmasParser.COMMA:
                 self.state = 707
                 self.match(braketPragmasParser.COMMA)
+
 
             self.state = 710
             self.match(braketPragmasParser.RBRACE)
@@ -6900,8 +6322,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArrayLiteralContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6911,19 +6335,21 @@ class braketPragmasParser(Parser):
         def RBRACE(self):
             return self.getToken(braketPragmasParser.RBRACE, 0)
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
-        def arrayLiteral(self, i: int = None):
+
+        def arrayLiteral(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ArrayLiteralContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ArrayLiteralContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ArrayLiteralContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -6932,25 +6358,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_arrayLiteral
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArrayLiteral"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArrayLiteral" ):
                 listener.enterArrayLiteral(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArrayLiteral"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArrayLiteral" ):
                 listener.exitArrayLiteral(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArrayLiteral"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArrayLiteral" ):
                 return visitor.visitArrayLiteral(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def arrayLiteral(self):
 
         localctx = braketPragmasParser.ArrayLiteralContext(self, self._ctx, self.state)
         self.enterRule(localctx, 122, self.RULE_arrayLiteral)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 712
@@ -6958,34 +6387,7 @@ class braketPragmasParser(Parser):
             self.state = 715
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.ARRAY,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-                braketPragmasParser.DURATIONOF,
-                braketPragmasParser.BooleanLiteral,
-                braketPragmasParser.LPAREN,
-                braketPragmasParser.MINUS,
-                braketPragmasParser.TILDE,
-                braketPragmasParser.EXCLAMATION_POINT,
-                braketPragmasParser.ImaginaryLiteral,
-                braketPragmasParser.BinaryIntegerLiteral,
-                braketPragmasParser.OctalIntegerLiteral,
-                braketPragmasParser.DecimalIntegerLiteral,
-                braketPragmasParser.HexIntegerLiteral,
-                braketPragmasParser.Identifier,
-                braketPragmasParser.HardwareQubit,
-                braketPragmasParser.FloatLiteral,
-                braketPragmasParser.TimingLiteral,
-                braketPragmasParser.BitstringLiteral,
-            ]:
+            if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.DURATIONOF, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                 self.state = 713
                 self.expression(0)
                 pass
@@ -6998,42 +6400,15 @@ class braketPragmasParser(Parser):
 
             self.state = 724
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 67, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,67,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 717
                     self.match(braketPragmasParser.COMMA)
                     self.state = 720
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [
-                        braketPragmasParser.BOOL,
-                        braketPragmasParser.BIT,
-                        braketPragmasParser.INT,
-                        braketPragmasParser.UINT,
-                        braketPragmasParser.FLOAT,
-                        braketPragmasParser.ANGLE,
-                        braketPragmasParser.COMPLEX,
-                        braketPragmasParser.ARRAY,
-                        braketPragmasParser.DURATION,
-                        braketPragmasParser.STRETCH,
-                        braketPragmasParser.DURATIONOF,
-                        braketPragmasParser.BooleanLiteral,
-                        braketPragmasParser.LPAREN,
-                        braketPragmasParser.MINUS,
-                        braketPragmasParser.TILDE,
-                        braketPragmasParser.EXCLAMATION_POINT,
-                        braketPragmasParser.ImaginaryLiteral,
-                        braketPragmasParser.BinaryIntegerLiteral,
-                        braketPragmasParser.OctalIntegerLiteral,
-                        braketPragmasParser.DecimalIntegerLiteral,
-                        braketPragmasParser.HexIntegerLiteral,
-                        braketPragmasParser.Identifier,
-                        braketPragmasParser.HardwareQubit,
-                        braketPragmasParser.FloatLiteral,
-                        braketPragmasParser.TimingLiteral,
-                        braketPragmasParser.BitstringLiteral,
-                    ]:
+                    if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.DURATIONOF, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                         self.state = 718
                         self.expression(0)
                         pass
@@ -7043,17 +6418,18 @@ class braketPragmasParser(Parser):
                         pass
                     else:
                         raise NoViableAltException(self)
-
+             
                 self.state = 726
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 67, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,67,self._ctx)
 
             self.state = 728
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COMMA:
+            if _la==braketPragmasParser.COMMA:
                 self.state = 727
                 self.match(braketPragmasParser.COMMA)
+
 
             self.state = 730
             self.match(braketPragmasParser.RBRACE)
@@ -7065,8 +6441,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class IndexOperatorContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7077,21 +6455,24 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.RBRACKET, 0)
 
         def setExpression(self):
-            return self.getTypedRuleContext(braketPragmasParser.SetExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.SetExpressionContext,0)
 
-        def expression(self, i: int = None):
+
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
-        def rangeExpression(self, i: int = None):
+
+        def rangeExpression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.RangeExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.RangeExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.RangeExpressionContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -7100,25 +6481,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_indexOperator
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIndexOperator"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIndexOperator" ):
                 listener.enterIndexOperator(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIndexOperator"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIndexOperator" ):
                 listener.exitIndexOperator(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIndexOperator"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIndexOperator" ):
                 return visitor.visitIndexOperator(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def indexOperator(self):
 
         localctx = braketPragmasParser.IndexOperatorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 124, self.RULE_indexOperator)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 732
@@ -7130,38 +6514,10 @@ class braketPragmasParser(Parser):
                 self.state = 733
                 self.setExpression()
                 pass
-            elif token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.ARRAY,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-                braketPragmasParser.DURATIONOF,
-                braketPragmasParser.BooleanLiteral,
-                braketPragmasParser.LPAREN,
-                braketPragmasParser.COLON,
-                braketPragmasParser.MINUS,
-                braketPragmasParser.TILDE,
-                braketPragmasParser.EXCLAMATION_POINT,
-                braketPragmasParser.ImaginaryLiteral,
-                braketPragmasParser.BinaryIntegerLiteral,
-                braketPragmasParser.OctalIntegerLiteral,
-                braketPragmasParser.DecimalIntegerLiteral,
-                braketPragmasParser.HexIntegerLiteral,
-                braketPragmasParser.Identifier,
-                braketPragmasParser.HardwareQubit,
-                braketPragmasParser.FloatLiteral,
-                braketPragmasParser.TimingLiteral,
-                braketPragmasParser.BitstringLiteral,
-            ]:
+            elif token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.DURATIONOF, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.COLON, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                 self.state = 736
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input, 69, self._ctx)
+                la_ = self._interp.adaptivePredict(self._input,69,self._ctx)
                 if la_ == 1:
                     self.state = 734
                     self.expression(0)
@@ -7172,16 +6528,17 @@ class braketPragmasParser(Parser):
                     self.rangeExpression()
                     pass
 
+
                 self.state = 745
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 71, self._ctx)
-                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                    if _alt == 1:
+                _alt = self._interp.adaptivePredict(self._input,71,self._ctx)
+                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                    if _alt==1:
                         self.state = 738
                         self.match(braketPragmasParser.COMMA)
                         self.state = 741
                         self._errHandler.sync(self)
-                        la_ = self._interp.adaptivePredict(self._input, 70, self._ctx)
+                        la_ = self._interp.adaptivePredict(self._input,70,self._ctx)
                         if la_ == 1:
                             self.state = 739
                             self.expression(0)
@@ -7192,16 +6549,18 @@ class braketPragmasParser(Parser):
                             self.rangeExpression()
                             pass
 
+                 
                     self.state = 747
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input, 71, self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input,71,self._ctx)
 
                 self.state = 749
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.COMMA:
+                if _la==braketPragmasParser.COMMA:
                     self.state = 748
                     self.match(braketPragmasParser.COMMA)
+
 
                 pass
             else:
@@ -7217,42 +6576,48 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class IndexedIdentifierContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def Identifier(self):
             return self.getToken(braketPragmasParser.Identifier, 0)
 
-        def indexOperator(self, i: int = None):
+        def indexOperator(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.IndexOperatorContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.IndexOperatorContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.IndexOperatorContext,i)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_indexedIdentifier
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIndexedIdentifier"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIndexedIdentifier" ):
                 listener.enterIndexedIdentifier(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIndexedIdentifier"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIndexedIdentifier" ):
                 listener.exitIndexedIdentifier(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIndexedIdentifier"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIndexedIdentifier" ):
                 return visitor.visitIndexedIdentifier(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def indexedIdentifier(self):
 
         localctx = braketPragmasParser.IndexedIdentifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 126, self.RULE_indexedIdentifier)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 755
@@ -7260,7 +6625,7 @@ class braketPragmasParser(Parser):
             self.state = 759
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == braketPragmasParser.LBRACKET:
+            while _la==braketPragmasParser.LBRACKET:
                 self.state = 756
                 self.indexOperator()
                 self.state = 761
@@ -7275,8 +6640,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ReturnSignatureContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7284,24 +6651,28 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.ARROW, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_returnSignature
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterReturnSignature"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterReturnSignature" ):
                 listener.enterReturnSignature(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitReturnSignature"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitReturnSignature" ):
                 listener.exitReturnSignature(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitReturnSignature"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitReturnSignature" ):
                 return visitor.visitReturnSignature(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def returnSignature(self):
 
@@ -7321,8 +6692,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateModifierContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7339,7 +6712,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.LPAREN, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def RPAREN(self):
             return self.getToken(braketPragmasParser.RPAREN, 0)
@@ -7353,25 +6727,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_gateModifier
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateModifier"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateModifier" ):
                 listener.enterGateModifier(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateModifier"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateModifier" ):
                 listener.exitGateModifier(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateModifier"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateModifier" ):
                 return visitor.visitGateModifier(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateModifier(self):
 
         localctx = braketPragmasParser.GateModifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 130, self.RULE_gateModifier)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 778
@@ -7394,7 +6771,7 @@ class braketPragmasParser(Parser):
             elif token in [braketPragmasParser.CTRL, braketPragmasParser.NEGCTRL]:
                 self.state = 771
                 _la = self._input.LA(1)
-                if not (_la == braketPragmasParser.CTRL or _la == braketPragmasParser.NEGCTRL):
+                if not(_la==braketPragmasParser.CTRL or _la==braketPragmasParser.NEGCTRL):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -7402,13 +6779,14 @@ class braketPragmasParser(Parser):
                 self.state = 776
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LPAREN:
+                if _la==braketPragmasParser.LPAREN:
                     self.state = 772
                     self.match(braketPragmasParser.LPAREN)
                     self.state = 773
                     self.expression(0)
                     self.state = 774
                     self.match(braketPragmasParser.RPAREN)
+
 
                 pass
             else:
@@ -7424,8 +6802,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ScalarTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7433,7 +6813,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.BIT, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext,0)
+
 
         def INT(self):
             return self.getToken(braketPragmasParser.INT, 0)
@@ -7463,7 +6844,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.LBRACKET, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def RBRACKET(self):
             return self.getToken(braketPragmasParser.RBRACKET, 0)
@@ -7471,25 +6853,28 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_scalarType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterScalarType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterScalarType" ):
                 listener.enterScalarType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitScalarType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitScalarType" ):
                 listener.exitScalarType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitScalarType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitScalarType" ):
                 return visitor.visitScalarType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def scalarType(self):
 
         localctx = braketPragmasParser.ScalarTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 132, self.RULE_scalarType)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 812
             self._errHandler.sync(self)
@@ -7501,9 +6886,10 @@ class braketPragmasParser(Parser):
                 self.state = 784
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 783
                     self.designator()
+
 
                 pass
             elif token in [braketPragmasParser.INT]:
@@ -7513,9 +6899,10 @@ class braketPragmasParser(Parser):
                 self.state = 788
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 787
                     self.designator()
+
 
                 pass
             elif token in [braketPragmasParser.UINT]:
@@ -7525,9 +6912,10 @@ class braketPragmasParser(Parser):
                 self.state = 792
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 791
                     self.designator()
+
 
                 pass
             elif token in [braketPragmasParser.FLOAT]:
@@ -7537,9 +6925,10 @@ class braketPragmasParser(Parser):
                 self.state = 796
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 795
                     self.designator()
+
 
                 pass
             elif token in [braketPragmasParser.ANGLE]:
@@ -7549,9 +6938,10 @@ class braketPragmasParser(Parser):
                 self.state = 800
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 799
                     self.designator()
+
 
                 pass
             elif token in [braketPragmasParser.BOOL]:
@@ -7576,13 +6966,14 @@ class braketPragmasParser(Parser):
                 self.state = 810
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 806
                     self.match(braketPragmasParser.LBRACKET)
                     self.state = 807
                     self.scalarType()
                     self.state = 808
                     self.match(braketPragmasParser.RBRACKET)
+
 
                 pass
             else:
@@ -7596,8 +6987,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class QubitTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7605,30 +6998,34 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.QUBIT, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_qubitType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterQubitType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterQubitType" ):
                 listener.enterQubitType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitQubitType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitQubitType" ):
                 listener.exitQubitType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitQubitType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitQubitType" ):
                 return visitor.visitQubitType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def qubitType(self):
 
         localctx = braketPragmasParser.QubitTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 134, self.RULE_qubitType)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 814
@@ -7636,9 +7033,10 @@ class braketPragmasParser(Parser):
             self.state = 816
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.LBRACKET:
+            if _la==braketPragmasParser.LBRACKET:
                 self.state = 815
                 self.designator()
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -7648,8 +7046,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArrayTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7660,13 +7060,15 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.LBRACKET, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def COMMA(self):
             return self.getToken(braketPragmasParser.COMMA, 0)
 
         def expressionList(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionListContext,0)
+
 
         def RBRACKET(self):
             return self.getToken(braketPragmasParser.RBRACKET, 0)
@@ -7674,19 +7076,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_arrayType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArrayType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArrayType" ):
                 listener.enterArrayType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArrayType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArrayType" ):
                 listener.exitArrayType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArrayType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArrayType" ):
                 return visitor.visitArrayType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def arrayType(self):
 
@@ -7714,8 +7119,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArrayReferenceTypeContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7726,7 +7133,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.LBRACKET, 0)
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def COMMA(self):
             return self.getToken(braketPragmasParser.COMMA, 0)
@@ -7741,7 +7149,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.MUTABLE, 0)
 
         def expressionList(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionListContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionListContext,0)
+
 
         def DIM(self):
             return self.getToken(braketPragmasParser.DIM, 0)
@@ -7750,35 +7159,39 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.EQUALS, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_arrayReferenceType
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArrayReferenceType"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArrayReferenceType" ):
                 listener.enterArrayReferenceType(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArrayReferenceType"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArrayReferenceType" ):
                 listener.exitArrayReferenceType(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArrayReferenceType"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArrayReferenceType" ):
                 return visitor.visitArrayReferenceType(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def arrayReferenceType(self):
 
         localctx = braketPragmasParser.ArrayReferenceTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 138, self.RULE_arrayReferenceType)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 825
             _la = self._input.LA(1)
-            if not (_la == braketPragmasParser.CONST or _la == braketPragmasParser.MUTABLE):
+            if not(_la==braketPragmasParser.CONST or _la==braketPragmasParser.MUTABLE):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -7794,34 +7207,7 @@ class braketPragmasParser(Parser):
             self.state = 834
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.ARRAY,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-                braketPragmasParser.DURATIONOF,
-                braketPragmasParser.BooleanLiteral,
-                braketPragmasParser.LPAREN,
-                braketPragmasParser.MINUS,
-                braketPragmasParser.TILDE,
-                braketPragmasParser.EXCLAMATION_POINT,
-                braketPragmasParser.ImaginaryLiteral,
-                braketPragmasParser.BinaryIntegerLiteral,
-                braketPragmasParser.OctalIntegerLiteral,
-                braketPragmasParser.DecimalIntegerLiteral,
-                braketPragmasParser.HexIntegerLiteral,
-                braketPragmasParser.Identifier,
-                braketPragmasParser.HardwareQubit,
-                braketPragmasParser.FloatLiteral,
-                braketPragmasParser.TimingLiteral,
-                braketPragmasParser.BitstringLiteral,
-            ]:
+            if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.ARRAY, braketPragmasParser.DURATION, braketPragmasParser.STRETCH, braketPragmasParser.DURATIONOF, braketPragmasParser.BooleanLiteral, braketPragmasParser.LPAREN, braketPragmasParser.MINUS, braketPragmasParser.TILDE, braketPragmasParser.EXCLAMATION_POINT, braketPragmasParser.ImaginaryLiteral, braketPragmasParser.BinaryIntegerLiteral, braketPragmasParser.OctalIntegerLiteral, braketPragmasParser.DecimalIntegerLiteral, braketPragmasParser.HexIntegerLiteral, braketPragmasParser.Identifier, braketPragmasParser.HardwareQubit, braketPragmasParser.FloatLiteral, braketPragmasParser.TimingLiteral, braketPragmasParser.BitstringLiteral]:
                 self.state = 830
                 self.expressionList()
                 pass
@@ -7846,8 +7232,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class DesignatorContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7855,7 +7243,8 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.LBRACKET, 0)
 
         def expression(self):
-            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,0)
+
 
         def RBRACKET(self):
             return self.getToken(braketPragmasParser.RBRACKET, 0)
@@ -7863,19 +7252,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_designator
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDesignator"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDesignator" ):
                 listener.enterDesignator(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDesignator"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDesignator" ):
                 listener.exitDesignator(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDesignator"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDesignator" ):
                 return visitor.visitDesignator(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def designator(self):
 
@@ -7897,13 +7289,16 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateOperandContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def indexedIdentifier(self):
-            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.IndexedIdentifierContext,0)
+
 
         def HardwareQubit(self):
             return self.getToken(braketPragmasParser.HardwareQubit, 0)
@@ -7911,19 +7306,22 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_gateOperand
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateOperand"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateOperand" ):
                 listener.enterGateOperand(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateOperand"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateOperand" ):
                 listener.exitGateOperand(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateOperand"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateOperand" ):
                 return visitor.visitGateOperand(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateOperand(self):
 
@@ -7954,60 +7352,58 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExternArgumentContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def arrayReferenceType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ArrayReferenceTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ArrayReferenceTypeContext,0)
+
 
         def CREG(self):
             return self.getToken(braketPragmasParser.CREG, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_externArgument
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExternArgument"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExternArgument" ):
                 listener.enterExternArgument(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExternArgument"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExternArgument" ):
                 listener.exitExternArgument(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExternArgument"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExternArgument" ):
                 return visitor.visitExternArgument(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def externArgument(self):
 
         localctx = braketPragmasParser.ExternArgumentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 144, self.RULE_externArgument)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 852
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-            ]:
+            if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.DURATION, braketPragmasParser.STRETCH]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 846
                 self.scalarType()
@@ -8024,9 +7420,10 @@ class braketPragmasParser(Parser):
                 self.state = 850
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 849
                     self.designator()
+
 
                 pass
             else:
@@ -8040,8 +7437,10 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class DefcalArgumentContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -8054,32 +7453,33 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_defcalArgument
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefcalArgument"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDefcalArgument" ):
                 listener.enterDefcalArgument(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefcalArgument"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDefcalArgument" ):
                 listener.exitDefcalArgument(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefcalArgument"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDefcalArgument" ):
                 return visitor.visitDefcalArgument(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def defcalArgument(self):
 
         localctx = braketPragmasParser.DefcalArgumentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 146, self.RULE_defcalArgument)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 854
             _la = self._input.LA(1)
-            if not (
-                _la == braketPragmasParser.Identifier or _la == braketPragmasParser.HardwareQubit
-            ):
+            if not(_la==braketPragmasParser.Identifier or _la==braketPragmasParser.HardwareQubit):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -8092,19 +7492,23 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArgumentDefinitionContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def scalarType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ScalarTypeContext,0)
+
 
         def Identifier(self):
             return self.getToken(braketPragmasParser.Identifier, 0)
 
         def qubitType(self):
-            return self.getTypedRuleContext(braketPragmasParser.QubitTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.QubitTypeContext,0)
+
 
         def CREG(self):
             return self.getToken(braketPragmasParser.CREG, 0)
@@ -8113,48 +7517,43 @@ class braketPragmasParser(Parser):
             return self.getToken(braketPragmasParser.QREG, 0)
 
         def designator(self):
-            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.DesignatorContext,0)
+
 
         def arrayReferenceType(self):
-            return self.getTypedRuleContext(braketPragmasParser.ArrayReferenceTypeContext, 0)
+            return self.getTypedRuleContext(braketPragmasParser.ArrayReferenceTypeContext,0)
+
 
         def getRuleIndex(self):
             return braketPragmasParser.RULE_argumentDefinition
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArgumentDefinition"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArgumentDefinition" ):
                 listener.enterArgumentDefinition(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArgumentDefinition"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArgumentDefinition" ):
                 listener.exitArgumentDefinition(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArgumentDefinition"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArgumentDefinition" ):
                 return visitor.visitArgumentDefinition(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def argumentDefinition(self):
 
         localctx = braketPragmasParser.ArgumentDefinitionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 148, self.RULE_argumentDefinition)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.state = 870
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [
-                braketPragmasParser.BOOL,
-                braketPragmasParser.BIT,
-                braketPragmasParser.INT,
-                braketPragmasParser.UINT,
-                braketPragmasParser.FLOAT,
-                braketPragmasParser.ANGLE,
-                braketPragmasParser.COMPLEX,
-                braketPragmasParser.DURATION,
-                braketPragmasParser.STRETCH,
-            ]:
+            if token in [braketPragmasParser.BOOL, braketPragmasParser.BIT, braketPragmasParser.INT, braketPragmasParser.UINT, braketPragmasParser.FLOAT, braketPragmasParser.ANGLE, braketPragmasParser.COMPLEX, braketPragmasParser.DURATION, braketPragmasParser.STRETCH]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 856
                 self.scalarType()
@@ -8172,7 +7571,7 @@ class braketPragmasParser(Parser):
                 self.enterOuterAlt(localctx, 3)
                 self.state = 862
                 _la = self._input.LA(1)
-                if not (_la == braketPragmasParser.QREG or _la == braketPragmasParser.CREG):
+                if not(_la==braketPragmasParser.QREG or _la==braketPragmasParser.CREG):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -8182,9 +7581,10 @@ class braketPragmasParser(Parser):
                 self.state = 865
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == braketPragmasParser.LBRACKET:
+                if _la==braketPragmasParser.LBRACKET:
                     self.state = 864
                     self.designator()
+
 
                 pass
             elif token in [braketPragmasParser.CONST, braketPragmasParser.MUTABLE]:
@@ -8205,18 +7605,21 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ArgumentDefinitionListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def argumentDefinition(self, i: int = None):
+        def argumentDefinition(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ArgumentDefinitionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ArgumentDefinitionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ArgumentDefinitionContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -8225,48 +7628,52 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_argumentDefinitionList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterArgumentDefinitionList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArgumentDefinitionList" ):
                 listener.enterArgumentDefinitionList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitArgumentDefinitionList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArgumentDefinitionList" ):
                 listener.exitArgumentDefinitionList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitArgumentDefinitionList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitArgumentDefinitionList" ):
                 return visitor.visitArgumentDefinitionList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def argumentDefinitionList(self):
 
         localctx = braketPragmasParser.ArgumentDefinitionListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 150, self.RULE_argumentDefinitionList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 872
             self.argumentDefinition()
             self.state = 877
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 91, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,91,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 873
                     self.match(braketPragmasParser.COMMA)
                     self.state = 874
-                    self.argumentDefinition()
+                    self.argumentDefinition() 
                 self.state = 879
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 91, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,91,self._ctx)
 
             self.state = 881
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COMMA:
+            if _la==braketPragmasParser.COMMA:
                 self.state = 880
                 self.match(braketPragmasParser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -8276,18 +7683,21 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExpressionListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def expression(self, i: int = None):
+        def expression(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExpressionContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -8296,48 +7706,52 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_expressionList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExpressionList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExpressionList" ):
                 listener.enterExpressionList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExpressionList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExpressionList" ):
                 listener.exitExpressionList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExpressionList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionList" ):
                 return visitor.visitExpressionList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def expressionList(self):
 
         localctx = braketPragmasParser.ExpressionListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 152, self.RULE_expressionList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 883
             self.expression(0)
             self.state = 888
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 93, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,93,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 884
                     self.match(braketPragmasParser.COMMA)
                     self.state = 885
-                    self.expression(0)
+                    self.expression(0) 
                 self.state = 890
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 93, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,93,self._ctx)
 
             self.state = 892
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COMMA:
+            if _la==braketPragmasParser.COMMA:
                 self.state = 891
                 self.match(braketPragmasParser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -8347,18 +7761,21 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class DefcalArgumentListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def defcalArgument(self, i: int = None):
+        def defcalArgument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.DefcalArgumentContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.DefcalArgumentContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.DefcalArgumentContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -8367,48 +7784,52 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_defcalArgumentList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefcalArgumentList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDefcalArgumentList" ):
                 listener.enterDefcalArgumentList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefcalArgumentList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDefcalArgumentList" ):
                 listener.exitDefcalArgumentList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefcalArgumentList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDefcalArgumentList" ):
                 return visitor.visitDefcalArgumentList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def defcalArgumentList(self):
 
         localctx = braketPragmasParser.DefcalArgumentListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 154, self.RULE_defcalArgumentList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 894
             self.defcalArgument()
             self.state = 899
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 95, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,95,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 895
                     self.match(braketPragmasParser.COMMA)
                     self.state = 896
-                    self.defcalArgument()
+                    self.defcalArgument() 
                 self.state = 901
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 95, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,95,self._ctx)
 
             self.state = 903
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COMMA:
+            if _la==braketPragmasParser.COMMA:
                 self.state = 902
                 self.match(braketPragmasParser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -8418,18 +7839,20 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class IdentifierListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def Identifier(self, i: int = None):
+        def Identifier(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.Identifier)
             else:
                 return self.getToken(braketPragmasParser.Identifier, i)
 
-        def COMMA(self, i: int = None):
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -8438,48 +7861,52 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_identifierList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterIdentifierList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIdentifierList" ):
                 listener.enterIdentifierList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitIdentifierList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIdentifierList" ):
                 listener.exitIdentifierList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitIdentifierList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitIdentifierList" ):
                 return visitor.visitIdentifierList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def identifierList(self):
 
         localctx = braketPragmasParser.IdentifierListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 156, self.RULE_identifierList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 905
             self.match(braketPragmasParser.Identifier)
             self.state = 910
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 97, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,97,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 906
                     self.match(braketPragmasParser.COMMA)
                     self.state = 907
-                    self.match(braketPragmasParser.Identifier)
+                    self.match(braketPragmasParser.Identifier) 
                 self.state = 912
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 97, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,97,self._ctx)
 
             self.state = 914
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COMMA:
+            if _la==braketPragmasParser.COMMA:
                 self.state = 913
                 self.match(braketPragmasParser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -8489,18 +7916,21 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class GateOperandListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def gateOperand(self, i: int = None):
+        def gateOperand(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.GateOperandContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.GateOperandContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.GateOperandContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -8509,48 +7939,52 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_gateOperandList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterGateOperandList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGateOperandList" ):
                 listener.enterGateOperandList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitGateOperandList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGateOperandList" ):
                 listener.exitGateOperandList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitGateOperandList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGateOperandList" ):
                 return visitor.visitGateOperandList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def gateOperandList(self):
 
         localctx = braketPragmasParser.GateOperandListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 158, self.RULE_gateOperandList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 916
             self.gateOperand()
             self.state = 921
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 99, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,99,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 917
                     self.match(braketPragmasParser.COMMA)
                     self.state = 918
-                    self.gateOperand()
+                    self.gateOperand() 
                 self.state = 923
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 99, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,99,self._ctx)
 
             self.state = 925
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COMMA:
+            if _la==braketPragmasParser.COMMA:
                 self.state = 924
                 self.match(braketPragmasParser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -8560,18 +7994,21 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
+
     class ExternArgumentListContext(ParserRuleContext):
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def externArgument(self, i: int = None):
+        def externArgument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(braketPragmasParser.ExternArgumentContext)
             else:
-                return self.getTypedRuleContext(braketPragmasParser.ExternArgumentContext, i)
+                return self.getTypedRuleContext(braketPragmasParser.ExternArgumentContext,i)
 
-        def COMMA(self, i: int = None):
+
+        def COMMA(self, i:int=None):
             if i is None:
                 return self.getTokens(braketPragmasParser.COMMA)
             else:
@@ -8580,48 +8017,52 @@ class braketPragmasParser(Parser):
         def getRuleIndex(self):
             return braketPragmasParser.RULE_externArgumentList
 
-        def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExternArgumentList"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterExternArgumentList" ):
                 listener.enterExternArgumentList(self)
 
-        def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExternArgumentList"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitExternArgumentList" ):
                 listener.exitExternArgumentList(self)
 
-        def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExternArgumentList"):
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExternArgumentList" ):
                 return visitor.visitExternArgumentList(self)
             else:
                 return visitor.visitChildren(self)
+
+
+
 
     def externArgumentList(self):
 
         localctx = braketPragmasParser.ExternArgumentListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 160, self.RULE_externArgumentList)
-        self._la = 0  # Token type
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 927
             self.externArgument()
             self.state = 932
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input, 101, self._ctx)
-            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
-                if _alt == 1:
+            _alt = self._interp.adaptivePredict(self._input,101,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
                     self.state = 928
                     self.match(braketPragmasParser.COMMA)
                     self.state = 929
-                    self.externArgument()
+                    self.externArgument() 
                 self.state = 934
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input, 101, self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,101,self._ctx)
 
             self.state = 936
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == braketPragmasParser.COMMA:
+            if _la==braketPragmasParser.COMMA:
                 self.state = 935
                 self.match(braketPragmasParser.COMMA)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -8631,7 +8072,9 @@ class braketPragmasParser(Parser):
             self.exitRule()
         return localctx
 
-    def sempred(self, localctx: RuleContext, ruleIndex: int, predIndex: int):
+
+
+    def sempred(self, localctx:RuleContext, ruleIndex:int, predIndex:int):
         if self._predicates == None:
             self._predicates = dict()
         self._predicates[55] = self.expression_sempred
@@ -8641,39 +8084,55 @@ class braketPragmasParser(Parser):
         else:
             return pred(localctx, predIndex)
 
-    def expression_sempred(self, localctx: ExpressionContext, predIndex: int):
-        if predIndex == 0:
-            return self.precpred(self._ctx, 16)
+    def expression_sempred(self, localctx:ExpressionContext, predIndex:int):
+            if predIndex == 0:
+                return self.precpred(self._ctx, 16)
+         
 
-        if predIndex == 1:
-            return self.precpred(self._ctx, 14)
+            if predIndex == 1:
+                return self.precpred(self._ctx, 14)
+         
 
-        if predIndex == 2:
-            return self.precpred(self._ctx, 13)
+            if predIndex == 2:
+                return self.precpred(self._ctx, 13)
+         
 
-        if predIndex == 3:
-            return self.precpred(self._ctx, 12)
+            if predIndex == 3:
+                return self.precpred(self._ctx, 12)
+         
 
-        if predIndex == 4:
-            return self.precpred(self._ctx, 11)
+            if predIndex == 4:
+                return self.precpred(self._ctx, 11)
+         
 
-        if predIndex == 5:
-            return self.precpred(self._ctx, 10)
+            if predIndex == 5:
+                return self.precpred(self._ctx, 10)
+         
 
-        if predIndex == 6:
-            return self.precpred(self._ctx, 9)
+            if predIndex == 6:
+                return self.precpred(self._ctx, 9)
+         
 
-        if predIndex == 7:
-            return self.precpred(self._ctx, 8)
+            if predIndex == 7:
+                return self.precpred(self._ctx, 8)
+         
 
-        if predIndex == 8:
-            return self.precpred(self._ctx, 7)
+            if predIndex == 8:
+                return self.precpred(self._ctx, 7)
+         
 
-        if predIndex == 9:
-            return self.precpred(self._ctx, 6)
+            if predIndex == 9:
+                return self.precpred(self._ctx, 6)
+         
 
-        if predIndex == 10:
-            return self.precpred(self._ctx, 5)
+            if predIndex == 10:
+                return self.precpred(self._ctx, 5)
+         
 
-        if predIndex == 11:
-            return self.precpred(self._ctx, 17)
+            if predIndex == 11:
+                return self.precpred(self._ctx, 17)
+         
+
+
+
+

@@ -21,8 +21,9 @@ from .openqasm_parser import parse
 
 class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
     """
-    This is a visitor for the BraketPragmas grammar. This class will be replaced
-    when the parser is updated. Feel free to skim over in review.
+    This is a visitor for the BraketPragmas grammar. Consumes a
+    braketPragmas AST and converts to relevant python objects
+    for use by the Interpreter
     """
 
     def __init__(self, qubit_table: "QubitTable"):

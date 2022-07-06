@@ -1,9 +1,9 @@
 # Generated from braketPragmasLexer.g4 by ANTLR 4.9
-import sys
+from antlr4 import *
 from io import StringIO
 from typing.io import TextIO
+import sys
 
-from antlr4 import *
 
 
 def serializedATN():
@@ -14,8 +14,8 @@ def serializedATN():
         buf.write("\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22")
         buf.write("\t\22\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27")
         buf.write("\4\30\t\30\4\31\t\31\4\32\t\32\4\33\t\33\4\34\t\34\4\35")
-        buf.write('\t\35\4\36\t\36\4\37\t\37\4 \t \4!\t!\4"\t"\4#\t#\4')
-        buf.write("$\t$\4%\t%\4&\t&\4'\t'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t")
+        buf.write("\t\35\4\36\t\36\4\37\t\37\4 \t \4!\t!\4\"\t\"\4#\t#\4")
+        buf.write("$\t$\4%\t%\4&\t&\4\'\t\'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t")
         buf.write(",\4-\t-\4.\t.\4/\t/\4\60\t\60\4\61\t\61\4\62\t\62\4\63")
         buf.write("\t\63\4\64\t\64\4\65\t\65\4\66\t\66\4\67\t\67\48\t8\4")
         buf.write("9\t9\4:\t:\4;\t;\4<\t<\4=\t=\4>\t>\4?\t?\4@\t@\4A\tA\4")
@@ -43,9 +43,9 @@ def serializedATN():
         buf.write("\3\31\3\31\3\32\3\32\3\32\3\32\3\33\3\33\3\33\3\33\3\34")
         buf.write("\3\34\3\34\3\34\3\34\3\34\3\35\3\35\3\35\3\35\3\35\3\35")
         buf.write("\3\35\3\35\3\35\3\36\3\36\3\36\3\37\3\37\3\37\3\37\3\37")
-        buf.write('\3 \3 \3 \3 \3!\3!\3!\3!\3!\3!\3!\3"\3"\3"\3"\3#\3')
+        buf.write("\3 \3 \3 \3 \3!\3!\3!\3!\3!\3!\3!\3\"\3\"\3\"\3\"\3#\3")
         buf.write("#\3#\3#\3#\3#\3$\3$\3$\3%\5%\u01e6\n%\3%\3%\3%\3%\3%\3")
-        buf.write("%\3%\3%\3%\3&\3&\3&\3&\3&\3'\3'\3'\3'\3'\3'\3(\3")
+        buf.write("%\3%\3%\3%\3&\3&\3&\3&\3&\3\'\3\'\3\'\3\'\3\'\3\'\3(\3")
         buf.write("(\3(\3(\3(\3(\3(\3)\3)\3)\3)\3)\3)\3*\3*\3*\3*\3*\3*\3")
         buf.write("*\3*\3+\3+\3+\3+\3+\3,\3,\3,\3,\3,\3,\3-\3-\3-\3-\3-\3")
         buf.write(".\3.\3.\3.\3.\3/\3/\3/\3/\3\60\3\60\3\60\3\60\3\61\3\61")
@@ -87,8 +87,8 @@ def serializedATN():
         buf.write("z\rz\16z\u0406\3z\3z\3{\3{\3{\3{\3{\3|\3|\7|\u0412\n|")
         buf.write("\f|\16|\u0415\13|\5\u03ba\u03c1\u03e5\2}\5\3\7\4\t\5\13")
         buf.write("\6\r\7\17\b\21\t\23\n\25\13\27\f\31\r\33\16\35\17\37\20")
-        buf.write("!\21#\22%\23'\24)\25+\26-\27/\30\61\31\63\32\65\33\67")
-        buf.write("\349\35;\36=\37? A!C\"E#G$I%K&M'O(Q)S*U+W,Y-[.]/_\60")
+        buf.write("!\21#\22%\23\'\24)\25+\26-\27/\30\61\31\63\32\65\33\67")
+        buf.write("\349\35;\36=\37? A!C\"E#G$I%K&M\'O(Q)S*U+W,Y-[.]/_\60")
         buf.write("a\61c\62e\63g\64i\65k\66m\67o8q9s:u;w<y={>}?\177@\u0081")
         buf.write("A\u0083B\u0085C\u0087D\u0089E\u008bF\u008dG\u008fH\u0091")
         buf.write("I\u0093J\u0095K\u0097L\u0099M\u009bN\u009dO\u009fP\u00a1")
@@ -99,8 +99,8 @@ def serializedATN():
         buf.write("k\u00e1\2\u00e3l\u00e5m\u00e7n\u00e9o\u00ebp\u00edq\u00ef")
         buf.write("r\u00f1s\u00f3t\u00f5u\u00f7v\u00f9w\5\2\3\4\16\4\2>>")
         buf.write("@@\3\2\62\63\3\2\629\3\2\62;\5\2\62;CHch\4\2C\\c|\4\2")
-        buf.write('GGgg\5\2\13\f\17\17$$\5\2\13\f\17\17))\4\2\13\13""\4')
-        buf.write('\2\f\f\17\17\5\2\13\f\17\17""\3\u024e\2C\2\\\2c\2|\2')
+        buf.write("GGgg\5\2\13\f\17\17$$\5\2\13\f\17\17))\4\2\13\13\"\"\4")
+        buf.write("\2\f\f\17\17\5\2\13\f\17\17\"\"\3\u024e\2C\2\\\2c\2|\2")
         buf.write("\u00ac\2\u00ac\2\u00b7\2\u00b7\2\u00bc\2\u00bc\2\u00c2")
         buf.write("\2\u00d8\2\u00da\2\u00f8\2\u00fa\2\u02c3\2\u02c8\2\u02d3")
         buf.write("\2\u02e2\2\u02e6\2\u02ee\2\u02ee\2\u02f0\2\u02f0\2\u0372")
@@ -271,7 +271,7 @@ def serializedATN():
         buf.write("\2\2\t\3\2\2\2\2\13\3\2\2\2\2\r\3\2\2\2\2\17\3\2\2\2\2")
         buf.write("\21\3\2\2\2\2\23\3\2\2\2\2\25\3\2\2\2\2\27\3\2\2\2\2\31")
         buf.write("\3\2\2\2\2\33\3\2\2\2\2\35\3\2\2\2\2\37\3\2\2\2\2!\3\2")
-        buf.write("\2\2\2#\3\2\2\2\2%\3\2\2\2\2'\3\2\2\2\2)\3\2\2\2\2+\3")
+        buf.write("\2\2\2#\3\2\2\2\2%\3\2\2\2\2\'\3\2\2\2\2)\3\2\2\2\2+\3")
         buf.write("\2\2\2\2-\3\2\2\2\2/\3\2\2\2\2\61\3\2\2\2\2\63\3\2\2\2")
         buf.write("\2\65\3\2\2\2\2\67\3\2\2\2\29\3\2\2\2\2;\3\2\2\2\2=\3")
         buf.write("\2\2\2\2?\3\2\2\2\2A\3\2\2\2\2C\3\2\2\2\2E\3\2\2\2\2G")
@@ -301,7 +301,7 @@ def serializedATN():
         buf.write("\u011e\3\2\2\2\17\u012a\3\2\2\2\21\u0139\3\2\2\2\23\u0143")
         buf.write("\3\2\2\2\25\u014f\3\2\2\2\27\u0158\3\2\2\2\31\u015f\3")
         buf.write("\2\2\2\33\u0161\3\2\2\2\35\u0163\3\2\2\2\37\u0165\3\2")
-        buf.write("\2\2!\u0167\3\2\2\2#\u0169\3\2\2\2%\u0173\3\2\2\2'\u0175")
+        buf.write("\2\2!\u0167\3\2\2\2#\u0169\3\2\2\2%\u0173\3\2\2\2\'\u0175")
         buf.write("\3\2\2\2)\u0180\3\2\2\2+\u0188\3\2\2\2-\u0196\3\2\2\2")
         buf.write("/\u019a\3\2\2\2\61\u01a1\3\2\2\2\63\u01a6\3\2\2\2\65\u01ad")
         buf.write("\3\2\2\2\67\u01b1\3\2\2\29\u01b5\3\2\2\2;\u01bb\3\2\2")
@@ -373,7 +373,7 @@ def serializedATN():
         buf.write("\3\2\2\2\u015f\u0160\7z\2\2\u0160\32\3\2\2\2\u0161\u0162")
         buf.write("\7{\2\2\u0162\34\3\2\2\2\u0163\u0164\7|\2\2\u0164\36\3")
         buf.write("\2\2\2\u0165\u0166\7k\2\2\u0166 \3\2\2\2\u0167\u0168\7")
-        buf.write('j\2\2\u0168"\3\2\2\2\u0169\u016a\7j\2\2\u016a\u016b\7')
+        buf.write("j\2\2\u0168\"\3\2\2\2\u0169\u016a\7j\2\2\u016a\u016b\7")
         buf.write("g\2\2\u016b\u016c\7t\2\2\u016c\u016d\7o\2\2\u016d\u016e")
         buf.write("\7k\2\2\u016e\u016f\7v\2\2\u016f\u0170\7k\2\2\u0170\u0171")
         buf.write("\7c\2\2\u0171\u0172\7p\2\2\u0172$\3\2\2\2\u0173\u0174")
@@ -497,7 +497,7 @@ def serializedATN():
         buf.write("\u00a4\3\2\2\2\u02ce\u02cf\7/\2\2\u02cf\u00a6\3\2\2\2")
         buf.write("\u02d0\u02d1\7,\2\2\u02d1\u00a8\3\2\2\2\u02d2\u02d3\7")
         buf.write(",\2\2\u02d3\u02d4\7,\2\2\u02d4\u00aa\3\2\2\2\u02d5\u02d6")
-        buf.write("\7\61\2\2\u02d6\u00ac\3\2\2\2\u02d7\u02d8\7'\2\2\u02d8")
+        buf.write("\7\61\2\2\u02d6\u00ac\3\2\2\2\u02d7\u02d8\7\'\2\2\u02d8")
         buf.write("\u00ae\3\2\2\2\u02d9\u02da\7~\2\2\u02da\u00b0\3\2\2\2")
         buf.write("\u02db\u02dc\7~\2\2\u02dc\u02dd\7~\2\2\u02dd\u00b2\3\2")
         buf.write("\2\2\u02de\u02df\7(\2\2\u02df\u00b4\3\2\2\2\u02e0\u02e1")
@@ -514,7 +514,7 @@ def serializedATN():
         buf.write("\7\u0080\2\2\u02fc\u030b\7?\2\2\u02fd\u02fe\7`\2\2\u02fe")
         buf.write("\u030b\7?\2\2\u02ff\u0300\7>\2\2\u0300\u0301\7>\2\2\u0301")
         buf.write("\u030b\7?\2\2\u0302\u0303\7@\2\2\u0303\u0304\7@\2\2\u0304")
-        buf.write("\u030b\7?\2\2\u0305\u0306\7'\2\2\u0306\u030b\7?\2\2\u0307")
+        buf.write("\u030b\7?\2\2\u0305\u0306\7\'\2\2\u0306\u030b\7?\2\2\u0307")
         buf.write("\u0308\7,\2\2\u0308\u0309\7,\2\2\u0309\u030b\7?\2\2\u030a")
         buf.write("\u02ef\3\2\2\2\u030a\u02f1\3\2\2\2\u030a\u02f3\3\2\2\2")
         buf.write("\u030a\u02f5\3\2\2\2\u030a\u02f7\3\2\2\2\u030a\u02f9\3")
@@ -529,7 +529,7 @@ def serializedATN():
         buf.write("\u0318\u00c4\3\2\2\2\u0319\u031a\7k\2\2\u031a\u031b\7")
         buf.write("o\2\2\u031b\u00c6\3\2\2\2\u031c\u031f\5\u00cdf\2\u031d")
         buf.write("\u031f\5\u00dfo\2\u031e\u031c\3\2\2\2\u031e\u031d\3\2")
-        buf.write('\2\2\u031f\u0323\3\2\2\2\u0320\u0322\7"\2\2\u0321\u0320')
+        buf.write("\2\2\u031f\u0323\3\2\2\2\u0320\u0322\7\"\2\2\u0321\u0320")
         buf.write("\3\2\2\2\u0322\u0325\3\2\2\2\u0323\u0321\3\2\2\2\u0323")
         buf.write("\u0324\3\2\2\2\u0324\u0326\3\2\2\2\u0325\u0323\3\2\2\2")
         buf.write("\u0326\u0327\5\u00c5b\2\u0327\u00c8\3\2\2\2\u0328\u0329")
@@ -649,7 +649,7 @@ class braketPragmasLexer(Lexer):
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
+    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
 
     VERSION_IDENTIFIER = 1
     EAT_TO_LINE_END = 2
@@ -772,358 +772,83 @@ class braketPragmasLexer(Lexer):
     EAT_LINE_END = 116
     RemainingLineContent = 117
 
-    channelNames = ["DEFAULT_TOKEN_CHANNEL", "HIDDEN"]
+    channelNames = [ u"DEFAULT_TOKEN_CHANNEL", u"HIDDEN" ]
 
-    modeNames = ["DEFAULT_MODE", "VERSION_IDENTIFIER", "EAT_TO_LINE_END"]
+    modeNames = [ "DEFAULT_MODE", "VERSION_IDENTIFIER", "EAT_TO_LINE_END" ]
 
-    literalNames = [
-        "<INVALID>",
-        "'braket'",
-        "'unitary'",
-        "'result'",
-        "'state_vector'",
-        "'probability'",
-        "'density_matrix'",
-        "'amplitude'",
-        "'expectation'",
-        "'variance'",
-        "'sample'",
-        "'x'",
-        "'y'",
-        "'z'",
-        "'i'",
-        "'h'",
-        "'hermitian'",
-        "'@'",
-        "'OPENQASM'",
-        "'include'",
-        "'defcalgrammar'",
-        "'def'",
-        "'defcal'",
-        "'gate'",
-        "'extern'",
-        "'box'",
-        "'let'",
-        "'break'",
-        "'continue'",
-        "'if'",
-        "'else'",
-        "'end'",
-        "'return'",
-        "'for'",
-        "'while'",
-        "'in'",
-        "'input'",
-        "'output'",
-        "'const'",
-        "'mutable'",
-        "'qreg'",
-        "'qubit'",
-        "'creg'",
-        "'bool'",
-        "'bit'",
-        "'int'",
-        "'uint'",
-        "'float'",
-        "'angle'",
-        "'complex'",
-        "'array'",
-        "'duration'",
-        "'stretch'",
-        "'gphase'",
-        "'inv'",
-        "'pow'",
-        "'ctrl'",
-        "'negctrl'",
-        "'#dim'",
-        "'durationof'",
-        "'delay'",
-        "'reset'",
-        "'measure'",
-        "'barrier'",
-        "'['",
-        "']'",
-        "'{'",
-        "'}'",
-        "'('",
-        "')'",
-        "':'",
-        "';'",
-        "'.'",
-        "','",
-        "'='",
-        "'->'",
-        "'+'",
-        "'++'",
-        "'-'",
-        "'*'",
-        "'**'",
-        "'/'",
-        "'%'",
-        "'|'",
-        "'||'",
-        "'&'",
-        "'&&'",
-        "'^'",
-        "'~'",
-        "'!'",
-        "'im'",
-    ]
+    literalNames = [ "<INVALID>",
+            "'braket'", "'unitary'", "'result'", "'state_vector'", "'probability'", 
+            "'density_matrix'", "'amplitude'", "'expectation'", "'variance'", 
+            "'sample'", "'x'", "'y'", "'z'", "'i'", "'h'", "'hermitian'", 
+            "'@'", "'OPENQASM'", "'include'", "'defcalgrammar'", "'def'", 
+            "'defcal'", "'gate'", "'extern'", "'box'", "'let'", "'break'", 
+            "'continue'", "'if'", "'else'", "'end'", "'return'", "'for'", 
+            "'while'", "'in'", "'input'", "'output'", "'const'", "'mutable'", 
+            "'qreg'", "'qubit'", "'creg'", "'bool'", "'bit'", "'int'", "'uint'", 
+            "'float'", "'angle'", "'complex'", "'array'", "'duration'", 
+            "'stretch'", "'gphase'", "'inv'", "'pow'", "'ctrl'", "'negctrl'", 
+            "'#dim'", "'durationof'", "'delay'", "'reset'", "'measure'", 
+            "'barrier'", "'['", "']'", "'{'", "'}'", "'('", "')'", "':'", 
+            "';'", "'.'", "','", "'='", "'->'", "'+'", "'++'", "'-'", "'*'", 
+            "'**'", "'/'", "'%'", "'|'", "'||'", "'&'", "'&&'", "'^'", "'~'", 
+            "'!'", "'im'" ]
 
-    symbolicNames = [
-        "<INVALID>",
-        "BRAKET",
-        "UNITARY",
-        "RESULT",
-        "STATE_VECTOR",
-        "PROBABILITY",
-        "DENSITY_MATRIX",
-        "AMPLITUDE",
-        "EXPECTATION",
-        "VARIANCE",
-        "SAMPLE",
-        "X",
-        "Y",
-        "Z",
-        "I",
-        "H",
-        "HERMITIAN",
-        "AT",
-        "OPENQASM",
-        "INCLUDE",
-        "DEFCALGRAMMAR",
-        "DEF",
-        "DEFCAL",
-        "GATE",
-        "EXTERN",
-        "BOX",
-        "LET",
-        "BREAK",
-        "CONTINUE",
-        "IF",
-        "ELSE",
-        "END",
-        "RETURN",
-        "FOR",
-        "WHILE",
-        "IN",
-        "PRAGMA",
-        "AnnotationKeyword",
-        "INPUT",
-        "OUTPUT",
-        "CONST",
-        "MUTABLE",
-        "QREG",
-        "QUBIT",
-        "CREG",
-        "BOOL",
-        "BIT",
-        "INT",
-        "UINT",
-        "FLOAT",
-        "ANGLE",
-        "COMPLEX",
-        "ARRAY",
-        "DURATION",
-        "STRETCH",
-        "GPHASE",
-        "INV",
-        "POW",
-        "CTRL",
-        "NEGCTRL",
-        "DIM",
-        "DURATIONOF",
-        "DELAY",
-        "RESET",
-        "MEASURE",
-        "BARRIER",
-        "BooleanLiteral",
-        "LBRACKET",
-        "RBRACKET",
-        "LBRACE",
-        "RBRACE",
-        "LPAREN",
-        "RPAREN",
-        "COLON",
-        "SEMICOLON",
-        "DOT",
-        "COMMA",
-        "EQUALS",
-        "ARROW",
-        "PLUS",
-        "DOUBLE_PLUS",
-        "MINUS",
-        "ASTERISK",
-        "DOUBLE_ASTERISK",
-        "SLASH",
-        "PERCENT",
-        "PIPE",
-        "DOUBLE_PIPE",
-        "AMPERSAND",
-        "DOUBLE_AMPERSAND",
-        "CARET",
-        "TILDE",
-        "EXCLAMATION_POINT",
-        "EqualityOperator",
-        "CompoundAssignmentOperator",
-        "ComparisonOperator",
-        "BitshiftOperator",
-        "IMAG",
-        "ImaginaryLiteral",
-        "BinaryIntegerLiteral",
-        "OctalIntegerLiteral",
-        "DecimalIntegerLiteral",
-        "HexIntegerLiteral",
-        "Identifier",
-        "HardwareQubit",
-        "FloatLiteral",
-        "TimingLiteral",
-        "BitstringLiteral",
-        "StringLiteral",
-        "Whitespace",
-        "Newline",
-        "LineComment",
-        "BlockComment",
-        "VERSION_IDENTIFER_WHITESPACE",
-        "VersionSpecifier",
-        "EAT_INITIAL_SPACE",
-        "EAT_LINE_END",
-        "RemainingLineContent",
-    ]
+    symbolicNames = [ "<INVALID>",
+            "BRAKET", "UNITARY", "RESULT", "STATE_VECTOR", "PROBABILITY", 
+            "DENSITY_MATRIX", "AMPLITUDE", "EXPECTATION", "VARIANCE", "SAMPLE", 
+            "X", "Y", "Z", "I", "H", "HERMITIAN", "AT", "OPENQASM", "INCLUDE", 
+            "DEFCALGRAMMAR", "DEF", "DEFCAL", "GATE", "EXTERN", "BOX", "LET", 
+            "BREAK", "CONTINUE", "IF", "ELSE", "END", "RETURN", "FOR", "WHILE", 
+            "IN", "PRAGMA", "AnnotationKeyword", "INPUT", "OUTPUT", "CONST", 
+            "MUTABLE", "QREG", "QUBIT", "CREG", "BOOL", "BIT", "INT", "UINT", 
+            "FLOAT", "ANGLE", "COMPLEX", "ARRAY", "DURATION", "STRETCH", 
+            "GPHASE", "INV", "POW", "CTRL", "NEGCTRL", "DIM", "DURATIONOF", 
+            "DELAY", "RESET", "MEASURE", "BARRIER", "BooleanLiteral", "LBRACKET", 
+            "RBRACKET", "LBRACE", "RBRACE", "LPAREN", "RPAREN", "COLON", 
+            "SEMICOLON", "DOT", "COMMA", "EQUALS", "ARROW", "PLUS", "DOUBLE_PLUS", 
+            "MINUS", "ASTERISK", "DOUBLE_ASTERISK", "SLASH", "PERCENT", 
+            "PIPE", "DOUBLE_PIPE", "AMPERSAND", "DOUBLE_AMPERSAND", "CARET", 
+            "TILDE", "EXCLAMATION_POINT", "EqualityOperator", "CompoundAssignmentOperator", 
+            "ComparisonOperator", "BitshiftOperator", "IMAG", "ImaginaryLiteral", 
+            "BinaryIntegerLiteral", "OctalIntegerLiteral", "DecimalIntegerLiteral", 
+            "HexIntegerLiteral", "Identifier", "HardwareQubit", "FloatLiteral", 
+            "TimingLiteral", "BitstringLiteral", "StringLiteral", "Whitespace", 
+            "Newline", "LineComment", "BlockComment", "VERSION_IDENTIFER_WHITESPACE", 
+            "VersionSpecifier", "EAT_INITIAL_SPACE", "EAT_LINE_END", "RemainingLineContent" ]
 
-    ruleNames = [
-        "BRAKET",
-        "UNITARY",
-        "RESULT",
-        "STATE_VECTOR",
-        "PROBABILITY",
-        "DENSITY_MATRIX",
-        "AMPLITUDE",
-        "EXPECTATION",
-        "VARIANCE",
-        "SAMPLE",
-        "X",
-        "Y",
-        "Z",
-        "I",
-        "H",
-        "HERMITIAN",
-        "AT",
-        "OPENQASM",
-        "INCLUDE",
-        "DEFCALGRAMMAR",
-        "DEF",
-        "DEFCAL",
-        "GATE",
-        "EXTERN",
-        "BOX",
-        "LET",
-        "BREAK",
-        "CONTINUE",
-        "IF",
-        "ELSE",
-        "END",
-        "RETURN",
-        "FOR",
-        "WHILE",
-        "IN",
-        "PRAGMA",
-        "AnnotationKeyword",
-        "INPUT",
-        "OUTPUT",
-        "CONST",
-        "MUTABLE",
-        "QREG",
-        "QUBIT",
-        "CREG",
-        "BOOL",
-        "BIT",
-        "INT",
-        "UINT",
-        "FLOAT",
-        "ANGLE",
-        "COMPLEX",
-        "ARRAY",
-        "DURATION",
-        "STRETCH",
-        "GPHASE",
-        "INV",
-        "POW",
-        "CTRL",
-        "NEGCTRL",
-        "DIM",
-        "DURATIONOF",
-        "DELAY",
-        "RESET",
-        "MEASURE",
-        "BARRIER",
-        "BooleanLiteral",
-        "LBRACKET",
-        "RBRACKET",
-        "LBRACE",
-        "RBRACE",
-        "LPAREN",
-        "RPAREN",
-        "COLON",
-        "SEMICOLON",
-        "DOT",
-        "COMMA",
-        "EQUALS",
-        "ARROW",
-        "PLUS",
-        "DOUBLE_PLUS",
-        "MINUS",
-        "ASTERISK",
-        "DOUBLE_ASTERISK",
-        "SLASH",
-        "PERCENT",
-        "PIPE",
-        "DOUBLE_PIPE",
-        "AMPERSAND",
-        "DOUBLE_AMPERSAND",
-        "CARET",
-        "TILDE",
-        "EXCLAMATION_POINT",
-        "EqualityOperator",
-        "CompoundAssignmentOperator",
-        "ComparisonOperator",
-        "BitshiftOperator",
-        "IMAG",
-        "ImaginaryLiteral",
-        "BinaryIntegerLiteral",
-        "OctalIntegerLiteral",
-        "DecimalIntegerLiteral",
-        "HexIntegerLiteral",
-        "ValidUnicode",
-        "Letter",
-        "FirstIdCharacter",
-        "GeneralIdCharacter",
-        "Identifier",
-        "HardwareQubit",
-        "FloatLiteralExponent",
-        "FloatLiteral",
-        "TimeUnit",
-        "TimingLiteral",
-        "BitstringLiteral",
-        "StringLiteral",
-        "Whitespace",
-        "Newline",
-        "LineComment",
-        "BlockComment",
-        "VERSION_IDENTIFER_WHITESPACE",
-        "VersionSpecifier",
-        "EAT_INITIAL_SPACE",
-        "EAT_LINE_END",
-        "RemainingLineContent",
-    ]
+    ruleNames = [ "BRAKET", "UNITARY", "RESULT", "STATE_VECTOR", "PROBABILITY", 
+                  "DENSITY_MATRIX", "AMPLITUDE", "EXPECTATION", "VARIANCE", 
+                  "SAMPLE", "X", "Y", "Z", "I", "H", "HERMITIAN", "AT", 
+                  "OPENQASM", "INCLUDE", "DEFCALGRAMMAR", "DEF", "DEFCAL", 
+                  "GATE", "EXTERN", "BOX", "LET", "BREAK", "CONTINUE", "IF", 
+                  "ELSE", "END", "RETURN", "FOR", "WHILE", "IN", "PRAGMA", 
+                  "AnnotationKeyword", "INPUT", "OUTPUT", "CONST", "MUTABLE", 
+                  "QREG", "QUBIT", "CREG", "BOOL", "BIT", "INT", "UINT", 
+                  "FLOAT", "ANGLE", "COMPLEX", "ARRAY", "DURATION", "STRETCH", 
+                  "GPHASE", "INV", "POW", "CTRL", "NEGCTRL", "DIM", "DURATIONOF", 
+                  "DELAY", "RESET", "MEASURE", "BARRIER", "BooleanLiteral", 
+                  "LBRACKET", "RBRACKET", "LBRACE", "RBRACE", "LPAREN", 
+                  "RPAREN", "COLON", "SEMICOLON", "DOT", "COMMA", "EQUALS", 
+                  "ARROW", "PLUS", "DOUBLE_PLUS", "MINUS", "ASTERISK", "DOUBLE_ASTERISK", 
+                  "SLASH", "PERCENT", "PIPE", "DOUBLE_PIPE", "AMPERSAND", 
+                  "DOUBLE_AMPERSAND", "CARET", "TILDE", "EXCLAMATION_POINT", 
+                  "EqualityOperator", "CompoundAssignmentOperator", "ComparisonOperator", 
+                  "BitshiftOperator", "IMAG", "ImaginaryLiteral", "BinaryIntegerLiteral", 
+                  "OctalIntegerLiteral", "DecimalIntegerLiteral", "HexIntegerLiteral", 
+                  "ValidUnicode", "Letter", "FirstIdCharacter", "GeneralIdCharacter", 
+                  "Identifier", "HardwareQubit", "FloatLiteralExponent", 
+                  "FloatLiteral", "TimeUnit", "TimingLiteral", "BitstringLiteral", 
+                  "StringLiteral", "Whitespace", "Newline", "LineComment", 
+                  "BlockComment", "VERSION_IDENTIFER_WHITESPACE", "VersionSpecifier", 
+                  "EAT_INITIAL_SPACE", "EAT_LINE_END", "RemainingLineContent" ]
 
     grammarFileName = "braketPragmasLexer.g4"
 
-    def __init__(self, input=None, output: TextIO = sys.stdout):
+    def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.9")
-        self._interp = LexerATNSimulator(
-            self, self.atn, self.decisionsToDFA, PredictionContextCache()
-        )
+        self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
         self._actions = None
         self._predicates = None
+
+
