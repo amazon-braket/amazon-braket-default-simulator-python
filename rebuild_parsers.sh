@@ -1,5 +1,8 @@
 # current openqasm commit: 429781bb9c95ef15944861f306ac6b9e4ff0abf0
 
+# This script rebuilds the parsers from the source g4 files. Use for
+# development when making changes to the grammar.
+
 if [ ! -f "antlr-4.9.2-complete.jar" ]; then
     curl -O https://www.antlr.org/download/antlr-4.9.2-complete.jar
 fi
