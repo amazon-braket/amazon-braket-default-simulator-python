@@ -34,6 +34,7 @@ setup(
         "numpy",
         "opt_einsum",
         "scipy",
+        "antlr4-python3-runtime==4.9.2",
         (
             "amazon-braket-schemas "
             "@ git+https://github.com/aws/amazon-braket-schemas-python.git"
@@ -69,9 +70,6 @@ setup(
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
             "tox",
-        ],
-        "dev": [
-            "antlr4-python3-runtime==4.9.2",
         ]
     },
     url="https://github.com/aws/amazon-braket-default-simulator-python",
