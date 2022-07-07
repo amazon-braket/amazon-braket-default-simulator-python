@@ -13,6 +13,18 @@ from braket.ir.jaqcd import (
 )
 from braket.ir.jaqcd.program_v1 import Results
 
+from ...noise_operations import (
+    AmplitudeDamping,
+    BitFlip,
+    Depolarizing,
+    GeneralizedAmplitudeDamping,
+    Kraus,
+    PauliChannel,
+    PhaseDamping,
+    PhaseFlip,
+    TwoQubitDephasing,
+    TwoQubitDepolarizing,
+)
 from .generated.BraketPragmasLexer import BraketPragmasLexer
 from .generated.BraketPragmasParser import BraketPragmasParser
 from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
@@ -150,7 +162,6 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
 
     def visitRow(self, ctx: BraketPragmasParser.RowContext) -> List[complex]:
         numbers = ctx.children[1::2]
-        print([self.visit(x) for x in numbers])
         return [x[0] + x[1] * 1j for x in [self.visit(number) for number in numbers]]
 
     def visitTwoDimMatrix(self, ctx: BraketPragmasParser.TwoDimMatrixContext) -> np.ndarray:
@@ -159,6 +170,31 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
             raise TypeError("Not a valid square matrix")
         matrix = np.array(rows)
         return matrix
+
+    def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
+        target = self.visit(ctx.target)
+        probabilities = self.visit(ctx.probabilities())
+        noise_instruction = ctx.noiseInstructionName().getText()
+        one_prob_noise_map = {
+            "bit_flip": BitFlip,
+            "phase_flip": PhaseFlip,
+            "pauli_channel": PauliChannel,
+            "depolarizing": Depolarizing,
+            "two_qubit_depolarizing": TwoQubitDepolarizing,
+            "two_qubit_dephasing": TwoQubitDephasing,
+            "amplitude_damping": AmplitudeDamping,
+            "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
+            "phase_damping": PhaseDamping,
+        }
+        return one_prob_noise_map[noise_instruction](target, *probabilities)
+
+    def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
+        target = self.visit(ctx.target)
+        matrices = [self.visit(m) for m in ctx.matrices().children[::2]]
+        return Kraus(target, matrices)
+
+    def visitProbabilities(self, ctx: BraketPragmasParser.ProbabilitiesContext):
+        return [float(prob.symbol.text) for prob in ctx.children[::2]]
 
 
 def parse_braket_pragma(pragma_body: str, qubit_table: "QubitTable"):

@@ -1,10 +1,23 @@
 import re
+from unittest.mock import Mock, call, patch
 
 import numpy as np
 import pytest
 
 from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.gate_operations import U
+from braket.default_simulator.noise_operations import (
+    AmplitudeDamping,
+    BitFlip,
+    Depolarizing,
+    GeneralizedAmplitudeDamping,
+    Kraus,
+    PauliChannel,
+    PhaseDamping,
+    PhaseFlip,
+    TwoQubitDephasing,
+    TwoQubitDepolarizing,
+)
 from braket.default_simulator.openqasm._helpers.casting import (
     convert_bool_array_to_string,
     convert_string_to_bool_array,
@@ -27,7 +40,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     QuantumGateDefinition,
     UintType,
 )
-from braket.default_simulator.openqasm.program_context import QubitTable
+from braket.default_simulator.openqasm.program_context import ProgramContext, QubitTable
 
 
 def test_bit_declaration():
@@ -1519,3 +1532,61 @@ def test_builtin_functions():
     assert context.get_value("sin_result") == FloatLiteral(np.sin(1))
     assert context.get_value("sqrt_result") == FloatLiteral(np.sqrt(2))
     assert context.get_value("tan_result") == FloatLiteral(np.tan(1))
+
+
+def test_noise():
+    """
+    Will add noise simulation functionality in another PR. For now,
+    just testing that noise instructions are parsed without errors.
+    """
+    qasm = """
+    qubit[2] qs;
+
+    #pragma braket noise bit_flip(.5) qs[1]
+    #pragma braket noise phase_flip(.5) qs[0]
+    #pragma braket noise pauli_channel(.1, .2, .3) qs[0]
+    #pragma braket noise depolarizing(.5) qs[0]
+    #pragma braket noise two_qubit_depolarizing(.9) qs
+    #pragma braket noise two_qubit_depolarizing(.7) qs[1], qs[0]
+    #pragma braket noise two_qubit_dephasing(.6) qs
+    #pragma braket noise amplitude_damping(.2) qs[0]
+    #pragma braket noise generalized_amplitude_damping(.2, .3)  qs[1]
+    #pragma braket noise phase_damping(.4) qs[0]
+    #pragma braket noise kraus([[0.9486833im, 0], [0, 0.9486833im]], [[0, 0.31622777], [0.31622777, 0]]) qs[0]
+    #pragma braket noise kraus([[0.9486832980505138, 0, 0, 0], [0, 0.9486832980505138, 0, 0], [0, 0, 0.9486832980505138, 0], [0, 0, 0, 0.9486832980505138]], [[0, 0.31622776601683794, 0, 0], [0.31622776601683794, 0, 0, 0], [0, 0, 0, 0.31622776601683794], [0, 0, 0.31622776601683794, 0]]) qs[{1, 0}]
+    """
+    context = ProgramContext()
+    add_noise_mock = Mock()
+    context.add_noise_instruction = add_noise_mock
+    Interpreter(context).run(qasm)
+    add_noise_mock.assert_has_calls(
+        calls=[
+            call(noise_instruction)
+            for noise_instruction in [
+                BitFlip([1], 0.5),
+                PhaseFlip([0], 0.5),
+                PauliChannel([0], 0.1, 0.2, 0.3),
+                Depolarizing([0], 0.5),
+                TwoQubitDepolarizing((0, 1), 0.9),
+                TwoQubitDepolarizing([1, 0], 0.7),
+                TwoQubitDephasing([0, 1], 0.6),
+                AmplitudeDamping([0], 0.2),
+                GeneralizedAmplitudeDamping([1], 0.2, 0.3),
+                PhaseDamping([0], 0.4),
+                Kraus(
+                    [0],
+                    [
+                        np.array([[0.9486833j, 0], [0, 0.9486833j]]),
+                        np.array([[0, 0.31622777], [0.31622777, 0]]),
+                    ],
+                ),
+                Kraus(
+                    [1, 0],
+                    [
+                        np.eye(4) * np.sqrt(0.9),
+                        np.kron([[1.0, 0.0], [0.0, 1.0]], [[0.0, 1.0], [1.0, 0.0]]) * np.sqrt(0.1),
+                    ],
+                ),
+            ]
+        ]
+    )

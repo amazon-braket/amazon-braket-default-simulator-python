@@ -34,6 +34,11 @@ class BraketPragmasParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by BraketPragmasParser#resultType.
+    def visitResultType(self, ctx:BraketPragmasParser.ResultTypeContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by BraketPragmasParser#noArgResultType.
     def visitNoArgResultType(self, ctx:BraketPragmasParser.NoArgResultTypeContext):
         return self.visitChildren(ctx)
@@ -116,6 +121,36 @@ class BraketPragmasParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by BraketPragmasParser#complexTwoValues.
     def visitComplexTwoValues(self, ctx:BraketPragmasParser.ComplexTwoValuesContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#braketNoisePragma.
+    def visitBraketNoisePragma(self, ctx:BraketPragmasParser.BraketNoisePragmaContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#Noise.
+    def visitNoise(self, ctx:BraketPragmasParser.NoiseContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#Kraus.
+    def visitKraus(self, ctx:BraketPragmasParser.KrausContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#matrices.
+    def visitMatrices(self, ctx:BraketPragmasParser.MatricesContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#probabilities.
+    def visitProbabilities(self, ctx:BraketPragmasParser.ProbabilitiesContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#noiseInstructionName.
+    def visitNoiseInstructionName(self, ctx:BraketPragmasParser.NoiseInstructionNameContext):
         return self.visitChildren(ctx)
 
 

@@ -62,6 +62,9 @@ class KrausOperation(Operation, ABC):
     def matrices(self) -> List[np.ndarray]:
         """List[np.ndarray]: A list of matrices representing Kraus operators."""
 
+    def __eq__(self, other):
+        return self.targets == other.targets and np.allclose(self.matrices, other.matrices)
+
 
 class Observable(Operation, ABC):
     """
