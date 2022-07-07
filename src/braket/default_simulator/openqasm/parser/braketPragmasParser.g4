@@ -57,7 +57,7 @@ multiStateResultTypeName
     ;
 
 multiState
-    : StringLiteral (COMMA StringLiteral)*
+    : BitstringLiteral (COMMA BitstringLiteral)*
     ;
 
 observableResultType

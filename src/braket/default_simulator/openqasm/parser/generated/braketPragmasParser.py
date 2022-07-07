@@ -147,8 +147,8 @@ def serializedATN():
         buf.write("\3\2\2\2\u00dc\u00da\3\2\2\2\u00dc\u00dd\3\2\2\2\u00dd")
         buf.write("\25\3\2\2\2\u00de\u00dc\3\2\2\2\u00df\u00e0\5\30\r\2\u00e0")
         buf.write("\u00e1\5\32\16\2\u00e1\27\3\2\2\2\u00e2\u00e3\7\t\2\2")
-        buf.write("\u00e3\31\3\2\2\2\u00e4\u00e9\7n\2\2\u00e5\u00e6\7N\2")
-        buf.write("\2\u00e6\u00e8\7n\2\2\u00e7\u00e5\3\2\2\2\u00e8\u00eb")
+        buf.write("\u00e3\31\3\2\2\2\u00e4\u00e9\7m\2\2\u00e5\u00e6\7N\2")
+        buf.write("\2\u00e6\u00e8\7m\2\2\u00e7\u00e5\3\2\2\2\u00e8\u00eb")
         buf.write("\3\2\2\2\u00e9\u00e7\3\2\2\2\u00e9\u00ea\3\2\2\2\u00ea")
         buf.write("\33\3\2\2\2\u00eb\u00e9\3\2\2\2\u00ec\u00ed\5&\24\2\u00ed")
         buf.write("\u00ee\5\36\20\2\u00ee\35\3\2\2\2\u00ef\u00f3\5 \21\2")
@@ -1533,11 +1533,11 @@ class braketPragmasParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def StringLiteral(self, i:int=None):
+        def BitstringLiteral(self, i:int=None):
             if i is None:
-                return self.getTokens(braketPragmasParser.StringLiteral)
+                return self.getTokens(braketPragmasParser.BitstringLiteral)
             else:
-                return self.getToken(braketPragmasParser.StringLiteral, i)
+                return self.getToken(braketPragmasParser.BitstringLiteral, i)
 
         def COMMA(self, i:int=None):
             if i is None:
@@ -1573,7 +1573,7 @@ class braketPragmasParser ( Parser ):
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 226
-            self.match(braketPragmasParser.StringLiteral)
+            self.match(braketPragmasParser.BitstringLiteral)
             self.state = 231
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -1581,7 +1581,7 @@ class braketPragmasParser ( Parser ):
                 self.state = 227
                 self.match(braketPragmasParser.COMMA)
                 self.state = 228
-                self.match(braketPragmasParser.StringLiteral)
+                self.match(braketPragmasParser.BitstringLiteral)
                 self.state = 233
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
