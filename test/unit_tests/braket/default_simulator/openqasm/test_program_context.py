@@ -1,6 +1,13 @@
 import pytest
-from openqasm3.ast import BooleanLiteral, BoolType, FloatLiteral, FloatType, IntegerLiteral, IntType
 
+from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    BooleanLiteral,
+    BoolType,
+    FloatLiteral,
+    FloatType,
+    IntegerLiteral,
+    IntType,
+)
 from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
 
 boolean = BoolType()
@@ -79,7 +86,7 @@ SCOPE LEVEL 0
 x	Symbol<IntType(span=None, size=IntegerLiteral(span=None, value=8)), const=True>
 y	Symbol<FloatType(span=None, size=IntegerLiteral(span=None, value=16)), const=False>
 z	Symbol<BoolType(span=None), const=False>
-q	Symbol<<class 'openqasm3.ast.Identifier'>, const=False>
+q	Symbol<<class 'braket.default_simulator.openqasm.parser.openqasm_ast.Identifier'>, const=False>
 SCOPE LEVEL 1
 x	Symbol<IntType(span=None, size=IntegerLiteral(span=None, value=16)), const=False>
 y	Symbol<FloatType(span=None, size=IntegerLiteral(span=None, value=8)), const=True>

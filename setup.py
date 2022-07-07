@@ -11,10 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import distutils.cmd
-import os
-import subprocess
-from pathlib import Path
 
 from setuptools import find_namespace_packages, setup
 
@@ -25,81 +21,6 @@ with open("src/braket/default_simulator/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 
-class InstallOQ3Command(distutils.cmd.Command):
-    """A custom command to install OpenQASM 3 and build grammars"""
-
-    description = "install OQ3"
-    user_options = []
-
-    def initialize_options(self):
-        """Set default values for options."""
-        pass
-
-    def finalize_options(self):
-        """Post-process options."""
-        pass
-
-    def run(self):
-        """Run command."""
-        curdir = os.getcwd()
-        if not Path("antlr-4.9.2-complete.jar").is_file():
-            subprocess.check_call(
-                ["curl", "-O", "https://www.antlr.org/download/antlr-4.9.2-complete.jar"]
-            )
-        classpath = Path(
-            f".:{curdir}",
-            f"antlr-4.9.2-complete.jar:{os.environ.get('CLASSPATH', '')}",
-        )
-        antlr4 = (
-            f'java -Xmx500M -cp "{Path(curdir, f"antlr-4.9.2-complete.jar:{classpath}")}" '
-            f"org.antlr.v4.Tool"
-        )
-
-        os.chdir(Path("src", "braket", "default_simulator", "openqasm"))
-        subprocess.check_call(
-            [
-                *antlr4.split(),
-                "-Dlanguage=Python3",
-                "-visitor",
-                "BraketPragmas.g4",
-                "-o",
-                "dist",
-            ]
-        )
-        os.chdir(Path("..", "..", "..", ".."))
-        subprocess.check_call(["pip", "install", "-e", "."])
-
-        if not Path("openqasm").is_dir():
-            subprocess.check_call(["git", "clone", "https://github.com/Qiskit/openqasm.git"])
-        os.chdir(Path("openqasm", "source", "grammar"))
-        subprocess.check_call(
-            [
-                *antlr4.split(),
-                "-o",
-                "openqasm_reference_parser",
-                "-Dlanguage=Python3",
-                "-visitor",
-                "qasm3Lexer.g4",
-                "qasm3Parser.g4",
-            ]
-        )
-        subprocess.check_call(
-            [
-                *antlr4.split(),
-                "-o",
-                Path("..", "openqasm", "openqasm3", "antlr"),
-                "-Dlanguage=Python3",
-                "-visitor",
-                "qasm3Lexer.g4",
-                "qasm3Parser.g4",
-            ]
-        )
-        subprocess.check_call(["pip", "install", "."])
-        os.chdir(Path("..", "openqasm"))
-        subprocess.check_call(["pip", "install", "."])
-        os.chdir(Path("..", "..", ".."))
-
-
 setup(
     name="amazon-braket-default-simulator",
     version=version,
@@ -107,20 +28,18 @@ setup(
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
-    package_data={"": ["*.g4"]},
+    package_data={"": ["*.g4", "*.inc"]},
     include_package_data=True,
     install_requires=[
         "numpy",
         "opt_einsum",
         "scipy",
         "antlr4-python3-runtime==4.9.2",
-        "amazon_braket_schemas",
-        # uncomment to build locally
-        # (
-        #     "amazon-braket-schemas "
-        #     "@ git+https://github.com/aws/amazon-braket-schemas-python.git"
-        #     "@feature/openqasm-local-simulator"
-        # ),
+        (
+            "amazon-braket-schemas "
+            "@ git+https://github.com/aws/amazon-braket-schemas-python.git"
+            "@feature/openqasm-local-simulator"
+        ),
     ],
     entry_points={
         "braket.simulators": [
@@ -171,7 +90,4 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
-    cmdclass={
-        "install_oq3": InstallOQ3Command,
-    },
 )

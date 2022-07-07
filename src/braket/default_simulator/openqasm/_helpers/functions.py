@@ -5,7 +5,8 @@ import math
 from typing import Type
 
 import numpy as np
-from openqasm3.ast import (
+
+from ..parser.openqasm_ast import (
     ArrayLiteral,
     AssignmentOperator,
     BinaryOperator,
@@ -15,7 +16,6 @@ from openqasm3.ast import (
     UintType,
     UnaryOperator,
 )
-
 from .casting import LiteralType, cast_to, convert_bool_array_to_string
 
 operator_maps = {

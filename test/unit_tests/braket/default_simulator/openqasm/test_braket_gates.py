@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.gate_operations import (
     CV,
     CX,

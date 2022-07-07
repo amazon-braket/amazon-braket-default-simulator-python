@@ -12,17 +12,18 @@ from braket.ir.jaqcd import (
     Variance,
 )
 from braket.ir.jaqcd.program_v1 import Results
-from openqasm3.parser import parse
 
-from .dist.BraketPragmasLexer import BraketPragmasLexer
-from .dist.BraketPragmasParser import BraketPragmasParser
-from .dist.BraketPragmasVisitor import BraketPragmasVisitor
+from .generated.BraketPragmasLexer import BraketPragmasLexer
+from .generated.BraketPragmasParser import BraketPragmasParser
+from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
+from .openqasm_parser import parse
 
 
-class BraketPragmaNodeVisitor(BraketPragmasVisitor):
+class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     """
-    This is a visitor for the BraketPragmas grammar. This class will be replaced
-    when the parser is updated. Feel free to skim over in review.
+    This is a visitor for the BraketPragmas grammar. Consumes a
+    braketPragmas AST and converts to relevant python objects
+    for use by the Interpreter
     """
 
     def __init__(self, qubit_table: "QubitTable"):
@@ -149,6 +150,7 @@ class BraketPragmaNodeVisitor(BraketPragmasVisitor):
 
     def visitRow(self, ctx: BraketPragmasParser.RowContext) -> List[complex]:
         numbers = ctx.children[1::2]
+        print([self.visit(x) for x in numbers])
         return [x[0] + x[1] * 1j for x in [self.visit(number) for number in numbers]]
 
     def visitTwoDimMatrix(self, ctx: BraketPragmasParser.TwoDimMatrixContext) -> np.ndarray:
