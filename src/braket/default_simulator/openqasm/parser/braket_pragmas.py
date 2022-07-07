@@ -13,13 +13,13 @@ from braket.ir.jaqcd import (
 )
 from braket.ir.jaqcd.program_v1 import Results
 
-from .generated.braketPragmasLexer import braketPragmasLexer
-from .generated.braketPragmasParser import braketPragmasParser
-from .generated.braketPragmasParserVisitor import braketPragmasParserVisitor
+from .generated.BraketPragmasLexer import BraketPragmasLexer
+from .generated.BraketPragmasParser import BraketPragmasParser
+from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
 from .openqasm_parser import parse
 
 
-class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
+class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     """
     This is a visitor for the BraketPragmas grammar. Consumes a
     braketPragmas AST and converts to relevant python objects
@@ -29,7 +29,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
     def __init__(self, qubit_table: "QubitTable"):
         self.qubit_table = qubit_table
 
-    def visitNoArgResultType(self, ctx: braketPragmasParser.NoArgResultTypeContext) -> Results:
+    def visitNoArgResultType(self, ctx: BraketPragmasParser.NoArgResultTypeContext) -> Results:
         result_type = ctx.getChild(0).getText()
         no_arg_result_type_map = {
             "state_vector": StateVector,
@@ -37,7 +37,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         return no_arg_result_type_map[result_type]()
 
     def visitOptionalMultiTargetResultType(
-        self, ctx: braketPragmasParser.OptionalMultiTargetResultTypeContext
+        self, ctx: BraketPragmasParser.OptionalMultiTargetResultTypeContext
     ) -> Results:
         result_type = ctx.getChild(0).getText()
         optional_multitarget_result_type_map = {
@@ -47,7 +47,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         targets = self.visit(ctx.getChild(1)) if ctx.getChild(1) is not None else None
         return optional_multitarget_result_type_map[result_type](targets=targets)
 
-    def visitMultiTarget(self, ctx: braketPragmasParser.MultiTargetContext) -> Tuple[int]:
+    def visitMultiTarget(self, ctx: BraketPragmasParser.MultiTargetContext) -> Tuple[int]:
         parsable = f"target {''.join(x.getText() for x in ctx.getChildren())};"
         parsed_statement = parse(parsable)
         target_identifiers = parsed_statement.statements[0].qubits
@@ -58,7 +58,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         return target
 
     def visitMultiStateResultType(
-        self, ctx: braketPragmasParser.MultiStateResultTypeContext
+        self, ctx: BraketPragmasParser.MultiStateResultTypeContext
     ) -> Results:
         result_type = ctx.getChild(0).getText()
         multistate_result_type_map = {
@@ -67,13 +67,13 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         states = self.visit(ctx.getChild(1))
         return multistate_result_type_map[result_type](states=states)
 
-    def visitMultiState(self, ctx: braketPragmasParser.MultiStateContext) -> List[str]:
+    def visitMultiState(self, ctx: BraketPragmasParser.MultiStateContext) -> List[str]:
         # unquote and skip commas
         states = [x.getText()[1:-1] for x in list(ctx.getChildren())[::2]]
         return states
 
     def visitObservableResultType(
-        self, ctx: braketPragmasParser.ObservableResultTypeContext
+        self, ctx: BraketPragmasParser.ObservableResultTypeContext
     ) -> Results:
         result_type = ctx.getChild(0).getText()
         observable_result_type_map = {
@@ -86,7 +86,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         return obs
 
     def visitStandardObservable(
-        self, ctx: braketPragmasParser.StandardObservableContext
+        self, ctx: BraketPragmasParser.StandardObservableContext
     ) -> Tuple[Tuple[str], int]:
         observable = ctx.getChild(0).getText()
         target_tuple = self.visit(ctx.getChild(2))
@@ -95,7 +95,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         return (observable,), target_tuple
 
     def visitTensorProductObservable(
-        self, ctx: braketPragmasParser.TensorProductObservableContext
+        self, ctx: BraketPragmasParser.TensorProductObservableContext
     ) -> Tuple[Tuple[str], Tuple[int]]:
         observables, targets = zip(
             *(self.visit(ctx.getChild(i)) for i in range(0, ctx.getChildCount(), 2))
@@ -105,7 +105,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         return observables, targets
 
     def visitHermitianObservable(
-        self, ctx: braketPragmasParser.HermitianObservableContext
+        self, ctx: BraketPragmasParser.HermitianObservableContext
     ) -> Tuple[Tuple[List[List[float]]], int]:
         matrix = [
             [self.visit(ctx.getChild(4)), self.visit(ctx.getChild(6))],
@@ -115,7 +115,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         return (matrix,), target
 
     def visitIndexedIdentifier(
-        self, ctx: braketPragmasParser.IndexedIdentifierContext
+        self, ctx: BraketPragmasParser.IndexedIdentifierContext
     ) -> Tuple[int]:
         parsable = f"target {''.join(x.getText() for x in ctx.getChildren())};"
         parsed_statement = parse(parsable)
@@ -123,7 +123,7 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         target = self.qubit_table.get_by_identifier(identifier)
         return target
 
-    def visitComplexOneValue(self, ctx: braketPragmasParser.ComplexOneValueContext) -> List[float]:
+    def visitComplexOneValue(self, ctx: BraketPragmasParser.ComplexOneValueContext) -> List[float]:
         sign = -1 if ctx.neg else 1
         value = ctx.value.text
         imag = False
@@ -135,25 +135,25 @@ class BraketPragmaNodeVisitor(braketPragmasParserVisitor):
         return complex_array
 
     def visitComplexTwoValues(
-        self, ctx: braketPragmasParser.ComplexTwoValuesContext
+        self, ctx: BraketPragmasParser.ComplexTwoValuesContext
     ) -> List[float]:
         real = float(ctx.real.text)
         imag = float(ctx.imag.text[:-2])  # exclude "im"
         return [real, imag]
 
     def visitBraketUnitaryPragma(
-        self, ctx: braketPragmasParser.BraketUnitaryPragmaContext
+        self, ctx: BraketPragmasParser.BraketUnitaryPragmaContext
     ) -> Tuple[np.ndarray, Tuple[int]]:
         target = self.visit(ctx.multiTarget())
         matrix = self.visit(ctx.twoDimMatrix())
         return matrix, target
 
-    def visitRow(self, ctx: braketPragmasParser.RowContext) -> List[complex]:
+    def visitRow(self, ctx: BraketPragmasParser.RowContext) -> List[complex]:
         numbers = ctx.children[1::2]
         print([self.visit(x) for x in numbers])
         return [x[0] + x[1] * 1j for x in [self.visit(number) for number in numbers]]
 
-    def visitTwoDimMatrix(self, ctx: braketPragmasParser.TwoDimMatrixContext) -> np.ndarray:
+    def visitTwoDimMatrix(self, ctx: BraketPragmasParser.TwoDimMatrixContext) -> np.ndarray:
         rows = [self.visit(row) for row in ctx.children[1::2]]
         if not all(len(r) == len(rows) for r in rows):
             raise TypeError("Not a valid square matrix")
@@ -169,9 +169,9 @@ def parse_braket_pragma(pragma_body: str, qubit_table: "QubitTable"):
       - custom unitary operations
     """
     data = InputStream(pragma_body)
-    lexer = braketPragmasLexer(data)
+    lexer = BraketPragmasLexer(data)
     stream = CommonTokenStream(lexer)
-    parser = braketPragmasParser(stream)
+    parser = BraketPragmasParser(stream)
     tree = parser.braketPragma()
     visited = BraketPragmaNodeVisitor(qubit_table).visit(tree)
     return visited

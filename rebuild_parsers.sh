@@ -13,10 +13,10 @@ alias grun='java -Xmx500M -cp "/usr/local/lib/antlr-4.10.1-complete.jar:$CLASSPA
 
 
 cd src/braket/default_simulator/openqasm/parser || exit
-antlr4 -Dlanguage=Python3 -visitor braketPragmasLexer.g4 braketPragmasParser.g4 -o generated
+antlr4 -Dlanguage=Python3 -visitor BraketPragmasLexer.g4 BraketPragmasParser.g4 -o generated
 antlr4 -Dlanguage=Python3 -visitor qasm3Lexer.g4 qasm3Parser.g4 -o generated
 cd generated || exit
-rm braketPragmasParser.interp braketPragmasParser.tokens braketPragmasLexer.interp \
-  braketPragmasLexer.tokens braketPragmasParserListener.py qasm3Lexer.interp \
+rm BraketPragmasParser.interp BraketPragmasParser.tokens BraketPragmasLexer.interp \
+  BraketPragmasLexer.tokens BraketPragmasParserListener.py qasm3Lexer.interp \
   qasm3Lexer.tokens qasm3Parser.interp qasm3Parser.tokens qasm3ParserListener.py
 cd ../../../../../.. || exit

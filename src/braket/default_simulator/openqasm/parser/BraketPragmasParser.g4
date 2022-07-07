@@ -1,7 +1,7 @@
-parser grammar braketPragmasParser;
+parser grammar BraketPragmasParser;
 
 options {
-    tokenVocab = braketPragmasLexer;
+    tokenVocab = BraketPragmasLexer;
 }
 
 import qasm3Parser;

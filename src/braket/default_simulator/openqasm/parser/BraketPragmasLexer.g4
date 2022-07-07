@@ -1,4 +1,4 @@
-lexer grammar braketPragmasLexer;
+lexer grammar BraketPragmasLexer;
 
 import qasm3Lexer;
 
