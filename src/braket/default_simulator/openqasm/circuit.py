@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from braket.ir.jaqcd.program_v1 import Results
 
-from braket.default_simulator.operation import GateOperation
+from braket.default_simulator.operation import GateOperation, KrausOperation
 
 
 class Circuit:
@@ -33,7 +33,7 @@ class Circuit:
             for result in results:
                 self.add_result(result)
 
-    def add_instruction(self, instruction: GateOperation) -> None:
+    def add_instruction(self, instruction: [GateOperation, KrausOperation]) -> None:
         """
         Add instruction to the circuit.
 

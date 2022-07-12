@@ -51,6 +51,11 @@ setup(
                 "braket.default_simulator.openqasm_state_vector_simulator:"
                 "OpenQASMStateVectorSimulator"
             ),
+            (
+                "braket_oq3_dm = "
+                "braket.default_simulator.openqasm_density_matrix_simulator:"
+                "OpenQASMDensityMatrixSimulator"
+            ),
         ]
     },
     extras_require={

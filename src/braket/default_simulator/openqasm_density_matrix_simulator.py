@@ -18,39 +18,38 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceParameters,
 )
 
+from braket.default_simulator import DensityMatrixSimulation
 from braket.default_simulator.openqasm_simulator import BaseLocalOQ3Simulator
-from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class OpenQASMStateVectorSimulator(BaseLocalOQ3Simulator):
-    DEVICE_ID = "braket_oq3_sv"
+class OpenQASMDensityMatrixSimulator(BaseLocalOQ3Simulator):
+    DEVICE_ID = "braket_oq3_dm"
 
-    def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
+    def initialize_simulation(self, **kwargs) -> DensityMatrixSimulation:
         """
-        Initialize state vector simulation.
+        Initialize density matrix simulation.
 
         Args:
             **kwargs: qubit_count, shots, batch_size
 
         Returns:
-            StateVectorSimulation: Initialized simulation.
+            DensityMatrixSimulation: Initialized simulation.
         """
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
-        batch_size = kwargs.get("batch_size")
-        return StateVectorSimulation(qubit_count, shots, batch_size)
+        return DensityMatrixSimulation(qubit_count, shots)
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
         """
-        Device properties for the OpenQASMStateVectorSimulator.
+        Device properties for the OpenQASMDensityMatrixSimulator.
 
         Returns:
             GateModelSimulatorDeviceCapabilities: Device capabilities for this simulator.
         """
         observables = ["x", "y", "z", "h", "i", "hermitian"]
         max_shots = sys.maxsize
-        qubit_count = 26
+        qubit_count = 13
         return GateModelSimulatorDeviceCapabilities.parse_obj(
             {
                 "service": {
@@ -67,46 +66,59 @@ class OpenQASMStateVectorSimulator(BaseLocalOQ3Simulator):
                     "braket.ir.openqasm.program": {
                         "actionType": "braket.ir.openqasm.program",
                         "version": ["1"],
-                        "supportedOperations": [
-                            # OpenQASM primitives
-                            "U",
-                            "GPhase",
-                            # builtin Braket gates
-                            "ccnot",
-                            "cnot",
-                            "cphaseshift",
-                            "cphaseshift00",
-                            "cphaseshift01",
-                            "cphaseshift10",
-                            "cswap",
-                            "cv",
-                            "cy",
-                            "cz",
-                            "ecr",
-                            "h",
-                            "i",
-                            "iswap",
-                            "pswap",
-                            "phaseshift",
-                            "rx",
-                            "ry",
-                            "rz",
-                            "s",
-                            "si",
-                            "swap",
-                            "t",
-                            "ti",
-                            "unitary",
-                            "v",
-                            "vi",
-                            "x",
-                            "xx",
-                            "xy",
-                            "y",
-                            "yy",
-                            "z",
-                            "zz",
-                        ],
+                        "supportedOperations": sorted(
+                            [
+                                # OpenQASM primitives
+                                "U",
+                                "GPhase",
+                                # builtin Braket gates
+                                "ccnot",
+                                "cnot",
+                                "cphaseshift",
+                                "cphaseshift00",
+                                "cphaseshift01",
+                                "cphaseshift10",
+                                "cswap",
+                                "cv",
+                                "cy",
+                                "cz",
+                                "ecr",
+                                "h",
+                                "i",
+                                "iswap",
+                                "pswap",
+                                "phaseshift",
+                                "rx",
+                                "ry",
+                                "rz",
+                                "s",
+                                "si",
+                                "swap",
+                                "t",
+                                "ti",
+                                "unitary",
+                                "v",
+                                "vi",
+                                "x",
+                                "xx",
+                                "xy",
+                                "y",
+                                "yy",
+                                "z",
+                                "zz",
+                                # noise operations
+                                "bit_flip",
+                                "phase_flip",
+                                "pauli_channel",
+                                "depolarizing",
+                                "two_qubit_depolarizing",
+                                "two_qubit_dephasing",
+                                "amplitude_damping",
+                                "generalized_amplitude_damping",
+                                "phase_damping",
+                                "kraus",
+                            ]
+                        ),
                         "supportedResultTypes": [
                             {
                                 "name": "Sample",
@@ -127,9 +139,7 @@ class OpenQASMStateVectorSimulator(BaseLocalOQ3Simulator):
                                 "maxShots": max_shots,
                             },
                             {"name": "Probability", "minShots": 0, "maxShots": max_shots},
-                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
                             {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
-                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                         ],
                     }
                 },
