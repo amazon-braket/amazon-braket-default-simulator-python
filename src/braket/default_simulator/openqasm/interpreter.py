@@ -523,9 +523,11 @@ class Interpreter:
 
         if node.command.startswith("braket result"):
             self.context.add_result(parsed)
-        else:  # node.command.startswith("braket unitary"):
+        elif node.command.startswith("braket unitary"):
             unitary, target = parsed
             self.context.add_custom_unitary(unitary, target)
+        else:  # node.command.startswith("braket noise")
+            self.context.add_noise_instruction(parsed)
 
     @visit.register
     def _(self, node: SubroutineDefinition) -> None:

@@ -5,6 +5,7 @@ import qasm3Lexer;
 BRAKET: 'braket';
 UNITARY: 'unitary';
 RESULT: 'result';
+NOISE: 'noise';
 
 STATE_VECTOR: 'state_vector';
 PROBABILITY: 'probability';
@@ -22,3 +23,14 @@ H: 'h';
 HERMITIAN: 'hermitian';
 
 AT: '@';
+
+BIT_FLIP: 'bit_flip';
+PHASE_FLIP: 'phase_flip';
+PAULI_CHANNEL: 'pauli_channel';
+DEPOLARIZING: 'depolarizing';
+TWO_QUBIT_DEPOLARIZING: 'two_qubit_depolarizing';
+TWO_QUBIT_DEPHASING: 'two_qubit_dephasing';
+AMPLITUDE_DAMPING: 'amplitude_damping';
+GENERALIZED_AMPLITUDE_DAMPING: 'generalized_amplitude_damping';
+PHASE_DAMPING: 'phase_damping';
+KRAUS: 'kraus';

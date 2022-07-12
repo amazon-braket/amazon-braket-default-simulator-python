@@ -9,6 +9,7 @@ import qasm3Parser;
 braketPragma
     : braketResultPragma
     | braketUnitaryPragma
+    | braketNoisePragma
     ;
 
 braketUnitaryPragma
@@ -24,7 +25,14 @@ row
     ;
 
 braketResultPragma
-    : BRAKET RESULT (noArgResultType | optionalMultiTargetResultType | multiStateResultType | observableResultType)
+    : BRAKET RESULT resultType
+    ;
+
+resultType
+    : noArgResultType
+    | optionalMultiTargetResultType
+    | multiStateResultType
+    | observableResultType
     ;
 
 noArgResultType
@@ -100,4 +108,33 @@ standardObservableName
 complexNumber
     : neg=MINUS? value=(DecimalIntegerLiteral | FloatLiteral | ImaginaryLiteral)                        # complexOneValue
     | neg=MINUS? real=(DecimalIntegerLiteral | FloatLiteral) sign=(PLUS|MINUS) imag=ImaginaryLiteral    # complexTwoValues
+    ;
+
+braketNoisePragma
+    : BRAKET NOISE noiseInstruction
+    ;
+
+noiseInstruction
+    : noiseInstructionName LPAREN probabilities RPAREN target=multiTarget   # Noise
+    | KRAUS LPAREN matrices RPAREN target=multiTarget                       # Kraus
+    ;
+
+matrices
+    : twoDimMatrix (COMMA twoDimMatrix)*
+    ;
+
+probabilities
+    : FloatLiteral (COMMA FloatLiteral)*
+    ;
+
+noiseInstructionName
+    : BIT_FLIP
+    | PHASE_FLIP
+    | PAULI_CHANNEL
+    | DEPOLARIZING
+    | TWO_QUBIT_DEPOLARIZING
+    | TWO_QUBIT_DEPHASING
+    | AMPLITUDE_DAMPING
+    | GENERALIZED_AMPLITUDE_DAMPING
+    | PHASE_DAMPING
     ;

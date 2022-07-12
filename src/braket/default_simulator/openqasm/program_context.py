@@ -5,6 +5,7 @@ from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import GPhase, U, Unitary
 
+from .. import KrausOperation
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
@@ -564,3 +565,6 @@ class ProgramContext:
         """Add a custom Unitary instruction to the circuit"""
         instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)
+
+    def add_noise_instruction(self, noise: KrausOperation):
+        """Add a noise instruction the circuit"""
