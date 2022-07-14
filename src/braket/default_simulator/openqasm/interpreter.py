@@ -82,7 +82,7 @@ from .parser.openqasm_ast import (
     SizeOf,
     SubroutineDefinition,
     UnaryExpression,
-    WhileLoop,
+    WhileLoop, QuantumMeasurementStatement,
 )
 from .parser.openqasm_parser import parse
 from .program_context import ProgramContext
@@ -450,7 +450,7 @@ class Interpreter:
         return node
 
     @visit.register
-    def _(self, node: QuantumMeasurement) -> None:
+    def _(self, node: QuantumMeasurement) -> Union[BooleanLiteral, ArrayLiteral]:
         """Doesn't do anything, but may add more functionality in the future"""
         self.logger.debug(f"Quantum measurement: {node}")
 
