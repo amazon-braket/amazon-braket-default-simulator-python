@@ -1535,10 +1535,6 @@ def test_builtin_functions():
 
 
 def test_noise():
-    """
-    Will add noise simulation functionality in another PR. For now,
-    just testing that noise instructions are parsed without errors.
-    """
     qasm = """
     qubit[2] qs;
 
@@ -1555,38 +1551,30 @@ def test_noise():
     #pragma braket noise kraus([[0.9486833im, 0], [0, 0.9486833im]], [[0, 0.31622777], [0.31622777, 0]]) qs[0]
     #pragma braket noise kraus([[0.9486832980505138, 0, 0, 0], [0, 0.9486832980505138, 0, 0], [0, 0, 0.9486832980505138, 0], [0, 0, 0, 0.9486832980505138]], [[0, 0.31622776601683794, 0, 0], [0.31622776601683794, 0, 0, 0], [0, 0, 0, 0.31622776601683794], [0, 0, 0.31622776601683794, 0]]) qs[{1, 0}]
     """
-    context = ProgramContext()
-    add_noise_mock = Mock()
-    context.add_noise_instruction = add_noise_mock
-    Interpreter(context).run(qasm)
-    add_noise_mock.assert_has_calls(
-        calls=[
-            call(noise_instruction)
-            for noise_instruction in [
-                BitFlip([1], 0.5),
-                PhaseFlip([0], 0.5),
-                PauliChannel([0], 0.1, 0.2, 0.3),
-                Depolarizing([0], 0.5),
-                TwoQubitDepolarizing((0, 1), 0.9),
-                TwoQubitDepolarizing([1, 0], 0.7),
-                TwoQubitDephasing([0, 1], 0.6),
-                AmplitudeDamping([0], 0.2),
-                GeneralizedAmplitudeDamping([1], 0.2, 0.3),
-                PhaseDamping([0], 0.4),
-                Kraus(
-                    [0],
-                    [
-                        np.array([[0.9486833j, 0], [0, 0.9486833j]]),
-                        np.array([[0, 0.31622777], [0.31622777, 0]]),
-                    ],
-                ),
-                Kraus(
-                    [1, 0],
-                    [
-                        np.eye(4) * np.sqrt(0.9),
-                        np.kron([[1.0, 0.0], [0.0, 1.0]], [[0.0, 1.0], [1.0, 0.0]]) * np.sqrt(0.1),
-                    ],
-                ),
-            ]
-        ]
-    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.instructions == [
+        BitFlip([1], 0.5),
+        PhaseFlip([0], 0.5),
+        PauliChannel([0], 0.1, 0.2, 0.3),
+        Depolarizing([0], 0.5),
+        TwoQubitDepolarizing((0, 1), 0.9),
+        TwoQubitDepolarizing([1, 0], 0.7),
+        TwoQubitDephasing([0, 1], 0.6),
+        AmplitudeDamping([0], 0.2),
+        GeneralizedAmplitudeDamping([1], 0.2, 0.3),
+        PhaseDamping([0], 0.4),
+        Kraus(
+            [0],
+            [
+                np.array([[0.9486833j, 0], [0, 0.9486833j]]),
+                np.array([[0, 0.31622777], [0.31622777, 0]]),
+            ],
+        ),
+        Kraus(
+            [1, 0],
+            [
+                np.eye(4) * np.sqrt(0.9),
+                np.kron([[1.0, 0.0], [0.0, 1.0]], [[0.0, 1.0], [1.0, 0.0]]) * np.sqrt(0.1),
+            ],
+        ),
+    ]
