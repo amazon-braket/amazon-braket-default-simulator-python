@@ -588,3 +588,8 @@ class ProgramContext:
     def add_noise_instruction(self, noise: KrausOperation):
         """Add a noise instruction the circuit"""
         self.circuit.add_instruction(noise)
+
+    def pop_instructions(self):
+        instructions = self.circuit.instructions
+        self.circuit.instructions = []
+        return instructions

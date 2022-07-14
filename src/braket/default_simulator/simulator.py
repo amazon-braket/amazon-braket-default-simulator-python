@@ -15,6 +15,7 @@ import warnings
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Union
 
+from braket.default_simulator.openqasm.native_interpreter import NativeInterpreter
 from braket.device_schema import DeviceActionType, DeviceCapabilities
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
@@ -84,6 +85,9 @@ class BaseLocalSimulator(BraketSimulator):
                 are requested when shots>0.
         """
         if isinstance(circuit_ir, OpenQASMProgram):
+            if kwargs.get("mcm", False):
+                del kwargs["mcm"]
+                return self.run_program(circuit_ir, *args, **kwargs)
             return self.run_openqasm(circuit_ir, *args, **kwargs)
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
@@ -392,6 +396,45 @@ class BaseLocalSimulator(BraketSimulator):
             simulation.evolve(circuit.basis_rotation_instructions)
 
         return self._create_results_obj(results, openqasm_ir, simulation)
+
+    def run_program(
+        self,
+        openqasm_ir: OpenQASMProgram,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
+    ) -> GateModelTaskResult:
+        """Executes the program specified by the supplied `circuit_ir` on the simulator.
+
+        Args:
+            openqasm_ir (Program): ir representation of a braket circuit specifying the
+                instructions to execute.
+            shots (int): The number of times to run the circuit.
+            batch_size (int): The size of the circuit partitions to contract,
+                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
+                Must be a positive integer.
+                Defaults to 1, which means gates are applied one at a time without any
+                optimized contraction.
+        Returns:
+            GateModelTaskResult: object that represents the result
+
+        Raises:
+            ValueError: If result types are not specified in the IR or sample is specified
+                as a result type when shots=0. Or, if StateVector and Amplitude result types
+                are requested when shots>0.
+        """
+        is_file = openqasm_ir.source.endswith(".qasm")
+        simulation = self.initialize_simulation(
+            qubit_count=0, shots=shots, batch_size=batch_size
+        )
+        interpreter = NativeInterpreter(simulation=simulation)
+
+        context = interpreter.simulate(
+            source=openqasm_ir.source,
+            inputs=openqasm_ir.inputs,
+            is_file=is_file,
+        )
+        return context
 
     def run_jaqcd(
         self,
