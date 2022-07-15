@@ -1246,7 +1246,7 @@ def test_bad_float_declaration():
     qasm = """
     float[4] x = π;
     """
-    invalid_float = "Float size must be one of {16, 32, 64, 128}."
+    invalid_float = "Float size must be one of {16, 32, 64}."
     with pytest.raises(ValueError, match=invalid_float):
         Interpreter().run(qasm)
 
