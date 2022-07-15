@@ -187,3 +187,7 @@ class StateVectorSimulation(Simulation):
             outcome,
         )
         return outcome
+
+    def reset(self) -> None:
+        self._state_vector = np.array([1], dtype=complex)
+        self._qubit_count = 0

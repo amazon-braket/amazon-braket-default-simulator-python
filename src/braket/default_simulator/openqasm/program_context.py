@@ -15,7 +15,7 @@ from ._helpers.arrays import (
     get_type_width,
     update_value,
 )
-from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
+from ._helpers.casting import LiteralType, get_identifier_name, is_none_like, convert_to_output
 from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
@@ -383,6 +383,7 @@ class ProgramContext:
         self.qubit_mapping = QubitTable()
         self.scope_manager = ScopeManager(self)
         self.inputs = {}
+        self.outputs = {}
         self.num_qubits = 0
         self.circuit = Circuit()
 
@@ -593,3 +594,12 @@ class ProgramContext:
         instructions = self.circuit.instructions
         self.circuit.instructions = []
         return instructions
+
+    def add_output(self, output_name: str):
+        self.outputs[output_name] = []
+
+    def save_output_values(self):
+        for output, shot_data in self.outputs.items():
+            shot_data.append(
+                convert_to_output(self.get_value(output))
+            )

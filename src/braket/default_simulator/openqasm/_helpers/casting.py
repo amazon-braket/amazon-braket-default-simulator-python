@@ -198,3 +198,31 @@ def _(value: str) -> BitstringLiteral:
 @wrap_value_into_literal.register(list)
 def _(value: Iterable[Any]) -> ArrayLiteral:
     return ArrayLiteral([wrap_value_into_literal(v) for v in value])
+
+def is_supported_output_type(var_type):
+    return isinstance(var_type, (IntType, FloatType, BoolType, BitType, ArrayType))
+
+
+@singledispatch
+def convert_to_output(value):
+    raise TypeError(f"converting {value} to output")
+
+
+@convert_to_output.register(IntegerLiteral)
+@convert_to_output.register(FloatLiteral)
+@convert_to_output.register(BooleanLiteral)
+@convert_to_output.register(BitstringLiteral)
+def _(value):
+    return value.value
+
+
+@convert_to_output.register(BitstringLiteral)
+def _(value):
+    return np.array(np.binary_repr(value.value, value.width))
+
+
+@convert_to_output.register
+def _(value: ArrayLiteral):
+    if isinstance(value.values[0], BooleanLiteral):
+        return convert_bool_array_to_string(value)
+    return np.array([convert_to_output(x) for x in value.values])

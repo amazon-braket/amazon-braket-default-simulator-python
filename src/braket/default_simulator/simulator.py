@@ -433,6 +433,7 @@ class BaseLocalSimulator(BraketSimulator):
             source=openqasm_ir.source,
             inputs=openqasm_ir.inputs,
             is_file=is_file,
+            shots=shots,
         )
         return context
 
