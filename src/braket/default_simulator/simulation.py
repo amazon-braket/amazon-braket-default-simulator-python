@@ -93,3 +93,6 @@ class Simulation:
 
     def add_qubits(self, num_qubits: int) -> None:
         raise NotImplementedError("add_qubits has not been implemented.")
+
+    def reset(self) -> None:
+            raise NotImplementedError("reset has not been implemented.")

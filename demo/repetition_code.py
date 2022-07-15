@@ -7,8 +7,8 @@ OPENQASM 3;
 
 qubit[3] q;
 qubit[2] f;
-bit[3] cq;
-bit[2] cf;
+output uint[3] cq;
+output uint[2] cf;
 
 // Inirtial state
 // x q[0]; // uncomment to start with state 1
@@ -28,7 +28,7 @@ cnot q[2], f[0];
 cnot q[1], f[1];
 cnot q[2], f[1];
 
-uint cf = measure f;
+cf = measure f;
 
 // Correct error based on error syndrome
 if (cf==2){ 
@@ -42,7 +42,7 @@ if (cf==3){
 }
 
 // measure q
-uint cq = measure q;
+cq = measure q;
 
 """
 
@@ -50,11 +50,13 @@ uint cq = measure q;
 device = OpenQASMNativeStateVectorSimulator()
 program = Program(source=ghz_qasm)
 
-for _ in range(5):
-  result = device.run(program, shots=1)
-  cf = result.get_value("cf").value
+result = device.run(program, shots=5)
+
+for i in range(5):
+
+  cf = result["cf"][i]
   print(f"error syndrome = {cf:02b}")
-  cq = result.get_value("cq").value
+  cq = result["cq"][i]
   print(f"final sample   = {cq:03b}")
 
   print()

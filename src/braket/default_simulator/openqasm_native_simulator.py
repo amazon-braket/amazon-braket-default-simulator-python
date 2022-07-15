@@ -35,7 +35,7 @@ class BaseLocalOQ3NativeSimulator(BaseLocalSimulator):
     def run(
         self,
         openqasm_ir: Program,
-        shots: int = 0,
+        shots: int = 1,
         *,
         batch_size: int = 1,
     ) -> GateModelTaskResult:
@@ -73,6 +73,7 @@ class BaseLocalOQ3NativeSimulator(BaseLocalSimulator):
             source=openqasm_ir.source,
             inputs=openqasm_ir.inputs,
             is_file=is_file,
+            shots=shots,
         )
         return context
 
