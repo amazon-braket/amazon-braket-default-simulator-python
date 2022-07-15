@@ -138,14 +138,14 @@ def test_float_declaration():
     float[16] uninitialized;
     float[32] pos = 10;
     float[64] neg = -4.2;
-    float[128] precise = π;
+    float[64] precise = π;
     """
     context = Interpreter().run(qasm)
 
     assert context.get_type("uninitialized") == FloatType(IntegerLiteral(16))
     assert context.get_type("pos") == FloatType(IntegerLiteral(32))
     assert context.get_type("neg") == FloatType(IntegerLiteral(64))
-    assert context.get_type("precise") == FloatType(IntegerLiteral(128))
+    assert context.get_type("precise") == FloatType(IntegerLiteral(64))
 
     assert context.get_value("uninitialized") is None
     assert context.get_value("pos") == FloatLiteral(10)
@@ -612,7 +612,7 @@ def test_update_bits_int_unsized():
 
 def test_gate_def():
     qasm = """
-    float[128] my_pi = π;
+    float[64] my_pi = π;
     gate x a { U(π, 0, my_pi) a; }
     gate x1(mp) c { U(π, 0, mp) c; }
     gate x2(p) a, b {
@@ -719,7 +719,7 @@ def test_gate_undef():
 
 def test_gate_call():
     qasm = """
-    float[128] my_pi = π;
+    float[64] my_pi = π;
     gate x a { U(π, 0, my_pi) a; }
     gate x2(p) a { U(π, 0, p) a; }
 
