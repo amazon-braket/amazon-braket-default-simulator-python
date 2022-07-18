@@ -106,8 +106,8 @@ standardObservableName
     ;
 
 complexNumber
-    : neg=MINUS? value=(DecimalIntegerLiteral | FloatLiteral | ImaginaryLiteral)                        # complexOneValue
-    | neg=MINUS? real=(DecimalIntegerLiteral | FloatLiteral) sign=(PLUS|MINUS) imag=ImaginaryLiteral    # complexTwoValues
+    : neg=MINUS? value=(DecimalIntegerLiteral | FloatLiteral | ImaginaryLiteral)                                        # complexOneValue
+    | neg=MINUS? real=(DecimalIntegerLiteral | FloatLiteral) sign=(PLUS|MINUS) imagNeg=MINUS? imag=ImaginaryLiteral     # complexTwoValues
     ;
 
 braketNoisePragma

@@ -151,6 +151,8 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     ) -> List[float]:
         real = float(ctx.real.text)
         imag = float(ctx.imag.text[:-2])  # exclude "im"
+        if ctx.imagNeg:
+            imag *= -1
         return [real, imag]
 
     def visitBraketUnitaryPragma(

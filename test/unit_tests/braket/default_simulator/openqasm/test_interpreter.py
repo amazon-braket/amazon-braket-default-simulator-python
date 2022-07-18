@@ -1322,9 +1322,11 @@ def test_gate_qubit_reg_size_mismatch(stdgates):
         Interpreter().run(qasm)
 
 
+# noqa: E501
 def test_unitary_pragma():
     qasm = """
     qubit[3] q;
+
     x q[0];
     h q[1];
 
@@ -1332,8 +1334,13 @@ def test_unitary_pragma():
     #pragma braket unitary([[1.0, 0], [0, 0.70710678 + 0.70710678im]]) q[0]
     ti q[0];
 
+    // unitary pragma for h gate (with phase shift)
+    #pragma braket unitary([[0.70710678 im, 0.70710678im], [0.70710678im, 0.0 + -0.70710678im]]) q[1]
+    gphase(-π/2) q[1];
+    h q[1];
+
     // unitary pragma for ccnot gate
-    #pragma braket unitary([[1.0, 0, 0, 0, 0, 0, 0, 0], [0, 1.0, 0, 0, 0, 0, 0, 0], [0, 0, 1.0, 0, 0, 0, 0, 0], [0, 0, 0, 1.0, 0, 0, 0, 0], [0, 0, 0, 0, 1.0, 0, 0, 0], [0, 0, 0, 0, 0, 1.0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1.0], [0, 0, 0, 0, 0, 0, 1.0, 0]]) q  # noqa: E501
+    #pragma braket unitary([[1.0, 0, 0, 0, 0, 0, 0, 0], [0, 1.0, 0, 0, 0, 0, 0, 0], [0, 0, 1.0, 0, 0, 0, 0, 0], [0, 0, 0, 1.0, 0, 0, 0, 0], [0, 0, 0, 0, 1.0, 0, 0, 0], [0, 0, 0, 0, 0, 1.0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1.0], [0, 0, 0, 0, 0, 0, 1.0, 0]]) q
     """
     circuit = Interpreter().build_circuit(qasm)
     simulation = StateVectorSimulation(3, 1, 1)
