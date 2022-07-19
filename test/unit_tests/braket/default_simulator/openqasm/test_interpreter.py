@@ -1335,7 +1335,7 @@ def test_unitary_pragma():
     ti q[0];
 
     // unitary pragma for h gate (with phase shift)
-    #pragma braket unitary([[0.70710678 im, 0.70710678im], [0.70710678im, 0.0 + -0.70710678im]]) q[1]
+    #pragma braket unitary([[0.70710678 im, 0.70710678im], [0 - -0.70710678im, -0.0 - 0.70710678im]]) q[1]
     gphase(-π/2) q[1];
     h q[1];
 
