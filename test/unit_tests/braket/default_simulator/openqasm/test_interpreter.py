@@ -139,6 +139,7 @@ def test_float_declaration():
     float[32] pos = 10;
     float[64] neg = -4.2;
     float[64] precise = π;
+    float unsized = π;
     """
     context = Interpreter().run(qasm)
 
@@ -146,11 +147,13 @@ def test_float_declaration():
     assert context.get_type("pos") == FloatType(IntegerLiteral(32))
     assert context.get_type("neg") == FloatType(IntegerLiteral(64))
     assert context.get_type("precise") == FloatType(IntegerLiteral(64))
+    assert context.get_type("unsized") == FloatType(None)
 
     assert context.get_value("uninitialized") is None
     assert context.get_value("pos") == FloatLiteral(10)
     assert context.get_value("neg") == FloatLiteral(-4.2)
     assert context.get_value("precise") == FloatLiteral(np.pi)
+    assert context.get_value("unsized") == FloatLiteral(np.pi)
 
 
 def test_constant_declaration():

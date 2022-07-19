@@ -100,9 +100,12 @@ def _(into: UintType, variable: LiteralType) -> IntegerLiteral:
 @cast_to.register
 def _(into: FloatType, variable: LiteralType) -> FloatLiteral:
     """Cast to float"""
-    if into.size.value not in (16, 32, 64):
-        raise ValueError("Float size must be one of {16, 32, 64}.")
-    value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
+    if into.size is None:
+        value = float(variable.value)
+    else:
+        if into.size.value not in (16, 32, 64):
+            raise ValueError("Float size must be one of {16, 32, 64}.")
+        value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
     return FloatLiteral(value)
 
 
