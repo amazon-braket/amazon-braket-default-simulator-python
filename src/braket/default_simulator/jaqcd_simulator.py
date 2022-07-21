@@ -25,10 +25,6 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 
 
 class BaseLocalJaqcdSimulator(BaseLocalSimulator):
-    @property
-    def device_action_type(self) -> DeviceActionType:
-        return DeviceActionType.JAQCD
-
     def run(
         self,
         circuit_ir: Program,
@@ -57,8 +53,14 @@ class BaseLocalJaqcdSimulator(BaseLocalSimulator):
                 as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
-        self._validate_ir_results_compatibility(circuit_ir.results)
-        self._validate_ir_instructions_compatibility(circuit_ir)
+        self._validate_ir_results_compatibility(
+            circuit_ir.results,
+            device_action_type=DeviceActionType.JAQCD,
+        )
+        self._validate_ir_instructions_compatibility(
+            circuit_ir,
+            device_action_type=DeviceActionType.JAQCD,
+        )
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit_ir.results, qubit_count)
 
         operations = [

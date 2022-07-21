@@ -53,11 +53,6 @@ _NOISE_INSTRUCTIONS = frozenset(
 
 
 class BaseLocalSimulator(BraketSimulator):
-    @property
-    @abstractmethod
-    def device_action_type(self) -> DeviceActionType:
-        """DeviceActionType"""
-
     @abstractmethod
     def run(
         self, ir: Union[JaqcdProgram, OQ3Program, Problem], *args, **kwargs
@@ -73,7 +68,9 @@ class BaseLocalSimulator(BraketSimulator):
     def initialize_simulation(self, **kwargs) -> Simulation:
         """Initializes simulation with keyword arguments"""
 
-    def _validate_ir_results_compatibility(self, results: List[Results]) -> None:
+    def _validate_ir_results_compatibility(
+        self, results: List[Results], device_action_type
+    ) -> None:
         """
         Validate that requested result types are valid for the simulator.
 
@@ -85,9 +82,7 @@ class BaseLocalSimulator(BraketSimulator):
         """
         if results:
             circuit_result_types_name = [result.__class__.__name__ for result in results]
-            supported_result_types = self.properties.action[
-                self.device_action_type
-            ].supportedResultTypes
+            supported_result_types = self.properties.action[device_action_type].supportedResultTypes
             supported_result_types_name = [result.name for result in supported_result_types]
             for name in circuit_result_types_name:
                 if name not in supported_result_types_name:
@@ -97,7 +92,9 @@ class BaseLocalSimulator(BraketSimulator):
 
     @staticmethod
     def _validate_shots_and_ir_results(
-        shots: int, results: List[Results], qubit_count: int
+        shots: int,
+        results: List[Results],
+        qubit_count: int,
     ) -> None:
         """
         Validated that requested result types are valid for given shots and qubit count.
@@ -186,7 +183,9 @@ class BaseLocalSimulator(BraketSimulator):
                 )
 
     def _validate_ir_instructions_compatibility(
-        self, circuit_ir: Union[JaqcdProgram, Circuit]
+        self,
+        circuit_ir: Union[JaqcdProgram, Circuit],
+        device_action_type: DeviceActionType,
     ) -> None:
         """
         Validate that requested IR instructions are valid for the simulator.
@@ -202,7 +201,7 @@ class BaseLocalSimulator(BraketSimulator):
         ]
         supported_instructions = frozenset(
             op.lower().replace("_", "")
-            for op in self.properties.action[self.device_action_type].supportedOperations
+            for op in self.properties.action[device_action_type].supportedOperations
         )
         no_noise = True
         for name in circuit_instruction_names:

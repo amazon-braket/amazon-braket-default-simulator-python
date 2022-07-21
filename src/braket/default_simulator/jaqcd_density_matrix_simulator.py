@@ -12,37 +12,23 @@
 # language governing permissions and limitations under the License.
 
 import sys
-from typing import Union
 
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-from braket.ir.jaqcd import Program as JaqcdProgram
-from braket.ir.openqasm import Program as OQ3Program
-from braket.task_result import GateModelTaskResult
 
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
-from braket.default_simulator.jaqcd_density_matrix_simulator import JaqcdDensityMatrixSimulator
-from braket.default_simulator.openqasm._helpers.utils import singledispatchmethod
-from braket.default_simulator.openqasm_density_matrix_simulator import (
-    OpenQASMDensityMatrixSimulator,
-)
+from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
 
 
-class DensityMatrixSimulator(OpenQASMDensityMatrixSimulator, JaqcdDensityMatrixSimulator):
-    DEVICE_ID = "braket_dm"
+class JaqcdDensityMatrixSimulator(BaseLocalJaqcdSimulator):
+    DEVICE_ID = "braket_jaqcd_dm"
 
     def initialize_simulation(self, **kwargs) -> DensityMatrixSimulation:
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         return DensityMatrixSimulation(qubit_count, shots)
-
-    def run(self, ir: Union[JaqcdProgram, OQ3Program], *args, **kwargs) -> GateModelTaskResult:
-        """run ir with appropriate simulator superclass method"""
-        result = self._run_internal(ir, *args, **kwargs)
-        result.taskMetadata.deviceId = "braket_dm"
-        return result
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
@@ -62,85 +48,6 @@ class DensityMatrixSimulator(OpenQASMDensityMatrixSimulator, JaqcdDensityMatrixS
                     "shotsRange": [0, max_shots],
                 },
                 "action": {
-                    "braket.ir.openqasm.program": {
-                        "actionType": "braket.ir.openqasm.program",
-                        "version": ["1"],
-                        "supportedOperations": sorted(
-                            [
-                                # OpenQASM primitives
-                                "U",
-                                "GPhase",
-                                # builtin Braket gates
-                                "ccnot",
-                                "cnot",
-                                "cphaseshift",
-                                "cphaseshift00",
-                                "cphaseshift01",
-                                "cphaseshift10",
-                                "cswap",
-                                "cv",
-                                "cy",
-                                "cz",
-                                "ecr",
-                                "h",
-                                "i",
-                                "iswap",
-                                "pswap",
-                                "phaseshift",
-                                "rx",
-                                "ry",
-                                "rz",
-                                "s",
-                                "si",
-                                "swap",
-                                "t",
-                                "ti",
-                                "unitary",
-                                "v",
-                                "vi",
-                                "x",
-                                "xx",
-                                "xy",
-                                "y",
-                                "yy",
-                                "z",
-                                "zz",
-                                # noise operations
-                                "bit_flip",
-                                "phase_flip",
-                                "pauli_channel",
-                                "depolarizing",
-                                "two_qubit_depolarizing",
-                                "two_qubit_dephasing",
-                                "amplitude_damping",
-                                "generalized_amplitude_damping",
-                                "phase_damping",
-                                "kraus",
-                            ]
-                        ),
-                        "supportedResultTypes": [
-                            {
-                                "name": "Sample",
-                                "observables": observables,
-                                "minShots": 1,
-                                "maxShots": max_shots,
-                            },
-                            {
-                                "name": "Expectation",
-                                "observables": observables,
-                                "minShots": 0,
-                                "maxShots": max_shots,
-                            },
-                            {
-                                "name": "Variance",
-                                "observables": observables,
-                                "minShots": 0,
-                                "maxShots": max_shots,
-                            },
-                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
-                            {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
-                        ],
-                    },
                     "braket.ir.jaqcd.program": {
                         "actionType": "braket.ir.jaqcd.program",
                         "version": ["1"],
@@ -213,21 +120,9 @@ class DensityMatrixSimulator(OpenQASMDensityMatrixSimulator, JaqcdDensityMatrixS
                             {"name": "Probability", "minShots": 0, "maxShots": max_shots},
                             {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                         ],
-                    },
+                    }
                 },
                 "paradigm": {"qubitCount": qubit_count},
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
             }
         )
-
-    @singledispatchmethod
-    def _run_internal(
-        self, ir: Union[OQ3Program, JaqcdProgram], *args, **kwargs
-    ) -> GateModelTaskResult:
-        """run OpenQASM program"""
-        return OpenQASMDensityMatrixSimulator.run(self, ir, *args, **kwargs)
-
-    @_run_internal.register
-    def _(self, ir: JaqcdProgram, *args, **kwargs) -> GateModelTaskResult:
-        """run Jaqcd program"""
-        return JaqcdDensityMatrixSimulator.run(self, ir, *args, **kwargs)

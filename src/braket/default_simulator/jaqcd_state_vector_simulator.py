@@ -12,24 +12,18 @@
 # language governing permissions and limitations under the License.
 
 import sys
-from typing import Union
 
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-from braket.ir.jaqcd import Program as JaqcdProgram
-from braket.ir.openqasm import Program as OQ3Program
-from braket.task_result import GateModelTaskResult
 
-from braket.default_simulator.jaqcd_state_vector_simulator import JaqcdStateVectorSimulator
-from braket.default_simulator.openqasm._helpers.utils import singledispatchmethod
-from braket.default_simulator.openqasm_state_vector_simulator import OpenQASMStateVectorSimulator
+from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class StateVectorSimulator(OpenQASMStateVectorSimulator, JaqcdStateVectorSimulator):
-    DEVICE_ID = "braket_sv"
+class JaqcdStateVectorSimulator(BaseLocalJaqcdSimulator):
+    DEVICE_ID = "braket_jaqcd_sv"
 
     def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
         """
@@ -45,12 +39,6 @@ class StateVectorSimulator(OpenQASMStateVectorSimulator, JaqcdStateVectorSimulat
         shots = kwargs.get("shots")
         batch_size = kwargs.get("batch_size")
         return StateVectorSimulation(qubit_count, shots, batch_size)
-
-    def run(self, ir: Union[JaqcdProgram, OQ3Program], *args, **kwargs) -> GateModelTaskResult:
-        """run ir with appropriate simulator superclass method"""
-        result = self._run_internal(ir, *args, **kwargs)
-        result.taskMetadata.deviceId = "braket_sv"
-        return result
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
@@ -139,92 +127,9 @@ class StateVectorSimulator(OpenQASMStateVectorSimulator, JaqcdStateVectorSimulat
                             {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                             {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                         ],
-                    },
-                    "braket.ir.openqasm.program": {
-                        "actionType": "braket.ir.openqasm.program",
-                        "version": ["1"],
-                        "supportedOperations": [
-                            # OpenQASM primitives
-                            "U",
-                            "GPhase",
-                            # builtin Braket gates
-                            "ccnot",
-                            "cnot",
-                            "cphaseshift",
-                            "cphaseshift00",
-                            "cphaseshift01",
-                            "cphaseshift10",
-                            "cswap",
-                            "cv",
-                            "cy",
-                            "cz",
-                            "ecr",
-                            "h",
-                            "i",
-                            "iswap",
-                            "pswap",
-                            "phaseshift",
-                            "rx",
-                            "ry",
-                            "rz",
-                            "s",
-                            "si",
-                            "swap",
-                            "t",
-                            "ti",
-                            "unitary",
-                            "v",
-                            "vi",
-                            "x",
-                            "xx",
-                            "xy",
-                            "y",
-                            "yy",
-                            "z",
-                            "zz",
-                        ],
-                        "supportedResultTypes": [
-                            {
-                                "name": "Sample",
-                                "observables": observables,
-                                "minShots": 1,
-                                "maxShots": max_shots,
-                            },
-                            {
-                                "name": "Expectation",
-                                "observables": observables,
-                                "minShots": 0,
-                                "maxShots": max_shots,
-                            },
-                            {
-                                "name": "Variance",
-                                "observables": observables,
-                                "minShots": 0,
-                                "maxShots": max_shots,
-                            },
-                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
-                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
-                            {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
-                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
-                        ],
-                    },
+                    }
                 },
                 "paradigm": {"qubitCount": qubit_count},
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
             }
         )
-
-    @singledispatchmethod
-    def _run_internal(
-        self, ir: Union[OQ3Program, JaqcdProgram], *args, **kwargs
-    ) -> GateModelTaskResult:
-        """run OpenQASM program"""
-        return OpenQASMStateVectorSimulator.run(self, ir, *args, **kwargs)
-
-    @_run_internal.register
-    def _(self, ir: JaqcdProgram, *args, **kwargs) -> GateModelTaskResult:
-        """run Jaqcd program"""
-        return JaqcdStateVectorSimulator.run(self, ir, *args, **kwargs)
-
-
-DefaultSimulator = StateVectorSimulator

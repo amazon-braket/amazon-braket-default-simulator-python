@@ -13,7 +13,7 @@
 
 import uuid
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from braket.device_schema.device_action_properties import DeviceActionType
 from braket.device_schema.simulators import GateModelSimulatorDeviceCapabilities
@@ -27,13 +27,10 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 
 
 class BaseLocalOQ3Simulator(BaseLocalSimulator):
-    @property
-    def device_action_type(self) -> DeviceActionType:
-        return DeviceActionType.OPENQASM
-
     def run(
         self,
         openqasm_ir: Program,
+        qubit_count: Optional[int] = 0,
         shots: int = 0,
         *,
         batch_size: int = 1,
@@ -43,6 +40,7 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
         Args:
             openqasm_ir (Program): ir representation of a braket circuit specifying the
                 instructions to execute.
+            qubit_count (int, optional): parameter present for backwards compatibility.
             shots (int): The number of times to run the circuit.
             batch_size (int): The size of the circuit partitions to contract,
                 if applying multiple gates at a time is desired; see `StateVectorSimulation`.
@@ -66,8 +64,14 @@ class BaseLocalOQ3Simulator(BaseLocalSimulator):
         )
         qubit_count = circuit.num_qubits
 
-        self._validate_ir_results_compatibility(circuit.results)
-        self._validate_ir_instructions_compatibility(circuit)
+        self._validate_ir_results_compatibility(
+            circuit.results,
+            device_action_type=DeviceActionType.OPENQASM,
+        )
+        self._validate_ir_instructions_compatibility(
+            circuit,
+            device_action_type=DeviceActionType.OPENQASM,
+        )
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit.results, qubit_count)
 
         operations = circuit.instructions
