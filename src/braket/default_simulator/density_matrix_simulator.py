@@ -12,37 +12,32 @@
 # language governing permissions and limitations under the License.
 
 import sys
-from typing import Union
 
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-from braket.ir.jaqcd import Program as JaqcdProgram
-from braket.ir.openqasm import Program as OQ3Program
-from braket.task_result import GateModelTaskResult
 
-from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
-from braket.default_simulator.jaqcd_density_matrix_simulator import JaqcdDensityMatrixSimulator
-from braket.default_simulator.openqasm._helpers.utils import singledispatchmethod
-from braket.default_simulator.openqasm_density_matrix_simulator import (
-    OpenQASMDensityMatrixSimulator,
-)
+from braket.default_simulator import DensityMatrixSimulation
+from braket.default_simulator.simulator import BaseLocalSimulator
 
 
-class DensityMatrixSimulator(OpenQASMDensityMatrixSimulator, JaqcdDensityMatrixSimulator):
+class DensityMatrixSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_dm"
 
     def initialize_simulation(self, **kwargs) -> DensityMatrixSimulation:
+        """
+        Initialize density matrix simulation.
+
+        Args:
+            **kwargs: qubit_count, shots, batch_size
+
+        Returns:
+            DensityMatrixSimulation: Initialized simulation.
+        """
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         return DensityMatrixSimulation(qubit_count, shots)
-
-    def run(self, ir: Union[JaqcdProgram, OQ3Program], *args, **kwargs) -> GateModelTaskResult:
-        """run ir with appropriate simulator superclass method"""
-        result = self._run_internal(ir, *args, **kwargs)
-        result.taskMetadata.deviceId = "braket_dm"
-        return result
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
@@ -219,15 +214,3 @@ class DensityMatrixSimulator(OpenQASMDensityMatrixSimulator, JaqcdDensityMatrixS
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
             }
         )
-
-    @singledispatchmethod
-    def _run_internal(
-        self, ir: Union[OQ3Program, JaqcdProgram], *args, **kwargs
-    ) -> GateModelTaskResult:
-        """run OpenQASM program"""
-        return OpenQASMDensityMatrixSimulator.run(self, ir, *args, **kwargs)
-
-    @_run_internal.register
-    def _(self, ir: JaqcdProgram, *args, **kwargs) -> GateModelTaskResult:
-        """run Jaqcd program"""
-        return JaqcdDensityMatrixSimulator.run(self, ir, *args, **kwargs)

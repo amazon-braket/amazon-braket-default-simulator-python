@@ -12,31 +12,25 @@
 # language governing permissions and limitations under the License.
 
 import sys
-from typing import Union
 
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-from braket.ir.jaqcd import Program as JaqcdProgram
-from braket.ir.openqasm import Program as OQ3Program
-from braket.task_result import GateModelTaskResult
 
-from braket.default_simulator.jaqcd_state_vector_simulator import JaqcdStateVectorSimulator
-from braket.default_simulator.openqasm._helpers.utils import singledispatchmethod
-from braket.default_simulator.openqasm_state_vector_simulator import OpenQASMStateVectorSimulator
+from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class StateVectorSimulator(OpenQASMStateVectorSimulator, JaqcdStateVectorSimulator):
+class StateVectorSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_sv"
 
     def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
         """
         Initialize state vector simulation.
 
-        Kwargs:
-            qubit_count (int), shots (int), batch_size (int)
+        Args:
+            **kwargs: qubit_count, shots, batch_size
 
         Returns:
             StateVectorSimulation: Initialized simulation.
@@ -45,12 +39,6 @@ class StateVectorSimulator(OpenQASMStateVectorSimulator, JaqcdStateVectorSimulat
         shots = kwargs.get("shots")
         batch_size = kwargs.get("batch_size")
         return StateVectorSimulation(qubit_count, shots, batch_size)
-
-    def run(self, ir: Union[JaqcdProgram, OQ3Program], *args, **kwargs) -> GateModelTaskResult:
-        """run ir with appropriate simulator superclass method"""
-        result = self._run_internal(ir, *args, **kwargs)
-        result.taskMetadata.deviceId = "braket_sv"
-        return result
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
@@ -213,18 +201,6 @@ class StateVectorSimulator(OpenQASMStateVectorSimulator, JaqcdStateVectorSimulat
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
             }
         )
-
-    @singledispatchmethod
-    def _run_internal(
-        self, ir: Union[OQ3Program, JaqcdProgram], *args, **kwargs
-    ) -> GateModelTaskResult:
-        """run OpenQASM program"""
-        return OpenQASMStateVectorSimulator.run(self, ir, *args, **kwargs)
-
-    @_run_internal.register
-    def _(self, ir: JaqcdProgram, *args, **kwargs) -> GateModelTaskResult:
-        """run Jaqcd program"""
-        return JaqcdStateVectorSimulator.run(self, ir, *args, **kwargs)
 
 
 DefaultSimulator = StateVectorSimulator
