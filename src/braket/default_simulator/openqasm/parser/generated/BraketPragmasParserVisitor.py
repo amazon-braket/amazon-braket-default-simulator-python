@@ -59,8 +59,13 @@ class BraketPragmasParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by BraketPragmasParser#multiTarget.
-    def visitMultiTarget(self, ctx:BraketPragmasParser.MultiTargetContext):
+    # Visit a parse tree produced by BraketPragmasParser#MultiTargetIdentifiers.
+    def visitMultiTargetIdentifiers(self, ctx:BraketPragmasParser.MultiTargetIdentifiersContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#MultiTargetAll.
+    def visitMultiTargetAll(self, ctx:BraketPragmasParser.MultiTargetAllContext):
         return self.visitChildren(ctx)
 
 

@@ -1,5 +1,6 @@
 import cmath
 import json
+import re
 import sys
 from collections import Counter, namedtuple
 
@@ -376,6 +377,7 @@ def test_result_types_analytic(stdgates):
 
     #pragma braket result state_vector
     #pragma braket result probability
+    #pragma braket result probability all
     #pragma braket result probability q
     #pragma braket result probability q[0]
     #pragma braket result probability q[0:1]
@@ -400,20 +402,21 @@ def test_result_types_analytic(stdgates):
 
     assert result_types[0].type == StateVector()
     assert result_types[1].type == Probability()
-    assert result_types[2].type == Probability(targets=(0, 1, 2))
-    assert result_types[3].type == Probability(targets=(0,))
-    assert result_types[4].type == Probability(targets=(0, 1))
-    assert result_types[5].type == Probability(targets=(0, 2, 1))
-    assert result_types[6].type == Amplitude(states=("001", "110"))
-    assert result_types[7].type == DensityMatrix()
-    assert result_types[8].type == DensityMatrix(targets=(0, 1, 2))
-    assert result_types[9].type == DensityMatrix(targets=(0,))
-    assert result_types[10].type == DensityMatrix(targets=(0, 1))
+    assert result_types[2].type == Probability()
+    assert result_types[3].type == Probability(targets=(0, 1, 2))
+    assert result_types[4].type == Probability(targets=(0,))
+    assert result_types[5].type == Probability(targets=(0, 1))
+    assert result_types[6].type == Probability(targets=(0, 2, 1))
+    assert result_types[7].type == Amplitude(states=("001", "110"))
+    assert result_types[8].type == DensityMatrix()
+    assert result_types[9].type == DensityMatrix(targets=(0, 1, 2))
+    assert result_types[10].type == DensityMatrix(targets=(0,))
     assert result_types[11].type == DensityMatrix(targets=(0, 1))
-    assert result_types[12].type == DensityMatrix(targets=(0, 2, 1))
-    assert result_types[13].type == Expectation(observable=("z",), targets=(0,))
-    assert result_types[14].type == Variance(observable=("x", "z", "h"), targets=(0, 2, 1))
-    assert result_types[15].type == Expectation(
+    assert result_types[12].type == DensityMatrix(targets=(0, 1))
+    assert result_types[13].type == DensityMatrix(targets=(0, 2, 1))
+    assert result_types[14].type == Expectation(observable=("z",), targets=(0,))
+    assert result_types[15].type == Variance(observable=("x", "z", "h"), targets=(0, 2, 1))
+    assert result_types[16].type == Expectation(
         observable=([[[0, 0], [0, -1]], [[0, 1], [0, 0]]],),
         targets=(0,),
     )
@@ -432,31 +435,22 @@ def test_result_types_analytic(stdgates):
     )
     assert np.allclose(
         result_types[3].value,
-        [0.5, 0.5],
+        [0, 0.5, 0, 0, 0, 0, 0.5, 0],
     )
     assert np.allclose(
         result_types[4].value,
-        [0.5, 0, 0, 0.5],
+        [0.5, 0.5],
     )
     assert np.allclose(
         result_types[5].value,
+        [0.5, 0, 0, 0.5],
+    )
+    assert np.allclose(
+        result_types[6].value,
         [0, 0, 0.5, 0, 0, 0.5, 0, 0],
     )
-    assert np.isclose(result_types[6].value["001"], 1 / np.sqrt(2))
-    assert np.isclose(result_types[6].value["110"], 1 / np.sqrt(2))
-    assert np.allclose(
-        result_types[7].value,
-        [
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-        ],
-    )
+    assert np.isclose(result_types[7].value["001"], 1 / np.sqrt(2))
+    assert np.isclose(result_types[7].value["110"], 1 / np.sqrt(2))
     assert np.allclose(
         result_types[8].value,
         [
@@ -472,11 +466,20 @@ def test_result_types_analytic(stdgates):
     )
     assert np.allclose(
         result_types[9].value,
-        np.eye(2) * 0.5,
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0.5, 0, 0, 0, 0, 0.5, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
     )
     assert np.allclose(
         result_types[10].value,
-        [[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]],
+        np.eye(2) * 0.5,
     )
     assert np.allclose(
         result_types[11].value,
@@ -484,6 +487,10 @@ def test_result_types_analytic(stdgates):
     )
     assert np.allclose(
         result_types[12].value,
+        [[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]],
+    )
+    assert np.allclose(
+        result_types[13].value,
         [
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
@@ -495,9 +502,9 @@ def test_result_types_analytic(stdgates):
             [0, 0, 0, 0, 0, 0, 0, 0],
         ],
     )
-    assert np.allclose(result_types[13].value, 0)
-    assert np.allclose(result_types[14].value, 1)
-    assert np.allclose(result_types[15].value, 0)
+    assert np.allclose(result_types[14].value, 0)
+    assert np.allclose(result_types[15].value, 1)
+    assert np.allclose(result_types[16].value, 0)
 
 
 def test_invalid_standard_observable_target():
@@ -512,6 +519,32 @@ def test_invalid_standard_observable_target():
 
     with pytest.raises(ValueError, match=must_be_one_qubit):
         simulator.run(program, shots=0)
+
+
+@pytest.mark.parametrize("shots", (0, 10))
+def test_invalid_hermitian_target(shots):
+    qasm = """
+    OPENQASM 3.0;
+    qubit[3] q;
+    i q;
+    #pragma braket result expectation x(q[0])
+    #pragma braket result expectation z(q[0])
+    #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0] # noqa: E501
+    """
+    simulator = StateVectorSimulator()
+    program = OpenQASMProgram(source=qasm)
+
+    invalid_observable = re.escape(
+        "Invalid observable specified: ["
+        "[[-6.0, 0.0], [2.0, 1.0], [-3.0, 0.0], [-5.0, 2.0]], "
+        "[[2.0, -1.0], [0.0, 0.0], [2.0, -1.0], [-5.0, 4.0]], "
+        "[[-3.0, 0.0], [2.0, 1.0], [0.0, 0.0], [-4.0, 3.0]], "
+        "[[-5.0, -2.0], [-5.0, -4.0], [-4.0, -3.0], [-6.0, 0.0]]"
+        "], targets: [0]"
+    )
+
+    with pytest.raises(ValueError, match=invalid_observable):
+        simulator.run(program, shots=shots)
 
 
 @pytest.fixture

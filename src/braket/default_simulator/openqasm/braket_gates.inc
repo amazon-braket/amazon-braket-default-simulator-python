@@ -2,7 +2,7 @@
 
 
 // identity gate
-gate i a {}
+gate i a { gphase(0) a; }
 
 // phase gate
 gate phaseshift(λ) a { ctrl @ gphase(λ) a; }

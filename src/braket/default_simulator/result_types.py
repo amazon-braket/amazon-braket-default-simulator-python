@@ -364,7 +364,7 @@ def _from_single_observable(
             else:
                 return Hermitian(matrix, targets)
         except Exception:
-            raise ValueError(f"Invalid observable specified: {observable}")
+            raise ValueError(f"Invalid observable specified: {observable}, targets: {targets}")
 
 
 def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):

@@ -53,7 +53,8 @@ optionalMultiTargetResultTypeName
     ;
 
 multiTarget
-    : indexedIdentifier (COMMA indexedIdentifier)*
+    : indexedIdentifier (COMMA indexedIdentifier)*      # MultiTargetIdentifiers
+    | ALL                                               # MultiTargetAll
     ;
 
 multiStateResultType
@@ -79,8 +80,7 @@ observable
     ;
 
 standardObservable
-    : standardObservableName
-    | standardObservableName LPAREN indexedIdentifier RPAREN
+    : standardObservableName LPAREN indexedIdentifier RPAREN
     ;
 
 tensorProductObservable
@@ -88,7 +88,7 @@ tensorProductObservable
     ;
 
 hermitianObservable
-    : HERMITIAN LPAREN LBRACKET LBRACKET complexNumber COMMA complexNumber RBRACKET COMMA LBRACKET complexNumber COMMA complexNumber RBRACKET RBRACKET RPAREN indexedIdentifier
+    : HERMITIAN LPAREN twoDimMatrix RPAREN multiTarget
     ;
 
 observableResultTypeName
