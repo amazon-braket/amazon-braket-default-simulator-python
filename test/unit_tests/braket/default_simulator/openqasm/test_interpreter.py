@@ -244,6 +244,7 @@ def test_assign_variable():
 def test_array_declaration():
     qasm = """
     array[uint[8], 2] row = {1, 2};
+    array[int, 2] unsized_int = {1, 2};
     array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4}};
     array[uint[8], 2, 2] by_ref = {row, row};
     array[uint[8], 1, 1, 1] with_expressions = {{{1 + 2}}};
@@ -252,6 +253,9 @@ def test_array_declaration():
 
     assert context.get_type("row") == ArrayType(
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2)]
+    )
+    assert context.get_type("unsized_int") == ArrayType(
+        base_type=IntType(), dimensions=[IntegerLiteral(2)]
     )
     assert context.get_type("multi_dim") == ArrayType(
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
@@ -265,6 +269,12 @@ def test_array_declaration():
     )
 
     assert context.get_value("row") == ArrayLiteral(
+        [
+            IntegerLiteral(1),
+            IntegerLiteral(2),
+        ]
+    )
+    assert context.get_value("unsized_int") == ArrayLiteral(
         [
             IntegerLiteral(1),
             IntegerLiteral(2),
