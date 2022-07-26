@@ -29,6 +29,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     BitstringLiteral,
     BitType,
     BooleanLiteral,
+    BoolType,
     FloatLiteral,
     FloatType,
     Identifier,
@@ -65,6 +66,23 @@ def test_bit_declaration():
     assert context.get_value("register_initialized") == ArrayLiteral(
         [BooleanLiteral(False), BooleanLiteral(True)]
     )
+
+
+def test_bool_declaration():
+    qasm = """
+    bool uninitialized;
+    bool initialized_int = 0;
+    bool initialized_bool = true;
+    """
+    context = Interpreter().run(qasm)
+
+    assert context.get_type("uninitialized") == BoolType()
+    assert context.get_type("initialized_int") == BoolType()
+    assert context.get_type("initialized_bool") == BoolType()
+
+    assert context.get_value("uninitialized") is None
+    assert context.get_value("initialized_int") == BooleanLiteral(False)
+    assert context.get_value("initialized_bool") == BooleanLiteral(True)
 
 
 def test_int_declaration():
