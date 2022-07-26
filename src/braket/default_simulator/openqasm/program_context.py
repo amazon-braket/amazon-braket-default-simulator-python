@@ -5,7 +5,7 @@ from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import GPhase, U, Unitary
 
-from .. import KrausOperation
+from ..noise_operations import KrausOperation
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,

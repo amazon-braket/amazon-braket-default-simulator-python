@@ -10,22 +10,27 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
-
+import uuid
 import warnings
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Union
 
 from braket.device_schema import DeviceActionType, DeviceCapabilities
-from braket.ir.annealing import Problem
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
-from braket.ir.openqasm import Program as OQ3Program
-from braket.task_result import AnnealingTaskResult, GateModelTaskResult, ResultTypeValue
-from braket.task_result.oq3_program_result_v1 import OQ3ProgramResult
+from braket.ir.openqasm import Program as OpenQASMProgram
+from braket.task_result import (
+    AdditionalMetadata,
+    GateModelTaskResult,
+    ResultTypeValue,
+    TaskMetadata,
+)
 
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.operation import Observable, Operation
+from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
     ResultType,
     TargetedResultType,
@@ -53,16 +58,34 @@ _NOISE_INSTRUCTIONS = frozenset(
 
 
 class BaseLocalSimulator(BraketSimulator):
-    @property
-    @abstractmethod
-    def device_action_type(self) -> DeviceActionType:
-        """DeviceActionType"""
-
-    @abstractmethod
     def run(
-        self, ir: Union[JaqcdProgram, OQ3Program, Problem], *args, **kwargs
-    ) -> Union[GateModelTaskResult, AnnealingTaskResult, OQ3ProgramResult]:
-        """run method"""
+        self, circuit_ir: Union[OpenQASMProgram, JaqcdProgram], *args, **kwargs
+    ) -> GateModelTaskResult:
+        """
+        Simulate a circuit using either OpenQASM or Jaqcd.
+
+        Args:
+            circuit_ir (Union[OpenQASMProgram, JaqcdProgram]): Circuit specification.
+            qubit_count (int, jaqcd-only): Number of qubits.
+            shots (int, optional): The number of shots to simulate. Default is 0, which
+                performs a full analytical simulation.
+            batch_size (int, optional): The size of the circuit partitions to contract,
+                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
+                Must be a positive integer.
+                Defaults to 1, which means gates are applied one at a time without any
+                optimized contraction.
+
+        Returns:
+            GateModelTaskResult: object that represents the result
+
+        Raises:
+            ValueError: If result types are not specified in the IR or sample is specified
+                as a result type when shots=0. Or, if StateVector and Amplitude result types
+                are requested when shots>0.
+        """
+        if isinstance(circuit_ir, OpenQASMProgram):
+            return self.run_openqasm(circuit_ir, *args, **kwargs)
+        return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
     @property
     @abstractmethod
@@ -73,7 +96,9 @@ class BaseLocalSimulator(BraketSimulator):
     def initialize_simulation(self, **kwargs) -> Simulation:
         """Initializes simulation with keyword arguments"""
 
-    def _validate_ir_results_compatibility(self, results: List[Results]) -> None:
+    def _validate_ir_results_compatibility(
+        self, results: List[Results], device_action_type
+    ) -> None:
         """
         Validate that requested result types are valid for the simulator.
 
@@ -85,9 +110,7 @@ class BaseLocalSimulator(BraketSimulator):
         """
         if results:
             circuit_result_types_name = [result.__class__.__name__ for result in results]
-            supported_result_types = self.properties.action[
-                self.device_action_type
-            ].supportedResultTypes
+            supported_result_types = self.properties.action[device_action_type].supportedResultTypes
             supported_result_types_name = [result.name for result in supported_result_types]
             for name in circuit_result_types_name:
                 if name not in supported_result_types_name:
@@ -97,7 +120,9 @@ class BaseLocalSimulator(BraketSimulator):
 
     @staticmethod
     def _validate_shots_and_ir_results(
-        shots: int, results: List[Results], qubit_count: int
+        shots: int,
+        results: List[Results],
+        qubit_count: int,
     ) -> None:
         """
         Validated that requested result types are valid for given shots and qubit count.
@@ -164,6 +189,26 @@ class BaseLocalSimulator(BraketSimulator):
             for index in range(len(results))
         ]
 
+    def _create_results_obj(
+        self,
+        results: List[Dict[str, Any]],
+        openqasm_ir: OpenQASMProgram,
+        simulation: Simulation,
+    ) -> GateModelTaskResult:
+        return GateModelTaskResult.construct(
+            taskMetadata=TaskMetadata(
+                id=str(uuid.uuid4()),
+                shots=simulation.shots,
+                deviceId=self.DEVICE_ID,
+            ),
+            additionalMetadata=AdditionalMetadata(
+                action=openqasm_ir,
+            ),
+            resultTypes=results,
+            measurements=self._formatted_measurements(simulation),
+            measuredQubits=self._get_measured_qubits(simulation.qubit_count),
+        )
+
     @staticmethod
     def _validate_operation_qubits(operations: List[Operation]) -> None:
         qubits_referenced = {target for operation in operations for target in operation.targets}
@@ -186,7 +231,9 @@ class BaseLocalSimulator(BraketSimulator):
                 )
 
     def _validate_ir_instructions_compatibility(
-        self, circuit_ir: Union[JaqcdProgram, Circuit]
+        self,
+        circuit_ir: Union[JaqcdProgram, Circuit],
+        device_action_type: DeviceActionType,
     ) -> None:
         """
         Validate that requested IR instructions are valid for the simulator.
@@ -202,7 +249,7 @@ class BaseLocalSimulator(BraketSimulator):
         ]
         supported_instructions = frozenset(
             op.lower().replace("_", "")
-            for op in self.properties.action[self.device_action_type].supportedOperations
+            for op in self.properties.action[device_action_type].supportedOperations
         )
         no_noise = True
         for name in circuit_instruction_names:
@@ -270,3 +317,149 @@ class BaseLocalSimulator(BraketSimulator):
             list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
             for sample in simulation.retrieve_samples()
         ]
+
+    def run_openqasm(
+        self,
+        openqasm_ir: OpenQASMProgram,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
+    ) -> GateModelTaskResult:
+        """Executes the circuit specified by the supplied `circuit_ir` on the simulator.
+
+        Args:
+            openqasm_ir (Program): ir representation of a braket circuit specifying the
+                instructions to execute.
+            shots (int): The number of times to run the circuit.
+            batch_size (int): The size of the circuit partitions to contract,
+                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
+                Must be a positive integer.
+                Defaults to 1, which means gates are applied one at a time without any
+                optimized contraction.
+        Returns:
+            GateModelTaskResult: object that represents the result
+
+        Raises:
+            ValueError: If result types are not specified in the IR or sample is specified
+                as a result type when shots=0. Or, if StateVector and Amplitude result types
+                are requested when shots>0.
+        """
+        is_file = openqasm_ir.source.endswith(".qasm")
+        interpreter = Interpreter()
+        circuit = interpreter.build_circuit(
+            source=openqasm_ir.source,
+            inputs=openqasm_ir.inputs,
+            is_file=is_file,
+        )
+        qubit_count = circuit.num_qubits
+
+        self._validate_ir_results_compatibility(
+            circuit.results,
+            device_action_type=DeviceActionType.OPENQASM,
+        )
+        self._validate_ir_instructions_compatibility(
+            circuit,
+            device_action_type=DeviceActionType.OPENQASM,
+        )
+        BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit.results, qubit_count)
+
+        operations = circuit.instructions
+        BaseLocalSimulator._validate_operation_qubits(operations)
+
+        simulation = self.initialize_simulation(
+            qubit_count=qubit_count, shots=shots, batch_size=batch_size
+        )
+        simulation.evolve(operations)
+
+        results = circuit.results
+
+        if not shots:
+            result_types = BaseLocalSimulator._translate_result_types(circuit.results)
+            BaseLocalSimulator._validate_result_types_qubits_exist(
+                [
+                    result_type
+                    for result_type in result_types
+                    if isinstance(result_type, TargetedResultType)
+                ],
+                qubit_count,
+            )
+            results = self._generate_results(
+                circuit.results,
+                result_types,
+                simulation,
+            )
+
+        return self._create_results_obj(results, openqasm_ir, simulation)
+
+    def run_jaqcd(
+        self,
+        circuit_ir: JaqcdProgram,
+        qubit_count: int,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
+    ) -> GateModelTaskResult:
+        """Executes the circuit specified by the supplied `circuit_ir` on the simulator.
+
+        Args:
+            circuit_ir (Program): ir representation of a braket circuit specifying the
+                instructions to execute.
+            qubit_count (int): The number of qubits to simulate.
+            shots (int): The number of times to run the circuit.
+            batch_size (int): The size of the circuit partitions to contract,
+                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
+                Must be a positive integer.
+                Defaults to 1, which means gates are applied one at a time without any
+                optimized contraction.
+        Returns:
+            GateModelTaskResult: object that represents the result
+
+        Raises:
+            ValueError: If result types are not specified in the IR or sample is specified
+                as a result type when shots=0. Or, if StateVector and Amplitude result types
+                are requested when shots>0.
+        """
+        self._validate_ir_results_compatibility(
+            circuit_ir.results,
+            device_action_type=DeviceActionType.JAQCD,
+        )
+        self._validate_ir_instructions_compatibility(
+            circuit_ir,
+            device_action_type=DeviceActionType.JAQCD,
+        )
+        BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit_ir.results, qubit_count)
+
+        operations = [
+            from_braket_instruction(instruction) for instruction in circuit_ir.instructions
+        ]
+
+        if shots > 0 and circuit_ir.basis_rotation_instructions:
+            for instruction in circuit_ir.basis_rotation_instructions:
+                operations.append(from_braket_instruction(instruction))
+
+        self._validate_operation_qubits(operations)
+
+        simulation = self.initialize_simulation(
+            qubit_count=qubit_count, shots=shots, batch_size=batch_size
+        )
+        simulation.evolve(operations)
+
+        results = []
+
+        if not shots and circuit_ir.results:
+            result_types = self._translate_result_types(circuit_ir.results)
+            self._validate_result_types_qubits_exist(
+                [
+                    result_type
+                    for result_type in result_types
+                    if isinstance(result_type, TargetedResultType)
+                ],
+                qubit_count,
+            )
+            results = self._generate_results(
+                circuit_ir.results,
+                result_types,
+                simulation,
+            )
+
+        return self._create_results_obj(results, circuit_ir, simulation)

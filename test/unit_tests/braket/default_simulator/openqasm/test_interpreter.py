@@ -1,5 +1,4 @@
 import re
-from unittest.mock import Mock, call, patch
 
 import numpy as np
 import pytest
@@ -40,7 +39,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     QuantumGateDefinition,
     UintType,
 )
-from braket.default_simulator.openqasm.program_context import ProgramContext, QubitTable
+from braket.default_simulator.openqasm.program_context import QubitTable
 
 
 def test_bit_declaration():

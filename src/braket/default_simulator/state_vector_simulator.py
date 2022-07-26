@@ -18,19 +18,19 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceParameters,
 )
 
-from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
+from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
-class StateVectorSimulator(BaseLocalJaqcdSimulator):
+class StateVectorSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_sv"
 
     def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
         """
         Initialize state vector simulation.
 
-        Kwargs:
-            qubit_count (int), shots (int), batch_size (int)
+        Args:
+            **kwargs: qubit_count, shots, batch_size
 
         Returns:
             StateVectorSimulation: Initialized simulation.
@@ -127,7 +127,75 @@ class StateVectorSimulator(BaseLocalJaqcdSimulator):
                             {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                             {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                         ],
-                    }
+                    },
+                    "braket.ir.openqasm.program": {
+                        "actionType": "braket.ir.openqasm.program",
+                        "version": ["1"],
+                        "supportedOperations": [
+                            # OpenQASM primitives
+                            "U",
+                            "GPhase",
+                            # builtin Braket gates
+                            "ccnot",
+                            "cnot",
+                            "cphaseshift",
+                            "cphaseshift00",
+                            "cphaseshift01",
+                            "cphaseshift10",
+                            "cswap",
+                            "cv",
+                            "cy",
+                            "cz",
+                            "ecr",
+                            "h",
+                            "i",
+                            "iswap",
+                            "pswap",
+                            "phaseshift",
+                            "rx",
+                            "ry",
+                            "rz",
+                            "s",
+                            "si",
+                            "swap",
+                            "t",
+                            "ti",
+                            "unitary",
+                            "v",
+                            "vi",
+                            "x",
+                            "xx",
+                            "xy",
+                            "y",
+                            "yy",
+                            "z",
+                            "zz",
+                        ],
+                        "supportedResultTypes": [
+                            {
+                                "name": "Sample",
+                                "observables": observables,
+                                "minShots": 1,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Expectation",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Variance",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                            {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
+                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+                        ],
+                    },
                 },
                 "paradigm": {"qubitCount": qubit_count},
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),

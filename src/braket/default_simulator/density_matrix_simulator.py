@@ -18,14 +18,23 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceParameters,
 )
 
-from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
-from braket.default_simulator.jaqcd_simulator import BaseLocalJaqcdSimulator
+from braket.default_simulator import DensityMatrixSimulation
+from braket.default_simulator.simulator import BaseLocalSimulator
 
 
-class DensityMatrixSimulator(BaseLocalJaqcdSimulator):
+class DensityMatrixSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_dm"
 
     def initialize_simulation(self, **kwargs) -> DensityMatrixSimulation:
+        """
+        Initialize density matrix simulation.
+
+        Args:
+            **kwargs: qubit_count, shots, batch_size
+
+        Returns:
+            DensityMatrixSimulation: Initialized simulation.
+        """
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         return DensityMatrixSimulation(qubit_count, shots)
@@ -48,6 +57,85 @@ class DensityMatrixSimulator(BaseLocalJaqcdSimulator):
                     "shotsRange": [0, max_shots],
                 },
                 "action": {
+                    "braket.ir.openqasm.program": {
+                        "actionType": "braket.ir.openqasm.program",
+                        "version": ["1"],
+                        "supportedOperations": sorted(
+                            [
+                                # OpenQASM primitives
+                                "U",
+                                "GPhase",
+                                # builtin Braket gates
+                                "ccnot",
+                                "cnot",
+                                "cphaseshift",
+                                "cphaseshift00",
+                                "cphaseshift01",
+                                "cphaseshift10",
+                                "cswap",
+                                "cv",
+                                "cy",
+                                "cz",
+                                "ecr",
+                                "h",
+                                "i",
+                                "iswap",
+                                "pswap",
+                                "phaseshift",
+                                "rx",
+                                "ry",
+                                "rz",
+                                "s",
+                                "si",
+                                "swap",
+                                "t",
+                                "ti",
+                                "unitary",
+                                "v",
+                                "vi",
+                                "x",
+                                "xx",
+                                "xy",
+                                "y",
+                                "yy",
+                                "z",
+                                "zz",
+                                # noise operations
+                                "bit_flip",
+                                "phase_flip",
+                                "pauli_channel",
+                                "depolarizing",
+                                "two_qubit_depolarizing",
+                                "two_qubit_dephasing",
+                                "amplitude_damping",
+                                "generalized_amplitude_damping",
+                                "phase_damping",
+                                "kraus",
+                            ]
+                        ),
+                        "supportedResultTypes": [
+                            {
+                                "name": "Sample",
+                                "observables": observables,
+                                "minShots": 1,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Expectation",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Variance",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                            {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
+                        ],
+                    },
                     "braket.ir.jaqcd.program": {
                         "actionType": "braket.ir.jaqcd.program",
                         "version": ["1"],
@@ -120,7 +208,7 @@ class DensityMatrixSimulator(BaseLocalJaqcdSimulator):
                             {"name": "Probability", "minShots": 0, "maxShots": max_shots},
                             {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                         ],
-                    }
+                    },
                 },
                 "paradigm": {"qubitCount": qubit_count},
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
