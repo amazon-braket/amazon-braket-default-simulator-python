@@ -100,14 +100,22 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         obs = observable_result_type_map[result_type](targets=targets, observable=observables)
         return obs
 
-    def visitStandardObservable(
-        self, ctx: BraketPragmasParser.StandardObservableContext
+    def visitStandardObservableIdentifier(
+        self,
+        ctx: BraketPragmasParser.StandardObservableIdentifierContext,
     ) -> Tuple[Tuple[str], int]:
         observable = ctx.standardObservableName().getText()
         target_tuple = self.visit(ctx.indexedIdentifier())
         if len(target_tuple) != 1:
             raise ValueError("Standard observable target must be exactly 1 qubit.")
         return (observable,), target_tuple
+
+    def visitStandardObservableAll(
+        self,
+        ctx: BraketPragmasParser.StandardObservableAllContext,
+    ) -> Tuple[Tuple[str], None]:
+        observable = ctx.standardObservableName().getText()
+        return (observable,), None
 
     def visitTensorProductObservable(
         self, ctx: BraketPragmasParser.TensorProductObservableContext

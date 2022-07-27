@@ -80,7 +80,8 @@ observable
     ;
 
 standardObservable
-    : standardObservableName LPAREN indexedIdentifier RPAREN
+    : standardObservableName LPAREN indexedIdentifier RPAREN    # StandardObservableIdentifier
+    | standardObservableName ALL                                # StandardObservableAll
     ;
 
 tensorProductObservable

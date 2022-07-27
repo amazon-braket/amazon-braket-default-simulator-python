@@ -94,8 +94,13 @@ class BraketPragmasParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by BraketPragmasParser#standardObservable.
-    def visitStandardObservable(self, ctx:BraketPragmasParser.StandardObservableContext):
+    # Visit a parse tree produced by BraketPragmasParser#StandardObservableIdentifier.
+    def visitStandardObservableIdentifier(self, ctx:BraketPragmasParser.StandardObservableIdentifierContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BraketPragmasParser#StandardObservableAll.
+    def visitStandardObservableAll(self, ctx:BraketPragmasParser.StandardObservableAllContext):
         return self.visitChildren(ctx)
 
 

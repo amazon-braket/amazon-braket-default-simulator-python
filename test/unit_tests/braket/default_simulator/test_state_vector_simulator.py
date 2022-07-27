@@ -390,13 +390,12 @@ def test_result_types_analytic(stdgates):
     #pragma braket result density_matrix q[0], q[1]
     #pragma braket result density_matrix q[{0, 2, 1}]
     #pragma braket result expectation z(q[0])
+    #pragma braket result expectation x all
     #pragma braket result variance x(q[0]) @ z(q[2]) @ h(q[1])
     #pragma braket result expectation hermitian([[0, -1im], [0 + 1im, 0]]) q[0]
     """
     program = OpenQASMProgram(source=qasm)
     result = simulator.run(program, shots=0)
-    for rt in result.resultTypes:
-        print(f"{rt.type}: {rt.value}")
 
     result_types = result.resultTypes
 
@@ -415,8 +414,9 @@ def test_result_types_analytic(stdgates):
     assert result_types[12].type == DensityMatrix(targets=(0, 1))
     assert result_types[13].type == DensityMatrix(targets=(0, 2, 1))
     assert result_types[14].type == Expectation(observable=("z",), targets=(0,))
-    assert result_types[15].type == Variance(observable=("x", "z", "h"), targets=(0, 2, 1))
-    assert result_types[16].type == Expectation(
+    assert result_types[15].type == Expectation(observable=("x",))
+    assert result_types[16].type == Variance(observable=("x", "z", "h"), targets=(0, 2, 1))
+    assert result_types[17].type == Expectation(
         observable=([[[0, 0], [0, -1]], [[0, 1], [0, 0]]],),
         targets=(0,),
     )
@@ -503,8 +503,9 @@ def test_result_types_analytic(stdgates):
         ],
     )
     assert np.allclose(result_types[14].value, 0)
-    assert np.allclose(result_types[15].value, 1)
-    assert np.allclose(result_types[16].value, 0)
+    assert np.allclose(result_types[14].value, 0)
+    assert np.allclose(result_types[16].value, 1)
+    assert np.allclose(result_types[17].value, 0)
 
 
 def test_invalid_standard_observable_target():
