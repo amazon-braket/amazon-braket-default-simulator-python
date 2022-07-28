@@ -367,7 +367,6 @@ class BaseLocalSimulator(BraketSimulator):
         BaseLocalSimulator._validate_operation_qubits(operations)
 
         results = circuit.results
-        # perform validation on result types even if not calculating
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
