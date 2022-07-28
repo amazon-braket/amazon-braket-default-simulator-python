@@ -61,30 +61,28 @@ class Circuit:
 
     @property
     def basis_rotation_instructions(self):
+        """
+        This function assumes all observables are commuting.
+        """
 
         basis_rotation_instructions = []
-        observable_map = [None] * self.num_qubits
+        measured_qubits = set()
 
         for result in self.results:
             if isinstance(result, Observable):
-
                 observables = result.observable
                 targets = result.targets or range(self.num_qubits)
 
-                for target, observable in zip(targets, observables):
-                    current_observable = observable_map[target]
-                    if current_observable is not None and current_observable != observable:
-                        raise ValueError("Not simultaneously measurable observables")
-                    observable_map[target] = observable
+                if set(targets).issubset(measured_qubits):
+                    continue
+                elif set(targets).isdisjoint(measured_qubits):
+                    braket_obs = _from_braket_observable(observables, targets)
+                    diagonalizing_gates = braket_obs.diagonalizing_gates()
+                    basis_rotation_instructions.extend(diagonalizing_gates)
+                    measured_qubits |= set(targets)
+                else:
+                    raise NotImplementedError("Partially measured observable target")
 
-        for target, observable in enumerate(observable_map):
-
-            if not observable:
-                continue
-
-            braket_obs = _from_braket_observable([observable], [target])
-            diagonalizing_gates = braket_obs.diagonalizing_gates()
-            basis_rotation_instructions.extend(diagonalizing_gates)
         return basis_rotation_instructions
 
     def __eq__(self, other: Circuit):
