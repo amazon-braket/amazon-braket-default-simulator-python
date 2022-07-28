@@ -528,8 +528,6 @@ def test_invalid_hermitian_target(shots):
     OPENQASM 3.0;
     qubit[3] q;
     i q;
-    #pragma braket result expectation x(q[0])
-    #pragma braket result expectation z(q[0])
     #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0] # noqa: E501
     """
     simulator = StateVectorSimulator()
@@ -931,6 +929,7 @@ def test_basis_rotation():
     h qs;
     #pragma braket result expectation x(q[0])
     #pragma braket result expectation x(qs[0]) @ i(qs[1])
+    #pragma braket result variance x(q[0])
     """
     simulator = StateVectorSimulator()
     result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
