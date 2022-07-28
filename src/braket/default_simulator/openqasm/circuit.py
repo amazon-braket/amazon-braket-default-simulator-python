@@ -3,8 +3,11 @@ from __future__ import annotations
 from typing import List, Optional
 
 from braket.ir.jaqcd.program_v1 import Results
+from braket.ir.jaqcd.shared_models import Observable
 
 from braket.default_simulator.operation import GateOperation, KrausOperation
+from braket.default_simulator.operation_helpers import from_braket_instruction
+from braket.default_simulator.result_types import _from_braket_observable
 
 
 class Circuit:
@@ -55,6 +58,18 @@ class Circuit:
     @property
     def num_qubits(self) -> int:
         return len(self.qubit_set)
+
+    @property
+    def basis_rotation_instructions(self):
+        basis_rotation_instructions = []
+        for result in self.results:
+            if isinstance(result, Observable):
+                observables = result.observable
+                targets = result.targets or range(self.num_qubits)
+                braket_obs = _from_braket_observable(observables, targets)
+                diagonalizing_gates = braket_obs.diagonalizing_gates()
+                basis_rotation_instructions.extend(diagonalizing_gates)
+        return basis_rotation_instructions
 
     def __eq__(self, other: Circuit):
         return (self.instructions, self.results) == (other.instructions, other.results)

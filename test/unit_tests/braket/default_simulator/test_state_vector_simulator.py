@@ -921,3 +921,20 @@ def test_observable_hash_tensor_product():
     hash_dict = StateVectorSimulator._observable_hash(obs)
     matrix_hash = hash_dict[1]
     assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
+
+
+def test_basis_rotation():
+    qasm = """
+    qubit q;
+    qubit[2] qs;
+    i q;
+    h qs;
+    #pragma braket result expectation x(q[0])
+    #pragma braket result expectation x(qs[0]) @ i(qs[1])
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert 400 < np.sum(measurements, axis=0)[0] < 600
+    assert np.sum(measurements, axis=0)[1] == 0
+    assert 400 < np.sum(measurements, axis=0)[2] < 600

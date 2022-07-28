@@ -368,7 +368,6 @@ class BaseLocalSimulator(BraketSimulator):
 
         results = circuit.results
         # perform validation on result types even if not calculating
-        result_types = BaseLocalSimulator._translate_result_types(results)
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
@@ -376,6 +375,7 @@ class BaseLocalSimulator(BraketSimulator):
         simulation.evolve(operations)
 
         if not shots:
+            result_types = BaseLocalSimulator._translate_result_types(results)
             BaseLocalSimulator._validate_result_types_qubits_exist(
                 [
                     result_type
@@ -389,6 +389,8 @@ class BaseLocalSimulator(BraketSimulator):
                 result_types,
                 simulation,
             )
+        else:
+            simulation.evolve(circuit.basis_rotation_instructions)
 
         return self._create_results_obj(results, openqasm_ir, simulation)
 
