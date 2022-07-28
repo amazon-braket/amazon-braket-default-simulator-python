@@ -54,7 +54,8 @@ class Circuit:
             result (Results): Result type to add.
         """
         self.results.append(result)
-        self.qubit_set |= set(result.targets)
+        if result.targets is not None:
+            self.qubit_set |= set(result.targets)
 
     @property
     def num_qubits(self) -> int:
