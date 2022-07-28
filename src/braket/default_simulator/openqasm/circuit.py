@@ -83,6 +83,7 @@ class Circuit:
                     basis_rotation_instructions.extend(diagonalizing_gates)
                     measured_qubits |= set(actual_targets)
                 else:
+                    # this shouldn't impact any circuits coming from the BDK
                     raise NotImplementedError("Partially measured observable target")
 
         return basis_rotation_instructions

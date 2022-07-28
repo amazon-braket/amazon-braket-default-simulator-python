@@ -937,3 +937,29 @@ def test_basis_rotation():
     assert 400 < np.sum(measurements, axis=0)[0] < 600
     assert np.sum(measurements, axis=0)[1] == 0
     assert 400 < np.sum(measurements, axis=0)[2] < 600
+
+
+def test_partially_overlapping_basis_rotation():
+    qasm = """
+    qubit[2] q;
+    i q;
+    #pragma braket result expectation x(q[0])
+    #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1] # noqa: E501
+    """
+    partially_measured = "Partially measured observable target"
+    with pytest.raises(NotImplementedError, match=partially_measured):
+        simulator = StateVectorSimulator()
+        simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+
+
+def test_sample():
+    qasm = """
+    qubit[2] qs;
+    i qs;
+    #pragma braket result sample x(qs[0]) @ i(qs[1])
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert 400 < np.sum(measurements, axis=0)[0] < 600
+    assert np.sum(measurements, axis=0)[1] == 0

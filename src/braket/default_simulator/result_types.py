@@ -322,21 +322,6 @@ def _(variance: jaqcd.Variance):
     return Variance(_from_braket_observable(variance.observable, variance.targets))
 
 
-class Sample(ObservableResultType):
-    """
-    Not an exact result type, but present for validation reasons.
-    """
-
-    @staticmethod
-    def _calculate_single_quantity(simulation: Simulation, observable: Observable) -> float:
-        raise NotImplementedError("Cannot calculate exact sample from simulation")
-
-
-@_from_braket_result_type.register
-def _(sample: jaqcd.Sample):
-    return Sample(_from_braket_observable(sample.observable, sample.targets))
-
-
 def _from_braket_observable(
     ir_observable: List[Union[str, List[List[List[float]]]]], ir_targets: Optional[List[int]] = None
 ) -> Observable:
