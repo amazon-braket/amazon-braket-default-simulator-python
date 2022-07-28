@@ -73,15 +73,15 @@ class Circuit:
         for result in self.results:
             if isinstance(result, Observable):
                 observables = result.observable
-                targets = result.targets or range(self.num_qubits)
+                actual_targets = result.targets or range(self.num_qubits)
 
-                if set(targets).issubset(measured_qubits):
+                if set(actual_targets).issubset(measured_qubits):
                     continue
-                elif set(targets).isdisjoint(measured_qubits):
-                    braket_obs = _from_braket_observable(observables, targets)
-                    diagonalizing_gates = braket_obs.diagonalizing_gates()
+                elif set(actual_targets).isdisjoint(measured_qubits):
+                    braket_obs = _from_braket_observable(observables, result.targets)
+                    diagonalizing_gates = braket_obs.diagonalizing_gates(self.num_qubits)
                     basis_rotation_instructions.extend(diagonalizing_gates)
-                    measured_qubits |= set(targets)
+                    measured_qubits |= set(actual_targets)
                 else:
                     raise NotImplementedError("Partially measured observable target")
 
