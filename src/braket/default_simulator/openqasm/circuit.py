@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from braket.ir.jaqcd.program_v1 import Results
-from braket.ir.jaqcd.shared_models import Observable
+from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 from braket.default_simulator.operation import GateOperation, KrausOperation
 from braket.default_simulator.operation_helpers import from_braket_instruction
@@ -54,7 +54,7 @@ class Circuit:
             result (Results): Result type to add.
         """
         self.results.append(result)
-        if result.targets is not None:
+        if isinstance(result, OptionalMultiTarget) and result.targets is not None:
             self.qubit_set |= set(result.targets)
 
     @property
