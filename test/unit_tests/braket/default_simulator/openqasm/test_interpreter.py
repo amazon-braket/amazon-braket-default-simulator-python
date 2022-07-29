@@ -1615,3 +1615,35 @@ def test_noise():
             ],
         ),
     ]
+
+
+@pytest.mark.parametrize(
+    "qasm",
+    (
+        "int x;",
+        "int x = 1;",
+        "int x; x = 1;",
+        "input int x;",
+        "const int x = 4;",
+        "int x = 1 + 1;",
+        "qubit[2] q; h q[0:1];",
+        "gate my_x q { x q; }",
+        "qubit q; gphase(.3);",
+        "qubit[2] q; ctrl @ x q[0], q[1];",
+        "qubit q; if (1) { x q; }",
+        "qubit q; for int i in [0:10] { x q; }",
+        "while (false) {}",
+        "def subroutine() {}",
+        "def subroutine() {} subroutine();",
+    ),
+)
+def test_advanced_language_features(qasm, caplog):
+    Interpreter().run(qasm, inputs={"x": 1})
+    assert re.match(
+        (
+            "WARNING.*"
+            "This program uses OpenQASM language features that are "
+            "currently only supported in the LocalSimulator\n"
+        ),
+        caplog.text,
+    )

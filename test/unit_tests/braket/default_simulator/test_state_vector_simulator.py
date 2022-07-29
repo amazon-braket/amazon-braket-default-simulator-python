@@ -77,7 +77,7 @@ def test_simulator_run_grcs_16(grcs_16_qubit, batch_size):
 
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
-def test_simulator_run_bell_pair(bell_ir, batch_size):
+def test_simulator_run_bell_pair(bell_ir, batch_size, caplog):
     simulator = StateVectorSimulator()
     shots_count = 10000
     if isinstance(bell_ir, JaqcdProgram):
@@ -95,6 +95,7 @@ def test_simulator_run_bell_pair(bell_ir, batch_size):
         id=result.taskMetadata.id, deviceId=StateVectorSimulator.DEVICE_ID, shots=shots_count
     )
     assert result.additionalMetadata == AdditionalMetadata(action=bell_ir)
+    assert not caplog.text
 
 
 def test_properties():
@@ -634,7 +635,7 @@ def circuit_noise(ir_type):
         )
 
 
-def test_simulator_identity():
+def test_simulator_identity(caplog):
     simulator = StateVectorSimulator()
     shots_count = 1000
     programs = (
@@ -663,6 +664,7 @@ def test_simulator_identity():
         counter = Counter(["".join(measurement) for measurement in result.measurements])
         assert counter.keys() == {"00"}
         assert counter["00"] == shots_count
+    assert not caplog.text
 
 
 @pytest.mark.xfail(raises=TypeError)
@@ -747,7 +749,7 @@ def test_simulator_run_statevector_shots():
         simulator.run(qasm, shots=100)
 
 
-def test_simulator_run_result_types_shots():
+def test_simulator_run_result_types_shots(caplog):
     simulator = StateVectorSimulator()
     jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
@@ -777,9 +779,10 @@ def test_simulator_run_result_types_shots():
         assert result.measuredQubits == [0, 1]
     # qasm_result.resultTypes carries info back to the BDK to calculate results
     assert not jaqcd_result.resultTypes
+    assert not caplog.text
 
 
-def test_simulator_run_result_types_shots_basis_rotation_gates():
+def test_simulator_run_result_types_shots_basis_rotation_gates(caplog):
     simulator = StateVectorSimulator()
     jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
@@ -809,6 +812,7 @@ def test_simulator_run_result_types_shots_basis_rotation_gates():
         assert len(result.measurements) == shots_count
         assert result.measuredQubits == [0, 1]
     assert not jaqcd_result.resultTypes
+    assert not caplog.text
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -922,7 +926,7 @@ def test_simulator_run_observable_references_invalid_qubit(ir, qubit_count):
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 @pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
-def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_size):
+def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_size, caplog):
     simulator = StateVectorSimulator()
     ir = bell_ir_with_result(targets)
     if isinstance(ir, JaqcdProgram):
@@ -939,6 +943,7 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_si
         id=result.taskMetadata.id, deviceId=StateVectorSimulator.DEVICE_ID, shots=0
     )
     assert result.additionalMetadata == AdditionalMetadata(action=ir)
+    assert not caplog.text
 
 
 def test_simulator_fails_samples_0_shots():
@@ -1084,7 +1089,7 @@ def test_simulator_valid_observables(result_types, expected):
         ),
     ],
 )
-def test_simulator_valid_observables_qasm(result_types, expected):
+def test_simulator_valid_observables_qasm(result_types, expected, caplog):
     simulator = StateVectorSimulator()
     prog = OpenQASMProgram(
         source=f"""
@@ -1097,6 +1102,7 @@ def test_simulator_valid_observables_qasm(result_types, expected):
     result = simulator.run(prog, shots=0)
     for i in range(len(result_types.split("\n")) - 2):
         assert np.allclose(result.resultTypes[i].value, expected[i])
+    assert not caplog.text
 
 
 def test_observable_hash_tensor_product():
@@ -1109,7 +1115,7 @@ def test_observable_hash_tensor_product():
     assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
 
 
-def test_basis_rotation():
+def test_basis_rotation(caplog):
     qasm = """
     qubit q;
     qubit[2] qs;
@@ -1125,6 +1131,7 @@ def test_basis_rotation():
     assert 400 < np.sum(measurements, axis=0)[0] < 600
     assert np.sum(measurements, axis=0)[1] == 0
     assert 400 < np.sum(measurements, axis=0)[2] < 600
+    assert not caplog.text
 
 
 def test_partially_overlapping_basis_rotation():
@@ -1140,7 +1147,7 @@ def test_partially_overlapping_basis_rotation():
         simulator.run(OpenQASMProgram(source=qasm), shots=1000)
 
 
-def test_sample():
+def test_sample(caplog):
     qasm = """
     qubit[2] qs;
     i qs;
@@ -1151,3 +1158,4 @@ def test_sample():
     measurements = np.array(result.measurements, dtype=int)
     assert 400 < np.sum(measurements, axis=0)[0] < 600
     assert np.sum(measurements, axis=0)[1] == 0
+    assert not caplog.text

@@ -103,6 +103,7 @@ class Interpreter:
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
+        self._uses_advanced_language_features = False
 
     def build_circuit(
         self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
@@ -117,7 +118,13 @@ class Interpreter:
 
         program = parse(source)
         self.visit(Include(Path(Path(__file__).parent, "braket_gates.inc")))
+        self._uses_advanced_language_features = False
         self.visit(program)
+        if self._uses_advanced_language_features:
+            self.logger.warning(
+                "This program uses OpenQASM language features that are "
+                "currently only supported in the LocalSimulator"
+            )
         return self.context.circuit
 
     def run(
@@ -150,6 +157,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
+        self._uses_advanced_language_features = True
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
@@ -164,6 +172,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
+        self._uses_advanced_language_features = True
         if node.io_identifier == IOKeyword.output:
             raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
@@ -175,6 +184,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
+        self._uses_advanced_language_features = True
         node_type = self.visit(node.type)
         init_expression = self.visit(node.init_expression)
         init_value = cast_to(node.type, init_expression)
@@ -182,6 +192,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: BinaryExpression) -> Union[BinaryExpression, LiteralType]:
+        self._uses_advanced_language_features = True
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
@@ -231,9 +242,12 @@ class Interpreter:
         indices = []
         for index in node.indices:
             if isinstance(index, DiscreteSet):
+                self._uses_advanced_language_features = True
                 indices.append(index)
             else:
                 for element in index:
+                    if isinstance(element, RangeDefinition):
+                        self._uses_advanced_language_features = True
                     element = self.visit(element)
                     indices.append([element])
         updated = IndexedIdentifier(name, indices)
@@ -243,6 +257,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: RangeDefinition) -> RangeDefinition:
+        self._uses_advanced_language_features = True
         start = self.visit(node.start) if node.start else None
         end = self.visit(node.end)
         step = self.visit(node.step) if node.step else None
@@ -264,6 +279,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGateDefinition) -> None:
+        self._uses_advanced_language_features = True
         with self.context.enter_scope():
             for qubit in node.qubits:
                 self.context.declare_qubit_alias(qubit.name, qubit)
@@ -330,6 +346,8 @@ class Interpreter:
         gate_name = node.name.name
         arguments = self.visit(node.arguments)
         modifiers = self.visit(node.modifiers)
+        if self.context.in_global_scope and modifiers:
+            self._uses_advanced_language_features = True
 
         qubits = []
         for qubit in node.qubits:
@@ -409,6 +427,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumPhase) -> None:
+        self._uses_advanced_language_features = True
         node.argument = self.visit(node.argument)
         node.modifiers = self.visit(node.modifiers)
         if is_inverted(node):
@@ -436,6 +455,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
+        self._uses_advanced_language_features = True
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
@@ -458,6 +478,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: BranchingStatement) -> None:
+        self._uses_advanced_language_features = True
         condition = cast_to(BooleanLiteral, self.visit(node.condition))
         block = node.if_block if condition.value else node.else_block
         for statement in block:
@@ -465,6 +486,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ForInLoop) -> None:
+        self._uses_advanced_language_features = True
         index = self.visit(node.set_declaration)
         if isinstance(index, RangeDefinition):
             index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
@@ -480,11 +502,13 @@ class Interpreter:
 
     @visit.register
     def _(self, node: WhileLoop) -> None:
+        self._uses_advanced_language_features = True
         while cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
             self.visit(deepcopy(node.block))
 
     @visit.register
     def _(self, node: Include) -> None:
+        self._uses_advanced_language_features = True
         with open(node.filename, encoding="utf-8", mode="r") as f:
             included = f.read()
             parsed = parse(included)
@@ -504,6 +528,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: SubroutineDefinition) -> None:
+        self._uses_advanced_language_features = True
         # todo: explicitly handle references to existing variables
         # either by throwing an error or evaluating the closure.
         # currently, the implementation does not consider the values
@@ -516,6 +541,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: FunctionCall) -> Optional[QASMNode]:
+        self._uses_advanced_language_features = True
         function_name = node.name.name
         arguments = self.visit(node.arguments)
         if function_name in builtin_functions:
@@ -559,10 +585,12 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ReturnStatement) -> Optional[QASMNode]:
+        self._uses_advanced_language_features = True
         return self.visit(node.expression)
 
     @visit.register
     def _(self, node: SizeOf) -> IntegerLiteral:
+        self._uses_advanced_language_features = True
         target = self.visit(node.target)
         index = self.visit(node.index)
         return builtin_functions["sizeof"](target, index)

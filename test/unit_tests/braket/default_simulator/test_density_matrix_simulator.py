@@ -88,7 +88,7 @@ def bell_ir(ir_type):
     )
 
 
-def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit):
+def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit, caplog):
     simulator = DensityMatrixSimulator()
     shots_count = 10000
     if isinstance(noisy_circuit_2_qubit, JaqcdProgram):
@@ -106,9 +106,10 @@ def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit):
         id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=shots_count
     )
     assert result.additionalMetadata == AdditionalMetadata(action=noisy_circuit_2_qubit)
+    assert not caplog.text
 
 
-def test_simulator_run_bell_pair(bell_ir):
+def test_simulator_run_bell_pair(bell_ir, caplog):
     simulator = DensityMatrixSimulator()
     shots_count = 10000
     if isinstance(bell_ir, JaqcdProgram):
@@ -126,6 +127,7 @@ def test_simulator_run_bell_pair(bell_ir):
         id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=shots_count
     )
     assert result.additionalMetadata == AdditionalMetadata(action=bell_ir)
+    assert not caplog.text
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -460,7 +462,7 @@ def test_simulator_run_densitymatrix_shots():
         simulator.run(qasm, shots=100)
 
 
-def test_simulator_run_result_types_shots():
+def test_simulator_run_result_types_shots(caplog):
     simulator = DensityMatrixSimulator()
     jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
@@ -489,9 +491,10 @@ def test_simulator_run_result_types_shots():
         assert len(result.measurements) == shots_count
         assert result.measuredQubits == [0, 1]
     assert not jaqcd_result.resultTypes
+    assert not caplog.text
 
 
-def test_simulator_run_result_types_shots_basis_rotation_gates():
+def test_simulator_run_result_types_shots_basis_rotation_gates(caplog):
     simulator = DensityMatrixSimulator()
     jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
@@ -521,6 +524,7 @@ def test_simulator_run_result_types_shots_basis_rotation_gates():
         assert len(result.measurements) == shots_count
         assert result.measuredQubits == [0, 1]
     assert not jaqcd_result.resultTypes
+    assert not caplog.text
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -543,7 +547,7 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
 
 
 @pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
-def test_simulator_bell_pair_result_types(bell_ir_with_result, targets):
+def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, caplog):
     simulator = DensityMatrixSimulator()
     ir = bell_ir_with_result(targets)
     if isinstance(ir, JaqcdProgram):
@@ -558,6 +562,7 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets):
         id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=0
     )
     assert result.additionalMetadata == AdditionalMetadata(action=ir)
+    assert not caplog.text
 
 
 def test_simulator_fails_samples_0_shots():
@@ -703,7 +708,7 @@ def test_simulator_valid_observables(result_types, expected):
         ),
     ],
 )
-def test_simulator_valid_observables_qasm(result_types, expected):
+def test_simulator_valid_observables_qasm(result_types, expected, caplog):
     simulator = DensityMatrixSimulator()
     prog = OpenQASMProgram(
         source=f"""
@@ -716,3 +721,4 @@ def test_simulator_valid_observables_qasm(result_types, expected):
     result = simulator.run(prog, shots=0)
     for i in range(len(result_types.split("\n")) - 2):
         assert np.allclose(result.resultTypes[i].value, expected[i])
+    assert not caplog.text
