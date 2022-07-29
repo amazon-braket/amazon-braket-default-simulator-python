@@ -158,6 +158,28 @@ def test_properties():
                         "z",
                         "zz",
                     ],
+                    "supportedPragmas": [
+                        "braket_unitary_matrix",
+                        "braket_result_type_state_vector",
+                        "braket_result_type_density_matrix",
+                        "braket_result_type_sample",
+                        "braket_result_type_expectation",
+                        "braket_result_type_variance",
+                        "braket_result_type_probability",
+                        "braket_result_type_amplitude",
+                    ],
+                    "forbiddenPragmas": [
+                        "braket_noise_amplitude_damping",
+                        "braket_noise_bit_flip",
+                        "braket_noise_depolarizing",
+                        "braket_noise_kraus",
+                        "braket_noise_pauli_channel",
+                        "braket_noise_generalized_amplitude_damping",
+                        "braket_noise_phase_flip",
+                        "braket_noise_phase_damping",
+                        "braket_noise_two_qubit_dephasing",
+                        "braket_noise_two_qubit_depolarizing",
+                    ],
                     "supportedResultTypes": [
                         {
                             "name": "Sample",
@@ -546,36 +568,55 @@ def test_invalid_hermitian_target(shots):
         simulator.run(program, shots=shots)
 
 
-@pytest.fixture
-def bell_ir_jaqcd():
-    return JaqcdProgram.parse_raw(
-        json.dumps(
-            {
-                "instructions": [
-                    {"type": "h", "target": 0},
-                    {"type": "cnot", "target": 1, "control": 0},
-                ]
-            }
-        )
-    )
+# @pytest.fixture
+# def bell_ir_jaqcd():
+#     return JaqcdProgram.parse_raw(
+#         json.dumps(
+#             {
+#                 "instructions": [
+#                     {"type": "h", "target": 0},
+#                     {"type": "cnot", "target": 1, "control": 0},
+#                 ]
+#             }
+#         )
+#     )
 
 
 @pytest.fixture
-def bell_ir_with_result():
+def bell_ir_with_result(ir_type):
     def _bell_ir_with_result(targets=None):
-        return JaqcdProgram.parse_raw(
-            json.dumps(
-                {
-                    "instructions": [
-                        {"type": "h", "target": 0},
-                        {"type": "cnot", "target": 1, "control": 0},
-                    ],
-                    "results": [
-                        {"type": "amplitude", "states": ["11"]},
-                        {"type": "expectation", "observable": ["x"], "targets": targets},
-                    ],
-                }
+        if ir_type == "Jaqcd":
+            return JaqcdProgram.parse_raw(
+                json.dumps(
+                    {
+                        "instructions": [
+                            {"type": "h", "target": 0},
+                            {"type": "cnot", "target": 1, "control": 0},
+                        ],
+                        "results": [
+                            {"type": "amplitude", "states": ["11"]},
+                            {"type": "expectation", "observable": ["x"], "targets": targets},
+                        ],
+                    }
+                )
             )
+        if targets is None:
+            observable_string = "x all"
+        elif len(targets) == 1:
+            observable_string = f"x(q[{targets[0]}])"
+        else:
+            raise ValueError("bad test")
+
+        return OpenQASMProgram(
+            source=f"""
+            qubit[2] q;
+
+            h q[0];
+            cnot q[0], q[1];
+
+            #pragma braket result amplitude "11"
+            #pragma braket result expectation {observable_string}
+            """
         )
 
     return _bell_ir_with_result
@@ -804,14 +845,17 @@ def test_simulator_run_observable_references_invalid_qubit(ir, qubit_count):
 def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_size):
     simulator = StateVectorSimulator()
     ir = bell_ir_with_result(targets)
-    result = simulator.run(ir, qubit_count=2, shots=0, batch_size=batch_size)
+    if isinstance(ir, JaqcdProgram):
+        result = simulator.run(ir, qubit_count=2, shots=0, batch_size=batch_size)
+    else:
+        result = simulator.run(ir, shots=0, batch_size=batch_size)
     assert len(result.resultTypes) == 2
     assert result.resultTypes[0] == ResultTypeValue.construct(
-        type=ir.results[0], value={"11": complex(1 / 2**0.5)}
+        type=Amplitude(states=["11"]), value={"11": complex(1 / 2**0.5)}
     )
-    assert result.resultTypes[1] == ResultTypeValue.construct(
-        type=ir.results[1], value=(0 if targets else [0, 0])
-    )
+    expected_expectation = Expectation(observable=["x"], targets=targets)
+    assert result.resultTypes[1].type == expected_expectation
+    assert np.allclose(result.resultTypes[1].value, 0 if targets else [0, 0])
     assert result.taskMetadata == TaskMetadata(
         id=result.taskMetadata.id, deviceId=StateVectorSimulator.DEVICE_ID, shots=0
     )

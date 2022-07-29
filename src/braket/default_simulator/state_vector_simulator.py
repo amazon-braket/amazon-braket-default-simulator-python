@@ -171,6 +171,28 @@ class StateVectorSimulator(BaseLocalSimulator):
                             "z",
                             "zz",
                         ],
+                        "supportedPragmas": [
+                            "braket_unitary_matrix",
+                            "braket_result_type_state_vector",
+                            "braket_result_type_density_matrix",
+                            "braket_result_type_sample",
+                            "braket_result_type_expectation",
+                            "braket_result_type_variance",
+                            "braket_result_type_probability",
+                            "braket_result_type_amplitude",
+                        ],
+                        "forbiddenPragmas": [
+                            "braket_noise_amplitude_damping",
+                            "braket_noise_bit_flip",
+                            "braket_noise_depolarizing",
+                            "braket_noise_kraus",
+                            "braket_noise_pauli_channel",
+                            "braket_noise_generalized_amplitude_damping",
+                            "braket_noise_phase_flip",
+                            "braket_noise_phase_damping",
+                            "braket_noise_two_qubit_dephasing",
+                            "braket_noise_two_qubit_depolarizing",
+                        ],
                         "supportedResultTypes": [
                             {
                                 "name": "Sample",
