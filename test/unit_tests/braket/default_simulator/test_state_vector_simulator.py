@@ -14,7 +14,7 @@ from braket.ir.jaqcd import Amplitude, DensityMatrix, Expectation, Probability
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd import StateVector, Variance
 from braket.ir.openqasm import Program as OpenQASMProgram
-from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
+from braket.task_result import AdditionalMetadata, TaskMetadata
 
 from braket.default_simulator import DefaultSimulator, StateVectorSimulator, observables
 
@@ -850,9 +850,8 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_si
     else:
         result = simulator.run(ir, shots=0, batch_size=batch_size)
     assert len(result.resultTypes) == 2
-    assert result.resultTypes[0] == ResultTypeValue.construct(
-        type=Amplitude(states=["11"]), value={"11": complex(1 / 2**0.5)}
-    )
+    assert result.resultTypes[0].type == Amplitude(states=["11"])
+    assert np.isclose(result.resultTypes[0].value["11"], 1 / np.sqrt(2))
     expected_expectation = Expectation(observable=["x"], targets=targets)
     assert result.resultTypes[1].type == expected_expectation
     assert np.allclose(result.resultTypes[1].value, 0 if targets else [0, 0])
