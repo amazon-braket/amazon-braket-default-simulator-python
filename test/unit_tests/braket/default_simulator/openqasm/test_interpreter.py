@@ -29,6 +29,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     BitstringLiteral,
     BitType,
     BooleanLiteral,
+    BoolType,
     FloatLiteral,
     FloatType,
     Identifier,
@@ -65,6 +66,23 @@ def test_bit_declaration():
     assert context.get_value("register_initialized") == ArrayLiteral(
         [BooleanLiteral(False), BooleanLiteral(True)]
     )
+
+
+def test_bool_declaration():
+    qasm = """
+    bool uninitialized;
+    bool initialized_int = 0;
+    bool initialized_bool = true;
+    """
+    context = Interpreter().run(qasm)
+
+    assert context.get_type("uninitialized") == BoolType()
+    assert context.get_type("initialized_int") == BoolType()
+    assert context.get_type("initialized_bool") == BoolType()
+
+    assert context.get_value("uninitialized") is None
+    assert context.get_value("initialized_int") == BooleanLiteral(False)
+    assert context.get_value("initialized_bool") == BooleanLiteral(True)
 
 
 def test_int_declaration():
@@ -226,6 +244,7 @@ def test_assign_variable():
 def test_array_declaration():
     qasm = """
     array[uint[8], 2] row = {1, 2};
+    array[int, 2] unsized_int = {1, 2};
     array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4}};
     array[uint[8], 2, 2] by_ref = {row, row};
     array[uint[8], 1, 1, 1] with_expressions = {{{1 + 2}}};
@@ -234,6 +253,9 @@ def test_array_declaration():
 
     assert context.get_type("row") == ArrayType(
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2)]
+    )
+    assert context.get_type("unsized_int") == ArrayType(
+        base_type=IntType(), dimensions=[IntegerLiteral(2)]
     )
     assert context.get_type("multi_dim") == ArrayType(
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
@@ -247,6 +269,12 @@ def test_array_declaration():
     )
 
     assert context.get_value("row") == ArrayLiteral(
+        [
+            IntegerLiteral(1),
+            IntegerLiteral(2),
+        ]
+    )
+    assert context.get_value("unsized_int") == ArrayLiteral(
         [
             IntegerLiteral(1),
             IntegerLiteral(2),

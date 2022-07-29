@@ -22,6 +22,8 @@ I: 'i';
 H: 'h';
 HERMITIAN: 'hermitian';
 
+ALL: 'all';
+
 AT: '@';
 
 BIT_FLIP: 'bit_flip';

@@ -130,7 +130,6 @@ class Interpreter:
     @singledispatchmethod
     def visit(self, node: Union[QASMNode, List[QASMNode]]) -> Optional[QASMNode]:
         """Generic visit function for an AST node"""
-        self.logger.debug(f"Node: {node}")
         if node is None:
             return
         if not isinstance(node, QASMNode):
@@ -143,17 +142,14 @@ class Interpreter:
     @visit.register
     def _(self, node_list: list) -> List[QASMNode]:
         """Generic visit function for a list of AST nodes"""
-        self.logger.debug(f"list: {node_list}")
         return [n for n in [self.visit(node) for node in node_list] if n is not None]
 
     @visit.register
     def _(self, node: Program) -> None:
-        self.logger.debug(f"Program: {node}")
         self.visit(node.statements)
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
-        self.logger.debug(f"Classical declaration: {node}")
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
@@ -168,7 +164,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
-        self.logger.debug(f"IO Declaration: {node}")
         if node.io_identifier == IOKeyword.output:
             raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
@@ -180,7 +175,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
-        self.logger.debug(f"Constant declaration: {node}")
         node_type = self.visit(node.type)
         init_expression = self.visit(node.init_expression)
         init_value = cast_to(node.type, init_expression)
@@ -188,7 +182,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: BinaryExpression) -> Union[BinaryExpression, LiteralType]:
-        self.logger.debug(f"Binary expression: {node}")
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
@@ -198,7 +191,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: UnaryExpression) -> Union[UnaryExpression, LiteralType]:
-        self.logger.debug(f"Unary expression: {node}")
         expression = self.visit(node.expression)
         if is_literal(expression):
             return evaluate_unary_expression(expression, node.op)
@@ -207,14 +199,12 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Cast) -> LiteralType:
-        self.logger.debug(f"Cast: {node}")
         return cast_to(node.type, self.visit(node.argument))
 
     @visit.register(BooleanLiteral)
     @visit.register(IntegerLiteral)
     @visit.register(FloatLiteral)
     def _(self, node: LiteralType) -> LiteralType:
-        self.logger.debug(f"Literal: {node}")
         return node
 
     @visit.register
@@ -227,19 +217,16 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QubitDeclaration) -> None:
-        self.logger.debug(f"Qubit declaration: {node}")
         size = self.visit(node.size).value if node.size else 1
         self.context.add_qubits(node.qubit.name, size)
 
     @visit.register
     def _(self, node: QuantumReset) -> None:
-        self.logger.debug(f"Quantum reset: {node}")
         raise NotImplementedError("Reset not supported")
 
     @visit.register
     def _(self, node: IndexedIdentifier) -> Union[IndexedIdentifier, LiteralType]:
         """Returns an identifier for qubits, value for classical identifier"""
-        self.logger.debug(f"Indexed identifier: {node}")
         name = node.name
         indices = []
         for index in node.indices:
@@ -256,7 +243,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: RangeDefinition) -> RangeDefinition:
-        self.logger.debug(f"Range definition: {node}")
         start = self.visit(node.start) if node.start else None
         end = self.visit(node.end)
         step = self.visit(node.step) if node.step else None
@@ -265,7 +251,6 @@ class Interpreter:
     @visit.register
     def _(self, node: IndexExpression) -> Union[IndexedIdentifier, ArrayLiteral]:
         """Returns an identifier for qubits, values for classical identifier"""
-        self.logger.debug(f"Index expression: {node}")
         type_width = None
         index = self.visit(node.index)
         if isinstance(node.collection, Identifier):
@@ -279,7 +264,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGateDefinition) -> None:
-        self.logger.debug(f"Quantum gate definition: {node}")
         with self.context.enter_scope():
             for qubit in node.qubits:
                 self.context.declare_qubit_alias(qubit.name, qubit)
@@ -343,7 +327,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGate) -> None:
-        self.logger.debug(f"Quantum gate: {node}")
         gate_name = node.name.name
         arguments = self.visit(node.arguments)
         modifiers = self.visit(node.modifiers)
@@ -426,7 +409,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumPhase) -> None:
-        self.logger.debug(f"Quantum phase: {node}")
         node.argument = self.visit(node.argument)
         node.modifiers = self.visit(node.modifiers)
         if is_inverted(node):
@@ -439,7 +421,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGateModifier) -> QuantumGateModifier:
-        self.logger.debug(f"Quantum gate modifier: {node}")
         if node.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
             if node.argument is None:
                 node.argument = IntegerLiteral(1)
@@ -452,11 +433,9 @@ class Interpreter:
     @visit.register
     def _(self, node: QuantumMeasurement) -> None:
         """Doesn't do anything, but may add more functionality in the future"""
-        self.logger.debug(f"Quantum measurement: {node}")
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
-        self.logger.debug(f"Classical assignment: {node}")
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
@@ -475,12 +454,10 @@ class Interpreter:
 
     @visit.register
     def _(self, node: BitstringLiteral) -> ArrayLiteral:
-        self.logger.debug(f"Bitstring literal: {node}")
         return cast_to(BitType(IntegerLiteral(node.width)), node)
 
     @visit.register
     def _(self, node: BranchingStatement) -> None:
-        self.logger.debug(f"Branching statement: {node}")
         condition = cast_to(BooleanLiteral, self.visit(node.condition))
         block = node.if_block if condition.value else node.else_block
         for statement in block:
@@ -488,7 +465,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ForInLoop) -> None:
-        self.logger.debug(f"For in loop: {node}")
         index = self.visit(node.set_declaration)
         if isinstance(index, RangeDefinition):
             index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
@@ -504,13 +480,11 @@ class Interpreter:
 
     @visit.register
     def _(self, node: WhileLoop) -> None:
-        self.logger.debug(f"While loop: {node}")
         while cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
             self.visit(deepcopy(node.block))
 
     @visit.register
     def _(self, node: Include) -> None:
-        self.logger.debug(f"Include: {node}")
         with open(node.filename, encoding="utf-8", mode="r") as f:
             included = f.read()
             parsed = parse(included)
@@ -518,7 +492,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Pragma) -> None:
-        self.logger.debug(f"Pragma: {node}")
         parsed = self.context.parse_pragma(node.command)
 
         if node.command.startswith("braket result"):
@@ -539,12 +512,10 @@ class Interpreter:
         # at the time of execution. This is incorrect, but currently an
         # edge case and known limitation. More effort can be invested here
         # if this functionality is prioritized.
-        self.logger.debug(f"Subroutine definition: {node}")
         self.context.add_subroutine(node.name.name, node)
 
     @visit.register
     def _(self, node: FunctionCall) -> Optional[QASMNode]:
-        self.logger.debug(f"Function call: {node}")
         function_name = node.name.name
         arguments = self.visit(node.arguments)
         if function_name in builtin_functions:
@@ -588,12 +559,10 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ReturnStatement) -> Optional[QASMNode]:
-        self.logger.debug(f"Return statement: {node}")
         return self.visit(node.expression)
 
     @visit.register
     def _(self, node: SizeOf) -> IntegerLiteral:
-        self.logger.debug(f"Size of: {node}")
         target = self.visit(node.target)
         index = self.visit(node.index)
         return builtin_functions["sizeof"](target, index)

@@ -366,15 +366,15 @@ class BaseLocalSimulator(BraketSimulator):
         operations = circuit.instructions
         BaseLocalSimulator._validate_operation_qubits(operations)
 
+        results = circuit.results
+
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
         )
         simulation.evolve(operations)
 
-        results = circuit.results
-
         if not shots:
-            result_types = BaseLocalSimulator._translate_result_types(circuit.results)
+            result_types = BaseLocalSimulator._translate_result_types(results)
             BaseLocalSimulator._validate_result_types_qubits_exist(
                 [
                     result_type
@@ -383,11 +383,13 @@ class BaseLocalSimulator(BraketSimulator):
                 ],
                 qubit_count,
             )
-            results = self._generate_results(
+            results = BaseLocalSimulator._generate_results(
                 circuit.results,
                 result_types,
                 simulation,
             )
+        else:
+            simulation.evolve(circuit.basis_rotation_instructions)
 
         return self._create_results_obj(results, openqasm_ir, simulation)
 
@@ -437,7 +439,7 @@ class BaseLocalSimulator(BraketSimulator):
             for instruction in circuit_ir.basis_rotation_instructions:
                 operations.append(from_braket_instruction(instruction))
 
-        self._validate_operation_qubits(operations)
+        BaseLocalSimulator._validate_operation_qubits(operations)
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
@@ -447,8 +449,8 @@ class BaseLocalSimulator(BraketSimulator):
         results = []
 
         if not shots and circuit_ir.results:
-            result_types = self._translate_result_types(circuit_ir.results)
-            self._validate_result_types_qubits_exist(
+            result_types = BaseLocalSimulator._translate_result_types(circuit_ir.results)
+            BaseLocalSimulator._validate_result_types_qubits_exist(
                 [
                     result_type
                     for result_type in result_types

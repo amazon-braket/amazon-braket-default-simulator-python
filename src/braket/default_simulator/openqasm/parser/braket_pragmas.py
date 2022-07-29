@@ -42,7 +42,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         self.qubit_table = qubit_table
 
     def visitNoArgResultType(self, ctx: BraketPragmasParser.NoArgResultTypeContext) -> Results:
-        result_type = ctx.getChild(0).getText()
+        result_type = ctx.noArgResultTypeName().getText()
         no_arg_result_type_map = {
             "state_vector": StateVector,
         }
@@ -51,15 +51,15 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     def visitOptionalMultiTargetResultType(
         self, ctx: BraketPragmasParser.OptionalMultiTargetResultTypeContext
     ) -> Results:
-        result_type = ctx.getChild(0).getText()
+        result_type = ctx.optionalMultiTargetResultTypeName().getText()
         optional_multitarget_result_type_map = {
             "probability": Probability,
             "density_matrix": DensityMatrix,
         }
-        targets = self.visit(ctx.getChild(1)) if ctx.getChild(1) is not None else None
+        targets = self.visit(ctx.multiTarget()) if ctx.multiTarget() is not None else None
         return optional_multitarget_result_type_map[result_type](targets=targets)
 
-    def visitMultiTarget(self, ctx: BraketPragmasParser.MultiTargetContext) -> Tuple[int]:
+    def visitMultiTargetIdentifiers(self, ctx: BraketPragmasParser.MultiTargetIdentifiersContext):
         parsable = f"target {''.join(x.getText() for x in ctx.getChildren())};"
         parsed_statement = parse(parsable)
         target_identifiers = parsed_statement.statements[0].qubits
@@ -69,10 +69,13 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         )
         return target
 
+    def visitMultiTargetAll(self, ctx: BraketPragmasParser.MultiTargetAllContext):
+        return
+
     def visitMultiStateResultType(
         self, ctx: BraketPragmasParser.MultiStateResultTypeContext
     ) -> Results:
-        result_type = ctx.getChild(0).getText()
+        result_type = ctx.multiStateResultTypeName().getText()
         multistate_result_type_map = {
             "amplitude": Amplitude,
         }
@@ -87,24 +90,32 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     def visitObservableResultType(
         self, ctx: BraketPragmasParser.ObservableResultTypeContext
     ) -> Results:
-        result_type = ctx.getChild(0).getText()
+        result_type = ctx.observableResultTypeName().getText()
         observable_result_type_map = {
             "expectation": Expectation,
             "sample": Sample,
             "variance": Variance,
         }
-        observables, targets = self.visit(ctx.getChild(1))
+        observables, targets = self.visit(ctx.observable())
         obs = observable_result_type_map[result_type](targets=targets, observable=observables)
         return obs
 
-    def visitStandardObservable(
-        self, ctx: BraketPragmasParser.StandardObservableContext
+    def visitStandardObservableIdentifier(
+        self,
+        ctx: BraketPragmasParser.StandardObservableIdentifierContext,
     ) -> Tuple[Tuple[str], int]:
-        observable = ctx.getChild(0).getText()
-        target_tuple = self.visit(ctx.getChild(2))
+        observable = ctx.standardObservableName().getText()
+        target_tuple = self.visit(ctx.indexedIdentifier())
         if len(target_tuple) != 1:
             raise ValueError("Standard observable target must be exactly 1 qubit.")
         return (observable,), target_tuple
+
+    def visitStandardObservableAll(
+        self,
+        ctx: BraketPragmasParser.StandardObservableAllContext,
+    ) -> Tuple[Tuple[str], None]:
+        observable = ctx.standardObservableName().getText()
+        return (observable,), None
 
     def visitTensorProductObservable(
         self, ctx: BraketPragmasParser.TensorProductObservableContext
@@ -119,12 +130,11 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     def visitHermitianObservable(
         self, ctx: BraketPragmasParser.HermitianObservableContext
     ) -> Tuple[Tuple[List[List[float]]], int]:
-        matrix = [
-            [self.visit(ctx.getChild(4)), self.visit(ctx.getChild(6))],
-            [self.visit(ctx.getChild(10)), self.visit(ctx.getChild(12))],
-        ]
-        target = self.visit(ctx.getChild(16))
-        return (matrix,), target
+        matrix = self.visit(ctx.twoDimMatrix())
+        matrix = np.expand_dims(matrix, axis=-1)
+        converted = np.append(matrix.real, matrix.imag, axis=-1).tolist()
+        target = self.visit(ctx.multiTarget())
+        return (converted,), target
 
     def visitIndexedIdentifier(
         self, ctx: BraketPragmasParser.IndexedIdentifierContext

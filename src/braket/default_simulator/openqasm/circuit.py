@@ -3,8 +3,11 @@ from __future__ import annotations
 from typing import List, Optional
 
 from braket.ir.jaqcd.program_v1 import Results
+from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 from braket.default_simulator.operation import GateOperation, KrausOperation
+from braket.default_simulator.operation_helpers import from_braket_instruction
+from braket.default_simulator.result_types import _from_braket_observable
 
 
 class Circuit:
@@ -51,10 +54,39 @@ class Circuit:
             result (Results): Result type to add.
         """
         self.results.append(result)
+        if isinstance(result, OptionalMultiTarget) and result.targets is not None:
+            self.qubit_set |= set(result.targets)
 
     @property
     def num_qubits(self) -> int:
         return len(self.qubit_set)
+
+    @property
+    def basis_rotation_instructions(self):
+        """
+        This function assumes all observables are commuting.
+        """
+
+        basis_rotation_instructions = []
+        measured_qubits = set()
+
+        for result in self.results:
+            if isinstance(result, Observable):
+                observables = result.observable
+                actual_targets = result.targets or range(self.num_qubits)
+
+                if set(actual_targets).issubset(measured_qubits):
+                    continue
+                elif set(actual_targets).isdisjoint(measured_qubits):
+                    braket_obs = _from_braket_observable(observables, result.targets)
+                    diagonalizing_gates = braket_obs.diagonalizing_gates(self.num_qubits)
+                    basis_rotation_instructions.extend(diagonalizing_gates)
+                    measured_qubits |= set(actual_targets)
+                else:
+                    # this shouldn't impact any circuits coming from the BDK
+                    raise NotImplementedError("Partially measured observable target")
+
+        return basis_rotation_instructions
 
     def __eq__(self, other: Circuit):
         return (self.instructions, self.results) == (other.instructions, other.results)
