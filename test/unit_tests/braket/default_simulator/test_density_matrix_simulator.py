@@ -9,9 +9,10 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
+from braket.ir.jaqcd import Expectation
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.openqasm import Program as OpenQASMProgram
-from braket.task_result import AdditionalMetadata, ResultTypeValue, TaskMetadata
+from braket.task_result import AdditionalMetadata, TaskMetadata
 
 from braket.default_simulator import DensityMatrixSimulator
 
@@ -371,18 +372,38 @@ invalid_ir_result_types = [
 
 
 @pytest.fixture
-def bell_ir_with_result():
+def bell_ir_with_result(ir_type):
     def _bell_ir_with_result(targets=None):
-        return JaqcdProgram.parse_raw(
-            json.dumps(
-                {
-                    "instructions": [
-                        {"type": "h", "target": 0},
-                        {"type": "cnot", "target": 1, "control": 0},
-                    ],
-                    "results": [{"type": "expectation", "observable": ["x"], "targets": targets}],
-                }
+        if ir_type == "Jaqcd":
+            return JaqcdProgram.parse_raw(
+                json.dumps(
+                    {
+                        "instructions": [
+                            {"type": "h", "target": 0},
+                            {"type": "cnot", "target": 1, "control": 0},
+                        ],
+                        "results": [
+                            {"type": "expectation", "observable": ["x"], "targets": targets},
+                        ],
+                    }
+                )
             )
+        if targets is None:
+            observable_string = "x all"
+        elif len(targets) == 1:
+            observable_string = f"x(q[{targets[0]}])"
+        else:
+            raise ValueError("bad test")
+
+        return OpenQASMProgram(
+            source=f"""
+            qubit[2] q;
+
+            h q[0];
+            cnot q[0], q[1];
+
+            #pragma braket result expectation {observable_string}
+            """
         )
 
     return _bell_ir_with_result
@@ -398,20 +419,50 @@ def test_simulator_run_invalid_ir_result_types(result_type):
     simulator.run(ir, qubit_count=2, shots=100)
 
 
-@pytest.mark.xfail(raises=ValueError)
+@pytest.mark.parametrize(
+    "result_type",
+    (
+        "#pragma braket result state_vector",
+        "#pragma braket result density_matrix",
+        '#pragma braket result amplitude "0"',
+    ),
+)
+def test_simulator_run_invalid_ir_result_types_openqasm(result_type):
+    simulator = DensityMatrixSimulator()
+    ir = OpenQASMProgram(
+        source=f"""
+        qubit q;
+        h q;
+        {result_type}
+        """
+    )
+    with pytest.raises(TypeError):
+        simulator.run(ir, qubit_count=2, shots=100)
+
+
 def test_simulator_run_densitymatrix_shots():
     simulator = DensityMatrixSimulator()
-    ir = JaqcdProgram.parse_raw(
+    jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
             {"instructions": [{"type": "h", "target": 0}], "results": [{"type": "densitymatrix"}]}
         )
     )
-    simulator.run(ir, qubit_count=2, shots=100)
+    qasm = OpenQASMProgram(
+        source="""
+        qubit q;
+        h q;
+        #pragma braket result density_matrix
+        """
+    )
+    with pytest.raises(ValueError):
+        simulator.run(jaqcd, qubit_count=2, shots=100)
+    with pytest.raises(ValueError):
+        simulator.run(qasm, shots=100)
 
 
 def test_simulator_run_result_types_shots():
     simulator = DensityMatrixSimulator()
-    ir = JaqcdProgram.parse_raw(
+    jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
             {
                 "instructions": [
@@ -422,17 +473,27 @@ def test_simulator_run_result_types_shots():
             }
         )
     )
+    qasm = OpenQASMProgram(
+        source="""
+        qubit[2] q;
+        h q[0];
+        cnot q[0], q[1];
+        #pragma braket result expectation z(q[1])
+        """
+    )
     shots_count = 100
-    result = simulator.run(ir, qubit_count=2, shots=shots_count)
-    assert all([len(measurement) == 2] for measurement in result.measurements)
-    assert len(result.measurements) == shots_count
-    assert result.measuredQubits == [0, 1]
-    assert not result.resultTypes
+    jaqcd_result = simulator.run(jaqcd, qubit_count=2, shots=shots_count)
+    qasm_result = simulator.run(qasm, shots=shots_count)
+    for result in jaqcd_result, qasm_result:
+        assert all([len(measurement) == 2] for measurement in result.measurements)
+        assert len(result.measurements) == shots_count
+        assert result.measuredQubits == [0, 1]
+    assert not jaqcd_result.resultTypes
 
 
 def test_simulator_run_result_types_shots_basis_rotation_gates():
     simulator = DensityMatrixSimulator()
-    ir = JaqcdProgram.parse_raw(
+    jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
             {
                 "instructions": [
@@ -444,12 +505,22 @@ def test_simulator_run_result_types_shots_basis_rotation_gates():
             }
         )
     )
+    qasm = OpenQASMProgram(
+        source="""
+            qubit[2] q;
+            h q[0];
+            cnot q[0], q[1];
+            #pragma braket result expectation x(q[1])
+            """
+    )
     shots_count = 1000
-    result = simulator.run(ir, qubit_count=2, shots=shots_count)
-    assert all([len(measurement) == 2] for measurement in result.measurements)
-    assert len(result.measurements) == shots_count
-    assert not result.resultTypes
-    assert result.measuredQubits == [0, 1]
+    jaqcd_result = simulator.run(jaqcd, qubit_count=2, shots=shots_count)
+    qasm_result = simulator.run(qasm, shots=shots_count)
+    for result in jaqcd_result, qasm_result:
+        assert all([len(measurement) == 2] for measurement in result.measurements)
+        assert len(result.measurements) == shots_count
+        assert result.measuredQubits == [0, 1]
+    assert not jaqcd_result.resultTypes
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -475,21 +546,23 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
 def test_simulator_bell_pair_result_types(bell_ir_with_result, targets):
     simulator = DensityMatrixSimulator()
     ir = bell_ir_with_result(targets)
-    result = simulator.run(ir, qubit_count=2, shots=0)
+    if isinstance(ir, JaqcdProgram):
+        result = simulator.run(ir, qubit_count=2, shots=0)
+    else:
+        result = simulator.run(ir, shots=0)
     assert len(result.resultTypes) == 1
-    assert result.resultTypes[0] == ResultTypeValue.construct(
-        type=ir.results[0], value=(0 if targets else [0, 0])
-    )
+    expected_expectation = Expectation(observable=["x"], targets=targets)
+    assert result.resultTypes[0].type == expected_expectation
+    assert np.allclose(result.resultTypes[0].value, 0 if targets else [0, 0])
     assert result.taskMetadata == TaskMetadata(
         id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=0
     )
     assert result.additionalMetadata == AdditionalMetadata(action=ir)
 
 
-@pytest.mark.xfail(raises=ValueError)
 def test_simulator_fails_samples_0_shots():
     simulator = DensityMatrixSimulator()
-    prog = JaqcdProgram.parse_raw(
+    jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
             {
                 "instructions": [{"type": "h", "target": 0}],
@@ -497,7 +570,17 @@ def test_simulator_fails_samples_0_shots():
             }
         )
     )
-    simulator.run(prog, qubit_count=1, shots=0)
+    qasm = OpenQASMProgram(
+        source="""
+            qubit q;
+            h q;
+            #pragma braket result sample x(q)
+            """
+    )
+    with pytest.raises(ValueError):
+        simulator.run(jaqcd, qubit_count=1, shots=0)
+    with pytest.raises(ValueError):
+        simulator.run(qasm, shots=0)
 
 
 @pytest.mark.parametrize(
@@ -576,4 +659,60 @@ def test_simulator_valid_observables(result_types, expected):
     )
     result = simulator.run(prog, qubit_count=2, shots=0)
     for i in range(len(result_types)):
+        assert np.allclose(result.resultTypes[i].value, expected[i])
+
+
+@pytest.mark.parametrize(
+    "result_types,expected",
+    [
+        (
+            """
+            #pragma braket result expectation x(q[1])
+            #pragma braket result variance x(q[1])
+            """,
+            [0, 1],
+        ),
+        (
+            """
+            #pragma braket result expectation x all
+            #pragma braket result variance x(q[1])
+            """,
+            [[0, 0], 1],
+        ),
+        (
+            """
+            #pragma braket result expectation hermitian([[0, 1], [1, 0]]) q[1]
+            #pragma braket result variance hermitian([[0, 1], [1, 0]]) q[1]
+            """,
+            [0, 1],
+        ),
+        (
+            """
+            #pragma braket result expectation x(q[0]) @ hermitian([[0, 1], [1, 0]]) q[1]
+            #pragma braket result expectation x(q[0]) @ hermitian([[0, 1], [1, 0]]) q[1]
+            """,
+            [1, 1],
+        ),
+        (
+            """
+            #pragma braket result variance x(q[1])
+            #pragma braket result expectation x all
+            #pragma braket result expectation x(q[0]) @ hermitian([[0, 1], [1, 0]]) q[1]
+            """,
+            [1, [0, 0], 1],
+        ),
+    ],
+)
+def test_simulator_valid_observables_qasm(result_types, expected):
+    simulator = DensityMatrixSimulator()
+    prog = OpenQASMProgram(
+        source=f"""
+        qubit[2] q;
+        h q[0];
+        cnot q[0], q[1];
+        {result_types}
+        """
+    )
+    result = simulator.run(prog, shots=0)
+    for i in range(len(result_types.split("\n")) - 2):
         assert np.allclose(result.resultTypes[i].value, expected[i])
