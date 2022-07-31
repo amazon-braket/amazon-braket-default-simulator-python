@@ -157,7 +157,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
-        self._uses_advanced_language_features = True
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
@@ -455,7 +454,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
-        self._uses_advanced_language_features = True
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
