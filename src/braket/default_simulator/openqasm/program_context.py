@@ -126,6 +126,10 @@ class ScopedTable(Table):
         self._scopes.pop()
 
     @property
+    def in_global_scope(self):
+        return len(self._scopes) == 1
+
+    @property
     def current_scope(self) -> Dict[str, Any]:
         return self._scopes[-1]
 
@@ -442,6 +446,10 @@ class ProgramContext:
         self.symbol_table.pop_scope()
         self.variable_table.pop_scope()
         self.gate_table.pop_scope()
+
+    @property
+    def in_global_scope(self):
+        return self.symbol_table.in_global_scope
 
     def get_type(self, name: str) -> Union[ClassicalType, Type[LiteralType]]:
         """Get symbol type by name"""
