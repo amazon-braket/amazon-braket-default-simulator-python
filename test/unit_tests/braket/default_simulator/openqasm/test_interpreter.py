@@ -982,8 +982,10 @@ def test_pow():
 
 def test_measurement_noop_does_not_raise_exceptions():
     qasm = """
-    qubit q;
-    measure q;
+    qubit[2] q;
+    bit[1] c;
+    measure q[0];
+    c = measure q[1];
     """
     Interpreter().run(qasm)
 
