@@ -73,6 +73,7 @@ from .parser.openqasm_ast import (
     QuantumGateDefinition,
     QuantumGateModifier,
     QuantumMeasurement,
+    QuantumMeasurementStatement,
     QuantumPhase,
     QuantumReset,
     QuantumStatement,
@@ -452,6 +453,10 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumMeasurement) -> None:
+        """Doesn't do anything, but may add more functionality in the future"""
+
+    @visit.register
+    def _(self, node: QuantumMeasurementStatement) -> None:
         """Doesn't do anything, but may add more functionality in the future"""
 
     @visit.register
