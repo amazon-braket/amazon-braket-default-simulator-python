@@ -122,8 +122,10 @@ class Interpreter:
         self.visit(program)
         if self._uses_advanced_language_features:
             self.logger.warning(
-                "This program uses OpenQASM language features that are "
-                "currently only supported in the LocalSimulator"
+                "This program uses OpenQASM language features "
+                "only supported in the LocalSimulator. Some of "
+                "these features may not be supported on QPU or "
+                "managed simulator."
             )
         return self.context.circuit
 
