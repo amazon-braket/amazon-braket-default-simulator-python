@@ -1190,15 +1190,26 @@ def test_bit_operators():
 
 
 @pytest.mark.parametrize("in_int", (0, 1, -2, 5))
-def test_input(in_int):
+@pytest.mark.parametrize("in_bit", ("10110010",))
+def test_input(in_int, in_bit):
     qasm = """
     input int[8] in_int;
+    input bit[8] in_bit;
     int[8] doubled;
 
     doubled = in_int * 2;
     """
-    context = Interpreter().run(qasm, inputs={"in_int": in_int})
+    context = Interpreter().run(
+        qasm,
+        inputs={
+            "in_int": in_int,
+            "in_bit": in_bit,
+        },
+    )
     assert context.get_value("doubled") == IntegerLiteral(in_int * 2)
+    assert context.get_value("in_bit") == convert_string_to_bool_array(
+        BitstringLiteral(value=0b10110010, width=8)
+    )
 
 
 def test_output():

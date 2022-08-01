@@ -190,6 +190,11 @@ def _(value: bool) -> BooleanLiteral:
     return BooleanLiteral(value)
 
 
+@wrap_value_into_literal.register
+def _(value: str) -> BitstringLiteral:
+    return BitstringLiteral(value=int(value, base=2), width=len(value))
+
+
 @wrap_value_into_literal.register(list)
 def _(value: Iterable[Any]) -> ArrayLiteral:
     return ArrayLiteral([wrap_value_into_literal(v) for v in value])
