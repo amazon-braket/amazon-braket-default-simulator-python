@@ -1190,8 +1190,7 @@ def test_bit_operators():
 
 
 @pytest.mark.parametrize("in_int", (0, 1, -2, 5))
-@pytest.mark.parametrize("in_bit", ("10110010",))
-def test_input(in_int, in_bit):
+def test_input(in_int):
     qasm = """
     input int[8] in_int;
     input bit[8] in_bit;
@@ -1199,6 +1198,7 @@ def test_input(in_int, in_bit):
 
     doubled = in_int * 2;
     """
+    in_bit = "10110010"
     context = Interpreter().run(
         qasm,
         inputs={
