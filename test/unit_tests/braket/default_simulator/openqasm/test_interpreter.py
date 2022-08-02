@@ -1653,8 +1653,8 @@ def test_advanced_language_features(qasm, caplog):
             "WARNING.*"
             "This program uses OpenQASM language features "
             "only supported in the LocalSimulator\. Some of "
-            "these features may not be supported on QPU or "
-            "managed simulator\.\n"
+            "these features may not be supported on QPUs or "
+            "managed simulators\.\n"
         ),
         caplog.text,
     )
