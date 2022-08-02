@@ -1636,7 +1636,6 @@ def test_noise():
         "int x = 1 + 1;",
         "qubit[2] q; h q[0:1];",
         "gate my_x q { x q; }",
-        "qubit q; gphase(.3);",
         "qubit[2] q; ctrl @ x q[0], q[1];",
         "qubit q; if (1) { x q; }",
         "qubit q; for int i in [0:10] { x q; }",
@@ -1657,3 +1656,12 @@ def test_advanced_language_features(qasm, caplog):
         ),
         caplog.text,
     )
+
+
+def test_no_warning(caplog):
+    qasm = """
+    qubit q;
+    rz(4.9164057364353715) q;
+    """
+    Interpreter().run(qasm)
+    assert not caplog.text
