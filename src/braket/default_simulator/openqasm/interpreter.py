@@ -124,8 +124,8 @@ class Interpreter:
             self.logger.warning(
                 "This program uses OpenQASM language features "
                 "only supported in the LocalSimulator. Some of "
-                "these features may not be supported on QPU or "
-                "managed simulator."
+                "these features may not be supported on QPUs or "
+                "managed simulators."
             )
         return self.context.circuit
 
