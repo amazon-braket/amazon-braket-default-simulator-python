@@ -1147,6 +1147,15 @@ def test_basis_rotation(caplog):
         """
     qubit[2] q;
     i q;
+    // # noqa: E501
+    // # noqa: E501
+    #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
+    // # noqa: E501
+    #pragma braket result expectation hermitian([[-5+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
+    """,
+        """
+    qubit[2] q;
+    i q;
     #pragma braket result expectation x(q[0])
     #pragma braket result expectation z(q[0]) @ x(q[1])
     """,

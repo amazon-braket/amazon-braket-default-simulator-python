@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
-from braket.default_simulator.observables import Identity, TensorProduct
+from braket.default_simulator.observables import Hermitian, Identity, TensorProduct
 from braket.default_simulator.operation import GateOperation, KrausOperation
-from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import _from_braket_observable
 
 
@@ -74,10 +74,19 @@ class Circuit:
             for qubit in measured_qubits:
                 for target, previously_measured in observable_map.items():
                     if qubit in target:
+                        conflicts = False
                         if not (
                             target == measured_qubits
                             and type(previously_measured) == type(observable)
                         ):
+                            conflicts = True
+                        elif (
+                            isinstance(observable, Hermitian)
+                            and isinstance(previously_measured, Hermitian)
+                            and not np.allclose(observable.matrix, previously_measured.matrix)
+                        ):
+                            conflicts = True
+                        if conflicts:
                             raise ValueError("Qubits not simultaneously measurable")
             observable_map[measured_qubits] = observable
 
