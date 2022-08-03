@@ -159,7 +159,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                         "supportPhysicalQubits": False,
                         "supportsPartialVerbatimBox": False,
                         "requiresContiguousQubitIndices": True,
-                        "requiresAllQubitsMeasurement": False,
+                        "requiresAllQubitsMeasurement": True,
                         "supportsUnassignedMeasurements": True,
                         "disabledQubitRewiringSupported": False,
                     },
