@@ -1677,6 +1677,22 @@ def test_basis_rotation():
     ]
 
 
+def test_basis_rotation_identity():
+    qasm = """
+    qubit[3] q;
+    i q;
+    
+    #pragma braket result expectation z(q[2]) @ x(q[0])
+    #pragma braket result variance x(q[0]) @ y(q[1])
+    #pragma braket result sample i(q[0])
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.basis_rotation_instructions == [
+        Hadamard([0]),
+        Unitary([1], PauliY._diagonalizing_matrix),
+    ]
+
+
 def test_basis_rotation_hermitian():
     qasm = """
     qubit[3] q;

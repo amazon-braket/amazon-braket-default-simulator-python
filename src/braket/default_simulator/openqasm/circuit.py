@@ -5,7 +5,7 @@ from typing import List, Optional
 from braket.ir.jaqcd.program_v1 import Results
 from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
-from braket.default_simulator.observables import TensorProduct
+from braket.default_simulator.observables import Identity, TensorProduct
 from braket.default_simulator.operation import GateOperation, KrausOperation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import _from_braket_observable
@@ -68,6 +68,8 @@ class Circuit:
         observable_map = {}
 
         def process_observable(observable):
+            if isinstance(observable, Identity):
+                return
             measured_qubits = tuple(observable.measured_qubits)
             for qubit in measured_qubits:
                 for target, previously_measured in observable_map.items():
