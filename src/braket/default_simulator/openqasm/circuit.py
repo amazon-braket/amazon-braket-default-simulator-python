@@ -5,6 +5,7 @@ from typing import List, Optional
 from braket.ir.jaqcd.program_v1 import Results
 from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
+from braket.default_simulator.observables import TensorProduct
 from braket.default_simulator.operation import GateOperation, KrausOperation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import _from_braket_observable
@@ -63,28 +64,31 @@ class Circuit:
 
     @property
     def basis_rotation_instructions(self):
-        """
-        This function assumes all observables are commuting.
-        """
-
         basis_rotation_instructions = []
-        measured_qubits = set()
+        observable_map = [None] * self.num_qubits
 
         for result in self.results:
             if isinstance(result, Observable):
                 observables = result.observable
                 actual_targets = result.targets or range(self.num_qubits)
+                braket_obs = _from_braket_observable(observables, actual_targets)
 
-                if set(actual_targets).issubset(measured_qubits):
-                    continue
-                elif set(actual_targets).isdisjoint(measured_qubits):
-                    braket_obs = _from_braket_observable(observables, result.targets)
-                    diagonalizing_gates = braket_obs.diagonalizing_gates(self.num_qubits)
-                    basis_rotation_instructions.extend(diagonalizing_gates)
-                    measured_qubits |= set(actual_targets)
+                if isinstance(braket_obs, TensorProduct):
+                    for factor in braket_obs.factors:
+                        current_value = observable_map[factor.measured_qubits[0]]
+                        if current_value is not None and type(current_value) != type(factor):
+                            raise ValueError("Qubits not simultaneously measurable")
+                        observable_map[factor.measured_qubits[0]] = factor
                 else:
-                    # this shouldn't impact any circuits coming from the BDK
-                    raise NotImplementedError("Partially measured observable target")
+                    current_value = observable_map[braket_obs.measured_qubits[0]]
+                    if current_value is not None and type(current_value) != type(braket_obs):
+                        raise ValueError("Qubits not simultaneously measurable")
+                    observable_map[braket_obs.measured_qubits[0]] = braket_obs
+
+        for target, obs in enumerate(observable_map):
+            if obs is not None:
+                diagonalizing_gates = obs.diagonalizing_gates(self.num_qubits)
+                basis_rotation_instructions.extend(diagonalizing_gates)
 
         return basis_rotation_instructions
 
