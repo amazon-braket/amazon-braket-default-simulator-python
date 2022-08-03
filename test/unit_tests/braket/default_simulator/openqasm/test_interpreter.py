@@ -17,7 +17,7 @@ from braket.default_simulator.noise_operations import (
     TwoQubitDephasing,
     TwoQubitDepolarizing,
 )
-from braket.default_simulator.observables import PauliY
+from braket.default_simulator.observables import Hermitian, PauliY
 from braket.default_simulator.openqasm._helpers.casting import (
     convert_bool_array_to_string,
     convert_string_to_bool_array,
@@ -1674,4 +1674,30 @@ def test_basis_rotation():
     assert circuit.basis_rotation_instructions == [
         Hadamard([0]),
         Unitary([1], PauliY._diagonalizing_matrix),
+    ]
+
+
+def test_basis_rotation_hermitian():
+    qasm = """
+    qubit[3] q;
+    i q;
+    #pragma braket result expectation x(q[2])
+    // # noqa: E501
+    #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
+    // # noqa: E501
+    #pragma braket result expectation x(q[2]) @ hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    array = np.array(
+        [
+            [-6, 2 + 1j, -3, -5 + 2j],
+            [2 - 1j, 0, 2 - 1j, -5 + 4j],
+            [-3, 2 + 1j, 0, -4 + 3j],
+            [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+        ]
+    )
+    hermitian = Hermitian(array, targets=[0, 1])
+    assert circuit.basis_rotation_instructions == [
+        Hadamard([2]),
+        *hermitian.diagonalizing_gates(),
     ]

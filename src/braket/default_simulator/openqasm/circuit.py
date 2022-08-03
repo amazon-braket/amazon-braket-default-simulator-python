@@ -65,7 +65,19 @@ class Circuit:
     @property
     def basis_rotation_instructions(self):
         basis_rotation_instructions = []
-        observable_map = [None] * self.num_qubits
+        observable_map = {}
+
+        def process_observable(observable):
+            measured_qubits = tuple(observable.measured_qubits)
+            for qubit in measured_qubits:
+                for target, previously_measured in observable_map.items():
+                    if qubit in target:
+                        if not (
+                            target == measured_qubits
+                            and type(previously_measured) == type(observable)
+                        ):
+                            raise ValueError("Qubits not simultaneously measurable")
+            observable_map[measured_qubits] = observable
 
         for result in self.results:
             if isinstance(result, Observable):
@@ -75,20 +87,13 @@ class Circuit:
 
                 if isinstance(braket_obs, TensorProduct):
                     for factor in braket_obs.factors:
-                        current_value = observable_map[factor.measured_qubits[0]]
-                        if current_value is not None and type(current_value) != type(factor):
-                            raise ValueError("Qubits not simultaneously measurable")
-                        observable_map[factor.measured_qubits[0]] = factor
+                        process_observable(factor)
                 else:
-                    current_value = observable_map[braket_obs.measured_qubits[0]]
-                    if current_value is not None and type(current_value) != type(braket_obs):
-                        raise ValueError("Qubits not simultaneously measurable")
-                    observable_map[braket_obs.measured_qubits[0]] = braket_obs
+                    process_observable(braket_obs)
 
-        for target, obs in enumerate(observable_map):
-            if obs is not None:
-                diagonalizing_gates = obs.diagonalizing_gates(self.num_qubits)
-                basis_rotation_instructions.extend(diagonalizing_gates)
+        for target, obs in observable_map.items():
+            diagonalizing_gates = obs.diagonalizing_gates(self.num_qubits)
+            basis_rotation_instructions.extend(diagonalizing_gates)
 
         return basis_rotation_instructions
 
