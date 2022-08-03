@@ -266,6 +266,12 @@ def test_properties():
                         {"name": "Probability", "minShots": 0, "maxShots": max_shots},
                         {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                     ],
+                    "supportPhysicalQubits": False,
+                    "supportsPartialVerbatimBox": False,
+                    "requiresContiguousQubitIndices": True,
+                    "requiresAllQubitsMeasurement": False,
+                    "supportsUnassignedMeasurements": True,
+                    "disabledQubitRewiringSupported": False,
                 },
                 "braket.ir.jaqcd.program": {
                     "actionType": "braket.ir.jaqcd.program",

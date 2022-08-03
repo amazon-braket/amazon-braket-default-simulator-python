@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
+from braket.default_simulator.observables import Hermitian, Identity, TensorProduct
 from braket.default_simulator.operation import GateOperation, KrausOperation
-from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import _from_braket_observable
 
 
@@ -63,28 +64,46 @@ class Circuit:
 
     @property
     def basis_rotation_instructions(self):
-        """
-        This function assumes all observables are commuting.
-        """
-
+        """Basis rotation instructions implied by the provided observables"""
         basis_rotation_instructions = []
-        measured_qubits = set()
+        observable_map = {}
+
+        def process_observable(observable):
+            if isinstance(observable, Identity):
+                return
+            measured_qubits = tuple(observable.measured_qubits)
+            for qubit in measured_qubits:
+                for target, previously_measured in observable_map.items():
+                    if qubit in target:
+                        # must ensure that target is the same
+                        if target != measured_qubits:
+                            raise ValueError("Qubit part of incompatible results targets")
+                        # must ensure observable is the same
+                        if type(previously_measured) != type(observable):
+                            raise ValueError("Conflicting result types applied to a single qubit")
+                        # including matrix value for Hermitians
+                        if isinstance(observable, Hermitian):
+                            if not np.allclose(previously_measured.matrix, observable.matrix):
+                                raise ValueError(
+                                    "Conflicting result types applied to a single qubit"
+                                )
+            observable_map[measured_qubits] = observable
 
         for result in self.results:
             if isinstance(result, Observable):
                 observables = result.observable
                 actual_targets = result.targets or range(self.num_qubits)
+                braket_obs = _from_braket_observable(observables, actual_targets)
 
-                if set(actual_targets).issubset(measured_qubits):
-                    continue
-                elif set(actual_targets).isdisjoint(measured_qubits):
-                    braket_obs = _from_braket_observable(observables, result.targets)
-                    diagonalizing_gates = braket_obs.diagonalizing_gates(self.num_qubits)
-                    basis_rotation_instructions.extend(diagonalizing_gates)
-                    measured_qubits |= set(actual_targets)
+                if isinstance(braket_obs, TensorProduct):
+                    for factor in braket_obs.factors:
+                        process_observable(factor)
                 else:
-                    # this shouldn't impact any circuits coming from the BDK
-                    raise NotImplementedError("Partially measured observable target")
+                    process_observable(braket_obs)
+
+        for target, obs in observable_map.items():
+            diagonalizing_gates = obs.diagonalizing_gates(self.num_qubits)
+            basis_rotation_instructions.extend(diagonalizing_gates)
 
         return basis_rotation_instructions
 

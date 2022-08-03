@@ -98,13 +98,11 @@ gate ecr a, b {
   cnot a, b;
   rz(π/4) b;
   cnot a, b;
-  h b;
 
   // rx(π) a
   x a;
 
   // rzx(-π/4) a, b
-  h b;
   cnot a, b;
   rz(-π/4) b;
   cnot a, b;
