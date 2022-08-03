@@ -64,6 +64,7 @@ class Circuit:
 
     @property
     def basis_rotation_instructions(self):
+        """Basis rotation instructions implied by the provided observables"""
         basis_rotation_instructions = []
         observable_map = {}
 
@@ -74,20 +75,18 @@ class Circuit:
             for qubit in measured_qubits:
                 for target, previously_measured in observable_map.items():
                     if qubit in target:
-                        conflicts = False
-                        if not (
-                            target == measured_qubits
-                            and type(previously_measured) == type(observable)
-                        ):
-                            conflicts = True
-                        elif (
-                            isinstance(observable, Hermitian)
-                            and isinstance(previously_measured, Hermitian)
-                            and not np.allclose(observable.matrix, previously_measured.matrix)
-                        ):
-                            conflicts = True
-                        if conflicts:
-                            raise ValueError("Qubits not simultaneously measurable")
+                        # must ensure that target is the same
+                        if target != measured_qubits:
+                            raise ValueError("Qubit part of incompatible results targets")
+                        # must ensure observable is the same
+                        if type(previously_measured) != type(observable):
+                            raise ValueError("Conflicting result types applied to a single qubit")
+                        # including matrix value for Hermitians
+                        if isinstance(observable, Hermitian):
+                            if not np.allclose(previously_measured.matrix, observable.matrix):
+                                raise ValueError(
+                                    "Conflicting result types applied to a single qubit"
+                                )
             observable_map[measured_qubits] = observable
 
         for result in self.results:

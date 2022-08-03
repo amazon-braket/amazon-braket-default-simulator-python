@@ -1141,35 +1141,43 @@ def test_basis_rotation(caplog):
 
 
 @pytest.mark.parametrize(
-    "qasm",
+    "qasm, error_string",
     (
-        """
-    qubit[2] q;
-    i q;
-    #pragma braket result expectation x(q[0])
-    // # noqa: E501
-    #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
-    """,
-        """
-    qubit[2] q;
-    i q;
-    // # noqa: E501
-    // # noqa: E501
-    #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
-    // # noqa: E501
-    #pragma braket result expectation hermitian([[-5+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
-    """,
-        """
-    qubit[2] q;
-    i q;
-    #pragma braket result expectation x(q[0])
-    #pragma braket result expectation z(q[0]) @ x(q[1])
-    """,
+        (
+            """
+        qubit[2] q;
+        i q;
+        #pragma braket result expectation x(q[0])
+        // # noqa: E501
+        #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
+        """,
+            "Qubit part of incompatible results targets",
+        ),
+        (
+            """
+        qubit[2] q;
+        i q;
+        // # noqa: E501
+        // # noqa: E501
+        #pragma braket result expectation hermitian([[-6+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
+        // # noqa: E501
+        #pragma braket result expectation hermitian([[-5+0im, 2+1im, -3+0im, -5+2im], [2-1im, 0im, 2-1im, -5+4im], [-3+0im, 2+1im, 0im, -4+3im], [-5-2im, -5-4im, -4-3im, -6+0im]]) q[0:1]
+        """,
+            "Conflicting result types applied to a single qubit",
+        ),
+        (
+            """
+        qubit[2] q;
+        i q;
+        #pragma braket result expectation x(q[0])
+        #pragma braket result expectation z(q[0]) @ x(q[1])
+        """,
+            "Conflicting result types applied to a single qubit",
+        ),
     ),
 )
-def test_partially_overlapping_basis_rotation(qasm):
-    not_simultaneously_measurable = "Qubits not simultaneously measurable"
-    with pytest.raises(ValueError, match=not_simultaneously_measurable):
+def test_partially_overlapping_basis_rotation(qasm, error_string):
+    with pytest.raises(ValueError, match=error_string):
         simulator = StateVectorSimulator()
         simulator.run(OpenQASMProgram(source=qasm), shots=1000)
 
