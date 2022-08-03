@@ -1652,10 +1652,8 @@ def test_advanced_language_features(qasm, caplog):
     assert re.match(
         (
             "WARNING.*"
-            "This program uses OpenQASM language features "
-            "only supported in the LocalSimulator\. Some of "
-            "these features may not be supported on QPUs or "
-            "managed simulators\.\n"
+            "This program uses OpenQASM language features that may "
+            "not be supported on QPUs or on-demand simulators\.\n"
         ),
         caplog.text,
     )
