@@ -205,6 +205,12 @@ def test_properties():
                         {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                         {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                     ],
+                    "supportPhysicalQubits": False,
+                    "supportsPartialVerbatimBox": False,
+                    "requiresContiguousQubitIndices": True,
+                    "requiresAllQubitsMeasurement": False,
+                    "supportsUnassignedMeasurements": True,
+                    "disabledQubitRewiringSupported": False,
                 },
                 "braket.ir.jaqcd.program": {
                     "actionType": "braket.ir.jaqcd.program",
