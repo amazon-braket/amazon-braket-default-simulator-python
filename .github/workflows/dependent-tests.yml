@@ -25,9 +25,11 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    # install schemas from github to get the latest changes
     - name: Install dependencies
       run: |
         pip install --upgrade pip
+        pip install --upgrade git+https://github.com/aws/amazon-braket-schemas-python@main
         pip install -e .
         cd ..
         git clone https://github.com/aws/${{ matrix.dependent }}.git
