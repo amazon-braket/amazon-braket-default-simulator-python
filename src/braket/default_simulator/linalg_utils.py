@@ -128,7 +128,7 @@ def controlled_unitary(unitary: np.ndarray, negctrl: bool = False) -> np.ndarray
     Args:
         unitary (np.ndarray): Unitary matrix operation.
         negctrl (bool): Whether to control the operation on the |0⟩ state,
-            instead of the |1⟩ state.
+            instead of the |1⟩ state. Default: False.
 
     Returns:
         np.ndarray: A controlled version of the provided unitary matrix.
