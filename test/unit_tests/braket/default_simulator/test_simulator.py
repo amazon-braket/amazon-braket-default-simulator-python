@@ -17,7 +17,6 @@ import pytest
 from braket.default_simulator import observables
 from braket.default_simulator.result_types import DensityMatrix, Expectation, Probability, Variance
 from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.simulator import BraketSimulator
 
 
 @pytest.mark.parametrize(
@@ -58,15 +57,10 @@ def test_observable_hash_tensor_product():
     assert hash_dict == {0: "PauliX", 1: matrix_hash, 2: matrix_hash, 3: "PauliY"}
 
 
-def test_base_local_simulator_instance_braket_simulator():
-    assert isinstance(BaseLocalSimulator(), BraketSimulator)
-
-
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_base_local_simulator_properties():
-    BaseLocalSimulator().properties
-
-
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_base_local_simulator_initialize_simulation():
-    BaseLocalSimulator().initialize_simulation()
+def test_base_local_simulator_abstract():
+    abstract_methods = (
+        "Can't instantiate abstract class BaseLocalSimulator with "
+        "abstract methods initialize_simulation, properties"
+    )
+    with pytest.raises(TypeError, match=abstract_methods):
+        BaseLocalSimulator()

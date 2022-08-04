@@ -15,11 +15,13 @@ from __future__ import annotations
 
 import cmath
 import math
-from typing import Tuple
+from typing import List, Sequence, Tuple
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
+from scipy.linalg import fractional_matrix_power
 
+from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.operation_helpers import (
     _from_braket_instruction,
@@ -833,3 +835,82 @@ class Unitary(GateOperation):
 @_from_braket_instruction.register(braket_instruction.Unitary)
 def _unitary(instruction) -> Unitary:
     return Unitary(instruction.targets, ir_matrix_to_ndarray(instruction.matrix))
+
+
+"""
+OpenQASM gate operations
+"""
+
+
+class U(GateOperation):
+    """
+    Parameterized primitive gate for OpenQASM simulator
+    """
+
+    def __init__(
+        self,
+        targets: Sequence[int],
+        theta: float,
+        phi: float,
+        lambda_: float,
+        ctrl_modifiers: List[int],
+        power: float = 1,
+    ):
+        self._targets = tuple(targets)
+        self._theta = theta
+        self._phi = phi
+        self._lambda = lambda_
+        self._ctrl_modifiers = ctrl_modifiers
+        self._power = power
+
+    @property
+    def matrix(self) -> np.ndarray:
+        """
+        Generate parameterized Unitary matrix.
+        https://openqasm.com/language/gates.html#built-in-gates
+
+        Returns:
+            np.ndarray: U Matrix
+        """
+        unitary = np.array(
+            [
+                [
+                    math.cos(self._theta / 2),
+                    -cmath.exp(1j * self._lambda) * math.sin(self._theta / 2),
+                ],
+                [
+                    cmath.exp(1j * self._phi) * math.sin(self._theta / 2),
+                    cmath.exp(1j * (self._phi + self._lambda)) * math.cos(self._theta / 2),
+                ],
+            ]
+        )
+        if int(self._power) == self._power:
+            unitary = np.linalg.matrix_power(unitary, int(self._power))
+        else:
+            unitary = fractional_matrix_power(unitary, self._power)
+
+        for mod in self._ctrl_modifiers:
+            unitary = controlled_unitary(unitary, negctrl=mod)
+        return unitary
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+class GPhase(GateOperation):
+    """
+    Global phase operation for OpenQASM simulator
+    """
+
+    def __init__(self, targets: Sequence[int], angle: float):
+        self._targets = tuple(targets)
+        self._angle = angle
+
+    @property
+    def matrix(self) -> np.ndarray:
+        return cmath.exp(self._angle * 1j) * np.eye(2 ** len(self._targets))
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets

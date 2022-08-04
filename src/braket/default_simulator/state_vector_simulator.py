@@ -26,6 +26,15 @@ class StateVectorSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_sv"
 
     def initialize_simulation(self, **kwargs) -> StateVectorSimulation:
+        """
+        Initialize state vector simulation.
+
+        Args:
+            **kwargs: qubit_count, shots, batch_size
+
+        Returns:
+            StateVectorSimulation: Initialized simulation.
+        """
         qubit_count = kwargs.get("qubit_count")
         shots = kwargs.get("shots")
         batch_size = kwargs.get("batch_size")
@@ -33,6 +42,12 @@ class StateVectorSimulator(BaseLocalSimulator):
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:
+        """
+        Device properties for the StateVectorSimulator.
+
+        Returns:
+            GateModelSimulatorDeviceCapabilities: Device capabilities for this simulator.
+        """
         observables = ["x", "y", "z", "h", "i", "hermitian"]
         max_shots = sys.maxsize
         qubit_count = 26
@@ -112,7 +127,103 @@ class StateVectorSimulator(BaseLocalSimulator):
                             {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                             {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                         ],
-                    }
+                    },
+                    "braket.ir.openqasm.program": {
+                        "actionType": "braket.ir.openqasm.program",
+                        "version": ["1"],
+                        "supportedOperations": [
+                            # OpenQASM primitives
+                            "U",
+                            "GPhase",
+                            # builtin Braket gates
+                            "ccnot",
+                            "cnot",
+                            "cphaseshift",
+                            "cphaseshift00",
+                            "cphaseshift01",
+                            "cphaseshift10",
+                            "cswap",
+                            "cv",
+                            "cy",
+                            "cz",
+                            "ecr",
+                            "h",
+                            "i",
+                            "iswap",
+                            "pswap",
+                            "phaseshift",
+                            "rx",
+                            "ry",
+                            "rz",
+                            "s",
+                            "si",
+                            "swap",
+                            "t",
+                            "ti",
+                            "unitary",
+                            "v",
+                            "vi",
+                            "x",
+                            "xx",
+                            "xy",
+                            "y",
+                            "yy",
+                            "z",
+                            "zz",
+                        ],
+                        "supportedPragmas": [
+                            "braket_unitary_matrix",
+                            "braket_result_type_state_vector",
+                            "braket_result_type_density_matrix",
+                            "braket_result_type_sample",
+                            "braket_result_type_expectation",
+                            "braket_result_type_variance",
+                            "braket_result_type_probability",
+                            "braket_result_type_amplitude",
+                        ],
+                        "forbiddenPragmas": [
+                            "braket_noise_amplitude_damping",
+                            "braket_noise_bit_flip",
+                            "braket_noise_depolarizing",
+                            "braket_noise_kraus",
+                            "braket_noise_pauli_channel",
+                            "braket_noise_generalized_amplitude_damping",
+                            "braket_noise_phase_flip",
+                            "braket_noise_phase_damping",
+                            "braket_noise_two_qubit_dephasing",
+                            "braket_noise_two_qubit_depolarizing",
+                        ],
+                        "supportedResultTypes": [
+                            {
+                                "name": "Sample",
+                                "observables": observables,
+                                "minShots": 1,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Expectation",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Variance",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                            {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
+                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+                        ],
+                        "supportPhysicalQubits": False,
+                        "supportsPartialVerbatimBox": False,
+                        "requiresContiguousQubitIndices": True,
+                        "requiresAllQubitsMeasurement": True,
+                        "supportsUnassignedMeasurements": True,
+                        "disabledQubitRewiringSupported": False,
+                    },
                 },
                 "paradigm": {"qubitCount": qubit_count},
                 "deviceParameters": GateModelSimulatorDeviceParameters.schema(),

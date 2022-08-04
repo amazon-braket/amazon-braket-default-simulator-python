@@ -16,7 +16,8 @@ from typing import Union
 
 from braket.device_schema import DeviceCapabilities
 from braket.ir.annealing import Problem
-from braket.ir.jaqcd import Program
+from braket.ir.jaqcd import Program as JaqcdProgram
+from braket.ir.openqasm import Program as OQ3Program
 from braket.task_result import AnnealingTaskResult, GateModelTaskResult
 
 
@@ -38,9 +39,11 @@ class BraketSimulator(ABC):
     >>> }
     """
 
+    DEVICE_ID = None
+
     @abstractmethod
     def run(
-        self, ir: Union[Program, Problem], *args, **kwargs
+        self, ir: Union[JaqcdProgram, OQ3Program, Problem], *args, **kwargs
     ) -> Union[GateModelTaskResult, AnnealingTaskResult]:
         """
         Run the task specified by the given IR.
@@ -49,7 +52,7 @@ class BraketSimulator(ABC):
         such as number of qubits.
 
         Args:
-            ir (Union[Program, Problem]): The IR representation of the program
+            ir (Union[JaqcdProgram, OQ3Program, Problem]): The IR representation of the program
 
         Returns:
             Union[GateModelTaskResult, AnnealingTaskResult]: An object representing
