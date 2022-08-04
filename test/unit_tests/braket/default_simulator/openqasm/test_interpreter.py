@@ -1057,7 +1057,7 @@ def test_include_stdgates():
     with tempfile.TemporaryDirectory() as temp_dir:
         os.chdir(temp_dir)
         Path("stdgates.inc").touch()
-        with open("stdgates.inc", "w") as f:
+        with open("stdgates.inc", "w", encoding="utf-8") as f:
             f.write(
                 """
             // OpenQASM 3 standard gate library
