@@ -34,7 +34,8 @@ setup(
         "numpy",
         "opt_einsum",
         "scipy",
-        "antlr4-python3-runtime==4.9.2",
+        # pinned for compatibility with strawberry fields
+        "antlr4-python3-runtime==4.8",
         "amazon-braket-schemas>=1.10.1",
     ],
     entry_points={
