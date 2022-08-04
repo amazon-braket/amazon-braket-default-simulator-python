@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.6.3 (2022-08-04)
+
+### Bug Fixes and Other Changes
+
+ * remove pytester
+ * bump pytest version further
+ * modify pytester reference to _pytest.pytester
+ * pin pytest version for pytester plugin
+ * Enable simulation of OpenQASM programs 🚀 (#💯)
+
 ## v1.6.2 (2022-04-19)
 
 ### Bug Fixes and Other Changes
