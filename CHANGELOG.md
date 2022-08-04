@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.7.0 (2022-08-04)
+
+### Features
+
+ * Simulation of OpenQASM programs
+
 ## v1.6.3 (2022-08-04)
 
 ### Bug Fixes and Other Changes
