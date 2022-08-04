@@ -47,6 +47,9 @@ class GateOperation(Operation, ABC):
     def matrix(self) -> np.ndarray:
         """np.ndarray: The matrix representation of the operation."""
 
+    def __eq__(self, other):
+        return self.targets == other.targets and np.allclose(self.matrix, other.matrix)
+
 
 class KrausOperation(Operation, ABC):
     """
@@ -58,6 +61,9 @@ class KrausOperation(Operation, ABC):
     @abstractmethod
     def matrices(self) -> List[np.ndarray]:
         """List[np.ndarray]: A list of matrices representing Kraus operators."""
+
+    def __eq__(self, other):
+        return self.targets == other.targets and np.allclose(self.matrices, other.matrices)
 
 
 class Observable(Operation, ABC):
