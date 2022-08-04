@@ -289,57 +289,48 @@ def test_alias():
 
 
 @pytest.fixture
-def sv_adder(pytester, stdgates):
-    pytester.makefile(
-        ".qasm",
-        adder="""
-            /*
-             * quantum ripple-carry adder
-             * Cuccaro et al, quant-ph/0410184
-             * (adjusted for Braket)
-             */
-            OPENQASM 3;
-            include "stdgates.inc";
+def sv_adder():
+    return """
+    OPENQASM 3;
 
-            input uint[4] a_in;
-            input uint[4] b_in;
+    input uint[4] a_in;
+    input uint[4] b_in;
 
-            gate majority a, b, c {
-                cx c, b;
-                cx c, a;
-                ccx a, b, c;
-            }
+    gate majority a, b, c {
+        cnot c, b;
+        cnot c, a;
+        ccnot a, b, c;
+    }
 
-            gate unmaj a, b, c {
-                ccx a, b, c;
-                cx c, a;
-                cx a, b;
-            }
+    gate unmaj a, b, c {
+        ccnot a, b, c;
+        cnot c, a;
+        cnot a, b;
+    }
 
-            qubit cin;
-            qubit[4] a;
-            qubit[4] b;
-            qubit cout;
+    qubit cin;
+    qubit[4] a;
+    qubit[4] b;
+    qubit cout;
 
-            // set input states
-            for int[8] i in [0: 3] {
-              if(bool(a_in[i])) x a[i];
-              if(bool(b_in[i])) x b[i];
-            }
+    // set input states
+    for int[8] i in [0: 3] {
+      if(bool(a_in[i])) x a[i];
+      if(bool(b_in[i])) x b[i];
+    }
 
-            // add a to b, storing result in b
-            majority cin, b[3], a[3];
-            for int[8] i in [3: -1: 1] { majority a[i], b[i - 1], a[i - 1]; }
-            cx a[0], cout;
-            for int[8] i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
-            unmaj cin, b[3], a[3];
+    // add a to b, storing result in b
+    majority cin, b[3], a[3];
+    for int[8] i in [3: -1: 1] { majority a[i], b[i - 1], a[i - 1]; }
+    cnot a[0], cout;
+    for int[8] i in [1: 3] { unmaj a[i], b[i - 1], a[i - 1]; }
+    unmaj cin, b[3], a[3];
 
-            // todo: subtle bug when trying to get a result type for both at once
-            #pragma braket result probability cout, b
-            #pragma braket result probability cout
-            #pragma braket result probability b
-        """,
-    )
+    // todo: subtle bug when trying to get a result type for both at once
+    #pragma braket result probability cout, b
+    #pragma braket result probability cout
+    #pragma braket result probability b
+    """
 
 
 def test_gphase():
@@ -375,31 +366,29 @@ def test_gphase():
 def test_adder(sv_adder):
     simulator = StateVectorSimulator()
     inputs = {"a_in": 7, "b_in": 3}
-    result = simulator.run(OpenQASMProgram(source="adder.qasm", inputs=inputs), shots=100)
+    result = simulator.run(OpenQASMProgram(source=sv_adder, inputs=inputs), shots=100)
     assert result.resultTypes[0] == Probability(targets=[9, 5, 6, 7, 8])
 
 
 def test_adder_analytic(sv_adder):
     simulator = StateVectorSimulator()
     inputs = {"a_in": 7, "b_in": 3}
-    result = simulator.run(OpenQASMProgram(source="adder.qasm", inputs=inputs))
+    result = simulator.run(OpenQASMProgram(source=sv_adder, inputs=inputs))
     expected_probs = np.zeros(2**5)
     expected_probs[10] = 1
     probs = np.outer(result.resultTypes[1].value, result.resultTypes[2].value).flatten()
     assert np.allclose(probs, expected_probs)
 
 
-def test_result_types_analytic(stdgates):
+def test_result_types_analytic():
     simulator = StateVectorSimulator()
     qasm = """
-    include "stdgates.inc";
-
     qubit[3] q;
     bit[3] c;
 
     h q[0];
-    cx q[0], q[1];
-    cx q[1], q[2];
+    cnot q[0], q[1];
+    cnot q[1], q[2];
     x q[2];
 
     // {{ 001: .5, 110: .5 }}
