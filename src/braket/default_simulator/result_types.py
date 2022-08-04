@@ -203,7 +203,7 @@ class DensityMatrix(TargetedResultType):
         Returns:
             np.ndarray: The density matrix (before observables) of the simulation
         """
-        if self._targets is None or len(self._targets) == simulation.qubit_count:
+        if self._targets is None or np.array_equal(self._targets, range(simulation.qubit_count)):
             return simulation.density_matrix
         else:
             if not all(ta in list(range(simulation.qubit_count)) for ta in self._targets):
@@ -314,7 +314,7 @@ class Variance(ObservableResultType):
 
     @staticmethod
     def _calculate_single_quantity(simulation: Simulation, observable: Observable) -> float:
-        return simulation.expectation(observable ** 2) - simulation.expectation(observable) ** 2
+        return simulation.expectation(observable**2) - simulation.expectation(observable) ** 2
 
 
 @_from_braket_result_type.register
@@ -364,7 +364,7 @@ def _from_single_observable(
             else:
                 return Hermitian(matrix, targets)
         except Exception:
-            raise ValueError(f"Invalid observable specified: {observable}")
+            raise ValueError(f"Invalid observable specified: {observable}, targets: {targets}")
 
 
 def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):

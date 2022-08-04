@@ -1,5 +1,55 @@
 # Changelog
 
+## v1.7.0 (2022-08-04)
+
+### Features
+
+ * Simulation of OpenQASM programs
+
+## v1.6.3 (2022-08-04)
+
+### Bug Fixes and Other Changes
+
+ * remove pytester
+ * bump pytest version further
+ * modify pytester reference to _pytest.pytester
+ * pin pytest version for pytester plugin
+ * Enable simulation of OpenQASM programs 🚀 (#💯)
+
+## v1.6.2 (2022-04-19)
+
+### Bug Fixes and Other Changes
+
+ * align ECR gate definition with OQC
+
+## v1.6.1 (2022-04-15)
+
+### Bug Fixes and Other Changes
+
+ * ensure correct behavior for target ordering with DensityMatrix r…
+
+## v1.6.0 (2022-04-12)
+
+### Features
+
+ * add ECR gate (#5)
+
+## v1.5.0 (2022-02-01)
+
+### Features
+
+ * adding two qubit Pauli channels
+
+## v1.4.0 (2022-01-27)
+
+### Features
+
+ * added controlled-sqrt-not gate.
+
+### Bug Fixes and Other Changes
+
+ * Add controlled-sqrt-not gate to dm simulator
+
 ## v1.3.0 (2021-08-23)
 
 ### Features

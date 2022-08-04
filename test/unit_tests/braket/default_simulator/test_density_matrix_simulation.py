@@ -211,7 +211,7 @@ def test_simulation_qft_circuit(qft_circuit_operations):
     simulation = DensityMatrixSimulation(qubit_count, 0)
     operations = qft_circuit_operations(qubit_count)
     simulation.evolve(operations)
-    assert np.allclose(simulation.probabilities, [1 / (2 ** qubit_count)] * (2 ** qubit_count))
+    assert np.allclose(simulation.probabilities, [1 / (2**qubit_count)] * (2**qubit_count))
 
 
 def test_simulation_retrieve_samples():

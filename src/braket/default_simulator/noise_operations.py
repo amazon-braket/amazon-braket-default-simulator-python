@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import itertools
 from typing import List, Tuple
 
 import braket.ir.jaqcd as braket_instruction
@@ -300,3 +301,46 @@ def _kraus(instruction) -> Kraus:
     return Kraus(
         instruction.targets, [ir_matrix_to_ndarray(matrix) for matrix in instruction.matrices]
     )
+
+
+class TwoQubitPauliChannel(KrausOperation):
+    """Two qubit Pauli noise channel"""
+
+    _paulis = {
+        "I": np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex),
+        "X": np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex),
+        "Y": np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex),
+        "Z": np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex),
+    }
+    _tensor_products_strings = itertools.product(_paulis.keys(), repeat=2)
+    _names_list = ["".join(x) for x in _tensor_products_strings]
+
+    def __init__(self, targets, probabilities):
+        self._targets = tuple(targets)
+        self.probabilities = probabilities
+
+        total_prob = sum(self.probabilities.values())
+
+        K_list = [np.sqrt(1 - total_prob) * np.identity(4)]  # identity
+        for pstring in self._names_list[1:]:  # ignore "II"
+            if pstring in self.probabilities:
+                mat = np.sqrt(self.probabilities[pstring]) * np.kron(
+                    self._paulis[pstring[0]], self._paulis[pstring[1]]
+                )
+                K_list.append(mat)
+            else:
+                K_list.append(np.zeros((4, 4)))
+        self._matrices = K_list
+
+    @property
+    def matrices(self) -> List[np.ndarray]:
+        return self._matrices
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+@_from_braket_instruction.register(braket_instruction.MultiQubitPauliChannel)
+def _two_qubit_pauli_channel(instruction) -> TwoQubitPauliChannel:
+    return TwoQubitPauliChannel(instruction.targets, instruction.probabilities)

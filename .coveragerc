@@ -8,6 +8,8 @@ omit =
     **/braket/device_schema/*
     **/braket/schema_common/*
     **/braket/task_result/*
+    **/braket/default_simulator/openqasm/parser/generated/*
+    **/braket/default_simulator/openqasm/parser/openqasm_parser.py
 
 [paths]
 source =
