@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.7.1 (2022-08-04)
+
+### Bug Fixes and Other Changes
+
+ * rebuild parsers with new antlr version
+
 ## v1.7.0 (2022-08-04)
 
 ### Features
