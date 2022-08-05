@@ -1129,6 +1129,20 @@ def test_basis_rotation(caplog):
     assert not caplog.text
 
 
+def test_basis_rotation_all(caplog):
+    qasm = """
+    qubit q;
+    qubit[2] qs;
+    h q;
+    h qs;
+    #pragma braket result variance x all
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert np.array_equal(measurements, np.zeros([1000, 3]))
+
+
 @pytest.mark.parametrize(
     "qasm, error_string",
     (

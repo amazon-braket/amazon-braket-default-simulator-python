@@ -92,14 +92,20 @@ class Circuit:
         for result in self.results:
             if isinstance(result, Observable):
                 observables = result.observable
-                actual_targets = result.targets or range(self.num_qubits)
-                braket_obs = _from_braket_observable(observables, actual_targets)
 
-                if isinstance(braket_obs, TensorProduct):
-                    for factor in braket_obs.factors:
-                        process_observable(factor)
+                if result.targets is not None:
+                    braket_obs = _from_braket_observable(observables, result.targets)
+
+                    if isinstance(braket_obs, TensorProduct):
+                        for factor in braket_obs.factors:
+                            process_observable(factor)
+                    else:
+                        process_observable(braket_obs)
+
                 else:
-                    process_observable(braket_obs)
+                    for q in range(self.num_qubits):
+                        braket_obs = _from_braket_observable(observables, [q])
+                        process_observable(braket_obs)
 
         for target, obs in observable_map.items():
             diagonalizing_gates = obs.diagonalizing_gates(self.num_qubits)
