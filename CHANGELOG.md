@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.7.2 (2022-08-05)
+
+### Bug Fixes and Other Changes
+
+ * correct behavior for result types all
+
 ## v1.7.1 (2022-08-04)
 
 ### Bug Fixes and Other Changes
