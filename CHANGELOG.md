@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.7.2.post0 (2022-08-10)
+
+### Testing and Release Infrastructure
+
+ * Don't run tests on push to feature branches
+ * Add SF plugin to dependent tests
+
 ## v1.7.2 (2022-08-05)
 
 ### Bug Fixes and Other Changes
