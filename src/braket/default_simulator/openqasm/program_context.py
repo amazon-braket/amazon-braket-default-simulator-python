@@ -507,6 +507,15 @@ class ProgramContext:
         except KeyError:
             raise ValueError(f"Gate {name} is not defined.")
 
+    def is_builtin_gate(self, name: str) -> bool:
+        """Whether the gate is currently in scope as a built in Braket gate"""
+        try:
+            self.get_gate_definition(name)
+            user_defined_gate = True
+        except ValueError:
+            user_defined_gate = False
+        return name in BRAKET_GATES and not user_defined_gate
+
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """Add a subroutine definition"""
         self.subroutine_table.add_subroutine(name, definition)
@@ -562,7 +571,9 @@ class ProgramContext:
                 ctrl_modifiers += [ctrl_mod_ix] * mod.argument.value
             if mod.modifier == GateModifierName.pow:
                 power *= mod.argument.value
-        instruction = BRAKET_GATES[gate_name](target, *params, ctrl_modifiers, power)
+        instruction = BRAKET_GATES[gate_name](
+            target, *params, ctrl_modifiers=ctrl_modifiers, power=power
+        )
         self.circuit.add_instruction(instruction)
 
     def add_custom_unitary(

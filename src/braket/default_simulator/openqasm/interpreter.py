@@ -309,7 +309,7 @@ class Interpreter:
                 statement.arguments = self.visit(statement.arguments)
                 statement.modifiers = self.visit(statement.modifiers)
                 statement.qubits = self.visit(statement.qubits)
-                if gate_name in BRAKET_GATES:
+                if self.context.is_builtin_gate(gate_name):
                     inlined_body.append(statement)
                 else:
                     with self.context.enter_scope():
@@ -386,8 +386,7 @@ class Interpreter:
                 self.visit(gate_call)
             return
 
-        # todo: address collisions between custom and built-in gate names
-        if gate_name in BRAKET_GATES:
+        if self.context.is_builtin_gate(gate_name):
             # to simplify indices
             qubits = self.visit(qubits)
             self.handle_builtin_gate(
@@ -407,7 +406,7 @@ class Interpreter:
                 gate_qubits = qubits[num_ctrl:]
 
                 modified_gate_body = modify_body(
-                    gate_def.body,
+                    deepcopy(gate_def.body),
                     is_inverted(node),
                     ctrl_modifiers,
                     ctrl_qubits,

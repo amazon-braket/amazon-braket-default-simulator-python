@@ -7,7 +7,9 @@ import numpy as np
 import pytest
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.gate_operations import Hadamard, U, Unitary
+from braket.default_simulator.gate_operations import Hadamard, PauliX
+from braket.default_simulator.gate_operations import PauliY as Y
+from braket.default_simulator.gate_operations import U, Unitary
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -754,7 +756,6 @@ def test_gate_undef():
 def test_gate_call():
     qasm = """
     float[64] my_pi = π;
-    gate x a { U(π, 0, my_pi) a; }
     gate x2(p) a { U(π, 0, p) a; }
 
     qubit q1;
@@ -764,13 +765,20 @@ def test_gate_call():
     U(π, 0, my_pi) q1;
     x q2;
     x2(my_pi) qs[1];
+    
+    // overwrite x gate
+    gate x a { y a; }
+    x qs;
+
     """
     circuit = Interpreter().build_circuit(qasm)
     expected_circuit = Circuit(
         instructions=[
             U((0,), np.pi, 0, np.pi, ()),
-            U((1,), np.pi, 0, np.pi, ()),
+            PauliX((1,)),
             U((3,), np.pi, 0, np.pi, ()),
+            Y((2,)),
+            Y((3,)),
         ]
     )
     assert circuit == expected_circuit
