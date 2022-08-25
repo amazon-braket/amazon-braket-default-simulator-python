@@ -647,10 +647,10 @@ def test_update_bits_int_unsized():
 def test_gate_def():
     qasm = """
     float[64] my_pi = π;
-    gate x a { U(π, 0, my_pi) a; }
+    gate x0 a { U(π, 0, my_pi) a; }
     gate x1(mp) c { U(π, 0, mp) c; }
     gate x2(p) a, b {
-        x b;
+        x0 b;
         x1(p) a;
         x1(my_pi) a;
         U(1, 2, p) b;
@@ -658,8 +658,8 @@ def test_gate_def():
     """
     context = Interpreter().run(qasm)
 
-    assert context.get_gate_definition("x") == QuantumGateDefinition(
-        name=Identifier("x"),
+    assert context.get_gate_definition("x0") == QuantumGateDefinition(
+        name=Identifier("x0"),
         arguments=[],
         qubits=[Identifier("a")],
         body=[
@@ -966,7 +966,8 @@ def test_pow():
     qubit q4;
     qubit q5;
 
-    x q1;       // flip
+    pow(1/2) @ x q1;       // half flip
+    pow(1/2) @ x q1;       // half flip
     cx q1, q2;   // flip
     cxx_1 q1, q3;    // don't flip
     cxx_2 q1, q4;    // don't flip

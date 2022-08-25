@@ -19,9 +19,7 @@ from typing import List, Sequence, Tuple
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
-from scipy.linalg import fractional_matrix_power
 
-from braket.default_simulator.linalg_utils import controlled_unitary
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.operation_helpers import (
     _from_braket_instruction,
@@ -34,11 +32,15 @@ from braket.default_simulator.operation_helpers import (
 class Identity(GateOperation):
     """Identity gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.eye(2)
 
     @property
@@ -54,11 +56,15 @@ def _i(instruction) -> Identity:
 class Hadamard(GateOperation):
     """Hadamard gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 1], [1, -1]]) / math.sqrt(2)
 
     @property
@@ -74,11 +80,15 @@ def _hadamard(instruction) -> Hadamard:
 class PauliX(GateOperation):
     """Pauli-X gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[0, 1], [1, 0]])
 
     @property
@@ -94,11 +104,15 @@ def _pauli_x(instruction) -> PauliX:
 class PauliY(GateOperation):
     """Pauli-Y gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[0, -1j], [1j, 0]])
 
     @property
@@ -114,11 +128,15 @@ def _pauli_y(instruction) -> PauliY:
 class PauliZ(GateOperation):
     """Pauli-Z gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, -1]])
 
     @property
@@ -134,11 +152,15 @@ def _pauli_z(instruction) -> PauliZ:
 class CV(GateOperation):
     """Controlled-Sqrt(NOT) gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -161,11 +183,15 @@ def _cv(instruction) -> CV:
 class CX(GateOperation):
     """Controlled Pauli-X gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @property
@@ -181,11 +207,15 @@ def _cx(instruction) -> CX:
 class CY(GateOperation):
     """Controlled Pauli-Y gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self):
+    def _base_matrix(self):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
 
     @property
@@ -201,11 +231,15 @@ def _cy(instruction) -> CY:
 class CZ(GateOperation):
     """Controlled Pauli-Z gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @property
@@ -221,11 +255,15 @@ def _cz(instruction) -> CZ:
 class ECR(GateOperation):
     """ECR gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return (
             1
             / np.sqrt(2)
@@ -248,11 +286,15 @@ def _ecr(instruction) -> ECR:
 class S(GateOperation):
     """S gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, 1j]], dtype=complex)
 
     @property
@@ -268,11 +310,15 @@ def _s(instruction) -> S:
 class Si(GateOperation):
     r"""The adjoint :math:`S^{\dagger}` of the S gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, -1j]], dtype=complex)
 
     @property
@@ -288,11 +334,15 @@ def _si(instruction) -> Si:
 class T(GateOperation):
     """T gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(1j * math.pi / 4)]], dtype=complex)
 
     @property
@@ -308,11 +358,15 @@ def _t(instruction) -> T:
 class Ti(GateOperation):
     r"""The adjoint :math:`T^{\dagger}` of the T gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(-1j * math.pi / 4)]], dtype=complex)
 
     @property
@@ -328,11 +382,15 @@ def _ti(instruction) -> Ti:
 class V(GateOperation):
     """Square root of the X (not) gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]], dtype=complex)
 
     @property
@@ -348,11 +406,15 @@ def _v(instruction) -> V:
 class Vi(GateOperation):
     r"""The adjoint :math:`V^{\dagger}` of the square root of the X (not) gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array(([[0.5 - 0.5j, 0.5 + 0.5j], [0.5 + 0.5j, 0.5 - 0.5j]]), dtype=complex)
 
     @property
@@ -368,12 +430,16 @@ def _vi(instruction) -> Vi:
 class PhaseShift(GateOperation):
     """Phase shift gate"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(1j * self._angle)]])
 
     @property
@@ -389,12 +455,16 @@ def _phase_shift(instruction) -> PhaseShift:
 class CPhaseShift(GateOperation):
     """Controlled phase shift gate"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, 1.0, 1.0, cmath.exp(1j * self._angle)])
 
     @property
@@ -410,12 +480,16 @@ def _c_phase_shift(instruction) -> CPhaseShift:
 class CPhaseShift00(GateOperation):
     r"""Controlled phase shift gate phasing the :math:`\ket{00}` state"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.diag([cmath.exp(1j * self._angle), 1.0, 1.0, 1.0])
 
     @property
@@ -431,12 +505,16 @@ def _c_phase_shift_00(instruction) -> CPhaseShift00:
 class CPhaseShift01(GateOperation):
     r"""Controlled phase shift gate phasing the :math:`\ket{01}` state"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, cmath.exp(1j * self._angle), 1.0, 1.0])
 
     @property
@@ -452,12 +530,16 @@ def _c_phase_shift_01(instruction) -> CPhaseShift01:
 class CPhaseShift10(GateOperation):
     r"""Controlled phase shift gate phasing the :math:`\ket{10}` state"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, 1.0, cmath.exp(1j * self._angle), 1.0])
 
     @property
@@ -473,12 +555,16 @@ def _c_phase_shift_10(instruction) -> CPhaseShift10:
 class RotX(GateOperation):
     """X-axis rotation gate"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         cos_half_angle = math.cos(self._angle / 2)
         i_sin_half_angle = 1j * math.sin(self._angle / 2)
         return np.array([[cos_half_angle, -i_sin_half_angle], [-i_sin_half_angle, cos_half_angle]])
@@ -496,12 +582,16 @@ def _rot_x(instruction) -> RotX:
 class RotY(GateOperation):
     """Y-axis rotation gate"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         cos_half_angle = math.cos(self._angle / 2)
         sin_half_angle = math.sin(self._angle / 2)
         return np.array([[cos_half_angle, -sin_half_angle], [sin_half_angle, cos_half_angle]])
@@ -519,12 +609,16 @@ def _rot_y(instruction) -> RotY:
 class RotZ(GateOperation):
     """Z-axis rotation gate"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         positive_phase = cmath.exp(1j * self._angle / 2)
         negative_phase = cmath.exp(-1j * self._angle / 2)
         return np.array([[negative_phase, 0], [0, positive_phase]])
@@ -542,11 +636,15 @@ def _rot_z(instruction) -> RotZ:
 class Swap(GateOperation):
     """Swap gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @property
@@ -562,11 +660,15 @@ def _swap(instruction) -> Swap:
 class ISwap(GateOperation):
     """iSwap gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array(
             [
                 [1.0, 0.0, 0.0, 0.0],
@@ -590,12 +692,16 @@ def _iswap(instruction) -> ISwap:
 class PSwap(GateOperation):
     """Parametrized Swap gate"""
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array(
             [
                 [1.0, 0.0, 0.0, 0.0],
@@ -622,12 +728,16 @@ class XY(GateOperation):
     Reference: https://arxiv.org/abs/1912.04424v1
     """
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         cos = math.cos(self._angle / 2)
         sin = math.sin(self._angle / 2)
         return np.array(
@@ -656,12 +766,16 @@ class XX(GateOperation):
     Reference: https://arxiv.org/abs/1707.06356
     """
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         cos_angle = math.cos(self._angle / 2)
         i_sin_angle = 1j * math.sin(self._angle / 2)
         return np.array(
@@ -689,12 +803,16 @@ class YY(GateOperation):
     Reference: https://arxiv.org/abs/1707.06356
     """
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         cos_angle = math.cos(self._angle / 2)
         i_sin_angle = 1j * math.sin(self._angle / 2)
         return np.array(
@@ -722,12 +840,16 @@ class ZZ(GateOperation):
     Reference: https://arxiv.org/abs/1707.06356
     """
 
-    def __init__(self, targets, angle):
-        self._targets = tuple(targets)
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         positive_phase = cmath.exp(1j * self._angle / 2)
         negative_phase = cmath.exp(-1j * self._angle / 2)
         return np.array(
@@ -752,11 +874,15 @@ def _zz(instruction) -> ZZ:
 class CCNot(GateOperation):
     """Controlled CNot or Toffoli gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -784,11 +910,15 @@ def _ccnot(instruction) -> CCNot:
 class CSwap(GateOperation):
     """Controlled Swap gate"""
 
-    def __init__(self, targets):
-        self._targets = tuple(targets)
+    def __init__(self, targets, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -816,15 +946,19 @@ def _cswap(instruction) -> CSwap:
 class Unitary(GateOperation):
     """Arbitrary unitary gate"""
 
-    def __init__(self, targets, matrix):
-        self._targets = tuple(targets)
+    def __init__(self, targets, matrix, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         clone = np.array(matrix, dtype=complex)
         check_matrix_dimensions(clone, self._targets)
         check_unitary(clone)
         self._matrix = clone
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return np.array(self._matrix)
 
     @property
@@ -856,15 +990,17 @@ class U(GateOperation):
         ctrl_modifiers: List[int],
         power: float = 1,
     ):
-        self._targets = tuple(targets)
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
         self._theta = theta
         self._phi = phi
         self._lambda = lambda_
-        self._ctrl_modifiers = ctrl_modifiers
-        self._power = power
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         """
         Generate parameterized Unitary matrix.
         https://openqasm.com/language/gates.html#built-in-gates
@@ -872,7 +1008,7 @@ class U(GateOperation):
         Returns:
             np.ndarray: U Matrix
         """
-        unitary = np.array(
+        return np.array(
             [
                 [
                     math.cos(self._theta / 2),
@@ -884,14 +1020,6 @@ class U(GateOperation):
                 ],
             ]
         )
-        if int(self._power) == self._power:
-            unitary = np.linalg.matrix_power(unitary, int(self._power))
-        else:
-            unitary = fractional_matrix_power(unitary, self._power)
-
-        for mod in self._ctrl_modifiers:
-            unitary = controlled_unitary(unitary, negctrl=mod)
-        return unitary
 
     @property
     def targets(self) -> Tuple[int, ...]:
@@ -904,13 +1032,55 @@ class GPhase(GateOperation):
     """
 
     def __init__(self, targets: Sequence[int], angle: float):
-        self._targets = tuple(targets)
+        super().__init__(
+            targets=targets,
+        )
         self._angle = angle
 
     @property
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         return cmath.exp(self._angle * 1j) * np.eye(2 ** len(self._targets))
 
     @property
     def targets(self) -> Tuple[int, ...]:
         return self._targets
+
+
+BRAKET_GATES = {
+    "i": Identity,
+    "h": Hadamard,
+    "x": PauliX,
+    "y": PauliY,
+    "z": PauliZ,
+    "cv": CV,
+    "cnot": CX,
+    "cy": CY,
+    "cz": CZ,
+    "ecr": ECR,
+    "s": S,
+    "si": Si,
+    "t": T,
+    "ti": Ti,
+    "v": V,
+    "vi": Vi,
+    "phaseshift": PhaseShift,
+    "cphaseshift": CPhaseShift,
+    "cphaseshift00": CPhaseShift00,
+    "cphaseshift01": CPhaseShift01,
+    "cphaseshift10": CPhaseShift10,
+    "rx": RotX,
+    "ry": RotY,
+    "rz": RotZ,
+    "swap": Swap,
+    "iswap": ISwap,
+    "pswap": PSwap,
+    "xy": XY,
+    "xx": XX,
+    "yy": YY,
+    "zz": ZZ,
+    "ccnot": CCNot,
+    "cswap": CSwap,
+    "unitary": Unitary,
+    "U": U,
+    "gphase": GPhase,
+}
