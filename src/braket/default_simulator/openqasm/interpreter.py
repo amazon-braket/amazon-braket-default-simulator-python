@@ -1,12 +1,12 @@
 from copy import deepcopy
 from dataclasses import fields
 from logging import Logger, getLogger
-from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
 from braket.ir.openqasm.program_v1 import io_type
 
+from ..gate_operations import BRAKET_GATES
 from ._helpers.arrays import (
     convert_range_def_to_range,
     create_empty_array,
@@ -118,7 +118,6 @@ class Interpreter:
                 source = f.read()
 
         program = parse(source)
-        self.visit(Include(Path(Path(__file__).parent, "braket_gates.inc")))
         self._uses_advanced_language_features = False
         self.visit(program)
         if self._uses_advanced_language_features:
@@ -310,7 +309,7 @@ class Interpreter:
                 statement.arguments = self.visit(statement.arguments)
                 statement.modifiers = self.visit(statement.modifiers)
                 statement.qubits = self.visit(statement.qubits)
-                if gate_name == "U":
+                if self.context.is_builtin_gate(gate_name):
                     inlined_body.append(statement)
                 else:
                     with self.context.enter_scope():
@@ -387,10 +386,11 @@ class Interpreter:
                 self.visit(gate_call)
             return
 
-        if gate_name == "U":
+        if self.context.is_builtin_gate(gate_name):
             # to simplify indices
             qubits = self.visit(qubits)
-            self.handle_builtin_unitary(
+            self.handle_builtin_gate(
+                gate_name,
                 arguments,
                 qubits,
                 modifiers,
@@ -406,7 +406,7 @@ class Interpreter:
                 gate_qubits = qubits[num_ctrl:]
 
                 modified_gate_body = modify_body(
-                    gate_def.body,
+                    deepcopy(gate_def.body),
                     is_inverted(node),
                     ctrl_modifiers,
                     ctrl_qubits,
@@ -598,14 +598,16 @@ class Interpreter:
         index = self.visit(node.index)
         return builtin_functions["sizeof"](target, index)
 
-    def handle_builtin_unitary(
+    def handle_builtin_gate(
         self,
+        gate_name: str,
         arguments: List[FloatLiteral],
         qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: List[QuantumGateModifier],
     ) -> None:
         """Add unitary operation to the circuit"""
-        self.context.add_builtin_unitary(
+        self.context.add_builtin_gate(
+            gate_name,
             arguments,
             qubits,
             modifiers,

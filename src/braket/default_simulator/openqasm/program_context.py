@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 
-from braket.default_simulator.gate_operations import GPhase, U, Unitary
+from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, U, Unitary
 
 from ..noise_operations import KrausOperation
 from ._helpers.arrays import (
@@ -507,6 +507,15 @@ class ProgramContext:
         except KeyError:
             raise ValueError(f"Gate {name} is not defined.")
 
+    def is_builtin_gate(self, name: str) -> bool:
+        """Whether the gate is currently in scope as a built in Braket gate"""
+        try:
+            self.get_gate_definition(name)
+            user_defined_gate = True
+        except ValueError:
+            user_defined_gate = False
+        return name in BRAKET_GATES and not user_defined_gate
+
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """Add a subroutine definition"""
         self.subroutine_table.add_subroutine(name, definition)
@@ -536,33 +545,35 @@ class ProgramContext:
         phase_instruction = GPhase(target, phase.value)
         self.circuit.add_instruction(phase_instruction)
 
-    def add_builtin_unitary(
+    def add_builtin_gate(
         self,
+        gate_name: str,
         parameters: List[FloatLiteral],
         qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ) -> None:
-        """Add a builtin Unitary (U) instruction to the circuit"""
+        """Add a builtin gate instruction to the circuit"""
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
+        power = 1
         if num_inv_modifiers % 2:
-            # inv @ U(θ, ϕ, λ) == U(-θ, -λ, -ϕ)
-            params = -params[[0, 2, 1]]
+            power *= -1  # todo: replace with adjoint
 
         ctrl_mod_map = {
             GateModifierName.ctrl: 0,
             GateModifierName.negctrl: 1,
         }
         ctrl_modifiers = []
-        power = 1
         for mod in modifiers:
             ctrl_mod_ix = ctrl_mod_map.get(mod.modifier)
             if ctrl_mod_ix is not None:
                 ctrl_modifiers += [ctrl_mod_ix] * mod.argument.value
             if mod.modifier == GateModifierName.pow:
                 power *= mod.argument.value
-        instruction = U(target, *params, ctrl_modifiers, power)
+        instruction = BRAKET_GATES[gate_name](
+            target, *params, ctrl_modifiers=ctrl_modifiers, power=power
+        )
         self.circuit.add_instruction(instruction)
 
     def add_custom_unitary(
