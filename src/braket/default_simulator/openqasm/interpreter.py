@@ -309,12 +309,7 @@ class Interpreter:
                 statement.arguments = self.visit(statement.arguments)
                 statement.modifiers = self.visit(statement.modifiers)
                 statement.qubits = self.visit(statement.qubits)
-                try:
-                    self.context.get_gate_definition(gate_name)
-                    user_defined_gate = True
-                except ValueError:
-                    user_defined_gate = False
-                if gate_name in BRAKET_GATES and not user_defined_gate:
+                if self.context.is_builtin_gate(gate_name):
                     inlined_body.append(statement)
                 else:
                     with self.context.enter_scope():
@@ -391,12 +386,7 @@ class Interpreter:
                 self.visit(gate_call)
             return
 
-        try:
-            self.context.get_gate_definition(gate_name)
-            user_defined_gate = True
-        except ValueError:
-            user_defined_gate = False
-        if gate_name in BRAKET_GATES and not user_defined_gate:
+        if self.context.is_builtin_gate(gate_name):
             # to simplify indices
             qubits = self.visit(qubits)
             self.handle_builtin_gate(
@@ -405,7 +395,6 @@ class Interpreter:
                 qubits,
                 modifiers,
             )
-            return
         else:
             with self.context.enter_scope():
                 gate_def = self.context.get_gate_definition(gate_name)
