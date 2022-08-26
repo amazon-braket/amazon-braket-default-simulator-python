@@ -943,6 +943,96 @@ def _cswap(instruction) -> CSwap:
     return CSwap([instruction.control, *instruction.targets])
 
 
+class GPi(GateOperation):
+    """
+    IonQ GPi gate.
+
+    Reference: https://ionq.com/docs/getting-started-with-native-gates#single-qubit-gates
+    """
+
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
+        self._angle = angle
+
+    @property
+    def _base_matrix(self) -> np.ndarray:
+        return np.array(
+            [
+                [0, np.exp(-1j * self._angle)],
+                [np.exp(1j * self._angle), 0],
+            ]
+        )
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+class GPi2(GateOperation):
+    """
+    IonQ GPi2 gate.
+
+    Reference: https://ionq.com/docs/getting-started-with-native-gates#single-qubit-gates
+    """
+
+    def __init__(self, targets, angle, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
+        self._angle = angle
+
+    @property
+    def _base_matrix(self) -> np.ndarray:
+        return np.array(
+            [
+                [1, -1j * np.exp(-1j * self._angle)],
+                [-1j * np.exp(1j * self._angle), 1],
+            ]
+        ) / np.sqrt(2)
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
+class MS(GateOperation):
+    """
+    IonQ MS gate.
+
+    Reference: https://ionq.com/docs/getting-started-with-native-gates#entangling-gates
+    """
+
+    def __init__(self, targets, angle_1, angle_2, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
+        self._angle_1 = angle_1
+        self._angle_2 = angle_2
+
+    @property
+    def _base_matrix(self) -> np.ndarray:
+        return np.array(
+            [
+                [1, 0, 0, -1j * np.exp(-1j * (self._angle_1 + self._angle_2))],
+                [0, 1, -1j * np.exp(-1j * (self._angle_1 - self._angle_2)), 0],
+                [0, -1j * np.exp(1j * (self._angle_1 - self._angle_2)), 1, 0],
+                [-1j * np.exp(1j * (self._angle_1 + self._angle_2)), 0, 0, 1],
+            ]
+        ) / np.sqrt(2)
+
+    @property
+    def targets(self) -> Tuple[int, ...]:
+        return self._targets
+
+
 class Unitary(GateOperation):
     """Arbitrary unitary gate"""
 
@@ -1080,6 +1170,9 @@ BRAKET_GATES = {
     "zz": ZZ,
     "ccnot": CCNot,
     "cswap": CSwap,
+    "gpi": GPi,
+    "gpi2": GPi2,
+    "ms": MS,
     "unitary": Unitary,
     "U": U,
     "gphase": GPhase,
