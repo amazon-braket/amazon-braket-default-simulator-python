@@ -7,6 +7,7 @@ from braket.default_simulator.gate_operations import (
     CY,
     CZ,
     ECR,
+    MS,
     XX,
     XY,
     YY,
@@ -17,6 +18,8 @@ from braket.default_simulator.gate_operations import (
     CPhaseShift01,
     CPhaseShift10,
     CSwap,
+    GPi,
+    GPi2,
     Hadamard,
     Identity,
     ISwap,
@@ -76,6 +79,9 @@ from braket.default_simulator.simulation_strategies.single_operation_strategy im
         ("zz", ZZ, 2, (2,)),
         ("ccnot", CCNot, 3, ()),
         ("cswap", CSwap, 3, ()),
+        ("gpi", GPi, 1, (2,)),
+        ("gpi2", GPi2, 1, (2,)),
+        ("ms", MS, 2, (2, 3)),
     ),
 )
 def test_gates(gate_name, gate_class, num_qubits, params):
