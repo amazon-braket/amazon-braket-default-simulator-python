@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.8.0 (2022-08-29)
+
+### Features
+
+ * add ionq native gates
+ * optimize interpretation by enabling direct computation of bu…
+
 ## v1.7.2.post0 (2022-08-10)
 
 ### Testing and Release Infrastructure
