@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.8.1 (2022-08-31)
+
+### Bug Fixes and Other Changes
+
+ * add native gates to device properties
+
 ## v1.8.0 (2022-08-29)
 
 ### Features
