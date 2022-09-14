@@ -1,4 +1,4 @@
-# Generated from qasm3Parser.g4 by ANTLR 4.8
+# Generated from qasm3Parser.g4 by ANTLR 4.9.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .qasm3Parser import qasm3Parser

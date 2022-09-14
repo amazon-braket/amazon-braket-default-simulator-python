@@ -3,15 +3,15 @@
 # This script rebuilds the parsers from the source g4 files. Use for
 # development when making changes to the grammar.
 
-if [ ! -f "antlr-4.8-complete.jar" ]; then
-    curl -O https://www.antlr.org/download/antlr-4.8-complete.jar
+if [ ! -f "antlr-4.9.2-complete.jar" ]; then
+    curl -O https://www.antlr.org/download/antlr-4.9.2-complete.jar
 fi
 
-cp antlr-4.8-complete.jar /usr/local/lib/antlr-4.8-complete.jar
+cp antlr-4.9.2-complete.jar /usr/local/lib/antlr-4.9.2-complete.jar
 
-export CLASSPATH=".:/usr/local/lib/antlr-4.8-complete.jar:$CLASSPATH"
-alias antlr4='java -Xmx500M -cp "/usr/local/lib/antlr-4.8-complete.jar:$CLASSPATH" org.antlr.v4.Tool'
-alias grun='java -Xmx500M -cp "/usr/local/lib/antlr-4.8-complete.jar:$CLASSPATH" org.antlr.v4.gui.TestRig'
+export CLASSPATH=".:/usr/local/lib/antlr-4.9.2-complete.jar:$CLASSPATH"
+alias antlr4='java -Xmx500M -cp "/usr/local/lib/antlr-4.9.2-complete.jar:$CLASSPATH" org.antlr.v4.Tool'
+alias grun='java -Xmx500M -cp "/usr/local/lib/antlr-4.9.2-complete.jar:$CLASSPATH" org.antlr.v4.gui.TestRig'
 
 cd src/braket/default_simulator/openqasm/parser || exit
 antlr4 -Dlanguage=Python3 -visitor BraketPragmasLexer.g4 BraketPragmasParser.g4 -o generated
