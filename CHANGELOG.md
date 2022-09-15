@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.9.0 (2022-09-15)
+
+### Features
+
+ * update antlr version to 4.9.2
+
 ## v1.8.1 (2022-08-31)
 
 ### Bug Fixes and Other Changes
