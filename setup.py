@@ -26,7 +26,16 @@ setup(
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
-    install_requires=["amazon-braket-schemas", "numpy", "opt_einsum"],
+    install_requires=[
+        "numpy",
+        "opt_einsum",
+        (
+            "amazon-braket-schemas @ "
+            "git+https://github.com/aws/amazon-braket-schemas-python@quera"
+        ),
+        "pydantic==1.9.0",
+        "scipy",
+    ],
     entry_points={
         "braket.simulators": [
             "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",

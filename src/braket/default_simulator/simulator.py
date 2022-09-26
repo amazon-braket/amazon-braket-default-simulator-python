@@ -149,14 +149,15 @@ class BaseLocalSimulator(BraketSimulator):
                 no_noise = False
                 if name not in supported_instructions:
                     raise TypeError(
-                        'Noise instructions are not supported by the state vector simulator (by default). \
-You need to use the density matrix simulator: LocalSimulator("braket_dm").'
+                        "Noise instructions are not supported by the state vector simulator "
+                        "(by default). You need to use the density matrix simulator: "
+                        'LocalSimulator("braket_dm").'
                     )
         if no_noise and _NOISE_INSTRUCTIONS.intersection(supported_instructions):
             warnings.warn(
-                'You are running a noise-free circuit on the density matrix simulator. \
-Consider running this circuit on the state vector simulator: LocalSimulator("default") \
-for a better user experience.'
+                "You are running a noise-free circuit on the density matrix simulator."
+                "Consider running this circuit on the state vector simulator: "
+                'LocalSimulator("default") for a better user experience.'
             )
 
     @staticmethod
