@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import (
@@ -7,6 +8,9 @@ from braket.analog_hamiltonian_simulator.rydberg.constants import (
     TIME_UNIT,
 )
 from braket.analog_hamiltonian_simulator.rydberg.numpy_solver import RK_run
+from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
+    get_blockade_configurations,
+)
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
     convert_unit,
 )
@@ -57,8 +61,12 @@ theory_value_00 = 1 - theory_value_10 - theory_value_01
 true_final_prob = [theory_value_00, theory_value_01, theory_value_10, 0]
 
 
-def test_scipy_integrate_ode_run():
-    states = scipy_integrate_ode_run(
+@pytest.mark.parametrize(
+    "solver",
+    [scipy_integrate_ode_run, RK_run],
+)
+def test_solvers(solver):
+    states = solver(
         program,
         configurations,
         simulation_times,
@@ -70,14 +78,38 @@ def test_scipy_integrate_ode_run():
     assert np.allclose(final_prob, true_final_prob, atol=1e-2)
 
 
-def test_RK_run():
-    states = RK_run(
-        program,
-        configurations,
-        simulation_times,
+empty_program = Program(
+    setup={
+        "atomArray": {
+            "sites": [[0, i * a] for i in range(11)],
+            "filling": [1 for _ in range(11)],
+        }
+    },
+    hamiltonian={"drivingFields": [], "shiftingFields": []},
+)
+
+configurations_big_lattice = get_blockade_configurations(empty_program.setup.atomArray, 0)
+
+empty_program = convert_unit(empty_program)
+
+
+@pytest.mark.parametrize(
+    "solver",
+    [scipy_integrate_ode_run, RK_run],
+)
+def test_solvers_empty_program(solver):
+    states = solver(
+        empty_program,
+        configurations_big_lattice,
+        [0],
         rydberg_interaction_coef,
         progress_bar=True,
     )
     final_prob = [np.abs(i) ** 2 for i in states[-1]]
+    true_final_prob_empty_program = [0 for _ in range(2**11)]
+    true_final_prob_empty_program[0] = 1
 
-    assert np.allclose(final_prob, true_final_prob, atol=1e-2)
+    print(final_prob)
+    print(true_final_prob_empty_program)
+
+    assert np.allclose(final_prob, true_final_prob_empty_program, atol=1e-2)

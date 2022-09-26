@@ -275,7 +275,7 @@ def _interpolate_time_series(
 
     if method == "piecewise_linear":
         return np.interp(t, times, values)
-    elif method == "piecewise_constant":
+    if method == "piecewise_constant":
         index = np.searchsorted(times, t, side="right") - 1
         return values[index]
 

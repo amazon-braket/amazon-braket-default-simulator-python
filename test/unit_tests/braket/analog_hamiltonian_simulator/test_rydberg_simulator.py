@@ -1,3 +1,5 @@
+from lib2to3.pytree import convert
+
 import numpy as np
 import pytest
 from braket.ir.ahs.program_v1 import Program
@@ -7,6 +9,9 @@ from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import RYDBERG_INTERACTION_COEF
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator import RydbergAtomSimulator
+from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
+    convert_unit,
+)
 
 device = RydbergAtomSimulator()
 
@@ -124,20 +129,6 @@ def test_success_run_without_args(program):
 
 
 @pytest.mark.parametrize(
-    "program",
-    [
-        (program_full),
-        (empty_program),
-        (program_only_shiftingFields),
-        (program_only_drivingFields),
-    ],
-)
-def test_success_qutip_run(program):
-    result = device.run(program, progress_bar=True, shots=100)
-    assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
-
-
-@pytest.mark.parametrize(
     "program, error_message",
     [
         (program_full, "Shot = 0 is not implemented yet"),
@@ -150,3 +141,35 @@ def test_run_shot_0(program, error_message):
     with pytest.raises(NotImplementedError) as e:
         device.run(program, shots=0)
     assert error_message in str(e.value)
+
+
+zero_field = {
+    "pattern": "uniform",
+    "sequence": {
+        "times": [0, 1e-8],
+        "values": [0, 0],
+    },
+}
+
+
+zero_program = convert_unit(
+    Program(
+        setup={
+            "atomArray": {
+                "sites": [[0, i * a] for i in range(11)],
+                "filling": [1 for _ in range(11)],
+            }
+        },
+        hamiltonian={
+            "drivingFields": [
+                {"amplitude": zero_field, "phase": zero_field, "detuning": zero_field}
+            ],
+            "shiftingFields": [],
+        },
+    )
+)
+
+
+def test_scipy_run_for_large_system():
+    result = device.run(zero_program, steps=1)
+    assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
