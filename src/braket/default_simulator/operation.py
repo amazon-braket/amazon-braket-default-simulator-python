@@ -17,6 +17,9 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
 import numpy as np
+from scipy.linalg import fractional_matrix_power
+
+from braket.default_simulator.linalg_utils import controlled_unitary
 
 
 class Operation(ABC):
@@ -42,10 +45,29 @@ class GateOperation(Operation, ABC):
     a set of target qubits.
     """
 
-    @property
+    def __init__(self, targets, *params, ctrl_modifiers=(), power=1):
+        self._targets = tuple(targets)
+        self._ctrl_modifiers = ctrl_modifiers
+        self._power = power
+
     @abstractmethod
-    def matrix(self) -> np.ndarray:
+    def _base_matrix(self) -> np.ndarray:
         """np.ndarray: The matrix representation of the operation."""
+
+    @property
+    def matrix(self) -> np.ndarray:
+        unitary = self._base_matrix
+        if int(self._power) == self._power:
+            unitary = np.linalg.matrix_power(unitary, int(self._power))
+        else:
+            unitary = fractional_matrix_power(unitary, self._power)
+
+        for mod in self._ctrl_modifiers:
+            unitary = controlled_unitary(unitary, negctrl=mod)
+        return unitary
+
+    def __eq__(self, other):
+        return self.targets == other.targets and np.allclose(self.matrix, other.matrix)
 
 
 class KrausOperation(Operation, ABC):
@@ -58,6 +80,9 @@ class KrausOperation(Operation, ABC):
     @abstractmethod
     def matrices(self) -> List[np.ndarray]:
         """List[np.ndarray]: A list of matrices representing Kraus operators."""
+
+    def __eq__(self, other):
+        return self.targets == other.targets and np.allclose(self.matrices, other.matrices)
 
 
 class Observable(Operation, ABC):

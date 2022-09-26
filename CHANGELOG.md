@@ -1,5 +1,59 @@
 # Changelog
 
+## v1.9.0 (2022-09-15)
+
+### Features
+
+ * update antlr version to 4.9.2
+
+## v1.8.1 (2022-08-31)
+
+### Bug Fixes and Other Changes
+
+ * add native gates to device properties
+
+## v1.8.0 (2022-08-29)
+
+### Features
+
+ * add ionq native gates
+ * optimize interpretation by enabling direct computation of bu…
+
+## v1.7.2.post0 (2022-08-10)
+
+### Testing and Release Infrastructure
+
+ * Don't run tests on push to feature branches
+ * Add SF plugin to dependent tests
+
+## v1.7.2 (2022-08-05)
+
+### Bug Fixes and Other Changes
+
+ * correct behavior for result types all
+
+## v1.7.1 (2022-08-04)
+
+### Bug Fixes and Other Changes
+
+ * rebuild parsers with new antlr version
+
+## v1.7.0 (2022-08-04)
+
+### Features
+
+ * Simulation of OpenQASM programs
+
+## v1.6.3 (2022-08-04)
+
+### Bug Fixes and Other Changes
+
+ * remove pytester
+ * bump pytest version further
+ * modify pytester reference to _pytest.pytester
+ * pin pytest version for pytester plugin
+ * Enable simulation of OpenQASM programs 🚀 (#💯)
+
 ## v1.6.2 (2022-04-19)
 
 ### Bug Fixes and Other Changes

@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+
 from setuptools import find_namespace_packages, setup
 
 with open("README.md", "r") as fh:
@@ -19,6 +20,7 @@ with open("README.md", "r") as fh:
 with open("src/braket/default_simulator/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
+
 setup(
     name="amazon-braket-default-simulator",
     version=version,
@@ -26,6 +28,8 @@ setup(
     python_requires=">= 3.7",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
+    package_data={"": ["*.g4", "*.inc"]},
+    include_package_data=True,
     install_requires=[
         "numpy",
         "opt_einsum",
@@ -35,22 +39,35 @@ setup(
         ),
         "pydantic==1.9.0",
         "scipy",
+        # pinned for compatibility with strawberry fields
+        "antlr4-python3-runtime==4.9.2",
     ],
     entry_points={
         "braket.simulators": [
             "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
+            (
+                "braket_oq3_sv = "
+                "braket.default_simulator.openqasm_state_vector_simulator:"
+                "OpenQASMStateVectorSimulator"
+            ),
+            (
+                "braket_oq3_dm = "
+                "braket.default_simulator.openqasm_density_matrix_simulator:"
+                "OpenQASMDensityMatrixSimulator"
+            ),
         ]
     },
     extras_require={
         "test": [
             "black",
+            "coverage",
             "flake8",
             "isort",
             "pre-commit",
             "pylint",
-            "pytest",
+            "pytest==7.1.2",
             "pytest-benchmark",
             "pytest-cov",
             "pytest-rerunfailures",
