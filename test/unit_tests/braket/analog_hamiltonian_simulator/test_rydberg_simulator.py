@@ -1,5 +1,3 @@
-from lib2to3.pytree import convert
-
 import numpy as np
 import pytest
 from braket.ir.ahs.program_v1 import Program
