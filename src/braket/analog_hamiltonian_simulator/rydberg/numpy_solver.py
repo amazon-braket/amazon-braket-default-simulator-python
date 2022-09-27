@@ -31,7 +31,7 @@ def RK_run(
 
     Notes on the algorithm:
         For more details, please refer to this link
-        https://en.wikipedia.org/wiki/Gauss%E2%80%93Legendre_method
+        https://en.wikipedia.org/wiki/Gauss-Legendre_method
 
     """
 
