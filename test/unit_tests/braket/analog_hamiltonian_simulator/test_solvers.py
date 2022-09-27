@@ -113,3 +113,33 @@ def test_solvers_empty_program(solver):
     print(true_final_prob_empty_program)
 
     assert np.allclose(final_prob, true_final_prob_empty_program, atol=1e-2)
+
+
+failed_program = convert_unit(
+    Program(
+        setup={
+            "atomArray": {
+                "sites": [[0, 0], [0, 1e-20]],
+                "filling": [1 for _ in range(2)],
+            }
+        },
+        hamiltonian=hamiltonian,
+    )
+)
+
+
+def test_failed_scipy_run():
+    try:
+        scipy_integrate_ode_run(
+            failed_program,
+            configurations,
+            simulation_times,
+            rydberg_interaction_coef,
+            progress_bar=True,
+        )
+    except Exception as e:
+        assert str(e) == (
+            "ODE integration error: Try to increase "
+            "the allowed number of substeps by increasing "
+            "the nsteps parameter in the Options class."
+        )

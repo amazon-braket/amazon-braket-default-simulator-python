@@ -93,6 +93,15 @@ program_only_drivingFields = Program(
 )
 
 
+def test_device_properties():
+    properties = device.properties
+    assert properties.action == {"braket.ir.ahs.program": {}}
+
+
+def test_device_initialization():
+    device.initialize_simulation()
+
+
 @pytest.mark.parametrize(
     "program, rydberg_interaction_coef, blockade_radius",
     [
