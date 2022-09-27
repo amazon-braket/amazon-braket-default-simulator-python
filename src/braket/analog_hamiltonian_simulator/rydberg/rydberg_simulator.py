@@ -76,7 +76,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             these keyword arguments do not apply.
 
 
-        Return:
+        Returns:
             (AnalogHamiltonianSimulationTaskResult): The result of the simulation
 
         """
