@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 import scipy as sp
+import scipy.integrate
 from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import get_ops_coefs
