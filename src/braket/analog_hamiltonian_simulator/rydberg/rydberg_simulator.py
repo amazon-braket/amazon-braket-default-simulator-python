@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 from braket.device_schema import DeviceCapabilities
 from braket.ir.ahs.program_v1 import Program
@@ -5,6 +7,7 @@ from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
     AnalogHamiltonianSimulationTaskResult,
 )
 from braket.task_result.task_metadata_v1 import TaskMetadata
+from pydantic import create_model  # This is temporary for defining properties below
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import (
     RYDBERG_INTERACTION_COEF,
@@ -12,7 +15,7 @@ from braket.analog_hamiltonian_simulator.rydberg.constants import (
     TIME_UNIT,
     capabilities_constants,
 )
-from braket.analog_hamiltonian_simulator.rydberg.numpy_solver import RK_run
+from braket.analog_hamiltonian_simulator.rydberg.numpy_solver import rk_run
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
     get_blockade_configurations,
     sample_state,
@@ -34,11 +37,9 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.rydberg_coefficient 
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
 
-from pydantic import create_model  # This is temporary for defining properties below
-import sys
 
 class RydbergAtomSimulator(BaseLocalSimulator):
-    DEVICE_ID = "rydberg"
+    DEVICE_ID = "braket_ahs"
 
     def run(
         self,
@@ -116,7 +117,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         # Run the solver
         # We shall adaptive change between numpy solver (RK6 method) and scipy solver
         if len(self.configurations) <= 1000:
-            states = RK_run(
+            states = rk_run(
                 program,
                 self.configurations,
                 self.simulation_times,
@@ -141,7 +142,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
 
         # Convert the result type
         if shots == 0:
-            raise NotImplementedError("Shot = 0 is not implemented yet")
+            raise NotImplementedError("Shot = 0 is not currently implemented")
         else:
             dist = sample_state(states[-1], shots)
             return convert_result(
@@ -179,7 +180,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             "RydbergSimulatorDeviceCapabilities", **mock_dict
         )
 
-        return RydbergSimulatorDeviceCapabilities.parse_obj(mock_dict)                    
+        return RydbergSimulatorDeviceCapabilities.parse_obj(mock_dict)
 
     def initialize_simulation(self, **kwargs) -> Simulation:
         """Initializes simulation with keyword arguments"""

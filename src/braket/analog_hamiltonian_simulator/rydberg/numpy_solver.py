@@ -6,7 +6,7 @@ from braket.ir.ahs.program_v1 import Program
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import get_ops_coefs
 
 
-def RK_run(
+def rk_run(
     hamiltonian: Program,
     configurations: list,
     simulation_times: list,
@@ -48,23 +48,23 @@ def RK_run(
     def _get_hamiltonian(index_time):
         """Get the Hamiltonian matrix for the time point with index `index_time`"""
         index_time = int(index_time)
-        h = interaction_op
+        hamiltonian = interaction_op
 
         # Add the driving fields
         for rabi_op, rabi_coef, detuning_op, detuning_coef in zip(
             rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
         ):
-            h += (
-                rabi_op * rabi_coef[index_time]/2
-                + (rabi_op.T.conj() * np.conj(rabi_coef[index_time])/2)
+            hamiltonian += (
+                rabi_op * rabi_coef[index_time] / 2
+                + (rabi_op.T.conj() * np.conj(rabi_coef[index_time]) / 2)
                 - detuning_op * detuning_coef[index_time]
             )
 
         # Add the shifting fields
         for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
-            h -= local_detuning_op * local_detuning_coef[index_time]
+            hamiltonian -= local_detuning_op * local_detuning_coef[index_time]
 
-        return h
+        return hamiltonian
 
     # Define the initial state for the simulation
     size_hilbert_space = len(configurations)

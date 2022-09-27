@@ -7,7 +7,7 @@ from braket.analog_hamiltonian_simulator.rydberg.constants import (
     SPACE_UNIT,
     TIME_UNIT,
 )
-from braket.analog_hamiltonian_simulator.rydberg.numpy_solver import RK_run
+from braket.analog_hamiltonian_simulator.rydberg.numpy_solver import rk_run
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
     get_blockade_configurations,
 )
@@ -52,8 +52,8 @@ steps = 400
 simulation_times = np.linspace(0, tmax * 1e6, steps)
 
 
-ω = np.sqrt(((Delta / 1e6) ** 2 + 8 * (Omega / 1e6) ** 2))
-theory_value_01 = 4 * (Omega / 1e6) ** 2 * (np.sin(ω / 2 * (tmax * 1e6))) ** 2 / (ω**2)
+ω = np.sqrt(((Delta / 1e6) ** 2 + 8 * (Omega / 2 / 1e6) ** 2))
+theory_value_01 = 4 * (Omega / 2 / 1e6) ** 2 * (np.sin(ω / 2 * (tmax * 1e6))) ** 2 / (ω**2)
 theory_value_10 = theory_value_01
 theory_value_00 = 1 - theory_value_10 - theory_value_01
 
@@ -63,7 +63,7 @@ true_final_prob = [theory_value_00, theory_value_01, theory_value_10, 0]
 
 @pytest.mark.parametrize(
     "solver",
-    [scipy_integrate_ode_run, RK_run],
+    [scipy_integrate_ode_run, rk_run],
 )
 def test_solvers(solver):
     states = solver(
@@ -95,7 +95,7 @@ empty_program = convert_unit(empty_program)
 
 @pytest.mark.parametrize(
     "solver",
-    [scipy_integrate_ode_run, RK_run],
+    [scipy_integrate_ode_run, rk_run],
 )
 def test_solvers_empty_program(solver):
     states = solver(

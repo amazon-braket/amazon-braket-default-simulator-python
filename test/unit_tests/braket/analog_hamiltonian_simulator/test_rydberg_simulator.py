@@ -129,10 +129,10 @@ def test_success_run_without_args(program):
 @pytest.mark.parametrize(
     "program, error_message",
     [
-        (program_full, "Shot = 0 is not implemented yet"),
-        (empty_program, "Shot = 0 is not implemented yet"),
-        (program_only_shiftingFields, "Shot = 0 is not implemented yet"),
-        (program_only_drivingFields, "Shot = 0 is not implemented yet"),
+        (program_full, "Shot = 0 is not currently implemented"),
+        (empty_program, "Shot = 0 is not currently implemented"),
+        (program_only_shiftingFields, "Shot = 0 is not currently implemented"),
+        (program_only_drivingFields, "Shot = 0 is not currently implemented"),
     ],
 )
 def test_run_shot_0(program, error_message):
