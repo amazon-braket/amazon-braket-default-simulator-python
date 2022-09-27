@@ -55,14 +55,14 @@ def RK_run(
             rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
         ):
             h += (
-                rabi_op * rabi_coef[index_time]
-                + (rabi_op.T.conj() * np.conj(rabi_coef[index_time]))
-                + detuning_op * detuning_coef[index_time]
+                rabi_op * rabi_coef[index_time]/2
+                + (rabi_op.T.conj() * np.conj(rabi_coef[index_time])/2)
+                - detuning_op * detuning_coef[index_time]
             )
 
         # Add the shifting fields
         for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
-            h += local_detuning_op * local_detuning_coef[index_time]
+            h -= local_detuning_op * local_detuning_coef[index_time]
 
         return h
 

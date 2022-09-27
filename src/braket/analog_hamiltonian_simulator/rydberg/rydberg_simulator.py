@@ -34,6 +34,8 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.rydberg_coefficient 
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
 
+from pydantic import create_model  # This is temporary for defining properties below
+import sys
 
 class RydbergAtomSimulator(BaseLocalSimulator):
     DEVICE_ID = "rydberg"
@@ -156,9 +158,28 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             deviceId="rydbergLocalSimulator",
         )
 
+    @property
     def properties(self) -> DeviceCapabilities:
         """simulator properties"""
-        pass
+        mock_dict = {
+            "service": {
+                "executionWindows": [
+                    {
+                        "executionDay": "Everyday",
+                        "windowStartHour": "00:00",
+                        "windowEndHour": "23:59:59",
+                    }
+                ],
+                "shotsRange": [0, sys.maxsize],
+            },
+            "action": {"braket.ir.ahs.program": {}},
+        }
+
+        RydbergSimulatorDeviceCapabilities = create_model(
+            "RydbergSimulatorDeviceCapabilities", **mock_dict
+        )
+
+        return RydbergSimulatorDeviceCapabilities.parse_obj(mock_dict)                    
 
     def initialize_simulation(self, **kwargs) -> Simulation:
         """Initializes simulation with keyword arguments"""
