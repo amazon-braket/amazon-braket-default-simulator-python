@@ -25,7 +25,7 @@ def RK_run(
         rydberg_interaction_coef (float): The interaction coefficient
         progress_bar (bool): If true, a progress bar will be printed during the simulation
 
-    Return:
+    Returns:
         states (List(np.ndarray)): The list of all the intermediate states in the simulation.
 
 
