@@ -27,7 +27,9 @@ def test_time_series(time_series_data, device_capabilities_constants):
     ],
 )
 # Rule: There must be at least 2 times for any component of the effective Hamiltonian
-def test_time_series_times_at_least_2_timepoints(times, error_message, device_capabilities_constants):
+def test_time_series_times_at_least_2_timepoints(
+    times, error_message, device_capabilities_constants
+):
     data = {"times": times}
     _assert_time_series_fields(data, error_message, device_capabilities_constants)
 
