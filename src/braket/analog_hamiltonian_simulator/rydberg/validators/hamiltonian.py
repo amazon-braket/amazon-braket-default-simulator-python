@@ -28,12 +28,14 @@ class HamiltonianValidator(Hamiltonian):
         end_times = {}
         for index, field in enumerate(values["drivingFields"]):
             for name in d_field_names:
-                end_times[f"{name} of driving field {index}"] = field[name]["sequence"]["times"][-1]
-        for index, field in enumerate(values["shiftingFields"]):
-            for name in s_field_names:
-                end_times[f"{name} of shifting field {index}"] = field[name]["sequence"]["times"][
+                end_times[f"{name} of driving field {index}"] = field[name]["time_series"]["times"][
                     -1
                 ]
+        for index, field in enumerate(values["shiftingFields"]):
+            for name in s_field_names:
+                end_times[f"{name} of shifting field {index}"] = field[name]["time_series"][
+                    "times"
+                ][-1]
 
         if len(set(end_times.values())) > 1:
             raise ValueError("The timepoints for all the sequences are not equal.")

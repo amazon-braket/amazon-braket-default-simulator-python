@@ -12,21 +12,21 @@ def driving_field_data():
     return {
         "amplitude": {
             "pattern": "uniform",
-            "sequence": {
+            "time_series": {
                 "times": [0, 1e-07, 3.9e-06, 4e-06],
                 "values": [0, 12566400.0, 12566400.0, 0],
             },
         },
         "phase": {
             "pattern": "uniform",
-            "sequence": {
+            "time_series": {
                 "times": [0, 1e-07, 3.9e-06, 4e-06],
                 "values": [0, 0, -16.0832, -16.0832],
             },
         },
         "detuning": {
             "pattern": "uniform",
-            "sequence": {
+            "time_series": {
                 "times": [0, 1e-07, 3.9e-06, 4e-06],
                 "values": [-125000000, -125000000, 125000000, 125000000],
             },
@@ -39,21 +39,21 @@ def mock_driving_field_data():
     data = {
         "amplitude": {
             "pattern": "uniform",
-            "sequence": {
+            "time_series": {
                 "times": [],
                 "values": [],
             },
         },
         "phase": {
             "pattern": "uniform",
-            "sequence": {
+            "time_series": {
                 "times": [],
                 "values": [],
             },
         },
         "detuning": {
             "pattern": "uniform",
-            "sequence": {
+            "time_series": {
                 "times": [],
                 "values": [],
             },
@@ -90,9 +90,9 @@ def test_driving_field_sequences_have_the_same_end_time(
     mock_driving_field_data,
     device_capabilities_constants,
 ):
-    mock_driving_field_data["amplitude"]["sequence"]["times"] = amplitude_times
-    mock_driving_field_data["phase"]["sequence"]["times"] = phase_times
-    mock_driving_field_data["detuning"]["sequence"]["times"] = detuning_times
+    mock_driving_field_data["amplitude"]["time_series"]["times"] = amplitude_times
+    mock_driving_field_data["phase"]["time_series"]["times"] = phase_times
+    mock_driving_field_data["detuning"]["time_series"]["times"] = detuning_times
     _assert_driving_field(mock_driving_field_data, error_message, device_capabilities_constants)
 
 
@@ -102,31 +102,34 @@ def test_driving_field_sequences_have_the_same_end_time(
         (
             [0.0, 2.6e7, 2.5e7, 0.0],
             "amplitude",
-            "Value 1 (26000000.0) in amplitude sequence outside the typical range [0, 25000000.0]. "
+            "Value 1 (26000000.0) in amplitude time series outside "
+            "the typical range [0, 25000000.0]. "
             "The values should  be specified in SI units.",
         ),
         (
             [0.0, -0.5e7, 0.5e7, 0.0],
             "amplitude",
-            "Value 1 (-5000000.0) in amplitude sequence outside the typical range [0, 25000000.0]. "
+            "Value 1 (-5000000.0) in amplitude time series outside "
+            "the typical range [0, 25000000.0]. "
             "The values should  be specified in SI units.",
         ),
         (
             [0.0, -0.5e7, 2.6e7, 0.0],
             "amplitude",
-            "Value 1 (-5000000.0) in amplitude sequence outside the typical range [0, 25000000.0]. "
+            "Value 1 (-5000000.0) in amplitude time series outside "
+            "the typical range [0, 25000000.0]. "
             "The values should  be specified in SI units.",
         ),
         (
             [1.26e8],
             "detuning",
-            "Value 0 (126000000.0) in detuning sequence outside the typical range "
+            "Value 0 (126000000.0) in detuning time series outside the typical range "
             "[-125000000.0, 125000000.0]. The values should  be specified in SI units.",
         ),
         (
             [-2e8],
             "detuning",
-            "Value 0 (-200000000.0) in detuning sequence outside the typical range "
+            "Value 0 (-200000000.0) in detuning time series outside the typical range "
             "[-125000000.0, 125000000.0]. The values should  be specified in SI units.",
         ),
     ],
@@ -139,7 +142,7 @@ def test_driving_field_sequences_have_the_same_end_time(
 def test_driving_field_values_within_range(
     values, field_name, warning_message, mock_driving_field_data, device_capabilities_constants
 ):
-    mock_driving_field_data[field_name]["sequence"]["values"] = values
+    mock_driving_field_data[field_name]["time_series"]["values"] = values
     _assert_driving_field_warning_message(
         mock_driving_field_data, warning_message, device_capabilities_constants
     )

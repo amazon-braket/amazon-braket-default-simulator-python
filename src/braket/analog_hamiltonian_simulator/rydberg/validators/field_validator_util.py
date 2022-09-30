@@ -11,7 +11,7 @@ def validate_value_range_with_warning(
     for i, value in enumerate(values):
         if not min_value <= value <= max_value:
             warnings.warn(
-                f"Value {i} ({value}) in {name} sequence outside the typical range "
+                f"Value {i} ({value}) in {name} time series outside the typical range "
                 f"[{min_value}, {max_value}]. The values should  be specified in SI units."
             )
             break  # Only one warning messasge will be issued

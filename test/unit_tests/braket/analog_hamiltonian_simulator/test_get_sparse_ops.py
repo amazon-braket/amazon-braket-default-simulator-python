@@ -14,25 +14,25 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converte
 a = 3
 rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
-amplitude1 = {"pattern": "uniform", "sequence": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
+amplitude1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
 
 detuning1 = {
     "pattern": "uniform",
-    "sequence": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
+    "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
 }
 
 phase1 = {
     "pattern": "uniform",
-    "sequence": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
+    "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
 shift1 = {
     "pattern": [0.5, 1.0],
-    "sequence": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
+    "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
 }
 
-setup1 = {"atomArray": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
+setup1 = {"ahs_register": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
 
 program1 = convert_unit(
     Program(

@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
-from braket.ir.ahs.atom_array import AtomArray
+from braket.ir.ahs.atom_arrangement import AtomArrangement
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
     get_blockade_configurations,
     validate_config,
 )
 
-setup_1 = AtomArray(**{"sites": [[0, 0], [0, 3e-6], [0, 6e-6]], "filling": [1, 1, 1]})
+setup_1 = AtomArrangement(**{"sites": [[0, 0], [0, 3e-6], [0, 6e-6]], "filling": [1, 1, 1]})
 atoms_coordinates_1 = np.array([[0, 0], [0, 3e-6], [0, 6e-6]])
 
 config_1_1 = "grr"
@@ -71,7 +71,7 @@ def test_get_blockade_configurations_setup_1_no_blockade(para):
 
 
 ###
-setup_2 = AtomArray(**{"sites": [[0, 0], [0, 3e-6], [0, 6e-6]], "filling": [1, 0, 1]})
+setup_2 = AtomArrangement(**{"sites": [[0, 0], [0, 3e-6], [0, 6e-6]], "filling": [1, 0, 1]})
 atoms_coordinates_2 = np.array([[0, 0], [0, 6e-6]])
 
 config_2_1 = "gg"
@@ -129,7 +129,7 @@ def test_get_blockade_configurations_setup_2_no_blockade(para):
 
 
 ###
-setup_3 = AtomArray(**{"sites": [[0, 0], [0, 3e-6], [0, 6e-6]], "filling": [1, 1, 0]})
+setup_3 = AtomArrangement(**{"sites": [[0, 0], [0, 3e-6], [0, 6e-6]], "filling": [1, 1, 0]})
 atoms_coordinates_3 = np.array([[0, 0], [0, 3e-6]])
 
 config_3_1 = "gg"

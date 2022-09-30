@@ -15,25 +15,25 @@ a = 3
 rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
 
-amplitude_1 = {"pattern": "uniform", "sequence": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
+amplitude_1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
 
 detuning_1 = {
     "pattern": "uniform",
-    "sequence": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
+    "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
 }
 
 phase_1 = {
     "pattern": "uniform",
-    "sequence": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
+    "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
 shift_1 = {
     "pattern": [0.0, 1.0, 0.5, 0.0],
-    "sequence": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
+    "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
 }
 
-setup_1 = {"atomArray": {"sites": [[0, 0], [0, a * 1e-6]], "filling": [1, 1]}}
+setup_1 = {"ahs_register": {"sites": [[0, 0], [0, a * 1e-6]], "filling": [1, 1]}}
 
 program_1 = convert_unit(
     Program(
@@ -82,7 +82,7 @@ def test_get_rabi_dict_configurations_1_3():
     )
 
 
-setup_2 = {"atomArray": {"sites": [[0, 0], [0, a * 1e-6], [0, a * 2e-6]], "filling": [1, 0, 1]}}
+setup_2 = {"ahs_register": {"sites": [[0, 0], [0, a * 1e-6], [0, a * 2e-6]], "filling": [1, 0, 1]}}
 
 program_2 = convert_unit(
     Program(
@@ -105,7 +105,7 @@ def test_get_interaction_dict_setup_2(para):
     assert interaction == dict({(3, 3): rydberg_interaction_coef / ((2 * a) ** 6)})
 
 
-setup3 = {"atomArray": {"sites": [[0, 0], [0, a * 1e-6], [0, a * 2e-6]], "filling": [1, 1, 1]}}
+setup3 = {"ahs_register": {"sites": [[0, 0], [0, a * 1e-6], [0, a * 2e-6]], "filling": [1, 1, 1]}}
 
 program_3 = convert_unit(
     Program(

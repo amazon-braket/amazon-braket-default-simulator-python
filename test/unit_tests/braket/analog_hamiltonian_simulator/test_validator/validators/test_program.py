@@ -9,7 +9,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.program import Progr
 def mock_program_data():
     data = {
         "setup": {
-            "atomArray": {
+            "ahs_register": {
                 "sites": [],
                 "filling": [],
             }
@@ -19,21 +19,21 @@ def mock_program_data():
                 {
                     "amplitude": {
                         "pattern": "uniform",
-                        "sequence": {
+                        "time_series": {
                             "times": [],
                             "values": [],
                         },
                     },
                     "phase": {
                         "pattern": "uniform",
-                        "sequence": {
+                        "time_series": {
                             "times": [],
                             "values": [],
                         },
                     },
                     "detuning": {
                         "pattern": "uniform",
-                        "sequence": {
+                        "time_series": {
                             "times": [],
                             "values": [],
                         },
@@ -43,7 +43,7 @@ def mock_program_data():
             "shiftingFields": [
                 {
                     "magnitude": {
-                        "sequence": {
+                        "time_series": {
                             "times": [],
                             "values": [],
                         },
@@ -67,11 +67,11 @@ def test_program_shifting_field_pattern_has_the_same_length_as_atom_array_sites(
     mock_program_data: Program, device_capabilities_constants
 ):
 
-    mock_program_data.setup.atomArray.sites = [[0, 0], [0, 4e-6], [5e-6, 0], [5e-6, 4e-6]]
+    mock_program_data.setup.ahs_register.sites = [[0, 0], [0, 4e-6], [5e-6, 0], [5e-6, 4e-6]]
     mock_program_data.hamiltonian.shiftingFields = [
         {
             "magnitude": {
-                "sequence": {"times": [], "values": []},
+                "time_series": {"times": [], "values": []},
                 "pattern": [0.0, 1.0, 0.5],
             }
         }

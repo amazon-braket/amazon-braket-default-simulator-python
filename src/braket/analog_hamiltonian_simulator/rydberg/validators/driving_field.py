@@ -18,9 +18,9 @@ class DrivingFieldValidator(DrivingField):
         fields = {"amplitude", "phase", "detuning"}
         end_times = []
         for field in fields:
-            times = values[field]["sequence"]["times"]
+            times = values[field]["time_series"]["times"]
             if times:
-                end_times.append(values[field]["sequence"]["times"][-1])
+                end_times.append(values[field]["time_series"]["times"][-1])
         if end_times:
             if len(set(end_times)) != 1:
                 raise ValueError(
@@ -40,7 +40,7 @@ class DrivingFieldValidator(DrivingField):
         amplitude = values["amplitude"]
         capabilities = values["capabilities"]
         validate_value_range_with_warning(
-            amplitude["sequence"]["values"],
+            amplitude["time_series"]["values"],
             capabilities.GLOBAL_AMPLITUDE_VALUE_MIN,
             capabilities.GLOBAL_AMPLITUDE_VALUE_MAX,
             "amplitude",
@@ -70,7 +70,7 @@ class DrivingFieldValidator(DrivingField):
         detuning = values["detuning"]
         capabilities = values["capabilities"]
         validate_value_range_with_warning(
-            detuning["sequence"]["values"],
+            detuning["time_series"]["values"],
             capabilities.GLOBAL_DETUNING_VALUE_MIN,
             capabilities.GLOBAL_DETUNING_VALUE_MAX,
             "detuning",

@@ -1,20 +1,20 @@
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from braket.analog_hamiltonian_simulator.rydberg.validators.waveform import WaveformValidator
+from braket.analog_hamiltonian_simulator.rydberg.validators.times_series import TimeSeriesValidator
 
 
 @pytest.fixture
-def waveform_data():
+def time_series_data():
     return {
         "times": [0.0, 1e-8, 2e-8, 3e-8],
         "values": [0.0, 0.1, 0.2, 0.3],
     }
 
 
-def test_waveform(waveform_data, device_capabilities_constants):
+def test_time_series(time_series_data, device_capabilities_constants):
     try:
-        WaveformValidator(capabilities=device_capabilities_constants, **waveform_data)
+        TimeSeriesValidator(capabilities=device_capabilities_constants, **time_series_data)
     except ValidationError as e:
         pytest.fail(f"Validate test is failing : {str(e)}")
 
@@ -27,9 +27,11 @@ def test_waveform(waveform_data, device_capabilities_constants):
     ],
 )
 # Rule: There must be at least 2 times for any component of the effective Hamiltonian
-def test_waveform_times_at_least_2_timepoints(times, error_message, device_capabilities_constants):
+def test_time_series_times_at_least_2_timepoints(
+    times, error_message, device_capabilities_constants
+):
     data = {"times": times}
-    _assert_waveform_fields(data, error_message, device_capabilities_constants)
+    _assert_time_series_fields(data, error_message, device_capabilities_constants)
 
 
 @pytest.mark.parametrize(
@@ -46,9 +48,9 @@ def test_waveform_times_at_least_2_timepoints(times, error_message, device_capab
     ],
 )
 # Rule: The times for any component of the effective Hamiltonian must start at 0
-def test_waveform_times_start_with_0(times, error_message, device_capabilities_constants):
+def test_time_series_times_start_with_0(times, error_message, device_capabilities_constants):
     data = {"times": times, "values": [0.0, 0.1]}
-    _assert_waveform_fields(data, error_message, device_capabilities_constants)
+    _assert_time_series_fields(data, error_message, device_capabilities_constants)
 
 
 @pytest.mark.parametrize(
@@ -67,9 +69,9 @@ def test_waveform_times_start_with_0(times, error_message, device_capabilities_c
     ],
 )
 #  Rule: The times for any component of the effective Hamiltonian must remain in bounds.
-def test_waveform_times_are_not_too_big(times, warning_message, device_capabilities_constants):
+def test_time_series_times_are_not_too_big(times, warning_message, device_capabilities_constants):
     data = {"times": times, "values": [0.0, 0.1]}
-    _assert_waveform_fields_2(data, warning_message, device_capabilities_constants)
+    _assert_time_series_fields_2(data, warning_message, device_capabilities_constants)
 
 
 @pytest.mark.parametrize(
@@ -94,11 +96,11 @@ def test_waveform_times_are_not_too_big(times, warning_message, device_capabilit
 )
 # Rule: The times for any component of the effective Hamiltonian must be sorted in strict
 #       ascending order
-def test_waveform_times_must_be_ascendingly_sorted(
+def test_time_series_times_must_be_ascendingly_sorted(
     times, values, error_message, device_capabilities_constants
 ):
     data = {"times": times, "values": values}
-    _assert_waveform_fields(data, error_message, device_capabilities_constants)
+    _assert_time_series_fields(data, error_message, device_capabilities_constants)
 
 
 @pytest.mark.parametrize(
@@ -119,16 +121,16 @@ def test_driving_field_times_and_values_have_same_length(
     values, times, error_message, device_capabilities_constants
 ):
     data = {"times": times, "values": values}
-    _assert_waveform_fields(data, error_message, device_capabilities_constants)
+    _assert_time_series_fields(data, error_message, device_capabilities_constants)
 
 
-def _assert_waveform_fields(data, error_message, device_capabilities_constants):
+def _assert_time_series_fields(data, error_message, device_capabilities_constants):
     with pytest.raises(ValidationError) as e:
-        WaveformValidator(capabilities=device_capabilities_constants, **data)
+        TimeSeriesValidator(capabilities=device_capabilities_constants, **data)
     assert error_message in str(e.value)
 
 
-def _assert_waveform_fields_2(data, warning_message, device_capabilities_constants):
+def _assert_time_series_fields_2(data, warning_message, device_capabilities_constants):
     with pytest.warns(UserWarning) as e:
-        WaveformValidator(capabilities=device_capabilities_constants, **data)
+        TimeSeriesValidator(capabilities=device_capabilities_constants, **data)
     assert warning_message in str(e[-1].message)

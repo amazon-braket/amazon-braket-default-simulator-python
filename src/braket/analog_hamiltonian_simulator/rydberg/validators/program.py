@@ -12,7 +12,7 @@ class ProgramValidator(Program):
     # The pattern of the shifting field must have the same length as the lattice_sites
     @root_validator(pre=True, skip_on_failure=True)
     def shifting_field_pattern_has_the_same_length_as_atom_array_sites(cls, values):
-        num_sites = len(values["setup"]["atomArray"]["sites"])
+        num_sites = len(values["setup"]["ahs_register"]["sites"])
         for idx, shifting_field in enumerate(values["hamiltonian"]["shiftingFields"]):
             pattern_size = len(shifting_field["magnitude"]["pattern"])
             if num_sites != pattern_size:
