@@ -1,6 +1,6 @@
 import warnings
 
-from braket.ir.ahs.atom_array import AtomArray
+from braket.ir.ahs.atom_arrangement import AtomArrangement
 from pydantic.class_validators import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
@@ -8,7 +8,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 )
 
 
-class AtomArrayValidator(AtomArray):
+class AtomArrangementValidator(AtomArrangement):
     capabilities: CapabilitiesConstants
 
     # Each site has two coordinates (minItems=maxItems=2)

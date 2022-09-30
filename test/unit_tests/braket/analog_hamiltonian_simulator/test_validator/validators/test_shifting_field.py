@@ -11,7 +11,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.shifting_field impor
 def shifting_field_data():
     return {
         "magnitude": {
-            "sequence": {"times": [0, 1e-07], "values": [0, 0]},
+            "time_series": {"times": [0, 1e-07], "values": [0, 0]},
             "pattern": [0.0, 1.0, 0.5, 0.0, 1.0],
         }
     }
@@ -29,7 +29,7 @@ def mock_shifting_field_data():
     data = {
         "magnitude": {
             "pattern": [],
-            "sequence": {
+            "time_series": {
                 "times": [],
                 "values": [],
             },
@@ -85,12 +85,12 @@ def test_shifting_field_empty(mock_shifting_field_data, device_capabilities_cons
     [
         (
             [0.0, -5e8, 0.5e7, 0.0],
-            "Value 1 (-500000000.0) in magnitude sequence outside the typical range "
+            "Value 1 (-500000000.0) in magnitude time series outside the typical range "
             "[-125000000.0, 125000000.0]. The values should  be specified in SI units.",
         ),
         (
             [0.0, -2e8, 2.6e7, 0.0],
-            "Value 1 (-200000000.0) in magnitude sequence outside the typical range "
+            "Value 1 (-200000000.0) in magnitude time series outside the typical range "
             "[-125000000.0, 125000000.0]. The values should  be specified in SI units.",
         ),
     ],
@@ -98,7 +98,7 @@ def test_shifting_field_empty(mock_shifting_field_data, device_capabilities_cons
 def test_shifting_field_magnitude_values_within_range(
     values, warning_message, mock_shifting_field_data, device_capabilities_constants
 ):
-    mock_shifting_field_data["magnitude"]["sequence"]["values"] = values
+    mock_shifting_field_data["magnitude"]["time_series"]["values"] = values
     _assert_shifting_field_warning_message(
         mock_shifting_field_data, warning_message, device_capabilities_constants
     )

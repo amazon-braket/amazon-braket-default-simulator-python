@@ -17,25 +17,25 @@ rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
 eps = 1e-3
 
-amplitude1 = {"pattern": "uniform", "sequence": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
+amplitude1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
 
 detuning1 = {
     "pattern": "uniform",
-    "sequence": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
+    "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
 }
 
 phase1 = {
     "pattern": "uniform",
-    "sequence": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
+    "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
 shift1 = {
     "pattern": [0.5, 1.0],
-    "sequence": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
+    "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
 }
 
-setup1 = {"atomArray": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
+setup1 = {"ahs_register": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
 
 program1 = convert_unit(
     Program(
@@ -53,10 +53,14 @@ configurations1 = ["gg", "gr", "rg", "rr"]
 @pytest.mark.parametrize(
     "para",
     [
-        [[1e-6, 2e-6, 3e-6], amplitude1["sequence"]["times"], amplitude1["sequence"]["values"]],
-        [[1e-6, 2e-6, 3e-6], detuning1["sequence"]["times"], detuning1["sequence"]["values"]],
-        [[1e-6, 2e-6, 3e-6], phase1["sequence"]["times"], phase1["sequence"]["values"]],
-        [[1e-6, 2e-6, 3e-6], shift1["sequence"]["times"], shift1["sequence"]["values"]],
+        [
+            [1e-6, 2e-6, 3e-6],
+            amplitude1["time_series"]["times"],
+            amplitude1["time_series"]["values"],
+        ],
+        [[1e-6, 2e-6, 3e-6], detuning1["time_series"]["times"], detuning1["time_series"]["values"]],
+        [[1e-6, 2e-6, 3e-6], phase1["time_series"]["times"], phase1["time_series"]["values"]],
+        [[1e-6, 2e-6, 3e-6], shift1["time_series"]["times"], shift1["time_series"]["values"]],
     ],
 )
 def test_get_func(para):
@@ -84,13 +88,13 @@ def test_get_coefs(para):
     rabi_coefs, detuning_coefs, local_detuing_coefs = get_coefs(program, ts)
 
     amplitude = program.hamiltonian.drivingFields[0].amplitude
-    amplitude_times, amplitude_values = amplitude.sequence.times, amplitude.sequence.values
+    amplitude_times, amplitude_values = amplitude.time_series.times, amplitude.time_series.values
     phase = program.hamiltonian.drivingFields[0].phase
-    phase_times, phase_values = phase.sequence.times, phase.sequence.values
+    phase_times, phase_values = phase.time_series.times, phase.time_series.values
     detuning = program.hamiltonian.drivingFields[0].detuning
-    detuning_times, detuning_values = detuning.sequence.times, detuning.sequence.values
+    detuning_times, detuning_values = detuning.time_series.times, detuning.time_series.values
     shift = program.hamiltonian.shiftingFields[0].magnitude
-    shift_times, shift_values = shift.sequence.times, shift.sequence.values
+    shift_times, shift_values = shift.time_series.times, shift.time_series.values
 
     true_rabi_coefs = []
     true_detuning_coefs = []

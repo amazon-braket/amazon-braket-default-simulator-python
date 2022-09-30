@@ -1,8 +1,10 @@
 import pytest
-from braket.ir.ahs.atom_array import AtomArray
+from braket.ir.ahs.atom_arrangement import AtomArrangement
 from pydantic.error_wrappers import ValidationError
 
-from braket.analog_hamiltonian_simulator.rydberg.validators.atom_array import AtomArrayValidator
+from braket.analog_hamiltonian_simulator.rydberg.validators.atom_arrangement import (
+    AtomArrangementValidator,
+)
 
 
 @pytest.fixture
@@ -19,12 +21,12 @@ def mock_atom_array_data():
         "sites": [],
         "filling": [1, 1, 1, 1],
     }
-    return AtomArray.parse_obj(data).dict()
+    return AtomArrangement.parse_obj(data).dict()
 
 
 def test_valid_atom_array(atom_array_data, device_capabilities_constants):
     try:
-        AtomArrayValidator(capabilities=device_capabilities_constants, **atom_array_data)
+        AtomArrangementValidator(capabilities=device_capabilities_constants, **atom_array_data)
     except ValidationError as e:
         pytest.fail(f"Validate test is failing : {str(e)}")
 
@@ -130,7 +132,7 @@ def _assert_validation_error_is_raised_for_atom_array(
     data, error_message, device_capabilities_constants
 ):
     with pytest.raises(ValidationError) as e:
-        AtomArrayValidator(capabilities=device_capabilities_constants, **data)
+        AtomArrangementValidator(capabilities=device_capabilities_constants, **data)
     assert error_message in str(e.value)
 
 
@@ -138,6 +140,6 @@ def _assert_warning_is_produced_for_atom_array(
     data, warning_message, device_capabilities_constants
 ):
     with pytest.warns(UserWarning) as e:
-        AtomArrayValidator(capabilities=device_capabilities_constants, **data)
+        AtomArrangementValidator(capabilities=device_capabilities_constants, **data)
     # print(e[-1].message)
     assert warning_message in str(e[-1].message)

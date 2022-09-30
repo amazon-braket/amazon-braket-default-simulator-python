@@ -1,7 +1,7 @@
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from braket.analog_hamiltonian_simulator.rydberg.validators.waveform import WaveformValidator
+from braket.analog_hamiltonian_simulator.rydberg.validators.times_series import TimeSeriesValidator
 
 
 @pytest.fixture
@@ -14,7 +14,7 @@ def waveform_data():
 
 def test_waveform(waveform_data, device_capabilities_constants):
     try:
-        WaveformValidator(capabilities=device_capabilities_constants, **waveform_data)
+        TimeSeriesValidator(capabilities=device_capabilities_constants, **waveform_data)
     except ValidationError as e:
         pytest.fail(f"Validate test is failing : {str(e)}")
 
@@ -124,11 +124,11 @@ def test_driving_field_times_and_values_have_same_length(
 
 def _assert_waveform_fields(data, error_message, device_capabilities_constants):
     with pytest.raises(ValidationError) as e:
-        WaveformValidator(capabilities=device_capabilities_constants, **data)
+        TimeSeriesValidator(capabilities=device_capabilities_constants, **data)
     assert error_message in str(e.value)
 
 
 def _assert_waveform_fields_2(data, warning_message, device_capabilities_constants):
     with pytest.warns(UserWarning) as e:
-        WaveformValidator(capabilities=device_capabilities_constants, **data)
+        TimeSeriesValidator(capabilities=device_capabilities_constants, **data)
     assert warning_message in str(e[-1].message)

@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import scipy.sparse
-from braket.ir.ahs.atom_array import AtomArray
+from braket.ir.ahs.atom_arrangement import AtomArrangement
 from braket.ir.ahs.program_v1 import Program
 
 
@@ -32,11 +32,11 @@ def validate_config(config: str, atoms_coordinates: np.ndarray, blockade_radius:
     return True
 
 
-def get_blockade_configurations(lattice: AtomArray, blockade_radius: float) -> List[str]:
+def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float) -> List[str]:
     """Return the lattice configurations complying with the blockade approximation
 
     Args:
-        lattice (AtomArray): A lattice with Rydberg atoms and their coordinates
+        lattice (AtomArrangement): A lattice with Rydberg atoms and their coordinates
         blockade_radius (float): The Rydberg blockade radius
 
     Returns:
@@ -90,7 +90,7 @@ def _get_interaction_dict(
     """
 
     # The coordinates for atoms in the filled sites
-    lattice = program.setup.atomArray
+    lattice = program.setup.ahs_register
     atoms_coordinates = np.array(
         [lattice.sites[i] for i in range(len(lattice.sites)) if lattice.filling[i] == 1]
     )
@@ -224,7 +224,7 @@ def get_sparse_ops(
         rydberg_interaction_coef (float): The interaction coefficient
     """
     # Get the driving fields as sparse matrices, whose targets are all the atoms in the system
-    targets = tuple(range(sum(program.setup.atomArray.filling)))
+    targets = tuple(range(sum(program.setup.ahs_register.filling)))
     rabi_dict = _get_rabi_dict(targets, configurations)
     detuning_dict = _get_detuning_dict(targets, configurations)
 
@@ -293,9 +293,9 @@ def get_coefs(
     rabi_coefs, detuning_coefs = [], []
 
     for driving_field in program.hamiltonian.drivingFields:
-        amplitude = driving_field.amplitude.sequence
-        phase = driving_field.phase.sequence
-        detuning = driving_field.detuning.sequence
+        amplitude = driving_field.amplitude.time_series
+        phase = driving_field.phase.time_series
+        detuning = driving_field.detuning.time_series
 
         # Get the Rabi part. We use the convention: Omega * exp(1j*phi) * |r><g| + h.c.
         rabi_coef = np.array(
@@ -330,7 +330,7 @@ def get_coefs(
     # add shifting fields
     local_detuing_coefs = []
     for shifting_field in program.hamiltonian.shiftingFields:
-        magnitude = shifting_field.magnitude.sequence
+        magnitude = shifting_field.magnitude.time_series
 
         local_detuing_coef = np.array(
             [
