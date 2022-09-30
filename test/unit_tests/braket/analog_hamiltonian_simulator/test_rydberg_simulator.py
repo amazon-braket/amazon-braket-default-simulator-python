@@ -103,50 +103,50 @@ def test_device_initialization():
 
 
 @pytest.mark.parametrize(
-    "program, rydberg_interaction_coef, blockade_radius",
+    "program, shots, rydberg_interaction_coef, blockade_radius",
     [
-        (program_full, rydberg_interaction_coef, a * 1e-6),
-        (empty_program, rydberg_interaction_coef, a * 1e-6),
-        (program_only_shiftingFields, rydberg_interaction_coef, a * 1e-6),
-        (program_only_drivingFields, rydberg_interaction_coef, a * 1e-6),
+        (program_full, 100, rydberg_interaction_coef, a * 1e-6),
+        (empty_program, 100, rydberg_interaction_coef, a * 1e-6),
+        (program_only_shiftingFields, 100, rydberg_interaction_coef, a * 1e-6),
+        (program_only_drivingFields, 100, rydberg_interaction_coef, a * 1e-6),
     ],
 )
-def test_success_run(program, rydberg_interaction_coef, blockade_radius):
+def test_success_run(program, shots, rydberg_interaction_coef, blockade_radius):
     result = device.run(
         program,
+        shots,
         rydberg_interaction_coef=rydberg_interaction_coef,
         blockade_radius=blockade_radius,
-        shots=100,
     )
     assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
 
 
 @pytest.mark.parametrize(
-    "program",
+    "program, shots",
     [
-        (program_full),
-        (empty_program),
-        (program_only_shiftingFields),
-        (program_only_drivingFields),
+        (program_full, 100),
+        (empty_program, 100),
+        (program_only_shiftingFields, 100),
+        (program_only_drivingFields, 100),
     ],
 )
-def test_success_run_without_args(program):
-    result = device.run(program, shots=100)
+def test_success_run_without_args(program, shots):
+    result = device.run(program, shots)
     assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
 
 
 @pytest.mark.parametrize(
-    "program, error_message",
+    "program, shots, error_message",
     [
-        (program_full, "Shot = 0 is not currently implemented"),
-        (empty_program, "Shot = 0 is not currently implemented"),
-        (program_only_shiftingFields, "Shot = 0 is not currently implemented"),
-        (program_only_drivingFields, "Shot = 0 is not currently implemented"),
+        (program_full, 0, "Shot = 0 is not currently implemented"),
+        (empty_program, 0, "Shot = 0 is not currently implemented"),
+        (program_only_shiftingFields, 0, "Shot = 0 is not currently implemented"),
+        (program_only_drivingFields, 0, "Shot = 0 is not currently implemented"),
     ],
 )
-def test_run_shot_0(program, error_message):
+def test_run_shot_0(program, shots, error_message):
     with pytest.raises(NotImplementedError) as e:
-        device.run(program, shots=0)
+        device.run(program, shots)
     assert error_message in str(e.value)
 
 
@@ -178,5 +178,5 @@ zero_program = convert_unit(
 
 
 def test_scipy_run_for_large_system():
-    result = device.run(zero_program, steps=1)
+    result = device.run(zero_program, 100, steps=1)
     assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
