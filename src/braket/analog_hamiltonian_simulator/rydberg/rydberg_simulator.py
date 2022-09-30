@@ -99,10 +99,12 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         # the duration for both fields
         self.duration = 0
         if len(program.hamiltonian.drivingFields) == 1:
-            self.duration = float(program.hamiltonian.drivingFields[0].amplitude.sequence.times[-1])
+            self.duration = float(
+                program.hamiltonian.drivingFields[0].amplitude.time_series.times[-1]
+            )
         elif len(program.hamiltonian.shiftingFields) == 1:
             self.duration = float(
-                program.hamiltonian.shiftingFields[0].magnitude.sequence.times[-1]
+                program.hamiltonian.shiftingFields[0].magnitude.time_series.times[-1]
             )
 
         if self.duration == 0:
@@ -111,7 +113,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             self.simulation_times = np.linspace(0, self.duration, steps)
 
         # Get valid configurations that comply with the blockade approximation
-        self.atomArray = program.setup.atomArray
+        self.atomArray = program.setup.ahs_register
         self.configurations = get_blockade_configurations(self.atomArray, self.blockade_radius)
 
         # Run the solver

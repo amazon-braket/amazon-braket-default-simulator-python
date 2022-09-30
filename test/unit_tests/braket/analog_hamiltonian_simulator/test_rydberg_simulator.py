@@ -25,14 +25,14 @@ duration = 4
 rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
 setup = {
-    "atomArray": {
+    "ahs_register": {
         "sites": [[0, 0], [0, a * 1e-6], [0, a * 2e-6], [0, a * 3e-6]],
         "filling": [1, 0, 1, 0],
     }
 }
 amplitude = {
     "pattern": "uniform",
-    "sequence": {
+    "time_series": {
         "times": [0, duration * 1e-06],
         "values": [Omega * 1e6, Omega * 1e6],
     },
@@ -40,7 +40,7 @@ amplitude = {
 
 phase = {
     "pattern": "uniform",
-    "sequence": {
+    "time_series": {
         "times": [0, duration * 1e-06],
         "values": [theta, theta],
     },
@@ -48,14 +48,14 @@ phase = {
 
 detuning = {
     "pattern": "uniform",
-    "sequence": {
+    "time_series": {
         "times": [0, duration * 1e-06],
         "values": [Delta1 * 1e6, Delta1 * 1e6],
     },
 }
 
 shift = {
-    "sequence": {"times": [0, duration * 1e-06], "values": [Delta2 * 1e6, Delta2 * 1e6]},
+    "time_series": {"times": [0, duration * 1e-06], "values": [Delta2 * 1e6, Delta2 * 1e6]},
     "pattern": [0.0, 1.0, 0.5, 0.0],
 }
 
@@ -152,7 +152,7 @@ def test_run_shot_0(program, error_message):
 
 zero_field = {
     "pattern": "uniform",
-    "sequence": {
+    "time_series": {
         "times": [0, 1e-8],
         "values": [0, 0],
     },
@@ -162,7 +162,7 @@ zero_field = {
 zero_program = convert_unit(
     Program(
         setup={
-            "atomArray": {
+            "ahs_register": {
                 "sites": [[0, i * a] for i in range(11)],
                 "filling": [1 for _ in range(11)],
             }

@@ -25,19 +25,22 @@ Omega = 2 * pi * 4 * 1e6
 Delta = 2 * pi * 3 * 1e6
 
 
-amplitude = {"pattern": "uniform", "sequence": {"times": [0, tmax], "values": [Omega, Omega]}}
+amplitude = {"pattern": "uniform", "time_series": {"times": [0, tmax], "values": [Omega, Omega]}}
 detuning = {
     "pattern": "uniform",
-    "sequence": {"times": [0, tmax], "values": [3 / 4 * Delta, 3 / 4 * Delta]},
+    "time_series": {"times": [0, tmax], "values": [3 / 4 * Delta, 3 / 4 * Delta]},
 }
-phase = {"pattern": "uniform", "sequence": {"times": [0, tmax], "values": [0, 0]}}
+phase = {"pattern": "uniform", "time_series": {"times": [0, tmax], "values": [0, 0]}}
 
 driving_field = {"amplitude": amplitude, "phase": phase, "detuning": detuning}
-magnitude = {"pattern": [1 / 4, 1 / 4], "sequence": {"times": [0, tmax], "values": [Delta, Delta]}}
+magnitude = {
+    "pattern": [1 / 4, 1 / 4],
+    "time_series": {"times": [0, tmax], "values": [Delta, Delta]},
+}
 shifting_field = {"magnitude": magnitude}
 hamiltonian = {"drivingFields": [driving_field], "shiftingFields": [shifting_field]}
 
-setup = {"atomArray": {"sites": [[0, 0], [0, a]], "filling": [1, 1]}}
+setup = {"ahs_register": {"sites": [[0, 0], [0, a]], "filling": [1, 1]}}
 
 
 program = convert_unit(
@@ -80,7 +83,7 @@ def test_solvers(solver):
 
 empty_program = Program(
     setup={
-        "atomArray": {
+        "ahs_register": {
             "sites": [[0, i * a] for i in range(11)],
             "filling": [1 for _ in range(11)],
         }
@@ -88,7 +91,7 @@ empty_program = Program(
     hamiltonian={"drivingFields": [], "shiftingFields": []},
 )
 
-configurations_big_lattice = get_blockade_configurations(empty_program.setup.atomArray, 0)
+configurations_big_lattice = get_blockade_configurations(empty_program.setup.ahs_register, 0)
 
 empty_program = convert_unit(empty_program)
 
@@ -118,7 +121,7 @@ def test_solvers_empty_program(solver):
 failed_program = convert_unit(
     Program(
         setup={
-            "atomArray": {
+            "ahs_register": {
                 "sites": [[0, 0], [0, 1e-20]],
                 "filling": [1 for _ in range(2)],
             }
