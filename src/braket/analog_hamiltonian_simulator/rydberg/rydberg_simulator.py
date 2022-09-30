@@ -37,7 +37,6 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.rydberg_coefficient 
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
 
-from typing import Optional
 
 class RydbergAtomSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_ahs"
@@ -45,8 +44,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
     def run(
         self,
         program: Program,
-        shots,
-        args, # A minor place holder such that the local simulator can run on sdk. Help is needed here. 
+        shots: int = 100,
         steps: int = 100,
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 0.0,
