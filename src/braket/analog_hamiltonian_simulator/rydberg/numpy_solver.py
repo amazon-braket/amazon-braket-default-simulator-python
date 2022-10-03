@@ -93,7 +93,7 @@ def rk_run(
     eigvals_A, eigvecs_A = np.linalg.eig(A)
     inv_eigvecs_A = np.linalg.inv(eigvecs_A)
 
-    for index_time in range(len(simulation_times) - 1):
+    for index_time, _ in enumerate(simulation_times[1:]):
 
         if progress_bar:  # print a lightweight progress bar
             if index_time == 0:
