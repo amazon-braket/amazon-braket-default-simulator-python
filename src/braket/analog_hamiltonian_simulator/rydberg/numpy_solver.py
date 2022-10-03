@@ -80,7 +80,7 @@ def rk_run(
 
     # define the Butcher tableau
     order = 6
-    A = [
+    a = [
         [5 / 36, 2 / 9 - 1 / np.sqrt(15), 5 / 36 - np.sqrt(15) / 30],
         [5 / 36 + np.sqrt(15) / 24, 2 / 9, 5 / 36 - np.sqrt(15) / 24],
         [5 / 36 + np.sqrt(15) / 30, 2 / 9 + 1 / np.sqrt(15), 5 / 36],
@@ -88,9 +88,9 @@ def rk_run(
     b = [5 / 18, 4 / 9, 5 / 18]
     c = [1 / 2 - np.sqrt(15) / 10, 1 / 2, 1 / 2 + np.sqrt(15) / 10]
 
-    s = int(order / 2)  # The number of steps in the RK method see reference above
+    stages = int(order / 2)  # The number of steps in the RK method see reference above
 
-    eigvals_A, eigvecs_A = np.linalg.eig(A)
+    eigvals_A, eigvecs_A = np.linalg.eig(a)
     inv_eigvecs_A = np.linalg.inv(eigvecs_A)
 
     for index_time, _ in enumerate(simulation_times[1:]):
@@ -125,25 +125,26 @@ def rk_run(
         x2 = -1j * ham.dot(x1)
         x3 = -1j * ham.dot(x2)
 
-        kk = [x1 + c[ii] * dt * x2 for ii in range(s)]
+        kk = [x1 + c[ii] * dt * x2 for ii in range(stages)]
 
         kx = [
             kk[ii]
             - x1
-            - dt * np.sum([A[ii][jj] * (x2 + c[jj] * dt * x3) for jj in range(s)], axis=0)
-            for ii in range(s)
+            - dt * np.sum([a[ii][jj] * (x2 + c[jj] * dt * x3) for jj in range(stages)], axis=0)
+            for ii in range(stages)
         ]
 
         dk_tilde = [
             np.linalg.solve(
                 np.eye(size_hilbert_space) + 1j * dt * eigvals_A[ii] * ham,
-                np.sum([inv_eigvecs_A[ii][jj] * kx[jj] for jj in range(s)], axis=0),
+                np.sum([inv_eigvecs_A[ii][jj] * kx[jj] for jj in range(stages)], axis=0),
             )
-            for ii in range(s)
+            for ii in range(stages)
         ]
 
         dk = [
-            np.sum([eigvecs_A[ii][jj] * dk_tilde[jj] for jj in range(s)], axis=0) for ii in range(s)
+            np.sum([eigvecs_A[ii][jj] * dk_tilde[jj] for jj in range(stages)], axis=0)
+            for ii in range(stages)
         ]
 
         kk = np.array(kk) - dk
