@@ -57,6 +57,8 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         first_step: int = 0,
         max_step: int = 0,
         min_step: int = 0,
+        *args,
+        **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
         """
         Run the simulation for the dynamics of the Rydberg system, and return the result
