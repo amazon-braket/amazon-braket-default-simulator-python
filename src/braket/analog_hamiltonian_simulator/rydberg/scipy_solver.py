@@ -32,10 +32,16 @@ def scipy_integrate_ode_run(
         simulation_times (list[float]): The list of time points
         rydberg_interaction_coef (float): The interaction coefficient
         progress_bar (bool): If true, a progress bar will be printed during the simulation
-
-        For the interpretations of the rest of the keyword arguments, see the document for
-        `scipy.integrate.ode`
-        https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html
+        atol (float): Absolute tolerance for solution
+        rtol (float): Relative tolerance for solution
+        solver_method (str): Which solver to use, `adams` for non-stiff problems or `bdf`
+            for stiff problems
+        order (int): Maximum order used by the integrator, order <= 12 for Adams, <= 5 for BDF.
+        nsteps (int): Maximum number of (internally defined) steps allowed during one call to
+            the solver.
+        max_step (float): Limits for the step sizes used by the integrator.
+        first_step (float)
+        min_step (float)
 
     Return:
         states (List(np.ndarray)): The list of all the intermediate states in the simulation.
