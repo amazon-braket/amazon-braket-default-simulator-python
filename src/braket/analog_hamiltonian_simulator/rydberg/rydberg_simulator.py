@@ -126,7 +126,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         self.configurations = get_blockade_configurations(self.atomArray, self.blockade_radius)
 
         # Run the solver
-        # We shall adaptive change between numpy solver (RK6 method) and scipy solver
+        # We shall adaptively change between numpy solver (RK6 method) and scipy solver
         if len(self.configurations) <= 1000:
             states = rk_run(
                 program,

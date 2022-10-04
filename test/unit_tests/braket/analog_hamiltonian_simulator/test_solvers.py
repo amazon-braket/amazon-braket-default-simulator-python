@@ -119,11 +119,8 @@ def test_solvers_empty_program(solver, progress_bar):
         progress_bar=progress_bar,
     )
     final_prob = [np.abs(i) ** 2 for i in states[-1]]
-    true_final_prob_empty_program = np.zeros(2*11)
+    true_final_prob_empty_program = np.zeros(2**11)
     true_final_prob_empty_program[0] = 1
-
-    print(final_prob)
-    print(true_final_prob_empty_program)
 
     assert np.allclose(final_prob, true_final_prob_empty_program, atol=1e-2)
 

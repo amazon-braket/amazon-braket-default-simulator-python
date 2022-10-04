@@ -128,23 +128,23 @@ def rk_run(
         kk = [x1 + c[i] * dt * x2 for i in range(stages)]
 
         kx = [
-            kk[ii]
+            kk[i]
             - x1
-            - dt * np.sum([a[ii][jj] * (x2 + c[jj] * dt * x3) for jj in range(stages)], axis=0)
-            for ii in range(stages)
+            - dt * np.sum([a[i][j] * (x2 + c[j] * dt * x3) for j in range(stages)], axis=0)
+            for i in range(stages)
         ]
 
         dk_tilde = [
             np.linalg.solve(
-                np.eye(size_hilbert_space) + 1j * dt * eigvals_a[ii] * hamiltonian,
-                np.sum([inv_eigvecs_a[ii][jj] * kx[jj] for jj in range(stages)], axis=0),
+                np.eye(size_hilbert_space) + 1j * dt * eigvals_a[i] * hamiltonian,
+                np.sum([inv_eigvecs_a[i][j] * kx[j] for j in range(stages)], axis=0),
             )
-            for ii in range(stages)
+            for i in range(stages)
         ]
 
         dk = [
-            np.sum([eigvecs_a[ii][jj] * dk_tilde[jj] for jj in range(stages)], axis=0)
-            for ii in range(stages)
+            np.sum([eigvecs_a[i][j] * dk_tilde[j] for j in range(stages)], axis=0)
+            for i in range(stages)
         ]
 
         kk = np.array(kk) - dk
