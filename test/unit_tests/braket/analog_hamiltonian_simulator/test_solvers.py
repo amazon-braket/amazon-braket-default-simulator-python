@@ -65,16 +65,21 @@ true_final_prob = [theory_value_00, theory_value_01, theory_value_10, 0]
 
 
 @pytest.mark.parametrize(
-    "solver",
-    [scipy_integrate_ode_run, rk_run],
+    "solver, progress_bar",
+    [
+        [scipy_integrate_ode_run, True],
+        [scipy_integrate_ode_run, False],
+        [rk_run, True],
+        [rk_run, False],
+    ],
 )
-def test_solvers(solver):
+def test_solvers(solver, progress_bar):
     states = solver(
         program,
         configurations,
         simulation_times,
         rydberg_interaction_coef,
-        progress_bar=True,
+        progress_bar=progress_bar,
     )
     final_prob = [np.abs(i) ** 2 for i in states[-1]]
 
@@ -97,16 +102,21 @@ empty_program = convert_unit(empty_program)
 
 
 @pytest.mark.parametrize(
-    "solver",
-    [scipy_integrate_ode_run, rk_run],
+    "solver, progress_bar",
+    [
+        [scipy_integrate_ode_run, True],
+        [scipy_integrate_ode_run, False],
+        [rk_run, True],
+        [rk_run, False],
+    ],
 )
-def test_solvers_empty_program(solver):
+def test_solvers_empty_program(solver, progress_bar):
     states = solver(
         empty_program,
         configurations_big_lattice,
         [0],
         rydberg_interaction_coef,
-        progress_bar=True,
+        progress_bar=progress_bar,
     )
     final_prob = [np.abs(i) ** 2 for i in states[-1]]
     true_final_prob_empty_program = [0 for _ in range(2**11)]
