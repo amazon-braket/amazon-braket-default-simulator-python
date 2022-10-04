@@ -86,6 +86,18 @@ def test_get_func(para):
     assert all([item_1 == item_2 for item_1, item_2 in zip(vals, trueval)])
 
 
+@pytest.mark.parametrize(
+    "method, error_message",
+    [
+        ("square_wave", "`method` can only be `piecewise_linear` or `piecewise_constant`."),
+    ],
+)
+def test_interpolate_time_series_error_message(method, error_message):
+    with pytest.raises(ValueError) as e:
+        _interpolate_time_series(0, [0, 1], [0, 1], method)
+    assert error_message in str(e.value)
+
+
 @pytest.mark.parametrize("para", [[[1, 2, 3], program_1]])
 def test_get_coefs(para):
     ts, program = para[0], para[1]

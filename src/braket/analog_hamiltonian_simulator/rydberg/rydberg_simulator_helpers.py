@@ -278,6 +278,8 @@ def _interpolate_time_series(
     elif method == "piecewise_constant":
         index = np.searchsorted(times, t, side="right") - 1
         return values[index]
+    else:
+        raise ValueError("`method` can only be `piecewise_linear` or `piecewise_constant`.")
 
 
 def get_coefs(
