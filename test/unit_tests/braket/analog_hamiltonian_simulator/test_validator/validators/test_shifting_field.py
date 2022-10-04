@@ -84,14 +84,14 @@ def test_shifting_field_empty(mock_shifting_field_data, device_capabilities_cons
     "values, warning_message",
     [
         (
-            [0.0, -0.5e7, 0.5e7, 0.0],
-            "Value 1 (-5000000.0) in magnitude sequence outside the typical range "
-            "[0, 125000000.0]. The values should  be specified in SI units.",
+            [0.0, -5e8, 0.5e7, 0.0],
+            "Value 1 (-500000000.0) in magnitude sequence outside the typical range "
+            "[-125000000.0, 125000000.0]. The values should  be specified in SI units.",
         ),
         (
-            [0.0, -0.5e7, 2.6e7, 0.0],
-            "Value 1 (-5000000.0) in magnitude sequence outside the typical range "
-            "[0, 125000000.0]. The values should  be specified in SI units.",
+            [0.0, -2e8, 2.6e7, 0.0],
+            "Value 1 (-200000000.0) in magnitude sequence outside the typical range "
+            "[-125000000.0, 125000000.0]. The values should  be specified in SI units.",
         ),
     ],
 )
