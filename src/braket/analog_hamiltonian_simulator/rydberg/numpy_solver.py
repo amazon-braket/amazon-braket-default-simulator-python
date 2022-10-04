@@ -121,9 +121,9 @@ def rk_run(
         # For more details of the algorithm, see the reference above
 
         # Define k0,...,ks
-        x1 = -1j * ham.dot(x)
-        x2 = -1j * ham.dot(x1)
-        x3 = -1j * ham.dot(x2)
+        x1 = -1j * hamiltonian.dot(x)
+        x2 = -1j * hamiltonian.dot(x1)
+        x3 = -1j * hamiltonian.dot(x2)
 
         kk = [x1 + c[ii] * dt * x2 for ii in range(stages)]
 
@@ -136,14 +136,14 @@ def rk_run(
 
         dk_tilde = [
             np.linalg.solve(
-                np.eye(size_hilbert_space) + 1j * dt * eigvals_A[ii] * ham,
-                np.sum([inv_eigvecs_A[ii][jj] * kx[jj] for jj in range(stages)], axis=0),
+                np.eye(size_hilbert_space) + 1j * dt * eigvals_a[ii] * hamiltonian,
+                np.sum([inv_eigvecs_a[ii][jj] * kx[jj] for jj in range(stages)], axis=0),
             )
             for ii in range(stages)
         ]
 
         dk = [
-            np.sum([eigvecs_A[ii][jj] * dk_tilde[jj] for jj in range(stages)], axis=0)
+            np.sum([eigvecs_a[ii][jj] * dk_tilde[jj] for jj in range(stages)], axis=0)
             for ii in range(stages)
         ]
 
