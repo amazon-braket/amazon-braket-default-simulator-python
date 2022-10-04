@@ -170,7 +170,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
     @property
     def properties(self) -> DeviceCapabilities:
         """simulator properties"""
-        mock_dict = {
+        properties = {
             "service": {
                 "executionWindows": [
                     {
@@ -185,10 +185,10 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         }
 
         RydbergSimulatorDeviceCapabilities = create_model(
-            "RydbergSimulatorDeviceCapabilities", **mock_dict
+            "RydbergSimulatorDeviceCapabilities", **properties
         )
 
-        return RydbergSimulatorDeviceCapabilities.parse_obj(mock_dict)
+        return RydbergSimulatorDeviceCapabilities.parse_obj(properties)
 
     def initialize_simulation(self, **kwargs) -> Simulation:
         """Initializes simulation with keyword arguments"""
