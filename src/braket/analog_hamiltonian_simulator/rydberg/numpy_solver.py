@@ -90,7 +90,7 @@ def rk_run(
 
     stages = int(order / 2)  # The number of steps in the RK method see reference above
 
-    eigvals_A, eigvecs_A = np.linalg.eig(a)
+    eigvals_a, eigvecs_a = np.linalg.eig(a)
     inv_eigvecs_a = np.linalg.inv(eigvecs_a)
 
     for index_time, _ in enumerate(simulation_times[1:]):
@@ -115,7 +115,7 @@ def rk_run(
                 )
 
         x = states[-1]
-        ham = _get_hamiltonian(index_time)
+        hamiltonian = _get_hamiltonian(index_time)
 
         # The start of implicit RK method for updating the state
         # For more details of the algorithm, see the reference above
