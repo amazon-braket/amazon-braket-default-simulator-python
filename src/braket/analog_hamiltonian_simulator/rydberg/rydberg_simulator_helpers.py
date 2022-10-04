@@ -224,7 +224,7 @@ def get_sparse_ops(
         rydberg_interaction_coef (float): The interaction coefficient
     """
     # Get the driving fields as sparse matrices, whose targets are all the atoms in the system
-    targets = tuple(range(sum(program.setup.ahs_register.filling)))
+    targets = np.arange(np.count_nonzero(program.setup.ahs_register.filling))
     rabi_dict = _get_rabi_dict(targets, configurations)
     detuning_dict = _get_detuning_dict(targets, configurations)
 
