@@ -23,10 +23,10 @@ def scipy_integrate_ode_run(
     min_step: int = 0,
 ):
     """
-    Using `scipy.integrate.ode` for solving the schrodinger equation
+    Using `scipy.integrate.ode` for solving the Schrödinger equation
 
     Args:
-        hamiltonian (Program): An analog simulation hamiltonian for Rydberg system
+        hamiltonian (Program): An analog Hamiltonian for the Rydberg system to be simulated
         configuraitons (list[str]): The list of configurations that comply with the
             blockade approximation.
         simulation_times (list[float]): The list of time points
@@ -45,8 +45,6 @@ def scipy_integrate_ode_run(
 
     Return:
         states (List(np.ndarray)): The list of all the intermediate states in the simulation.
-
-
     """
 
     (

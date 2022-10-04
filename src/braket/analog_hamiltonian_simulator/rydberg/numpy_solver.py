@@ -125,7 +125,7 @@ def rk_run(
         x2 = -1j * hamiltonian.dot(x1)
         x3 = -1j * hamiltonian.dot(x2)
 
-        kk = [x1 + c[ii] * dt * x2 for ii in range(stages)]
+        kk = [x1 + c[i] * dt * x2 for i in range(stages)]
 
         kx = [
             kk[ii]

@@ -119,7 +119,7 @@ def test_solvers_empty_program(solver, progress_bar):
         progress_bar=progress_bar,
     )
     final_prob = [np.abs(i) ** 2 for i in states[-1]]
-    true_final_prob_empty_program = [0 for _ in range(2**11)]
+    true_final_prob_empty_program = np.zeros(2*11)
     true_final_prob_empty_program[0] = 1
 
     print(final_prob)
@@ -133,7 +133,7 @@ failed_program = convert_unit(
         setup={
             "ahs_register": {
                 "sites": [[0, 0], [0, 1e-20]],
-                "filling": [1 for _ in range(2)],
+                "filling": [1, 1],
             }
         },
         hamiltonian=hamiltonian,
