@@ -96,8 +96,8 @@ def scipy_integrate_ode_run(
     def f(index_time, y):
         return -1j * dt * _get_hamiltonian(index_time).dot(y)
 
-    r = scipy.integrate.ode(f)
-    r.set_integrator(
+    integrator = scipy.integrate.ode(f)
+    integrator.set_integrator(
         "zvode",
         atol=atol,
         rtol=rtol,
@@ -130,18 +130,18 @@ def scipy_integrate_ode_run(
                     end="\r",
                 )
 
-        if not r.successful():
+        if not integrator.successful():
             raise Exception(
                 "ODE integration error: Try to increase "
                 "the allowed number of substeps by increasing "
                 "the nsteps parameter in the Options class."
             )
 
-        r.set_initial_value(state, index_time)
-        r.integrate(index_time + 1)
+        integrator.set_initial_value(state, index_time)
+        integrator.integrate(index_time + 1)
 
         # get the current state, and normalize it
-        state = r.y
+        state = integrator.y
         state /= np.linalg.norm(state)  # normalize the state
         states.append(state)
 
