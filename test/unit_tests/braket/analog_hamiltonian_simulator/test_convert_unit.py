@@ -8,36 +8,36 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converte
     convert_unit_for_field,
 )
 
-amplitude1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
+amplitude_1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
 
-detuning1 = {
+detuning_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
 }
 
-phase1 = {
+phase_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
-shift1 = {
+shift_1 = {
     "pattern": [0.0, 1.0, 0.5, 0.0],
     "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
-setup1 = {"ahs_register": {"sites": [[0, 0]], "filling": [1]}}
+setup_1 = {"ahs_register": {"sites": [[0, 0]], "filling": [1]}}
 
-program1 = Program(
-    setup=setup1,
+program_1 = Program(
+    setup=setup_1,
     hamiltonian={
-        "drivingFields": [{"amplitude": amplitude1, "phase": phase1, "detuning": detuning1}],
-        "shiftingFields": [{"magnitude": shift1}],
+        "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
+        "shiftingFields": [{"magnitude": shift_1}],
     },
 )
 
 
-@pytest.mark.parametrize("field", [amplitude1, detuning1, shift1])
+@pytest.mark.parametrize("field", [amplitude_1, detuning_1, shift_1])
 def test_convert_unit_for_field_amp_det(field):
     newfield = PhysicalField(**convert_unit_for_field(PhysicalField(**field), True))
     truth = PhysicalField(
@@ -52,7 +52,7 @@ def test_convert_unit_for_field_amp_det(field):
     assert newfield == truth
 
 
-@pytest.mark.parametrize("field", [phase1])
+@pytest.mark.parametrize("field", [phase_1])
 def test_convert_unit_for_field_phase(field):
     newfield = PhysicalField(**convert_unit_for_field(PhysicalField(**field), False))
     truth = PhysicalField(
@@ -68,7 +68,7 @@ def test_convert_unit_for_field_phase(field):
     assert newfield == truth
 
 
-@pytest.mark.parametrize("program", [program1])
+@pytest.mark.parametrize("program", [program_1])
 def test_convert_unit(program):
     newprogram = convert_unit(program)
 

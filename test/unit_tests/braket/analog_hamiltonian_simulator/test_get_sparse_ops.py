@@ -14,37 +14,37 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converte
 a = 3
 rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
-amplitude1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
+amplitude_1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
 
-detuning1 = {
+detuning_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
 }
 
-phase1 = {
+phase_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
-shift1 = {
+shift_1 = {
     "pattern": [0.5, 1.0],
     "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
 }
 
-setup1 = {"ahs_register": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
+setup_1 = {"ahs_register": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
 
 program1 = convert_unit(
     Program(
-        setup=setup1,
+        setup=setup_1,
         hamiltonian={
-            "drivingFields": [{"amplitude": amplitude1, "phase": phase1, "detuning": detuning1}],
-            "shiftingFields": [{"magnitude": shift1}],
+            "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
+            "shiftingFields": [{"magnitude": shift_1}],
         },
     )
 )
 
-configurations1 = ["gg", "gr", "rg", "rr"]
+configurations_1 = ["gg", "gr", "rg", "rr"]
 
 
 def test_get_sparse_from_dict_1():
@@ -71,31 +71,31 @@ def test_get_sparse_from_dict_2():
     assert (mat != truth).nnz == 0
 
 
-@pytest.mark.parametrize("para", [[program1, rydberg_interaction_coef, configurations1]])
+@pytest.mark.parametrize("para", [[program1, rydberg_interaction_coef, configurations_1]])
 def test_get_sparse_ops(para):
-    program1, rydberg_interaction_coef, configurations1 = para[0], para[1], para[2]
+    program1, rydberg_interaction_coef, configurations_1 = para[0], para[1], para[2]
     rabi_ops, detuning_ops, interaction_op, local_detuning_ops = get_sparse_ops(
-        program1, configurations1, rydberg_interaction_coef
+        program1, configurations_1, rydberg_interaction_coef
     )
 
     true_interaction_op = sp.sparse.csr_matrix(
         tuple([[rydberg_interaction_coef / (a**6)], [[3], [3]]]),
-        shape=(len(configurations1), len(configurations1)),
+        shape=(len(configurations_1), len(configurations_1)),
     )
 
     true_detuning_ops = sp.sparse.csr_matrix(
         tuple([[1, 1, 2], [[1, 2, 3], [1, 2, 3]]]),
-        shape=(len(configurations1), len(configurations1)),
+        shape=(len(configurations_1), len(configurations_1)),
     )
 
     true_rabi_ops = sp.sparse.csr_matrix(
         tuple([[1, 1, 1, 1], [[1, 2, 3, 3], [0, 0, 1, 2]]]),
-        shape=(len(configurations1), len(configurations1)),
+        shape=(len(configurations_1), len(configurations_1)),
     )
 
     true_local_detuning_ops = sp.sparse.csr_matrix(
         tuple([[1.0, 0.5, 1.5], [[1, 2, 3], [1, 2, 3]]]),
-        shape=(len(configurations1), len(configurations1)),
+        shape=(len(configurations_1), len(configurations_1)),
     )
 
     assert (true_interaction_op != interaction_op).nnz == 0
