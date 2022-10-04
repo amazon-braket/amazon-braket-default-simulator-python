@@ -21,21 +21,24 @@ rydberg_interaction_coef = RYDBERG_INTERACTION_COEF / ((SPACE_UNIT**6) / TIME_UN
 
 a = 3.0e-6
 tmax = 0.25 * 1e-6  # note that we are in SI unites
-Omega = 2 * pi * 4 * 1e6
-Delta = 2 * pi * 3 * 1e6
+rabi_frequency = 2 * pi * 4 * 1e6
+detuning_value = 2 * pi * 3 * 1e6
 
 
-amplitude = {"pattern": "uniform", "time_series": {"times": [0, tmax], "values": [Omega, Omega]}}
+amplitude = {
+    "pattern": "uniform",
+    "time_series": {"times": [0, tmax], "values": [rabi_frequency, rabi_frequency]},
+}
 detuning = {
     "pattern": "uniform",
-    "time_series": {"times": [0, tmax], "values": [3 / 4 * Delta, 3 / 4 * Delta]},
+    "time_series": {"times": [0, tmax], "values": [3 / 4 * detuning_value, 3 / 4 * detuning_value]},
 }
 phase = {"pattern": "uniform", "time_series": {"times": [0, tmax], "values": [0, 0]}}
 
 driving_field = {"amplitude": amplitude, "phase": phase, "detuning": detuning}
 magnitude = {
     "pattern": [1 / 4, 1 / 4],
-    "time_series": {"times": [0, tmax], "values": [Delta, Delta]},
+    "time_series": {"times": [0, tmax], "values": [detuning_value, detuning_value]},
 }
 shifting_field = {"magnitude": magnitude}
 hamiltonian = {"drivingFields": [driving_field], "shiftingFields": [shifting_field]}
@@ -55,8 +58,13 @@ steps = 400
 simulation_times = np.linspace(0, tmax * 1e6, steps)
 
 
-ω = np.sqrt(((Delta / 1e6) ** 2 + 8 * (Omega / 2 / 1e6) ** 2))
-theory_value_01 = 4 * (Omega / 2 / 1e6) ** 2 * (np.sin(ω / 2 * (tmax * 1e6))) ** 2 / (ω**2)
+angular_frequency = np.sqrt(((detuning_value / 1e6) ** 2 + 8 * (rabi_frequency / 2 / 1e6) ** 2))
+theory_value_01 = (
+    4
+    * (rabi_frequency / 2 / 1e6) ** 2
+    * (np.sin(angular_frequency / 2 * (tmax * 1e6))) ** 2
+    / (angular_frequency**2)
+)
 theory_value_10 = theory_value_01
 theory_value_00 = 1 - theory_value_10 - theory_value_01
 

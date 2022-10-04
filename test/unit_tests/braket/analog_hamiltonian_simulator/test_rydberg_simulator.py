@@ -17,10 +17,10 @@ device = RydbergAtomSimulator()
 pi = np.pi
 
 a = 3
-Omega = 12 * pi
-theta = 0.0  # 16.45
-Delta1 = 20 * pi
-Delta2 = 0.0  # 10*pi
+rabi_frequency = 12 * pi
+rabi_phase = 0.0  # 16.45
+detuning_1 = 20 * pi
+detuning_2 = 0.0  # 10*pi
 duration = 4
 rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
@@ -34,7 +34,7 @@ amplitude = {
     "pattern": "uniform",
     "time_series": {
         "times": [0, duration * 1e-06],
-        "values": [Omega * 1e6, Omega * 1e6],
+        "values": [rabi_frequency * 1e6, rabi_frequency * 1e6],
     },
 }
 
@@ -42,7 +42,7 @@ phase = {
     "pattern": "uniform",
     "time_series": {
         "times": [0, duration * 1e-06],
-        "values": [theta, theta],
+        "values": [rabi_phase, rabi_phase],
     },
 }
 
@@ -50,12 +50,12 @@ detuning = {
     "pattern": "uniform",
     "time_series": {
         "times": [0, duration * 1e-06],
-        "values": [Delta1 * 1e6, Delta1 * 1e6],
+        "values": [detuning_1 * 1e6, detuning_1 * 1e6],
     },
 }
 
 shift = {
-    "time_series": {"times": [0, duration * 1e-06], "values": [Delta2 * 1e6, Delta2 * 1e6]},
+    "time_series": {"times": [0, duration * 1e-06], "values": [detuning_2 * 1e6, detuning_2 * 1e6]},
     "pattern": [0.0, 1.0, 0.5, 0.0],
 }
 
