@@ -91,7 +91,7 @@ def rk_run(
     stages = int(order / 2)  # The number of steps in the RK method see reference above
 
     eigvals_A, eigvecs_A = np.linalg.eig(a)
-    inv_eigvecs_A = np.linalg.inv(eigvecs_A)
+    inv_eigvecs_a = np.linalg.inv(eigvecs_a)
 
     for index_time, _ in enumerate(simulation_times[1:]):
 
