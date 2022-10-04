@@ -11,21 +11,21 @@ def hamiltonian_data():
             {
                 "amplitude": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [0, 12566400.0, 12566400.0, 0],
                     },
                 },
                 "phase": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [0, 0, -16.0832, -16.0832],
                     },
                 },
                 "detuning": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [-125000000, -125000000, 125000000, 125000000],
                     },
@@ -35,7 +35,7 @@ def hamiltonian_data():
         "shiftingFields": [
             {
                 "magnitude": {
-                    "sequence": {"times": [0, 4e-6], "values": [0, 0]},
+                    "time_series": {"times": [0, 4e-6], "values": [0, 0]},
                     "pattern": [0.0, 1.0, 0.5, 0.0, 1.0],
                 }
             }
@@ -71,21 +71,21 @@ def test_hamiltonian_max_one_driving_field():
             {
                 "amplitude": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [0, 12566400.0, 12566400.0, 0],
                     },
                 },
                 "phase": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [0, 0, -16.0832, -16.0832],
                     },
                 },
                 "detuning": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [-125000000, -125000000, 125000000, 125000000],
                     },
@@ -94,21 +94,21 @@ def test_hamiltonian_max_one_driving_field():
             {
                 "amplitude": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [0, 12566400.0, 12566400.0, 0],
                     },
                 },
                 "phase": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [0, 0, -16.0832, -16.0832],
                     },
                 },
                 "detuning": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [-125000000, -125000000, 125000000, 125000000],
                     },
@@ -127,21 +127,21 @@ def test_hamiltonian_max_one_shifting_field():
             {
                 "amplitude": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [0, 12566400.0, 12566400.0, 0],
                     },
                 },
                 "phase": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [0, 0, -16.0832, -16.0832],
                     },
                 },
                 "detuning": {
                     "pattern": "uniform",
-                    "sequence": {
+                    "time_series": {
                         "times": [0, 1e-07, 3.9e-06, 4e-06],
                         "values": [-125000000, -125000000, 125000000, 125000000],
                     },
@@ -151,13 +151,13 @@ def test_hamiltonian_max_one_shifting_field():
         "shiftingFields": [
             {
                 "magnitude": {
-                    "sequence": {"times": [0, 4e-6], "values": [0, 0]},
+                    "time_series": {"times": [0, 4e-6], "values": [0, 0]},
                     "pattern": [0.0, 1.0, 0.5, 0.0, 1.0],
                 }
             },
             {
                 "magnitude": {
-                    "sequence": {"times": [0, 4e-6], "values": [0, 0]},
+                    "time_series": {"times": [0, 4e-6], "values": [0, 0]},
                     "pattern": [0.0, 1.0, 0.5, 0.0, 1.0],
                 }
             },
@@ -170,7 +170,7 @@ def test_hamiltonian_max_one_shifting_field():
 def test_hamiltonian_all_sequences_in_driving_and_shifting_fields_have_the_same_last_timepoint(
     hamiltonian_data,
 ):
-    hamiltonian_data["drivingFields"][0]["amplitude"]["sequence"]["times"] = [
+    hamiltonian_data["drivingFields"][0]["amplitude"]["time_series"]["times"] = [
         0,
         1e-07,
         3.9e-06,

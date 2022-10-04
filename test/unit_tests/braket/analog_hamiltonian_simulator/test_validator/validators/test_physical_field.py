@@ -9,7 +9,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field impor
 @pytest.fixture
 def physical_field_data_1():
     return {
-        "sequence": {
+        "time_series": {
             "times": [0.0, 1e-8, 2e-8, 3e-8],
             "values": [0.0, 0.1, 0.2, 0.3],
         },
@@ -20,7 +20,7 @@ def physical_field_data_1():
 @pytest.fixture
 def physical_field_data_2():
     return {
-        "sequence": {
+        "time_series": {
             "times": [0.0, 1e-8, 2e-8, 3e-8],
             "values": [0.0, 0.1, 0.2, 0.3],
         },

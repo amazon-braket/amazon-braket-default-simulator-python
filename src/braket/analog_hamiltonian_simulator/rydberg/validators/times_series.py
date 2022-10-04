@@ -1,6 +1,6 @@
 import warnings
 
-from braket.ir.ahs.waveform import Waveform
+from braket.ir.ahs.time_series import TimeSeries
 from pydantic.class_validators import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
@@ -8,7 +8,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 )
 
 
-class WaveformValidator(Waveform):
+class TimeSeriesValidator(TimeSeries):
     capabilities: CapabilitiesConstants
 
     # must have at least 2 time values

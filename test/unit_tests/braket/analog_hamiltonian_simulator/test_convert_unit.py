@@ -8,25 +8,25 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converte
     convert_unit_for_field,
 )
 
-amplitude1 = {"pattern": "uniform", "sequence": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
+amplitude1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
 
 detuning1 = {
     "pattern": "uniform",
-    "sequence": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
+    "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
 }
 
 phase1 = {
     "pattern": "uniform",
-    "sequence": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
+    "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
 shift1 = {
     "pattern": [0.0, 1.0, 0.5, 0.0],
-    "sequence": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
+    "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
-setup1 = {"atomArray": {"sites": [[0, 0]], "filling": [1]}}
+setup1 = {"ahs_register": {"sites": [[0, 0]], "filling": [1]}}
 
 program1 = Program(
     setup=setup1,
@@ -43,9 +43,9 @@ def test_convert_unit_for_field_amp_det(field):
     truth = PhysicalField(
         **{
             "pattern": field["pattern"],
-            "sequence": {
-                "times": [float(time) / TIME_UNIT for time in field["sequence"]["times"]],
-                "values": [float(value) / FIELD_UNIT for value in field["sequence"]["values"]],
+            "time_series": {
+                "times": [float(time) / TIME_UNIT for time in field["time_series"]["times"]],
+                "values": [float(value) / FIELD_UNIT for value in field["time_series"]["values"]],
             },
         }
     )
@@ -58,9 +58,9 @@ def test_convert_unit_for_field_phase(field):
     truth = PhysicalField(
         **{
             "pattern": field["pattern"],
-            "sequence": {
-                "times": [float(time) / TIME_UNIT for time in field["sequence"]["times"]],
-                "values": [float(value) for value in field["sequence"]["values"]],
+            "time_series": {
+                "times": [float(time) / TIME_UNIT for time in field["time_series"]["times"]],
+                "values": [float(value) for value in field["time_series"]["values"]],
             },
         }
     )
@@ -74,12 +74,12 @@ def test_convert_unit(program):
 
     truth = Program(
         setup={
-            "atomArray": {
+            "ahs_register": {
                 "sites": [
                     [float(site[0]) / SPACE_UNIT, float(site[1]) / SPACE_UNIT]
-                    for site in program.setup.atomArray.sites
+                    for site in program.setup.ahs_register.sites
                 ],
-                "filling": program.setup.atomArray.filling,
+                "filling": program.setup.ahs_register.filling,
             }
         },
         hamiltonian={
@@ -87,52 +87,52 @@ def test_convert_unit(program):
                 {
                     "amplitude": {
                         "pattern": program.hamiltonian.drivingFields[0].amplitude.pattern,
-                        "sequence": {
+                        "time_series": {
                             "times": [
                                 float(time) / TIME_UNIT
                                 for time in program.hamiltonian.drivingFields[
                                     0
-                                ].amplitude.sequence.times
+                                ].amplitude.time_series.times
                             ],
                             "values": [
                                 float(value) / FIELD_UNIT
                                 for value in program.hamiltonian.drivingFields[
                                     0
-                                ].amplitude.sequence.values
+                                ].amplitude.time_series.values
                             ],
                         },
                     },
                     "detuning": {
                         "pattern": program.hamiltonian.drivingFields[0].detuning.pattern,
-                        "sequence": {
+                        "time_series": {
                             "times": [
                                 float(time) / TIME_UNIT
                                 for time in program.hamiltonian.drivingFields[
                                     0
-                                ].detuning.sequence.times
+                                ].detuning.time_series.times
                             ],
                             "values": [
                                 float(value) / FIELD_UNIT
                                 for value in program.hamiltonian.drivingFields[
                                     0
-                                ].detuning.sequence.values
+                                ].detuning.time_series.values
                             ],
                         },
                     },
                     "phase": {
                         "pattern": program.hamiltonian.drivingFields[0].phase.pattern,
-                        "sequence": {
+                        "time_series": {
                             "times": [
                                 float(time) / TIME_UNIT
                                 for time in program.hamiltonian.drivingFields[
                                     0
-                                ].phase.sequence.times
+                                ].phase.time_series.times
                             ],
                             "values": [
                                 float(value)
                                 for value in program.hamiltonian.drivingFields[
                                     0
-                                ].phase.sequence.values
+                                ].phase.time_series.values
                             ],
                         },
                     },
@@ -142,18 +142,18 @@ def test_convert_unit(program):
                 {
                     "magnitude": {
                         "pattern": program.hamiltonian.shiftingFields[0].magnitude.pattern,
-                        "sequence": {
+                        "time_series": {
                             "times": [
                                 float(time) / TIME_UNIT
                                 for time in program.hamiltonian.shiftingFields[
                                     0
-                                ].magnitude.sequence.times
+                                ].magnitude.time_series.times
                             ],
                             "values": [
                                 float(value) / FIELD_UNIT
                                 for value in program.hamiltonian.shiftingFields[
                                     0
-                                ].magnitude.sequence.values
+                                ].magnitude.time_series.values
                             ],
                         },
                     }

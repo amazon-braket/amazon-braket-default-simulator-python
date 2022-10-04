@@ -40,7 +40,7 @@ class ShiftingFieldValidator(ShiftingField):
     def magnitude_values_within_range(cls, values):
         magnitude = values["magnitude"]
         capabilities = values["capabilities"]
-        magnitude_values = magnitude["sequence"]["values"]
+        magnitude_values = magnitude["time_series"]["values"]
         validate_value_range_with_warning(
             magnitude_values,
             capabilities.LOCAL_MAGNITUDE_SEQUENCE_VALUE_MIN,

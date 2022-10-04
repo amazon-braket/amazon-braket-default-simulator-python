@@ -13,7 +13,7 @@ def device_capabilities_constants():
 def program_data():
     data = {
         "setup": {
-            "atomArray": {
+            "ahs_register": {
                 "sites": [[0, 0], [0, 4e-6], [5e-6, 0], [5e-6, 4e-6]],
                 "filling": [1, 0, 1, 0],
             }
@@ -23,21 +23,21 @@ def program_data():
                 {
                     "amplitude": {
                         "pattern": "uniform",
-                        "sequence": {
+                        "time_series": {
                             "times": [0, 1e-07, 3.9e-06, 4e-06],
                             "values": [0, 12566400.0, 12566400.0, 0],
                         },
                     },
                     "phase": {
                         "pattern": "uniform",
-                        "sequence": {
+                        "time_series": {
                             "times": [0, 1e-07, 3.9e-06, 4e-06],
                             "values": [0, 0, -16.0832, -16.0832],
                         },
                     },
                     "detuning": {
                         "pattern": "uniform",
-                        "sequence": {
+                        "time_series": {
                             "times": [0, 1e-07, 3.9e-06, 4e-06],
                             "values": [-125000000, -125000000, 125000000, 125000000],
                         },
@@ -47,7 +47,7 @@ def program_data():
             "shiftingFields": [
                 {
                     "magnitude": {
-                        "sequence": {"times": [0, 4e-6], "values": [0, 0]},
+                        "time_series": {"times": [0, 4e-6], "values": [0, 0]},
                         "pattern": [0.0, 1.0, 0.5, 0.0],
                     }
                 }

@@ -10,9 +10,9 @@ def convert_unit(program: Program):
     """
 
     setup = program.setup
-    sites = setup.atomArray.sites
+    sites = setup.ahs_register.sites
     new_sites = [[float(site[0]) / SPACE_UNIT, float(site[1]) / SPACE_UNIT] for site in sites]
-    new_setup = {"atomArray": {"sites": new_sites, "filling": setup.atomArray.filling}}
+    new_setup = {"ahs_register": {"sites": new_sites, "filling": setup.ahs_register.filling}}
 
     hamiltonian = program.hamiltonian
     driving_fields = hamiltonian.drivingFields
@@ -49,13 +49,13 @@ def convert_unit_for_field(field, convertvalues=True):
     For a given field, convert the unit of time from second to microsecond,
     and convert the unit of values from Hz to MHz if `convertvalues`=True
     """
-    times = [float(time) / TIME_UNIT for time in field.sequence.times]
+    times = [float(time) / TIME_UNIT for time in field.time_series.times]
 
     if convertvalues:
-        values = [float(value) / FIELD_UNIT for value in field.sequence.values]
+        values = [float(value) / FIELD_UNIT for value in field.time_series.values]
     else:
-        values = [float(value) for value in field.sequence.values]
+        values = [float(value) for value in field.time_series.values]
 
-    new_field = {"pattern": field.pattern, "sequence": {"times": times, "values": values}}
+    new_field = {"pattern": field.pattern, "time_series": {"times": times, "values": values}}
 
     return new_field
