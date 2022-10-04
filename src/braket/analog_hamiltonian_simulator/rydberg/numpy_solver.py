@@ -23,7 +23,8 @@ def rk_run(
             blockade approximation.
         simulation_times (list[float]): The list of time points
         rydberg_interaction_coef (float): The interaction coefficient
-        progress_bar (bool): If true, a progress bar will be printed during the simulation
+        progress_bar (bool): If true, a progress bar will be printed during the simulation.
+            Default: False
 
     Returns:
         states (List(np.ndarray)): The list of all the intermediate states in the simulation.

@@ -70,20 +70,17 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             rydberg_interaction_coef (float): The interaction coefficient
             blockade_radius (float): The blockade radius for the Rydberg system
             progress_bar (bool): If true, a progress bar will be printed during the simulation
-            atol (float): Absolute tolerance for solution
-            rtol (float): Relative tolerance for solution
+            atol (float): Absolute tolerance for solution. Default: 1e-8
+            rtol (float): Relative tolerance for solution. Default: 1e-6
             solver_method (str): Which solver to use, `adams` for non-stiff problems or `bdf`
-                for stiff problems
+                for stiff problems. Default: "adams"
             order (int): Maximum order used by the integrator, order <= 12 for Adams, <= 5 for BDF.
+                Default: 12
             nsteps (int): Maximum number of (internally defined) steps allowed during one call to
-                the solver.
-            max_step (float): Limits for the step sizes used by the integrator.
-            first_step (float)
-            min_step (float)
-
-            Note that for system with the size of Hilbert space less than 1000, only the following
-            keyword arguments apply: shots, steps, rydberg_interaction_coef, blockade_radius and
-            progress_bar.
+                the solver. Default: 1000
+            first_step (float): Default: 0
+            max_step (float): Limits for the step sizes used by the integrator. Default: 0
+            min_step (float): Default: 0
 
 
         Returns:
