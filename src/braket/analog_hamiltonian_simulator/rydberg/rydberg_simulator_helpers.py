@@ -181,8 +181,9 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
                     continue
 
                 # Only keep the lower triangular part of the Rabi operator
-                if (config_1[index_diff], config_2[index_diff]) == ("g", "r"):
-                    rabi[(ind_2, ind_1)] = 1
+                # In particular, we only add the following component if and only if
+                # (config_1[index_diff], config_2[index_diff]) == ("g", "r")
+                rabi[(ind_2, ind_1)] = 1
     return rabi
 
 
