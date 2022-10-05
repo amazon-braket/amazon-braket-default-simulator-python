@@ -19,7 +19,6 @@ eps = 1e-3
 
 amplitude_1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
-
 detuning_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
