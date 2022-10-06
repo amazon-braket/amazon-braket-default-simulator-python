@@ -47,10 +47,10 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
 
 
     Notes on the indexing: The left-most bit in the configuration corresponds to
-        the first atom in the lattice.
+    the first atom in the lattice.
 
     Notes on the algorithm: We start from all possible configurations and get rid of
-        those violating the blockade approximation constraint.
+    those violating the blockade approximation constraint.
 
     """
 
@@ -82,7 +82,7 @@ def _get_interaction_dict(
     Args:
         program (Program): An analog simulation program for Rydberg system with the interaction term
         rydberg_interaction_coef (float): The interaction coefficient
-        configuraiton (List[str]): The list of configurations that comply with the blockade
+        configuration (List[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
@@ -126,7 +126,7 @@ def _get_detuning_dict(
 
     Args:
         targets (Tuple[int]): The target atoms of the detuning operator
-        configuraiton (List[str]): The list of configurations that comply with the blockade
+        configuration (List[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
@@ -148,14 +148,14 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
 
     Args:
         targets (Tuple[int]): The target atoms of the detuning operator
-        configuraiton (List[str]): The list of configurations that comply with the blockade
+        configuration (List[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
         Dict[Tuple[int, int], float]: The dictionary for the Rabi operator
 
     Notes: We only save the lower triangular part of the matrix that corresponds
-        to the Rabi operator.
+    to the Rabi operator.
     """
 
     rabi = {}  # The Rabi term in the basis of configurations, as a dictionary
@@ -187,7 +187,7 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
 
 
 def _get_sparse_from_dict(
-    matrx_dict: Dict[Tuple[int, int], float], matrix_dimension: int
+    matrix_dict: Dict[Tuple[int, int], float], matrix_dimension: int
 ) -> scipy.sparse.csr_matrix:
     """Convert a dict to a CSR sparse matrix
 
@@ -198,10 +198,10 @@ def _get_sparse_from_dict(
     Returns:
         scipy.sparse.csr_matrix: The sparse matrix in CSR format
     """
-    rows = [key[0] for key in matrx_dict.keys()]
-    cols = [key[1] for key in matrx_dict.keys()]
+    rows = [key[0] for key in matrix_dict.keys()]
+    cols = [key[1] for key in matrix_dict.keys()]
     return scipy.sparse.csr_matrix(
-        tuple([list(matrx_dict.values()), [rows, cols]]),
+        tuple([list(matrix_dict.values()), [rows, cols]]),
         shape=(matrix_dimension, matrix_dimension),
     )
 
@@ -366,7 +366,7 @@ def get_ops_coefs(
 
     Args:
         program (Program): An analog simulation program for Rydberg system
-        configuraiton (List[str]): The list of configurations that comply to the
+        configurations (List[str]): The list of configurations that comply to the
             blockade approximation.
         rydberg_interaction_coef (float): The interaction coefficient
         simulation_times (List[float]): The list of time points
