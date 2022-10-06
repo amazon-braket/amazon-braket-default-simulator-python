@@ -78,13 +78,13 @@ class RydbergAtomSimulator(BaseLocalSimulator):
                 Default: 12
             nsteps (int): Maximum number of (internally defined) steps allowed during one call to
                 the solver. Default: 1000
-            first_step (float): Default: 0
-            max_step (float): Limits for the step sizes used by the integrator. Default: 0
-            min_step (float): Default: 0
+            first_step (int): Default: 0
+            max_step (int): Limits for the step sizes used by the integrator. Default: 0
+            min_step (int): Default: 0
 
 
         Returns:
-            (AnalogHamiltonianSimulationTaskResult): The result of the simulation
+            AnalogHamiltonianSimulationTaskResult: The result of the simulation
 
         """
 
@@ -160,7 +160,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
                 self.mock_taskMetadata(shots),
             )
 
-    def mock_taskMetadata(self, shots):
+    def mock_taskMetadata(self, shots: int) -> TaskMetadata:
         return TaskMetadata(
             id="rydberg",
             shots=shots,
@@ -169,7 +169,12 @@ class RydbergAtomSimulator(BaseLocalSimulator):
 
     @property
     def properties(self) -> DeviceCapabilities:
-        """simulator properties"""
+        """
+        Device properties for the RydbergAtomSimulator.
+
+        Returns:
+            DeviceCapabilities: Device capabilities for this simulator.
+        """
         properties = {
             "service": {
                 "executionWindows": [
@@ -191,5 +196,13 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         return RydbergSimulatorDeviceCapabilities.parse_obj(properties)
 
     def initialize_simulation(self, **kwargs) -> Simulation:
-        """Initializes simulation with keyword arguments"""
+        """
+        Initialize Rydberg Hamiltonian simulation.
+
+        Args:
+            **kwargs: TBD
+
+        Returns:
+            Simulation: Initialized simulation.
+        """
         pass

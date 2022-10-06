@@ -1,7 +1,9 @@
 import time
+from typing import List
 
 import numpy as np
 import scipy.integrate
+import scipy.sparse
 from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import get_ops_coefs
@@ -9,27 +11,27 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers impor
 
 def scipy_integrate_ode_run(
     hamiltonian: Program,
-    configurations: list,
-    simulation_times: list,
+    configurations: List[str],
+    simulation_times: List[float],
     rydberg_interaction_coef: float,
     progress_bar: bool = False,
-    atol: bool = 1e-8,
-    rtol: bool = 1e-6,
+    atol: float = 1e-8,
+    rtol: float = 1e-6,
     solver_method: str = "adams",
     order: int = 12,
     nsteps: int = 1000,
     first_step: int = 0,
     max_step: int = 0,
     min_step: int = 0,
-):
+) -> np.ndarray:
     """
     Using `scipy.integrate.ode` for solving the Schrödinger equation
 
     Args:
         hamiltonian (Program): An analog Hamiltonian for the Rydberg system to be simulated
-        configurations (list[str]): The list of configurations that comply with the
+        configurations (List[str]): The List of configurations that comply with the
             blockade approximation.
-        simulation_times (list[float]): The list of time points
+        simulation_times (List[float]): The List of time points
         rydberg_interaction_coef (float): The interaction coefficient
         progress_bar (bool): If true, a progress bar will be printed during the simulation.
             Default: False
@@ -41,12 +43,12 @@ def scipy_integrate_ode_run(
             Default: 12
         nsteps (int): Maximum number of (internally defined) steps allowed during one call to
             the solver. Default: 1000
-        first_step (float): Default: 0
-        max_step (float): Limits for the step sizes used by the integrator. Default: 0
-        min_step (float): Default: 0
+        first_step (int): Default: 0
+        max_step (int): Limits for the step sizes used by the integrator. Default: 0
+        min_step (int): Default: 0
 
-    Return:
-        states (List(np.ndarray)): The list of all the intermediate states in the simulation.
+    Returns:
+        np.ndarray: The list of all the intermediate states in the simulation.
     """
 
     (
@@ -59,7 +61,7 @@ def scipy_integrate_ode_run(
         interaction_op,
     ) = get_ops_coefs(hamiltonian, configurations, rydberg_interaction_coef, simulation_times)
 
-    def _get_hamiltonian(index_time: int):
+    def _get_hamiltonian(index_time: int) -> scipy.sparse.csr_matrix:
         """Get the Hamiltonian matrix for the time point with index `index_time`"""
         index_time = int(index_time)
         hamiltonian = interaction_op
@@ -95,7 +97,7 @@ def scipy_integrate_ode_run(
     # Define the function to be integrated, e.g. dy/dt = f(t, y).
     # Note that we we will use the index of the time point,
     # instead of time, for f(t, y).
-    def f(index_time: int, y: np.ndarray):
+    def f(index_time: int, y: np.ndarray) -> scipy.sparse.csr_matrix:
         return -1j * dt * _get_hamiltonian(index_time).dot(y)
 
     integrator = scipy.integrate.ode(f)

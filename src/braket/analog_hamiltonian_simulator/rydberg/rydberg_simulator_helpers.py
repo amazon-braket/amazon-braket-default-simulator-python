@@ -46,11 +46,11 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
         with 'r' and 'g' indicating the Rydberg and ground states, respectively.
 
 
-    Notes on the indexing: The left-most bit in the configuration corresponds to
-    the first atom in the lattice.
+        Notes on the indexing: The left-most bit in the configuration corresponds to
+        the first atom in the lattice.
 
-    Notes on the algorithm: We start from all possible configurations and get rid of
-    those violating the blockade approximation constraint.
+        Notes on the algorithm: We start from all possible configurations and get rid of
+        those violating the blockade approximation constraint.
 
     """
 
@@ -82,7 +82,7 @@ def _get_interaction_dict(
     Args:
         program (Program): An analog simulation program for Rydberg system with the interaction term
         rydberg_interaction_coef (float): The interaction coefficient
-        configuration (List[str]): The list of configurations that comply with the blockade
+        configurations (List[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
@@ -126,7 +126,7 @@ def _get_detuning_dict(
 
     Args:
         targets (Tuple[int]): The target atoms of the detuning operator
-        configuration (List[str]): The list of configurations that comply with the blockade
+        configurations (List[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
@@ -148,14 +148,14 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
 
     Args:
         targets (Tuple[int]): The target atoms of the detuning operator
-        configuration (List[str]): The list of configurations that comply with the blockade
+        configurations (List[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
         Dict[Tuple[int, int], float]: The dictionary for the Rabi operator
 
-    Notes: We only save the lower triangular part of the matrix that corresponds
-    to the Rabi operator.
+        Notes: We only save the lower triangular part of the matrix that corresponds
+        to the Rabi operator.
     """
 
     rabi = {}  # The Rabi term in the basis of configurations, as a dictionary
@@ -207,7 +207,7 @@ def _get_sparse_from_dict(
     )
 
 
-def get_sparse_ops(
+def _get_sparse_ops(
     program: Program, configurations: List[str], rydberg_interaction_coef: float
 ) -> Tuple[
     List[scipy.sparse.csr_matrix],
@@ -223,6 +223,12 @@ def get_sparse_ops(
         configurations (List[str]): The list of configurations that comply with the blockade
             approximation.
         rydberg_interaction_coef (float): The interaction coefficient
+
+    Returns:
+        Tuple[List[csr_matrix],List[csr_matrix],csr_matrix,List[csr_matrix]]: A tuple containing
+        the list of Rabi operators, the list of detuing operators,
+        the interaction operator and the list of local detuing operators
+
     """
     # Get the driving fields as sparse matrices, whose targets are all the atoms in the system
     targets = np.arange(np.count_nonzero(program.setup.ahs_register.filling))
@@ -283,7 +289,7 @@ def _interpolate_time_series(
         raise ValueError("`method` can only be `piecewise_linear` or `piecewise_constant`.")
 
 
-def get_coefs(
+def _get_coefs(
     program: Program, simulation_times: List[float]
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Returns the coefficients for the Rabi operators, detuning operators and local detuning
@@ -292,6 +298,11 @@ def get_coefs(
     Args:
         program (Program): An analog simulation program for Rydberg system
         simulation_times (List[float]): The list of time points
+
+    Returns:
+        Tuple[ndarray, ndarray, ndarray]: A tuple containing
+        the list of Rabi frequencies, the list of global detuings and
+        the list of local detunings
     """
     rabi_coefs, detuning_coefs = [], []
 
@@ -373,12 +384,19 @@ def get_ops_coefs(
             blockade approximation.
         rydberg_interaction_coef (float): The interaction coefficient
         simulation_times (List[float]): The list of time points
+
+    Returns:
+        Tuple[List[csr_matrix],List[csr_matrix],List[csr_matrix],ndarray,ndarray,ndarray,csr_matrix]: A tuple
+        containing the list of Rabi operators, the list of detuing operators, the list
+        of local detuing operators, the list of Rabi frequencies, the list of global
+        detuings, the list of local detunings and the interaction operator.
+
     """
 
-    rabi_ops, detuning_ops, interaction_op, local_detuning_ops = get_sparse_ops(
+    rabi_ops, detuning_ops, interaction_op, local_detuning_ops = _get_sparse_ops(
         program, configurations, rydberg_interaction_coef
     )
-    rabi_coefs, detuning_coefs, local_detuing_coefs = get_coefs(program, simulation_times)
+    rabi_coefs, detuning_coefs, local_detuing_coefs = _get_coefs(program, simulation_times)
 
     return (
         rabi_ops,
@@ -398,7 +416,7 @@ def sample_state(state: np.ndarray, shots: int) -> np.ndarray:
         shots (int): The number of samples
 
     Returns:
-       np.ndarray: The array for the sample results
+        np.ndarray: The array for the sample results
     """
 
     weights = (np.abs(state) ** 2).flatten()

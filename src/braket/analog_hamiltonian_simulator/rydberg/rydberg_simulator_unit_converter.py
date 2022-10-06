@@ -1,7 +1,9 @@
-from braket.ir.ahs.program_v1 import Program
-from braket.ir.ahs.physical_field import PhysicalField
-from braket.analog_hamiltonian_simulator.rydberg.constants import FIELD_UNIT, SPACE_UNIT, TIME_UNIT
 from typing import Dict
+
+from braket.ir.ahs.physical_field import PhysicalField
+from braket.ir.ahs.program_v1 import Program
+
+from braket.analog_hamiltonian_simulator.rydberg.constants import FIELD_UNIT, SPACE_UNIT, TIME_UNIT
 
 
 def convert_unit(program: Program) -> Program:
@@ -9,11 +11,11 @@ def convert_unit(program: Program) -> Program:
     For a given program, convert the SI units to units that are more
     suitable for local simulator
 
-    Args: 
+    Args:
         program (Program): An analog simulation program for Rydberg system
 
     Returns:
-        (Program): The program with units converted for simulation
+        Program: The program with units converted for simulation
     """
 
     setup = program.setup
@@ -51,7 +53,7 @@ def convert_unit(program: Program) -> Program:
     return new_program
 
 
-def convert_unit_for_field(field: PhysicalField, convertvalues: bool=True) -> Dict:
+def convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> Dict:
     """
     For a given field, convert the unit of time from second to microsecond,
     and convert the unit of values from Hz to MHz if `convertvalues`=True
@@ -59,7 +61,10 @@ def convert_unit_for_field(field: PhysicalField, convertvalues: bool=True) -> Di
     Args:
         field (PhysicalField): The physical field for converting unit
         convertvalues (bool): If true then convert the unit of values from Hz to MHz,
-        otherwise convert the unit of time from second to microsecond. Default: True.
+            otherwise convert the unit of time from second to microsecond. Default: True.
+
+    Returns:
+        Dict: The field with units converted
 
     """
     times = [float(time) / TIME_UNIT for time in field.time_series.times]

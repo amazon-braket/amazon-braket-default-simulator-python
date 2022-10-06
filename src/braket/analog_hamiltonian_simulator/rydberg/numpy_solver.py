@@ -1,6 +1,8 @@
 import time
 from typing import List
+
 import numpy as np
+import scipy.sparse
 from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import get_ops_coefs
@@ -12,7 +14,7 @@ def rk_run(
     simulation_times: List[float],
     rydberg_interaction_coef: float,
     progress_bar: bool = False,
-) -> List[np.ndarray]:
+) -> np.ndarray:
     """
     Implement the implicit Runge-Kutta method of order 6 for solving the schrodinger equation
 
@@ -27,12 +29,12 @@ def rk_run(
             Default: False
 
     Returns:
-        states (List(np.ndarray)): The List of all the intermediate states in the simulation.
+        np.ndarray: The List of all the intermediate states in the simulation.
 
 
-    Notes on the algorithm:
-    For more details, please refer to this link
-    https://en.wikipedia.org/wiki/Gauss-Legendre_method
+        Notes on the algorithm:
+        For more details, please refer to this link
+        https://en.wikipedia.org/wiki/Gauss-Legendre_method
 
     """
 
@@ -46,7 +48,7 @@ def rk_run(
         interaction_op,
     ) = get_ops_coefs(hamiltonian, configurations, rydberg_interaction_coef, simulation_times)
 
-    def _get_hamiltonian(index_time: int):
+    def _get_hamiltonian(index_time: int) -> scipy.sparse.csr_matrix:
         """Get the Hamiltonian matrix for the time point with index `index_time`"""
         index_time = int(index_time)
         hamiltonian = interaction_op

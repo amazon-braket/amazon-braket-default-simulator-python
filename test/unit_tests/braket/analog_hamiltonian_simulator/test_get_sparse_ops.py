@@ -5,7 +5,7 @@ from braket.ir.ahs.program_v1 import Program
 from braket.analog_hamiltonian_simulator.rydberg.constants import RYDBERG_INTERACTION_COEF
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
     _get_sparse_from_dict,
-    get_sparse_ops,
+    _get_sparse_ops,
 )
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
     convert_unit,
@@ -73,7 +73,7 @@ def test_get_sparse_from_dict_2():
 @pytest.mark.parametrize("para", [[program1, rydberg_interaction_coef, configurations_1]])
 def test_get_sparse_ops(para):
     program1, rydberg_interaction_coef, configurations_1 = para[0], para[1], para[2]
-    rabi_ops, detuning_ops, interaction_op, local_detuning_ops = get_sparse_ops(
+    rabi_ops, detuning_ops, interaction_op, local_detuning_ops = _get_sparse_ops(
         program1, configurations_1, rydberg_interaction_coef
     )
 
