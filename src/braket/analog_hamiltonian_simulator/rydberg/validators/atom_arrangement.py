@@ -1,4 +1,5 @@
 import warnings
+from typing import Dict
 
 from braket.ir.ahs.atom_arrangement import AtomArrangement
 from pydantic.class_validators import root_validator
@@ -6,8 +7,6 @@ from pydantic.class_validators import root_validator
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
 )
-
-from typing import Dict
 
 
 class AtomArrangementValidator(AtomArrangement):

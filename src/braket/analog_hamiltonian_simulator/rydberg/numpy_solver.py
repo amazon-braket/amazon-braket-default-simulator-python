@@ -21,15 +21,15 @@ def rk_run(
 
     Args:
         hamiltonian (Program): An analog simulation hamiltonian for Rydberg system
-        configurations (List[str]): The List of configurations that comply with the
+        configurations (List[str]): The list of configurations that comply with the
             blockade approximation.
-        simulation_times (List[float]): The List of time points
+        simulation_times (List[float]): The list of time points
         rydberg_interaction_coef (float): The interaction coefficient
         progress_bar (bool): If true, a progress bar will be printed during the simulation.
             Default: False
 
     Returns:
-        np.ndarray: The List of all the intermediate states in the simulation.
+        np.ndarray: The list of all the intermediate states in the simulation.
 
 
         Notes on the algorithm:
