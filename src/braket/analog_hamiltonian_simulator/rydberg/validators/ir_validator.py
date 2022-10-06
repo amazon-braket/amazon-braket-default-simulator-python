@@ -20,7 +20,15 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.shifting_field impor
 from braket.analog_hamiltonian_simulator.rydberg.validators.times_series import TimeSeriesValidator
 
 
-def validate_program(program: Program, device_capabilities: CapabilitiesConstants):
+def validate_program(program: Program, device_capabilities: CapabilitiesConstants) -> None:
+    """
+    Validate the analog Hamiltonian simulation program has only one driving and shifting field,
+    and all the sequences have the same last time point.
+
+    Args:
+        program (Program): An analog Hamiltonian simulation program
+        device_capabilities (CapabilitiesConstants): The capability constants for the simulator
+    """
 
     ProgramValidator(capabilities=device_capabilities, **program.dict())
     AtomArrangementValidator(capabilities=device_capabilities, **program.setup.ahs_register.dict())
