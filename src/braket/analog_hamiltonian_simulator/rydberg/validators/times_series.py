@@ -37,7 +37,7 @@ class TimeSeriesValidator(TimeSeries):
         capabilities = values["capabilities"]
         if times[-1] > capabilities.MAX_TIME:
             warnings.warn(
-                f"Max time is {times[-1]} which is bigger than the typical scale "
+                f"Max time is {times[-1]} seconds which is bigger than the typical scale "
                 f"({capabilities.MAX_TIME} seconds). "
                 "The time points should  be specified in SI units."
             )
