@@ -181,8 +181,9 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
                     continue
 
                 # Only keep the lower triangular part of the Rabi operator
-                if (config_1[index_diff], config_2[index_diff]) == ("g", "r"):
-                    rabi[(ind_2, ind_1)] = 1
+                # In particular, we only add the following component if and only if
+                # (config_1[index_diff], config_2[index_diff]) == ("g", "r")
+                rabi[(ind_2, ind_1)] = 1
     return rabi
 
 
@@ -224,7 +225,7 @@ def get_sparse_ops(
         rydberg_interaction_coef (float): The interaction coefficient
     """
     # Get the driving fields as sparse matrices, whose targets are all the atoms in the system
-    targets = tuple(range(sum(program.setup.ahs_register.filling)))
+    targets = np.arange(np.count_nonzero(program.setup.ahs_register.filling))
     rabi_dict = _get_rabi_dict(targets, configurations)
     detuning_dict = _get_detuning_dict(targets, configurations)
 
@@ -278,6 +279,8 @@ def _interpolate_time_series(
     elif method == "piecewise_constant":
         index = np.searchsorted(times, t, side="right") - 1
         return values[index]
+    else:
+        raise ValueError("`method` can only be `piecewise_linear` or `piecewise_constant`.")
 
 
 def get_coefs(

@@ -17,32 +17,31 @@ rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
 eps = 1e-3
 
-amplitude1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
+amplitude_1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
-
-detuning1 = {
+detuning_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
 }
 
-phase1 = {
+phase_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
-shift1 = {
+shift_1 = {
     "pattern": [0.5, 1.0],
     "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
 }
 
-setup1 = {"ahs_register": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
+setup_1 = {"ahs_register": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
 
-program1 = convert_unit(
+program_1 = convert_unit(
     Program(
-        setup=setup1,
+        setup=setup_1,
         hamiltonian={
-            "drivingFields": [{"amplitude": amplitude1, "phase": phase1, "detuning": detuning1}],
-            "shiftingFields": [{"magnitude": shift1}],
+            "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
+            "shiftingFields": [{"magnitude": shift_1}],
         },
     )
 )
@@ -55,12 +54,16 @@ configurations1 = ["gg", "gr", "rg", "rr"]
     [
         [
             [1e-6, 2e-6, 3e-6],
-            amplitude1["time_series"]["times"],
-            amplitude1["time_series"]["values"],
+            amplitude_1["time_series"]["times"],
+            amplitude_1["time_series"]["values"],
         ],
-        [[1e-6, 2e-6, 3e-6], detuning1["time_series"]["times"], detuning1["time_series"]["values"]],
-        [[1e-6, 2e-6, 3e-6], phase1["time_series"]["times"], phase1["time_series"]["values"]],
-        [[1e-6, 2e-6, 3e-6], shift1["time_series"]["times"], shift1["time_series"]["values"]],
+        [
+            [1e-6, 2e-6, 3e-6],
+            detuning_1["time_series"]["times"],
+            detuning_1["time_series"]["values"],
+        ],
+        [[1e-6, 2e-6, 3e-6], phase_1["time_series"]["times"], phase_1["time_series"]["values"]],
+        [[1e-6, 2e-6, 3e-6], shift_1["time_series"]["times"], shift_1["time_series"]["values"]],
     ],
 )
 def test_get_func(para):
@@ -79,10 +82,22 @@ def test_get_func(para):
         )
 
     # print(trueval)
-    assert all([item1 == item2 for item1, item2 in zip(vals, trueval)])
+    assert all([item_1 == item_2 for item_1, item_2 in zip(vals, trueval)])
 
 
-@pytest.mark.parametrize("para", [[[1, 2, 3], program1]])
+@pytest.mark.parametrize(
+    "method, error_message",
+    [
+        ("square_wave", "`method` can only be `piecewise_linear` or `piecewise_constant`."),
+    ],
+)
+def test_interpolate_time_series_error_message(method, error_message):
+    with pytest.raises(ValueError) as e:
+        _interpolate_time_series(0, [0, 1], [0, 1], method)
+    assert error_message in str(e.value)
+
+
+@pytest.mark.parametrize("para", [[[1, 2, 3], program_1]])
 def test_get_coefs(para):
     ts, program = para[0], para[1]
     rabi_coefs, detuning_coefs, local_detuing_coefs = get_coefs(program, ts)
@@ -135,17 +150,17 @@ def test_get_coefs(para):
     assert len(local_detuing_coefs) == 1
 
     assert all(
-        [np.abs(item1 - item2) < eps for item1, item2 in zip(rabi_coefs[0], true_rabi_coefs)]
+        [np.abs(item_1 - item_2) < eps for item_1, item_2 in zip(rabi_coefs[0], true_rabi_coefs)]
     )
     assert all(
         [
-            np.abs(item1 - item2) < eps
-            for item1, item2 in zip(detuning_coefs[0], true_detuning_coefs)
+            np.abs(item_1 - item_2) < eps
+            for item_1, item_2 in zip(detuning_coefs[0], true_detuning_coefs)
         ]
     )
     assert all(
         [
-            np.abs(item1 - item2) < eps
-            for item1, item2 in zip(local_detuing_coefs[0], true_local_detuing_coefs)
+            np.abs(item_1 - item_2) < eps
+            for item_1, item_2 in zip(local_detuing_coefs[0], true_local_detuing_coefs)
         ]
     )

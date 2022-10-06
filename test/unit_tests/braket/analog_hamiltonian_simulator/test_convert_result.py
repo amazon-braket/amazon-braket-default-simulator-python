@@ -13,7 +13,7 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_result_conver
     convert_result,
 )
 
-configurations1 = ["gg", "gr", "rg", "rr"]
+configurations_1 = ["gg", "gr", "rg", "rr"]
 
 shots = 10000000
 
@@ -46,7 +46,7 @@ def test_sample_state(para):
 
 
 @pytest.mark.parametrize(
-    "para", [[mock_dist, mock_preSequence, configurations1, mock_taskMetadata]]
+    "para", [[mock_dist, mock_preSequence, configurations_1, mock_taskMetadata]]
 )
 def test_convert_result(para):
     dist, preSequence, configurations, taskMetadata = para[0], para[1], para[2], para[3]
