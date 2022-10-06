@@ -27,7 +27,7 @@ def scipy_integrate_ode_run(
 
     Args:
         hamiltonian (Program): An analog Hamiltonian for the Rydberg system to be simulated
-        configuraitons (list[str]): The list of configurations that comply with the
+        configurations (list[str]): The list of configurations that comply with the
             blockade approximation.
         simulation_times (list[float]): The list of time points
         rydberg_interaction_coef (float): The interaction coefficient
@@ -59,7 +59,7 @@ def scipy_integrate_ode_run(
         interaction_op,
     ) = get_ops_coefs(hamiltonian, configurations, rydberg_interaction_coef, simulation_times)
 
-    def _get_hamiltonian(index_time):
+    def _get_hamiltonian(index_time: int):
         """Get the Hamiltonian matrix for the time point with index `index_time`"""
         index_time = int(index_time)
         hamiltonian = interaction_op
@@ -95,7 +95,7 @@ def scipy_integrate_ode_run(
     # Define the function to be integrated, e.g. dy/dt = f(t, y).
     # Note that we we will use the index of the time point,
     # instead of time, for f(t, y).
-    def f(index_time, y):
+    def f(index_time: int, y: np.ndarray):
         return -1j * dt * _get_hamiltonian(index_time).dot(y)
 
     integrator = scipy.integrate.ode(f)
