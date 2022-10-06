@@ -29,7 +29,7 @@ def rk_run(
             Default: False
 
     Returns:
-        np.ndarray: The list of all the intermediate states in the simulation.
+        ndarray: The list of all the intermediate states in the simulation.
 
 
         Notes on the algorithm:

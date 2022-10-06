@@ -12,7 +12,7 @@ def validate_config(config: str, atoms_coordinates: np.ndarray, blockade_radius:
 
     Args:
         config (str): The configuration to be validated
-        atoms_coordinates (np.ndarray): The coordinates for atoms in the filled sites
+        atoms_coordinates (ndarray): The coordinates for atoms in the filled sites
         blockade_radius (float): The Rydberg blockade radius
 
     Returns:
@@ -412,11 +412,11 @@ def get_ops_coefs(
 def sample_state(state: np.ndarray, shots: int) -> np.ndarray:
     """Sample measurement outcomes from the quantum state `stat`
     Args:
-        state (np.ndarray): A state vector
+        state (ndarray): A state vector
         shots (int): The number of samples
 
     Returns:
-        np.ndarray: The array for the sample results
+        ndarray: The array for the sample results
     """
 
     weights = (np.abs(state) ** 2).flatten()

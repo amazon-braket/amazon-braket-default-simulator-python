@@ -48,7 +48,7 @@ def scipy_integrate_ode_run(
         min_step (int): Default: 0
 
     Returns:
-        np.ndarray: The list of all the intermediate states in the simulation.
+        ndarray: The list of all the intermediate states in the simulation.
     """
 
     (
