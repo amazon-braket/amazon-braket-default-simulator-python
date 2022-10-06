@@ -4,8 +4,8 @@ from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import FIELD_UNIT, SPACE_UNIT, TIME_UNIT
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
+    _convert_unit_for_field,
     convert_unit,
-    convert_unit_for_field,
 )
 
 amplitude_1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
@@ -38,8 +38,8 @@ program_1 = Program(
 
 
 @pytest.mark.parametrize("field", [amplitude_1, detuning_1, shift_1])
-def test_convert_unit_for_field_amp_det(field):
-    newfield = PhysicalField(**convert_unit_for_field(PhysicalField(**field), True))
+def test__convert_unit_for_field_amp_det(field):
+    newfield = PhysicalField(**_convert_unit_for_field(PhysicalField(**field), True))
     truth = PhysicalField(
         **{
             "pattern": field["pattern"],
@@ -53,8 +53,8 @@ def test_convert_unit_for_field_amp_det(field):
 
 
 @pytest.mark.parametrize("field", [phase_1])
-def test_convert_unit_for_field_phase(field):
-    newfield = PhysicalField(**convert_unit_for_field(PhysicalField(**field), False))
+def test__convert_unit_for_field_phase(field):
+    newfield = PhysicalField(**_convert_unit_for_field(PhysicalField(**field), False))
     truth = PhysicalField(
         **{
             "pattern": field["pattern"],

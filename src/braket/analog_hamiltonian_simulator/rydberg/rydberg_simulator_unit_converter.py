@@ -15,7 +15,7 @@ def convert_unit(program: Program) -> Program:
         program (Program): An analog simulation program for Rydberg system
 
     Returns:
-        Program: The program with units converted for simulation
+        Program: A new Program object with units converted for simulation
     """
 
     setup = program.setup
@@ -29,9 +29,9 @@ def convert_unit(program: Program) -> Program:
 
     new_driving_fields, new_shifting_fields = [], []
     for driving_field in driving_fields:
-        new_amplitude = convert_unit_for_field(driving_field.amplitude)
-        new_phase = convert_unit_for_field(driving_field.phase, False)
-        new_detuning = convert_unit_for_field(driving_field.detuning)
+        new_amplitude = _convert_unit_for_field(driving_field.amplitude)
+        new_phase = _convert_unit_for_field(driving_field.phase, False)
+        new_detuning = _convert_unit_for_field(driving_field.detuning)
         new_driving_field = {
             "amplitude": new_amplitude,
             "phase": new_phase,
@@ -40,7 +40,7 @@ def convert_unit(program: Program) -> Program:
         new_driving_fields.append(new_driving_field)
 
     for shifting_field in shifting_fields:
-        new_magnitude = convert_unit_for_field(shifting_field.magnitude)
+        new_magnitude = _convert_unit_for_field(shifting_field.magnitude)
         new_shifting_field = {"magnitude": new_magnitude}
         new_shifting_fields.append(new_shifting_field)
 
@@ -53,7 +53,7 @@ def convert_unit(program: Program) -> Program:
     return new_program
 
 
-def convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> Dict:
+def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> Dict:
     """
     For a given field, convert the unit of time from second to microsecond,
     and convert the unit of values from Hz to MHz if `convertvalues`=True
