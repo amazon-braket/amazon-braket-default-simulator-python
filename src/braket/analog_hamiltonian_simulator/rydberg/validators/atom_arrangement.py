@@ -7,13 +7,25 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
     CapabilitiesConstants,
 )
 
+from typing import Dict
+
 
 class AtomArrangementValidator(AtomArrangement):
     capabilities: CapabilitiesConstants
 
     # Each site has two coordinates (minItems=maxItems=2)
     @root_validator(pre=True, skip_on_failure=True)
-    def sites_have_length_2(cls, values):
+    def sites_have_length_2(cls, values: Dict) -> Dict:
+        """
+        Validate that the sites in the atom arrangement have only two coordinates
+
+        Args:
+            values (Dict): The site and capability constants
+
+        Returns:
+            Dict: The validated sites
+
+        """
         sites = values["sites"]
         capabilities = values["capabilities"]
         for index, site in enumerate(sites):
