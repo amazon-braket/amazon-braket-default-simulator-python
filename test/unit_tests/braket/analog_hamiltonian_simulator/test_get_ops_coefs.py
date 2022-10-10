@@ -15,40 +15,41 @@ rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
 eps = 1e-3
 
-amplitude1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
+amplitude_1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
 
-
-detuning1 = {
+detuning_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 4e-6], "values": [-10e6, 25e6, 0]},
 }
 
-phase1 = {
+phase_1 = {
     "pattern": "uniform",
     "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [10, 20, -30, 40]},
 }
 
-shift1 = {
+shift_1 = {
     "pattern": [0.5, 1.0],
     "time_series": {"times": [0, 2e-6, 3e-6, 4e-6], "values": [1e7, 2e7, -3e7, 4e7]},
 }
 
 setup1 = {"ahs_register": {"sites": [[0, 0], [0, 3e-6]], "filling": [1, 1]}}
 
-program1 = convert_unit(
+program_1 = convert_unit(
     Program(
         setup=setup1,
         hamiltonian={
-            "drivingFields": [{"amplitude": amplitude1, "phase": phase1, "detuning": detuning1}],
-            "shiftingFields": [{"magnitude": shift1}],
+            "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
+            "shiftingFields": [{"magnitude": shift_1}],
         },
     )
 )
 
-configurations1 = ["gg", "gr", "rg", "rr"]
+configurations_1 = ["gg", "gr", "rg", "rr"]
 
 
-@pytest.mark.parametrize("para", [[program1, configurations1, rydberg_interaction_coef, [1, 2, 3]]])
+@pytest.mark.parametrize(
+    "para", [[program_1, configurations_1, rydberg_interaction_coef, [1, 2, 3]]]
+)
 def test_get_ops_coefs(para):
     program, configurations, rydberg_interaction_coef, ts = para[0], para[1], para[2], para[3]
     (
@@ -142,17 +143,17 @@ def test_get_ops_coefs(para):
     assert len(local_detuing_coefs) == 1
 
     assert all(
-        [np.abs(item1 - item2) < eps for item1, item2 in zip(rabi_coefs[0], true_rabi_coefs)]
+        [np.abs(item_1 - item_2) < eps for item_1, item_2 in zip(rabi_coefs[0], true_rabi_coefs)]
     )
     assert all(
         [
-            np.abs(item1 - item2) < eps
-            for item1, item2 in zip(detuning_coefs[0], true_detuning_coefs)
+            np.abs(item_1 - item_2) < eps
+            for item_1, item_2 in zip(detuning_coefs[0], true_detuning_coefs)
         ]
     )
     assert all(
         [
-            np.abs(item1 - item2) < eps
-            for item1, item2 in zip(local_detuing_coefs[0], true_local_detuing_coefs)
+            np.abs(item_1 - item_2) < eps
+            for item_1, item_2 in zip(local_detuing_coefs[0], true_local_detuing_coefs)
         ]
     )

@@ -19,9 +19,9 @@ def convert_result(
     """Convert a given sampled distribution to the analog simulation result schema
 
     Args:
-        dist (np.ndarray): The sample results to convert
+        dist (ndarray): The sample results to convert
         pre_sequence (List[int]): the same pre-sequence measurement results used for all shots
-        configuraiton (List[str]): The list of configurations that comply with the blockade
+        configurations (List[str]): The list of configurations that comply with the blockade
             approximation.
         task_Metadata (TaskMetadata): The metadata for the task
 

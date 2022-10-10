@@ -3,7 +3,7 @@ import warnings
 from braket.analog_hamiltonian_simulator.rydberg.constants import MIN_BLOCKADE_RADIUS
 
 
-def validate_blockade_radius(blockade_radius: float):
+def validate_blockade_radius(blockade_radius: float) -> float:
     """Validate the Blockade radius
 
     Args:

@@ -57,6 +57,11 @@ setup(
                 "braket.default_simulator.openqasm_density_matrix_simulator:"
                 "OpenQASMDensityMatrixSimulator"
             ),
+            (
+                "braket_ahs = "
+                "braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator:"
+                "RydbergAtomSimulator",
+            ),
         ]
     },
     extras_require={

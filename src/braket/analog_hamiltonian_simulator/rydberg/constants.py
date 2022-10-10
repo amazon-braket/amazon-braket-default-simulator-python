@@ -32,7 +32,7 @@ MAGNITUDE_PATTERN_VALUE_MIN = 0.0
 MAGNITUDE_PATTERN_VALUE_MAX = 1.0
 
 
-def capabilities_constants():
+def capabilities_constants() -> CapabilitiesConstants:
     return CapabilitiesConstants(
         BOUNDING_BOX_SIZE_X=BOUNDING_BOX_SIZE_X,
         BOUNDING_BOX_SIZE_Y=BOUNDING_BOX_SIZE_Y,
