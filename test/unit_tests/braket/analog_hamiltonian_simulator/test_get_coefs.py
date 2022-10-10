@@ -81,7 +81,6 @@ def test_get_func(para):
             + (values[ind + 1] - values[ind]) / (times[ind + 1] - times[ind]) * (t - times[ind])
         )
 
-    # print(trueval)
     assert all([item_1 == item_2 for item_1, item_2 in zip(vals, trueval)])
 
 

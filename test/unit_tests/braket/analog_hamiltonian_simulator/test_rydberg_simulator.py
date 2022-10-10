@@ -18,9 +18,9 @@ pi = np.pi
 
 a = 3
 rabi_frequency = 12 * pi
-rabi_phase = 0.0  # 16.45
+rabi_phase = 0.0
 detuning_1 = 20 * pi
-detuning_2 = 0.0  # 10*pi
+detuning_2 = 0.0
 duration = 4
 rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
