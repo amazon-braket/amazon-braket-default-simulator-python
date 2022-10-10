@@ -386,9 +386,16 @@ def get_ops_coefs(
         simulation_times (List[float]): The list of time points
 
     Returns:
-        Tuple[List[csr_matrix],List[csr_matrix],List[csr_matrix],ndarray,ndarray,ndarray,csr_matrix]: A tuple
-        containing the list of Rabi operators, the list of detuing operators, the list
-        of local detuing operators, the list of Rabi frequencies, the list of global
+        Tuple[
+            List[csr_matrix],
+            List[csr_matrix],
+            List[csr_matrix],
+            ndarray,
+            ndarray,
+            ndarray,
+            csr_matrix
+        ]: A tuple containing the list of Rabi operators, the list of detuing operators,
+        the list of local detuing operators, the list of Rabi frequencies, the list of global
         detuings, the list of local detunings and the interaction operator.
 
     """
