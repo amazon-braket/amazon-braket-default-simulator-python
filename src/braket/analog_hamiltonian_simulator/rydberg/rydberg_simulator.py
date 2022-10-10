@@ -199,9 +199,6 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         """
         Initialize Rydberg Hamiltonian simulation.
 
-        Args:
-            **kwargs: TBD
-
         Returns:
             Simulation: Initialized simulation.
         """
