@@ -1,4 +1,5 @@
 import warnings
+from typing import Dict
 
 from braket.ir.ahs.atom_arrangement import AtomArrangement
 from pydantic.class_validators import root_validator
@@ -13,7 +14,17 @@ class AtomArrangementValidator(AtomArrangement):
 
     # Each site has two coordinates (minItems=maxItems=2)
     @root_validator(pre=True, skip_on_failure=True)
-    def sites_have_length_2(cls, values):
+    def sites_have_length_2(cls, values: Dict) -> Dict:
+        """
+        Validate that the sites in the atom arrangement have only two coordinates
+
+        Args:
+            values (Dict): The site and capability constants
+
+        Returns:
+            Dict: The validated sites
+
+        """
         sites = values["sites"]
         capabilities = values["capabilities"]
         for index, site in enumerate(sites):

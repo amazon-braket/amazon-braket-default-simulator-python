@@ -4,8 +4,8 @@ from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import RYDBERG_INTERACTION_COEF
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
+    _get_coefs,
     _interpolate_time_series,
-    get_coefs,
 )
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
     convert_unit,
@@ -100,7 +100,7 @@ def test_interpolate_time_series_error_message(method, error_message):
 @pytest.mark.parametrize("para", [[[1, 2, 3], program_1]])
 def test_get_coefs(para):
     ts, program = para[0], para[1]
-    rabi_coefs, detuning_coefs, local_detuing_coefs = get_coefs(program, ts)
+    rabi_coefs, detuning_coefs, local_detuing_coefs = _get_coefs(program, ts)
 
     amplitude = program.hamiltonian.drivingFields[0].amplitude
     amplitude_times, amplitude_values = amplitude.time_series.times, amplitude.time_series.values

@@ -58,12 +58,12 @@ def test_time_series_times_start_with_0(times, error_message, device_capabilitie
     [
         (
             [0.0, 5.0e-6],
-            "Max time is 5e-06 which is bigger than the typical scale (0.000004 seconds). "
+            "Max time is 5e-06 seconds which is bigger than the typical scale (0.000004 seconds). "
             "The time points should  be specified in SI units.",
         ),
         (
             [0.0, 0.000005],
-            "Max time is 5e-06 which is bigger than the typical scale (0.000004 seconds). "
+            "Max time is 5e-06 seconds which is bigger than the typical scale (0.000004 seconds). "
             "The time points should  be specified in SI units.",
         ),
     ],

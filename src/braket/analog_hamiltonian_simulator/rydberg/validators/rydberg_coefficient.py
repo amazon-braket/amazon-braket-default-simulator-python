@@ -3,7 +3,7 @@ import warnings
 from braket.analog_hamiltonian_simulator.rydberg.constants import RYDBERG_INTERACTION_COEF
 
 
-def validate_rydberg_interaction_coef(rydberg_interaction_coef: float):
+def validate_rydberg_interaction_coef(rydberg_interaction_coef: float) -> float:
     """Validate the Rydberg interaction coefficient
 
     Args:
