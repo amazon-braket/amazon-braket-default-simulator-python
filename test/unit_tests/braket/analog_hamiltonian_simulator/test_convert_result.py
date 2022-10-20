@@ -84,7 +84,7 @@ def test_convert_result(dist, preSequence, configurations, taskMetadata):
         ([0, 0, 1, 0], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 1, 0]),
         ([0, 0, 0, 1], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0]),
         
-        ([1, 0, 0, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0, 0]),
+        ([1, 0, 0, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0, 1]),
         ([0, 1, 0, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0, 0]),
         ([0, 0, 1, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0, 1]),
         ([0, 0, 0, 1], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0, 0]),

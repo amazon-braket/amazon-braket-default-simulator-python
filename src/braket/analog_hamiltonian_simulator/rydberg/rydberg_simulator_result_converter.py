@@ -30,9 +30,16 @@ def convert_result(
     """
     measurements = []
 
-    for key, val in zip(configurations, dist):
-        post_sequence = list(key)
-        post_sequence = [0 if item == "r" else 1 for item in post_sequence]
+    pre_sequence_arr = np.array(pre_sequence)
+    non_empty_sites = np.where(pre_sequence_arr == 1)[0]
+
+    for configuration, count in zip(configurations, dist):
+        post_sequence = [0] * len(pre_sequence)
+        for site, state in zip(non_empty_sites, list(configuration)):
+            if state == "g":
+                post_sequence[site] = 1
+            elif state == "r":
+                post_sequence[site] = 0
 
         shot_measurement = AnalogHamiltonianSimulationShotMeasurement(
             shotMetadata=AnalogHamiltonianSimulationShotMetadata(shotStatus="Success"),
@@ -40,7 +47,7 @@ def convert_result(
                 preSequence=pre_sequence, postSequence=post_sequence
             ),
         )
-        measurements += [shot_measurement for _ in range(val)]
+        measurements += [shot_measurement for _ in range(count)]
 
     return AnalogHamiltonianSimulationTaskResult(
         taskMetadata=task_Metadata, measurements=measurements
