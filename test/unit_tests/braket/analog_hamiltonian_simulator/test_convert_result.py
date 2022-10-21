@@ -46,9 +46,10 @@ def test_sample_state(para):
 
 
 @pytest.mark.parametrize(
-    "dist, preSequence, configurations, taskMetadata", [
+    "dist, preSequence, configurations, taskMetadata",
+    [
         (mock_dist, mock_preSequence, configurations_1, mock_taskMetadata),
-    ]
+    ],
 )
 def test_convert_result(dist, preSequence, configurations, taskMetadata):
     result = convert_result(dist, preSequence, configurations, taskMetadata)
@@ -77,23 +78,25 @@ def test_convert_result(dist, preSequence, configurations, taskMetadata):
 
     assert pytest.approx(result) == pytest.approx(trueresult)
 
+
 @pytest.mark.parametrize(
-    "dist, preSequence, configurations, taskMetadata, expected_postSequence", [
+    "dist, preSequence, configurations, taskMetadata, expected_postSequence",
+    [
         ([1, 0, 0, 0], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 1, 0]),
         ([0, 1, 0, 0], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0]),
         ([0, 0, 1, 0], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 1, 0]),
         ([0, 0, 0, 1], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0]),
-        
         ([1, 0, 0, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0, 1]),
         ([0, 1, 0, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0, 0]),
         ([0, 0, 1, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0, 1]),
         ([0, 0, 0, 1], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0, 0]),
-
         ([1, 0], [0, 0, 0, 1], ["g", "r"], mock_taskMetadata, [0, 0, 0, 1]),
         ([0, 1], [0, 0, 0, 1], ["g", "r"], mock_taskMetadata, [0, 0, 0, 0]),
-    ]
+    ],
 )
-def test_convert_result_with_empty_sites(dist, preSequence, configurations, taskMetadata, expected_postSequence):
+def test_convert_result_with_empty_sites(
+    dist, preSequence, configurations, taskMetadata, expected_postSequence
+):
     result = convert_result(dist, preSequence, configurations, taskMetadata)
     postSequence = result.measurements[0].shotResult.postSequence
-    assert result.measurements[0].shotResult.postSequence == expected_postSequence
+    assert postSequence == expected_postSequence
