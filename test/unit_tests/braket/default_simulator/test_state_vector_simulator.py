@@ -135,9 +135,12 @@ def test_properties():
                         "cy",
                         "cz",
                         "ecr",
+                        "gpi",
+                        "gpi2",
                         "h",
                         "i",
                         "iswap",
+                        "ms",
                         "pswap",
                         "phaseshift",
                         "rx",
@@ -1127,6 +1130,20 @@ def test_basis_rotation(caplog):
     assert np.sum(measurements, axis=0)[1] == 0
     assert 400 < np.sum(measurements, axis=0)[2] < 600
     assert not caplog.text
+
+
+def test_basis_rotation_all(caplog):
+    qasm = """
+    qubit q;
+    qubit[2] qs;
+    h q;
+    h qs;
+    #pragma braket result variance x all
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert np.array_equal(measurements, np.zeros([1000, 3]))
 
 
 @pytest.mark.parametrize(

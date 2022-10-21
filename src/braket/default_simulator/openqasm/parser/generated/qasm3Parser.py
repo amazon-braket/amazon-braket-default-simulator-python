@@ -1,4 +1,4 @@
-# Generated from qasm3Parser.g4 by ANTLR 4.9
+# Generated from qasm3Parser.g4 by ANTLR 4.9.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -629,7 +629,7 @@ class qasm3Parser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.9")
+        self.checkVersion("4.9.2")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -637,6 +637,7 @@ class qasm3Parser ( Parser ):
 
 
     class ProgramContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -713,6 +714,7 @@ class qasm3Parser ( Parser ):
 
 
     class VersionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -769,6 +771,7 @@ class qasm3Parser ( Parser ):
 
 
     class StatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1092,6 +1095,7 @@ class qasm3Parser ( Parser ):
 
 
     class AnnotationContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1150,6 +1154,7 @@ class qasm3Parser ( Parser ):
 
 
     class ScopeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1219,6 +1224,7 @@ class qasm3Parser ( Parser ):
 
 
     class PragmaContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1270,6 +1276,7 @@ class qasm3Parser ( Parser ):
 
 
     class StatementOrScopeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1334,6 +1341,7 @@ class qasm3Parser ( Parser ):
 
 
     class CalibrationGrammarStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1390,6 +1398,7 @@ class qasm3Parser ( Parser ):
 
 
     class IncludeStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1446,6 +1455,7 @@ class qasm3Parser ( Parser ):
 
 
     class BreakStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1497,6 +1507,7 @@ class qasm3Parser ( Parser ):
 
 
     class ContinueStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1548,6 +1559,7 @@ class qasm3Parser ( Parser ):
 
 
     class EndStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1599,6 +1611,7 @@ class qasm3Parser ( Parser ):
 
 
     class ForStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1707,6 +1720,7 @@ class qasm3Parser ( Parser ):
 
 
     class IfStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1793,6 +1807,7 @@ class qasm3Parser ( Parser ):
 
 
     class ReturnStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1867,6 +1882,7 @@ class qasm3Parser ( Parser ):
 
 
     class WhileStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1936,6 +1952,7 @@ class qasm3Parser ( Parser ):
 
 
     class BarrierStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2000,6 +2017,7 @@ class qasm3Parser ( Parser ):
 
 
     class BoxStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2065,6 +2083,7 @@ class qasm3Parser ( Parser ):
 
 
     class DelayStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2135,6 +2154,7 @@ class qasm3Parser ( Parser ):
 
 
     class GateCallStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2312,6 +2332,7 @@ class qasm3Parser ( Parser ):
 
 
     class MeasureArrowAssignmentStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2382,6 +2403,7 @@ class qasm3Parser ( Parser ):
 
 
     class ResetStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2439,6 +2461,7 @@ class qasm3Parser ( Parser ):
 
 
     class AliasDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2506,6 +2529,7 @@ class qasm3Parser ( Parser ):
 
 
     class ClassicalDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2597,6 +2621,7 @@ class qasm3Parser ( Parser ):
 
 
     class ConstDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2670,6 +2695,7 @@ class qasm3Parser ( Parser ):
 
 
     class IoDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2757,6 +2783,7 @@ class qasm3Parser ( Parser ):
 
 
     class OldStyleDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2834,6 +2861,7 @@ class qasm3Parser ( Parser ):
 
 
     class QuantumDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2891,6 +2919,7 @@ class qasm3Parser ( Parser ):
 
 
     class DefStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2983,6 +3012,7 @@ class qasm3Parser ( Parser ):
 
 
     class ExternStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3074,6 +3104,7 @@ class qasm3Parser ( Parser ):
 
 
     class GateStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3167,6 +3198,7 @@ class qasm3Parser ( Parser ):
 
 
     class AssignmentStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3257,6 +3289,7 @@ class qasm3Parser ( Parser ):
 
 
     class ExpressionStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3309,6 +3342,7 @@ class qasm3Parser ( Parser ):
 
 
     class DefcalStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3428,6 +3462,7 @@ class qasm3Parser ( Parser ):
 
 
     class ExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4329,6 +4364,7 @@ class qasm3Parser ( Parser ):
 
 
     class AliasExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4398,6 +4434,7 @@ class qasm3Parser ( Parser ):
 
 
     class DeclarationExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4471,6 +4508,7 @@ class qasm3Parser ( Parser ):
 
 
     class MeasureExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4523,6 +4561,7 @@ class qasm3Parser ( Parser ):
 
 
     class RangeExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4606,6 +4645,7 @@ class qasm3Parser ( Parser ):
 
 
     class SetExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4694,6 +4734,7 @@ class qasm3Parser ( Parser ):
 
 
     class ArrayLiteralContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4813,6 +4854,7 @@ class qasm3Parser ( Parser ):
 
 
     class IndexOperatorContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4948,6 +4990,7 @@ class qasm3Parser ( Parser ):
 
 
     class IndexedIdentifierContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5012,6 +5055,7 @@ class qasm3Parser ( Parser ):
 
 
     class ReturnSignatureContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5064,6 +5108,7 @@ class qasm3Parser ( Parser ):
 
 
     class GateModifierContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5174,6 +5219,7 @@ class qasm3Parser ( Parser ):
 
 
     class ScalarTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5359,6 +5405,7 @@ class qasm3Parser ( Parser ):
 
 
     class QubitTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5418,6 +5465,7 @@ class qasm3Parser ( Parser ):
 
 
     class ArrayTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5491,6 +5539,7 @@ class qasm3Parser ( Parser ):
 
 
     class ArrayReferenceTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5604,6 +5653,7 @@ class qasm3Parser ( Parser ):
 
 
     class DesignatorContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5661,6 +5711,7 @@ class qasm3Parser ( Parser ):
 
 
     class GateOperandContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5724,6 +5775,7 @@ class qasm3Parser ( Parser ):
 
 
     class ExternArgumentContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5809,6 +5861,7 @@ class qasm3Parser ( Parser ):
 
 
     class DefcalArgumentContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5864,6 +5917,7 @@ class qasm3Parser ( Parser ):
 
 
     class ArgumentDefinitionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5977,6 +6031,7 @@ class qasm3Parser ( Parser ):
 
 
     class ArgumentDefinitionListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6055,6 +6110,7 @@ class qasm3Parser ( Parser ):
 
 
     class ExpressionListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6133,6 +6189,7 @@ class qasm3Parser ( Parser ):
 
 
     class DefcalArgumentListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6211,6 +6268,7 @@ class qasm3Parser ( Parser ):
 
 
     class IdentifierListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6288,6 +6346,7 @@ class qasm3Parser ( Parser ):
 
 
     class GateOperandListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6366,6 +6425,7 @@ class qasm3Parser ( Parser ):
 
 
     class ExternArgumentListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)

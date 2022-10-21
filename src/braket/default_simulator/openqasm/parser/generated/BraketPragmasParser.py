@@ -1,4 +1,4 @@
-# Generated from BraketPragmasParser.g4 by ANTLR 4.9
+# Generated from BraketPragmasParser.g4 by ANTLR 4.9.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -810,7 +810,7 @@ class BraketPragmasParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.9")
+        self.checkVersion("4.9.2")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -818,6 +818,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class BraketPragmaContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -892,6 +893,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class BraketUnitaryPragmaContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -965,6 +967,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class TwoDimMatrixContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1044,6 +1047,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class RowContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1123,6 +1127,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class BraketResultPragmaContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1180,6 +1185,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ResultTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1262,6 +1268,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class NoArgResultTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1309,6 +1316,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class NoArgResultTypeNameContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1355,6 +1363,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class OptionalMultiTargetResultTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1415,6 +1424,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class OptionalMultiTargetResultTypeNameContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1470,6 +1480,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class MultiTargetContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1589,6 +1600,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class MultiStateResultTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1642,6 +1654,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class MultiStateResultTypeNameContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1688,6 +1701,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class MultiStateContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1756,6 +1770,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ObservableResultTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1809,6 +1824,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ObservableContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1883,6 +1899,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class StandardObservableContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1999,6 +2016,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class TensorProductObservableContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2073,6 +2091,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class HermitianObservableContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2141,6 +2160,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ObservableResultTypeNameContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2199,6 +2219,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class StandardObservableNameContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2263,6 +2284,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ComplexNumberContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2431,6 +2453,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class BraketNoisePragmaContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2488,6 +2511,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class NoiseInstructionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2624,6 +2648,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class MatricesContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2693,6 +2718,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ProbabilitiesContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2761,6 +2787,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class NoiseInstructionNameContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2837,6 +2864,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ProgramContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2913,6 +2941,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class VersionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2969,6 +2998,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class StatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3292,6 +3322,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class AnnotationContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3350,6 +3381,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ScopeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3419,6 +3451,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class PragmaContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3470,6 +3503,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class StatementOrScopeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3534,6 +3568,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class CalibrationGrammarStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3590,6 +3625,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class IncludeStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3646,6 +3682,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class BreakStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3697,6 +3734,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ContinueStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3748,6 +3786,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class EndStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3799,6 +3838,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ForStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3907,6 +3947,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class IfStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3993,6 +4034,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ReturnStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4067,6 +4109,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class WhileStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4136,6 +4179,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class BarrierStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4200,6 +4244,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class BoxStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4265,6 +4310,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class DelayStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4335,6 +4381,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class GateCallStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4512,6 +4559,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class MeasureArrowAssignmentStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4582,6 +4630,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ResetStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4639,6 +4688,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class AliasDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4706,6 +4756,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ClassicalDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4797,6 +4848,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ConstDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4870,6 +4922,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class IoDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4957,6 +5010,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class OldStyleDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5034,6 +5088,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class QuantumDeclarationStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5091,6 +5146,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class DefStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5183,6 +5239,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ExternStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5274,6 +5331,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class GateStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5367,6 +5425,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class AssignmentStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5457,6 +5516,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ExpressionStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5509,6 +5569,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class DefcalStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5628,6 +5689,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6529,6 +6591,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class AliasExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6598,6 +6661,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class DeclarationExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6671,6 +6735,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class MeasureExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6723,6 +6788,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class RangeExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6806,6 +6872,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class SetExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6894,6 +6961,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ArrayLiteralContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7013,6 +7081,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class IndexOperatorContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7148,6 +7217,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class IndexedIdentifierContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7212,6 +7282,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ReturnSignatureContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7264,6 +7335,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class GateModifierContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7374,6 +7446,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ScalarTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7559,6 +7632,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class QubitTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7618,6 +7692,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ArrayTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7691,6 +7766,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ArrayReferenceTypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7804,6 +7880,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class DesignatorContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7861,6 +7938,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class GateOperandContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7924,6 +8002,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ExternArgumentContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8009,6 +8088,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class DefcalArgumentContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8064,6 +8144,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ArgumentDefinitionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8177,6 +8258,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ArgumentDefinitionListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8255,6 +8337,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ExpressionListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8333,6 +8416,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class DefcalArgumentListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8411,6 +8495,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class IdentifierListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8488,6 +8573,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class GateOperandListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8566,6 +8652,7 @@ class BraketPragmasParser ( Parser ):
 
 
     class ExternArgumentListContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
