@@ -38,7 +38,7 @@ def convert_result(
         for site, state in zip(non_empty_sites, list(configuration)):
             if state == "g":
                 post_sequence[site] = 1
-            elif state == "r":
+            else: # state == "r":
                 post_sequence[site] = 0
 
         shot_measurement = AnalogHamiltonianSimulationShotMeasurement(
