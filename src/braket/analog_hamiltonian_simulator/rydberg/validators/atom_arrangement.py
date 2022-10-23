@@ -1,5 +1,6 @@
 import warnings
-from typing import Dict
+from decimal import Decimal
+from typing import Dict, Tuple
 
 from braket.ir.ahs.atom_arrangement import AtomArrangement
 from pydantic.class_validators import root_validator
@@ -7,6 +8,12 @@ from pydantic.class_validators import root_validator
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
 )
+
+
+def euclidean_distance(site_1: Tuple[Decimal, Decimal], site_2: Tuple[Decimal, Decimal]) -> Decimal:
+    # Compute the Euclidean distance between two sets of 2-D points, (x1, y1) and (x2, y2)
+
+    return Decimal((site_1[0] - site_2[0]) ** 2 + (site_1[1] - site_2[1]) ** 2).sqrt()
 
 
 class AtomArrangementValidator(AtomArrangement):
@@ -85,4 +92,23 @@ class AtomArrangementValidator(AtomArrangement):
             raise ValueError(
                 f"Filling length ({length}) does not match sites length ({expected_length})"
             )
+        return values
+
+    # Two lattice sites cannot be closer (in terms of Euclidean distance) than MIN_DISTANCE
+    @root_validator(pre=True, skip_on_failure=True)
+    def sites_not_too_close(cls, values):
+        sites = values["sites"]
+        capabilities = values["capabilities"]
+        for idx1, s1 in enumerate(sites):
+            for idx2, s2 in enumerate(sites):
+                if idx2 <= idx1:
+                    continue
+                distance = euclidean_distance(s1, s2)
+                if distance < capabilities.MIN_DISTANCE:
+                    raise ValueError(
+                        f"Sites {idx1}({s1}) and site {idx2}({s2}) are too close. "
+                        f"Their Euclidean distance ({distance} meters) is smaller than "
+                        f"the typical scale ({capabilities.MIN_DISTANCE} meters). "
+                        "The coordinates of the sites should be specified in SI units."
+                    )
         return values
