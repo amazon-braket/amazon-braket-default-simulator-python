@@ -100,7 +100,7 @@ class AtomArrangementValidator(AtomArrangement):
     def sites_not_too_close(cls, values):
         sites = values["sites"]
         capabilities = values["capabilities"]
-        for idx1, s1 in enumerate(sites):
+        for index_1, site_1 in enumerate(sites):
             for idx2, s2 in enumerate(sites):
                 if idx2 <= idx1:
                     continue
