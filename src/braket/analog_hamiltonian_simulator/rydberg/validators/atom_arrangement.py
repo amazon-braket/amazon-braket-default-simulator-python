@@ -101,7 +101,7 @@ class AtomArrangementValidator(AtomArrangement):
         sites = values["sites"]
         capabilities = values["capabilities"]
         for index_1, site_1 in enumerate(sites):
-            for idx2, s2 in enumerate(sites):
+            for index_2, site_2 in enumerate(sites[index_1 + 1:], start=index_1 + 1):
                 if idx2 <= idx1:
                     continue
                 distance = euclidean_distance(s1, s2)
