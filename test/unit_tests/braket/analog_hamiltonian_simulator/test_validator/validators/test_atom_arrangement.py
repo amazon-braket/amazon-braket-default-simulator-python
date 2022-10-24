@@ -134,17 +134,7 @@ def test_atom_array_filling_contains_only_0_and_1(
     "sites, warning_message",
     [
         (
-            [
-                [0.0, 0.0],
-                [2.4e-6, 0.0],
-                [4.8e-6, 0.0],
-                [0.0, 2.4e-6],
-                [2.4e-6, 2.4e-6],
-                [4.8e-6, 2.4e-6],
-                [0.0, 4.8e-6],
-                [2.4e-6, 4.8e-6],
-                [4.8e-6, 4.8e-6],
-            ],
+            [[0.0, 0.0], [2.4e-6, 0.0], [8.8e-6, 0.0], [0.0, 4.4e-6]],
             (
                 "Sites 0([0.0, 0.0]) and site 1([2.4e-06, 0.0]) are too close. "
                 "Their Euclidean distance (0.0000024 meters) is smaller than "
@@ -153,7 +143,7 @@ def test_atom_array_filling_contains_only_0_and_1(
             ),
         ),
         (
-            [[0.0, 0.0], [0.0, 4.0e-6], [2.6e-6, 4.0e-6], [2.6e-6, 5.0e-6]],
+            [[0.0, 0.0], [0.0, 4.0e-6], [2.6e-6, 4.0e-6], [2.6e-6, 9.0e-6]],
             (
                 "Sites 1([0.0, 4e-06]) and site 2([2.6e-06, 4e-06]) are too close. "
                 "Their Euclidean distance (0.0000026 meters) is smaller than "
@@ -163,7 +153,8 @@ def test_atom_array_filling_contains_only_0_and_1(
         ),
     ],
 )
-# Rule: All sites in the lattice must be at least lattice.geometry.spacing_radial_min from each other
+# Rule: All sites in the lattice must be at least lattice.geometry.spacing_radial_min
+# from each other
 def test_atom_arrangement_sites_not_too_close(
     sites, warning_message, mock_atom_arrangement_data, device_capabilities_constants
 ):
@@ -186,5 +177,4 @@ def _assert_warning_is_produced_for_atom_array(
 ):
     with pytest.warns(UserWarning) as e:
         AtomArrangementValidator(capabilities=device_capabilities_constants, **data)
-    # print(e[-1].message)
     assert warning_message in str(e[-1].message)
