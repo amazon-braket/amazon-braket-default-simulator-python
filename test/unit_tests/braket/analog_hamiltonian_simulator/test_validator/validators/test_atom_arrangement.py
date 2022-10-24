@@ -24,13 +24,13 @@ def mock_atom_arrangement_data():
     return AtomArrangement.parse_obj(data).dict()
 
 
-# def test_valid_atom_array(atom_arrangement_data, device_capabilities_constants):
-#     try:
-#         AtomArrangementValidator(
-#             capabilities=device_capabilities_constants, **atom_arrangement_data
-#         )
-#     except ValidationError as e:
-#         pytest.fail(f"Validate test is failing : {str(e)}")
+def test_valid_atom_array(atom_arrangement_data, device_capabilities_constants):
+    try:
+        AtomArrangementValidator(
+            capabilities=device_capabilities_constants, **atom_arrangement_data
+        )
+    except ValidationError as e:
+        pytest.fail(f"Validate test is failing : {str(e)}")
 
 
 @pytest.mark.parametrize(

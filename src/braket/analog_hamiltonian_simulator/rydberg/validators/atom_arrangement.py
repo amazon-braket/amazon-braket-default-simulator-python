@@ -101,13 +101,11 @@ class AtomArrangementValidator(AtomArrangement):
         sites = values["sites"]
         capabilities = values["capabilities"]
         for index_1, site_1 in enumerate(sites):
-            for index_2, site_2 in enumerate(sites[index_1 + 1:], start=index_1 + 1):
-                if idx2 <= idx1:
-                    continue
-                distance = euclidean_distance(s1, s2)
+            for index_2, site_2 in enumerate(sites[index_1 + 1 :], start=index_1 + 1):
+                distance = euclidean_distance(site_1, site_2)
                 if distance < capabilities.MIN_DISTANCE:
                     warnings.warn(
-                        f"Sites {idx1}({s1}) and site {idx2}({s2}) are too close. "
+                        f"Sites {index_1}({site_1}) and site {index_2}({site_2}) are too close. "
                         f"Their Euclidean distance ({Decimal(str(distance))} meters) is smaller "
                         f"than the typical scale ({capabilities.MIN_DISTANCE} meters). "
                         "The coordinates of the sites should be specified in SI units."
