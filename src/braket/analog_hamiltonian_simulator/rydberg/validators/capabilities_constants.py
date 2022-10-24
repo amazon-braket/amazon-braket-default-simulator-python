@@ -9,6 +9,7 @@ class CapabilitiesConstants(BaseModel):
     BOUNDING_BOX_SIZE_X: Decimal
     BOUNDING_BOX_SIZE_Y: Decimal
     MAX_TIME: Decimal
+    MIN_DISTANCE: Decimal
     GLOBAL_AMPLITUDE_VALUE_MIN: Decimal
     GLOBAL_AMPLITUDE_VALUE_MAX: Decimal
     GLOBAL_DETUNING_VALUE_MIN: Decimal

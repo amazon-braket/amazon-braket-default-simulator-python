@@ -8,7 +8,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.atom_arrangement imp
 
 
 @pytest.fixture
-def atom_array_data():
+def atom_arrangement_data():
     return {
         "sites": [[0, 0], [0, 4e-6], [5e-6, 0], [5e-6, 4e-6]],
         "filling": [1, 0, 1, 0],
@@ -16,7 +16,7 @@ def atom_array_data():
 
 
 @pytest.fixture
-def mock_atom_array_data():
+def mock_atom_arrangement_data():
     data = {
         "sites": [],
         "filling": [1, 1, 1, 1],
@@ -24,9 +24,11 @@ def mock_atom_array_data():
     return AtomArrangement.parse_obj(data).dict()
 
 
-def test_valid_atom_array(atom_array_data, device_capabilities_constants):
+def test_valid_atom_array(atom_arrangement_data, device_capabilities_constants):
     try:
-        AtomArrangementValidator(capabilities=device_capabilities_constants, **atom_array_data)
+        AtomArrangementValidator(
+            capabilities=device_capabilities_constants, **atom_arrangement_data
+        )
     except ValidationError as e:
         pytest.fail(f"Validate test is failing : {str(e)}")
 
@@ -35,13 +37,13 @@ def test_valid_atom_array(atom_array_data, device_capabilities_constants):
     "sites, warning_message",
     [
         (
-            [[-50.1e-6, 50.0e-6], [0.0, 0.0], [0.0, 0.000001], [50.0e-6, -50.0e-6]],
+            [[-50.1e-6, 50.0e-6], [0.0, 0.0], [0.0, 5e-6], [50.0e-6, -50.0e-6]],
             "Arrangement is too wide. Sites [-5.01e-05, 5e-05] and [5e-05, -5e-05] have "
             "x-separation bigger than the typical scale (0.0001 meters). "
             "The coordinates of the atoms should be specified in SI units.",
         ),
         (
-            [[-50.0e-6, 50.1e-6], [0.0, 0.0], [0.0, 0.000001], [50.0e-6, -50.0e-6]],
+            [[-50.0e-6, 50.1e-6], [0.0, 0.0], [0.0, 5e-6], [50.0e-6, -50.0e-6]],
             "Arrangement is too wide. Sites [-5e-05, 5.01e-05] and [5e-05, -5e-05] have "
             "x-separation bigger than the typical scale (0.0001 meters). "
             "The coordinates of the atoms should be specified in SI units.",
@@ -64,7 +66,7 @@ def test_valid_atom_array(atom_array_data, device_capabilities_constants):
             "The coordinates of the atoms should be specified in SI units.",
         ),
         (
-            [[0.0, 0.0], [0.0, 0.000001], [6.71e-5, -3.9e-5], [-3.3e-5, 6.11e-5]],
+            [[0.0, 0.0], [0.0, 5e-6], [6.71e-5, -3.9e-5], [-3.3e-5, 6.11e-5]],
             "Arrangement is too wide. Sites [-3.3e-05, 6.11e-05] and [6.71e-05, -3.9e-05] "
             "have x-separation bigger than the typical scale (0.0001 meters). "
             "The coordinates of the atoms should be specified in SI units.",
@@ -74,11 +76,11 @@ def test_valid_atom_array(atom_array_data, device_capabilities_constants):
 # Rule: The lattice sites must define an area with maximum dimensions of
 #       lattice.area.width, lattice.area.height
 def test_atom_array_sites_fit_in_bounding_box(
-    sites, warning_message, mock_atom_array_data, device_capabilities_constants
+    sites, warning_message, mock_atom_arrangement_data, device_capabilities_constants
 ):
-    mock_atom_array_data["sites"] = sites
+    mock_atom_arrangement_data["sites"] = sites
     _assert_warning_is_produced_for_atom_array(
-        mock_atom_array_data, warning_message, device_capabilities_constants
+        mock_atom_arrangement_data, warning_message, device_capabilities_constants
     )
 
 
@@ -99,32 +101,66 @@ def test_atom_array_sites_fit_in_bounding_box(
 )
 # Rule: Lattice filling must specify occupancy/vacancy for each lattice site
 def test_atom_array_filling_same_length_as_sites(
-    sites, filling, error_message, mock_atom_array_data, device_capabilities_constants
+    sites, filling, error_message, mock_atom_arrangement_data, device_capabilities_constants
 ):
-    mock_atom_array_data["sites"] = sites
-    mock_atom_array_data["filling"] = filling
+    mock_atom_arrangement_data["sites"] = sites
+    mock_atom_arrangement_data["filling"] = filling
     _assert_validation_error_is_raised_for_atom_array(
-        mock_atom_array_data, error_message, device_capabilities_constants
+        mock_atom_arrangement_data, error_message, device_capabilities_constants
     )
 
 
-def test_atom_array_sites_have_length_2(mock_atom_array_data, device_capabilities_constants):
+def test_atom_array_sites_have_length_2(mock_atom_arrangement_data, device_capabilities_constants):
     sites = [[0, 0, 0], [0, 4e-6, 5e-6]]
-    mock_atom_array_data["sites"] = sites
+    mock_atom_arrangement_data["sites"] = sites
     error_message = "Site 0([0, 0, 0]) has length 3; it must be 2."
     _assert_validation_error_is_raised_for_atom_array(
-        mock_atom_array_data, error_message, device_capabilities_constants
+        mock_atom_arrangement_data, error_message, device_capabilities_constants
     )
 
 
 def test_atom_array_filling_contains_only_0_and_1(
-    mock_atom_array_data, device_capabilities_constants
+    mock_atom_arrangement_data, device_capabilities_constants
 ):
     filling = [0, 1, 2, 1]
-    mock_atom_array_data["filling"] = filling
+    mock_atom_arrangement_data["filling"] = filling
     error_message = "Invalid value at 2 (value: 2). Only 0 and 1 are allowed."
     _assert_validation_error_is_raised_for_atom_array(
-        mock_atom_array_data, error_message, device_capabilities_constants
+        mock_atom_arrangement_data, error_message, device_capabilities_constants
+    )
+
+
+@pytest.mark.parametrize(
+    "sites, warning_message",
+    [
+        (
+            [[0.0, 0.0], [2.4e-6, 0.0], [8.8e-6, 0.0], [0.0, 4.4e-6]],
+            (
+                "Sites 0([0.0, 0.0]) and site 1([2.4e-06, 0.0]) are too close. "
+                "Their Euclidean distance (0.0000024 meters) is smaller than "
+                "the typical scale (0.000004 meters). "
+                "The coordinates of the sites should be specified in SI units."
+            ),
+        ),
+        (
+            [[0.0, 0.0], [0.0, 4.0e-6], [2.6e-6, 4.0e-6], [2.6e-6, 9.0e-6]],
+            (
+                "Sites 1([0.0, 4e-06]) and site 2([2.6e-06, 4e-06]) are too close. "
+                "Their Euclidean distance (0.0000026 meters) is smaller than "
+                "the typical scale (0.000004 meters). "
+                "The coordinates of the sites should be specified in SI units."
+            ),
+        ),
+    ],
+)
+# Rule: All sites in the lattice must be at least lattice.geometry.spacing_radial_min
+# from each other
+def test_atom_arrangement_sites_not_too_close(
+    sites, warning_message, mock_atom_arrangement_data, device_capabilities_constants
+):
+    mock_atom_arrangement_data["sites"] = sites
+    _assert_warning_is_produced_for_atom_array(
+        mock_atom_arrangement_data, warning_message, device_capabilities_constants
     )
 
 
@@ -141,5 +177,4 @@ def _assert_warning_is_produced_for_atom_array(
 ):
     with pytest.warns(UserWarning) as e:
         AtomArrangementValidator(capabilities=device_capabilities_constants, **data)
-    # print(e[-1].message)
     assert warning_message in str(e[-1].message)

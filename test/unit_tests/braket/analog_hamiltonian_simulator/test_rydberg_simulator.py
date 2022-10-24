@@ -16,7 +16,7 @@ device = RydbergAtomSimulator()
 
 pi = np.pi
 
-a = 3
+a = 4
 rabi_frequency = 12 * pi
 rabi_phase = 0.0
 detuning_1 = 20 * pi
