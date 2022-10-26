@@ -531,7 +531,7 @@ class Interpreter:
         elif node.command.startswith("braket verbatim"):
             pass
         else:
-            raise NotImplementedError(f"Pragma {node.command} is not supported")
+            raise NotImplementedError(f"Pragma '{node.command}' is not supported")
 
     @visit.register
     def _(self, node: SubroutineDefinition) -> None:

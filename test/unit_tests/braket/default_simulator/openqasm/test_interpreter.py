@@ -1576,6 +1576,18 @@ def test_verbatim_pragma():
         sim_wo_verbatim.state_vector,
     )
 
+def test_unsupported_pragma():
+    qasm = """
+    qubit q;
+    #pragma braket abcd
+    box{
+    rx(1.57) q;
+    }
+    """
+    unsupported_pragma = "Pragma 'braket abcd' is not supported"
+    with pytest.raises(NotImplementedError, match=unsupported_pragma):
+        Interpreter().run(qasm)
+
 def test_subroutine():
     qasm = """
     const int[8] n = 4;
