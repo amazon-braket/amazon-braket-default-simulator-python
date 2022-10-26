@@ -7,6 +7,21 @@ from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import get_ops_coefs
 
+# define the Butcher tableau
+_ORDER = 6
+_A = [
+    [5 / 36, 2 / 9 - 1 / np.sqrt(15), 5 / 36 - np.sqrt(15) / 30],
+    [5 / 36 + np.sqrt(15) / 24, 2 / 9, 5 / 36 - np.sqrt(15) / 24],
+    [5 / 36 + np.sqrt(15) / 30, 2 / 9 + 1 / np.sqrt(15), 5 / 36],
+]
+_B = [5 / 18, 4 / 9, 5 / 18]
+_C = [1 / 2 - np.sqrt(15) / 10, 1 / 2, 1 / 2 + np.sqrt(15) / 10]
+
+_STAGES = int(_ORDER / 2)
+
+_EIGVALS_A, _EIGVECS_A = np.linalg.eig(_A)
+_INV_EIGVECS_A = np.linalg.inv(_EIGVECS_A)
+
 
 def rk_run(
     program: Program,
@@ -77,21 +92,6 @@ def rk_run(
 
     dt = simulation_times[1] - simulation_times[0]  # The time step for the simulation
 
-    # define the Butcher tableau
-    order = 6
-    a = [
-        [5 / 36, 2 / 9 - 1 / np.sqrt(15), 5 / 36 - np.sqrt(15) / 30],
-        [5 / 36 + np.sqrt(15) / 24, 2 / 9, 5 / 36 - np.sqrt(15) / 24],
-        [5 / 36 + np.sqrt(15) / 30, 2 / 9 + 1 / np.sqrt(15), 5 / 36],
-    ]
-    b = [5 / 18, 4 / 9, 5 / 18]
-    c = [1 / 2 - np.sqrt(15) / 10, 1 / 2, 1 / 2 + np.sqrt(15) / 10]
-
-    stages = int(order / 2)  # The number of steps in the RK method see reference above
-
-    eigvals_a, eigvecs_a = np.linalg.eig(a)
-    inv_eigvecs_a = np.linalg.inv(eigvecs_a)
-
     for index_time, _ in enumerate(simulation_times[1:]):
 
         if progress_bar:  # print a lightweight progress bar
@@ -124,31 +124,31 @@ def rk_run(
         x2 = -1j * hamiltonian.dot(x1)
         x3 = -1j * hamiltonian.dot(x2)
 
-        kk = [x1 + c[i] * dt * x2 for i in range(stages)]
+        kk = [x1 + _C[i] * dt * x2 for i in range(_STAGES)]
 
         kx = [
             kk[i]
             - x1
-            - dt * np.sum([a[i][j] * (x2 + c[j] * dt * x3) for j in range(stages)], axis=0)
-            for i in range(stages)
+            - dt * np.sum([_A[i][j] * (x2 + _C[j] * dt * x3) for j in range(_STAGES)], axis=0)
+            for i in range(_STAGES)
         ]
 
         dk_tilde = [
             np.linalg.solve(
-                np.eye(size_hilbert_space) + 1j * dt * eigvals_a[i] * hamiltonian,
-                np.sum([inv_eigvecs_a[i][j] * kx[j] for j in range(stages)], axis=0),
+                np.eye(size_hilbert_space) + 1j * dt * _EIGVALS_A[i] * hamiltonian,
+                np.sum([_INV_EIGVECS_A[i][j] * kx[j] for j in range(_STAGES)], axis=0),
             )
-            for i in range(stages)
+            for i in range(_STAGES)
         ]
 
         dk = [
-            np.sum([eigvecs_a[i][j] * dk_tilde[j] for j in range(stages)], axis=0)
-            for i in range(stages)
+            np.sum([_EIGVECS_A[i][j] * dk_tilde[j] for j in range(_STAGES)], axis=0)
+            for i in range(_STAGES)
         ]
 
         kk = np.array(kk) - dk
 
-        delta_state = dt * np.array(b).dot(kk)  # The update of the state
+        delta_state = dt * np.array(_B).dot(kk)  # The update of the state
 
         # The end of the implicit RK method for updating the state
 
