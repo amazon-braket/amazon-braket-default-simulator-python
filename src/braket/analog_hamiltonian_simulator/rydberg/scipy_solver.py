@@ -28,7 +28,7 @@ def scipy_integrate_ode_run(
     Solves the Schrödinger equation with `scipy.integrate.ode`
 
     Args:
-        program (Program): An analog program for the Rydberg system to be simulated
+        program (Program): An analog simulation Hamiltonian for the Rydberg system simulated
         configurations (List[str]): The list of configurations that comply with the
             blockade approximation.
         simulation_times (List[float]): The list of time points
@@ -52,7 +52,7 @@ def scipy_integrate_ode_run(
 
     For more information, please refer to the documentation for `scipy.integrate.ode`
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html
-        
+
     """
 
     (

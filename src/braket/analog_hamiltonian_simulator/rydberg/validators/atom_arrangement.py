@@ -11,7 +11,9 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 )
 
 
-def euclidean_distance(site_1: Tuple[Decimal, Decimal], site_2: Tuple[Decimal, Decimal]) -> Decimal:
+def _euclidean_distance(
+    site_1: Tuple[Decimal, Decimal], site_2: Tuple[Decimal, Decimal]
+) -> Decimal:
     # Compute the Euclidean distance between two sets of 2-D points, (x1, y1) and (x2, y2)
 
     return np.linalg.norm(np.array(site_1) - np.array(site_2))
@@ -101,7 +103,7 @@ class AtomArrangementValidator(AtomArrangement):
         capabilities = values["capabilities"]
         for index_1, site_1 in enumerate(sites):
             for index_2, site_2 in enumerate(sites[index_1 + 1 :], start=index_1 + 1):
-                distance = euclidean_distance(site_1, site_2)
+                distance = _euclidean_distance(site_1, site_2)
                 if distance < capabilities.MIN_DISTANCE:
                     warnings.warn(
                         f"Sites {index_1}({site_1}) and site {index_2}({site_2}) are too close. "
