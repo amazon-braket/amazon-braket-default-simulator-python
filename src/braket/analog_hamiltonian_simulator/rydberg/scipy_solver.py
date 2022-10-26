@@ -10,7 +10,7 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers impor
 
 
 def scipy_integrate_ode_run(
-    hamiltonian: Program,
+    program: Program,
     configurations: List[str],
     simulation_times: List[float],
     rydberg_interaction_coef: float,
@@ -28,7 +28,7 @@ def scipy_integrate_ode_run(
     Solves the Schrödinger equation with `scipy.integrate.ode`
 
     Args:
-        hamiltonian (Program): An analog Hamiltonian for the Rydberg system to be simulated
+        program (Program): An analog program for the Rydberg system to be simulated
         configurations (List[str]): The list of configurations that comply with the
             blockade approximation.
         simulation_times (List[float]): The list of time points
@@ -49,6 +49,10 @@ def scipy_integrate_ode_run(
 
     Returns:
         ndarray: The list of all the intermediate states in the simulation.
+
+    For more information, please refer to the documentation for `scipy.integrate.ode`
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html
+        
     """
 
     (
@@ -59,7 +63,7 @@ def scipy_integrate_ode_run(
         detuning_coefs,
         local_detuing_coefs,
         interaction_op,
-    ) = get_ops_coefs(hamiltonian, configurations, rydberg_interaction_coef, simulation_times)
+    ) = get_ops_coefs(program, configurations, rydberg_interaction_coef, simulation_times)
 
     def _get_hamiltonian(index_time: int) -> scipy.sparse.csr_matrix:
         """Get the Hamiltonian matrix for the time point with index `index_time`"""

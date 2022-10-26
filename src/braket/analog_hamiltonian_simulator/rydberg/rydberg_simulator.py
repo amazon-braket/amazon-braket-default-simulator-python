@@ -64,12 +64,13 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         Run the simulation for the dynamics of the Rydberg system, and return the result
 
         Args:
-            program (Program): An analog simulation Hamiltonian for a Rydberg system
-            shots (int): The number of shots
-            steps (int): The number of time points for the simulation
-            rydberg_interaction_coef (float): The interaction coefficient
-            blockade_radius (float): The blockade radius for the Rydberg system
-            progress_bar (bool): If true, a progress bar will be printed during the simulation
+            program (Program): An analog simulation Hamiltonian for the Rydberg system to be simulated
+            shots (int): The number of shots. Default: 100
+            steps (int): The number of time points for the simulation. Default: 100
+            rydberg_interaction_coef (float): The interaction coefficient. Default: 5.42e-24
+            blockade_radius (float): The blockade radius for the Rydberg system. Default: 0.0
+            progress_bar (bool): If true, a progress bar will be printed during the simulation. 
+                Default: False
             atol (float): Absolute tolerance for solution. Default: 1e-8
             rtol (float): Relative tolerance for solution. Default: 1e-6
             solver_method (str): Which solver to use, `adams` for non-stiff problems or `bdf`
@@ -155,10 +156,10 @@ class RydbergAtomSimulator(BaseLocalSimulator):
                 dist,
                 self.atomArray.filling,
                 self.configurations,
-                self.mock_taskMetadata(shots),
+                self._task_metadata(shots),
             )
 
-    def mock_taskMetadata(self, shots: int) -> TaskMetadata:
+    def _task_metadata(self, shots: int) -> TaskMetadata:
         return TaskMetadata(
             id="rydberg",
             shots=shots,

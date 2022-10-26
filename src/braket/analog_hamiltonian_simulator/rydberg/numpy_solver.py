@@ -9,7 +9,7 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers impor
 
 
 def rk_run(
-    hamiltonian: Program,
+    program: Program,
     configurations: List[str],
     simulation_times: List[float],
     rydberg_interaction_coef: float,
@@ -19,7 +19,7 @@ def rk_run(
     Implement the implicit Runge-Kutta method of order 6 for solving the schrodinger equation
 
     Args:
-        hamiltonian (Program): An analog simulation hamiltonian for Rydberg system
+        program (Program): An analog simulation program for a Rydberg system
         configurations (List[str]): The list of configurations that comply with the
             blockade approximation.
         simulation_times (List[float]): The list of time points
@@ -42,7 +42,7 @@ def rk_run(
         detuning_coefs,
         local_detuing_coefs,
         interaction_op,
-    ) = get_ops_coefs(hamiltonian, configurations, rydberg_interaction_coef, simulation_times)
+    ) = get_ops_coefs(program, configurations, rydberg_interaction_coef, simulation_times)
 
     def _get_hamiltonian(index_time: int) -> scipy.sparse.csr_matrix:
         """Get the Hamiltonian matrix for the time point with index `index_time`"""
