@@ -1537,6 +1537,7 @@ def test_bad_unitary_pragma():
     with pytest.raises(TypeError, match=invalid_matrix):
         Interpreter().run(qasm)
 
+
 def test_verbatim_pragma():
     with_verbatim = """
     OPENQASM 3.0;
@@ -1576,6 +1577,7 @@ def test_verbatim_pragma():
         sim_wo_verbatim.state_vector,
     )
 
+
 def test_unsupported_pragma():
     qasm = """
     qubit q;
@@ -1587,6 +1589,7 @@ def test_unsupported_pragma():
     unsupported_pragma = "Pragma 'braket abcd' is not supported"
     with pytest.raises(NotImplementedError, match=unsupported_pragma):
         Interpreter().run(qasm)
+
 
 def test_subroutine():
     qasm = """
