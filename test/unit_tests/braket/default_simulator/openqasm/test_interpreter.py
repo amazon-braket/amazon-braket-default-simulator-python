@@ -1537,6 +1537,44 @@ def test_bad_unitary_pragma():
     with pytest.raises(TypeError, match=invalid_matrix):
         Interpreter().run(qasm)
 
+def test_verbatim_pragma():
+    with_verbatim = """
+    OPENQASM 3.0;
+    bit[2] b;
+    qubit[2] q;
+    #pragma braket verbatim
+    box{
+    cnot q[0], q[1];
+    cnot q[0], q[1];
+    rx(1.57) q[0];
+    }
+    b[0] = measure q[0];
+    b[1] = measure q[1];
+    """
+    circuit = Interpreter().build_circuit(with_verbatim)
+    sim_w_verbatim = StateVectorSimulation(2, 1, 1)
+    sim_w_verbatim.evolve(circuit.instructions)
+
+    without_verbatim = """
+    OPENQASM 3.0;
+    bit[2] b;
+    qubit[2] q;
+    box{
+    cnot q[0], q[1];
+    cnot q[0], q[1];
+    rx(1.57) q[0];
+    }
+    b[0] = measure q[0];
+    b[1] = measure q[1];
+    """
+    circuit = Interpreter().build_circuit(without_verbatim)
+    sim_wo_verbatim = StateVectorSimulation(2, 1, 1)
+    sim_wo_verbatim.evolve(circuit.instructions)
+
+    assert np.allclose(
+        sim_w_verbatim.state_vector,
+        sim_wo_verbatim.state_vector,
+    )
 
 def test_subroutine():
     qasm = """
