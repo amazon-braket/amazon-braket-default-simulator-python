@@ -4,7 +4,7 @@ import scipy as sp
 from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import RYDBERG_INTERACTION_COEF
-from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import get_ops_coefs
+from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import _get_ops_coefs
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
     convert_unit,
 )
@@ -60,7 +60,7 @@ def test_get_ops_coefs(para):
         detuning_coefs,
         local_detuing_coefs,
         interaction_op,
-    ) = get_ops_coefs(program, configurations, rydberg_interaction_coef, ts)
+    ) = _get_ops_coefs(program, configurations, rydberg_interaction_coef, ts)
 
     # Test the operator
     true_interaction_op = sp.sparse.csr_matrix(

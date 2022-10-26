@@ -7,8 +7,9 @@ import scipy.sparse
 from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
+    _get_hamiltonian,
+    _get_ops_coefs,
     _print_progress_bar,
-    get_ops_coefs,
 )
 
 
@@ -58,36 +59,9 @@ def scipy_integrate_ode_run(
 
     """
 
-    (
-        rabi_ops,
-        detuning_ops,
-        local_detuning_ops,
-        rabi_coefs,
-        detuning_coefs,
-        local_detuing_coefs,
-        interaction_op,
-    ) = get_ops_coefs(program, configurations, rydberg_interaction_coef, simulation_times)
-
-    def _get_hamiltonian(index_time: int) -> scipy.sparse.csr_matrix:
-        """Get the Hamiltonian matrix for the time point with index `index_time`"""
-        index_time = int(index_time)
-        hamiltonian = interaction_op
-
-        # Add the driving fields
-        for rabi_op, rabi_coef, detuning_op, detuning_coef in zip(
-            rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
-        ):
-            hamiltonian += (
-                rabi_op * rabi_coef[index_time] / 2
-                + (rabi_op.T.conj() * np.conj(rabi_coef[index_time]) / 2)
-                - detuning_op * detuning_coef[index_time]
-            )
-
-        # Add the shifting fields
-        for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
-            hamiltonian -= local_detuning_op * local_detuning_coef[index_time]
-
-        return hamiltonian
+    operators_coefficients = _get_ops_coefs(
+        program, configurations, rydberg_interaction_coef, simulation_times
+    )
 
     # Define the initial state for the simulation
     size_hilbert_space = len(configurations)
@@ -105,7 +79,7 @@ def scipy_integrate_ode_run(
     # Note that we we will use the index of the time point,
     # instead of time, for f(t, y).
     def f(index_time: int, y: np.ndarray) -> scipy.sparse.csr_matrix:
-        return -1j * dt * _get_hamiltonian(index_time).dot(y)
+        return -1j * dt * _get_hamiltonian(index_time, operators_coefficients).dot(y)
 
     integrator = scipy.integrate.ode(f)
     integrator.set_integrator(

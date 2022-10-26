@@ -360,7 +360,7 @@ def _get_coefs(
     return np.array(rabi_coefs), np.array(detuning_coefs), np.array(local_detuing_coefs)
 
 
-def get_ops_coefs(
+def _get_ops_coefs(
     program: Program,
     configurations: List[str],
     rydberg_interaction_coef: float,
@@ -455,3 +455,64 @@ def _print_progress_bar(num_time_points: int, index_time: int, start_time: float
             flush=True,
             end="\r",
         )
+
+
+def _get_hamiltonian(
+    index_time: int,
+    operators_coefficients: Tuple[
+        List[scipy.sparse.csr_matrix],
+        List[scipy.sparse.csr_matrix],
+        List[scipy.sparse.csr_matrix],
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        scipy.sparse.csr_matrix,
+    ],
+) -> scipy.sparse.csr_matrix:
+    """Get the Hamiltonian at a given time point
+
+    Args:
+        index_time (int): The index of the current time point
+        operators_coefficients (Tuple[
+            List[csr_matrix],
+            List[csr_matrix],
+            List[csr_matrix],
+            ndarray,
+            ndarray,
+            ndarray,
+            csr_matrix
+        ]): A tuple containing the list of Rabi operators, the list of detuing operators,
+        the list of local detuing operators, the list of Rabi frequencies, the list of global
+        detuings, the list of local detunings and the interaction operator.
+
+    Returns:
+        (scipy.sparse.csr_matrix): The Hamiltonian at the given time point as a sparse matrix
+    """
+    (
+        rabi_ops,
+        detuning_ops,
+        local_detuning_ops,
+        rabi_coefs,
+        detuning_coefs,
+        local_detuing_coefs,
+        interaction_op,
+    ) = operators_coefficients
+
+    index_time = int(index_time)
+    hamiltonian = interaction_op
+
+    # Add the driving fields
+    for rabi_op, rabi_coef, detuning_op, detuning_coef in zip(
+        rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
+    ):
+        hamiltonian += (
+            rabi_op * rabi_coef[index_time] / 2
+            + (rabi_op.T.conj() * np.conj(rabi_coef[index_time]) / 2)
+            - detuning_op * detuning_coef[index_time]
+        )
+
+    # Add the shifting fields
+    for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
+        hamiltonian -= local_detuning_op * local_detuning_coef[index_time]
+
+    return hamiltonian
