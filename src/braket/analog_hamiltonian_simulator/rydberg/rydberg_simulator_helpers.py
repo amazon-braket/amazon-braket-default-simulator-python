@@ -45,13 +45,11 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
         each configuration is the same as the number of atoms in the lattice,
         with 'r' and 'g' indicating the Rydberg and ground states, respectively.
 
-
         Notes on the indexing: The left-most bit in the configuration corresponds to
         the first atom in the lattice.
 
         Notes on the algorithm: We start from all possible configurations and get rid of
         those violating the blockade approximation constraint.
-
     """
 
     # The coordinates for atoms in the filled sites
@@ -154,7 +152,8 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
     Returns:
         Dict[Tuple[int, int], float]: The dictionary for the Rabi operator
 
-        Notes: We only save the lower triangular part of the matrix that corresponds
+    Note:
+        We only save the lower triangular part of the matrix that corresponds
         to the Rabi operator.
     """
 
@@ -397,7 +396,6 @@ def get_ops_coefs(
         ]: A tuple containing the list of Rabi operators, the list of detuing operators,
         the list of local detuing operators, the list of Rabi frequencies, the list of global
         detuings, the list of local detunings and the interaction operator.
-
     """
 
     rabi_ops, detuning_ops, interaction_op, local_detuning_ops = _get_sparse_ops(
@@ -417,7 +415,8 @@ def get_ops_coefs(
 
 
 def sample_state(state: np.ndarray, shots: int) -> np.ndarray:
-    """Sample measurement outcomes from the quantum state `stat`
+    """Sample measurement outcomes from the quantum state `state`
+    
     Args:
         state (ndarray): A state vector
         shots (int): The number of samples
