@@ -31,7 +31,6 @@ class AtomArrangementValidator(AtomArrangement):
 
         Returns:
             Dict: The validated sites
-
         """
         sites = values["sites"]
         capabilities = values["capabilities"]

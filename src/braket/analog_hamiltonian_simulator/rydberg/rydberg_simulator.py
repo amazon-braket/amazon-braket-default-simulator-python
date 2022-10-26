@@ -64,7 +64,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         Run the simulation for the dynamics of the Rydberg system, and return the result
 
         Args:
-            program (Program): An analog simulation hamiltonian for Rydberg system
+            program (Program): An analog simulation Hamiltonian for a Rydberg system
             shots (int): The number of shots
             steps (int): The number of time points for the simulation
             rydberg_interaction_coef (float): The interaction coefficient
@@ -82,10 +82,8 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             max_step (int): Limits for the step sizes used by the integrator. Default: 0
             min_step (int): Default: 0
 
-
         Returns:
             AnalogHamiltonianSimulationTaskResult: The result of the simulation
-
         """
 
         # Validate the given program against the capabilities
@@ -150,7 +148,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
 
         # Convert the result type
         if shots == 0:
-            raise NotImplementedError("Shot = 0 is not currently implemented")
+            raise NotImplementedError("shots=0 is not implemented")
         else:
             dist = sample_state(states[-1], shots)
             return convert_result(

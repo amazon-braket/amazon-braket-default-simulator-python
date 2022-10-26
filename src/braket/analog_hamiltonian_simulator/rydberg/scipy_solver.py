@@ -25,7 +25,7 @@ def scipy_integrate_ode_run(
     min_step: int = 0,
 ) -> np.ndarray:
     """
-    Using `scipy.integrate.ode` for solving the Schrödinger equation
+    Solves the Schrödinger equation with `scipy.integrate.ode`
 
     Args:
         hamiltonian (Program): An analog Hamiltonian for the Rydberg system to be simulated

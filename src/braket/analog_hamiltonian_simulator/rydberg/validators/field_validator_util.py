@@ -14,7 +14,6 @@ def validate_value_range_with_warning(
         min_value (Decimal): The minimal value allowed
         max_value (Decimal): The maximal value allowed
         name (str): The name of the field corresponds to the values
-
     """
     # Raise ValueError if at any item in the values is outside the allowed range
     # [min_value, max_value]

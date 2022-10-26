@@ -18,7 +18,6 @@ def rk_run(
     """
     Implement the implicit Runge-Kutta method of order 6 for solving the schrodinger equation
 
-
     Args:
         hamiltonian (Program): An analog simulation hamiltonian for Rydberg system
         configurations (List[str]): The list of configurations that comply with the
@@ -31,11 +30,8 @@ def rk_run(
     Returns:
         ndarray: The list of all the intermediate states in the simulation.
 
-
-        Notes on the algorithm:
-        For more details, please refer to this link
+    Notes on the algorithm: For more details, please refer to
         https://en.wikipedia.org/wiki/Gauss-Legendre_method
-
     """
 
     (
