@@ -5,7 +5,10 @@ import numpy as np
 import scipy.sparse
 from braket.ir.ahs.program_v1 import Program
 
-from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import get_ops_coefs
+from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
+    _print_progress_bar,
+    get_ops_coefs,
+)
 
 # define the Butcher tableau
 _ORDER = 6
@@ -91,27 +94,12 @@ def rk_run(
         return states
 
     dt = simulation_times[1] - simulation_times[0]  # The time step for the simulation
-
+    start_time = 0
     for index_time, _ in enumerate(simulation_times[1:]):
 
         if progress_bar:  # print a lightweight progress bar
-            if index_time == 0:
-                start_time = time.time()
-                print("0% finished, elapsed time = NA, ETA = NA", flush=True, end="\r")
-            else:
-                current_time = time.time()
-                estimate_time_arrival = (
-                    (current_time - start_time)
-                    / (index_time + 1)
-                    * (len(simulation_times) - (index_time + 1))
-                )
-                print(
-                    f"{100 * (index_time+1)/len(simulation_times)}% finished, "
-                    f"elapsed time = {(current_time-start_time)} seconds, "
-                    f"ETA = {estimate_time_arrival} seconds ",
-                    flush=True,
-                    end="\r",
-                )
+            start_time = time.time()
+            _print_progress_bar(len(simulation_times), index_time, start_time)
 
         x = states[-1]
         hamiltonian = _get_hamiltonian(index_time)

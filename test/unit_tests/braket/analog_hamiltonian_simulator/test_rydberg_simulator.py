@@ -7,6 +7,9 @@ from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import RYDBERG_INTERACTION_COEF
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator import RydbergAtomSimulator
+from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
+    _print_progress_bar,
+)
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
     convert_unit,
 )
@@ -180,3 +183,16 @@ zero_program = convert_unit(
 def test_scipy_run_for_large_system():
     result = device.run(zero_program, steps=1)
     assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
+
+
+@pytest.mark.parametrize(
+    "num_time_points, index_time, start_time",
+    [
+        (10, 2, 1234.3),
+        (10, 9, 34.3),
+        (10, 1, 123.3),
+        (10, 0, 3.3),
+    ],
+)
+def test_print_progress_bar(num_time_points, index_time, start_time):
+    _print_progress_bar(num_time_points, index_time, start_time)

@@ -1,4 +1,5 @@
 import itertools
+import time
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -416,7 +417,7 @@ def get_ops_coefs(
 
 def sample_state(state: np.ndarray, shots: int) -> np.ndarray:
     """Sample measurement outcomes from the quantum state `state`
-    
+
     Args:
         state (ndarray): A state vector
         shots (int): The number of samples
@@ -429,3 +430,28 @@ def sample_state(state: np.ndarray, shots: int) -> np.ndarray:
     weights /= sum(weights)
     sample = np.random.multinomial(shots, weights)
     return sample
+
+
+def _print_progress_bar(num_time_points: int, index_time: int, start_time: float) -> None:
+    """Print a lightweight progress bar
+
+    Args:
+        num_time_points (int): The total number of time points
+        index_time (int): The index of the current time point
+        start_time (float): The starting time for the simulation
+
+    """
+    if index_time == 0:
+        print("0% finished, elapsed time = NA, ETA = NA", flush=True, end="\r")
+    else:
+        current_time = time.time()
+        estimate_time_arrival = (
+            (current_time - start_time) / (index_time + 1) * (num_time_points - (index_time + 1))
+        )
+        print(
+            f"{100 * (index_time+1)/num_time_points}% finished, "
+            f"elapsed time = {(current_time-start_time)} seconds, "
+            f"ETA = {estimate_time_arrival} seconds ",
+            flush=True,
+            end="\r",
+        )

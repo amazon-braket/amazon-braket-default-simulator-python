@@ -6,7 +6,10 @@ import scipy.integrate
 import scipy.sparse
 from braket.ir.ahs.program_v1 import Program
 
-from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import get_ops_coefs
+from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
+    _print_progress_bar,
+    get_ops_coefs,
+)
 
 
 def scipy_integrate_ode_run(
@@ -120,23 +123,8 @@ def scipy_integrate_ode_run(
     for index_time, _ in enumerate(simulation_times[1:]):
 
         if progress_bar:  # print a lightweight progress bar
-            if index_time == 0:
-                start_time = time.time()
-                print("0% finished, elapsed time = NA, ETA = NA", flush=True, end="\r")
-            else:
-                current_time = time.time()
-                estimate_time_arrival = (
-                    (current_time - start_time)
-                    / (index_time + 1)
-                    * (len(simulation_times) - (index_time + 1))
-                )
-                print(
-                    f"{100 * (index_time+1)/len(simulation_times)}% finished, "
-                    f"elapsed time = {(current_time-start_time)} seconds, "
-                    f"ETA = {estimate_time_arrival} seconds ",
-                    flush=True,
-                    end="\r",
-                )
+            start_time = time.time()
+            _print_progress_bar(len(simulation_times), index_time, start_time)
 
         if not integrator.successful():
             raise Exception(
