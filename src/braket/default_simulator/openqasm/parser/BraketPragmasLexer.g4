@@ -6,6 +6,7 @@ BRAKET: 'braket';
 UNITARY: 'unitary';
 RESULT: 'result';
 NOISE: 'noise';
+VERBATIM: 'verbatim';
 
 STATE_VECTOR: 'state_vector';
 PROBABILITY: 'probability';

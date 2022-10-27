@@ -526,8 +526,12 @@ class Interpreter:
         elif node.command.startswith("braket unitary"):
             unitary, target = parsed
             self.context.add_custom_unitary(unitary, target)
-        else:  # node.command.startswith("braket noise")
+        elif node.command.startswith("braket noise"):
             self.context.add_noise_instruction(parsed)
+        elif node.command.startswith("braket verbatim"):
+            pass
+        else:
+            raise NotImplementedError(f"Pragma '{node.command}' is not supported")
 
     @visit.register
     def _(self, node: SubroutineDefinition) -> None:

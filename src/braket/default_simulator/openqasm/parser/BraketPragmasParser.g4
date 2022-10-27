@@ -10,10 +10,15 @@ braketPragma
     : braketResultPragma
     | braketUnitaryPragma
     | braketNoisePragma
+    | braketVerbatimPragma
     ;
 
 braketUnitaryPragma
     : BRAKET UNITARY LPAREN twoDimMatrix RPAREN multiTarget
+    ;
+
+braketVerbatimPragma
+    : BRAKET VERBATIM
     ;
 
 twoDimMatrix

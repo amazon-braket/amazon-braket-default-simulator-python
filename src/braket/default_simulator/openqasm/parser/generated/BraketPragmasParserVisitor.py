@@ -19,6 +19,11 @@ class BraketPragmasParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by BraketPragmasParser#braketVerbatimPragma.
+    def visitBraketVerbatimPragma(self, ctx:BraketPragmasParser.BraketVerbatimPragmaContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by BraketPragmasParser#twoDimMatrix.
     def visitTwoDimMatrix(self, ctx:BraketPragmasParser.TwoDimMatrixContext):
         return self.visitChildren(ctx)
