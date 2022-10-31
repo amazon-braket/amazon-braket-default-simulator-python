@@ -33,14 +33,11 @@ setup(
     install_requires=[
         "numpy",
         "opt_einsum",
-        (
-            "amazon-braket-schemas @ "
-            "git+https://github.com/aws/amazon-braket-schemas-python@quera"
-        ),
         "pydantic==1.9.0",
         "scipy",
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
+        "amazon-braket-schemas>=1.12.0",
     ],
     entry_points={
         "braket.simulators": [
