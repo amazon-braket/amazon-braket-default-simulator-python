@@ -33,10 +33,11 @@ setup(
     install_requires=[
         "numpy",
         "opt_einsum",
+        "pydantic==1.9.0",
         "scipy",
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
-        "amazon-braket-schemas>=1.10.1",
+        "amazon-braket-schemas>=1.12.0",
     ],
     entry_points={
         "braket.simulators": [
@@ -52,6 +53,11 @@ setup(
                 "braket_oq3_dm = "
                 "braket.default_simulator.openqasm_density_matrix_simulator:"
                 "OpenQASMDensityMatrixSimulator"
+            ),
+            (
+                "braket_ahs = "
+                "braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator:"
+                "RydbergAtomSimulator",
             ),
         ]
     },
