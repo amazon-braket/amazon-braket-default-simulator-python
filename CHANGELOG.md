@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.10.0 (2022-10-31)
+
+### Features
+
+ * neutral atom simulator
+
 ## v1.9.1 (2022-10-27)
 
 ### Bug Fixes and Other Changes
