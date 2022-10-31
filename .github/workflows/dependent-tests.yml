@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip
-        pip install --upgrade git+https://github.com/aws/amazon-braket-schemas-python@quera
+        pip install --upgrade git+https://github.com/aws/amazon-braket-schemas-python@main
         pip install -e .
         cd ..
         git clone https://github.com/aws/${{ matrix.dependent }}.git
