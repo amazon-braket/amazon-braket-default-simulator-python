@@ -4,6 +4,7 @@ from functools import singledispatch
 from typing import Any, Iterable, Type, Union
 
 import numpy as np
+from sympy import Symbol
 
 from ..parser.openqasm_ast import (
     ArrayLiteral,
@@ -21,7 +22,7 @@ from ..parser.openqasm_ast import (
     IndexedIdentifier,
     IntegerLiteral,
     IntType,
-    UintType,
+    UintType, SymbolLiteral,
 )
 
 LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, BitstringLiteral]
@@ -188,6 +189,11 @@ def _(value: float) -> FloatLiteral:
 @wrap_value_into_literal.register
 def _(value: bool) -> BooleanLiteral:
     return BooleanLiteral(value)
+
+
+@wrap_value_into_literal.register
+def _(value: Symbol) -> SymbolLiteral:
+    return SymbolLiteral(value)
 
 
 @wrap_value_into_literal.register

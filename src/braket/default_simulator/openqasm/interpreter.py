@@ -19,6 +19,7 @@ from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
 from braket.ir.openqasm.program_v1 import io_type
+from sympy import Symbol
 
 from ..gate_operations import BRAKET_GATES
 from ._helpers.arrays import (
@@ -96,7 +97,7 @@ from .parser.openqasm_ast import (
     SizeOf,
     SubroutineDefinition,
     UnaryExpression,
-    WhileLoop,
+    WhileLoop, SymbolLiteral,
 )
 from .parser.openqasm_parser import parse
 from .program_context import ProgramContext
@@ -188,11 +189,14 @@ class Interpreter:
             raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
             if node.identifier.name not in self.context.inputs:
-                self.context.add_parameter(node.identifier.name, node.type)
+                # previously raised a NameError
+                init_value = wrap_value_into_literal(Symbol(node.identifier.name))
+                node_type = SymbolLiteral
             else:
                 init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
-                declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
-                self.visit(declaration)
+                node_type = node.type
+            declaration = ClassicalDeclaration(node_type, node.identifier, init_value)
+            self.visit(declaration)
 
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
