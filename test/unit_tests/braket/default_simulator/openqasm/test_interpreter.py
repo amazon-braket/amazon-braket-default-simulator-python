@@ -1832,7 +1832,7 @@ def test_advanced_language_features(qasm, caplog):
         (
             "WARNING.*"
             "This program uses OpenQASM language features that may "
-            "not be supported on QPUs or on-demand simulators\.\n"
+            "not be supported on QPUs or on-demand simulators\\.\n"
         ),
         caplog.text,
     )
