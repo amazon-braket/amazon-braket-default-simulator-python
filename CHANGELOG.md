@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.10.2 (2022-11-22)
+
+### Bug Fixes and Other Changes
+
+ * regex escape char in unit test
+
 ## v1.10.1.post0 (2022-11-21)
 
 ### Testing and Release Infrastructure
