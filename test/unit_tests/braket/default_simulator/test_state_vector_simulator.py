@@ -183,6 +183,7 @@ def test_properties():
                         "braket_noise_phase_damping",
                         "braket_noise_two_qubit_dephasing",
                         "braket_noise_two_qubit_depolarizing",
+                        "braket_result_type_adjoint_gradient",
                     ],
                     "supportedResultTypes": [
                         {
@@ -1200,3 +1201,21 @@ def test_sample(caplog):
     assert 400 < np.sum(measurements, axis=0)[0] < 600
     assert np.sum(measurements, axis=0)[1] == 0
     assert not caplog.text
+
+
+def test_adjoint_gradient_pragma_sv1():
+    simulator = StateVectorSimulator()
+    prog = OpenQASMProgram(
+        source="""
+        input float alpha;
+        input float beta;
+        qubit[1] q;
+        h q[0];
+        #pragma braket result adjoint_gradient h(q[0]) alpha, beta
+        """,
+        inputs={"alpha": 0.2, "beta": 0.3},
+    )
+    ag_not_supported = "Result type adjoint_gradient is not supported."
+
+    with pytest.raises(TypeError, match=ag_not_supported):
+        simulator.run(prog, shots=0)

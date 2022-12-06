@@ -171,7 +171,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
-        self._uses_advanced_language_features = True
         if node.io_identifier == IOKeyword.output:
             raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
@@ -522,6 +521,8 @@ class Interpreter:
         parsed = self.context.parse_pragma(node.command)
 
         if node.command.startswith("braket result"):
+            if not parsed:
+                raise TypeError(f"Result type {node.command.split()[2]} is not supported.")
             self.context.add_result(parsed)
         elif node.command.startswith("braket unitary"):
             unitary, target = parsed
