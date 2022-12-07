@@ -33,7 +33,7 @@ setup(
     install_requires=[
         "numpy",
         "opt_einsum",
-        "pydantic==1.9.0",
+        "pydantic>=1.9,<2.0",
         "scipy",
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
