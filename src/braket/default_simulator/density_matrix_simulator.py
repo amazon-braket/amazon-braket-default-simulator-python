@@ -136,7 +136,9 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                             "braket_noise_two_qubit_dephasing",
                             "braket_noise_two_qubit_depolarizing",
                         ],
-                        "forbiddenPragmas": [],
+                        "forbiddenPragmas": [
+                            "braket_result_type_adjoint_gradient",
+                        ],
                         "supportedResultTypes": [
                             {
                                 "name": "Sample",

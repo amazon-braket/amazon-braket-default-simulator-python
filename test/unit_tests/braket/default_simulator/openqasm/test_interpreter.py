@@ -1813,7 +1813,6 @@ def test_noise():
 @pytest.mark.parametrize(
     "qasm",
     (
-        "input int x;",
         "const int x = 4;",
         "int x = 1 + 1;",
         "qubit[2] q; h q[0:1];",

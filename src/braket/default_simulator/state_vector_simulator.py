@@ -195,6 +195,7 @@ class StateVectorSimulator(BaseLocalSimulator):
                             "braket_noise_phase_damping",
                             "braket_noise_two_qubit_dephasing",
                             "braket_noise_two_qubit_depolarizing",
+                            "braket_result_type_adjoint_gradient",
                         ],
                         "supportedResultTypes": [
                             {
