@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.11.0 (2022-12-07)
+
+### Features
+
+ * Adjoint Gradient changes
+
+### Bug Fixes and Other Changes
+
+ * Relax pydantic version constraint
+
 ## v1.10.2 (2022-11-22)
 
 ### Bug Fixes and Other Changes
