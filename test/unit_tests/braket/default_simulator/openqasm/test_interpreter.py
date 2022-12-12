@@ -1814,7 +1814,6 @@ def test_noise():
     "qasm",
     (
         "const int x = 4;",
-        "int x = 1 + 1;",
         "qubit[2] q; h q[0:1];",
         "gate my_x q { x q; }",
         "qubit[2] q; ctrl @ x q[0], q[1];",

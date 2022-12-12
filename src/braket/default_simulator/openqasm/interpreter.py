@@ -190,8 +190,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: BinaryExpression) -> Union[BinaryExpression, LiteralType]:
-        if self.context.in_global_scope:
-            self._uses_advanced_language_features = True
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
