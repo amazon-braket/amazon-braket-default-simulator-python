@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.11.1 (2022-12-13)
+
+### Bug Fixes and Other Changes
+
+ * remove warning for binary expressions
+
 ## v1.11.0 (2022-12-07)
 
 ### Features
