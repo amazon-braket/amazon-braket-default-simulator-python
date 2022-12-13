@@ -45,16 +45,6 @@ setup(
             "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
             (
-                "braket_oq3_sv = "
-                "braket.default_simulator.openqasm_state_vector_simulator:"
-                "OpenQASMStateVectorSimulator"
-            ),
-            (
-                "braket_oq3_dm = "
-                "braket.default_simulator.openqasm_density_matrix_simulator:"
-                "OpenQASMDensityMatrixSimulator"
-            ),
-            (
                 "braket_ahs = "
                 "braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator:"
                 "RydbergAtomSimulator",
