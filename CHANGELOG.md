@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.11.2 (2023-01-04)
+
+### Bug Fixes and Other Changes
+
+ * remove oq3 named sims
+
 ## v1.11.1 (2022-12-13)
 
 ### Bug Fixes and Other Changes
