@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.11.3 (2023-01-05)
+
+### Bug Fixes and Other Changes
+
+ * numpy ragged array error
+
 ## v1.11.2 (2023-01-04)
 
 ### Bug Fixes and Other Changes
