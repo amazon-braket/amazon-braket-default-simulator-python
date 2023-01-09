@@ -56,7 +56,7 @@ class AtomArrangementValidator(AtomArrangement):
             biggest_x_distance = sorted_sites[-1][0] - sorted_sites[0][0]
             if biggest_x_distance > capabilities.BOUNDING_BOX_SIZE_X:
                 warnings.warn(
-                    f"Arrangement is too wide. Sites {sorted_sites[0]} and {sorted_sites[-1]} "
+                    f"Sites {sorted_sites[0]} and {sorted_sites[-1]} "
                     "have x-separation bigger than the typical scale "
                     f"({capabilities.BOUNDING_BOX_SIZE_X} meters). "
                     "The coordinates of the atoms should be specified in SI units."
@@ -67,7 +67,7 @@ class AtomArrangementValidator(AtomArrangement):
                 biggest_y_distance = sorted_sites[-1][1] - sorted_sites[0][1]
                 if biggest_y_distance > capabilities.BOUNDING_BOX_SIZE_Y:
                     warnings.warn(
-                        f"Arrangement is too tall. Sites {sorted_sites[0]} and {sorted_sites[-1]} "
+                        f"Sites {sorted_sites[0]} and {sorted_sites[-1]} "
                         "have y-separation bigger than the typical scale "
                         f"({capabilities.BOUNDING_BOX_SIZE_Y} meters). "
                         "The coordinates of the atoms should be specified in SI units."
