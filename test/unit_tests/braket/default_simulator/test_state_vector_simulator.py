@@ -629,7 +629,7 @@ def circuit_noise(ir_type):
             qubit[2] q;
             h q[0];
             cnot q[0], q[1];
-            #pragma braket noise probability(.15) q[0]
+            #pragma braket noise bit_flip(.15) q[0]
             """
         )
 
@@ -666,10 +666,17 @@ def test_simulator_identity(caplog):
     assert not caplog.text
 
 
-@pytest.mark.xfail(raises=TypeError)
 def test_simulator_instructions_not_supported(circuit_noise):
     simulator = StateVectorSimulator()
-    simulator.run(circuit_noise, qubit_count=2, shots=0)
+    no_noise = re.escape(
+        "Noise instructions are not supported by the state vector simulator (by default). "
+        'You need to use the density matrix simulator: LocalSimulator("braket_dm").'
+    )
+    with pytest.raises(TypeError, match=no_noise):
+        if isinstance(circuit_noise, JaqcdProgram):
+            simulator.run(circuit_noise, qubit_count=2, shots=0)
+        else:
+            simulator.run(circuit_noise, shots=0)
 
 
 @pytest.mark.xfail(raises=ValueError)
