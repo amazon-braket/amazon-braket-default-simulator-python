@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.11.4 (2023-01-16)
+
+### Bug Fixes and Other Changes
+
+ * tweak noise on sv test
+
 ## v1.11.3 (2023-01-05)
 
 ### Bug Fixes and Other Changes
