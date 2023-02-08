@@ -69,7 +69,6 @@ def rk_run(
     dt = simulation_times[1] - simulation_times[0]  # The time step for the simulation
     start_time = 0
     for index_time, _ in enumerate(simulation_times[1:]):
-
         if progress_bar:  # print a lightweight progress bar
             start_time = time.time()
             _print_progress_bar(len(simulation_times), index_time, start_time)

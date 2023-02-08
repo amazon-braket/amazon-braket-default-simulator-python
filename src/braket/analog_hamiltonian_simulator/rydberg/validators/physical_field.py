@@ -3,7 +3,6 @@ from pydantic.class_validators import root_validator
 
 
 class PhysicalFieldValidator(PhysicalField):
-
     # Pattern, if string, must be "uniform"
     @root_validator(pre=True, skip_on_failure=True)
     def pattern_str(cls, values):

@@ -174,7 +174,6 @@ class TwoQubitDephasing(KrausOperation):
 
     @property
     def matrices(self) -> List[np.ndarray]:
-
         SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
         SZ = np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
         K0 = np.sqrt(1 - self._probability) * np.kron(SI, SI)
