@@ -104,7 +104,7 @@ def scipy_integrate_ode_run(
             raise Exception(
                 "ODE integration error: Try to increase "
                 "the allowed number of substeps by increasing "
-                "the nsteps parameter in the Options class."
+                "the parameter `nsteps`."
             )
 
         integrator.set_initial_value(state, index_time)
