@@ -2,7 +2,7 @@
 
 [![Latest Version](https://img.shields.io/pypi/v/amazon-braket-default-simulator.svg)](https://pypi.python.org/pypi/amazon-braket-default-simulator)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/amazon-braket-default-simulator.svg)](https://pypi.python.org/pypi/amazon-braket-default-simulator)
-[![Build Status](https://img.shields.io/github/workflow/status/aws/amazon-braket-default-simulator-python/Python%20package/main?logo=github)](https://github.com/aws/amazon-braket-default-simulator-python/actions?query=workflow%3A%22Python+package%22)
+[![Build status](https://github.com/aws/amazon-braket-default-simulator-python/actions/workflows/python-package.yml/badge.svg)](https://github.com/aws/amazon-braket-default-simulator-python/actions/workflows/python-package.yml)
 [![codecov](https://codecov.io/gh/aws/amazon-braket-default-simulator-python/branch/main/graph/badge.svg?token=FZEG1AQU3S)](https://codecov.io/gh/aws/amazon-braket-default-simulator-python)
 [![Documentation Status](https://img.shields.io/readthedocs/amazon-braket-default-simulator-python.svg?logo=read-the-docs)](https://amazon-braket-default-simulator-python.readthedocs.io/en/latest/?badge=latest)
 [![Code Style: Black](https://img.shields.io/badge/code_style-black-000000.svg)](https://github.com/psf/black)

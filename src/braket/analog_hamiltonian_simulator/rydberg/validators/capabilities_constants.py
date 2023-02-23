@@ -4,7 +4,6 @@ from pydantic.main import BaseModel
 
 
 class CapabilitiesConstants(BaseModel):
-
     DIMENSIONS = 2
     BOUNDING_BOX_SIZE_X: Decimal
     BOUNDING_BOX_SIZE_Y: Decimal

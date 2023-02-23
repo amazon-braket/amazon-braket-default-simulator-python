@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.11.5.post0 (2023-02-13)
+
+### Testing and Release Infrastructure
+
+ * update github workflows for node12 retirement
+
+## v1.11.5 (2023-02-09)
+
+### Bug Fixes and Other Changes
+
+ * update: adding build for python 3.10
+
+## v1.11.4 (2023-01-16)
+
+### Bug Fixes and Other Changes
+
+ * tweak noise on sv test
+
 ## v1.11.3 (2023-01-05)
 
 ### Bug Fixes and Other Changes
