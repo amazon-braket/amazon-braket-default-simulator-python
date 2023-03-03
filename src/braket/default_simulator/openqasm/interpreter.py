@@ -1,5 +1,6 @@
 from copy import deepcopy
 from dataclasses import fields
+from functools import singledispatchmethod
 from logging import Logger, getLogger
 from typing import Dict, Iterable, List, Optional, Union
 
@@ -36,7 +37,6 @@ from ._helpers.quantum import (
     is_inverted,
     modify_body,
 )
-from ._helpers.utils import singledispatchmethod
 from .circuit import Circuit
 from .parser.openqasm_ast import (
     AccessControl,
