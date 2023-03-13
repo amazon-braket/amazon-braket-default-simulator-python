@@ -159,5 +159,5 @@ def test_failed_scipy_run():
         assert str(e) == (
             "ODE integration error: Try to increase "
             "the allowed number of substeps by increasing "
-            "the nsteps parameter in the Options class."
+            "the parameter `nsteps`."
         )

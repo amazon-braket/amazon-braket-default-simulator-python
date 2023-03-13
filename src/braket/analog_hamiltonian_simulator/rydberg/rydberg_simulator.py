@@ -45,7 +45,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         self,
         program: Program,
         shots: int = 100,
-        steps: int = 100,
+        steps: int = 1000,
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 0.0,
         progress_bar: bool = False,
@@ -123,7 +123,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
 
         # Run the solver
         # We shall adaptively change between numpy solver (RK6 method) and scipy solver
-        if len(self.configurations) <= 1000:
+        if len(self.configurations) <= 32:
             states = rk_run(
                 program,
                 self.configurations,
