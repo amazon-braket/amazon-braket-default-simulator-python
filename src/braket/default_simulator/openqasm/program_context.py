@@ -1,3 +1,4 @@
+from functools import singledispatchmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
@@ -15,7 +16,6 @@ from ._helpers.arrays import (
     update_value,
 )
 from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
-from ._helpers.utils import singledispatchmethod
 from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
