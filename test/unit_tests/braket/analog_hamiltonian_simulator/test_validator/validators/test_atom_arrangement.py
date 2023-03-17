@@ -38,13 +38,13 @@ def test_valid_atom_array(atom_arrangement_data, device_capabilities_constants):
     [
         (
             [[-50.1e-6, 50.0e-6], [0.0, 0.0], [0.0, 5e-6], [50.0e-6, -50.0e-6]],
-            "Arrangement is too wide. Sites [-5.01e-05, 5e-05] and [5e-05, -5e-05] have "
+            "Sites [-5.01e-05, 5e-05] and [5e-05, -5e-05] have "
             "x-separation bigger than the typical scale (0.0001 meters). "
             "The coordinates of the atoms should be specified in SI units.",
         ),
         (
             [[-50.0e-6, 50.1e-6], [0.0, 0.0], [0.0, 5e-6], [50.0e-6, -50.0e-6]],
-            "Arrangement is too wide. Sites [-5e-05, 5.01e-05] and [5e-05, -5e-05] have "
+            "Sites [-5e-05, 5.01e-05] and [5e-05, -5e-05] have "
             "x-separation bigger than the typical scale (0.0001 meters). "
             "The coordinates of the atoms should be specified in SI units.",
         ),
@@ -55,19 +55,19 @@ def test_valid_atom_array(atom_arrangement_data, device_capabilities_constants):
                 [31.3e-6, -68.8e-6],
                 [22.7e-6, 28.3e-6],
             ],
-            "Arrangement is too tall. Sites [3.13e-05, -6.88e-05] and [3.13e-05, 3.13e-05] "
+            "Sites [3.13e-05, -6.88e-05] and [3.13e-05, 3.13e-05] "
             "have y-separation bigger than the typical scale (0.0001 meters). "
             "The coordinates of the atoms should be specified in SI units.",
         ),
         (
             [[50.0e-6, 100.1e-6], [100.1e-6, 50.0e-6], [50.0e-6, 0.0], [0.0, 50.0e-6]],
-            "Arrangement is too wide. Sites [0.0, 5e-05] and [0.0001001, 5e-05] have "
+            "Sites [0.0, 5e-05] and [0.0001001, 5e-05] have "
             "x-separation bigger than the typical scale (0.0001 meters). "
             "The coordinates of the atoms should be specified in SI units.",
         ),
         (
             [[0.0, 0.0], [0.0, 5e-6], [6.71e-5, -3.9e-5], [-3.3e-5, 6.11e-5]],
-            "Arrangement is too wide. Sites [-3.3e-05, 6.11e-05] and [6.71e-05, -3.9e-05] "
+            "Sites [-3.3e-05, 6.11e-05] and [6.71e-05, -3.9e-05] "
             "have x-separation bigger than the typical scale (0.0001 meters). "
             "The coordinates of the atoms should be specified in SI units.",
         ),

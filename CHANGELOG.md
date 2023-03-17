@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.12.1 (2023-03-14)
+
+### Bug Fixes and Other Changes
+
+ * ahs local simulator update
+
 ## v1.12.0 (2023-03-03)
 
 ### Deprecations and Removals
