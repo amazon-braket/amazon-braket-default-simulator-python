@@ -66,7 +66,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         Args:
             program (Program): An analog simulation Hamiltonian for the Rydberg system simulated
             shots (int): The number of shots. Default: 100
-            steps (int): The number of time points for the simulation. Default: 100
+            steps (int): The number of time points for the simulation. Default: 1000
             rydberg_interaction_coef (float): The interaction coefficient. Default: 5.42e-24
             blockade_radius (float): The blockade radius for the Rydberg system. Default: 0.0
             progress_bar (bool): If true, a progress bar will be printed during the simulation.
