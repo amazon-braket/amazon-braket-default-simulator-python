@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.12.2 (2023-03-27)
+
+### Bug Fixes and Other Changes
+
+ * update default step value in doc string for the rydberg simulator
+
 ## v1.12.1 (2023-03-14)
 
 ### Bug Fixes and Other Changes
