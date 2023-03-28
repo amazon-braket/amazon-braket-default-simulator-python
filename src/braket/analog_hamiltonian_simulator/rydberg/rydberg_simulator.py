@@ -123,7 +123,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
 
         # Run the solver
         # We shall adaptively change between numpy solver (RK6 method) and scipy solver
-        if len(self.configurations) <= 32:
+        if len(self.configurations) <= 1000:
             states = rk_run(
                 program,
                 self.configurations,
