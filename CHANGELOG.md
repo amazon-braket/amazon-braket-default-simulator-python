@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.12.3 (2023-03-29)
+
+### Bug Fixes and Other Changes
+
+ * Revert threshold to switch AHS solvers
+
+### Testing and Release Infrastructure
+
+ * add dependabot updates for GH actions
+
 ## v1.12.2 (2023-03-27)
 
 ### Bug Fixes and Other Changes
