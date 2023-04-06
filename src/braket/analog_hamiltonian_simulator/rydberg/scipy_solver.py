@@ -7,6 +7,7 @@ import scipy.sparse
 from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
+    _apply_hamiltonian,
     _get_hamiltonian,
     _get_ops_coefs,
     _print_progress_bar,
@@ -79,7 +80,7 @@ def scipy_integrate_ode_run(
     # Note that we we will use the index of the time point,
     # instead of time, for f(t, y).
     def f(index_time: int, y: np.ndarray) -> scipy.sparse.csr_matrix:
-        return -1j * dt * _get_hamiltonian(index_time, operators_coefficients).dot(y)
+        return -1j * dt * _apply_hamiltonian(index_time, operators_coefficients, y)
 
     integrator = scipy.integrate.ode(f)
     integrator.set_integrator(
