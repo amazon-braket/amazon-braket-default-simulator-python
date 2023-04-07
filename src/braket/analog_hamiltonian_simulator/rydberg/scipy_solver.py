@@ -8,7 +8,7 @@ from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
     _apply_hamiltonian,
-    _get_hamiltonian,
+    # _get_hamiltonian,
     _get_ops_coefs,
     _print_progress_bar,
 )
