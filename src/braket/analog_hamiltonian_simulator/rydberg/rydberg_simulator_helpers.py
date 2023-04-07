@@ -531,7 +531,7 @@ def _apply_hamiltonian(
     ],
     input_register: np.ndarray,
 ) -> scipy.sparse.csr_matrix:
-    """Applies the Hamiltonian at a given time point on a state. 
+    """Applies the Hamiltonian at a given time point on a state.
 
     Args:
         index_time (int): The index of the current time point
