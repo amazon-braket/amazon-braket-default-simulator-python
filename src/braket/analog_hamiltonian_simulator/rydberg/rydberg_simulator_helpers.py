@@ -55,26 +55,29 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
 
     # The coordinates for atoms in the filled sites
     atoms_coordinates = np.array(lattice.sites)[np.where(lattice.filling)]
-    min_separation = 1e10  # The minimum separation between atoms, or filled sites
+    min_separation = float("inf")  # The minimum separation between atoms, or filled sitesa
     for i, atom_coord in enumerate(atoms_coordinates[:-1]):
         dists = np.linalg.norm(atom_coord - atoms_coordinates[i + 1 :], axis=1)
         min_separation = min(min_separation, min(dists))
 
-    configurations = [
-        "".join(item) for item in itertools.product(["g", "r"], repeat=sum(lattice.filling))
-    ]
+    bit_list_iter = itertools.product(["g", "r"], repeat=sum(lattice.filling))
+    configuration_iter = ("".join(item) for item in bit_list_iter)
 
     if blockade_radius < min_separation:  # no need to consider blockade approximation
-        return configurations
-    return [
-        config
-        for config in configurations
-        if validate_config(config, atoms_coordinates, blockade_radius)
-    ]
+        return {config: ind for ind, config in enumerate(configuration_iter)}
+
+    ind = 0
+    configurations = {}
+    for config in configuration_iter:
+        if validate_config(config, atoms_coordinates, blockade_radius):
+            configurations[config] = ind
+            ind += 1
+
+    return configurations
 
 
 def _get_interaction_dict(
-    program: Program, rydberg_interaction_coef: float, configurations: List[str]
+    program: Program, rydberg_interaction_coef: float, configurations: Dict[str, int]
 ) -> Dict[Tuple[int, int], float]:
     """Return the dict contains the Rydberg interaction strength for all configurations.
 
@@ -96,7 +99,7 @@ def _get_interaction_dict(
 
     interactions = {}  # The interaction in the basis of configurations, as a dictionary
 
-    for config_index, config in enumerate(configurations):
+    for config, config_index in configurations.items():
         interaction = 0
 
         # The indices for the Rydberg atoms in the configuration
@@ -119,13 +122,13 @@ def _get_interaction_dict(
 
 
 def _get_detuning_dict(
-    targets: Tuple[int], configurations: List[str]
+    targets: Tuple[int], configurations: Dict[str, int]
 ) -> Dict[Tuple[int, int], float]:
     """Return the dict contains the detuning operators for a set of target atoms.
 
     Args:
         targets (Tuple[int]): The target atoms of the detuning operator
-        configurations (List[str]): The list of configurations that comply with the blockade
+        configurations (Dict[str, int]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
@@ -134,7 +137,7 @@ def _get_detuning_dict(
 
     detuning = {}  # The detuning term in the basis of configurations, as a dictionary
 
-    for ind_1, config in enumerate(configurations):
+    for config, ind_1 in configurations.items():
         value = sum([1 for ind_2, item in enumerate(config) if item == "r" and ind_2 in targets])
         if value > 0:
             detuning[(ind_1, ind_1)] = value
@@ -142,12 +145,14 @@ def _get_detuning_dict(
     return detuning
 
 
-def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple[int, int], float]:
+def _get_rabi_dict(
+    targets: Tuple[int], configurations: Dict[str, int]
+) -> Dict[Tuple[int, int], float]:
     """Return the dict for the Rabi operators for a set of target atoms.
 
     Args:
         targets (Tuple[int]): The target atoms of the detuning operator
-        configurations (List[str]): The list of configurations that comply with the blockade
+        configurations (Dict[str, int]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
@@ -160,30 +165,18 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
 
     rabi = {}  # The Rabi term in the basis of configurations, as a dictionary
 
-    for ind_1, config_1 in enumerate(configurations):
-        for ind_2, config_2 in enumerate(configurations):
-            if ind_2 > ind_1:
-                # Obtain the indices of the bits where config_1 differ from config_2
-                ind_diffs = [
-                    ind for ind, (bit1, bit2) in enumerate(zip(config_1, config_2)) if bit1 != bit2
-                ]
+    for config_1, ind_1 in configurations.items():
+        for target in targets:
+            if config_1[target] != "g":
+                continue
 
-                # The Rabi term will be nonzero iff the two configurations differ
-                # by one and only one bit
-                if len(ind_diffs) > 1:
-                    continue
+            bit_list = list(config_1)
+            bit_list[target] = "r"
+            config_2 = "".join(bit_list)
 
-                index_diff = ind_diffs[0]  # The index where config_1 differ from config_2
+            if config_2 in configurations:
+                rabi[(configurations[config_2], ind_1)] = 1
 
-                # If the index_diff is not in the target, then it won't contribute to the
-                # Rabi operator
-                if index_diff not in targets:
-                    continue
-
-                # Only keep the lower triangular part of the Rabi operator
-                # In particular, we only add the following component if and only if
-                # (config_1[index_diff], config_2[index_diff]) == ("g", "r")
-                rabi[(ind_2, ind_1)] = 1
     return rabi
 
 
@@ -208,7 +201,7 @@ def _get_sparse_from_dict(
 
 
 def _get_sparse_ops(
-    program: Program, configurations: List[str], rydberg_interaction_coef: float
+    program: Program, configurations: Dict[str, int], rydberg_interaction_coef: float
 ) -> Tuple[
     List[scipy.sparse.csr_matrix],
     List[scipy.sparse.csr_matrix],
@@ -362,7 +355,7 @@ def _get_coefs(
 
 def _get_ops_coefs(
     program: Program,
-    configurations: List[str],
+    configurations: Dict[str, int],
     rydberg_interaction_coef: float,
     simulation_times: List[float],
 ) -> Tuple[
