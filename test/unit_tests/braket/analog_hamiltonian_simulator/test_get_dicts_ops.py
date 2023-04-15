@@ -45,7 +45,7 @@ program_1 = convert_unit(
     )
 )
 
-configurations_1 = ["gg", "gr", "rg", "rr"]
+configurations_1 = {"gg": 0, "gr": 1, "rg": 2, "rr": 3}
 
 
 @pytest.mark.parametrize("para", [[program_1, rydberg_interaction_coef, configurations_1]])
@@ -94,7 +94,7 @@ program_2 = convert_unit(
     )
 )
 
-configurations_2 = ["gg", "gr", "rg", "rr"]
+configurations_2 = {"gg": 0, "gr": 1, "rg": 2, "rr": 3}
 
 
 @pytest.mark.parametrize("para", [[program_2, rydberg_interaction_coef, configurations_2]])
@@ -117,7 +117,7 @@ program_3 = convert_unit(
     )
 )
 
-configurations_3 = ["ggg", "ggr", "grg", "grr", "rgg", "rgr", "rrg", "rrr"]
+configurations_3 = {"ggg": 0, "ggr": 1, "grg": 2, "grr": 3, "rgg": 4, "rgr": 5, "rrg": 6, "rrr": 7}
 
 
 @pytest.mark.parametrize("para", [[program_3, rydberg_interaction_coef, configurations_3]])

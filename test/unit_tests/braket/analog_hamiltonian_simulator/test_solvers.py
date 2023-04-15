@@ -53,7 +53,7 @@ program = convert_unit(
     )
 )
 
-configurations = ["gg", "gr", "rg", "rr"]
+configurations = {"gg": 0, "gr": 1, "rg": 2, "rr": 3}
 steps = 400
 simulation_times = np.linspace(0, tmax * 1e6, steps)
 

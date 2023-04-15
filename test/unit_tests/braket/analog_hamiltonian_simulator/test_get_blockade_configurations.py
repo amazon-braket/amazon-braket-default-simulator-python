@@ -60,14 +60,23 @@ def test_validate_config_1_fail(para):
 def test_get_blockade_configurations_setup_1_blockade(para):
     lattice, blockade_radius = para[0], para[1]
     configurations = get_blockade_configurations(lattice, blockade_radius)
-    assert configurations == ["ggg", "ggr", "grg", "rgg", "rgr"]
+    assert configurations == {"ggg": 0, "ggr": 1, "grg": 2, "rgg": 3, "rgr": 4}
 
 
 @pytest.mark.parametrize("para", [[setup_1, 0]])
 def test_get_blockade_configurations_setup_1_no_blockade(para):
     lattice, blockade_radius = para[0], para[1]
     configurations = get_blockade_configurations(lattice, blockade_radius)
-    assert configurations == ["ggg", "ggr", "grg", "grr", "rgg", "rgr", "rrg", "rrr"]
+    assert configurations == {
+        "ggg": 0,
+        "ggr": 1,
+        "grg": 2,
+        "grr": 3,
+        "rgg": 4,
+        "rgr": 5,
+        "rrg": 6,
+        "rrr": 7,
+    }
 
 
 ###
@@ -111,21 +120,21 @@ def test_validate_config_2_fail(para):
 def test_get_blockade_configurations_setup_2_blockade_1(para):
     lattice, blockade_radius = para[0], para[1]
     configurations = get_blockade_configurations(lattice, blockade_radius)
-    assert configurations == ["gg", "gr", "rg", "rr"]
+    assert configurations == {"gg": 0, "gr": 1, "rg": 2, "rr": 3}
 
 
 @pytest.mark.parametrize("para", [[setup_2, 6e-6]])
 def test_get_blockade_configurations_setup_2_blockade_2(para):
     lattice, blockade_radius = para[0], para[1]
     configurations = get_blockade_configurations(lattice, blockade_radius)
-    assert configurations == ["gg", "gr", "rg"]
+    assert configurations == {"gg": 0, "gr": 1, "rg": 2}
 
 
 @pytest.mark.parametrize("para", [[setup_2, 0]])
 def test_get_blockade_configurations_setup_2_no_blockade(para):
     lattice, blockade_radius = para[0], para[1]
     configurations = get_blockade_configurations(lattice, blockade_radius)
-    assert configurations == ["gg", "gr", "rg", "rr"]
+    assert configurations == {"gg": 0, "gr": 1, "rg": 2, "rr": 3}
 
 
 ###
@@ -170,11 +179,11 @@ def test_validate_config_3_fail(para):
 def test_get_blockade_configurations_setup_3_blockade(para):
     lattice, blockade_radius = para[0], para[1]
     configurations = get_blockade_configurations(lattice, blockade_radius)
-    assert configurations == ["gg", "gr", "rg"]
+    assert configurations == {"gg": 0, "gr": 1, "rg": 2}
 
 
 @pytest.mark.parametrize("para", [[setup_2, 0]])
 def test_get_blockade_configurations_setup_3_no_blockade(para):
     lattice, blockade_radius = para[0], para[1]
     configurations = get_blockade_configurations(lattice, blockade_radius)
-    assert configurations == ["gg", "gr", "rg", "rr"]
+    assert configurations == {"gg": 0, "gr": 1, "rg": 2, "rr": 3}

@@ -44,7 +44,7 @@ program_1 = convert_unit(
     )
 )
 
-configurations_1 = ["gg", "gr", "rg", "rr"]
+configurations_1 = {"gg": 0, "gr": 1, "rg": 2, "rr": 3}
 
 
 @pytest.mark.parametrize(

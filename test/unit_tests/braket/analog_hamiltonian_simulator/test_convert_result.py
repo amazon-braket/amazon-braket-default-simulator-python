@@ -13,7 +13,7 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_result_conver
     convert_result,
 )
 
-configurations_1 = ["gg", "gr", "rg", "rr"]
+configurations_1 = {"gg": 0, "gr": 1, "rg": 2, "rr": 3}
 
 shots = 10000000
 
@@ -82,16 +82,64 @@ def test_convert_result(dist, preSequence, configurations, taskMetadata):
 @pytest.mark.parametrize(
     "dist, preSequence, configurations, taskMetadata, expected_postSequence",
     [
-        ([1, 0, 0, 0], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 1, 0]),
-        ([0, 1, 0, 0], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0]),
-        ([0, 0, 1, 0], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 1, 0]),
-        ([0, 0, 0, 1], [1, 1, 0], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0]),
-        ([1, 0, 0, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0, 1]),
-        ([0, 1, 0, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [1, 0, 0, 0]),
-        ([0, 0, 1, 0], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0, 1]),
-        ([0, 0, 0, 1], [1, 0, 0, 1], ["gg", "gr", "rg", "rr"], mock_taskMetadata, [0, 0, 0, 0]),
-        ([1, 0], [0, 0, 0, 1], ["g", "r"], mock_taskMetadata, [0, 0, 0, 1]),
-        ([0, 1], [0, 0, 0, 1], ["g", "r"], mock_taskMetadata, [0, 0, 0, 0]),
+        (
+            [1, 0, 0, 0],
+            [1, 1, 0],
+            {"gg": 0, "gr": 1, "rg": 2, "rr": 3},
+            mock_taskMetadata,
+            [1, 1, 0],
+        ),
+        (
+            [0, 1, 0, 0],
+            [1, 1, 0],
+            {"gg": 0, "gr": 1, "rg": 2, "rr": 3},
+            mock_taskMetadata,
+            [1, 0, 0],
+        ),
+        (
+            [0, 0, 1, 0],
+            [1, 1, 0],
+            {"gg": 0, "gr": 1, "rg": 2, "rr": 3},
+            mock_taskMetadata,
+            [0, 1, 0],
+        ),
+        (
+            [0, 0, 0, 1],
+            [1, 1, 0],
+            {"gg": 0, "gr": 1, "rg": 2, "rr": 3},
+            mock_taskMetadata,
+            [0, 0, 0],
+        ),
+        (
+            [1, 0, 0, 0],
+            [1, 0, 0, 1],
+            {"gg": 0, "gr": 1, "rg": 2, "rr": 3},
+            mock_taskMetadata,
+            [1, 0, 0, 1],
+        ),
+        (
+            [0, 1, 0, 0],
+            [1, 0, 0, 1],
+            {"gg": 0, "gr": 1, "rg": 2, "rr": 3},
+            mock_taskMetadata,
+            [1, 0, 0, 0],
+        ),
+        (
+            [0, 0, 1, 0],
+            [1, 0, 0, 1],
+            {"gg": 0, "gr": 1, "rg": 2, "rr": 3},
+            mock_taskMetadata,
+            [0, 0, 0, 1],
+        ),
+        (
+            [0, 0, 0, 1],
+            [1, 0, 0, 1],
+            {"gg": 0, "gr": 1, "rg": 2, "rr": 3},
+            mock_taskMetadata,
+            [0, 0, 0, 0],
+        ),
+        ([1, 0], [0, 0, 0, 1], {"g": 0, "r": 1}, mock_taskMetadata, [0, 0, 0, 1]),
+        ([0, 1], [0, 0, 0, 1], {"g": 0, "r": 1}, mock_taskMetadata, [0, 0, 0, 0]),
     ],
 )
 def test_convert_result_with_empty_sites(
