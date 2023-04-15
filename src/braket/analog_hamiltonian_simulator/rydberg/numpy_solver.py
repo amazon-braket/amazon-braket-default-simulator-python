@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import List, Dict
 
 import numpy as np
 from braket.ir.ahs.program_v1 import Program
