@@ -84,7 +84,7 @@ def _get_interaction_dict(
     Args:
         program (Program): An analog simulation program for Rydberg system with the interaction term
         rydberg_interaction_coef (float): The interaction coefficient
-        configurations (List[str]): The list of configurations that comply with the blockade
+        configurations (Dict[str, int]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
@@ -213,7 +213,7 @@ def _get_sparse_ops(
 
     Args:
         program (Program): An analog simulation program for Rydberg system
-        configurations (List[str]): The list of configurations that comply with the blockade
+        configurations (Dict[str, int]): The list of configurations that comply with the blockade
             approximation.
         rydberg_interaction_coef (float): The interaction coefficient
 
@@ -373,7 +373,7 @@ def _get_ops_coefs(
 
     Args:
         program (Program): An analog simulation program for Rydberg system
-        configurations (List[str]): The list of configurations that comply to the
+        configurations (Dict[str, int]): The list of configurations that comply to the
             blockade approximation.
         rydberg_interaction_coef (float): The interaction coefficient
         simulation_times (List[float]): The list of time points

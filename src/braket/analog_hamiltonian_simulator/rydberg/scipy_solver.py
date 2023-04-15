@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import List, Dict
 
 import numpy as np
 import scipy.integrate
@@ -15,7 +15,7 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers impor
 
 def scipy_integrate_ode_run(
     program: Program,
-    configurations: List[str],
+    configurations: Dict[str, int],
     simulation_times: List[float],
     rydberg_interaction_coef: float,
     progress_bar: bool = False,
@@ -33,7 +33,7 @@ def scipy_integrate_ode_run(
 
     Args:
         program (Program): An analog simulation Hamiltonian for the Rydberg system simulated
-        configurations (List[str]): The list of configurations that comply with the
+        configurations (Dict[str, int]): The list of configurations that comply with the
             blockade approximation.
         simulation_times (List[float]): The list of time points
         rydberg_interaction_coef (float): The interaction coefficient
