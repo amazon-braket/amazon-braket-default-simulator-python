@@ -15,7 +15,7 @@ from typing import List
 
 import numpy as np
 
-from braket.default_simulator.linalg_utils import multiply_matrix
+from braket.default_simulator.linalg_utils import apply_operation
 from braket.default_simulator.operation import GateOperation
 
 
@@ -36,6 +36,10 @@ def apply_operations(
     """
     for operation in operations:
         matrix = operation.matrix
-        targets = operation.targets
-        state = multiply_matrix(state, matrix, targets)
+        all_targets = operation.targets
+        num_ctrl = len(operation._ctrl_modifiers)
+        control_state = tuple(np.logical_not(operation._ctrl_modifiers).astype(int))
+        controls = all_targets[:num_ctrl]
+        targets = all_targets[num_ctrl:]
+        state = apply_operation(state, matrix, targets, controls, control_state)
     return state

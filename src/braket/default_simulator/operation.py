@@ -50,6 +50,7 @@ class GateOperation(Operation, ABC):
         self._ctrl_modifiers = ctrl_modifiers
         self._power = power
 
+    @property
     @abstractmethod
     def _base_matrix(self) -> np.ndarray:
         """np.ndarray: The matrix representation of the operation."""
@@ -61,9 +62,6 @@ class GateOperation(Operation, ABC):
             unitary = np.linalg.matrix_power(unitary, int(self._power))
         else:
             unitary = fractional_matrix_power(unitary, self._power)
-
-        for mod in self._ctrl_modifiers:
-            unitary = controlled_unitary(unitary, negctrl=mod)
         return unitary
 
     def __eq__(self, other):
