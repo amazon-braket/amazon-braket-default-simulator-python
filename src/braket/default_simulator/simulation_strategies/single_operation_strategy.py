@@ -15,7 +15,7 @@ from typing import List
 
 import numpy as np
 
-from braket.default_simulator.linalg_utils import apply_operation
+from braket.default_simulator.linalg_utils import multiply_matrix
 from braket.default_simulator.operation import GateOperation
 
 
