@@ -1028,7 +1028,6 @@ def test_gphase():
     circuit = Interpreter().build_circuit(qasm)
     simulation = StateVectorSimulation(2, 1, 1)
     simulation.evolve(circuit.instructions)
-    print(simulation.state_vector)
     assert np.allclose(simulation.state_vector, [-1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
 
 
