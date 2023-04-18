@@ -44,12 +44,8 @@ def apply_operation(
     control_state = control_state or (1,) * len(controls)
     num_qubits = len(state.shape)
     slices = (slice(None, 1), slice(1, None), slice(None, None))
-    control_slices = {
-        i: slices[state] for i, state in zip(controls, control_state)
-    }
-    ctrl_index = tuple(
-        control_slices[i] if i in controls else slices[2] for i in range(num_qubits)
-    )
+    control_slices = {i: slices[state] for i, state in zip(controls, control_state)}
+    ctrl_index = tuple(control_slices[i] if i in controls else slices[2] for i in range(num_qubits))
     state[ctrl_index] = multiply_matrix(state[ctrl_index], matrix, targets)
     return state
 
