@@ -44,8 +44,7 @@ def apply_operation(
     control_state = control_state or (1,) * len(controls)
     num_qubits = len(state.shape)
     control_slices = {
-        i: (slice(None, 1), slice(1, None))[state]
-        for i, state in zip(controls, control_state)
+        i: (slice(None, 1), slice(1, None))[state] for i, state in zip(controls, control_state)
     }
     ctrl_index = tuple(
         control_slices[i] if i in controls else slice(None, None) for i in range(num_qubits)
