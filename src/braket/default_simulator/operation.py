@@ -19,8 +19,6 @@ from typing import List, Optional, Tuple
 import numpy as np
 from scipy.linalg import fractional_matrix_power
 
-from braket.default_simulator.linalg_utils import controlled_unitary
-
 
 class Operation(ABC):
     """
