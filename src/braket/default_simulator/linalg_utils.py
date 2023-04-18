@@ -17,8 +17,8 @@ from typing import List, Optional, Sequence, Tuple
 import numpy as np
 
 _SLICES = (
-    _CONTROL_SLICE := slice(1, None),
     _NEG_CONTROL_SLICE := slice(None, 1),
+    _CONTROL_SLICE := slice(1, None),
     _NO_CONTROL_SLICE := slice(None, None),
 )
 
