@@ -41,5 +41,5 @@ def apply_operations(
         control_state = tuple(np.logical_not(operation._ctrl_modifiers).astype(int))
         controls = all_targets[:num_ctrl]
         targets = all_targets[num_ctrl:]
-        state = apply_operation(state, matrix, targets, controls, control_state)
+        state = multiply_matrix(state, matrix, targets, controls, control_state)
     return state
