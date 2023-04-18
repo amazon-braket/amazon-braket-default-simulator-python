@@ -46,7 +46,7 @@ def multiply_matrix(
         np.ndarray: The state after the matrix has been applied.
     """
     if not controls:
-        return multiply_matrix(state, matrix, targets)
+        return _multiply_matrix(state, matrix, targets)
 
     control_state = control_state or (1,) * len(controls)
     num_qubits = len(state.shape)
