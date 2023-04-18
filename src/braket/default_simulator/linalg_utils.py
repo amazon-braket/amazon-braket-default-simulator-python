@@ -16,15 +16,22 @@ from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 
+_SLICES = (
+    _CONTROL_SLICE := slice(1, None),
+    _NEG_CONTROL_SLICE := slice(None, 1),
+    _NO_CONTROL_SLICE := slice(None, None),
+)
 
-def apply_operation(
+
+def multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
     targets: Tuple[int, ...],
     controls: Optional[Tuple[int]] = (),
     control_state: Optional[Tuple[int]] = (),
 ) -> np.ndarray:
-    """Applies the given matrix to the given state, controlling the operation as specified.
+    """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
+    controlling the operation as specified.
 
     Args:
         state (np.ndarray): The state to multiply the matrix by.
@@ -43,14 +50,15 @@ def apply_operation(
 
     control_state = control_state or (1,) * len(controls)
     num_qubits = len(state.shape)
-    slices = (slice(None, 1), slice(1, None), slice(None, None))
-    control_slices = {i: slices[state] for i, state in zip(controls, control_state)}
-    ctrl_index = tuple(control_slices[i] if i in controls else slices[2] for i in range(num_qubits))
+    control_slices = {i: _SLICES[state] for i, state in zip(controls, control_state)}
+    ctrl_index = tuple(
+        control_slices[i] if i in controls else _NO_CONTROL_SLICE for i in range(num_qubits)
+    )
     state[ctrl_index] = multiply_matrix(state[ctrl_index], matrix, targets)
     return state
 
 
-def multiply_matrix(
+def _multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
     targets: Tuple[int, ...],
