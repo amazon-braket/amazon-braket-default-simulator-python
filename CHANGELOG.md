@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.13.0 (2023-04-20)
+
+### Features
+
+ * optimize performance for simulating control modifiers
+
 ## v1.12.3 (2023-03-29)
 
 ### Bug Fixes and Other Changes
