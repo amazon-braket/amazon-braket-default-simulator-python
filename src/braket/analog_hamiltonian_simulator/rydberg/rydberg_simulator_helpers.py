@@ -55,7 +55,7 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
 
     # The coordinates for atoms in the filled sites
     atoms_coordinates = np.array(lattice.sites)[np.where(lattice.filling)]
-    min_separation = float("inf")  # The minimum separation between atoms, or filled sitesa
+    min_separation = float("inf")  # The minimum separation between atoms, or filled sites
     for i, atom_coord in enumerate(atoms_coordinates[:-1]):
         dists = np.linalg.norm(atom_coord - atoms_coordinates[i + 1 :], axis=1)
         min_separation = min(min_separation, min(dists))
@@ -148,7 +148,7 @@ def _get_detuning_dict(
 def _get_rabi_dict(
     targets: Tuple[int], configurations: Dict[str, int]
 ) -> Dict[Tuple[int, int], float]:
-    """Return the dict for the Rabi operators for a set of target atoms.
+    """Return the dict for the Rabi operator for a set of target atoms.
 
     Args:
         targets (Tuple[int]): The target atoms of the detuning operator
@@ -167,13 +167,18 @@ def _get_rabi_dict(
 
     for config_1, ind_1 in configurations.items():
         for target in targets:
+            # Only keep the lower triangular part of the Rabi operator
+            # which convert a single atom from "g" to "r".
             if config_1[target] != "g":
                 continue
 
+            # Construct the state after applying the Rabi operator
             bit_list = list(config_1)
             bit_list[target] = "r"
             config_2 = "".join(bit_list)
 
+            # If the constructed state is in the Hilbert space,
+            # add the corresponding matrix element to the Rabi operator.
             if config_2 in configurations:
                 rabi[(configurations[config_2], ind_1)] = 1
 
