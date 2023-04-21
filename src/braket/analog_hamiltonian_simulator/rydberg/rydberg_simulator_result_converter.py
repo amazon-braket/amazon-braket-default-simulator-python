@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict, List
 
 import numpy as np
 from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (

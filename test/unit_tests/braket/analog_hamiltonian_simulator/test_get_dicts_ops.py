@@ -207,6 +207,7 @@ def test_get_detuning_dict_configurations_3_6():
         {(1, 1): 1, (2, 2): 1, (3, 3): 2, (6, 6): 2, (7, 7): 3, (4, 4): 1, (5, 5): 2}
     )
 
+
 configurations_4 = {"gg": 0, "gr": 1, "rg": 2}
 
 
