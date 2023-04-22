@@ -206,3 +206,36 @@ def test_get_detuning_dict_configurations_3_6():
     assert _get_detuning_dict((0, 1, 2), configurations_3) == dict(
         {(1, 1): 1, (2, 2): 1, (3, 3): 2, (6, 6): 2, (7, 7): 3, (4, 4): 1, (5, 5): 2}
     )
+
+configurations_4 = ["gg", "gr", "rg"]
+
+@pytest.mark.parametrize("para", [[program_1, rydberg_interaction_coef, configurations_4]])
+def test_get_interaction_dict_setup_4(para):
+    program, rydberg_interaction_coef, configurations = para[0], para[1], para[2]
+    interaction = _get_interaction_dict(program, rydberg_interaction_coef, configurations)
+
+    assert interaction == dict()
+
+
+def test_get_detuning_dict_configurations_4_1():
+    assert _get_detuning_dict((0,), configurations_4) == dict({(2, 2): 1})
+
+
+def test_get_detuning_dict_configurations_4_2():
+    assert _get_detuning_dict((1,), configurations_4) == dict({(1, 1): 1})
+
+
+def test_get_detuning_dict_configurations_4_3():
+    assert _get_detuning_dict((0, 1), configurations_4) == dict({(1, 1): 1, (2, 2): 1})
+
+
+def test_get_rabi_dict_configurations_4_1():
+    assert _get_rabi_dict((0,), configurations_4) == dict({(2, 0): 1})
+
+
+def test_get_rabi_dict_configurations_4_2():
+    assert _get_rabi_dict((1,), configurations_4) == dict({(1, 0): 1})
+
+
+def test_get_rabi_dict_configurations_4_3():
+    assert _get_rabi_dict((0, 1), configurations_4) == dict({(1, 0): 1, (2, 0): 1})
