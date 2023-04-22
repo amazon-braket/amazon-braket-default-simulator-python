@@ -55,7 +55,7 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
 
     # The coordinates for atoms in the filled sites
     atoms_coordinates = np.array(lattice.sites)[np.where(lattice.filling)]
-    min_separation = 1e10  # The minimum separation between atoms, or filled sites
+    min_separation = float("inf")  # The minimum separation between atoms, or filled sites
     for i, atom_coord in enumerate(atoms_coordinates[:-1]):
         dists = np.linalg.norm(atom_coord - atoms_coordinates[i + 1 :], axis=1)
         min_separation = min(min_separation, min(dists))
