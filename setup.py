@@ -54,7 +54,6 @@ setup(
     extras_require={
         "test": [
             "black",
-            "coverage",
             "flake8",
             "isort",
             "pre-commit",
