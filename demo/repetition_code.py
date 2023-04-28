@@ -10,7 +10,7 @@ qubit[2] f;
 output uint[3] cq;
 output uint[2] cf;
 
-// Inirtial state
+// Initial state
 // x q[0]; // uncomment to start with state 1
 
 // Encoding 
@@ -50,9 +50,10 @@ cq = measure q;
 device = OpenQASMNativeStateVectorSimulator()
 program = Program(source=ghz_qasm)
 
-result = device.run(program, shots=5)
+num_shots = 100
+result = device.run(program, shots=num_shots)
 
-for i in range(5):
+for i in range(num_shots):
 
   cf = result["cf"][i]
   print(f"error syndrome = {cf:02b}")
