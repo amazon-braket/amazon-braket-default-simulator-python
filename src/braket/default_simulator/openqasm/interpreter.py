@@ -112,7 +112,7 @@ class Interpreter:
             self.context.load_inputs(inputs)
 
         if is_file:
-            with open(source, "r") as f:
+            with open(source, encoding="utf-8", mode="r") as f:
                 source = f.read()
 
         program = parse(source)
@@ -511,7 +511,7 @@ class Interpreter:
     @visit.register
     def _(self, node: Include) -> None:
         self.logger.debug(f"Include: {node}")
-        with open(node.filename, "r") as f:
+        with open(node.filename, encoding="utf-8", mode="r") as f:
             included = f.read()
             parsed = parse(included)
             self.visit(parsed)
