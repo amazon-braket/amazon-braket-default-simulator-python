@@ -11,6 +11,9 @@ qubit[3] q;
 output uint first_two;
 output uint last_one;
 
+output float x;
+x = 2;
+
 h q[0];
 cx q[0], q[1];
 
