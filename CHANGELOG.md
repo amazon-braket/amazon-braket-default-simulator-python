@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.13.1 (2023-04-26)
+
+### Bug Fixes and Other Changes
+
+ * test: parallelize test execution for pytest
+
 ## v1.13.0 (2023-04-20)
 
 ### Features
