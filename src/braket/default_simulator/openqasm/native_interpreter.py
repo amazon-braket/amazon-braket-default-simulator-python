@@ -3,6 +3,8 @@ from logging import Logger
 from pathlib import Path
 from typing import Optional, Union, List
 
+from openqasm3.ast import IntegerLiteral
+
 from ._helpers.casting import wrap_value_into_literal, cast_to, get_identifier_name
 from ._helpers.utils import singledispatchmethod
 from .interpreter import Interpreter
@@ -60,7 +62,11 @@ class NativeInterpreter(Interpreter):
         self.simulation.evolve(self.context.pop_instructions())
         targets = self.context.get_qubits(node.qubit)
         outcome = self.simulation.measure(targets)
-        if len(targets) > 1 or isinstance(node.qubit, IndexedIdentifier):
+        if len(targets) > 1 or (
+            isinstance(node.qubit, IndexedIdentifier)
+            and not len(node.qubit.indices[0]) == 1
+            and isinstance(node.qubit.indices[0], IntegerLiteral)
+        ):
             return ArrayLiteral([BooleanLiteral(x) for x in outcome])
         return BooleanLiteral(outcome[0])
 
@@ -68,6 +74,7 @@ class NativeInterpreter(Interpreter):
     def _(self, node: QuantumMeasurementStatement) -> Union[BooleanLiteral, ArrayLiteral]:
         self.logger.debug(f"Quantum measurement statement: {node}")
         outcome = self.visit(node.measure)
+        var_type = self.context.get_type(get_identifier_name(node.target))
         value = cast_to(self.context.get_type(get_identifier_name(node.target)), outcome)
         self.context.update_value(node.target, value)
 
