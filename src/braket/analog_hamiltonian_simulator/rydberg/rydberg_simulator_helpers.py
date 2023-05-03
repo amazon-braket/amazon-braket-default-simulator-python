@@ -512,3 +512,63 @@ def _get_hamiltonian(
         hamiltonian -= local_detuning_op * local_detuning_coef[index_time]
 
     return hamiltonian
+
+
+def _apply_hamiltonian(
+    index_time: int,
+    operators_coefficients: Tuple[
+        List[scipy.sparse.csr_matrix],
+        List[scipy.sparse.csr_matrix],
+        List[scipy.sparse.csr_matrix],
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        scipy.sparse.csr_matrix,
+    ],
+    input_register: np.ndarray,
+) -> scipy.sparse.csr_matrix:
+    """Applies the Hamiltonian at a given time point on a state.
+
+    Args:
+        index_time (int): The index of the current time point
+        operators_coefficients (Tuple[
+            List[csr_matrix],
+            List[csr_matrix],
+            List[csr_matrix],
+            ndarray,
+            ndarray,
+            ndarray,
+            csr_matrix
+        ]): A tuple containing the list of Rabi operators, the list of detuing operators,
+        the list of local detuing operators, the list of Rabi frequencies, the list of global
+        detuings, the list of local detunings and the interaction operator.
+        input_register (ndarray): The input state which we apply the Hamiltonian to.
+    Returns:
+        (ndarray): The result
+    """
+    (
+        rabi_ops,
+        detuning_ops,
+        local_detuning_ops,
+        rabi_coefs,
+        detuning_coefs,
+        local_detuing_coefs,
+        interaction_op,
+    ) = operators_coefficients
+
+    index_time = int(index_time)
+    output_register = interaction_op.dot(input_register)
+
+    # Add the driving fields
+    for rabi_op, rabi_coef, detuning_op, detuning_coef in zip(
+        rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
+    ):
+        output_register += (rabi_coef[index_time] / 2) * rabi_op.dot(input_register)
+        output_register += (np.conj(rabi_coef[index_time]) / 2) * rabi_op.H.dot(input_register)
+        output_register -= detuning_coef[index_time] * detuning_op.dot(input_register)
+
+    # Add the shifting fields
+    for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
+        output_register -= local_detuning_coef[index_time] * local_detuning_op.dot(input_register)
+
+    return output_register
