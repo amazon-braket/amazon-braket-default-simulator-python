@@ -161,9 +161,7 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
     rabi = {}  # The Rabi term in the basis of configurations, as a dictionary
 
     # use dictionary to store index of configurations
-    configuration_index = {
-        config: ind for ind, config in enumerate(configurations)
-    }
+    configuration_index = {config: ind for ind, config in enumerate(configurations)}
 
     for ind_1, config_1 in enumerate(configurations):
         for target in targets:
@@ -181,7 +179,7 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
             # add the corresponding matrix element to the Rabi operator.
             if config_2 in configuration_index:
                 rabi[(configuration_index[config_2], ind_1)] = 1
-                
+
     return rabi
 
 

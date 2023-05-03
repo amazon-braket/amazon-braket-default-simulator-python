@@ -1,0 +1,1171 @@
+{
+    "machine_info": {
+        "node": "pweinbergmac.local",
+        "processor": "i386",
+        "machine": "x86_64",
+        "python_compiler": "Clang 14.0.6 ",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.9.16",
+        "python_version": "3.9.16",
+        "python_build": [
+            "main",
+            "Mar  8 2023 04:29:44"
+        ],
+        "release": "21.6.0",
+        "system": "Darwin",
+        "cpu": {
+            "python_version": "3.9.16.final.0 (64 bit)",
+            "cpuinfo_version": [
+                8,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "8.0.0",
+            "arch": "X86_64",
+            "bits": 64,
+            "count": 10,
+            "arch_string_raw": "x86_64",
+            "brand_raw": "Apple M1 Pro",
+            "hz_actual_friendly": "2.4000 GHz",
+            "hz_actual": [
+                2400000000,
+                0
+            ],
+            "family": 6,
+            "flags": [
+                "acpi",
+                "aes",
+                "apic",
+                "clflush",
+                "clfsh",
+                "cmov",
+                "cx16",
+                "cx8",
+                "de",
+                "ds",
+                "dscpl",
+                "dtes64",
+                "dtse64",
+                "est",
+                "fpu",
+                "fxsr",
+                "htt",
+                "lahf_lm",
+                "mca",
+                "mce",
+                "mmx",
+                "mon",
+                "monitor",
+                "msr",
+                "mtrr",
+                "pae",
+                "pat",
+                "pbe",
+                "pclmulqdq",
+                "pdcm",
+                "pge",
+                "pni",
+                "popcnt",
+                "pse",
+                "pse36",
+                "seglim64",
+                "sep",
+                "ss",
+                "sse",
+                "sse2",
+                "sse3",
+                "sse4.1",
+                "sse4.2",
+                "sse4_1",
+                "sse4_2",
+                "ssse3",
+                "tm",
+                "tm2",
+                "tpr",
+                "tsc",
+                "vme",
+                "vmx"
+            ],
+            "vendor_id_raw": "GenuineIntel",
+            "hz_advertised_friendly": "2.5000 GHz",
+            "hz_advertised": [
+                2500000000,
+                0
+            ],
+            "l2_cache_size": 65536,
+            "l2_cache_line_size": 8192,
+            "l2_cache_associativity": 8,
+            "model": 44
+        }
+    },
+    "commit_info": {
+        "id": "e09fe39b7d0b877e70e15e6d4aa27c25eb54654b",
+        "time": "2023-04-15T14:06:57-04:00",
+        "author_time": "2023-04-15T14:06:57-04:00",
+        "dirty": false,
+        "project": "amazon-braket-default-simulator-python",
+        "branch": "benchmarks-branch"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_grcs_simulation",
+            "fullname": "test/performance/test_performance.py::test_grcs_simulation",
+            "params": null,
+            "param": null,
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.3150119999999994,
+                "max": 0.4039850000000005,
+                "mean": 0.3584455999999999,
+                "stddev": 0.032460870572121346,
+                "rounds": 5,
+                "median": 0.35442399999999985,
+                "iqr": 0.038554999999998785,
+                "q1": 0.3401497500000006,
+                "q3": 0.37870474999999937,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.3150119999999994,
+                "hd15iqr": 0.4039850000000005,
+                "ops": 2.7898236161916903,
+                "total": 1.7922279999999997,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_qft[4]",
+            "fullname": "test/performance/test_performance.py::test_qft[4]",
+            "params": {
+                "nqubits": 4
+            },
+            "param": "4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.0013129999999996755,
+                "max": 0.0017689999999994654,
+                "mean": 0.0013423183183182326,
+                "stddev": 4.382420585532456e-05,
+                "rounds": 333,
+                "median": 0.0013329999999989184,
+                "iqr": 9.999999999621423e-06,
+                "q1": 0.0013290000000001356,
+                "q3": 0.001338999999999757,
+                "iqr_outliers": 31,
+                "stddev_outliers": 17,
+                "outliers": "17;31",
+                "ld15iqr": 0.0013199999999997658,
+                "hd15iqr": 0.0013540000000009655,
+                "ops": 744.979775924449,
+                "total": 0.4469919999999714,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_qft[8]",
+            "fullname": "test/performance/test_performance.py::test_qft[8]",
+            "params": {
+                "nqubits": 8
+            },
+            "param": "8",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.0023900000000001143,
+                "max": 0.002653999999999712,
+                "mean": 0.0024154114832536044,
+                "stddev": 2.2839615173986227e-05,
+                "rounds": 418,
+                "median": 0.0024100000000011335,
+                "iqr": 1.1000000002425736e-05,
+                "q1": 0.002405999999998798,
+                "q3": 0.0024170000000012237,
+                "iqr_outliers": 31,
+                "stddev_outliers": 33,
+                "outliers": "33;31",
+                "ld15iqr": 0.0023900000000001143,
+                "hd15iqr": 0.002433999999999159,
+                "ops": 414.00813357605693,
+                "total": 1.0096420000000066,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_qft[12]",
+            "fullname": "test/performance/test_performance.py::test_qft[12]",
+            "params": {
+                "nqubits": 12
+            },
+            "param": "12",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.006350000000001188,
+                "max": 0.006752999999999787,
+                "mean": 0.006431816455696229,
+                "stddev": 7.827738027361899e-05,
+                "rounds": 158,
+                "median": 0.0064104999999994305,
+                "iqr": 7.000000000445539e-05,
+                "q1": 0.006374999999998465,
+                "q3": 0.006445000000002921,
+                "iqr_outliers": 19,
+                "stddev_outliers": 26,
+                "outliers": "26;19",
+                "ld15iqr": 0.006350000000001188,
+                "hd15iqr": 0.006551999999999225,
+                "ops": 155.47707352786273,
+                "total": 1.0162270000000042,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_qft[16]",
+            "fullname": "test/performance/test_performance.py::test_qft[16]",
+            "params": {
+                "nqubits": 16
+            },
+            "param": "16",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.478591999999999,
+                "max": 0.5946350000000002,
+                "mean": 0.5089913999999993,
+                "stddev": 0.04843855200457632,
+                "rounds": 5,
+                "median": 0.4900599999999997,
+                "iqr": 0.04005974999999928,
+                "q1": 0.48224974999999937,
+                "q3": 0.5223094999999986,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.478591999999999,
+                "hd15iqr": 0.5946350000000002,
+                "ops": 1.9646697370525343,
+                "total": 2.5449569999999966,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[2-4]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[2-4]",
+            "params": {
+                "nqubits": 2,
+                "nlayers": 4
+            },
+            "param": "2-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.0015590000000003101,
+                "max": 0.0021039999999992176,
+                "mean": 0.0016063944954128853,
+                "stddev": 4.0475454369385285e-05,
+                "rounds": 436,
+                "median": 0.0015935000000002475,
+                "iqr": 2.1499999999008423e-05,
+                "q1": 0.0015880000000016992,
+                "q3": 0.0016095000000007076,
+                "iqr_outliers": 43,
+                "stddev_outliers": 39,
+                "outliers": "39;43",
+                "ld15iqr": 0.0015590000000003101,
+                "hd15iqr": 0.0016420000000003654,
+                "ops": 622.5120932968423,
+                "total": 0.700388000000018,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[2-12]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[2-12]",
+            "params": {
+                "nqubits": 2,
+                "nlayers": 12
+            },
+            "param": "2-12",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.00292699999999968,
+                "max": 0.0036269999999980485,
+                "mean": 0.0030282595870206467,
+                "stddev": 0.00011828647349410533,
+                "rounds": 339,
+                "median": 0.0029900000000004923,
+                "iqr": 5.8500000000627495e-05,
+                "q1": 0.002960250000000997,
+                "q3": 0.0030187500000016243,
+                "iqr_outliers": 48,
+                "stddev_outliers": 40,
+                "outliers": "40;48",
+                "ld15iqr": 0.00292699999999968,
+                "hd15iqr": 0.00311100000000053,
+                "ops": 330.22268113542077,
+                "total": 1.0265799999999992,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[2-20]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[2-20]",
+            "params": {
+                "nqubits": 2,
+                "nlayers": 20
+            },
+            "param": "2-20",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.004251000000000005,
+                "max": 0.0047560000000004266,
+                "mean": 0.004387795652173835,
+                "stddev": 6.912558647776727e-05,
+                "rounds": 230,
+                "median": 0.004382500000000178,
+                "iqr": 6.099999999875649e-05,
+                "q1": 0.0043480000000002406,
+                "q3": 0.004408999999998997,
+                "iqr_outliers": 15,
+                "stddev_outliers": 43,
+                "outliers": "43;15",
+                "ld15iqr": 0.004256999999999067,
+                "hd15iqr": 0.004501999999998674,
+                "ops": 227.90487052526532,
+                "total": 1.009192999999982,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[6-4]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[6-4]",
+            "params": {
+                "nqubits": 6,
+                "nlayers": 4
+            },
+            "param": "6-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.003363000000000227,
+                "max": 0.004049999999999443,
+                "mean": 0.003534916387959976,
+                "stddev": 0.00015811930452057515,
+                "rounds": 299,
+                "median": 0.00345999999999691,
+                "iqr": 0.0001639999999980546,
+                "q1": 0.0034330000000011296,
+                "q3": 0.003596999999999184,
+                "iqr_outliers": 28,
+                "stddev_outliers": 58,
+                "outliers": "58;28",
+                "ld15iqr": 0.003363000000000227,
+                "hd15iqr": 0.0038430000000033715,
+                "ops": 282.892122542425,
+                "total": 1.0569400000000329,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[6-12]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[6-12]",
+            "params": {
+                "nqubits": 6,
+                "nlayers": 12
+            },
+            "param": "6-12",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.008313000000001125,
+                "max": 0.009067999999999188,
+                "mean": 0.00853701680672248,
+                "stddev": 0.00011512255689015053,
+                "rounds": 119,
+                "median": 0.008523000000003833,
+                "iqr": 7.34999999973951e-05,
+                "q1": 0.00848900000000441,
+                "q3": 0.008562500000001805,
+                "iqr_outliers": 12,
+                "stddev_outliers": 20,
+                "outliers": "20;12",
+                "ld15iqr": 0.008380000000002497,
+                "hd15iqr": 0.008688999999996838,
+                "ops": 117.13693701675147,
+                "total": 1.0159049999999752,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[6-20]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[6-20]",
+            "params": {
+                "nqubits": 6,
+                "nlayers": 20
+            },
+            "param": "6-20",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.013246999999999787,
+                "max": 0.01381200000000149,
+                "mean": 0.0135014210526314,
+                "stddev": 0.0001350046185041868,
+                "rounds": 76,
+                "median": 0.013522999999995733,
+                "iqr": 0.00020899999999812735,
+                "q1": 0.013390000000001123,
+                "q3": 0.01359899999999925,
+                "iqr_outliers": 0,
+                "stddev_outliers": 28,
+                "outliers": "28;0",
+                "ld15iqr": 0.013246999999999787,
+                "hd15iqr": 0.01381200000000149,
+                "ops": 74.06627762379887,
+                "total": 1.0261079999999865,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[10-4]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[10-4]",
+            "params": {
+                "nqubits": 10,
+                "nlayers": 4
+            },
+            "param": "10-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.006168999999999869,
+                "max": 0.0070010000000024775,
+                "mean": 0.006508630303030206,
+                "stddev": 0.0002155944200442371,
+                "rounds": 165,
+                "median": 0.006543000000000632,
+                "iqr": 0.00039775000000119576,
+                "q1": 0.006289000000000655,
+                "q3": 0.006686750000001851,
+                "iqr_outliers": 0,
+                "stddev_outliers": 76,
+                "outliers": "76;0",
+                "ld15iqr": 0.006168999999999869,
+                "hd15iqr": 0.0070010000000024775,
+                "ops": 153.6421571731356,
+                "total": 1.073923999999984,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[10-12]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[10-12]",
+            "params": {
+                "nqubits": 10,
+                "nlayers": 12
+            },
+            "param": "10-12",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.016392000000003293,
+                "max": 0.03127699999999578,
+                "mean": 0.01678336065573765,
+                "stddev": 0.0019021948816453243,
+                "rounds": 61,
+                "median": 0.016491000000002032,
+                "iqr": 5.7250000001118906e-05,
+                "q1": 0.016467750000000336,
+                "q3": 0.016525000000001455,
+                "iqr_outliers": 6,
+                "stddev_outliers": 1,
+                "outliers": "1;6",
+                "ld15iqr": 0.016392000000003293,
+                "hd15iqr": 0.016618000000001132,
+                "ops": 59.5828225652849,
+                "total": 1.0237849999999966,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[10-20]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[10-20]",
+            "params": {
+                "nqubits": 10,
+                "nlayers": 20
+            },
+            "param": "10-20",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.026921000000001527,
+                "max": 0.031142000000002668,
+                "mean": 0.028150500000000165,
+                "stddev": 0.000983414013334298,
+                "rounds": 38,
+                "median": 0.02811850000000149,
+                "iqr": 0.0013980000000017867,
+                "q1": 0.02732199999999807,
+                "q3": 0.028719999999999857,
+                "iqr_outliers": 1,
+                "stddev_outliers": 10,
+                "outliers": "10;1",
+                "ld15iqr": 0.026921000000001527,
+                "hd15iqr": 0.031142000000002668,
+                "ops": 35.52334772028895,
+                "total": 1.0697190000000063,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[14-4]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[14-4]",
+            "params": {
+                "nqubits": 14,
+                "nlayers": 4
+            },
+            "param": "14-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.10966599999999715,
+                "max": 0.12741100000000216,
+                "mean": 0.11891858333333379,
+                "stddev": 0.005278136128638513,
+                "rounds": 12,
+                "median": 0.11775749999999974,
+                "iqr": 0.00747050000000371,
+                "q1": 0.11541849999999698,
+                "q3": 0.12288900000000069,
+                "iqr_outliers": 0,
+                "stddev_outliers": 4,
+                "outliers": "4;0",
+                "ld15iqr": 0.10966599999999715,
+                "hd15iqr": 0.12741100000000216,
+                "ops": 8.409114639357567,
+                "total": 1.4270230000000055,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[14-12]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[14-12]",
+            "params": {
+                "nqubits": 14,
+                "nlayers": 12
+            },
+            "param": "14-12",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.31827600000000444,
+                "max": 0.44557600000000264,
+                "mean": 0.36740000000000067,
+                "stddev": 0.050426992632914176,
+                "rounds": 5,
+                "median": 0.36417000000000144,
+                "iqr": 0.07011249999999691,
+                "q1": 0.32629200000000047,
+                "q3": 0.3964044999999974,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.31827600000000444,
+                "hd15iqr": 0.44557600000000264,
+                "ops": 2.7218290691344533,
+                "total": 1.8370000000000033,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[14-20]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[14-20]",
+            "params": {
+                "nqubits": 14,
+                "nlayers": 20
+            },
+            "param": "14-20",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.5179930000000041,
+                "max": 0.5728969999999975,
+                "mean": 0.5545869999999951,
+                "stddev": 0.02120966368191213,
+                "rounds": 5,
+                "median": 0.5604319999999916,
+                "iqr": 0.01762224999999873,
+                "q1": 0.5481549999999942,
+                "q3": 0.5657772499999929,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.5582089999999909,
+                "hd15iqr": 0.5728969999999975,
+                "ops": 1.8031436005532204,
+                "total": 2.7729349999999755,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[18-4]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[18-4]",
+            "params": {
+                "nqubits": 18,
+                "nlayers": 4
+            },
+            "param": "18-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 2.762664000000001,
+                "max": 2.870706999999996,
+                "mean": 2.8282598000000005,
+                "stddev": 0.043580858214355735,
+                "rounds": 5,
+                "median": 2.842918999999995,
+                "iqr": 0.0643854999999931,
+                "q1": 2.7963570000000075,
+                "q3": 2.8607425000000006,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 2.762664000000001,
+                "hd15iqr": 2.870706999999996,
+                "ops": 0.35357430742395013,
+                "total": 14.141299000000004,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[18-12]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[18-12]",
+            "params": {
+                "nqubits": 18,
+                "nlayers": 12
+            },
+            "param": "18-12",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 5.992118000000005,
+                "max": 8.595541999999995,
+                "mean": 7.797926200000006,
+                "stddev": 1.0970071877363432,
+                "rounds": 5,
+                "median": 8.294949000000003,
+                "iqr": 1.4294745000000049,
+                "q1": 7.148853500000008,
+                "q3": 8.578328000000013,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 5.992118000000005,
+                "hd15iqr": 8.595541999999995,
+                "ops": 0.1282392233976258,
+                "total": 38.98963100000003,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit[18-20]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit[18-20]",
+            "params": {
+                "nqubits": 18,
+                "nlayers": 20
+            },
+            "param": "18-20",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 13.987333999999976,
+                "max": 14.353594999999984,
+                "mean": 14.1683092,
+                "stddev": 0.13018150893925312,
+                "rounds": 5,
+                "median": 14.159955999999966,
+                "iqr": 0.11814749999999208,
+                "q1": 14.111290250000025,
+                "q3": 14.229437750000017,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 13.987333999999976,
+                "hd15iqr": 14.353594999999984,
+                "ops": 0.07058005199378342,
+                "total": 70.841546,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit_result_types[results0]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit_result_types[results0]",
+            "params": {
+                "results": [
+                    "UNSERIALIZABLE[Expectation(observable=['x'], targets=None, type=<Type.expectation: 'expectation'>)]"
+                ]
+            },
+            "param": "results0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.034863999999970474,
+                "max": 0.039387999999974,
+                "mean": 0.036863896551718144,
+                "stddev": 0.0013454542340980685,
+                "rounds": 29,
+                "median": 0.0373819999999796,
+                "iqr": 0.0026484999999638603,
+                "q1": 0.03516900000002465,
+                "q3": 0.03781749999998851,
+                "iqr_outliers": 0,
+                "stddev_outliers": 12,
+                "outliers": "12;0",
+                "ld15iqr": 0.034863999999970474,
+                "hd15iqr": 0.039387999999974,
+                "ops": 27.126812234757974,
+                "total": 1.0690529999998262,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit_result_types[results1]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit_result_types[results1]",
+            "params": {
+                "results": [
+                    "UNSERIALIZABLE[Probability(targets=[0, 1], type=<Type.probability: 'probability'>)]"
+                ]
+            },
+            "param": "results1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.0341940000000136,
+                "max": 0.03836300000000392,
+                "mean": 0.034741933333335355,
+                "stddev": 0.000994143919828296,
+                "rounds": 30,
+                "median": 0.034339000000016995,
+                "iqr": 0.00024200000001428634,
+                "q1": 0.0342939999999885,
+                "q3": 0.03453600000000279,
+                "iqr_outliers": 6,
+                "stddev_outliers": 4,
+                "outliers": "4;6",
+                "ld15iqr": 0.0341940000000136,
+                "hd15iqr": 0.03491300000001729,
+                "ops": 28.783660091837387,
+                "total": 1.0422580000000607,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit_result_types[results2]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit_result_types[results2]",
+            "params": {
+                "results": [
+                    "UNSERIALIZABLE[Probability(targets=None, type=<Type.probability: 'probability'>)]",
+                    "UNSERIALIZABLE[Variance(observable=['x'], targets=None, type=<Type.variance: 'variance'>)]"
+                ]
+            },
+            "param": "results2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.03514999999998736,
+                "max": 0.03825499999999238,
+                "mean": 0.0363056551724079,
+                "stddev": 0.0009141606718654179,
+                "rounds": 29,
+                "median": 0.03601999999995087,
+                "iqr": 0.0016387499999552801,
+                "q1": 0.03550775000000783,
+                "q3": 0.03714649999996311,
+                "iqr_outliers": 0,
+                "stddev_outliers": 12,
+                "outliers": "12;0",
+                "ld15iqr": 0.03514999999998736,
+                "hd15iqr": 0.03825499999999238,
+                "ops": 27.543918302843206,
+                "total": 1.052863999999829,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_layered_continuous_gates_circuit_result_types[results3]",
+            "fullname": "test/performance/test_performance.py::test_layered_continuous_gates_circuit_result_types[results3]",
+            "params": {
+                "results": [
+                    "UNSERIALIZABLE[Variance(observable=['z'], targets=[0], type=<Type.variance: 'variance'>)]"
+                ]
+            },
+            "param": "results3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.03610300000002553,
+                "max": 0.0414679999999521,
+                "mean": 0.0375517666666705,
+                "stddev": 0.001230828027515968,
+                "rounds": 30,
+                "median": 0.03740850000002638,
+                "iqr": 0.0008909999999673346,
+                "q1": 0.03682000000003427,
+                "q3": 0.037711000000001604,
+                "iqr_outliers": 2,
+                "stddev_outliers": 5,
+                "outliers": "5;2",
+                "ld15iqr": 0.03610300000002553,
+                "hd15iqr": 0.04142699999999877,
+                "ops": 26.62990556147553,
+                "total": 1.126553000000115,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_rydberg_simulator[1]",
+            "fullname": "test/performance/test_performance.py::test_rydberg_simulator[1]",
+            "params": {
+                "natoms": 1
+            },
+            "param": "1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.7827850000000467,
+                "max": 0.8036669999999617,
+                "mean": 0.7916165999999976,
+                "stddev": 0.008579150004492053,
+                "rounds": 5,
+                "median": 0.7901309999999739,
+                "iqr": 0.013933999999977686,
+                "q1": 0.7844020000000143,
+                "q3": 0.7983359999999919,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.7827850000000467,
+                "hd15iqr": 0.8036669999999617,
+                "ops": 1.2632377845537892,
+                "total": 3.958082999999988,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_rydberg_simulator[3]",
+            "fullname": "test/performance/test_performance.py::test_rydberg_simulator[3]",
+            "params": {
+                "natoms": 3
+            },
+            "param": "3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 0.7862440000000106,
+                "max": 0.8114020000000437,
+                "mean": 0.7972630000000095,
+                "stddev": 0.009768178770905979,
+                "rounds": 5,
+                "median": 0.7985510000000318,
+                "iqr": 0.013711500000027854,
+                "q1": 0.7891442499999783,
+                "q3": 0.8028557500000062,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.7862440000000106,
+                "hd15iqr": 0.8114020000000437,
+                "ops": 1.2542912439182405,
+                "total": 3.9863150000000473,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_rydberg_simulator[5]",
+            "fullname": "test/performance/test_performance.py::test_rydberg_simulator[5]",
+            "params": {
+                "natoms": 5
+            },
+            "param": "5",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 17.353060000000028,
+                "max": 19.984285999999997,
+                "mean": 18.101440000000025,
+                "stddev": 1.0815290304450698,
+                "rounds": 5,
+                "median": 17.77506900000003,
+                "iqr": 1.055535249999906,
+                "q1": 17.412445000000076,
+                "q3": 18.467980249999982,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 17.353060000000028,
+                "hd15iqr": 19.984285999999997,
+                "ops": 0.05524422366397362,
+                "total": 90.50720000000013,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_rydberg_simulator[7]",
+            "fullname": "test/performance/test_performance.py::test_rydberg_simulator[7]",
+            "params": {
+                "natoms": 7
+            },
+            "param": "7",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "process_time",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": 100
+            },
+            "stats": {
+                "min": 61.60221300000012,
+                "max": 67.57955300000003,
+                "mean": 64.64092240000005,
+                "stddev": 2.3387261702143953,
+                "rounds": 5,
+                "median": 64.37114800000018,
+                "iqr": 3.580382000000043,
+                "q1": 62.97691649999996,
+                "q3": 66.5572985,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 61.60221300000012,
+                "hd15iqr": 67.57955300000003,
+                "ops": 0.0154700762747779,
+                "total": 323.2046120000002,
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2023-04-15T18:20:15.413163",
+    "version": "3.4.1"
+}
