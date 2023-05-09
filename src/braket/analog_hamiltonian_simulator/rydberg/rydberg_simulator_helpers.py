@@ -55,7 +55,7 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
 
     # The coordinates for atoms in the filled sites
     atoms_coordinates = np.array(lattice.sites)[np.where(lattice.filling)]
-    min_separation = 1e10  # The minimum separation between atoms, or filled sites
+    min_separation = float("inf")  # The minimum separation between atoms, or filled sites
     for i, atom_coord in enumerate(atoms_coordinates[:-1]):
         dists = np.linalg.norm(atom_coord - atoms_coordinates[i + 1 :], axis=1)
         min_separation = min(min_separation, min(dists))
@@ -160,30 +160,26 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
 
     rabi = {}  # The Rabi term in the basis of configurations, as a dictionary
 
+    # use dictionary to store index of configurations
+    configuration_index = {config: ind for ind, config in enumerate(configurations)}
+
     for ind_1, config_1 in enumerate(configurations):
-        for ind_2, config_2 in enumerate(configurations):
-            if ind_2 > ind_1:
-                # Obtain the indices of the bits where config_1 differ from config_2
-                ind_diffs = [
-                    ind for ind, (bit1, bit2) in enumerate(zip(config_1, config_2)) if bit1 != bit2
-                ]
+        for target in targets:
+            # Only keep the lower triangular part of the Rabi operator
+            # which convert a single atom from "g" to "r".
+            if config_1[target] != "g":
+                continue
 
-                # The Rabi term will be nonzero iff the two configurations differ
-                # by one and only one bit
-                if len(ind_diffs) > 1:
-                    continue
+            # Construct the state after applying the Rabi operator
+            bit_list = list(config_1)
+            bit_list[target] = "r"
+            config_2 = "".join(bit_list)
 
-                index_diff = ind_diffs[0]  # The index where config_1 differ from config_2
+            # If the constructed state is in the Hilbert space,
+            # add the corresponding matrix element to the Rabi operator.
+            if config_2 in configuration_index:
+                rabi[(configuration_index[config_2], ind_1)] = 1
 
-                # If the index_diff is not in the target, then it won't contribute to the
-                # Rabi operator
-                if index_diff not in targets:
-                    continue
-
-                # Only keep the lower triangular part of the Rabi operator
-                # In particular, we only add the following component if and only if
-                # (config_1[index_diff], config_2[index_diff]) == ("g", "r")
-                rabi[(ind_2, ind_1)] = 1
     return rabi
 
 
