@@ -174,6 +174,21 @@ class StateVectorSimulator(BaseLocalSimulator):
                             "z",
                             "zz",
                         ],
+                        "supportedModifiers": [
+                            {
+                                "name": "ctrl",
+                            },
+                            {
+                                "name": "negctrl",
+                            },
+                            {
+                                "name": "pow",
+                                "exponent_types": ["int", "float"],
+                            },
+                            {
+                                "name": "inv",
+                            },
+                        ],
                         "supportedPragmas": [
                             "braket_unitary_matrix",
                             "braket_result_type_state_vector",
