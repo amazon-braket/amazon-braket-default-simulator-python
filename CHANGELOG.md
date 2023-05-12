@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.13.3 (2023-05-10)
+
+### Bug Fixes and Other Changes
+
+ * New implementation for helper `_get_rabi_dict` in rydberg AHS.
+
+## v1.13.2 (2023-05-01)
+
+### Bug Fixes and Other Changes
+
+ * Modification to `scipy_integrate_ode_run` In braket_ahs local simulator
+
 ## v1.13.1 (2023-04-26)
 
 ### Bug Fixes and Other Changes
