@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.14.0 (2023-05-15)
+
+### Features
+
+ * update local sim properties to include supported modifiers
+
 ## v1.13.3 (2023-05-10)
 
 ### Bug Fixes and Other Changes
