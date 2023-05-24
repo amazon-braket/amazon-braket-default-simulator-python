@@ -1,17 +1,27 @@
-from functools import singledispatchmethod
 from copy import deepcopy
+from functools import singledispatchmethod
 from logging import Logger
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 from openqasm3.ast import IntegerLiteral
 
-from ._helpers.casting import wrap_value_into_literal, cast_to, get_identifier_name
+from ..simulation import Simulation
+from ._helpers.casting import cast_to, get_identifier_name, wrap_value_into_literal
 from .interpreter import Interpreter
-from .parser.openqasm_ast import QASMNode, QubitDeclaration, QuantumMeasurement, BooleanLiteral, ArrayLiteral, \
-    IndexedIdentifier, IODeclaration, IOKeyword, ClassicalDeclaration, QuantumMeasurementStatement
+from .parser.openqasm_ast import (
+    ArrayLiteral,
+    BooleanLiteral,
+    ClassicalDeclaration,
+    IndexedIdentifier,
+    IODeclaration,
+    IOKeyword,
+    QASMNode,
+    QuantumMeasurement,
+    QuantumMeasurementStatement,
+    QubitDeclaration,
+)
 from .parser.openqasm_parser import parse
 from .program_context import ProgramContext
-from ..simulation import Simulation
 
 
 class NativeInterpreter(Interpreter):
@@ -91,5 +101,3 @@ class NativeInterpreter(Interpreter):
             init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
             declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
             self.visit(declaration)
-
-

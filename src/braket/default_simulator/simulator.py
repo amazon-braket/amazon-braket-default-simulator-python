@@ -15,7 +15,6 @@ import warnings
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Union
 
-from braket.default_simulator.openqasm.native_interpreter import NativeInterpreter
 from braket.device_schema import DeviceActionType, DeviceCapabilities
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
@@ -30,6 +29,7 @@ from braket.task_result import (
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.native_interpreter import NativeInterpreter
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
@@ -424,9 +424,7 @@ class BaseLocalSimulator(BraketSimulator):
                 are requested when shots>0.
         """
         is_file = openqasm_ir.source.endswith(".qasm")
-        simulation = self.initialize_simulation(
-            qubit_count=0, shots=shots, batch_size=batch_size
-        )
+        simulation = self.initialize_simulation(qubit_count=0, shots=shots, batch_size=batch_size)
         interpreter = NativeInterpreter(simulation=simulation)
 
         context = interpreter.simulate(

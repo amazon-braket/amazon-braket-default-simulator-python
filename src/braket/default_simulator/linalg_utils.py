@@ -179,8 +179,12 @@ def measurement_collapse_dm(dm_tensor, targets, outcomes):
     # move the target qubit to the front of axes
     qubit_count = int(np.log2(dm_tensor.shape[0]))
     unused_idxs = [idx for idx in range(qubit_count) if idx not in targets]
-    unused_idxs = [p+i*qubit_count for i in range(2) for p in unused_idxs] # convert indices to dm form
-    target_indx = [p+i*qubit_count for i in range(2) for p in targets] # convert indices to dm form
+    unused_idxs = [
+        p + i * qubit_count for i in range(2) for p in unused_idxs
+    ]  # convert indices to dm form
+    target_indx = [
+        p + i * qubit_count for i in range(2) for p in targets
+    ]  # convert indices to dm form
     permutation = target_indx + unused_idxs
     inverse_permutation = np.argsort(permutation)
 

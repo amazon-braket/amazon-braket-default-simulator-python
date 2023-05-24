@@ -83,7 +83,7 @@ from .parser.openqasm_ast import (
     SizeOf,
     SubroutineDefinition,
     UnaryExpression,
-    WhileLoop, QuantumMeasurementStatement,
+    WhileLoop,
 )
 from .parser.openqasm_parser import parse
 from .program_context import ProgramContext

@@ -1,6 +1,6 @@
-from braket.default_simulator import StateVectorSimulator
 from braket.ir.openqasm import Program
 
+from braket.default_simulator import StateVectorSimulator
 
 ghz_qasm = """
 OPENQASM 3;
@@ -13,7 +13,7 @@ output uint[2] cf;
 // Initial state
 // x q[0]; // uncomment to start with state 1
 
-// Encoding 
+// Encoding
 cnot q[0], q[1];
 cnot q[0], q[2];
 
@@ -31,13 +31,13 @@ cnot q[2], f[1];
 cf = measure f;
 
 // Correct error based on error syndrome
-if (cf==2){ 
+if (cf==2){
   x q[0];
 }
-if (cf==1){ 
+if (cf==1){
   x q[1];
 }
-if (cf==3){ 
+if (cf==3){
   x q[2];
 }
 
@@ -55,12 +55,9 @@ num_shots = 100
 result = device.run(program, shots=num_shots)
 
 for i in range(num_shots):
+    cf = result["cf"][i]
+    print(f"error syndrome = {cf:02b}")
+    cq = result["cq"][i]
+    print(f"final sample   = {cq:03b}")
 
-  cf = result["cf"][i]
-  print(f"error syndrome = {cf:02b}")
-  cq = result["cq"][i]
-  print(f"final sample   = {cq:03b}")
-
-  print()
-
-
+    print()

@@ -1,6 +1,8 @@
-from braket.default_simulator import StateVectorSimulator
 from braket.ir.openqasm import Program as BraketProgram
-qasm = '''
+
+from braket.default_simulator import StateVectorSimulator
+
+qasm = """
 OPENQASM 3.0;
 output bit f;
 def foo() -> bit {
@@ -11,6 +13,6 @@ def foo() -> bit {
 }
 qubit[10] q;
 f = foo();
-'''
+"""
 result = StateVectorSimulator().run(BraketProgram(source=qasm), shots=5, mcm=True)
 print(result)

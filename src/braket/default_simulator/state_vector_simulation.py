@@ -15,7 +15,11 @@ from typing import List, Tuple
 
 import numpy as np
 
-from braket.default_simulator.linalg_utils import marginal_probability, measurement_sample, measurement_collapse_sv
+from braket.default_simulator.linalg_utils import (
+    marginal_probability,
+    measurement_collapse_sv,
+    measurement_sample,
+)
 from braket.default_simulator.operation import GateOperation, Observable
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulation_strategies import (
@@ -171,9 +175,7 @@ class StateVectorSimulation(Simulation):
     def add_qubits(self, num_qubits: int) -> None:
         expanded_dims = np.expand_dims(self.state_vector, -1)
         expanded_qubits = np.append(
-            expanded_dims,
-            np.zeros((expanded_dims.size, 2 ** num_qubits - 1)),
-            axis=-1
+            expanded_dims, np.zeros((expanded_dims.size, 2**num_qubits - 1)), axis=-1
         )
         self._state_vector = expanded_qubits.flatten()
         self._qubit_count += num_qubits

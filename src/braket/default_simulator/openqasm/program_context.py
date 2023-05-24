@@ -15,7 +15,7 @@ from ._helpers.arrays import (
     get_type_width,
     update_value,
 )
-from ._helpers.casting import LiteralType, get_identifier_name, is_none_like, convert_to_output
+from ._helpers.casting import LiteralType, convert_to_output, get_identifier_name, is_none_like
 from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
@@ -600,6 +600,4 @@ class ProgramContext:
 
     def save_output_values(self):
         for output, shot_data in self.outputs.items():
-            shot_data.append(
-                convert_to_output(self.get_value(output))
-            )
+            shot_data.append(convert_to_output(self.get_value(output)))

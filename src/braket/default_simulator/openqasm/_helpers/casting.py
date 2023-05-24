@@ -199,6 +199,7 @@ def _(value: str) -> BitstringLiteral:
 def _(value: Iterable[Any]) -> ArrayLiteral:
     return ArrayLiteral([wrap_value_into_literal(v) for v in value])
 
+
 def is_supported_output_type(var_type):
     return isinstance(var_type, (IntType, FloatType, BoolType, BitType, ArrayType))
 

@@ -1,6 +1,6 @@
-from braket.default_simulator import StateVectorSimulator
 from braket.ir.openqasm import Program
 
+from braket.default_simulator import StateVectorSimulator
 
 ghz_qasm = """
 gate h a { U(π/2, 0, π) a; }
