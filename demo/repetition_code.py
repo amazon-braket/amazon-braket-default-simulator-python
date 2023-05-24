@@ -52,7 +52,7 @@ program = Program(source=ghz_qasm)
 
 
 num_shots = 100
-result = device.run(program, shots=num_shots)
+result = device.run(program, shots=num_shots, mcm=True)
 
 for i in range(num_shots):
     cf = result["cf"][i]
