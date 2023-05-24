@@ -39,7 +39,7 @@ def multiply_matrix(
         targets (Tuple[int]): The qubits to apply the state on.
         controls (Optional[Tuple[int]]): The qubits to control the operation on. Default ().
         control_state (Optional[Tuple[int]]): A tuple of same length as `controls` with either
-            a 0 or 1 in each index, corresponding to whether to control on the |0⟩ or |1⟩ state.
+            a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
             Default (1,) * len(controls).
 
     Returns:
