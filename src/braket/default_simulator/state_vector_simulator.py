@@ -30,7 +30,7 @@ class StateVectorSimulator(BaseLocalSimulator):
         Initialize state vector simulation.
 
         Args:
-            **kwargs: qubit_count, shots, batch_size
+            `**kwargs`: qubit_count, shots, batch_size
 
         Returns:
             StateVectorSimulation: Initialized simulation.
@@ -173,6 +173,21 @@ class StateVectorSimulator(BaseLocalSimulator):
                             "yy",
                             "z",
                             "zz",
+                        ],
+                        "supportedModifiers": [
+                            {
+                                "name": "ctrl",
+                            },
+                            {
+                                "name": "negctrl",
+                            },
+                            {
+                                "name": "pow",
+                                "exponent_types": ["int", "float"],
+                            },
+                            {
+                                "name": "inv",
+                            },
                         ],
                         "supportedPragmas": [
                             "braket_unitary_matrix",

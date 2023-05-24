@@ -16,8 +16,53 @@ from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 
+_SLICES = (
+    _NEG_CONTROL_SLICE := slice(None, 1),
+    _CONTROL_SLICE := slice(1, None),
+    _NO_CONTROL_SLICE := slice(None, None),
+)
 
-def multiply_matrix(state: np.ndarray, matrix: np.ndarray, targets: Tuple[int, ...]) -> np.ndarray:
+
+def multiply_matrix(
+    state: np.ndarray,
+    matrix: np.ndarray,
+    targets: Tuple[int, ...],
+    controls: Optional[Tuple[int]] = (),
+    control_state: Optional[Tuple[int]] = (),
+) -> np.ndarray:
+    """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
+    controlling the operation as specified.
+
+    Args:
+        state (np.ndarray): The state to multiply the matrix by.
+        matrix (np.ndarray): The matrix to apply to the state.
+        targets (Tuple[int]): The qubits to apply the state on.
+        controls (Optional[Tuple[int]]): The qubits to control the operation on. Default ().
+        control_state (Optional[Tuple[int]]): A tuple of same length as `controls` with either
+            a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
+            Default (1,) * len(controls).
+
+    Returns:
+        np.ndarray: The state after the matrix has been applied.
+    """
+    if not controls:
+        return _multiply_matrix(state, matrix, targets)
+
+    control_state = control_state or (1,) * len(controls)
+    num_qubits = len(state.shape)
+    control_slices = {i: _SLICES[state] for i, state in zip(controls, control_state)}
+    ctrl_index = tuple(
+        control_slices[i] if i in controls else _NO_CONTROL_SLICE for i in range(num_qubits)
+    )
+    state[ctrl_index] = _multiply_matrix(state[ctrl_index], matrix, targets)
+    return state
+
+
+def _multiply_matrix(
+    state: np.ndarray,
+    matrix: np.ndarray,
+    targets: Tuple[int, ...],
+) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
     Args:
@@ -118,27 +163,4 @@ def _get_target_permutation(targets: Sequence[int]) -> Sequence[int]:
     basis_states = np.array(list(itertools.product([0, 1], repeat=len(targets))))
     return np.ravel_multi_index(
         basis_states[:, np.argsort(np.argsort(targets))].T, [2] * len(targets)
-    )
-
-
-def controlled_unitary(unitary: np.ndarray, negctrl: bool = False) -> np.ndarray:
-    """
-    Transform unitary matrix into a controlled unitary matrix.
-
-    Args:
-        unitary (np.ndarray): Unitary matrix operation.
-        negctrl (bool): Whether to control the operation on the |0⟩ state,
-            instead of the |1⟩ state. Default: False.
-
-    Returns:
-        np.ndarray: A controlled version of the provided unitary matrix.
-    """
-    upper_left, bottom_right = np.eye(unitary.shape[0]), unitary
-    if negctrl:
-        upper_left, bottom_right = bottom_right, upper_left
-    return np.block(
-        [
-            [upper_left, np.zeros_like(unitary)],
-            [np.zeros_like(unitary), bottom_right],
-        ]
     )

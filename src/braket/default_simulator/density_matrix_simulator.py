@@ -30,7 +30,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
         Initialize density matrix simulation.
 
         Args:
-            **kwargs: qubit_count, shots, batch_size
+            `**kwargs`: qubit_count, shots, batch_size
 
         Returns:
             DensityMatrixSimulation: Initialized simulation.
@@ -116,6 +116,21 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                                 "kraus",
                             ]
                         ),
+                        "supportedModifiers": [
+                            {
+                                "name": "ctrl",
+                            },
+                            {
+                                "name": "negctrl",
+                            },
+                            {
+                                "name": "pow",
+                                "exponent_types": ["int", "float"],
+                            },
+                            {
+                                "name": "inv",
+                            },
+                        ],
                         "supportedPragmas": [
                             "braket_unitary_matrix",
                             "braket_result_type_state_vector",

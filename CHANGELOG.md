@@ -1,5 +1,45 @@
 # Changelog
 
+## v1.14.0 (2023-05-15)
+
+### Features
+
+ * update local sim properties to include supported modifiers
+
+## v1.13.3 (2023-05-10)
+
+### Bug Fixes and Other Changes
+
+ * New implementation for helper `_get_rabi_dict` in rydberg AHS.
+
+## v1.13.2 (2023-05-01)
+
+### Bug Fixes and Other Changes
+
+ * Modification to `scipy_integrate_ode_run` In braket_ahs local simulator
+
+## v1.13.1 (2023-04-26)
+
+### Bug Fixes and Other Changes
+
+ * test: parallelize test execution for pytest
+
+## v1.13.0 (2023-04-20)
+
+### Features
+
+ * optimize performance for simulating control modifiers
+
+## v1.12.3 (2023-03-29)
+
+### Bug Fixes and Other Changes
+
+ * Revert threshold to switch AHS solvers
+
+### Testing and Release Infrastructure
+
+ * add dependabot updates for GH actions
+
 ## v1.12.2 (2023-03-27)
 
 ### Bug Fixes and Other Changes

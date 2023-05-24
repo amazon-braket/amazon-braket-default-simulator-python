@@ -37,7 +37,7 @@ setup(
         "scipy",
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
-        "amazon-braket-schemas>=1.12.0",
+        "amazon-braket-schemas>=1.16.1",
     ],
     entry_points={
         "braket.simulators": [
@@ -54,8 +54,8 @@ setup(
     extras_require={
         "test": [
             "black",
-            "coverage",
             "flake8",
+            "flake8-rst-docstrings",
             "isort",
             "pre-commit",
             "pylint",
