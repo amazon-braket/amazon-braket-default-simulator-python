@@ -86,7 +86,7 @@ from .parser.openqasm_ast import (
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
-from .program_context import ProgramContext
+from .program_context import ProgramContext, BraketProgramContext
 
 
 class Interpreter:
@@ -102,7 +102,7 @@ class Interpreter:
 
     def __init__(self, context: Optional[ProgramContext] = None, logger: Optional[Logger] = None):
         # context keeps track of all state
-        self.context = context or ProgramContext()
+        self.context = context or BraketProgramContext()
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
 
@@ -306,7 +306,7 @@ class Interpreter:
                 statement.arguments = self.visit(statement.arguments)
                 statement.modifiers = self.visit(statement.modifiers)
                 statement.qubits = self.visit(statement.qubits)
-                if self.context.is_builtin_gate(gate_name):
+                if self.context.is_builtin_gate(gate_name, self.context.is_user_defined_gate(gate_name)):
                     inlined_body.append(statement)
                 else:
                     with self.context.enter_scope():
@@ -383,7 +383,7 @@ class Interpreter:
                 self.visit(gate_call)
             return
 
-        if self.context.is_builtin_gate(gate_name):
+        if self.context.is_builtin_gate(gate_name, self.context.is_user_defined_gate(gate_name)):
             # to simplify indices
             qubits = self.visit(qubits)
             self.handle_builtin_gate(

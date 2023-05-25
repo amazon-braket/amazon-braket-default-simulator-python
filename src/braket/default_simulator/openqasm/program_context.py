@@ -372,20 +372,19 @@ class ScopeManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.context.pop_scope()
 
-
 class AbstractProgramContext(ABC):
     """
-    Interpreter state.
+        Interpreter state.
 
-    Symbol table - symbols in scope
-    Variable table - variable values
-    Gate table - gate definitions
-    Subroutine table - subroutine definitions
-    Qubit mapping - mapping from logical qubits to qubit indices
+        Symbol table - symbols in scope
+        Variable table - variable values
+        Gate table - gate definitions
+        Subroutine table - subroutine definitions
+        Qubit mapping - mapping from logical qubits to qubit indices
 
-    Circuit - IR build to hand off to the simulator
+        Circuit - IR build to hand off to the simulator
 
-    """
+        """
 
     def __init__(self, program=Circuit()):
         self.symbol_table = SymbolTable()
@@ -397,6 +396,7 @@ class AbstractProgramContext(ABC):
         self.inputs = {}
         self.num_qubits = 0
         self.circuit = program
+
 
     def __repr__(self):
         return "\n\n".join(
@@ -412,6 +412,7 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
+        pass
 
     def declare_variable(
         self,
@@ -523,14 +524,15 @@ class AbstractProgramContext(ABC):
         """Whether the gate is user-defined gate"""
         try:
             self.get_gate_definition(name)
-            user_defined_gate = True
-        except ValueError:
             user_defined_gate = False
+        except ValueError:
+            user_defined_gate = True
         return user_defined_gate
 
     @abstractmethod
     def is_builtin_gate(self, name: str):
         """Whether the gate is currently in scope as a built-in Braket gate"""
+        pass
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """Add a subroutine definition"""
@@ -563,6 +565,7 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def add_phase_instruction(self, target, phase_value):
         """Add phase instruction to the program"""
+        pass
 
     def add_builtin_gate(
         self,
@@ -590,6 +593,7 @@ class AbstractProgramContext(ABC):
                 ctrl_modifiers += [ctrl_mod_ix] * mod.argument.value
             if mod.modifier == GateModifierName.pow:
                 power *= mod.argument.value
+
         self.add_gate_instruction(
             gate_name, target, params, ctrl_modifiers=ctrl_modifiers, power=power
         )
@@ -602,10 +606,12 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_custom_unitary(
+
         self,
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
+<<<<<<< HEAD
         """Add a custom Unitary instruction to the program"""
 
     @abstractmethod
@@ -633,7 +639,7 @@ class ProgramContext(AbstractProgramContext):
         )
         self.circuit.add_instruction(instruction)
 
-    def add_custom_unitary(
+    def add_custom_unitary_instruction(
         self,
         unitary: np.ndarray,
         target: Tuple[int],

@@ -346,7 +346,9 @@ class BaseLocalSimulator(BraketSimulator):
                 are requested when shots>0.
         """
         is_file = openqasm_ir.source.endswith(".qasm")
+
         interpreter = Interpreter(context=ProgramContext())
+
         circuit = interpreter.build_circuit(
             source=openqasm_ir.source,
             inputs=openqasm_ir.inputs,
