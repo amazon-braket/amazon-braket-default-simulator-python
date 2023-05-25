@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.14.0.post0 (2023-05-25)
+
+### Documentation Changes
+
+ * add a linter to check proper rst formatting and fix up incorrect docs
+
 ## v1.14.0 (2023-05-15)
 
 ### Features
