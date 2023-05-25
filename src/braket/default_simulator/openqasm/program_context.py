@@ -31,6 +31,7 @@ from .parser.openqasm_ast import (
     RangeDefinition,
     SubroutineDefinition,
 )
+from abc import ABC, abstractmethod
 
 
 class Table:
@@ -360,22 +361,21 @@ class ScopeManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.context.pop_scope()
 
-
-class ProgramContext:
+class ProgramContext(ABC):
     """
-    Interpreter state.
+        Interpreter state.
 
-    Symbol table - symbols in scope
-    Variable table - variable values
-    Gate table - gate definitions
-    Subroutine table - subroutine definitions
-    Qubit mapping - mapping from logical qubits to qubit indices
+        Symbol table - symbols in scope
+        Variable table - variable values
+        Gate table - gate definitions
+        Subroutine table - subroutine definitions
+        Qubit mapping - mapping from logical qubits to qubit indices
 
-    Circuit - IR build to hand off to the simulator
+        Circuit - IR build to hand off to the simulator
 
-    """
+        """
 
-    def __init__(self):
+    def __init__(self, circuit=Circuit()):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
         self.gate_table = GateTable()
@@ -384,7 +384,7 @@ class ProgramContext:
         self.scope_manager = ScopeManager(self)
         self.inputs = {}
         self.num_qubits = 0
-        self.circuit = Circuit()
+        self.circuit = circuit
 
     def __repr__(self):
         return "\n\n".join(
@@ -396,10 +396,10 @@ class ProgramContext:
         """Load inputs for the program"""
         for key, value in inputs.items():
             self.inputs[key] = value
-
+    @abstractmethod
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        return parse_braket_pragma(pragma_body, self.qubit_mapping)
+        pass
 
     def declare_variable(
         self,
@@ -507,14 +507,18 @@ class ProgramContext:
         except KeyError:
             raise ValueError(f"Gate {name} is not defined.")
 
-    def is_builtin_gate(self, name: str) -> bool:
+    def is_user_defined_gate(self, name: str) -> bool:
         """Whether the gate is currently in scope as a built in Braket gate"""
         try:
             self.get_gate_definition(name)
-            user_defined_gate = True
-        except ValueError:
             user_defined_gate = False
-        return name in BRAKET_GATES and not user_defined_gate
+        except ValueError:
+            user_defined_gate = True
+        return user_defined_gate
+
+    @abstractmethod
+    def is_builtin_gate(self, name: str):
+        pass
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """Add a subroutine definition"""
@@ -542,8 +546,11 @@ class ProgramContext:
             target = range(self.num_qubits)
         else:
             target = set(sum((self.get_qubits(q) for q in qubits), ()))
-        phase_instruction = GPhase(target, phase.value)
-        self.circuit.add_instruction(phase_instruction)
+        self.add_phase_instruction(target, phase.value)
+
+    @abstractmethod
+    def add_phase_instruction(self, target, phase_value):
+        pass
 
     def add_builtin_gate(
         self,
@@ -571,12 +578,50 @@ class ProgramContext:
                 ctrl_modifiers += [ctrl_mod_ix] * mod.argument.value
             if mod.modifier == GateModifierName.pow:
                 power *= mod.argument.value
+        self.add_gate_instruction(gate_name, target, *params, ctrl_modifiers=ctrl_modifiers, power=power)
+
+    @abstractmethod
+    def add_gate_instruction(self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int):
+        pass
+
+    @abstractmethod
+    def add_custom_unitary_instruction(
+        self,
+        unitary: np.ndarray,
+        target: Tuple[int],
+    ) -> None:
+        """Add a custom Unitary instruction to the circuit"""
+        pass
+
+    @abstractmethod
+    def add_noise_instruction(self, noise: KrausOperation):
+        """Add a noise instruction the circuit"""
+        pass
+
+
+class BraketProgramContext(ProgramContext):
+    def __init__(self):
+        super().__init__(Circuit())
+
+    def parse_pragma(self, pragma_body: str):
+        """Parse pragma"""
+        return parse_braket_pragma(pragma_body, self.qubit_mapping)
+
+    def is_builtin_gate(self, name: str, user_defined_gate: bool) -> bool:
+        """Whether the gate is currently in scope as a built-in Braket gate"""
+        return name in BRAKET_GATES and user_defined_gate
+
+    def add_phase_instruction(self, target: Tuple[int], phase_value: int):
+        phase_instruction = GPhase(target, phase_value)
+        self.circuit.add_instruction(phase_instruction)
+
+    def add_gate_instruction(self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int):
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
         )
         self.circuit.add_instruction(instruction)
 
-    def add_custom_unitary(
+    def add_custom_unitary_instruction(
         self,
         unitary: np.ndarray,
         target: Tuple[int],
@@ -588,3 +633,4 @@ class ProgramContext:
     def add_noise_instruction(self, noise: KrausOperation):
         """Add a noise instruction the circuit"""
         self.circuit.add_instruction(noise)
+

@@ -2929,7 +2929,6 @@ class BraketPragmasParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ProgramContext(ParserRuleContext):
         __slots__ = 'parser'
 
