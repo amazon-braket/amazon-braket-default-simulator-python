@@ -24,6 +24,5 @@ jobs:
         pip install -e .[test]
     - name: Run code format checks
       run: |
-        # stop the build if there are Python format errors or undefined names
         black --check .
         flake8
