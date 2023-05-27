@@ -409,10 +409,13 @@ class AbstractProgramContext(ABC):
         for key, value in inputs.items():
             self.inputs[key] = value
 
+<<<<<<< HEAD
     @abstractmethod
+=======
+>>>>>>> 4504035 (change: Renaming to maintain backward compaitability)
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        pass
+        return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def declare_variable(
         self,
@@ -606,7 +609,10 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_custom_unitary(
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4504035 (change: Renaming to maintain backward compaitability)
         self,
         unitary: np.ndarray,
         target: Tuple[int],
@@ -623,9 +629,15 @@ class ProgramContext(AbstractProgramContext):
     def __init__(self):
         super().__init__(Circuit())
 
+<<<<<<< HEAD
     def is_builtin_gate(self, name: str) -> bool:
         user_defined_gate = self.is_user_defined_gate(name)
         return name in BRAKET_GATES and not user_defined_gate
+=======
+    def is_builtin_gate(self, name: str, user_defined_gate: bool) -> bool:
+        """Whether the gate is currently in scope as a built-in Braket gate"""
+        return name in BRAKET_GATES and user_defined_gate
+>>>>>>> 4504035 (change: Renaming to maintain backward compaitability)
 
     def add_phase_instruction(self, target: Tuple[int], phase_value: int):
         phase_instruction = GPhase(target, phase_value)
@@ -639,7 +651,7 @@ class ProgramContext(AbstractProgramContext):
         )
         self.circuit.add_instruction(instruction)
 
-    def add_custom_unitary_instruction(
+    def add_custom_unitary(
         self,
         unitary: np.ndarray,
         target: Tuple[int],
