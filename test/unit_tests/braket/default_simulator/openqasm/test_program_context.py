@@ -8,7 +8,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     IntegerLiteral,
     IntType,
 )
-from braket.default_simulator.openqasm.program_context import ScopedTable, BraketProgramContext
+from braket.default_simulator.openqasm.program_context import ScopedTable, ProgramContext
 
 boolean = BoolType()
 int_8 = IntType(IntegerLiteral(8))
@@ -18,7 +18,7 @@ float_16 = FloatType(IntegerLiteral(16))
 
 
 def test_variable_declaration():
-    context = BraketProgramContext()
+    context = ProgramContext()
     context.declare_variable("x", int_8, IntegerLiteral(10), True)
     context.declare_variable("y", float_16, FloatLiteral(1.34), False)
     context.declare_variable("z", boolean, BooleanLiteral(False), False)
@@ -68,7 +68,7 @@ def test_variable_declaration():
 
 
 def test_repr():
-    context = BraketProgramContext()
+    context = ProgramContext()
     context.declare_variable("x", int_8, IntegerLiteral(10), True)
     context.declare_variable("y", float_16, FloatLiteral(1.34), False)
     context.declare_variable("z", boolean, BooleanLiteral(False), False)

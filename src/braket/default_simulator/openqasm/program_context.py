@@ -361,7 +361,7 @@ class ScopeManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.context.pop_scope()
 
-class ProgramContext(ABC):
+class AbstractProgramContext(ABC):
     """
         Interpreter state.
 
@@ -396,10 +396,10 @@ class ProgramContext(ABC):
         """Load inputs for the program"""
         for key, value in inputs.items():
             self.inputs[key] = value
-    @abstractmethod
+
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        pass
+        return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def declare_variable(
         self,
@@ -585,7 +585,7 @@ class ProgramContext(ABC):
         pass
 
     @abstractmethod
-    def add_custom_unitary_instruction(
+    def add_custom_unitary(
         self,
         unitary: np.ndarray,
         target: Tuple[int],
@@ -599,13 +599,9 @@ class ProgramContext(ABC):
         pass
 
 
-class BraketProgramContext(ProgramContext):
+class ProgramContext(AbstractProgramContext):
     def __init__(self):
         super().__init__(Circuit())
-
-    def parse_pragma(self, pragma_body: str):
-        """Parse pragma"""
-        return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def is_builtin_gate(self, name: str, user_defined_gate: bool) -> bool:
         """Whether the gate is currently in scope as a built-in Braket gate"""
@@ -621,7 +617,7 @@ class BraketProgramContext(ProgramContext):
         )
         self.circuit.add_instruction(instruction)
 
-    def add_custom_unitary_instruction(
+    def add_custom_unitary(
         self,
         unitary: np.ndarray,
         target: Tuple[int],

@@ -86,7 +86,7 @@ from .parser.openqasm_ast import (
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
-from .program_context import ProgramContext, BraketProgramContext
+from .program_context import ProgramContext
 
 
 class Interpreter:
@@ -102,7 +102,7 @@ class Interpreter:
 
     def __init__(self, context: Optional[ProgramContext] = None, logger: Optional[Logger] = None):
         # context keeps track of all state
-        self.context = context or BraketProgramContext()
+        self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
 
