@@ -402,7 +402,6 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def declare_variable(
         self,
@@ -522,7 +521,6 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def is_builtin_gate(self, name: str):
         """Whether the gate is currently in scope as a built-in Braket gate"""
-        pass
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """Add a subroutine definition"""
@@ -538,7 +536,6 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
-        pass
 
     def add_phase(
         self,
@@ -556,7 +553,6 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def add_phase_instruction(self, target, phase_value):
         """Add phase instruction to the program"""
-        pass
 
     def add_builtin_gate(
         self,

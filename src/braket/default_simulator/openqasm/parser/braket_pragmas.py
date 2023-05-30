@@ -32,9 +32,6 @@ from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
 from .openqasm_parser import parse
 
 
-class AbstractBraketPragmaNodeVisitor(ABC):
-    pass
-
 class AbstractBraketPragmaNodeVisitor(BraketPragmasParserVisitor, ABC):
     """
     This is a visitor for the BraketPragmas grammar. Consumes a
@@ -208,8 +205,18 @@ class BraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
         target = self.visit(ctx.target)
         probabilities = self.visit(ctx.probabilities())
         noise_instruction = ctx.noiseInstructionName().getText()
-
-        return target, probabilities, noise_instruction
+        one_prob_noise_map = {
+            "bit_flip": BitFlip,
+            "phase_flip": PhaseFlip,
+            "pauli_channel": PauliChannel,
+            "depolarizing": Depolarizing,
+            "two_qubit_depolarizing": TwoQubitDepolarizing,
+            "two_qubit_dephasing": TwoQubitDephasing,
+            "amplitude_damping": AmplitudeDamping,
+            "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
+            "phase_damping": PhaseDamping,
+        }
+        return one_prob_noise_map[noise_instruction](target, *probabilities)
 
     def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
         target = self.visit(ctx.target)
