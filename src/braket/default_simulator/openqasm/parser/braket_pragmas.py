@@ -190,13 +190,11 @@ class AbstractBraketPragmaNodeVisitor(BraketPragmasParserVisitor, ABC):
 
     @abstractmethod
     def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
-        pass
+        """Visit Noise Context"""
 
     @abstractmethod
     def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
-        target = self.visit(ctx.target)
-        matrices = [self.visit(m) for m in ctx.matrices().children[::2]]
-        return Kraus(target, matrices)
+        """Visit Kraus Context"""
 
     def visitProbabilities(self, ctx: BraketPragmasParser.ProbabilitiesContext):
         return [float(prob.symbol.text) for prob in ctx.children[::2]]

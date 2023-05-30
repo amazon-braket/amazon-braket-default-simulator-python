@@ -412,7 +412,6 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        pass
 
     def declare_variable(
         self,
@@ -531,7 +530,7 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def is_builtin_gate(self, name: str):
-        pass
+        """Whether the gate is currently in scope as a built-in Braket gate"""
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """Add a subroutine definition"""
@@ -547,7 +546,6 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
-        pass
 
     def add_phase(
         self,
@@ -600,7 +598,7 @@ class AbstractProgramContext(ABC):
     def add_gate_instruction(
         self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int
     ):
-        pass
+        """Add gate instruction to the circuit"""
 
     @abstractmethod
     def add_custom_unitary(
@@ -609,12 +607,10 @@ class AbstractProgramContext(ABC):
         target: Tuple[int],
     ) -> None:
         """Add a custom Unitary instruction to the circuit"""
-        pass
 
     @abstractmethod
     def add_noise_instruction(self, *args, **kwargs):
         """Add a noise instruction the circuit"""
-        pass
 
 
 class ProgramContext(AbstractProgramContext):
@@ -622,7 +618,6 @@ class ProgramContext(AbstractProgramContext):
         super().__init__(Circuit())
 
     def is_builtin_gate(self, name: str, user_defined_gate: bool) -> bool:
-        """Whether the gate is currently in scope as a built-in Braket gate"""
         return name in BRAKET_GATES and user_defined_gate
 
     def add_phase_instruction(self, target: Tuple[int], phase_value: int):
