@@ -6,8 +6,18 @@ from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, U, Unitary
 
-from ..noise_operations import KrausOperation, BitFlip, PhaseFlip, PauliChannel, Depolarizing, TwoQubitDepolarizing, \
-    TwoQubitDephasing, AmplitudeDamping, GeneralizedAmplitudeDamping, PhaseDamping
+from ..noise_operations import (
+    KrausOperation,
+    BitFlip,
+    PhaseFlip,
+    PauliChannel,
+    Depolarizing,
+    TwoQubitDepolarizing,
+    TwoQubitDephasing,
+    AmplitudeDamping,
+    GeneralizedAmplitudeDamping,
+    PhaseDamping,
+)
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
@@ -362,19 +372,20 @@ class ScopeManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.context.pop_scope()
 
+
 class AbstractProgramContext(ABC):
     """
-        Interpreter state.
+    Interpreter state.
 
-        Symbol table - symbols in scope
-        Variable table - variable values
-        Gate table - gate definitions
-        Subroutine table - subroutine definitions
-        Qubit mapping - mapping from logical qubits to qubit indices
+    Symbol table - symbols in scope
+    Variable table - variable values
+    Gate table - gate definitions
+    Subroutine table - subroutine definitions
+    Qubit mapping - mapping from logical qubits to qubit indices
 
-        Circuit - IR build to hand off to the simulator
+    Circuit - IR build to hand off to the simulator
 
-        """
+    """
 
     def __init__(self, circuit=Circuit()):
         self.symbol_table = SymbolTable()
@@ -580,10 +591,14 @@ class AbstractProgramContext(ABC):
                 ctrl_modifiers += [ctrl_mod_ix] * mod.argument.value
             if mod.modifier == GateModifierName.pow:
                 power *= mod.argument.value
-        self.add_gate_instruction(gate_name, target, *params, ctrl_modifiers=ctrl_modifiers, power=power)
+        self.add_gate_instruction(
+            gate_name, target, *params, ctrl_modifiers=ctrl_modifiers, power=power
+        )
 
     @abstractmethod
-    def add_gate_instruction(self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int):
+    def add_gate_instruction(
+        self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int
+    ):
         pass
 
     @abstractmethod
@@ -613,7 +628,9 @@ class ProgramContext(AbstractProgramContext):
         phase_instruction = GPhase(target, phase_value)
         self.circuit.add_instruction(phase_instruction)
 
-    def add_gate_instruction(self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int):
+    def add_gate_instruction(
+        self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int
+    ):
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
         )
@@ -650,5 +667,3 @@ class ProgramContext(AbstractProgramContext):
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
         self.circuit.add_result(result)
-
-
