@@ -306,7 +306,9 @@ class Interpreter:
                 statement.arguments = self.visit(statement.arguments)
                 statement.modifiers = self.visit(statement.modifiers)
                 statement.qubits = self.visit(statement.qubits)
-                if self.context.is_builtin_gate(gate_name, self.context.is_user_defined_gate(gate_name)):
+                if self.context.is_builtin_gate(
+                    gate_name, self.context.is_user_defined_gate(gate_name)
+                ):
                     inlined_body.append(statement)
                 else:
                     with self.context.enter_scope():

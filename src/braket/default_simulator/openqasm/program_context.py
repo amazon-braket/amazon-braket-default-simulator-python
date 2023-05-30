@@ -361,19 +361,20 @@ class ScopeManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.context.pop_scope()
 
+
 class AbstractProgramContext(ABC):
     """
-        Interpreter state.
+    Interpreter state.
 
-        Symbol table - symbols in scope
-        Variable table - variable values
-        Gate table - gate definitions
-        Subroutine table - subroutine definitions
-        Qubit mapping - mapping from logical qubits to qubit indices
+    Symbol table - symbols in scope
+    Variable table - variable values
+    Gate table - gate definitions
+    Subroutine table - subroutine definitions
+    Qubit mapping - mapping from logical qubits to qubit indices
 
-        Circuit - IR build to hand off to the simulator
+    Circuit - IR build to hand off to the simulator
 
-        """
+    """
 
     def __init__(self, program=Circuit()):
         self.symbol_table = SymbolTable()

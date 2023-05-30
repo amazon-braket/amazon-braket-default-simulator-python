@@ -31,6 +31,7 @@ from .generated.BraketPragmasParser import BraketPragmasParser
 from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
 from .openqasm_parser import parse
 
+
 class AbstractBraketPragmaNodeVisitor(ABC):
     pass
 
