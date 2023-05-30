@@ -562,7 +562,7 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_phase_instruction(self, target, phase_value):
-        pass
+        """Add phase instruction to the circuit"""
 
     def add_builtin_gate(
         self,
@@ -641,10 +641,6 @@ class ProgramContext(AbstractProgramContext):
         instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)
 
-    # def add_noise_instruction(self, noise: KrausOperation):
-    #     """Add a noise instruction the circuit"""
-    #     self.circuit.add_instruction(noise)
-
     def add_noise_instruction(self, noise: KrausOperation):
         """Add a noise instruction the circuit"""
         self.circuit.add_instruction(noise)
@@ -655,4 +651,4 @@ class ProgramContext(AbstractProgramContext):
 
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        return parse_braket_pragma(pragma_body, self.qubit_mapping, BraketPragmaNodeVisitor)
+        return parse_braket_pragma(pragma_body, self.qubit_mapping)

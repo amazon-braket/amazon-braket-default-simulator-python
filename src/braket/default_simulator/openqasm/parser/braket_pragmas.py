@@ -224,22 +224,8 @@ class BraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
         return Kraus(target, matrices)
 
 
-class GeneralPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
-    def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
-        target = self.visit(ctx.target)
-        probabilities = self.visit(ctx.probabilities())
-        noise_instruction = ctx.noiseInstructionName().getText()
-
-        return target, probabilities, noise_instruction
-
-    def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
-        target = self.visit(ctx.target)
-        matrices = [self.visit(m) for m in ctx.matrices().children[::2]]
-        return target, matrices
-
-
 def parse_braket_pragma(
-    pragma_body: str, qubit_table: "QubitTable", pragma_node_visitor=GeneralPragmaNodeVisitor
+    pragma_body: str, qubit_table: "QubitTable", pragma_node_visitor=BraketPragmaNodeVisitor
 ):
     """Parse braket pragma and return relevant information.
 
