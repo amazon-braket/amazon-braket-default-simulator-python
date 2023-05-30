@@ -6,7 +6,8 @@ from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, U, Unitary
 
-from ..noise_operations import KrausOperation
+from ..noise_operations import KrausOperation, BitFlip, PhaseFlip, PauliChannel, Depolarizing, TwoQubitDepolarizing, \
+    TwoQubitDephasing, AmplitudeDamping, GeneralizedAmplitudeDamping, PhaseDamping
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
@@ -531,9 +532,10 @@ class AbstractProgramContext(ABC):
         except KeyError:
             raise NameError(f"Subroutine {name} is not defined.")
 
+    @abstractmethod
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
-        self.circuit.add_result(result)
+        pass
 
     def add_phase(
         self,
@@ -626,7 +628,27 @@ class ProgramContext(AbstractProgramContext):
         instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)
 
-    def add_noise_instruction(self, noise: KrausOperation):
+    # def add_noise_instruction(self, noise: KrausOperation):
+    #     """Add a noise instruction the circuit"""
+    #     self.circuit.add_instruction(noise)
+
+    def add_noise_instruction(self, target, probabilities, noise_instruction):
         """Add a noise instruction the circuit"""
-        self.circuit.add_instruction(noise)
+        one_prob_noise_map = {
+            "bit_flip": BitFlip,
+            "phase_flip": PhaseFlip,
+            "pauli_channel": PauliChannel,
+            "depolarizing": Depolarizing,
+            "two_qubit_depolarizing": TwoQubitDepolarizing,
+            "two_qubit_dephasing": TwoQubitDephasing,
+            "amplitude_damping": AmplitudeDamping,
+            "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
+            "phase_damping": PhaseDamping,
+        }
+        self.circuit.add_instruction(one_prob_noise_map[noise_instruction](target, *probabilities))
+
+    def add_result(self, result: Results) -> None:
+        """Add a result type to the circuit"""
+        self.circuit.add_result(result)
+
 
