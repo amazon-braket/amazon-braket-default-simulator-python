@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import List, Tuple
 
 import numpy as np
@@ -32,11 +32,7 @@ from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
 from .openqasm_parser import parse
 
 
-class AbstractBraketPragmaNodeVisitor(ABC):
-    pass
-
-
-class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
+class AbstractBraketPragmaNodeVisitor(BraketPragmasParserVisitor, ABC):
     """
     This is a visitor for the BraketPragmas grammar. Consumes a
     braketPragmas AST and converts to relevant python objects
@@ -192,6 +188,45 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         matrix = np.array(rows)
         return matrix
 
+    @abstractmethod
+    def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
+        pass
+
+    @abstractmethod
+    def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
+        target = self.visit(ctx.target)
+        matrices = [self.visit(m) for m in ctx.matrices().children[::2]]
+        return Kraus(target, matrices)
+
+    def visitProbabilities(self, ctx: BraketPragmasParser.ProbabilitiesContext):
+        return [float(prob.symbol.text) for prob in ctx.children[::2]]
+
+
+class BraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
+    def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
+        target = self.visit(ctx.target)
+        probabilities = self.visit(ctx.probabilities())
+        noise_instruction = ctx.noiseInstructionName().getText()
+        one_prob_noise_map = {
+            "bit_flip": BitFlip,
+            "phase_flip": PhaseFlip,
+            "pauli_channel": PauliChannel,
+            "depolarizing": Depolarizing,
+            "two_qubit_depolarizing": TwoQubitDepolarizing,
+            "two_qubit_dephasing": TwoQubitDephasing,
+            "amplitude_damping": AmplitudeDamping,
+            "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
+            "phase_damping": PhaseDamping,
+        }
+        return one_prob_noise_map[noise_instruction](target, *probabilities)
+
+    def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
+        target = self.visit(ctx.target)
+        matrices = [self.visit(m) for m in ctx.matrices().children[::2]]
+        return Kraus(target, matrices)
+
+
+class GeneralPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
     def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
         target = self.visit(ctx.target)
         probabilities = self.visit(ctx.probabilities())
@@ -202,13 +237,12 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
         target = self.visit(ctx.target)
         matrices = [self.visit(m) for m in ctx.matrices().children[::2]]
-        return Kraus(target, matrices)
-
-    def visitProbabilities(self, ctx: BraketPragmasParser.ProbabilitiesContext):
-        return [float(prob.symbol.text) for prob in ctx.children[::2]]
+        return target, matrices
 
 
-def parse_braket_pragma(pragma_body: str, qubit_table: "QubitTable"):
+def parse_braket_pragma(
+    pragma_body: str, qubit_table: "QubitTable", pragma_node_visitor=GeneralPragmaNodeVisitor
+):
     """Parse braket pragma and return relevant information.
 
     Pragma types include:
@@ -220,5 +254,5 @@ def parse_braket_pragma(pragma_body: str, qubit_table: "QubitTable"):
     stream = CommonTokenStream(lexer)
     parser = BraketPragmasParser(stream)
     tree = parser.braketPragma()
-    visited = BraketPragmaNodeVisitor(qubit_table).visit(tree)
+    visited = pragma_node_visitor(qubit_table).visit(tree)
     return visited

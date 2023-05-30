@@ -28,7 +28,7 @@ from ._helpers.arrays import (
 )
 from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
 from .circuit import Circuit
-from .parser.braket_pragmas import parse_braket_pragma
+from .parser.braket_pragmas import parse_braket_pragma, BraketPragmaNodeVisitor
 from .parser.openqasm_ast import (
     ClassicalType,
     FloatLiteral,
@@ -409,9 +409,10 @@ class AbstractProgramContext(ABC):
         for key, value in inputs.items():
             self.inputs[key] = value
 
+    @abstractmethod
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        return parse_braket_pragma(pragma_body, self.qubit_mapping)
+        pass
 
     def declare_variable(
         self,
@@ -611,7 +612,7 @@ class AbstractProgramContext(ABC):
         pass
 
     @abstractmethod
-    def add_noise_instruction(self, noise: KrausOperation):
+    def add_noise_instruction(self, *args, **kwargs):
         """Add a noise instruction the circuit"""
         pass
 
@@ -649,21 +650,14 @@ class ProgramContext(AbstractProgramContext):
     #     """Add a noise instruction the circuit"""
     #     self.circuit.add_instruction(noise)
 
-    def add_noise_instruction(self, target, probabilities, noise_instruction):
+    def add_noise_instruction(self, noise: KrausOperation):
         """Add a noise instruction the circuit"""
-        one_prob_noise_map = {
-            "bit_flip": BitFlip,
-            "phase_flip": PhaseFlip,
-            "pauli_channel": PauliChannel,
-            "depolarizing": Depolarizing,
-            "two_qubit_depolarizing": TwoQubitDepolarizing,
-            "two_qubit_dephasing": TwoQubitDephasing,
-            "amplitude_damping": AmplitudeDamping,
-            "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
-            "phase_damping": PhaseDamping,
-        }
-        self.circuit.add_instruction(one_prob_noise_map[noise_instruction](target, *probabilities))
+        self.circuit.add_instruction(noise)
 
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
         self.circuit.add_result(result)
+
+    def parse_pragma(self, pragma_body: str):
+        """Parse pragma"""
+        return parse_braket_pragma(pragma_body, self.qubit_mapping, BraketPragmaNodeVisitor)
