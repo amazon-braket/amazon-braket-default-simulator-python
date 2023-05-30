@@ -597,11 +597,11 @@ class AbstractProgramContext(ABC):
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
-        """Add a custom Unitary instruction to the program"""
+        """Add a custom Unitary instruction to the circuit"""
 
     @abstractmethod
     def add_noise_instruction(self, *args, **kwargs):
-        """Add a noise instruction the program"""
+        """Add a noise instruction the circuit"""
 
 
 class ProgramContext(AbstractProgramContext):
