@@ -643,4 +643,8 @@ class ProgramContext(AbstractProgramContext):
 
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
+<<<<<<< HEAD
         return parse_braket_pragma(pragma_body, BraketPragmaNodeVisitor(self.qubit_mapping))
+=======
+        return parse_braket_pragma(pragma_body, self.qubit_mapping)
+>>>>>>> 94a4969 (change: Remove generic braket pragma)
