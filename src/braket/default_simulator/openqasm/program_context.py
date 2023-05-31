@@ -76,7 +76,7 @@ class QubitTable(Table):
         Convenience method to get an element with a possibly indexed identifier.
         """
         if identifier.name.startswith("$"):
-            return int(identifier.name[1:]),
+            return (int(identifier.name[1:]),)
         return self[identifier.name]
 
     @get_by_identifier.register
@@ -602,9 +602,10 @@ class ProgramContext:
 
     def save_output_values(self):
         if not self.outputs:
-            output_vars = self.symbol_table.current_scope
             self.outputs = {
-                v: [] for v in output_vars if isinstance(self.get_type(v), ClassicalType)
+                v: []
+                for v in self.symbol_table.current_scope
+                if isinstance(self.get_type(v), ClassicalType)
             }
         for output, shot_data in self.outputs.items():
             shot_data.append(convert_to_output(self.get_value(output)))
