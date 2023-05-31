@@ -601,5 +601,10 @@ class ProgramContext:
         self.outputs[output_name] = []
 
     def save_output_values(self):
+        if not self.outputs:
+            output_vars = self.symbol_table.current_scope
+            self.outputs = {
+                v: [] for v in output_vars if isinstance(self.get_type(v), ClassicalType)
+            }
         for output, shot_data in self.outputs.items():
             shot_data.append(convert_to_output(self.get_value(output)))
