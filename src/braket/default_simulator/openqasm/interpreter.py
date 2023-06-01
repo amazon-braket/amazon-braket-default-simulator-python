@@ -107,7 +107,7 @@ class Interpreter:
         self._uses_advanced_language_features = False
 
     def build_circuit(
-        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+            self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
     ) -> Circuit:
         """Interpret an OpenQASM program and build a Circuit IR."""
         if inputs:
@@ -128,7 +128,7 @@ class Interpreter:
         return self.context.circuit
 
     def run(
-        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+            self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
     ) -> ProgramContext:
         """Interpret an OpenQASM program and return the program state"""
         self.build_circuit(source, inputs, is_file)
@@ -307,7 +307,7 @@ class Interpreter:
                 statement.modifiers = self.visit(statement.modifiers)
                 statement.qubits = self.visit(statement.qubits)
                 if self.context.is_builtin_gate(
-                    gate_name, self.context.is_user_defined_gate(gate_name)
+                        gate_name, self.context.is_user_defined_gate(gate_name)
                 ):
                     inlined_body.append(statement)
                 else:
@@ -323,7 +323,7 @@ class Interpreter:
                             self.context.declare_qubit_alias(qubit_defined.name, qubit_called)
 
                         for param_called, param_defined in zip(
-                            statement.arguments, gate_def.arguments
+                                statement.arguments, gate_def.arguments
                         ):
                             self.context.declare_variable(
                                 param_defined.name, Identifier, param_called
@@ -385,9 +385,7 @@ class Interpreter:
                 self.visit(gate_call)
             return
 
-        is_user_defined_gate = self.context.is_user_defined_gate(gate_name)
-
-        if self.context.is_builtin_gate(gate_name, is_user_defined_gate):
+        if self.context.is_builtin_gate(gate_name):
             # to simplify indices
             qubits = self.visit(qubits)
             self.handle_builtin_gate(
@@ -606,11 +604,11 @@ class Interpreter:
         return builtin_functions["sizeof"](target, index)
 
     def handle_builtin_gate(
-        self,
-        gate_name: str,
-        arguments: List[FloatLiteral],
-        qubits: List[Union[Identifier, IndexedIdentifier]],
-        modifiers: List[QuantumGateModifier],
+            self,
+            gate_name: str,
+            arguments: List[FloatLiteral],
+            qubits: List[Union[Identifier, IndexedIdentifier]],
+            modifiers: List[QuantumGateModifier],
     ) -> None:
         """Add unitary operation to the program"""
         self.context.add_builtin_gate(
