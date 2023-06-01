@@ -520,7 +520,7 @@ class AbstractProgramContext(ABC):
             raise ValueError(f"Gate {name} is not defined.")
 
     def is_user_defined_gate(self, name: str) -> bool:
-        """Whether the gate is currently in scope as a built in Braket gate"""
+        """Whether the gate is user-defined gate"""
         try:
             self.get_gate_definition(name)
             user_defined_gate = True
@@ -617,8 +617,9 @@ class ProgramContext(AbstractProgramContext):
     def __init__(self):
         super().__init__(Circuit())
 
-    def is_builtin_gate(self, name: str, user_defined_gate: bool) -> bool:
-        return name in BRAKET_GATES and user_defined_gate
+    def is_builtin_gate(self, name: str) -> bool:
+        user_defined_gate = self.is_user_defined_gate(name)
+        return name in BRAKET_GATES and not user_defined_gate
 
     def add_phase_instruction(self, target: Tuple[int], phase_value: int):
         phase_instruction = GPhase(target, phase_value)
