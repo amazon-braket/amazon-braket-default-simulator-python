@@ -385,7 +385,9 @@ class Interpreter:
                 self.visit(gate_call)
             return
 
-        if self.context.is_builtin_gate(gate_name, self.context.is_user_defined_gate(gate_name)):
+        is_user_defined_gate = self.context.is_user_defined_gate(gate_name)
+
+        if self.context.is_builtin_gate(gate_name, is_user_defined_gate):
             # to simplify indices
             qubits = self.visit(qubits)
             self.handle_builtin_gate(

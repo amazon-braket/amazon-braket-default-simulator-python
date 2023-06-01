@@ -523,9 +523,9 @@ class AbstractProgramContext(ABC):
         """Whether the gate is currently in scope as a built in Braket gate"""
         try:
             self.get_gate_definition(name)
-            user_defined_gate = False
-        except ValueError:
             user_defined_gate = True
+        except ValueError:
+            user_defined_gate = False
         return user_defined_gate
 
     @abstractmethod
