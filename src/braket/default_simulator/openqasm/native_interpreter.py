@@ -10,6 +10,7 @@ from ._helpers.casting import cast_to, get_identifier_name, wrap_value_into_lite
 from .interpreter import Interpreter
 from .parser.openqasm_ast import (
     ArrayLiteral,
+    BitType,
     BooleanLiteral,
     ClassicalDeclaration,
     IndexedIdentifier,
@@ -81,8 +82,13 @@ class NativeInterpreter(Interpreter):
     def _(self, node: QuantumMeasurementStatement) -> Union[BooleanLiteral, ArrayLiteral]:
         self.logger.debug(f"Quantum measurement statement: {node}")
         outcome = self.visit(node.measure)
-        var_type = self.context.get_type(get_identifier_name(node.target))
-        value = cast_to(self.context.get_type(get_identifier_name(node.target)), outcome)
+        current_value = self.context.get_value_by_identifier(node.target)
+        result_type = (
+            BooleanLiteral
+            if isinstance(current_value, BooleanLiteral) or current_value is None
+            else BitType(size=IntegerLiteral(len(current_value.values)))
+        )
+        value = cast_to(result_type, outcome)
         self.context.update_value(node.target, value)
 
     @visit.register
