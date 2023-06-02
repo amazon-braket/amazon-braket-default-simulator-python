@@ -387,7 +387,6 @@ class AbstractProgramContext(ABC):
         self.num_qubits = 0
         self.circuit = program
 
-
     def __repr__(self):
         return "\n\n".join(
             repr(x)
@@ -535,7 +534,7 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_result(self, result: Results) -> None:
-        """Add a result type to the circuit"""
+        """Add a result type to the program"""
 
     def add_phase(
         self,
@@ -597,11 +596,11 @@ class AbstractProgramContext(ABC):
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
-        """Add a custom Unitary instruction to the circuit"""
+        """Add a custom Unitary instruction to the program"""
 
     @abstractmethod
     def add_noise_instruction(self, *args, **kwargs):
-        """Add a noise instruction the circuit"""
+        """Add a noise instruction the program"""
 
 
 class ProgramContext(AbstractProgramContext):
@@ -643,8 +642,4 @@ class ProgramContext(AbstractProgramContext):
 
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-<<<<<<< HEAD
         return parse_braket_pragma(pragma_body, BraketPragmaNodeVisitor(self.qubit_mapping))
-=======
-        return parse_braket_pragma(pragma_body, self.qubit_mapping)
->>>>>>> 94a4969 (change: Remove generic braket pragma)
