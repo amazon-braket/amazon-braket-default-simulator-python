@@ -224,9 +224,7 @@ class BraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
         return Kraus(target, matrices)
 
 
-def parse_braket_pragma(
-    pragma_body: str, qubit_table: "QubitTable", pragma_node_visitor=BraketPragmaNodeVisitor
-):
+def parse_braket_pragma(pragma_body: str, pragma_node_visitor=None):
     """Parse braket pragma and return relevant information.
 
     Pragma types include:
@@ -238,5 +236,5 @@ def parse_braket_pragma(
     stream = CommonTokenStream(lexer)
     parser = BraketPragmasParser(stream)
     tree = parser.braketPragma()
-    visited = pragma_node_visitor(qubit_table).visit(tree)
+    visited = pragma_node_visitor.visit(tree)
     return visited

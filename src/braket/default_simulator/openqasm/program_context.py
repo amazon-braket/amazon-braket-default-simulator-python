@@ -387,7 +387,7 @@ class AbstractProgramContext(ABC):
 
     """
 
-    def __init__(self, circuit=Circuit()):
+    def __init__(self, program=Circuit()):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
         self.gate_table = GateTable()
@@ -396,7 +396,7 @@ class AbstractProgramContext(ABC):
         self.scope_manager = ScopeManager(self)
         self.inputs = {}
         self.num_qubits = 0
-        self.circuit = circuit
+        self.circuit = program
 
     def __repr__(self):
         return "\n\n".join(
@@ -545,14 +545,14 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_result(self, result: Results) -> None:
-        """Add a result type to the circuit"""
+        """Add a result type to the program"""
 
     def add_phase(
         self,
         phase: FloatLiteral,
         qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None,
     ) -> None:
-        """Add quantum phase instruction to the circuit"""
+        """Add quantum phase instruction to the program"""
         # if targets overlap, duplicates will be ignored
         if not qubits:
             target = range(self.num_qubits)
@@ -562,7 +562,7 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_phase_instruction(self, target, phase_value):
-        """Add phase instruction to the circuit"""
+        """Add phase instruction to the program"""
 
     def add_builtin_gate(
         self,
@@ -571,7 +571,7 @@ class AbstractProgramContext(ABC):
         qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ) -> None:
-        """Add a builtin gate instruction to the circuit"""
+        """Add a builtin gate instruction to the program"""
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
@@ -598,7 +598,7 @@ class AbstractProgramContext(ABC):
     def add_gate_instruction(
         self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int
     ):
-        """Add gate instruction to the circuit"""
+        """Add gate instruction to the program"""
 
     @abstractmethod
     def add_custom_unitary(
@@ -606,11 +606,11 @@ class AbstractProgramContext(ABC):
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
-        """Add a custom Unitary instruction to the circuit"""
+        """Add a custom Unitary instruction to the program"""
 
     @abstractmethod
     def add_noise_instruction(self, *args, **kwargs):
-        """Add a noise instruction the circuit"""
+        """Add a noise instruction the program"""
 
 
 class ProgramContext(AbstractProgramContext):
@@ -638,18 +638,18 @@ class ProgramContext(AbstractProgramContext):
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
-        """Add a custom Unitary instruction to the circuit"""
+        """Add a custom Unitary instruction to the program"""
         instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)
 
     def add_noise_instruction(self, noise: KrausOperation):
-        """Add a noise instruction the circuit"""
+        """Add a noise instruction the program"""
         self.circuit.add_instruction(noise)
 
     def add_result(self, result: Results) -> None:
-        """Add a result type to the circuit"""
+        """Add a result type to the program"""
         self.circuit.add_result(result)
 
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        return parse_braket_pragma(pragma_body, self.qubit_mapping)
+        return parse_braket_pragma(pragma_body, BraketPragmaNodeVisitor(self.qubit_mapping))
