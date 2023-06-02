@@ -30,7 +30,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
         Initialize density matrix simulation.
 
         Args:
-            **kwargs: qubit_count, shots, batch_size
+            `**kwargs`: qubit_count, shots, batch_size
 
         Returns:
             DensityMatrixSimulation: Initialized simulation.

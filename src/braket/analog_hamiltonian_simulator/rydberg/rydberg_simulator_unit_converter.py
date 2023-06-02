@@ -56,7 +56,7 @@ def convert_unit(program: Program) -> Program:
 def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> Dict:
     """
     For a given field, convert the unit of time from second to microsecond,
-    and convert the unit of values from Hz to MHz if `convertvalues`=True
+    and convert the unit of values from Hz to MHz if `convertvalues` =True
 
     Args:
         field (PhysicalField): The physical field for converting unit

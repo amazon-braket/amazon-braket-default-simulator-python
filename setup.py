@@ -55,6 +55,7 @@ setup(
         "test": [
             "black",
             "flake8",
+            "flake8-rst-docstrings",
             "isort",
             "pre-commit",
             "pylint",
