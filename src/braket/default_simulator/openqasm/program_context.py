@@ -591,12 +591,12 @@ class AbstractProgramContext(ABC):
             if mod.modifier == GateModifierName.pow:
                 power *= mod.argument.value
         self.add_gate_instruction(
-            gate_name, target, *params, ctrl_modifiers=ctrl_modifiers, power=power
+            gate_name, target, params, ctrl_modifiers=ctrl_modifiers, power=power
         )
 
     @abstractmethod
     def add_gate_instruction(
-        self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int
+        self, gate_name: str, target: Tuple[int], params, ctrl_modifiers: List[int], power: int
     ):
         """Add gate instruction to the program"""
 
@@ -626,7 +626,7 @@ class ProgramContext(AbstractProgramContext):
         self.circuit.add_instruction(phase_instruction)
 
     def add_gate_instruction(
-        self, gate_name: str, target: Tuple[int], *params, ctrl_modifiers: List[int], power: int
+        self, gate_name: str, target: Tuple[int], params, ctrl_modifiers: List[int], power: int
     ):
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
