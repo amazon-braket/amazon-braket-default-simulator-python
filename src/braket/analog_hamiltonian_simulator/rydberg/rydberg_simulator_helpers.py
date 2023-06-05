@@ -563,15 +563,12 @@ def _apply_hamiltonian(
     for rabi_op, rabi_coef, detuning_op, detuning_coef in zip(
         rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
     ):
-        # output_register += (rabi_coef[index_time] / 2) * rabi_op.dot(input_register)
-        # output_register += (np.conj(rabi_coef[index_time]) / 2) * rabi_op.H.dot(input_register)
         output_register += np.real(rabi_coef[index_time] / 2) * (rabi_op + rabi_op.H).dot(
             input_register
         )
         output_register += (
             1j * np.imag(rabi_coef[index_time] / 2) * (rabi_op - rabi_op.H).dot(input_register)
         )
-        output_register += (np.conj(rabi_coef[index_time]) / 2) * rabi_op.H.dot(input_register)
         output_register -= detuning_coef[index_time] * detuning_op.dot(input_register)
 
     # Add the shifting fields
