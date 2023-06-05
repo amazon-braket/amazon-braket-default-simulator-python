@@ -565,8 +565,12 @@ def _apply_hamiltonian(
     ):
         # output_register += (rabi_coef[index_time] / 2) * rabi_op.dot(input_register)
         # output_register += (np.conj(rabi_coef[index_time]) / 2) * rabi_op.H.dot(input_register)
-        output_register += np.real(rabi_coef[index_time] / 2) * (rabi_op+rabi_op.H).dot(input_register)
-        output_register += 1j * np.imag(rabi_coef[index_time] / 2) * (rabi_op-rabi_op.H).dot(input_register)
+        output_register += np.real(rabi_coef[index_time] / 2) * (rabi_op + rabi_op.H).dot(
+            input_register
+        )
+        output_register += (
+            1j * np.imag(rabi_coef[index_time] / 2) * (rabi_op - rabi_op.H).dot(input_register)
+        )
         output_register += (np.conj(rabi_coef[index_time]) / 2) * rabi_op.H.dot(input_register)
         output_register -= detuning_coef[index_time] * detuning_op.dot(input_register)
 
