@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.15.0 (2023-06-12)
+
+### Features
+
+ * add optional third angle to MS gate
+
 ## v1.14.0.post0 (2023-05-25)
 
 ### Documentation Changes
