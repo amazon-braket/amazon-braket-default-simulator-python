@@ -8,15 +8,6 @@ from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, U, Un
 
 from ..noise_operations import (
     KrausOperation,
-    BitFlip,
-    PhaseFlip,
-    PauliChannel,
-    Depolarizing,
-    TwoQubitDepolarizing,
-    TwoQubitDephasing,
-    AmplitudeDamping,
-    GeneralizedAmplitudeDamping,
-    PhaseDamping,
 )
 from ._helpers.arrays import (
     convert_discrete_set_to_list,

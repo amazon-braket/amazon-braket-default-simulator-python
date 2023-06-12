@@ -21,7 +21,6 @@ CIRQ_GATES = {
     "rx": cirq.rx,
     "ry": cirq.ry,
     "rz": cirq.rz,
-    "cz": cirq.CZ,
     "swap": cirq.SWAP,
     "iswap": cirq.ISWAP,
     "xx": cirq.XX,
