@@ -7,6 +7,7 @@ from cirq import Circuit
 
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext
 
+# cirq.XX, cirq.YY, and cirq.ZZ gates are not the same as Braket gates
 CIRQ_GATES = {
     "i": cirq.I,
     "h": cirq.H,
@@ -23,9 +24,6 @@ CIRQ_GATES = {
     "rz": cirq.rz,
     "swap": cirq.SWAP,
     "iswap": cirq.ISWAP,
-    # "xx": cirq.XX,
-    # "yy": cirq.YY,
-    # "zz": cirq.ZZ,
     "ccnot": cirq.CCNOT,
     "cswap": cirq.CSWAP,
     "ccz": cirq.CCZ,
