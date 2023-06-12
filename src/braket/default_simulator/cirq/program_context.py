@@ -54,13 +54,11 @@ class ProgramContext(AbstractProgramContext):
         qubits = [cirq.LineQubit(int(qubit)) for qubit in target]
         target_qubits = qubits[len(ctrl_modifiers) :]
         control_qubits = qubits[: len(ctrl_modifiers)]
-        try:
-            if params:
-                gate = CIRQ_GATES[gate_name](*params).on(*target_qubits)
-            else:
-                gate = CIRQ_GATES[gate_name](*target_qubits)
-        except KeyError:
-            raise NotImplementedError
+
+        if params:
+            gate = CIRQ_GATES[gate_name](*params).on(*target_qubits)
+        else:
+            gate = CIRQ_GATES[gate_name].on(*target_qubits)
 
         gate = gate.controlled_by(*control_qubits, control_values=ctrl_modifiers)
         gate = gate**power
