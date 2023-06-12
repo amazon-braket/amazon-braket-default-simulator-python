@@ -35,6 +35,7 @@ CIRQ_GATES = {
     "measure": cirq.MeasurementGate,
 }
 
+
 class ProgramContext(AbstractProgramContext):
     def __init__(self):
         super().__init__(Circuit())
