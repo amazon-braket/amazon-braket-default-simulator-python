@@ -38,6 +38,7 @@ setup(
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
         "amazon-braket-schemas>=1.16.1",
+        "cirq==1.1.0",
     ],
     entry_points={
         "braket.simulators": [

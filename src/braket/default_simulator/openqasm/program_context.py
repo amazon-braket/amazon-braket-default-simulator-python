@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from functools import singledispatchmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
@@ -6,9 +7,7 @@ from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, U, Unitary
 
-from ..noise_operations import (
-    KrausOperation,
-)
+from ..noise_operations import KrausOperation
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
@@ -19,7 +18,7 @@ from ._helpers.arrays import (
 )
 from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
 from .circuit import Circuit
-from .parser.braket_pragmas import parse_braket_pragma, BraketPragmaNodeVisitor
+from .parser.braket_pragmas import BraketPragmaNodeVisitor, parse_braket_pragma
 from .parser.openqasm_ast import (
     ClassicalType,
     FloatLiteral,
@@ -33,7 +32,6 @@ from .parser.openqasm_ast import (
     RangeDefinition,
     SubroutineDefinition,
 )
-from abc import ABC, abstractmethod
 
 
 class Table:
