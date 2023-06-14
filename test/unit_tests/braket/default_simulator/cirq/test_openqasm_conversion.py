@@ -1,4 +1,5 @@
 import cirq
+import numpy as np
 import pytest
 
 from braket.default_simulator.cirq.program_context import ProgramContext
@@ -6,7 +7,7 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
 
 
 @pytest.mark.parametrize(
-    "openqasm",
+    "openqasm, expected_result",
     (
         (
             """
@@ -15,7 +16,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         qubit[1] q;
         h q[0];
         b[0] = measure q[0];
-        """
+        """,
+            [0.70710678+0.j, 0.70710678+0.j],
         ),
         (
             """
@@ -26,7 +28,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         cnot q[0], q[1];
         b[0] = measure q[0];
         b[1] = measure q[1];
-        """
+        """,
+            [0.70710678 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.70710678 + 0.0j],
         ),
         (
             """
@@ -36,7 +39,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         cnot q[0], q[1];
         b[0] = measure q[0];
         b[1] = measure q[1];
-        """
+        """,
+            [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
         ),
         (
             """
@@ -46,17 +50,19 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
             pow(0.5) @ cnot q[0], q[1];
             b[0] = measure q[0];
             b[1] = measure q[1];
-            """
+            """,
+            [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
         ),
         (
             """
-        OPENQASM 3.0;
-        bit[2] b;
-        qubit[2] q;
-        ctrl @ x q[0], q[1];
-        b[0] = measure q[0];
-        b[1] = measure q[1];
-        """
+            OPENQASM 3.0;
+            bit[2] b;
+            qubit[2] q;
+            ctrl @ x q[0], q[1];
+            b[0] = measure q[0];
+            b[1] = measure q[1];
+            """,
+            [1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
         ),
         (
             """
@@ -65,7 +71,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         qubit[1] q;
         rx(0.15) q[0];
         b[0] = measure q[0];
-        """
+        """,
+            [0.99718882 + 0.0j, 0.0 - 0.07492971j],
         ),
         (
             """
@@ -74,7 +81,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         qubit[1] q;
         ry(0.2) q[0];
         b[0] = measure q[0];
-        """
+        """,
+            [0.99500417 + 0.0j, 0.09983342 + 0.0j],
         ),
         (
             """
@@ -83,7 +91,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         qubit[1] q;
         rz(0.2) q[0];
         b[0] = measure q[0];
-        """
+        """,
+        [0.99500417-0.09983342j, 0.        +0.j        ],
         ),
         (
             """
@@ -94,7 +103,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         x q[1];
         b[0] = measure q[0];
         b[1] = measure q[1];
-        """
+        """,
+            [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j],
         ),
         (
             """
@@ -107,7 +117,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         b[0] = measure q[0];
         b[1] = measure q[1];
         b[2] = measure q[2];
-        """
+        """,
+            [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
         ),
         (
             """
@@ -116,7 +127,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         qubit[1] q;
         s q[0];
         b[0] = measure q[0];
-        """
+        """,
+            [1.0 + 0.0j, 0.0 + 0.0j],
         ),
         (
             """
@@ -125,7 +137,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         qubit[1] q;
         t q[0];
         b[0] = measure q[0];
-        """
+        """,
+            [1.0 + 0.0j, 0.0 + 0.0j],
         ),
         (
             """
@@ -135,7 +148,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         cphaseshift(0.15) q[1], q[0];
         b[0] = measure q[0];
         b[1] = measure q[1];
-        """
+        """,
+            [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
         ),
         (
             """
@@ -145,7 +159,8 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         swap q[0], q[1];
         b[0] = measure q[0];
         b[1] = measure q[1];
-        """
+        """,
+            [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
         ),
         (
             """
@@ -156,7 +171,17 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         b[0] = measure q[0];
         b[1] = measure q[1];
         b[2] = measure q[2];
-        """
+        """,
+            [
+                1.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ],
         ),
         (
             """
@@ -167,50 +192,88 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
         b[0] = measure q[0];
         b[1] = measure q[1];
         b[2] = measure q[2];
-        """
+        """,
+            [
+                1.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ],
         ),
         (
             """
-        OPENQASM 3.0;
-        bit[12] b;
-        qubit[12] q;
-        rx(0.15) q[0];
-        ry(0.2) q[1];
-        rz(0.25) q[2];
-        h q[3];
-        cnot q[0], q[2];
-        cnot q[1], q[3];
-        x q[1];
-        x q[3];
-        y q[1];
-        y q[3];
-        z q[1];
-        z q[2];
-        s q[2];
-        t q[1];
-        cphaseshift(0.15) q[4], q[2];
-        swap q[4], q[5];
-        ccnot q[6], q[7], q[8];
-        cswap q[9], q[10], q[11];
-        b[0] = measure q[0];
-        b[1] = measure q[1];
-        b[2] = measure q[2];
-        b[3] = measure q[3];
-        b[4] = measure q[4];
-        b[5] = measure q[5];
-        b[6] = measure q[6];
-        b[7] = measure q[7];
-        b[8] = measure q[8];
-        b[9] = measure q[9];
-        b[10] = measure q[10];
-        b[11] = measure q[11];
-        """
+                        OPENQASM 3.0;
+                        bit[5] b;
+                        qubit[5] q;
+                        rx(0.15) q[0];
+                        ry(0.2) q[1];
+                        rz(0.25) q[2];
+                        h q[3];
+                        cnot q[0], q[2];
+                        cnot q[1], q[3];
+                        x q[1];
+                        x q[3];
+                        y q[1];
+                        y q[3];
+                        z q[1];
+                        z q[2];
+                        s q[2];
+                        t q[1];
+                        cphaseshift(0.15) q[2], q[4];
+                        swap q[3], q[4];
+                        ccnot q[2], q[3], q[4];
+                        cswap q[1], q[3], q[4];
+                        b[0] = measure q[0];
+                        b[1] = measure q[1];
+                        b[2] = measure q[2];
+                        b[3] = measure q[3];
+                        b[4] = measure q[4];
+                        """,
+            [
+                -0.69612223 + 0.08747133j,
+                0.69612223 - 0.08747133j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.05559387 - 0.04318215j,
+                0.0 + 0.0j,
+                0.05559387 + 0.04318215j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.05230728 - 0.00657268j,
+                -0.05230728 + 0.00657268j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.00417738 + 0.00324475j,
+                0.0 + 0.0j,
+                -0.00417738 - 0.00324475j,
+                0.0 + 0.0j,
+            ],
         ),
     ),
 )
-def test_openqasm_conversion_to_cirq(openqasm):
+def test_openqasm_conversion_to_cirq(openqasm, expected_result):
     circuit = Interpreter(ProgramContext()).build_circuit(
         source=openqasm,
     )
 
     assert isinstance(circuit, cirq.Circuit)
+    assert np.allclose(cirq.final_state_vector(circuit), expected_result)
