@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import itertools
-from typing import List, Optional, Sequence, Tuple
+from typing import Iterable, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -126,7 +126,7 @@ def marginal_probability(
 
 def partial_trace(
     density_matrix: np.ndarray,
-    targets: Optional[List[int]] = None,
+    targets: Optional[Iterable[int]] = None,
 ) -> np.ndarray:
     """Returns the reduced density matrix for the target qubits.
 

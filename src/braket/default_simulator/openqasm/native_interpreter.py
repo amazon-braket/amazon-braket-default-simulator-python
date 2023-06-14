@@ -19,6 +19,7 @@ from .parser.openqasm_ast import (
     QASMNode,
     QuantumMeasurement,
     QuantumMeasurementStatement,
+    QuantumReset,
     QubitDeclaration,
 )
 from .parser.openqasm_parser import parse
@@ -90,6 +91,16 @@ class NativeInterpreter(Interpreter):
         )
         value = cast_to(result_type, outcome)
         self.context.update_value(node.target, value)
+
+    @visit.register
+    def _(self, node: QuantumReset) -> None:
+        self.logger.debug(f"Quantum reset: {node}")
+        self.simulation.evolve(self.context.pop_instructions())
+        targets = self.context.get_qubits(node.qubits)
+        outcome = self.simulation.measure(targets)
+        for qubit, result in zip(targets, outcome):
+            if result:
+                self.simulation.flip(qubit)
 
     @visit.register
     def _(self, node: IODeclaration) -> None:

@@ -15,6 +15,7 @@ from typing import List, Tuple
 
 import numpy as np
 
+from braket.default_simulator.gate_operations import PauliX
 from braket.default_simulator.linalg_utils import (
     marginal_probability,
     measurement_collapse_sv,
@@ -193,3 +194,6 @@ class StateVectorSimulation(Simulation):
     def reset(self) -> None:
         self._state_vector = np.array([1], dtype=complex)
         self._qubit_count = 0
+
+    def flip(self, target: int) -> None:
+        self.evolve([PauliX([target])])
