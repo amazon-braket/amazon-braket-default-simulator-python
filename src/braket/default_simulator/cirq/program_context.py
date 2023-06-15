@@ -57,7 +57,7 @@ class ProgramContext(AbstractProgramContext):
             gate = CIRQ_GATES[gate_name](*params).on(*target_qubits)
         else:
             gate = CIRQ_GATES[gate_name].on(*target_qubits)
-        ctrl_modifiers = [bit^1 for bit in ctrl_modifiers]
+        ctrl_modifiers = [bit ^ 1 for bit in ctrl_modifiers]
         gate = gate.controlled_by(*control_qubits, control_values=ctrl_modifiers)
         gate = gate**power
 
