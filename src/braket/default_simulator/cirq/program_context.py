@@ -32,7 +32,7 @@ CIRQ_GATES = {
 }
 
 
-class ProgramContext(AbstractProgramContext):
+class CirqProgramContext(AbstractProgramContext):
     def __init__(self):
         super().__init__(Circuit())
 
