@@ -2,7 +2,7 @@ import cirq
 import numpy as np
 import pytest
 
-from braket.default_simulator.cirq.program_context import CirqProgramContext
+from braket.default_simulator.cirq.cirq_program_context import CirqProgramContext
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator import StateVectorSimulation
 
