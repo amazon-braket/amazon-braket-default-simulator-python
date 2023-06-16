@@ -203,7 +203,7 @@ from braket.default_simulator import StateVectorSimulation
         ),
     ),
 )
-def test_openqasm_conversion_to_cirq(openqasm):
+def test_openqasm_conversion_basic_gates_to_cirq(openqasm):
     cirq_circuit = Interpreter(CirqProgramContext()).build_circuit(
         source=openqasm,
     )

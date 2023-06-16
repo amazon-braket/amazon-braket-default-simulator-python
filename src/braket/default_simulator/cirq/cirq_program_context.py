@@ -114,6 +114,8 @@ class CirqBraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
             "phase_damping": PhaseDampingChannel,
         }
         if noise_instruction in one_prob_noise_map:
+            if noise_instruction == "generalized_amplitude_damping":
+                return one_prob_noise_map[noise_instruction](*probabilities[::-1]).on(*qubits)
             return one_prob_noise_map[noise_instruction](*probabilities).on(*qubits)
         else:
             raise NotImplementedError
