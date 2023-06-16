@@ -3,8 +3,11 @@ from typing import List, Tuple
 import cirq
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
-from cirq import Circuit
+from cirq import Circuit, bit_flip, PhaseFlipChannel, DepolarizingChannel, AmplitudeDampingChannel, \
+    GeneralizedAmplitudeDampingChannel, PhaseDampingChannel
 
+from braket.default_simulator.openqasm.parser.braket_pragmas import AbstractBraketPragmaNodeVisitor, parse_braket_pragma
+from braket.default_simulator.openqasm.parser.generated.BraketPragmasParser import BraketPragmasParser
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext
 
 # cirq.XX, cirq.YY, and cirq.ZZ gates are not the same as Braket gates
@@ -71,9 +74,9 @@ class CirqProgramContext(AbstractProgramContext):
         """Add a custom Unitary instruction to the circuit"""
         raise NotImplementedError
 
-    def add_noise_instruction(self, target, probabilities, noise_instruction):
+    def add_noise_instruction(self, noise):
         """Add a noise instruction the circuit"""
-        raise NotImplementedError
+        self.circuit.append(noise)
 
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
@@ -81,4 +84,24 @@ class CirqProgramContext(AbstractProgramContext):
 
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
+        return parse_braket_pragma(pragma_body, CirqBraketPragmaNodeVisitor(self.qubit_mapping))
+
+
+class CirqBraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
+    def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
+        target = self.visit(ctx.target)
+        qubits = [cirq.LineQubit(int(qubit)) for qubit in target]
+        probabilities = self.visit(ctx.probabilities())
+        noise_instruction = ctx.noiseInstructionName().getText()
+        one_prob_noise_map = {
+            "bit_flip": bit_flip,
+            "phase_flip": PhaseFlipChannel,
+            "depolarizing": DepolarizingChannel,
+            "amplitude_damping": AmplitudeDampingChannel,
+            "generalized_amplitude_damping": GeneralizedAmplitudeDampingChannel,
+            "phase_damping": PhaseDampingChannel,
+        }
+        return one_prob_noise_map[noise_instruction](*probabilities).on(*qubits)
+
+    def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
         raise NotImplementedError
