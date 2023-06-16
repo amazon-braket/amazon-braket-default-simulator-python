@@ -51,12 +51,16 @@ class CirqProgramContext(AbstractProgramContext):
     def __init__(self):
         super().__init__(Circuit())
 
+    def _get_qubits(self, qubits: Tuple[int]):
+        return [cirq.LineQubit(int(qubit)) for qubit in qubits]
+
     def is_builtin_gate(self, name: str) -> bool:
         user_defined_gate = self.is_user_defined_gate(name)
         return name in CIRQ_GATES and not user_defined_gate
 
     def add_phase_instruction(self, target: Tuple[int], phase_value: int):
-        raise NotImplementedError
+        qubits = self._get_qubits(target)
+        self.circuit.append(cirq.GlobalPhaseGate(phase_value).on(*qubits))
 
     def _gate_accepts_parameters(self, gate_class):
         return hasattr(gate_class, "parameters") and len(gate_class.parameters) > 0
@@ -64,7 +68,7 @@ class CirqProgramContext(AbstractProgramContext):
     def add_gate_instruction(
         self, gate_name: str, target: Tuple[int], params, ctrl_modifiers: List[int], power: int
     ):
-        qubits = [cirq.LineQubit(int(qubit)) for qubit in target]
+        qubits = self._get_qubits(target)
         target_qubits = qubits[len(ctrl_modifiers) :]
         control_qubits = qubits[: len(ctrl_modifiers)]
 
@@ -84,7 +88,9 @@ class CirqProgramContext(AbstractProgramContext):
         target: Tuple[int],
     ) -> None:
         """Add a custom Unitary instruction to the circuit"""
-        raise NotImplementedError
+        qubits = self._get_qubits(target)
+        instruction = cirq.unitary(unitary).on(*qubits)
+        self.circuit.append(instruction)
 
     def add_noise_instruction(self, noise):
         """Add a noise instruction the circuit"""
