@@ -3,11 +3,23 @@ from typing import List, Tuple
 import cirq
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
-from cirq import Circuit, bit_flip, PhaseFlipChannel, DepolarizingChannel, AmplitudeDampingChannel, \
-    GeneralizedAmplitudeDampingChannel, PhaseDampingChannel
+from cirq import (
+    Circuit,
+    bit_flip,
+    PhaseFlipChannel,
+    DepolarizingChannel,
+    AmplitudeDampingChannel,
+    GeneralizedAmplitudeDampingChannel,
+    PhaseDampingChannel,
+)
 
-from braket.default_simulator.openqasm.parser.braket_pragmas import AbstractBraketPragmaNodeVisitor, parse_braket_pragma
-from braket.default_simulator.openqasm.parser.generated.BraketPragmasParser import BraketPragmasParser
+from braket.default_simulator.openqasm.parser.braket_pragmas import (
+    AbstractBraketPragmaNodeVisitor,
+    parse_braket_pragma,
+)
+from braket.default_simulator.openqasm.parser.generated.BraketPragmasParser import (
+    BraketPragmasParser,
+)
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext
 
 # cirq.XX, cirq.YY, and cirq.ZZ gates are not the same as Braket gates
@@ -101,7 +113,10 @@ class CirqBraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
             "generalized_amplitude_damping": GeneralizedAmplitudeDampingChannel,
             "phase_damping": PhaseDampingChannel,
         }
-        return one_prob_noise_map[noise_instruction](*probabilities).on(*qubits)
+        if noise_instruction in one_prob_noise_map:
+            return one_prob_noise_map[noise_instruction](*probabilities).on(*qubits)
+        else:
+            raise NotImplementedError
 
     def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
         raise NotImplementedError
