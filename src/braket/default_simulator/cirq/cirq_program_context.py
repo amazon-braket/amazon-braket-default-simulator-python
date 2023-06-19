@@ -115,31 +115,3 @@ class CirqProgramContext(AbstractProgramContext):
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
         raise NotImplementedError
-
-
-class CirqBraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
-    def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
-        target = self.visit(ctx.target)
-        qubits = [cirq.LineQubit(int(qubit)) for qubit in target]
-        probabilities = self.visit(ctx.probabilities())
-        noise_instruction = ctx.noiseInstructionName().getText()
-        one_prob_noise_map = {
-            "bit_flip": bit_flip,
-            "phase_flip": PhaseFlipChannel,
-            "depolarizing": DepolarizingChannel,
-            "amplitude_damping": AmplitudeDampingChannel,
-            "generalized_amplitude_damping": GeneralizedAmplitudeDampingChannel,
-            "phase_damping": PhaseDampingChannel,
-        }
-        if noise_instruction in one_prob_noise_map:
-            """Cirq generalized_amplitude_damping accepts probability as first argument
-            unlike Braket gate
-            """
-            if noise_instruction == "generalized_amplitude_damping":
-                return one_prob_noise_map[noise_instruction](*probabilities[::-1]).on(*qubits)
-            return one_prob_noise_map[noise_instruction](*probabilities).on(*qubits)
-        else:
-            raise NotImplementedError
-
-    def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
-        raise NotImplementedError
