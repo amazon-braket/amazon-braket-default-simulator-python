@@ -15,7 +15,6 @@ from cirq import (
 
 from braket.default_simulator.openqasm.parser.braket_pragmas import (
     AbstractBraketPragmaNodeVisitor,
-    parse_braket_pragma,
 )
 from braket.default_simulator.openqasm.parser.generated.BraketPragmasParser import (
     BraketPragmasParser,
@@ -94,15 +93,28 @@ class CirqProgramContext(AbstractProgramContext):
 
     def add_noise_instruction(self, noise):
         """Add a noise instruction the circuit"""
-        self.circuit.append(noise)
+        qubits = self._get_qubits(noise.targets)
+        probabilities = getattr(noise, "probabilities", [])
+        gamma = getattr(noise, "gamma", [])
+        one_prob_noise_map = {
+            "BitFlip": bit_flip,
+            "PhaseFlip": PhaseFlipChannel,
+            "Depolarizing": DepolarizingChannel,
+            "AmplitudeDamping": AmplitudeDampingChannel,
+            "GeneralizedAmplitudeDamping": GeneralizedAmplitudeDampingChannel,
+            "PhaseDamping": PhaseDampingChannel,
+        }
+
+        noise_instruction = noise.__class__.__name__
+        if noise_instruction in one_prob_noise_map:
+            noise_gate = one_prob_noise_map[noise_instruction](*probabilities, *gamma).on(*qubits)
+            self.circuit.append(noise_gate)
+        else:
+            raise NotImplementedError
 
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
         raise NotImplementedError
-
-    def parse_pragma(self, pragma_body: str):
-        """Parse pragma"""
-        return parse_braket_pragma(pragma_body, CirqBraketPragmaNodeVisitor(self.qubit_mapping))
 
 
 class CirqBraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):

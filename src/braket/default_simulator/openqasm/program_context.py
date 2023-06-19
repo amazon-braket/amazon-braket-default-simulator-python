@@ -398,9 +398,9 @@ class AbstractProgramContext(ABC):
         for key, value in inputs.items():
             self.inputs[key] = value
 
-    @abstractmethod
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
+        return parse_braket_pragma(pragma_body, BraketPragmaNodeVisitor(self.qubit_mapping))
 
     def declare_variable(
         self,
@@ -638,7 +638,3 @@ class ProgramContext(AbstractProgramContext):
     def add_result(self, result: Results) -> None:
         """Add a result type to the program"""
         self.circuit.add_result(result)
-
-    def parse_pragma(self, pragma_body: str):
-        """Parse pragma"""
-        return parse_braket_pragma(pragma_body, BraketPragmaNodeVisitor(self.qubit_mapping))
