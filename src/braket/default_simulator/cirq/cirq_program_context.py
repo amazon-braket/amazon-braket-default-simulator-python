@@ -13,12 +13,6 @@ from cirq import (
     PhaseDampingChannel,
 )
 
-from braket.default_simulator.openqasm.parser.braket_pragmas import (
-    AbstractBraketPragmaNodeVisitor,
-)
-from braket.default_simulator.openqasm.parser.generated.BraketPragmasParser import (
-    BraketPragmasParser,
-)
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext
 
 # cirq.XX, cirq.YY, and cirq.ZZ gates are not the same as Braket gates
