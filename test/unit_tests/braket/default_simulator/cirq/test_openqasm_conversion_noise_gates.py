@@ -92,6 +92,12 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
             b[0] = measure q[0];
             """
         ),
+        (
+            """
+            qubit[1] q;
+            #pragma braket unitary([[1.0, 0], [0, 0.70710678 + 0.70710678im]]) q[0]
+            """
+        ),
     ),
 )
 def test_openqasm_conversion_basic_gates_to_cirq(openqasm):

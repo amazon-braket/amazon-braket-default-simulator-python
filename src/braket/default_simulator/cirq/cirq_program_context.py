@@ -1,3 +1,4 @@
+from functools import singledispatch
 from typing import List, Tuple
 
 import cirq
@@ -13,6 +14,14 @@ from cirq import (
     PhaseDampingChannel,
 )
 
+from braket.default_simulator.noise_operations import (
+    BitFlip,
+    PhaseFlip,
+    GeneralizedAmplitudeDamping,
+    PhaseDamping,
+    AmplitudeDamping,
+    Depolarizing,
+)
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext
 
 # cirq.XX, cirq.YY, and cirq.ZZ gates are not the same as Braket gates
@@ -40,6 +49,41 @@ CIRQ_GATES = {
 }
 
 
+@singledispatch
+def cirq_gate_to_instruciton(gate, probabilities, gamma, qubits):
+    raise TypeError(f"Operation {type(gate).__name__} not supported")
+
+
+@cirq_gate_to_instruciton.register(BitFlip)
+def _(gate, probabilities, gamma, qubits):
+    return bit_flip(*probabilities, *gamma).on(*qubits)
+
+
+@cirq_gate_to_instruciton.register(PhaseFlip)
+def _(gate, probabilities, gamma, qubits):
+    return PhaseFlipChannel(*probabilities, *gamma).on(*qubits)
+
+
+@cirq_gate_to_instruciton.register(Depolarizing)
+def _(gate, probabilities, gamma, qubits):
+    return DepolarizingChannel(*probabilities, *gamma).on(*qubits)
+
+
+@cirq_gate_to_instruciton.register(AmplitudeDamping)
+def _(gate, probabilities, gamma, qubits):
+    return AmplitudeDampingChannel(*probabilities, *gamma).on(*qubits)
+
+
+@cirq_gate_to_instruciton.register(GeneralizedAmplitudeDamping)
+def _(gate, probabilities, gamma, qubits):
+    return GeneralizedAmplitudeDampingChannel(*probabilities, *gamma).on(*qubits)
+
+
+@cirq_gate_to_instruciton.register(PhaseDamping)
+def _(gate, probabilities, gamma, qubits):
+    return PhaseDampingChannel(*probabilities, *gamma).on(*qubits)
+
+
 class CirqProgramContext(AbstractProgramContext):
     def __init__(self):
         super().__init__(Circuit())
@@ -52,8 +96,7 @@ class CirqProgramContext(AbstractProgramContext):
         return name in CIRQ_GATES and not user_defined_gate
 
     def add_phase_instruction(self, target: Tuple[int], phase_value: int):
-        qubits = self._get_qubits(target)
-        self.circuit.append(cirq.GlobalPhaseGate(phase_value).on(*qubits))
+        raise NotImplementedError
 
     def _gate_accepts_parameters(self, gate_class):
         return hasattr(gate_class, "parameters") and len(gate_class.parameters) > 0
@@ -82,7 +125,7 @@ class CirqProgramContext(AbstractProgramContext):
     ) -> None:
         """Add a custom Unitary instruction to the circuit"""
         qubits = self._get_qubits(target)
-        instruction = cirq.unitary(unitary).on(*qubits)
+        instruction = cirq.MatrixGate(unitary).on(*qubits)
         self.circuit.append(instruction)
 
     def add_noise_instruction(self, noise):
@@ -90,21 +133,8 @@ class CirqProgramContext(AbstractProgramContext):
         qubits = self._get_qubits(noise.targets)
         probabilities = getattr(noise, "probabilities", [])
         gamma = getattr(noise, "gamma", [])
-        one_prob_noise_map = {
-            "BitFlip": bit_flip,
-            "PhaseFlip": PhaseFlipChannel,
-            "Depolarizing": DepolarizingChannel,
-            "AmplitudeDamping": AmplitudeDampingChannel,
-            "GeneralizedAmplitudeDamping": GeneralizedAmplitudeDampingChannel,
-            "PhaseDamping": PhaseDampingChannel,
-        }
-
-        noise_instruction = type(noise).__name__
-        if noise_instruction in one_prob_noise_map:
-            noise_gate = one_prob_noise_map[noise_instruction](*probabilities, *gamma).on(*qubits)
-            self.circuit.append(noise_gate)
-        else:
-            raise NotImplementedError
+        instruction = cirq_gate_to_instruciton(noise, probabilities, gamma, qubits)
+        self.circuit.append(instruction)
 
     def add_result(self, result: Results) -> None:
         """Add a result type to the circuit"""
