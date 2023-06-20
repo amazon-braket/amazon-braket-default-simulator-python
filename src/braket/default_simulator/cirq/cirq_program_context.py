@@ -99,7 +99,7 @@ class CirqProgramContext(AbstractProgramContext):
             "PhaseDamping": PhaseDampingChannel,
         }
 
-        noise_instruction = noise.__class__.__name__
+        noise_instruction = type(noise).__name__
         if noise_instruction in one_prob_noise_map:
             noise_gate = one_prob_noise_map[noise_instruction](*probabilities, *gamma).on(*qubits)
             self.circuit.append(noise_gate)
