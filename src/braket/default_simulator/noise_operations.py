@@ -46,10 +46,8 @@ class BitFlip(KrausOperation):
         return self._targets
 
     @property
-    def probabilities(self):
-        return [
-            self._probability,
-        ]
+    def probability(self):
+        return self._probability
 
 
 @_from_braket_instruction.register(braket_instruction.BitFlip)
@@ -75,10 +73,8 @@ class PhaseFlip(KrausOperation):
         return self._targets
 
     @property
-    def probabilities(self):
-        return [
-            self._probability,
-        ]
+    def probability(self):
+        return self._probability
 
 
 @_from_braket_instruction.register(braket_instruction.PhaseFlip)
@@ -143,10 +139,8 @@ class Depolarizing(KrausOperation):
         return self._targets
 
     @property
-    def probabilities(self):
-        return [
-            self._probability,
-        ]
+    def probability(self):
+        return self._probability
 
 
 @_from_braket_instruction.register(braket_instruction.Depolarizing)
@@ -182,10 +176,8 @@ class TwoQubitDepolarizing(KrausOperation):
         return self._targets
 
     @property
-    def probabilities(self):
-        return [
-            self._probability,
-        ]
+    def probability(self):
+        return self._probability
 
 
 @_from_braket_instruction.register(braket_instruction.TwoQubitDepolarizing)
@@ -216,10 +208,8 @@ class TwoQubitDephasing(KrausOperation):
         return self._targets
 
     @property
-    def probabilities(self):
-        return [
-            self._probability,
-        ]
+    def probability(self):
+        return self._probability
 
 
 @_from_braket_instruction.register(braket_instruction.TwoQubitDephasing)
@@ -246,9 +236,7 @@ class AmplitudeDamping(KrausOperation):
 
     @property
     def gamma(self):
-        return [
-            self._gamma,
-        ]
+        return self._gamma
 
 
 @_from_braket_instruction.register(braket_instruction.AmplitudeDamping)
@@ -283,16 +271,12 @@ class GeneralizedAmplitudeDamping(KrausOperation):
         return self._targets
 
     @property
-    def probabilities(self):
-        return [
-            self._probability,
-        ]
+    def probability(self):
+        return self._probability
 
     @property
     def gamma(self):
-        return [
-            self._gamma,
-        ]
+        return self._gamma
 
 
 @_from_braket_instruction.register(braket_instruction.GeneralizedAmplitudeDamping)
@@ -321,9 +305,7 @@ class PhaseDamping(KrausOperation):
 
     @property
     def gamma(self):
-        return [
-            self._gamma,
-        ]
+        return self._gamma
 
 
 @_from_braket_instruction.register(braket_instruction.PhaseDamping)

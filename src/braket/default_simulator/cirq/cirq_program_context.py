@@ -50,45 +50,52 @@ CIRQ_GATES = {
 
 
 @singledispatch
-def cirq_gate_to_instruciton(gate, probabilities, gamma, qubits):
-    raise TypeError(f"Operation {type(gate).__name__} not supported")
+def cirq_gate_to_instruciton(noise):
+    raise TypeError(f"Operation {type(noise).__name__} not supported")
 
 
 @cirq_gate_to_instruciton.register(BitFlip)
-def _(gate, probabilities, gamma, qubits):
-    return bit_flip(*probabilities, *gamma).on(*qubits)
+def _(noise):
+    qubits = CirqProgramContext.get_cirq_qubits(noise.targets)
+    return bit_flip(noise.probability).on(*qubits)
 
 
 @cirq_gate_to_instruciton.register(PhaseFlip)
-def _(gate, probabilities, gamma, qubits):
-    return PhaseFlipChannel(*probabilities, *gamma).on(*qubits)
+def _(noise):
+    qubits = CirqProgramContext.get_cirq_qubits(noise.targets)
+    return PhaseFlipChannel(noise.probability).on(*qubits)
 
 
 @cirq_gate_to_instruciton.register(Depolarizing)
-def _(gate, probabilities, gamma, qubits):
-    return DepolarizingChannel(*probabilities, *gamma).on(*qubits)
+def _(noise):
+    qubits = CirqProgramContext.get_cirq_qubits(noise.targets)
+    return DepolarizingChannel(noise.probability).on(*qubits)
 
 
 @cirq_gate_to_instruciton.register(AmplitudeDamping)
-def _(gate, probabilities, gamma, qubits):
-    return AmplitudeDampingChannel(*probabilities, *gamma).on(*qubits)
+def _(noise):
+    qubits = CirqProgramContext.get_cirq_qubits(noise.targets)
+    return AmplitudeDampingChannel(noise.gamma).on(*qubits)
 
 
 @cirq_gate_to_instruciton.register(GeneralizedAmplitudeDamping)
-def _(gate, probabilities, gamma, qubits):
-    return GeneralizedAmplitudeDampingChannel(*probabilities, *gamma).on(*qubits)
+def _(noise):
+    qubits = CirqProgramContext.get_cirq_qubits(noise.targets)
+    return GeneralizedAmplitudeDampingChannel(noise.probability, noise.gamma).on(*qubits)
 
 
 @cirq_gate_to_instruciton.register(PhaseDamping)
-def _(gate, probabilities, gamma, qubits):
-    return PhaseDampingChannel(*probabilities, *gamma).on(*qubits)
+def _(noise):
+    qubits = CirqProgramContext.get_cirq_qubits(noise.targets)
+    return PhaseDampingChannel(noise.gamma).on(*qubits)
 
 
 class CirqProgramContext(AbstractProgramContext):
     def __init__(self):
         super().__init__(Circuit())
 
-    def _get_qubits(self, qubits: Tuple[int]):
+    @classmethod
+    def get_cirq_qubits(cls, qubits: Tuple[int]):
         return [cirq.LineQubit(int(qubit)) for qubit in qubits]
 
     def is_builtin_gate(self, name: str) -> bool:
@@ -104,14 +111,14 @@ class CirqProgramContext(AbstractProgramContext):
     def add_gate_instruction(
         self, gate_name: str, target: Tuple[int], params, ctrl_modifiers: List[int], power: int
     ):
-        qubits = self._get_qubits(target)
-        target_qubits = qubits[len(ctrl_modifiers) :]
+        qubits = self.get_cirq_qubits(target)
+        target_cirq_qubits = qubits[len(ctrl_modifiers) :]
         control_qubits = qubits[: len(ctrl_modifiers)]
 
         if params:
-            gate = CIRQ_GATES[gate_name](*params).on(*target_qubits)
+            gate = CIRQ_GATES[gate_name](*params).on(*target_cirq_qubits)
         else:
-            gate = CIRQ_GATES[gate_name].on(*target_qubits)
+            gate = CIRQ_GATES[gate_name].on(*target_cirq_qubits)
         ctrl_modifiers = [bit ^ 1 for bit in ctrl_modifiers]
         gate = gate.controlled_by(*control_qubits, control_values=ctrl_modifiers)
         gate = gate**power
@@ -124,16 +131,13 @@ class CirqProgramContext(AbstractProgramContext):
         target: Tuple[int],
     ) -> None:
         """Add a custom Unitary instruction to the circuit"""
-        qubits = self._get_qubits(target)
+        qubits = self.get_cirq_qubits(target)
         instruction = cirq.MatrixGate(unitary).on(*qubits)
         self.circuit.append(instruction)
 
     def add_noise_instruction(self, noise):
         """Add a noise instruction the circuit"""
-        qubits = self._get_qubits(noise.targets)
-        probabilities = getattr(noise, "probabilities", [])
-        gamma = getattr(noise, "gamma", [])
-        instruction = cirq_gate_to_instruciton(noise, probabilities, gamma, qubits)
+        instruction = cirq_gate_to_instruciton(noise)
         self.circuit.append(instruction)
 
     def add_result(self, result: Results) -> None:
