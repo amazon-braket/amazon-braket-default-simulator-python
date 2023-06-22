@@ -44,6 +44,7 @@ setup(
         "braket.simulators": [
             "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
+            "cirq = braket.default_simulator.cirq.cirq_simulator:CirqSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
             (
                 "braket_ahs = "
