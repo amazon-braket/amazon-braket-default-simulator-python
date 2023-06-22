@@ -10,7 +10,6 @@ from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.task_result import GateModelTaskResult, TaskMetadata, AdditionalMetadata
 from cirq import Simulator
 
-from braket.default_simulator import DensityMatrixSimulation
 from braket.default_simulator.cirq.cirq_program_context import CirqProgramContext
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.simulator import BraketSimulator
