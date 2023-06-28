@@ -81,7 +81,7 @@ from braket.default_simulator.simulation_strategies.single_operation_strategy im
         ("cswap", CSwap, 3, ()),
         ("gpi", GPi, 1, (2,)),
         ("gpi2", GPi2, 1, (2,)),
-        ("ms", MS, 2, (2, 3)),
+        ("ms", MS, 2, (2, 3, 1.4)),
     ),
 )
 def test_gates(gate_name, gate_class, num_qubits, params):
