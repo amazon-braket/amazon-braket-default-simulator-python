@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from typing import List, Tuple
 
 import numpy as np
@@ -32,7 +31,7 @@ from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
 from .openqasm_parser import parse
 
 
-class AbstractBraketPragmaNodeVisitor(BraketPragmasParserVisitor, ABC):
+class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     """
     This is a visitor for the BraketPragmas grammar. Consumes a
     braketPragmas AST and converts to relevant python objects
@@ -188,19 +187,6 @@ class AbstractBraketPragmaNodeVisitor(BraketPragmasParserVisitor, ABC):
         matrix = np.array(rows)
         return matrix
 
-    @abstractmethod
-    def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
-        """Visit Noise Context"""
-
-    @abstractmethod
-    def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
-        """Visit Kraus Context"""
-
-    def visitProbabilities(self, ctx: BraketPragmasParser.ProbabilitiesContext):
-        return [float(prob.symbol.text) for prob in ctx.children[::2]]
-
-
-class BraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
     def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
         target = self.visit(ctx.target)
         probabilities = self.visit(ctx.probabilities())
@@ -222,6 +208,9 @@ class BraketPragmaNodeVisitor(AbstractBraketPragmaNodeVisitor):
         target = self.visit(ctx.target)
         matrices = [self.visit(m) for m in ctx.matrices().children[::2]]
         return Kraus(target, matrices)
+
+    def visitProbabilities(self, ctx: BraketPragmasParser.ProbabilitiesContext):
+        return [float(prob.symbol.text) for prob in ctx.children[::2]]
 
 
 def parse_braket_pragma(pragma_body: str, pragma_node_visitor=None):
