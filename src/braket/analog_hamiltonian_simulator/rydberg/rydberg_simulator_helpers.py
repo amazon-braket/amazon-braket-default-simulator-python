@@ -1,5 +1,6 @@
 import itertools
 import time
+import warnings
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -500,6 +501,12 @@ def _get_hamiltonian(
     # the final time value is used as an approximation.
     if index_time >= len(rabi_coefs):
         index_time = len(rabi_coefs) - 1
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "outside of the specified range. "
+            "The final time value of the specified range "
+            "is used as an approximation."
+        )
 
     hamiltonian = interaction_op
 
@@ -568,6 +575,12 @@ def _apply_hamiltonian(
     # the final time value is used as an approximation.
     if index_time >= len(rabi_coefs):
         index_time = len(rabi_coefs) - 1
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "outside of the specified range. "
+            "The final time value of the specified range "
+            "is used as an approximation."
+        )
 
     output_register = interaction_op.dot(input_register)
 
