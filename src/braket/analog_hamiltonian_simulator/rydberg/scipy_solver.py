@@ -94,9 +94,11 @@ def scipy_integrate_ode_run(
         min_step=min_step,
     )
 
+    if progress_bar:  # print a lightweight progress bar
+        start_time = time.time()
+
     for index_time, _ in enumerate(simulation_times[1:]):
         if progress_bar:  # print a lightweight progress bar
-            start_time = time.time()
             _print_progress_bar(len(simulation_times), index_time, start_time)
 
         if not integrator.successful():
