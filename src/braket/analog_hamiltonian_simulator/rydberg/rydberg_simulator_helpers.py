@@ -495,6 +495,12 @@ def _get_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
+
+    # If the integrator uses intermediate time value outside of the specified time range,
+    # the final time value is used as an approximation.
+    if index_time >= len(rabi_coefs):
+        index_time = len(rabi_coefs) - 1
+
     hamiltonian = interaction_op
 
     # Add the driving fields
@@ -557,6 +563,12 @@ def _apply_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
+
+    # If the integrator uses intermediate time value outside of the specified time range,
+    # the final time value is used as an approximation.
+    if index_time >= len(rabi_coefs):
+        index_time = len(rabi_coefs) - 1
+
     output_register = interaction_op.dot(input_register)
 
     # Add the driving fields
