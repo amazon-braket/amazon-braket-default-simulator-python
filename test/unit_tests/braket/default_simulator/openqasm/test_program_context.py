@@ -8,7 +8,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     IntegerLiteral,
     IntType,
 )
-from braket.default_simulator.openqasm.program_context import ScopedTable, ProgramContext
+from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
 
 boolean = BoolType()
 int_8 = IntType(IntegerLiteral(8))

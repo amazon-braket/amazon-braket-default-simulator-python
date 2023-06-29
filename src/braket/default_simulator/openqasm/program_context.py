@@ -1,23 +1,11 @@
+from abc import ABC, abstractmethod
 from functools import singledispatchmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 
-from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, U, Unitary
-
-from ..noise_operations import (
-    KrausOperation,
-    BitFlip,
-    PhaseFlip,
-    PauliChannel,
-    Depolarizing,
-    TwoQubitDepolarizing,
-    TwoQubitDephasing,
-    AmplitudeDamping,
-    GeneralizedAmplitudeDamping,
-    PhaseDamping,
-)
+from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
@@ -28,7 +16,7 @@ from ._helpers.arrays import (
 )
 from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
 from .circuit import Circuit
-from .parser.braket_pragmas import parse_braket_pragma, BraketPragmaNodeVisitor
+from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ClassicalType,
     FloatLiteral,
@@ -42,7 +30,9 @@ from .parser.openqasm_ast import (
     RangeDefinition,
     SubroutineDefinition,
 )
-from abc import ABC, abstractmethod
+from ..noise_operations import (
+    KrausOperation,
+)
 
 
 class Table:
@@ -411,7 +401,7 @@ class AbstractProgramContext(ABC):
 
     def parse_pragma(self, pragma_body: str):
         """Parse pragma"""
-        return parse_braket_pragma(pragma_body, BraketPragmaNodeVisitor(self.qubit_mapping))
+        return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def declare_variable(
         self,

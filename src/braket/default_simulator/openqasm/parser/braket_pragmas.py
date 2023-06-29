@@ -213,7 +213,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         return [float(prob.symbol.text) for prob in ctx.children[::2]]
 
 
-def parse_braket_pragma(pragma_body: str, pragma_node_visitor=None):
+def parse_braket_pragma(pragma_body: str, qubit_table: "QubitTable"):
     """Parse braket pragma and return relevant information.
 
     Pragma types include:
@@ -225,5 +225,5 @@ def parse_braket_pragma(pragma_body: str, pragma_node_visitor=None):
     stream = CommonTokenStream(lexer)
     parser = BraketPragmasParser(stream)
     tree = parser.braketPragma()
-    visited = pragma_node_visitor.visit(tree)
+    visited = BraketPragmaNodeVisitor(qubit_table).visit(tree)
     return visited
