@@ -455,7 +455,7 @@ def _print_progress_bar(num_time_points: int, index_time: int, start_time: float
 
 
 def _get_hamiltonian(
-    index_time: int,
+    index_time: float,
     operators_coefficients: Tuple[
         List[scipy.sparse.csr_matrix],
         List[scipy.sparse.csr_matrix],
@@ -469,7 +469,7 @@ def _get_hamiltonian(
     """Get the Hamiltonian at a given time point
 
     Args:
-        index_time (int): The index of the current time point
+        index_time (float): The index of the current time point
         operators_coefficients (Tuple[
             List[csr_matrix],
             List[csr_matrix],
@@ -497,14 +497,25 @@ def _get_hamiltonian(
 
     index_time = int(index_time)
 
-    # If the integrator uses intermediate time value outside of the specified time range,
-    # the final time value is used as an approximation.
+    # If the integrator uses intermediate time value that is larger than the maximum
+    # time value specified, the final time value is used as an approximation.
     if index_time >= len(rabi_coefs):
         index_time = len(rabi_coefs) - 1
         warnings.warn(
             "The solver uses intermediate time value that is "
-            "outside of the specified range. "
+            "larger than the maximum time value specified. "
             "The final time value of the specified range "
+            "is used as an approximation."
+        )
+
+    # If the integrator uses intermediate time value that is larger than the minimum
+    # time value specified, the final time value is used as an approximation.
+    if index_time < 0:
+        index_time = 0
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "smaller than the minimum time value specified. "
+            "The first time value of the specified range "
             "is used as an approximation."
         )
 
@@ -528,7 +539,7 @@ def _get_hamiltonian(
 
 
 def _apply_hamiltonian(
-    index_time: int,
+    index_time: float,
     operators_coefficients: Tuple[
         List[scipy.sparse.csr_matrix],
         List[scipy.sparse.csr_matrix],
@@ -543,7 +554,7 @@ def _apply_hamiltonian(
     """Applies the Hamiltonian at a given time point on a state.
 
     Args:
-        index_time (int): The index of the current time point
+        index_time (float): The index of the current time point
         operators_coefficients (Tuple[
             List[csr_matrix],
             List[csr_matrix],
@@ -571,14 +582,25 @@ def _apply_hamiltonian(
 
     index_time = int(index_time)
 
-    # If the integrator uses intermediate time value outside of the specified time range,
-    # the final time value is used as an approximation.
+    # If the integrator uses intermediate time value that is larger than the maximum
+    # time value specified, the final time value is used as an approximation.
     if index_time >= len(rabi_coefs):
         index_time = len(rabi_coefs) - 1
         warnings.warn(
             "The solver uses intermediate time value that is "
-            "outside of the specified range. "
+            "larger than the maximum time value specified. "
             "The final time value of the specified range "
+            "is used as an approximation."
+        )
+
+    # If the integrator uses intermediate time value that is larger than the minimum
+    # time value specified, the final time value is used as an approximation.
+    if index_time < 0:
+        index_time = 0
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "smaller than the minimum time value specified. "
+            "The first time value of the specified range "
             "is used as an approximation."
         )
 
