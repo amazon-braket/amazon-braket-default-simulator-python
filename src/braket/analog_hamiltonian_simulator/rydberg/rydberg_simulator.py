@@ -51,8 +51,8 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         progress_bar: bool = False,
         atol: float = 1e-8,
         rtol: float = 1e-6,
-        solver_method: str = "bdf",
-        order: int = 5,
+        solver_method: str = "adams",
+        order: int = 12,
         nsteps: int = 1000,
         first_step: int = 0,
         max_step: int = 0,
@@ -74,9 +74,9 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             atol (float): Absolute tolerance for solution. Default: 1e-8
             rtol (float): Relative tolerance for solution. Default: 1e-6
             solver_method (str): Which solver to use, `adams` for non-stiff problems or `bdf`
-                for stiff problems. Default: "bdf"
+                for stiff problems. Default: "adams"
             order (int): Maximum order used by the integrator, order <= 12 for Adams, <= 5 for BDF.
-                Default: 5
+                Default: 12
             nsteps (int): Maximum number of (internally defined) steps allowed during one call to
                 the solver. Default: 1000
             first_step (int): Default: 0
