@@ -29,7 +29,6 @@ from braket.task_result import (
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
-from braket.default_simulator.openqasm.program_context import ProgramContext
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
