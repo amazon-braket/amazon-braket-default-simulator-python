@@ -608,7 +608,7 @@ class Interpreter:
         qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: List[QuantumGateModifier],
     ) -> None:
-        """Add unitary operation to the program"""
+        """Add unitary operation to the circuit"""
         self.context.add_builtin_gate(
             gate_name,
             arguments,
@@ -617,5 +617,5 @@ class Interpreter:
         )
 
     def handle_phase(self, phase: FloatLiteral, qubits: Optional[Iterable[int]] = None) -> None:
-        """Add quantum phase operation to the program"""
+        """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
