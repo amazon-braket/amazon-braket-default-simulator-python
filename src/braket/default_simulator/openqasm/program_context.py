@@ -6,6 +6,8 @@ import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
+
+from ..noise_operations import KrausOperation
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
@@ -29,9 +31,6 @@ from .parser.openqasm_ast import (
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
-)
-from ..noise_operations import (
-    KrausOperation,
 )
 
 
@@ -377,7 +376,7 @@ class AbstractProgramContext(ABC):
 
     """
 
-    def __init__(self, program=Circuit()):
+    def __init__(self, circuit=Circuit()):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
         self.gate_table = GateTable()
@@ -386,7 +385,7 @@ class AbstractProgramContext(ABC):
         self.scope_manager = ScopeManager(self)
         self.inputs = {}
         self.num_qubits = 0
-        self.circuit = program
+        self.circuit = circuit
 
     def __repr__(self):
         return "\n\n".join(
@@ -395,7 +394,7 @@ class AbstractProgramContext(ABC):
         )
 
     def load_inputs(self, inputs: Dict[str, Any]) -> None:
-        """Load inputs for the program"""
+        """Load inputs for the circuit"""
         for key, value in inputs.items():
             self.inputs[key] = value
 
@@ -486,7 +485,7 @@ class AbstractProgramContext(ABC):
         self.variable_table.update_value(name, value, var_type, indices)
 
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1) -> None:
-        """Allocate additional qubits for the program"""
+        """Allocate additional qubits for the circuit"""
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.num_qubits += num_qubits
         self.declare_qubit_alias(name, Identifier(name))
@@ -535,14 +534,14 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_result(self, result: Results) -> None:
-        """Add a result type to the program"""
+        """Add a result type to the circuit"""
 
     def add_phase(
         self,
         phase: FloatLiteral,
         qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None,
     ) -> None:
-        """Add quantum phase instruction to the program"""
+        """Add quantum phase instruction to the circuit"""
         # if targets overlap, duplicates will be ignored
         if not qubits:
             target = range(self.num_qubits)
@@ -552,7 +551,7 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_phase_instruction(self, target, phase_value):
-        """Add phase instruction to the program"""
+        """Add phase instruction to the circuit"""
 
     def add_builtin_gate(
         self,
@@ -561,7 +560,7 @@ class AbstractProgramContext(ABC):
         qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ) -> None:
-        """Add a builtin gate instruction to the program"""
+        """Add a builtin gate instruction to the circuit"""
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
@@ -588,7 +587,7 @@ class AbstractProgramContext(ABC):
     def add_gate_instruction(
         self, gate_name: str, target: Tuple[int], params, ctrl_modifiers: List[int], power: int
     ):
-        """Add gate instruction to the program"""
+        """Add gate instruction to the circuit"""
 
     @abstractmethod
     def add_custom_unitary(
@@ -596,11 +595,11 @@ class AbstractProgramContext(ABC):
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
-        """Add a custom Unitary instruction to the program"""
+        """Add a custom Unitary instruction to the circuit"""
 
     @abstractmethod
     def add_noise_instruction(self, *args, **kwargs):
-        """Add a noise instruction the program"""
+        """Add a noise instruction to the circuit"""
 
 
 class ProgramContext(AbstractProgramContext):
@@ -628,14 +627,14 @@ class ProgramContext(AbstractProgramContext):
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
-        """Add a custom Unitary instruction to the program"""
+        """Add a custom Unitary instruction to the circuit"""
         instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)
 
     def add_noise_instruction(self, noise: KrausOperation):
-        """Add a noise instruction the program"""
+        """Add a noise instruction to the circuit"""
         self.circuit.add_instruction(noise)
 
     def add_result(self, result: Results) -> None:
-        """Add a result type to the program"""
+        """Add a result type to the circuit"""
         self.circuit.add_result(result)
