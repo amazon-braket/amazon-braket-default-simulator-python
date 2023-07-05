@@ -563,8 +563,8 @@ class ProgramContext:
             power *= -1  # todo: replace with adjoint
 
         ctrl_mod_map = {
-            GateModifierName.ctrl: 0,
-            GateModifierName.negctrl: 1,
+            GateModifierName.negctrl: 0,
+            GateModifierName.ctrl: 1,
         }
         ctrl_modifiers = []
         for mod in modifiers:
