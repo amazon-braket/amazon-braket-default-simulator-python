@@ -376,7 +376,7 @@ class AbstractProgramContext(ABC):
 
     """
 
-    def __init__(self, circuit=Circuit()):
+    def __init__(self):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
         self.gate_table = GateTable()
@@ -385,7 +385,6 @@ class AbstractProgramContext(ABC):
         self.scope_manager = ScopeManager(self)
         self.inputs = {}
         self.num_qubits = 0
-        self.circuit = circuit
 
     def __repr__(self):
         return "\n\n".join(
@@ -518,8 +517,14 @@ class AbstractProgramContext(ABC):
         return user_defined_gate
 
     @abstractmethod
-    def is_builtin_gate(self, name: str):
-        """Whether the gate is currently in scope as a built-in Braket gate"""
+    def is_builtin_gate(self, name: str) -> bool:
+        """
+        Abstract method to check if the gate with the given name is currently in scope as a built-in Braket gate.
+        Args:
+            name (str): name of the built-in Braket gate to be checked
+        Returns:
+            bool: True if the gate is a built-in gate, False otherwise.
+        """
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """Add a subroutine definition"""
@@ -534,7 +539,12 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_result(self, result: Results) -> None:
-        """Add a result type to the circuit"""
+        """
+        Abstract method to add result type to the circuit
+
+        Args:
+            result (Results): The result object representing the measurement results
+        """
 
     def add_phase(
         self,
@@ -551,7 +561,14 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_phase_instruction(self, target, phase_value):
-        """Add phase instruction to the circuit"""
+        """
+        Abstract method to add phase instruction to the circuit
+
+        Args:
+            target (int or List[int]): The target qubit or qubits to which the phase instruction is applied
+            phase_value (float): The phase value to be applied
+
+        """
 
     def add_builtin_gate(
         self,
@@ -587,7 +604,17 @@ class AbstractProgramContext(ABC):
     def add_gate_instruction(
         self, gate_name: str, target: Tuple[int], params, ctrl_modifiers: List[int], power: int
     ):
-        """Add gate instruction to the circuit"""
+        """Abstract method to add Braket gate to the circuit.
+        Args:
+            gate_name (str): name of the built-in Braket gate.
+            target (Tuple[int]): control_qubits + target_qubits.
+            ctrl_modifiers (List[int]): Quantum state on which to control the
+                operation. Must be a binary sequence of same length as number of qubits in
+                `control-qubits` in target. For example "0101", [0, 1, 0, 1], 5 all represent
+                controlling on qubits 0 and 2 being in the \\|0⟩ state and qubits 1 and 3 being
+                in the \\|1⟩ state.
+            power(float): Integer or fractional power to raise the gate to.
+        """
 
     @abstractmethod
     def add_custom_unitary(
@@ -595,16 +622,30 @@ class AbstractProgramContext(ABC):
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
-        """Add a custom Unitary instruction to the circuit"""
+        """Abstract method to add a custom Unitary instruction to the circuit
+        Args:
+            unitary (np.ndarray): unitary matrix
+            target (Tuple[int]): control_qubits + target_qubits
+        """
 
     @abstractmethod
-    def add_noise_instruction(self, *args, **kwargs):
-        """Add a noise instruction to the circuit"""
+    def add_noise_instruction(self, noise: KrausOperation):
+        """Abstract method to add a noise instruction to the circuit
+        Args:
+            noise (KrausOperation): The noise operation to be added to the circuit
+                - `target` (Tuple[int]): The target qubit or qubits to which the noise operation is applied.
+                - `gamma` (float): The probability of the noise operation occurring. (Optional)
+                - `probability` (float): The probability associated with possible outcome
+                                        of the noise operation. (Optional)
+                - `probabilities` (List[float]): The probabilities associated with each possible outcome
+                                                of the noise operation. (Optional)
+        """
 
 
 class ProgramContext(AbstractProgramContext):
     def __init__(self):
-        super().__init__(Circuit())
+        super().__init__()
+        self.circuit = Circuit()
 
     def is_builtin_gate(self, name: str) -> bool:
         user_defined_gate = self.is_user_defined_gate(name)
@@ -627,14 +668,11 @@ class ProgramContext(AbstractProgramContext):
         unitary: np.ndarray,
         target: Tuple[int],
     ) -> None:
-        """Add a custom Unitary instruction to the circuit"""
         instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)
 
     def add_noise_instruction(self, noise: KrausOperation):
-        """Add a noise instruction to the circuit"""
         self.circuit.add_instruction(noise)
 
     def add_result(self, result: Results) -> None:
-        """Add a result type to the circuit"""
         self.circuit.add_result(result)
