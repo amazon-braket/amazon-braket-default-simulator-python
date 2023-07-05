@@ -393,12 +393,22 @@ class AbstractProgramContext(ABC):
         )
 
     def load_inputs(self, inputs: Dict[str, Any]) -> None:
-        """Load inputs for the circuit"""
+        """
+        Load inputs for the circuit
+
+        Args:
+            inputs (Dict[str, Any]): A dictionary containing the inputs to be loaded
+        """
         for key, value in inputs.items():
             self.inputs[key] = value
 
     def parse_pragma(self, pragma_body: str):
-        """Parse pragma"""
+        """
+        Parse pragma
+
+        Args:
+            pragma_body (str): The body of the pragma statement.
+        """
         return parse_braket_pragma(pragma_body, self.qubit_mapping)
 
     def declare_variable(
@@ -408,7 +418,15 @@ class AbstractProgramContext(ABC):
         value: Optional[Any] = None,
         const: bool = False,
     ) -> None:
-        """Declare variable in current scope"""
+        """
+        Declare variable in current scope
+
+        Args:
+            name (str): The name of the variable
+            symbol_type(Union[ClassicalType, Type[LiteralType], Type[Identifier]]): The type of the variable.
+            value (Optional[Any]): The initial value of the variable . Defaults to None.
+            const (bool): Flag indicating if the variable is constant. Defaults to False.
+        """
         self.symbol_table.add_symbol(name, symbol_type, const)
         self.variable_table.add_variable(name, value)
 
@@ -417,7 +435,14 @@ class AbstractProgramContext(ABC):
         name: str,
         value: Identifier,
     ) -> None:
-        """Declare qubit alias in current scope"""
+        """
+        Declare qubit alias in current scope
+
+        Args:
+            name(str): The name of the qubit alias.
+            value(Identifier): The identifier representing the qubit
+
+        """
         self.symbol_table.add_symbol(name, Identifier)
         self.variable_table.add_variable(name, value)
 
@@ -452,39 +477,101 @@ class AbstractProgramContext(ABC):
         return self.symbol_table.in_global_scope
 
     def get_type(self, name: str) -> Union[ClassicalType, Type[LiteralType]]:
-        """Get symbol type by name"""
+        """
+        Get symbol type by name
+
+        Args:
+            name (str): The name of the symbol.
+
+        Returns:
+            Union[ClassicalType, Type[LiteralType]]: The type of the symbol.
+
+        """
         return self.symbol_table.get_type(name)
 
     def get_const(self, name: str) -> bool:
-        """Get whether a symbol is const by name"""
+        """
+        Get whether a symbol is const by name"
+
+        Args:
+            name (str): The name of the symbol.
+
+        Returns:
+            bool: True of the symbol os const, False otherwise.
+        """
         return self.symbol_table.get_const(name)
 
     def get_value(self, name: str) -> LiteralType:
-        """Get value of a variable by name"""
+        """
+        Get value of a variable by name
+
+        Args:
+            name(str): The name of the variable.
+
+        Returns:
+            LiteralType: The value of the variable.
+
+        Raises:
+            KeyError: If the variable is not found.
+
+        """
         return self.variable_table.get_value(name)
 
     def get_value_by_identifier(
         self, identifier: Union[Identifier, IndexedIdentifier]
     ) -> LiteralType:
-        """Get value of a variable by identifier"""
+        """
+        Get value of a variable by identifier
+
+        Args:
+            identifier (Union[Identifier, IndexedIdentifier]): The identifier of the variable.
+
+        Returns:
+            LiteralType: The value of the variable.
+
+        Raises:
+            KeyError: If the variable is not found.
+        """
         # find type width for the purpose of bitwise operations
         var_type = self.get_type(get_identifier_name(identifier))
         type_width = get_type_width(var_type)
         return self.variable_table.get_value_by_identifier(identifier, type_width)
 
     def is_initialized(self, name: str) -> bool:
-        """Check whether variable is initialized by name"""
+        """
+        Check whether variable is initialized by name
+
+        Args:
+            name (str): The name of the variable.
+
+        Returns:
+            bool: True if the variable is initialized, False otherwise.
+
+        """
         return self.variable_table.is_initalized(name)
 
     def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any) -> None:
-        """Update value by identifier, possible only a sub-index of a variable"""
+        """
+        Update value by identifier, possible only a sub-index of a variable
+
+        Args:
+            variable (Union[Identifier, IndexedIdentifier]): The identifier of the variable.
+            value (Any): The new value of the variable.
+        """
         name = get_identifier_name(variable)
         var_type = self.get_type(name)
         indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
         self.variable_table.update_value(name, value, var_type, indices)
 
     def add_qubits(self, name: str, num_qubits: Optional[int] = 1) -> None:
-        """Allocate additional qubits for the circuit"""
+        """
+        Allocate additional qubits for the circuit
+
+        Args:
+            name(str): The name of the qubit register
+            num_qubits (Optional[int]): The number of qubits to allocate. Default is 1.
+
+        """
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.num_qubits += num_qubits
         self.declare_qubit_alias(name, Identifier(name))
@@ -493,22 +580,56 @@ class AbstractProgramContext(ABC):
         """
         Get qubit indices from a qubit identifier, possibly referring to a sub-index of
         a qubit register
+
+        Args:
+            qubits (Union[Identifier, IndexedIdentifier]): The identifier of the qubits.
+
+        Returns:
+            Tuple[int]: The indices of the qubits.
+
+        Raises:
+            KeyError: If the qubit identifier is not found.
         """
         return self.qubit_mapping.get_by_identifier(qubits)
 
     def add_gate(self, name: str, definition: QuantumGateDefinition) -> None:
-        """Add a gate definition"""
+        """
+        Add a gate definition
+
+        Args:
+            name(str): The name of the gate.
+            definition (QuantumGateDefinition): The definition of the gate.
+        """
         self.gate_table.add_gate(name, definition)
 
     def get_gate_definition(self, name: str) -> QuantumGateDefinition:
-        """Get a gate definition by name"""
+        """
+        Get a gate definition by name
+
+        Args:
+            name (str): The name of the gate.
+
+        Returns:
+            QuantumGateDefinition: The definition of the gate.
+
+        Raises:
+            ValueError: If the gate is not defined.
+        """
         try:
             return self.gate_table.get_gate_definition(name)
         except KeyError:
             raise ValueError(f"Gate {name} is not defined.")
 
     def is_user_defined_gate(self, name: str) -> bool:
-        """Whether the gate is user-defined gate"""
+        """
+        Check whether the gate is user-defined gate
+
+        Args:
+            name (str): The name of the gate.
+
+        Returns:
+            bool: True of the gate is user-defined, False otherwise.
+        """
         try:
             self.get_gate_definition(name)
             user_defined_gate = True
@@ -527,11 +648,30 @@ class AbstractProgramContext(ABC):
         """
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
-        """Add a subroutine definition"""
+        """
+        Add a subroutine definition
+
+        Args:
+            name(str): The name of the subroutine.
+            definition (SubroutineDefinition): The definition of the subroutine.
+
+        """
         self.subroutine_table.add_subroutine(name, definition)
 
     def get_subroutine_definition(self, name: str) -> SubroutineDefinition:
-        """Get a subroutine definition by name"""
+        """
+        Get a subroutine definition by name
+
+        Args:
+            name (str): The name of the subroutine.
+
+        Returns:
+            SubroutineDefinition: The definition of the subroutine.
+
+        Raises:
+            NameError: If the subroutine with the give name is not defined.
+
+        """
         try:
             return self.subroutine_table.get_subroutine_definition(name)
         except KeyError:
@@ -577,7 +717,16 @@ class AbstractProgramContext(ABC):
         qubits: List[Union[Identifier, IndexedIdentifier]],
         modifiers: Optional[List[QuantumGateModifier]] = None,
     ) -> None:
-        """Add a builtin gate instruction to the circuit"""
+        """
+        Add a builtin gate instruction to the circuit
+
+        Args:
+            gate_name (str): The name of the built-in gate.
+            parameters (List[FloatLiteral]): The list of the gate parameters.
+            qubits (List[Union[Identifier, IndexedIdentifier]]): The list of qubits the gate acts on.
+            modifiers (Optional[List[QuantumGateModifier]]): The list of gate modifiers (optional).
+
+        """
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
