@@ -217,6 +217,8 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Identifier) -> LiteralType:
+        if node.name.startswith("$"):
+            return node
         if node.name in builtin_constants:
             return builtin_constants[node.name]
         if not self.context.is_initialized(node.name):

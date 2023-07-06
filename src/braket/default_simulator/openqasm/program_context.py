@@ -76,6 +76,8 @@ class QubitTable(Table):
         """
         Convenience method to get an element with a possibly indexed identifier.
         """
+        if identifier.name.startswith("$"):
+            return (int(identifier.name[1:]),)
         return self[identifier.name]
 
     @get_by_identifier.register

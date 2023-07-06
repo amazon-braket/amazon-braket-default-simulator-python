@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.gate_operations import Hadamard, PauliX
+from braket.default_simulator.gate_operations import Hadamard, PauliX, CX
 from braket.default_simulator.gate_operations import PauliY as Y
 from braket.default_simulator.gate_operations import U, Unitary
 from braket.default_simulator.noise_operations import (
@@ -1391,6 +1391,21 @@ def test_qubit_multi_dim_index():
                 [[IntegerLiteral(0), IntegerLiteral(1)]],
             )
         )
+
+
+def test_physical_qubits():
+    qasm = """
+    h $0;
+    cnot $0, $1;
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    expected_circuit = Circuit(
+        instructions=[
+            Hadamard((0,)),
+            CX((0, 1)),
+        ]
+    )
+    assert circuit == expected_circuit
 
 
 @pytest.mark.parametrize("bad_op", ("x - y", "-x"))
