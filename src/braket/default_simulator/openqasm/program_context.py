@@ -387,6 +387,11 @@ class AbstractProgramContext(ABC):
         self.inputs = {}
         self.num_qubits = 0
 
+    @property
+    @abstractmethod
+    def circuit(self):
+        """The circuit being built in this context."""
+
     def __repr__(self):
         return "\n\n".join(
             repr(x)
@@ -790,7 +795,11 @@ class ProgramContext(AbstractProgramContext):
                 context. Default: None.
         """
         super().__init__()
-        self.circuit = circuit or Circuit()
+        self._circuit = circuit or Circuit()
+
+    @property
+    def circuit(self):
+        return self._circuit
 
     def is_builtin_gate(self, name: str) -> bool:
         user_defined_gate = self.is_user_defined_gate(name)
@@ -798,7 +807,7 @@ class ProgramContext(AbstractProgramContext):
 
     def add_phase_instruction(self, target: Tuple[int], phase_value: int):
         phase_instruction = GPhase(target, phase_value)
-        self.circuit.add_instruction(phase_instruction)
+        self._circuit.add_instruction(phase_instruction)
 
     def add_gate_instruction(
         self, gate_name: str, target: Tuple[int, ...], params, ctrl_modifiers: List[int], power: int
@@ -806,7 +815,7 @@ class ProgramContext(AbstractProgramContext):
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
         )
-        self.circuit.add_instruction(instruction)
+        self._circuit.add_instruction(instruction)
 
     def add_custom_unitary(
         self,
@@ -814,10 +823,10 @@ class ProgramContext(AbstractProgramContext):
         target: Tuple[int, ...],
     ) -> None:
         instruction = Unitary(target, unitary)
-        self.circuit.add_instruction(instruction)
+        self._circuit.add_instruction(instruction)
 
     def add_noise_instruction(self, noise: KrausOperation):
-        self.circuit.add_instruction(noise)
+        self._circuit.add_instruction(noise)
 
     def add_result(self, result: Results) -> None:
-        self.circuit.add_result(result)
+        self._circuit.add_result(result)
