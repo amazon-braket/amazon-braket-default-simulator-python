@@ -375,7 +375,6 @@ class AbstractProgramContext(ABC):
     Qubit mapping - mapping from logical qubits to qubit indices
 
     Circuit - IR build to hand off to the simulator
-
     """
 
     def __init__(self):
@@ -443,7 +442,6 @@ class AbstractProgramContext(ABC):
         Args:
             name(str): The name of the qubit alias.
             value(Identifier): The identifier representing the qubit
-
         """
         self.symbol_table.add_symbol(name, Identifier)
         self.variable_table.add_variable(name, value)
@@ -487,7 +485,6 @@ class AbstractProgramContext(ABC):
 
         Returns:
             Union[ClassicalType, Type[LiteralType]]: The type of the symbol.
-
         """
         return self.symbol_table.get_type(name)
 
@@ -515,7 +512,6 @@ class AbstractProgramContext(ABC):
 
         Raises:
             KeyError: If the variable is not found.
-
         """
         return self.variable_table.get_value(name)
 
@@ -548,7 +544,6 @@ class AbstractProgramContext(ABC):
 
         Returns:
             bool: True if the variable is initialized, False otherwise.
-
         """
         return self.variable_table.is_initalized(name)
 
@@ -572,7 +567,6 @@ class AbstractProgramContext(ABC):
         Args:
             name(str): The name of the qubit register
             num_qubits (Optional[int]): The number of qubits to allocate. Default is 1.
-
         """
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.num_qubits += num_qubits
@@ -634,10 +628,9 @@ class AbstractProgramContext(ABC):
         """
         try:
             self.get_gate_definition(name)
-            user_defined_gate = True
+            return True
         except ValueError:
-            user_defined_gate = False
-        return user_defined_gate
+            return False
 
     @abstractmethod
     def is_builtin_gate(self, name: str) -> bool:
@@ -656,7 +649,6 @@ class AbstractProgramContext(ABC):
         Args:
             name(str): The name of the subroutine.
             definition (SubroutineDefinition): The definition of the subroutine.
-
         """
         self.subroutine_table.add_subroutine(name, definition)
 
@@ -672,7 +664,6 @@ class AbstractProgramContext(ABC):
 
         Raises:
             NameError: If the subroutine with the give name is not defined.
-
         """
         try:
             return self.subroutine_table.get_subroutine_definition(name)
@@ -709,7 +700,6 @@ class AbstractProgramContext(ABC):
         Args:
             target (int or List[int]): The target qubit or qubits to which the phase instruction is applied
             phase_value (float): The phase value to be applied
-
         """
 
     def add_builtin_gate(
@@ -727,7 +717,6 @@ class AbstractProgramContext(ABC):
             parameters (List[FloatLiteral]): The list of the gate parameters.
             qubits (List[Union[Identifier, IndexedIdentifier]]): The list of qubits the gate acts on.
             modifiers (Optional[List[QuantumGateModifier]]): The list of gate modifiers (optional).
-
         """
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([param.value for param in parameters])
@@ -753,7 +742,7 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_gate_instruction(
-        self, gate_name: str, target: Tuple[int], params, ctrl_modifiers: List[int], power: int
+        self, gate_name: str, target: Tuple[int, ...], params, ctrl_modifiers: List[int], power: int
     ):
         """Abstract method to add Braket gate to the circuit.
         Args:
@@ -771,12 +760,12 @@ class AbstractProgramContext(ABC):
     def add_custom_unitary(
         self,
         unitary: np.ndarray,
-        target: Tuple[int],
+        target: Tuple[int, ...],
     ) -> None:
         """Abstract method to add a custom Unitary instruction to the circuit
         Args:
             unitary (np.ndarray): unitary matrix
-            target (Tuple[int]): control_qubits + target_qubits
+            target (Tuple[int, ...]): control_qubits + target_qubits
         """
 
     @abstractmethod
@@ -794,9 +783,14 @@ class AbstractProgramContext(ABC):
 
 
 class ProgramContext(AbstractProgramContext):
-    def __init__(self):
+    def __init__(self, circuit: Optional[Circuit] = None):
+        """
+        Args:
+            circuit (Optional[Circuit]): A partially-built circuit to continue building with this
+                context. Default: None.
+        """
         super().__init__()
-        self.circuit = Circuit()
+        self.circuit = circuit or Circuit()
 
     def is_builtin_gate(self, name: str) -> bool:
         user_defined_gate = self.is_user_defined_gate(name)
@@ -807,7 +801,7 @@ class ProgramContext(AbstractProgramContext):
         self.circuit.add_instruction(phase_instruction)
 
     def add_gate_instruction(
-        self, gate_name: str, target: Tuple[int], params, ctrl_modifiers: List[int], power: int
+        self, gate_name: str, target: Tuple[int, ...], params, ctrl_modifiers: List[int], power: int
     ):
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
@@ -817,7 +811,7 @@ class ProgramContext(AbstractProgramContext):
     def add_custom_unitary(
         self,
         unitary: np.ndarray,
-        target: Tuple[int],
+        target: Tuple[int, ...],
     ) -> None:
         instruction = Unitary(target, unitary)
         self.circuit.add_instruction(instruction)
