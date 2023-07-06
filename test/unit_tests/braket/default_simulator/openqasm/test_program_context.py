@@ -1,5 +1,7 @@
 import pytest
 
+from braket.default_simulator import gate_operations
+from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     BooleanLiteral,
     BoolType,
@@ -123,3 +125,14 @@ def test_delete_from_scope():
     undefined_key = "Undefined key: x"
     with pytest.raises(KeyError, match=undefined_key):
         del table["x"]
+
+
+def test_prebuilt_circuit():
+    circuit = Circuit()
+    circuit.add_instruction(gate_operations.Hadamard([0]))
+    context = ProgramContext(circuit)
+    context.add_gate_instruction("cnot", (0, 1), [], ctrl_modifiers=[], power=1)
+    assert context.circuit.instructions == [
+        gate_operations.Hadamard([0]),
+        gate_operations.CX([0, 1]),
+    ]

@@ -45,6 +45,10 @@ class BitFlip(KrausOperation):
     def targets(self) -> Tuple[int, ...]:
         return self._targets
 
+    @property
+    def probability(self):
+        return self._probability
+
 
 @_from_braket_instruction.register(braket_instruction.BitFlip)
 def _bit_flip(instruction) -> BitFlip:
@@ -67,6 +71,10 @@ class PhaseFlip(KrausOperation):
     @property
     def targets(self) -> Tuple[int, ...]:
         return self._targets
+
+    @property
+    def probability(self):
+        return self._probability
 
 
 @_from_braket_instruction.register(braket_instruction.PhaseFlip)
@@ -97,6 +105,10 @@ class PauliChannel(KrausOperation):
     def targets(self) -> Tuple[int, ...]:
         return self._targets
 
+    @property
+    def probabilities(self):
+        return [self._probX, self._probY, self._probZ]
+
 
 @_from_braket_instruction.register(braket_instruction.PauliChannel)
 def _pauli_channel(instruction) -> PauliChannel:
@@ -125,6 +137,10 @@ class Depolarizing(KrausOperation):
     @property
     def targets(self) -> Tuple[int, ...]:
         return self._targets
+
+    @property
+    def probability(self):
+        return self._probability
 
 
 @_from_braket_instruction.register(braket_instruction.Depolarizing)
@@ -159,6 +175,10 @@ class TwoQubitDepolarizing(KrausOperation):
     def targets(self) -> Tuple[int, ...]:
         return self._targets
 
+    @property
+    def probability(self):
+        return self._probability
+
 
 @_from_braket_instruction.register(braket_instruction.TwoQubitDepolarizing)
 def _two_qubit_depolarizing(instruction) -> TwoQubitDepolarizing:
@@ -187,6 +207,10 @@ class TwoQubitDephasing(KrausOperation):
     def targets(self) -> Tuple[int, ...]:
         return self._targets
 
+    @property
+    def probability(self):
+        return self._probability
+
 
 @_from_braket_instruction.register(braket_instruction.TwoQubitDephasing)
 def _two_qubit_dephasing(instruction) -> TwoQubitDephasing:
@@ -209,6 +233,10 @@ class AmplitudeDamping(KrausOperation):
     @property
     def targets(self) -> Tuple[int, ...]:
         return self._targets
+
+    @property
+    def gamma(self):
+        return self._gamma
 
 
 @_from_braket_instruction.register(braket_instruction.AmplitudeDamping)
@@ -242,6 +270,14 @@ class GeneralizedAmplitudeDamping(KrausOperation):
     def targets(self) -> Tuple[int, ...]:
         return self._targets
 
+    @property
+    def probability(self):
+        return self._probability
+
+    @property
+    def gamma(self):
+        return self._gamma
+
 
 @_from_braket_instruction.register(braket_instruction.GeneralizedAmplitudeDamping)
 def _generalized_amplitude_damping(instruction) -> GeneralizedAmplitudeDamping:
@@ -266,6 +302,10 @@ class PhaseDamping(KrausOperation):
     @property
     def targets(self) -> Tuple[int, ...]:
         return self._targets
+
+    @property
+    def gamma(self):
+        return self._gamma
 
 
 @_from_braket_instruction.register(braket_instruction.PhaseDamping)

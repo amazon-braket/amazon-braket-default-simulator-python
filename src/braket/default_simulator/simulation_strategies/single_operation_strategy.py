@@ -38,7 +38,7 @@ def apply_operations(
         matrix = operation.matrix
         all_targets = operation.targets
         num_ctrl = len(operation._ctrl_modifiers)
-        control_state = tuple(np.logical_not(operation._ctrl_modifiers).astype(int))
+        control_state = operation._ctrl_modifiers
         controls = all_targets[:num_ctrl]
         targets = all_targets[num_ctrl:]
         state = multiply_matrix(state, matrix, targets, controls, control_state)
