@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.17.0 (2023-07-06)
+
+### Features
+
+ * `AbstractProgramContext` interface
+
+### Bug Fixes and Other Changes
+
+ * flip internal mapping for ctrl/negctrl
+ * clamp indexing in scipy integration method
+
 ## v1.16.0 (2023-06-29)
 
 ### Features
