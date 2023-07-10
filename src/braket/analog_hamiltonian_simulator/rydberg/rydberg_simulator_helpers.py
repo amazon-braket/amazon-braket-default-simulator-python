@@ -495,6 +495,12 @@ def _get_hamiltonian(
         interaction_op,
     ) = operators_coefficients
 
+    hamiltonian = interaction_op
+
+    # If the driving field is empty, return the interaction operator
+    if len(rabi_coefs) == 0:
+        return hamiltonian
+
     index_time = int(index_time)
 
     # If the integrator uses intermediate time value that is larger than the maximum
@@ -520,8 +526,6 @@ def _get_hamiltonian(
             "The first time value of the specified range "
             "is used as an approximation."
         )
-
-    hamiltonian = interaction_op
 
     # Add the driving fields
     for rabi_op, rabi_coef, detuning_op, detuning_coef in zip(
@@ -581,6 +585,10 @@ def _apply_hamiltonian(
         local_detuing_coefs,
         interaction_op,
     ) = operators_coefficients
+
+    # If the driving field is empty, return the input register
+    if len(rabi_coefs) == 0:
+        return input_register
 
     index_time = int(index_time)
 

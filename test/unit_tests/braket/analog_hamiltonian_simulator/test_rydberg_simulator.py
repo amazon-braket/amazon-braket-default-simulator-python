@@ -185,6 +185,11 @@ def test_scipy_run_for_large_system():
     assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
 
 
+def test_scipy_run_for_empty_program():
+    result = device.run(empty_program, steps=2)
+    assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
+
+
 @pytest.mark.parametrize(
     "num_time_points, index_time, start_time",
     [
