@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.18.0 (2023-07-10)
+
+### Features
+
+ * physical qubits
+ * Allow prebuilt circuits in `ProgramContext`
+
+### Bug Fixes and Other Changes
+
+ * Include `circuit` property in abstract context
+ * progress bar of ahs simulator
+
 ## v1.17.0 (2023-07-06)
 
 ### Features
