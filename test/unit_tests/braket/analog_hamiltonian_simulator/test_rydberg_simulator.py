@@ -162,7 +162,7 @@ zero_field = {
 }
 
 
-zero_program = convert_unit(
+big_program_with_only_driving_field = convert_unit(
     Program(
         setup={
             "ahs_register": {
@@ -180,7 +180,7 @@ zero_program = convert_unit(
 )
 
 
-zero_program_2 = convert_unit(
+big_program_with_only_shifting_field = convert_unit(
     Program(
         setup={
             "ahs_register": {
@@ -209,8 +209,8 @@ zero_program_2 = convert_unit(
 @pytest.mark.parametrize(
     "program, steps",
     [
-        (zero_program, 1),
-        (zero_program_2, 4),
+        (big_program_with_only_driving_field, 1),
+        (big_program_with_only_shifting_field, 4),
     ],
 )
 def test_scipy_run_for_large_system(program, steps):
