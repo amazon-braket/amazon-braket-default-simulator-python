@@ -16,15 +16,6 @@ from functools import singledispatchmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
-from braket.ir.jaqcd import (
-    Amplitude,
-    DensityMatrix,
-    Expectation,
-    Probability,
-    Sample,
-    StateVector,
-    Variance,
-)
 from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
@@ -34,7 +25,6 @@ from braket.default_simulator.noise_operations import (
     Depolarizing,
     GeneralizedAmplitudeDamping,
     Kraus,
-    KrausOperation,
     PauliChannel,
     PhaseDamping,
     PhaseFlip,
