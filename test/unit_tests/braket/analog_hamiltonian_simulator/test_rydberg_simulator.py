@@ -180,13 +180,41 @@ zero_program = convert_unit(
 )
 
 
-def test_scipy_run_for_large_system():
-    result = device.run(zero_program, steps=1)
-    assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
+zero_program_2 = convert_unit(
+    Program(
+        setup={
+            "ahs_register": {
+                "sites": [[0, i * a] for i in range(11)],
+                "filling": [1 for _ in range(11)],
+            }
+        },
+        hamiltonian={
+            "drivingFields": [],
+            "shiftingFields": [
+                {
+                    "magnitude": {
+                        "time_series": {
+                            "times": [0, duration * 1e-06],
+                            "values": [detuning_2 * 1e6, detuning_2 * 1e6],
+                        },
+                        "pattern": [1.0 for _ in range(11)],
+                    }
+                }
+            ],
+        },
+    )
+)
 
 
-def test_scipy_run_for_empty_program():
-    result = device.run(empty_program, steps=2)
+@pytest.mark.parametrize(
+    "program, steps",
+    [
+        (zero_program, 1),
+        (zero_program_2, 4),
+    ],
+)
+def test_scipy_run_for_large_system(program, steps):
+    result = device.run(program, steps=steps)
     assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
 
 
