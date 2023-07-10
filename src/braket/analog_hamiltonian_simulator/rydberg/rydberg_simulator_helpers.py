@@ -499,8 +499,8 @@ def _get_hamiltonian(
 
     # If the integrator uses intermediate time value that is larger than the maximum
     # time value specified, the final time value is used as an approximation.
-    # Currently there is only one driving field. If there are more than one driving 
-    # fields, we assume that they have the same number of coefficients 
+    # Currently there is only one driving field. If there are more than one driving
+    # fields, we assume that they have the same number of coefficients
     if index_time >= len(rabi_coefs[0]):
         index_time = len(rabi_coefs[0]) - 1
         warnings.warn(
@@ -586,8 +586,8 @@ def _apply_hamiltonian(
 
     # If the integrator uses intermediate time value that is larger than the maximum
     # time value specified, the final time value is used as an approximation.
-    # Currently there is only one driving field. If there are more than one driving 
-    # fields, we assume that they have the same number of coefficients 
+    # Currently there is only one driving field. If there are more than one driving
+    # fields, we assume that they have the same number of coefficients
     if index_time >= len(rabi_coefs[0]):
         index_time = len(rabi_coefs[0]) - 1
         warnings.warn(
