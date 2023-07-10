@@ -699,7 +699,6 @@ class AbstractProgramContext(ABC):
         except KeyError:
             raise NameError(f"Subroutine {name} is not defined.")
 
-    @abstractmethod
     def add_result(self, result: Results) -> None:
         """
         Abstract method to add result type to the circuit
@@ -707,6 +706,7 @@ class AbstractProgramContext(ABC):
         Args:
             result (Results): The result object representing the measurement results
         """
+        raise NotImplementedError
 
     def add_phase(
         self,
@@ -785,7 +785,6 @@ class AbstractProgramContext(ABC):
             power(float): Integer or fractional power to raise the gate to.
         """
 
-    @abstractmethod
     def add_custom_unitary(
         self,
         unitary: np.ndarray,
@@ -796,8 +795,8 @@ class AbstractProgramContext(ABC):
             unitary (np.ndarray): unitary matrix
             target (Tuple[int, ...]): control_qubits + target_qubits
         """
+        raise NotImplementedError
 
-    @abstractmethod
     def add_noise_instruction(
         self, noise_instruction: str, target: List[int], probabilities: List[float]
     ):
@@ -805,19 +804,20 @@ class AbstractProgramContext(ABC):
 
         Args:
             noise_instruction (str): The name of the noise operation
-            target (List[str]): The target qubit or qubits to which the noise operation is applied.
+            target (List[int]): The target qubit or qubits to which the noise operation is applied.
             probabilities (List[float]): The probabilities associated with each possible outcome
                 of the noise operation.
         """
+        raise NotImplementedError
 
-    @abstractmethod
     def add_kraus_instruction(self, matrices: List[np.ndarray], target: List[int]):
         """Abstract method to add a Kraus instruction to the circuit
 
         Args:
-            matrices (List[np.ndarray]): The matrices defining the Kraus operation
-            target (List[str]): The target qubit or qubits to which the Kraus operation is applied.
+            matrices (List[ndarray]): The matrices defining the Kraus operation
+            target (List[int]): The target qubit or qubits to which the Kraus operation is applied.
         """
+        raise NotImplementedError
 
 
 class ProgramContext(AbstractProgramContext):
@@ -874,7 +874,7 @@ class ProgramContext(AbstractProgramContext):
         }
         self._circuit.add_instruction(one_prob_noise_map[noise_instruction](target, *probabilities))
 
-    def add_kraus_instruction(self, matrices, target):
+    def add_kraus_instruction(self, matrices: List[np.ndarray], target: List[int]):
         self._circuit.add_instruction(Kraus(target, matrices))
 
     def add_result(self, result: Results) -> None:
