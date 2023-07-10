@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.18.1 (2023-07-10)
+
+### Bug Fixes and Other Changes
+
+ * Use op names for noise parsing
+
 ## v1.18.0 (2023-07-10)
 
 ### Features
