@@ -1,13 +1,47 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
+from braket.ir.jaqcd import (
+    Amplitude,
+    DensityMatrix,
+    Expectation,
+    Probability,
+    Sample,
+    StateVector,
+    Variance,
+)
 from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
+from braket.default_simulator.noise_operations import (
+    AmplitudeDamping,
+    BitFlip,
+    Depolarizing,
+    GeneralizedAmplitudeDamping,
+    Kraus,
+    KrausOperation,
+    PauliChannel,
+    PhaseDamping,
+    PhaseFlip,
+    TwoQubitDephasing,
+    TwoQubitDepolarizing,
+)
 
-from ..noise_operations import KrausOperation
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
@@ -774,16 +808,25 @@ class AbstractProgramContext(ABC):
         """
 
     @abstractmethod
-    def add_noise_instruction(self, noise: KrausOperation):
+    def add_noise_instruction(
+        self, noise_instruction: str, target: List[int], probabilities: List[float]
+    ):
         """Abstract method to add a noise instruction to the circuit
+
         Args:
-            noise (KrausOperation): The noise operation to be added to the circuit
-                - `target` (Tuple[int]): The target qubit or qubits to which the noise operation is applied.
-                - `gamma` (float): The probability of the noise operation occurring. (Optional)
-                - `probability` (float): The probability associated with possible outcome
-                                        of the noise operation. (Optional)
-                - `probabilities` (List[float]): The probabilities associated with each possible outcome
-                                                of the noise operation. (Optional)
+            noise_instruction (str): The name of the noise operation
+            target (List[str]): The target qubit or qubits to which the noise operation is applied.
+            probabilities (List[float]): The probabilities associated with each possible outcome
+                of the noise operation.
+        """
+
+    @abstractmethod
+    def add_kraus_instruction(self, matrices: List[np.ndarray], target: List[int]):
+        """Abstract method to add a Kraus instruction to the circuit
+
+        Args:
+            matrices (List[np.ndarray]): The matrices defining the Kraus operation
+            target (List[str]): The target qubit or qubits to which the Kraus operation is applied.
         """
 
 
@@ -825,8 +868,24 @@ class ProgramContext(AbstractProgramContext):
         instruction = Unitary(target, unitary)
         self._circuit.add_instruction(instruction)
 
-    def add_noise_instruction(self, noise: KrausOperation):
-        self._circuit.add_instruction(noise)
+    def add_noise_instruction(
+        self, noise_instruction: str, target: List[int], probabilities: List[float]
+    ):
+        one_prob_noise_map = {
+            "bit_flip": BitFlip,
+            "phase_flip": PhaseFlip,
+            "pauli_channel": PauliChannel,
+            "depolarizing": Depolarizing,
+            "two_qubit_depolarizing": TwoQubitDepolarizing,
+            "two_qubit_dephasing": TwoQubitDephasing,
+            "amplitude_damping": AmplitudeDamping,
+            "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
+            "phase_damping": PhaseDamping,
+        }
+        self._circuit.add_instruction(one_prob_noise_map[noise_instruction](target, *probabilities))
+
+    def add_kraus_instruction(self, matrices, target):
+        self._circuit.add_instruction(Kraus(target, matrices))
 
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
