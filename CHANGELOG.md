@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.18.2 (2023-07-11)
+
+### Bug Fixes and Other Changes
+
+ * Update schema dependency to 1.18.0
+ * fix index time clamping bug
+
 ## v1.18.1 (2023-07-10)
 
 ### Bug Fixes and Other Changes
