@@ -497,10 +497,25 @@ def _get_hamiltonian(
 
     index_time = int(index_time)
 
+    if len(rabi_coefs) > 0:
+        # If there is driving field, the maximum of index_time is the maximum time index
+        # for the driving field.
+        # Note that, if there is more than one driving field, we assume that they have the
+        # same number of coefficients
+        max_index_time = len(rabi_coefs[0]) - 1
+    else:
+        # If there is no driving field, then the maxium of index_time is the maxium time
+        # index for the shifting field.
+        # Note that, if there is more than one shifting field, we assume that they have the
+        # same number of coefficients
+        # Note that, if there is no driving field nor shifting field, the initial state will
+        # be returned, and the simulation would not reach here.
+        max_index_time = len(local_detuing_coefs[0]) - 1
+
     # If the integrator uses intermediate time value that is larger than the maximum
     # time value specified, the final time value is used as an approximation.
-    if index_time >= len(rabi_coefs):
-        index_time = len(rabi_coefs) - 1
+    if index_time > max_index_time:
+        index_time = max_index_time
         warnings.warn(
             "The solver uses intermediate time value that is "
             "larger than the maximum time value specified. "
@@ -582,10 +597,25 @@ def _apply_hamiltonian(
 
     index_time = int(index_time)
 
+    if len(rabi_coefs) > 0:
+        # If there is driving field, the maximum of index_time is the maximum time index
+        # for the driving field.
+        # Note that, if there is more than one driving field, we assume that they have the
+        # same number of coefficients
+        max_index_time = len(rabi_coefs[0]) - 1
+    else:
+        # If there is no driving field, then the maxium of index_time is the maxium time
+        # index for the shifting field.
+        # Note that, if there is more than one shifting field, we assume that they have the
+        # same number of coefficients
+        # Note that, if there is no driving field nor shifting field, the initial state will
+        # be returned, and the simulation would not reach here.
+        max_index_time = len(local_detuing_coefs[0]) - 1
+
     # If the integrator uses intermediate time value that is larger than the maximum
     # time value specified, the final time value is used as an approximation.
-    if index_time >= len(rabi_coefs):
-        index_time = len(rabi_coefs) - 1
+    if index_time > max_index_time:
+        index_time = max_index_time
         warnings.warn(
             "The solver uses intermediate time value that is "
             "larger than the maximum time value specified. "
