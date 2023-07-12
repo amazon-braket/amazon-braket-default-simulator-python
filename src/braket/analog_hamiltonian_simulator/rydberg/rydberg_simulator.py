@@ -129,6 +129,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
                 self.configurations,
                 self.simulation_times,
                 self.rydberg_interaction_coef,
+                progress_bar=progress_bar,
             )
         else:
             states = scipy_integrate_ode_run(

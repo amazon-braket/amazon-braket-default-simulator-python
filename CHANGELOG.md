@@ -1,5 +1,59 @@
 # Changelog
 
+## v1.18.2 (2023-07-11)
+
+### Bug Fixes and Other Changes
+
+ * Update schema dependency to 1.18.0
+ * fix index time clamping bug
+
+## v1.18.1 (2023-07-10)
+
+### Bug Fixes and Other Changes
+
+ * Use op names for noise parsing
+
+## v1.18.0 (2023-07-10)
+
+### Features
+
+ * physical qubits
+ * Allow prebuilt circuits in `ProgramContext`
+
+### Bug Fixes and Other Changes
+
+ * Include `circuit` property in abstract context
+ * progress bar of ahs simulator
+
+## v1.17.0 (2023-07-06)
+
+### Features
+
+ * `AbstractProgramContext` interface
+
+### Bug Fixes and Other Changes
+
+ * flip internal mapping for ctrl/negctrl
+ * clamp indexing in scipy integration method
+
+## v1.16.0 (2023-06-29)
+
+### Features
+
+ * add support for python 3.11
+
+## v1.15.0 (2023-06-12)
+
+### Features
+
+ * add optional third angle to MS gate
+
+## v1.14.0.post0 (2023-05-25)
+
+### Documentation Changes
+
+ * add a linter to check proper rst formatting and fix up incorrect docs
+
 ## v1.14.0 (2023-05-15)
 
 ### Features

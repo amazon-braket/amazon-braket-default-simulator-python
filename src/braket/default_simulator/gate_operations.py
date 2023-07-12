@@ -1008,7 +1008,7 @@ class MS(GateOperation):
     Reference: https://ionq.com/docs/getting-started-with-native-gates#entangling-gates
     """
 
-    def __init__(self, targets, angle_1, angle_2, ctrl_modifiers=(), power=1):
+    def __init__(self, targets, angle_1, angle_2, angle_3=np.pi / 2, ctrl_modifiers=(), power=1):
         super().__init__(
             targets=targets,
             ctrl_modifiers=ctrl_modifiers,
@@ -1016,17 +1016,38 @@ class MS(GateOperation):
         )
         self._angle_1 = angle_1
         self._angle_2 = angle_2
+        self._angle_3 = angle_3
 
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array(
             [
-                [1, 0, 0, -1j * np.exp(-1j * (self._angle_1 + self._angle_2))],
-                [0, 1, -1j * np.exp(-1j * (self._angle_1 - self._angle_2)), 0],
-                [0, -1j * np.exp(1j * (self._angle_1 - self._angle_2)), 1, 0],
-                [-1j * np.exp(1j * (self._angle_1 + self._angle_2)), 0, 0, 1],
+                [
+                    np.cos(self._angle_3 / 2),
+                    0,
+                    0,
+                    -1j * np.exp(-1j * (self._angle_1 + self._angle_2)) * np.sin(self._angle_3 / 2),
+                ],
+                [
+                    0,
+                    np.cos(self._angle_3 / 2),
+                    -1j * np.exp(-1j * (self._angle_1 - self._angle_2)) * np.sin(self._angle_3 / 2),
+                    0,
+                ],
+                [
+                    0,
+                    -1j * np.exp(1j * (self._angle_1 - self._angle_2)) * np.sin(self._angle_3 / 2),
+                    np.cos(self._angle_3 / 2),
+                    0,
+                ],
+                [
+                    -1j * np.exp(1j * (self._angle_1 + self._angle_2)) * np.sin(self._angle_3 / 2),
+                    0,
+                    0,
+                    np.cos(self._angle_3 / 2),
+                ],
             ]
-        ) / np.sqrt(2)
+        )
 
     @property
     def targets(self) -> Tuple[int, ...]:

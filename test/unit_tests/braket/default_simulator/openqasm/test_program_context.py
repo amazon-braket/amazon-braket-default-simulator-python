@@ -1,5 +1,20 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import pytest
 
+from braket.default_simulator import gate_operations
+from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     BooleanLiteral,
     BoolType,
@@ -123,3 +138,14 @@ def test_delete_from_scope():
     undefined_key = "Undefined key: x"
     with pytest.raises(KeyError, match=undefined_key):
         del table["x"]
+
+
+def test_prebuilt_circuit():
+    circuit = Circuit()
+    circuit.add_instruction(gate_operations.Hadamard([0]))
+    context = ProgramContext(circuit)
+    context.add_gate_instruction("cnot", (0, 1), [], ctrl_modifiers=[], power=1)
+    assert context.circuit.instructions == [
+        gate_operations.Hadamard([0]),
+        gate_operations.CX([0, 1]),
+    ]
