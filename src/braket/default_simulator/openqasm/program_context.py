@@ -820,6 +820,24 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
+    def pop_instructions(self):
+        instructions = self.circuit.instructions
+        self.circuit.instructions = []
+        return instructions
+
+    def add_output(self, output_name: str):
+        self.outputs[output_name] = []
+
+    def save_output_values(self):
+        if not self.outputs:
+            self.outputs = {
+                v: []
+                for v in self.symbol_table.current_scope
+                if isinstance(self.get_type(v), ClassicalType)
+            }
+        for output, shot_data in self.outputs.items():
+            shot_data.append(convert_to_output(self.get_value(output)))
+
 
 class ProgramContext(AbstractProgramContext):
     def __init__(self, circuit: Optional[Circuit] = None):
