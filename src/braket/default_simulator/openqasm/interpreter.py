@@ -1,3 +1,16 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 from copy import deepcopy
 from dataclasses import fields
 from functools import singledispatchmethod
@@ -519,7 +532,6 @@ class Interpreter:
     @visit.register
     def _(self, node: Pragma) -> None:
         parsed = self.context.parse_pragma(node.command)
-
         if node.command.startswith("braket result"):
             if not parsed:
                 raise TypeError(f"Result type {node.command.split()[2]} is not supported.")
@@ -527,8 +539,12 @@ class Interpreter:
         elif node.command.startswith("braket unitary"):
             unitary, target = parsed
             self.context.add_custom_unitary(unitary, target)
+        elif node.command.startswith("braket noise kraus"):
+            matrices, target = parsed
+            self.context.add_kraus_instruction(matrices, target)
         elif node.command.startswith("braket noise"):
-            self.context.add_noise_instruction(parsed)
+            noise_instruction, target, probabilities = parsed
+            self.context.add_noise_instruction(noise_instruction, target, probabilities)
         elif node.command.startswith("braket verbatim"):
             pass
         else:
