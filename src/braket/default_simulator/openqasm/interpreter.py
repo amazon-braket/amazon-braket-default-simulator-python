@@ -192,7 +192,7 @@ class Interpreter:
             else:
                 init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
                 declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
-        self.visit(declaration)
+                self.visit(declaration)
 
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
