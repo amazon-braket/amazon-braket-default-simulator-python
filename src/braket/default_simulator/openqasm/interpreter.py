@@ -188,9 +188,10 @@ class Interpreter:
             raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
             if node.identifier.name not in self.context.inputs:
-                raise NameError(f"Missing input variable '{node.identifier.name}'.")
-            init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
-            declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
+                self.context.add_parameter(node.identifier.name, node.type)
+            else:
+                init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
+                declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
         self.visit(declaration)
 
     @visit.register
