@@ -674,7 +674,15 @@ class AbstractProgramContext(ABC):
     def add_parameter(
         self, name: str, type: Union[ClassicalType, Type[LiteralType], Type[Identifier]]
     ):
-        raise NameError(f"Missing input variable '{name}'.")
+        """
+        Add a parameter.
+        This method allows you to add a variable which does not contain any value.
+
+        Parameters:
+            name (str): The name of the parameter to be added.
+            type (Union[ClassicalType, Type[LiteralType], Type[Identifier]]): The type of the parameter.
+        """
+        raise NotImplementedError
 
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """
@@ -886,3 +894,8 @@ class ProgramContext(AbstractProgramContext):
 
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
+
+    def add_parameter(
+        self, name: str, type: Union[ClassicalType, Type[LiteralType], Type[Identifier]]
+    ):
+        raise NameError(f"Missing input variable '{name}'.")
