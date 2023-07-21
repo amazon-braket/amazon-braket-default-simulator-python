@@ -671,6 +671,11 @@ class AbstractProgramContext(ABC):
             bool: True if the gate is a built-in gate, False otherwise.
         """
 
+    def add_parameter(
+        self, name: str, type: Union[ClassicalType, Type[LiteralType], Type[Identifier]]
+    ):
+        raise NameError(f"Missing input variable '{name}'.")
+
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """
         Add a subroutine definition
@@ -748,7 +753,9 @@ class AbstractProgramContext(ABC):
             modifiers (Optional[List[QuantumGateModifier]]): The list of gate modifiers (optional).
         """
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
-        params = np.array([param.value for param in parameters])
+        params = np.array(
+            [param.value if hasattr(param, "value") else param for param in parameters]
+        )
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         power = 1
         if num_inv_modifiers % 2:
