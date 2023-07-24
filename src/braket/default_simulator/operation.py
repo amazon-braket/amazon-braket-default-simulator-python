@@ -63,7 +63,11 @@ class GateOperation(Operation, ABC):
         return unitary
 
     def __eq__(self, other):
-        return self.targets == other.targets and np.allclose(self.matrix, other.matrix)
+        possible_parameters = "_angle", "_angle_1", "_angle_2"
+        return self.targets == other.targets and all(
+            getattr(self, param, None) == getattr(other, param, None)
+            for param in possible_parameters
+        )
 
 
 class KrausOperation(Operation, ABC):

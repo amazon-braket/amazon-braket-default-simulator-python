@@ -22,7 +22,8 @@ from ..parser.openqasm_ast import (
     IndexedIdentifier,
     IntegerLiteral,
     IntType,
-    UintType, SymbolLiteral,
+    SymbolLiteral,
+    UintType,
 )
 
 LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, BitstringLiteral]
@@ -135,6 +136,7 @@ def is_literal(expression: Expression) -> bool:
             FloatLiteral,
             BitstringLiteral,
             ArrayLiteral,
+            SymbolLiteral,
         ),
     )
 

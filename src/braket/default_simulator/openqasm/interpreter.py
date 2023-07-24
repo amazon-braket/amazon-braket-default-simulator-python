@@ -21,7 +21,6 @@ import numpy as np
 from braket.ir.openqasm.program_v1 import io_type
 from sympy import Symbol
 
-from ..gate_operations import BRAKET_GATES
 from ._helpers.arrays import (
     convert_range_def_to_range,
     create_empty_array,
@@ -96,8 +95,9 @@ from .parser.openqasm_ast import (
     ReturnStatement,
     SizeOf,
     SubroutineDefinition,
+    SymbolLiteral,
     UnaryExpression,
-    WhileLoop, SymbolLiteral,
+    WhileLoop,
 )
 from .parser.openqasm_parser import parse
 from .program_context import ProgramContext
@@ -488,6 +488,8 @@ class Interpreter:
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
+        elif isinstance(rvalue, SymbolLiteral):
+            pass
         else:
             rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)

@@ -18,11 +18,12 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.gate_operations import CX, Hadamard, PauliX
 from braket.default_simulator.gate_operations import PauliY as Y
-from braket.default_simulator.gate_operations import U, Unitary
+from braket.default_simulator.gate_operations import RotX, U, Unitary
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -1377,10 +1378,18 @@ def test_missing_input():
     int[8] doubled;
 
     doubled = in_int * 2;
+    qubit q;
+    rx(doubled) q;
     """
     missing_input = "Missing input variable 'in_int'."
-    with pytest.raises(NameError, match=missing_input):
-        Interpreter().run(qasm)
+    # with pytest.raises(NameError, match=missing_input):
+    circuit = Interpreter().build_circuit(qasm)
+    for instruction in circuit.instructions:
+        print(
+            f"{type(instruction).__name__}({getattr(instruction, '_angle', None)}) "
+            f"{', '.join(map(str, instruction._targets))}"
+        )
+    assert circuit.instructions == [RotX([0], 2 * Symbol("in_int"))]
 
 
 @pytest.mark.parametrize("bad_index", ("[0:1][0][0]", "[0][0][1]", "[0, 1][0]", "[0:1, 1][0]"))
