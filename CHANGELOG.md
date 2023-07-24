@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.18.3 (2023-07-24)
+
+### Bug Fixes and Other Changes
+
+ * indentation
+ * Support for unbounded parametric circuits
+
 ## v1.18.2 (2023-07-11)
 
 ### Bug Fixes and Other Changes
