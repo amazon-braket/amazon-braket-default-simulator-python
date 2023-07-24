@@ -1381,8 +1381,6 @@ def test_missing_input():
     qubit q;
     rx(doubled) q;
     """
-    missing_input = "Missing input variable 'in_int'."
-    # with pytest.raises(NameError, match=missing_input):
     circuit = Interpreter().build_circuit(qasm)
     for instruction in circuit.instructions:
         print(
