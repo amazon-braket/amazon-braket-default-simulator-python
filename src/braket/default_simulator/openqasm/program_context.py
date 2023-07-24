@@ -16,7 +16,6 @@ from functools import singledispatchmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
-
 from braket.ir.jaqcd.program_v1 import Results
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
@@ -749,10 +748,7 @@ class AbstractProgramContext(ABC):
             modifiers (Optional[List[QuantumGateModifier]]): The list of gate modifiers (optional).
         """
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
-        params = np.array([
-            self.handle_parameter_value(param.value)
-            for param in parameters
-        ])
+        params = np.array([self.handle_parameter_value(param.value) for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         power = 1
         if num_inv_modifiers % 2:
