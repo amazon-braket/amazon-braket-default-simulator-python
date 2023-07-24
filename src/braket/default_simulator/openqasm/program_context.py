@@ -770,7 +770,7 @@ class AbstractProgramContext(ABC):
         )
 
     def handle_parameter_value(self, value: Any) -> Any:
-        """Convert parameter value, default conversion is noop."""
+        """Convert parameter value to required format. Default conversion is noop."""
         return value
 
     @abstractmethod
