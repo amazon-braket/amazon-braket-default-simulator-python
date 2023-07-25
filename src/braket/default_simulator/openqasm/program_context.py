@@ -771,7 +771,10 @@ class AbstractProgramContext(ABC):
         )
 
     def handle_parameter_value(self, value: Union[float, Expr]) -> Any:
-        """Convert parameter value to required format. Default conversion is noop."""
+        """Convert parameter value to required format. Default conversion is noop.
+        Args:
+            value (Union[float, Expr]): Value of the parameter
+        """
         return value
 
     @abstractmethod
