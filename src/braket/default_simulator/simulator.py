@@ -281,7 +281,7 @@ class BaseLocalSimulator(BraketSimulator):
         for instruction in circuit.instructions:
             possible_parameters = "_angle", "_angle_1", "_angle_2"
             for parameter_name in possible_parameters:
-                param = getattr(instruction, parameter_name)
+                param = getattr(instruction, parameter_name, None)
                 if param is not None:
                     try:
                         float(param)
