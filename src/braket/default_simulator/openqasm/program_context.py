@@ -17,6 +17,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
+from sympy import Expr
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
 from braket.default_simulator.noise_operations import (
@@ -769,7 +770,7 @@ class AbstractProgramContext(ABC):
             gate_name, target, params, ctrl_modifiers=ctrl_modifiers, power=power
         )
 
-    def handle_parameter_value(self, value: Any) -> Any:
+    def handle_parameter_value(self, value: Union[float, Expr]) -> Any:
         """Convert parameter value to required format. Default conversion is noop."""
         return value
 
