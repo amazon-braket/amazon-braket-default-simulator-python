@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.19.0 (2023-07-25)
+
+### Features
+
+ * Support symbolic expressions
+
 ## v1.18.3 (2023-07-24)
 
 ### Bug Fixes and Other Changes

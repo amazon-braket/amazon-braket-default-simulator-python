@@ -19,8 +19,8 @@ from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
 from braket.ir.openqasm.program_v1 import io_type
+from sympy import Symbol
 
-from ..gate_operations import BRAKET_GATES
 from ._helpers.arrays import (
     convert_range_def_to_range,
     create_empty_array,
@@ -95,6 +95,7 @@ from .parser.openqasm_ast import (
     ReturnStatement,
     SizeOf,
     SubroutineDefinition,
+    SymbolLiteral,
     UnaryExpression,
     WhileLoop,
 )
@@ -188,11 +189,14 @@ class Interpreter:
             raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
             if node.identifier.name not in self.context.inputs:
-                self.context.add_parameter(node.identifier.name, node.type)
+                # previously raised a NameError
+                init_value = wrap_value_into_literal(Symbol(node.identifier.name))
+                node_type = SymbolLiteral
             else:
                 init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
-                declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
-                self.visit(declaration)
+                node_type = node.type
+            declaration = ClassicalDeclaration(node_type, node.identifier, init_value)
+            self.visit(declaration)
 
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
@@ -484,6 +488,8 @@ class Interpreter:
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
+        elif isinstance(rvalue, SymbolLiteral):
+            pass
         else:
             rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)
