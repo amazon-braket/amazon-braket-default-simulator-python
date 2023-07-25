@@ -268,6 +268,27 @@ class BaseLocalSimulator(BraketSimulator):
                 'LocalSimulator("default") for a better user experience.'
             )
 
+    def _validate_input_provided(self, circuit: Circuit) -> None:
+        """
+        Validate that requested circuit has all input parameters provided.
+
+        Args:
+            circuit (Circuit): IR for the simulator.
+
+        Raises:
+            NameError: If any the specified input parameters are not provided
+        """
+        for instruction in circuit.instructions:
+            possible_parameters = "_angle", "_angle_1", "_angle_2"
+            for parameter_name in possible_parameters:
+                param = getattr(instruction, parameter_name, None)
+                if param is not None:
+                    try:
+                        float(param)
+                    except TypeError:
+                        missing_input = param.free_symbols.pop()
+                        raise NameError(f"Missing input variable '{missing_input}'.")
+
     @staticmethod
     def _get_measured_qubits(qubit_count: int) -> List[int]:
         return list(range(qubit_count))
@@ -361,6 +382,7 @@ class BaseLocalSimulator(BraketSimulator):
             circuit,
             device_action_type=DeviceActionType.OPENQASM,
         )
+        self._validate_input_provided(circuit)
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit.results, qubit_count)
 
         operations = circuit.instructions

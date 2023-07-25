@@ -671,19 +671,6 @@ class AbstractProgramContext(ABC):
             bool: True if the gate is a built-in gate, False otherwise.
         """
 
-    def add_parameter(
-        self, name: str, type: Union[ClassicalType, Type[LiteralType], Type[Identifier]]
-    ):
-        """
-        Add a parameter.
-        This method allows you to add a variable which does not contain any value.
-
-        Parameters:
-            name (str): The name of the parameter to be added.
-            type (Union[ClassicalType, Type[LiteralType], Type[Identifier]]): The type of the parameter.
-        """
-        raise NotImplementedError
-
     def add_subroutine(self, name: str, definition: SubroutineDefinition) -> None:
         """
         Add a subroutine definition
@@ -761,9 +748,7 @@ class AbstractProgramContext(ABC):
             modifiers (Optional[List[QuantumGateModifier]]): The list of gate modifiers (optional).
         """
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
-        params = np.array(
-            [param.value if hasattr(param, "value") else param for param in parameters]
-        )
+        params = np.array([self.handle_parameter_value(param.value) for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         power = 1
         if num_inv_modifiers % 2:
@@ -783,6 +768,10 @@ class AbstractProgramContext(ABC):
         self.add_gate_instruction(
             gate_name, target, params, ctrl_modifiers=ctrl_modifiers, power=power
         )
+
+    def handle_parameter_value(self, value: Any) -> Any:
+        """Convert parameter value to required format. Default conversion is noop."""
+        return value
 
     @abstractmethod
     def add_gate_instruction(
@@ -894,8 +883,3 @@ class ProgramContext(AbstractProgramContext):
 
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
-
-    def add_parameter(
-        self, name: str, type: Union[ClassicalType, Type[LiteralType], Type[Identifier]]
-    ):
-        raise NameError(f"Missing input variable '{name}'.")
