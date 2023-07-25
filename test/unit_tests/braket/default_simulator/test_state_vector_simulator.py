@@ -1241,3 +1241,18 @@ def test_adjoint_gradient_pragma_sv1():
 
     with pytest.raises(TypeError, match=ag_not_supported):
         simulator.run(prog, shots=0)
+
+
+def test_missing_input():
+    qasm = """
+    input int[8] in_int;
+    int[8] doubled;
+
+    doubled = in_int * 2;
+    qubit q;
+    rx(doubled) q;
+    """
+    simulator = StateVectorSimulator()
+    missing_input = "Missing input variable 'in_int'."
+    with pytest.raises(NameError, match=missing_input):
+        simulator.run(OpenQASMProgram(source=qasm), shots=1000)

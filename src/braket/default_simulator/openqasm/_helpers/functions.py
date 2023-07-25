@@ -13,6 +13,7 @@ from ..parser.openqasm_ast import (
     BooleanLiteral,
     FloatLiteral,
     IntegerLiteral,
+    SymbolLiteral,
     UintType,
     UnaryOperator,
 )
@@ -51,6 +52,15 @@ operator_maps = {
         getattr(BinaryOperator, "<="): lambda x, y: BooleanLiteral(x.value <= y.value),
         getattr(BinaryOperator, "=="): lambda x, y: BooleanLiteral(x.value == y.value),
         getattr(BinaryOperator, "!="): lambda x, y: BooleanLiteral(x.value != y.value),
+    },
+    SymbolLiteral: {
+        # returns real
+        getattr(BinaryOperator, "+"): lambda x, y: SymbolLiteral(x.value + y.value),
+        getattr(BinaryOperator, "-"): lambda x, y: SymbolLiteral(x.value - y.value),
+        getattr(BinaryOperator, "*"): lambda x, y: SymbolLiteral(x.value * y.value),
+        getattr(BinaryOperator, "/"): lambda x, y: SymbolLiteral(x.value / y.value),
+        getattr(BinaryOperator, "**"): lambda x, y: SymbolLiteral(x.value**y.value),
+        getattr(UnaryOperator, "-"): lambda x: SymbolLiteral(-x.value),
     },
     BooleanLiteral: {
         # returns bool
@@ -116,6 +126,7 @@ type_hierarchy = (
     IntegerLiteral,
     FloatLiteral,
     ArrayLiteral,
+    SymbolLiteral,
 )
 
 constant_map = {
