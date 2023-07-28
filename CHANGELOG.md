@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.19.0.post0 (2023-07-28)
+
+### Documentation Changes
+
+ * update type annotation for handle_parameter_value
+
 ## v1.19.0 (2023-07-25)
 
 ### Features
