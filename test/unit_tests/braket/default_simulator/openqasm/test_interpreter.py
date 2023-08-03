@@ -44,6 +44,7 @@ from braket.default_simulator.openqasm._helpers.casting import (
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    AngleType,
     ArrayLiteral,
     ArrayType,
     BitstringLiteral,
@@ -191,6 +192,31 @@ def test_float_declaration():
     assert context.get_value("neg") == FloatLiteral(-4.2)
     assert context.get_value("precise") == FloatLiteral(np.pi)
     assert context.get_value("unsized") == FloatLiteral(np.pi)
+
+
+def test_angle_declaration():
+    qasm = """
+    angle uninitialized;
+    angle pos = 3.5 * π;
+    angle neg = -4.5 * π;
+    """
+    context = Interpreter().run(qasm)
+
+    assert context.get_type("uninitialized") == AngleType(None)
+    assert context.get_type("pos") == AngleType(None)
+    assert context.get_type("neg") == AngleType(None)
+
+    assert context.get_value("uninitialized") is None
+    assert context.get_value("pos") == FloatLiteral(1.5 * np.pi)
+    assert context.get_value("neg") == FloatLiteral(1.5 * np.pi)
+
+
+def test_fixed_bit_angle_declaration():
+    qasm = """
+    angle[16] pos = 10;
+    """
+    with pytest.raises(ValueError):
+        Interpreter().run(qasm)
 
 
 def test_constant_declaration():

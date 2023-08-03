@@ -100,7 +100,7 @@ from .parser.openqasm_ast import (
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
-from .program_context import ProgramContext
+from .program_context import AbstractProgramContext, ProgramContext
 
 
 class Interpreter:
@@ -114,7 +114,9 @@ class Interpreter:
     the ProgramContext object, which can be used for debugging or other customizability.
     """
 
-    def __init__(self, context: Optional[ProgramContext] = None, logger: Optional[Logger] = None):
+    def __init__(
+        self, context: Optional[AbstractProgramContext] = None, logger: Optional[Logger] = None
+    ):
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
