@@ -15,14 +15,16 @@
 Evaluating expressions
 """
 import math
-from typing import Type
+from typing import Optional, Type, Union
 
 import numpy as np
+import sympy
 
 from ..parser.openqasm_ast import (
     ArrayLiteral,
     AssignmentOperator,
     BinaryOperator,
+    BitstringLiteral,
     BooleanLiteral,
     FloatLiteral,
     IntegerLiteral,
@@ -142,55 +144,156 @@ type_hierarchy = (
     SymbolLiteral,
 )
 
-constant_map = {
-    "pi": np.pi,
-    "tau": 2 * np.pi,
-    "euler": np.e,
-}
-
-
 builtin_constants = {
-    "pi": FloatLiteral(np.pi),
-    "π": FloatLiteral(np.pi),
-    "tau": FloatLiteral(2 * np.pi),
-    "τ": FloatLiteral(2 * np.pi),
-    "euler": FloatLiteral(np.e),
-    "ℇ": FloatLiteral(np.e),
+    "pi": SymbolLiteral(sympy.pi),
+    "π": SymbolLiteral(sympy.pi),
+    "tau": SymbolLiteral(2 * sympy.pi),
+    "τ": SymbolLiteral(2 * sympy.pi),
+    "euler": SymbolLiteral(sympy.E),
+    "ℇ": SymbolLiteral(sympy.E),
 }
 
 
-builtin_functions = {
-    "sizeof": lambda array, dim: (
-        IntegerLiteral(len(array.values))
-        if dim is None or dim.value == 0
-        else builtin_functions["sizeof"](array.values[0], IntegerLiteral(dim.value - 1))
-    ),
-    "arccos": lambda x: FloatLiteral(np.arccos(x.value)),
-    "arcsin": lambda x: FloatLiteral(np.arcsin(x.value)),
-    "arctan": lambda x: FloatLiteral(np.arctan(x.value)),
-    "ceiling": lambda x: IntegerLiteral(math.ceil(x.value)),
-    "cos": lambda x: FloatLiteral(np.cos(x.value)),
-    "exp": lambda x: FloatLiteral(np.exp(x.value)),
-    "floor": lambda x: IntegerLiteral(math.floor(x.value)),
-    "log": lambda x: FloatLiteral(np.log(x.value)),
-    "mod": lambda x, y: (
-        IntegerLiteral(x.value % y.value)
-        if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
-        else FloatLiteral(x.value % y.value)
-    ),
-    "popcount": lambda x: IntegerLiteral(np.binary_repr(cast_to(UintType(), x).value).count("1")),
-    # parser gets confused by pow, mistaking for quantum modifier
-    "pow": lambda x, y: (
-        IntegerLiteral(x.value**y.value)
-        if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
-        else FloatLiteral(x.value**y.value)
-    ),
-    "rotl": lambda x: NotImplementedError(),
-    "rotr": lambda x: NotImplementedError(),
-    "sin": lambda x: FloatLiteral(np.sin(x.value)),
-    "sqrt": lambda x: FloatLiteral(np.sqrt(x.value)),
-    "tan": lambda x: FloatLiteral(np.tan(x.value)),
-}
+class BuiltinFunctions:
+    @staticmethod
+    def sizeof(array: ArrayLiteral, dim: Optional[IntegerLiteral] = None) -> IntegerLiteral:
+        return (
+            IntegerLiteral(len(array.values))
+            if dim is None or dim.value == 0
+            else BuiltinFunctions.sizeof(array.values[0], IntegerLiteral(dim.value - 1))
+        )
+
+    @staticmethod
+    def arccos(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.acos(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.arccos(x.value))
+        )
+
+    @staticmethod
+    def arcsin(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.asin(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.arcsin(x.value))
+        )
+
+    @staticmethod
+    def arctan(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.atan(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.arctan(x.value))
+        )
+
+    @staticmethod
+    def ceiling(x: Union[FloatLiteral, SymbolLiteral]) -> Union[IntegerLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.ceiling(x.value))
+            if isinstance(x, SymbolLiteral)
+            else IntegerLiteral(math.ceil(x.value))
+        )
+
+    @staticmethod
+    def cos(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.cos(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.cos(x.value))
+        )
+
+    @staticmethod
+    def exp(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.exp(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.exp(x.value))
+        )
+
+    @staticmethod
+    def floor(x: Union[FloatLiteral, SymbolLiteral]) -> Union[IntegerLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.floor(x.value))
+            if isinstance(x, SymbolLiteral)
+            else IntegerLiteral(np.floor(x.value))
+        )
+
+    @staticmethod
+    def log(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.log(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.log(x.value))
+        )
+
+    @staticmethod
+    def mod(
+        x: Union[IntegerLiteral, FloatLiteral, SymbolLiteral],
+        y: Union[IntegerLiteral, FloatLiteral, SymbolLiteral],
+    ) -> Union[IntegerLiteral, FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(x.value % y.value)
+            if isinstance(x, SymbolLiteral) or isinstance(y, SymbolLiteral)
+            else (
+                IntegerLiteral(x.value % y.value)
+                if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
+                else FloatLiteral(x.value % y.value)
+            )
+        )
+
+    @staticmethod
+    def popcount(x: Union[IntegerLiteral, BitstringLiteral, ArrayLiteral]) -> IntegerLiteral:
+        # does not support symbols or expressions
+        return IntegerLiteral(np.binary_repr(cast_to(UintType(), x).value).count("1"))
+
+    @staticmethod
+    def pow(
+        x: Union[IntegerLiteral, FloatLiteral, SymbolLiteral],
+        y: Union[IntegerLiteral, FloatLiteral, SymbolLiteral],
+    ) -> Union[IntegerLiteral, FloatLiteral, SymbolLiteral]:
+        # parser gets confused by pow, mistaking for quantum modifier
+        return (
+            SymbolLiteral(x.value**y.value)
+            if isinstance(x, SymbolLiteral) or isinstance(y, SymbolLiteral)
+            else (
+                IntegerLiteral(x.value**y.value)
+                if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
+                else FloatLiteral(x.value**y.value)
+            )
+        )
+
+    @staticmethod
+    def rotl(x, y):
+        raise NotImplementedError
+
+    @staticmethod
+    def rotr(x, y):
+        raise NotImplementedError
+
+    @staticmethod
+    def sin(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.sin(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.sin(x.value))
+        )
+
+    @staticmethod
+    def sqrt(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.sqrt(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.sqrt(x.value))
+        )
+
+    @staticmethod
+    def tan(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+        return (
+            SymbolLiteral(sympy.tan(x.value))
+            if isinstance(x, SymbolLiteral)
+            else FloatLiteral(np.tan(x.value))
+        )
 
 
 def resolve_type_hierarchy(x: LiteralType, y: LiteralType) -> Type[LiteralType]:

@@ -18,6 +18,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
@@ -59,6 +60,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     IntType,
     QuantumGate,
     QuantumGateDefinition,
+    SymbolLiteral,
     UintType,
 )
 from braket.default_simulator.openqasm.program_context import QubitTable
@@ -709,7 +711,7 @@ def test_gate_def():
                 modifiers=[],
                 name=Identifier("U"),
                 arguments=[
-                    FloatLiteral(np.pi),
+                    SymbolLiteral(sympy.pi),
                     IntegerLiteral(0),
                     FloatLiteral(np.pi),
                 ],
@@ -726,7 +728,7 @@ def test_gate_def():
                 modifiers=[],
                 name=Identifier("U"),
                 arguments=[
-                    FloatLiteral(np.pi),
+                    SymbolLiteral(sympy.pi),
                     IntegerLiteral(0),
                     Identifier("mp"),
                 ],
@@ -743,7 +745,7 @@ def test_gate_def():
                 modifiers=[],
                 name=Identifier("U"),
                 arguments=[
-                    FloatLiteral(np.pi),
+                    SymbolLiteral(sympy.pi),
                     IntegerLiteral(0),
                     FloatLiteral(np.pi),
                 ],
@@ -753,7 +755,7 @@ def test_gate_def():
                 modifiers=[],
                 name=Identifier("U"),
                 arguments=[
-                    FloatLiteral(np.pi),
+                    SymbolLiteral(sympy.pi),
                     IntegerLiteral(0),
                     Identifier("p"),
                 ],
@@ -763,7 +765,7 @@ def test_gate_def():
                 modifiers=[],
                 name=Identifier("U"),
                 arguments=[
-                    FloatLiteral(np.pi),
+                    SymbolLiteral(sympy.pi),
                     IntegerLiteral(0),
                     FloatLiteral(np.pi),
                 ],
@@ -1309,7 +1311,7 @@ def test_resolve_result_type():
     int_not_bool = t + 1;
     """
     context = Interpreter().run(qasm)
-    assert context.get_value("small_pi") == FloatLiteral(3.140625)
+    assert context.get_value("small_pi") == SymbolLiteral(sympy.pi)
     assert context.get_value("one_point_five") == FloatLiteral(1.5)
     assert context.get_value("int_not_bool") == IntegerLiteral(2)
 
@@ -1413,7 +1415,7 @@ def test_missing_input():
             f"{type(instruction).__name__}({getattr(instruction, '_angle', None)}) "
             f"{', '.join(map(str, instruction._targets))}"
         )
-    assert circuit.instructions == [RotX([0], 2 * Symbol("in_int"))]
+    assert circuit.instructions == [RotX([0], 2.0 * Symbol("in_int"))]
 
 
 @pytest.mark.parametrize("bad_index", ("[0:1][0][0]", "[0][0][1]", "[0, 1][0]", "[0:1, 1][0]"))
@@ -1822,6 +1824,49 @@ def test_builtin_functions():
     assert context.get_value("sin_result") == FloatLiteral(np.sin(1))
     assert context.get_value("sqrt_result") == FloatLiteral(np.sqrt(2))
     assert context.get_value("tan_result") == FloatLiteral(np.tan(1))
+
+
+def test_builtin_functions_symbolic():
+    qasm = """
+        input float x;
+        input float y;
+        
+        rx(x) $0;
+        rx(arccos(x)) $0;
+        rx(arcsin(x)) $0;
+        rx(arctan(x)) $0;
+        rx(ceiling(x)) $0;
+        rx(cos(x)) $0;
+        rx(exp(x)) $0;
+        rx(floor(x)) $0;
+        rx(log(x)) $0;
+        rx(mod(x, y)) $0;
+        rx(sin(x)) $0;
+        rx(sqrt(x)) $0;
+        rx(tan(x)) $0;
+        """
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit == Circuit(
+        [
+            RotX((0,), Symbol("x")),
+            RotX((0,), sympy.acos(Symbol("x"))),
+            RotX((0,), sympy.asin(Symbol("x"))),
+            RotX((0,), sympy.atan(Symbol("x"))),
+            RotX((0,), sympy.ceiling(Symbol("x"))),
+            RotX((0,), sympy.cos(Symbol("x"))),
+            RotX((0,), sympy.exp(Symbol("x"))),
+            RotX((0,), sympy.floor(Symbol("x"))),
+            RotX((0,), sympy.log(Symbol("x"))),
+            RotX((0,), Symbol("x") % Symbol("y")),
+            RotX((0,), sympy.sin(Symbol("x"))),
+            # sympy evalf changes sqrt to power in handle_parameter_value
+            RotX((0,), Symbol("x") ** 0.5),
+            RotX((0,), sympy.tan(Symbol("x"))),
+        ]
+    )
+    with_inputs = Interpreter().build_circuit(qasm, inputs={"x": 1, "y": 2})
+    simulation = StateVectorSimulation(1, 1, 1)
+    simulation.evolve(with_inputs.instructions)
 
 
 def test_noise():

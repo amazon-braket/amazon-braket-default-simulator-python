@@ -775,6 +775,8 @@ class AbstractProgramContext(ABC):
         Args:
             value (Union[float, Expr]): Value of the parameter
         """
+        if isinstance(value, Expr):
+            return value.evalf()
         return value
 
     @abstractmethod
