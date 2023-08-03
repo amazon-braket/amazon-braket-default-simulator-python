@@ -14,10 +14,7 @@
 """
 Evaluating expressions
 """
-import math
 from typing import Type
-
-import numpy as np
 
 from ..parser.openqasm_ast import (
     ArrayLiteral,
@@ -27,10 +24,10 @@ from ..parser.openqasm_ast import (
     FloatLiteral,
     IntegerLiteral,
     SymbolLiteral,
-    UintType,
     UnaryOperator,
 )
-from .casting import LiteralType, cast_to, convert_bool_array_to_string
+from .builtins import BuiltinConstants, BuiltinFunctions
+from .casting import LiteralType, convert_bool_array_to_string
 
 operator_maps = {
     IntegerLiteral: {
@@ -142,54 +139,21 @@ type_hierarchy = (
     SymbolLiteral,
 )
 
-constant_map = {
-    "pi": np.pi,
-    "tau": 2 * np.pi,
-    "euler": np.e,
-}
-
 
 builtin_constants = {
-    "pi": FloatLiteral(np.pi),
-    "π": FloatLiteral(np.pi),
-    "tau": FloatLiteral(2 * np.pi),
-    "τ": FloatLiteral(2 * np.pi),
-    "euler": FloatLiteral(np.e),
-    "ℇ": FloatLiteral(np.e),
+    "pi": BuiltinConstants.PI.value,
+    "π": BuiltinConstants.PI.value,
+    "tau": BuiltinConstants.TAU.value,
+    "τ": BuiltinConstants.TAU.value,
+    "euler": BuiltinConstants.E.value,
+    "ℇ": BuiltinConstants.E.value,
 }
 
 
 builtin_functions = {
-    "sizeof": lambda array, dim: (
-        IntegerLiteral(len(array.values))
-        if dim is None or dim.value == 0
-        else builtin_functions["sizeof"](array.values[0], IntegerLiteral(dim.value - 1))
-    ),
-    "arccos": lambda x: FloatLiteral(np.arccos(x.value)),
-    "arcsin": lambda x: FloatLiteral(np.arcsin(x.value)),
-    "arctan": lambda x: FloatLiteral(np.arctan(x.value)),
-    "ceiling": lambda x: IntegerLiteral(math.ceil(x.value)),
-    "cos": lambda x: FloatLiteral(np.cos(x.value)),
-    "exp": lambda x: FloatLiteral(np.exp(x.value)),
-    "floor": lambda x: IntegerLiteral(math.floor(x.value)),
-    "log": lambda x: FloatLiteral(np.log(x.value)),
-    "mod": lambda x, y: (
-        IntegerLiteral(x.value % y.value)
-        if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
-        else FloatLiteral(x.value % y.value)
-    ),
-    "popcount": lambda x: IntegerLiteral(np.binary_repr(cast_to(UintType(), x).value).count("1")),
-    # parser gets confused by pow, mistaking for quantum modifier
-    "pow": lambda x, y: (
-        IntegerLiteral(x.value**y.value)
-        if isinstance(x, IntegerLiteral) and isinstance(y, IntegerLiteral)
-        else FloatLiteral(x.value**y.value)
-    ),
-    "rotl": lambda x: NotImplementedError(),
-    "rotr": lambda x: NotImplementedError(),
-    "sin": lambda x: FloatLiteral(np.sin(x.value)),
-    "sqrt": lambda x: FloatLiteral(np.sqrt(x.value)),
-    "tan": lambda x: FloatLiteral(np.tan(x.value)),
+    function_name: getattr(BuiltinFunctions, function_name)
+    for function_name in dir(BuiltinFunctions)
+    if not function_name.startswith("__")
 }
 
 
