@@ -196,25 +196,30 @@ def test_float_declaration():
 
 def test_angle_declaration():
     qasm = """
-    angle[16] uninitialized;
-    angle[32] pos = 10;
-    angle[64] neg = -4.2;
-    angle[64] precise = π;
-    angle unsized = π;
+    angle uninitialized;
+    angle pos = 10;
+    angle neg = -4.2;
+    angle precise = π;
     """
     context = Interpreter().run(qasm)
 
-    assert context.get_type("uninitialized") == AngleType(IntegerLiteral(16))
-    assert context.get_type("pos") == AngleType(IntegerLiteral(32))
-    assert context.get_type("neg") == AngleType(IntegerLiteral(64))
-    assert context.get_type("precise") == AngleType(IntegerLiteral(64))
-    assert context.get_type("unsized") == AngleType(None)
+    assert context.get_type("uninitialized") == AngleType(None)
+    assert context.get_type("pos") == AngleType(None)
+    assert context.get_type("neg") == AngleType(None)
+    assert context.get_type("precise") == AngleType(None)
 
     assert context.get_value("uninitialized") is None
     assert context.get_value("pos") == FloatLiteral(10)
     assert context.get_value("neg") == FloatLiteral(-4.2)
     assert context.get_value("precise") == FloatLiteral(np.pi)
-    assert context.get_value("unsized") == FloatLiteral(np.pi)
+
+
+def test_fixed_bit_angle_declaration():
+    qasm = """
+    angle[16] pos = 10;
+    """
+    with pytest.raises(ValueError):
+        Interpreter().run(qasm)
 
 
 def test_constant_declaration():

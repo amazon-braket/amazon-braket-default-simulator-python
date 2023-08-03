@@ -113,17 +113,23 @@ def _(into: UintType, variable: LiteralType) -> IntegerLiteral:
     return IntegerLiteral(value)
 
 
-@cast_to.register(FloatType)
-@cast_to.register(AngleType)
-def _(into, variable: LiteralType) -> FloatLiteral:
+@cast_to.register
+def _(into: FloatType, variable: LiteralType) -> FloatLiteral:
     """Cast to float"""
     if into.size is None:
-        value = float(variable.value)
-    else:
-        if into.size.value not in (16, 32, 64):
-            raise ValueError("Float size must be one of {16, 32, 64}.")
-        value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
+        return FloatLiteral(float(variable.value))
+    if into.size.value not in (16, 32, 64):
+        raise ValueError("Float size must be one of {16, 32, 64}.")
+    value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
     return FloatLiteral(value)
+
+
+@cast_to.register
+def _(into: AngleType, variable: LiteralType) -> FloatLiteral:
+    """Cast angle to float"""
+    if into.size is None:
+        return FloatLiteral(float(variable.value))
+    raise ValueError("Fixed-bit angles are not supported.")
 
 
 @cast_to.register
