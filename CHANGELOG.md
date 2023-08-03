@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.19.1 (2023-08-03)
+
+### Bug Fixes and Other Changes
+
+ * Support `angle` declarations
+
 ## v1.19.0.post0 (2023-07-28)
 
 ### Documentation Changes
