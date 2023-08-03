@@ -199,7 +199,6 @@ def test_angle_declaration():
     angle uninitialized;
     angle pos = 3.5 * π;
     angle neg = -4.5 * π;
-    angle precise = π;
     """
     context = Interpreter().run(qasm)
 
