@@ -128,7 +128,7 @@ def _(into: FloatType, variable: LiteralType) -> FloatLiteral:
 def _(into: AngleType, variable: LiteralType) -> FloatLiteral:
     """Cast angle to float"""
     if into.size is None:
-        return FloatLiteral(float(variable.value))
+        return FloatLiteral(float(variable.value) % (2 * np.pi))
     raise ValueError("Fixed-bit angles are not supported.")
 
 
