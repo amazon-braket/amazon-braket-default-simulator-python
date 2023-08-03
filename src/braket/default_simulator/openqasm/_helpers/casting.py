@@ -1,3 +1,16 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import warnings
 from copy import deepcopy
 from functools import singledispatch
@@ -7,6 +20,7 @@ import numpy as np
 from sympy import Symbol
 
 from ..parser.openqasm_ast import (
+    AngleType,
     ArrayLiteral,
     ArrayType,
     BitstringLiteral,
@@ -99,8 +113,9 @@ def _(into: UintType, variable: LiteralType) -> IntegerLiteral:
     return IntegerLiteral(value)
 
 
-@cast_to.register
-def _(into: FloatType, variable: LiteralType) -> FloatLiteral:
+@cast_to.register(FloatType)
+@cast_to.register(AngleType)
+def _(into, variable: LiteralType) -> FloatLiteral:
     """Cast to float"""
     if into.size is None:
         value = float(variable.value)
