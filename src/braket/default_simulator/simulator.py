@@ -87,6 +87,9 @@ class BaseLocalSimulator(BraketSimulator):
             return self.run_openqasm(circuit_ir, *args, **kwargs)
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
+    def execute_manager(self):
+        raise NotImplementedError
+
     @property
     @abstractmethod
     def properties(self) -> DeviceCapabilities:
