@@ -35,8 +35,8 @@ from ._helpers.casting import (
     wrap_value_into_literal,
 )
 from ._helpers.functions import (
-    BuiltinFunctions,
     builtin_constants,
+    builtin_functions,
     evaluate_binary_expression,
     evaluate_unary_expression,
     get_operator_of_assignment_operator,
@@ -577,8 +577,8 @@ class Interpreter:
         self._uses_advanced_language_features = True
         function_name = node.name.name
         arguments = self.visit(node.arguments)
-        if function_name in dir(BuiltinFunctions) and not function_name.startswith("__"):
-            return getattr(BuiltinFunctions, function_name)(*arguments)
+        if function_name in builtin_functions:
+            return builtin_functions[function_name](*arguments)
         function_def = self.context.get_subroutine_definition(function_name)
         with self.context.enter_scope():
             for arg_passed, arg_defined in zip(arguments, function_def.arguments):
@@ -626,7 +626,7 @@ class Interpreter:
         self._uses_advanced_language_features = True
         target = self.visit(node.target)
         index = self.visit(node.index)
-        return BuiltinFunctions.sizeof(target, index)
+        return builtin_functions["sizeof"](target, index)
 
     def handle_builtin_gate(
         self,
