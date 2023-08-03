@@ -17,6 +17,7 @@ from functools import singledispatch
 from typing import Any, Iterable, Type, Union
 
 import numpy as np
+import sympy
 from sympy import Symbol
 
 from ..parser.openqasm_ast import (
@@ -127,10 +128,10 @@ def _(into: FloatType, variable: LiteralType) -> FloatLiteral:
 
 
 @cast_to.register
-def _(into: AngleType, variable: LiteralType) -> FloatLiteral:
+def _(into: AngleType, variable: LiteralType) -> SymbolLiteral:
     """Cast angle to float"""
     if into.size is None:
-        return FloatLiteral(float(variable.value) % (2 * np.pi))
+        return SymbolLiteral(variable.value % (2 * sympy.pi))
     raise ValueError("Fixed-bit angles are not supported.")
 
 

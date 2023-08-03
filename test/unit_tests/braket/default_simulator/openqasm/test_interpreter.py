@@ -209,8 +209,8 @@ def test_angle_declaration():
     assert context.get_type("neg") == AngleType(None)
 
     assert context.get_value("uninitialized") is None
-    assert context.get_value("pos") == FloatLiteral(1.5 * np.pi)
-    assert context.get_value("neg") == FloatLiteral(1.5 * np.pi)
+    assert context.get_value("pos") == SymbolLiteral(1.5 * sympy.pi)
+    assert context.get_value("neg") == SymbolLiteral(1.5 * sympy.pi)
 
 
 def test_fixed_bit_angle_declaration():
