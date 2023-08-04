@@ -60,7 +60,40 @@ _NOISE_INSTRUCTIONS = frozenset(
 
 
 class OpenQASMSimulator(BraketSimulator, ABC):
-    """A simulator that can run OpenQASM programs."""
+    """An abstract simulator that runs an OpenQASM 3 program.
+
+    Translation of individual operations and observables from OpenQASM to the desired format
+    is handled by implementing the `AbstractProgramContext` interface. This implementation is
+    exposed by implementing the `new_program_context` method, which enables the `parse_program`
+    method to translate an entire OpenQASM program:
+
+    >>> class MyProgramContext(AbstractProgramContext):
+    >>>     def __init__(self):
+    >>>         ...
+    >>>
+    >>>     def add_gate_instruction(self, gate_name: str, target: Tuple[int], ...):
+    >>>         ...
+    >>>
+    >>>     # Implement other MyProgramContext interface methods
+    >>>
+    >>> class MySimulator(OpenQASMSimulator):
+    >>>     def new_program_context(self) -> AbstractProgramContext:
+    >>>         return MyProgramContext()
+    >>>
+    >>>     # Implement other BraketSimulator interface methods
+    >>>
+    >>> parsed = MySimulator().parse_program(program)
+
+    To register a simulator so the Amazon Braket SDK recognizes its name,
+    the name and class must be added as an entry point for "braket.simulators".
+    This is done by adding an entry to entry_points in the simulator package's setup.py:
+
+    >>> entry_points = {
+    >>>     "braket.simulators": [
+    >>>         "backend_name = <backend_class>"
+    >>>     ]
+    >>> }
+    """
 
     @abstractmethod
     def new_program_context(self) -> AbstractProgramContext:
