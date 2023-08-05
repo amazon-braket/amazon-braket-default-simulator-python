@@ -126,6 +126,12 @@ class Interpreter:
         self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
     ) -> Circuit:
         """Interpret an OpenQASM program and build a Circuit IR."""
+        return self.run(source, inputs, is_file).circuit
+
+    def run(
+        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+    ) -> ProgramContext:
+        """Interpret an OpenQASM program and return the program state"""
         if inputs:
             self.context.load_inputs(inputs)
 
@@ -141,13 +147,6 @@ class Interpreter:
                 "This program uses OpenQASM language features that may "
                 "not be supported on QPUs or on-demand simulators."
             )
-        return self.context.circuit
-
-    def run(
-        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
-    ) -> ProgramContext:
-        """Interpret an OpenQASM program and return the program state"""
-        self.build_circuit(source, inputs, is_file)
         return self.context
 
     @singledispatchmethod
