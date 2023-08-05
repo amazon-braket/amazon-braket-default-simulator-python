@@ -64,7 +64,7 @@ class OpenQASMSimulator(BraketSimulator, ABC):
 
     Translation of individual operations and observables from OpenQASM to the desired format
     is handled by implementing the `AbstractProgramContext` interface. This implementation is
-    exposed by implementing the `new_program_context` method, which enables the `parse_program`
+    exposed by implementing the `create_program_context` method, which enables the `parse_program`
     method to translate an entire OpenQASM program:
 
     >>> class MyProgramContext(AbstractProgramContext):
@@ -77,7 +77,7 @@ class OpenQASMSimulator(BraketSimulator, ABC):
     >>>     # Implement other MyProgramContext interface methods
     >>>
     >>> class MySimulator(OpenQASMSimulator):
-    >>>     def new_program_context(self) -> AbstractProgramContext:
+    >>>     def create_program_context(self) -> AbstractProgramContext:
     >>>         return MyProgramContext()
     >>>
     >>>     # Implement other BraketSimulator interface methods
@@ -96,7 +96,7 @@ class OpenQASMSimulator(BraketSimulator, ABC):
     """
 
     @abstractmethod
-    def new_program_context(self) -> AbstractProgramContext:
+    def create_program_context(self) -> AbstractProgramContext:
         """Creates a new program context to handle translation of OpenQASM into a desired format."""
 
     def parse_program(self, program: OpenQASMProgram) -> AbstractProgramContext:
@@ -109,7 +109,7 @@ class OpenQASMSimulator(BraketSimulator, ABC):
             AbstractProgramContext: The program context after the program has been parsed.
         """
         is_file = program.source.endswith(".qasm")
-        interpreter = Interpreter(self.new_program_context())
+        interpreter = Interpreter(self.create_program_context())
         return interpreter.run(
             source=program.source,
             inputs=program.inputs,
@@ -147,7 +147,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return self.run_openqasm(circuit_ir, *args, **kwargs)
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
-    def new_program_context(self) -> AbstractProgramContext:
+    def create_program_context(self) -> AbstractProgramContext:
         return ProgramContext()
 
     @abstractmethod
