@@ -37,9 +37,6 @@ class LocalQuantumExecuteManager(QuantumExecuteManager):
     ) -> Union[GateModelTaskResult, AnnealingTaskResult, AnalogHamiltonianSimulationTaskResult,]:
         return self.simulator.run(*self.args, **self.kwargs)
 
-    def id(self) -> str:
-        raise NotImplementedError
-
     def cancel(self) -> None:
         """Cancel the quantum task."""
         raise NotImplementedError("LocalQuantumTask does not support cancelling")

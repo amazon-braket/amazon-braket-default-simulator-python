@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Union
+from typing import Union
 
 from braket.task_result import (
     AnalogHamiltonianSimulationTaskResult,
@@ -45,17 +45,4 @@ class QuantumExecuteManager(ABC):
         Returns:
             Union[GateModelQuantumTaskResult, AnnealingQuantumTaskResult, PhotonicModelQuantumTaskResult]: # noqa
             Get the quantum task result.
-        """
-
-    def metadata(self, use_cached_value: bool = False) -> Dict[str, Any]:
-        """
-        Get task metadata.
-
-        Args:
-            use_cached_value (bool): If True, uses the value retrieved from the previous
-                request. Default is False.
-
-        Returns:
-            Dict[str, Any]: The metadata regarding the task. If `use_cached_value` is True,
-            then the value retrieved from the most recent request is used.
         """
