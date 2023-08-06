@@ -1,12 +1,27 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import warnings
 from copy import deepcopy
 from functools import singledispatch
 from typing import Any, Iterable, Type, Union
 
 import numpy as np
+import sympy
 from sympy import Symbol
 
 from ..parser.openqasm_ast import (
+    AngleType,
     ArrayLiteral,
     ArrayType,
     BitstringLiteral,
@@ -102,13 +117,22 @@ def _(into: UintType, variable: LiteralType) -> IntegerLiteral:
 @cast_to.register
 def _(into: FloatType, variable: LiteralType) -> FloatLiteral:
     """Cast to float"""
+    value = variable.value.evalf() if isinstance(variable, SymbolLiteral) else variable.value
     if into.size is None:
-        value = float(variable.value)
+        value = float(value)
     else:
         if into.size.value not in (16, 32, 64):
             raise ValueError("Float size must be one of {16, 32, 64}.")
-        value = float(np.array(variable.value, dtype=np.dtype(f"float{into.size.value}")))
+        value = float(np.array(value, dtype=np.dtype(f"float{into.size.value}")))
     return FloatLiteral(value)
+
+
+@cast_to.register
+def _(into: AngleType, variable: LiteralType) -> SymbolLiteral:
+    """Cast angle to float"""
+    if into.size is None:
+        return SymbolLiteral(variable.value % (2 * sympy.pi))
+    raise ValueError("Fixed-bit angles are not supported.")
 
 
 @cast_to.register
