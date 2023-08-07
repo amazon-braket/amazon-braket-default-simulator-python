@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.20.0 (2023-08-07)
+
+### Features
+
+ * Create OpenQASMSimulator class
+ * symbolic built-in functions and constants
+
+### Documentation Changes
+
+ * License header in all code files
+
 ## v1.19.1 (2023-08-03)
 
 ### Bug Fixes and Other Changes
