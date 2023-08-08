@@ -19,9 +19,9 @@ from braket.device_schema.simulators import (
 )
 
 from braket.default_simulator import DensityMatrixSimulation
-from braket.default_simulator.local_quantum_execute_manager import LocalQuantumExecuteManager
+from braket.default_simulator.local_execution_manager import LocalExecutionManager
 from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.simulator.quantum_task import QuantumExecuteManager
+from braket.simulator.quantum_task import ExecutionManager
 
 
 class DensityMatrixSimulator(BaseLocalSimulator):
@@ -41,8 +41,8 @@ class DensityMatrixSimulator(BaseLocalSimulator):
         shots = kwargs.get("shots")
         return DensityMatrixSimulation(qubit_count, shots)
 
-    def execute_manager(self, *args, **kwargs) -> QuantumExecuteManager:
-        return LocalQuantumExecuteManager(self, *args, **kwargs)
+    def execution_manager(self, *args, **kwargs) -> ExecutionManager:
+        return LocalExecutionManager(self, *args, **kwargs)
 
     @property
     def properties(self) -> GateModelSimulatorDeviceCapabilities:

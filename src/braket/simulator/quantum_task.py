@@ -21,8 +21,8 @@ from braket.task_result import (
 )
 
 
-class QuantumExecuteManager(ABC):
-    """An abstraction over a quantum task on a quantum device."""
+class ExecutionManager(ABC):
+    """Manages the execution of a quantum program."""
 
     def cancel(self) -> None:
         """Cancel the quantum task."""
@@ -36,7 +36,7 @@ class QuantumExecuteManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def run(
+    def result(
         self,
         *args,
         **kwargs,

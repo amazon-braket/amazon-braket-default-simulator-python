@@ -36,7 +36,7 @@ from braket.default_simulator import (
     StateVectorSimulator,
     observables,
 )
-from braket.default_simulator.local_quantum_execute_manager import LocalQuantumExecuteManager
+from braket.default_simulator.local_execution_manager import LocalExecutionManager
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -1281,12 +1281,12 @@ def test_missing_input():
 @pytest.mark.parametrize(
     "simulator", [(StateVectorSimulator()), (DensityMatrixSimulator()), (RydbergAtomSimulator())]
 )
-def test_local_quantum_execute_manager(simulator):
-    # Call the execute_manager method with some arguments
-    manager = simulator.execute_manager(3, 4, arg1="val3", arg2="val4")
+def test_local_execution_manager(simulator):
+    # Call the execution_manager method with some arguments
+    manager = simulator.execution_manager(3, 4, arg1="val3", arg2="val4")
 
     # Check if the returned object is an instance of MockLocalQuantumExecuteManager
-    assert isinstance(manager, LocalQuantumExecuteManager)
+    assert isinstance(manager, LocalExecutionManager)
 
     # Check if the simulator property of the manager is the
     # same as the StateVectorSimulator instance

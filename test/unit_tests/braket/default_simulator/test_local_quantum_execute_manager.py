@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 import pytest
 
-from braket.default_simulator.local_quantum_execute_manager import LocalQuantumExecuteManager
+from braket.default_simulator.local_execution_manager import LocalExecutionManager
 
 
 class DummySimulator:
@@ -20,24 +20,24 @@ class DummySimulator:
         return "DummyResult"
 
 
-def test_local_quantum_execute_manager_run():
+def test_local_execution_manager_run():
     # Create a DummySimulator instance for testing
     simulator = DummySimulator()
 
-    # Instantiate the LocalQuantumExecuteManager with the DummySimulator
-    quantum_manager = LocalQuantumExecuteManager(simulator, 1, 2, arg1="val1", arg2="val2")
+    # Instantiate the LocalExecutionManager with the DummySimulator
+    quantum_manager = LocalExecutionManager(simulator, 1, 2, arg1="val1", arg2="val2")
 
-    # Call the run method and check the result
-    result = quantum_manager.run()
+    # Call the result method and check the result
+    result = quantum_manager.result()
     assert result == "DummyResult"
 
 
-def test_local_quantum_execute_manager_cancel():
+def test_local_execution_manager_cancel():
     # Create a DummySimulator instance for testing
     simulator = DummySimulator()
 
-    # Instantiate the LocalQuantumExecuteManager with the DummySimulator
-    quantum_manager = LocalQuantumExecuteManager(simulator, 1, 2, arg1="val1", arg2="val2")
+    # Instantiate the LocalQuantumExecutionManager with the DummySimulator
+    quantum_manager = LocalExecutionManager(simulator, 1, 2, arg1="val1", arg2="val2")
 
     # Call the cancel method and check if NotImplementedError is raised
     with pytest.raises(NotImplementedError):

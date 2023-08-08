@@ -47,10 +47,10 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.ir_validator import 
 from braket.analog_hamiltonian_simulator.rydberg.validators.rydberg_coefficient import (
     validate_rydberg_interaction_coef,
 )
-from braket.default_simulator.local_quantum_execute_manager import LocalQuantumExecuteManager
+from braket.default_simulator.local_execution_manager import LocalExecutionManager
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.simulator.quantum_task import QuantumExecuteManager
+from braket.simulator.quantum_task import ExecutionManager
 
 
 class RydbergAtomSimulator(BaseLocalSimulator):
@@ -182,8 +182,8 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             deviceId="rydbergLocalSimulator",
         )
 
-    def execute_manager(self, *args, **kwargs) -> QuantumExecuteManager:
-        return LocalQuantumExecuteManager(self, *args, **kwargs)
+    def execution_manager(self, *args, **kwargs) -> ExecutionManager:
+        return LocalExecutionManager(self, *args, **kwargs)
 
     @property
     def properties(self) -> DeviceCapabilities:

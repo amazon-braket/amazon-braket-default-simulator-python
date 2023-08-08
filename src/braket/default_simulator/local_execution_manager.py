@@ -18,10 +18,10 @@ from braket.task_result import (
     GateModelTaskResult,
 )
 
-from braket.simulator.quantum_task import QuantumExecuteManager
+from braket.simulator.quantum_task import ExecutionManager
 
 
-class LocalQuantumExecuteManager(QuantumExecuteManager):
+class LocalExecutionManager(ExecutionManager):
     """A task containing the results of a local simulation.
 
     Since this class is instantiated with the results, cancel() and run_async() are unsupported.
@@ -32,7 +32,7 @@ class LocalQuantumExecuteManager(QuantumExecuteManager):
         self.args = list(args)
         self.kwargs = kwargs
 
-    def run(
+    def result(
         self,
     ) -> Union[GateModelTaskResult, AnnealingTaskResult, AnalogHamiltonianSimulationTaskResult,]:
         return self.simulator.run(*self.args, **self.kwargs)
