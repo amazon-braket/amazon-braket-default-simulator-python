@@ -1285,7 +1285,7 @@ def test_local_execution_manager(simulator):
     # Call the execution_manager method with some arguments
     manager = simulator.execution_manager(3, 4, arg1="val3", arg2="val4")
 
-    # Check if the returned object is an instance of MockLocalQuantumExecuteManager
+    # Check if the returned object is an instance of LocalExecutionManager
     assert isinstance(manager, LocalExecutionManager)
 
     # Check if the simulator property of the manager is the
