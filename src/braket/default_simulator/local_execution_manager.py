@@ -29,7 +29,7 @@ class LocalExecutionManager(ExecutionManager):
         """Initialize the LocalExecutionManager.
 
         Args:
-            simulator (cirq.Simulator): The local simulator to use for quantum program execution.
+            simulator (BraketSimulator): The local simulator to use for quantum program execution.
             args: Additional positional arguments for configuring the simulation.
             kwargs: Additional keyword arguments for configuring the simulation.
         """
