@@ -56,3 +56,11 @@ class LocalExecutionManager(ExecutionManager):
             NotImplementedError: LocalExecutionManager does not support cancelling.
         """
         raise NotImplementedError("LocalQuantumTask does not support cancelling")
+
+    def id(self) -> None:
+        """Id of the quantum task.
+
+        Raises:
+            NotImplementedError: Id is not generated for LocalQuantumTask.
+        """
+        raise NotImplementedError("Id is not generated for LocalQuantumTask")

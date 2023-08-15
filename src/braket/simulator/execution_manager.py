@@ -24,8 +24,8 @@ from braket.task_result import (
 class ExecutionManager(ABC):
     """Manages the execution of a quantum program."""
 
-    def cancel(self) -> None:
-        """Cancel the quantum task."""
+    def id(self) -> None:
+        """Id of the quantum task."""
         raise NotImplementedError
 
     def state(self) -> str:
@@ -46,3 +46,7 @@ class ExecutionManager(ABC):
             Union[GateModelQuantumTaskResult, AnnealingQuantumTaskResult, PhotonicModelQuantumTaskResult]: # noqa
             Get the quantum task result.
         """
+
+    def cancel(self) -> None:
+        """cancel the quantum task."""
+        raise NotImplementedError
