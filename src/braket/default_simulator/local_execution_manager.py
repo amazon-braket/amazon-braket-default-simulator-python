@@ -18,16 +18,21 @@ from braket.task_result import (
     GateModelTaskResult,
 )
 
-from braket.simulator.quantum_task import ExecutionManager
+from braket.simulator import BraketSimulator
+from braket.simulator.execution_manager import ExecutionManager
 
 
 class LocalExecutionManager(ExecutionManager):
-    """A task containing the results of a local simulation.
+    """Manages the execution of a quantum program using a local simulator."""
 
-    Since this class is instantiated with the results, cancel() and run_async() are unsupported.
-    """
+    def __init__(self, simulator: BraketSimulator, *args, **kwargs):
+        """Initialize the LocalExecutionManager.
 
-    def __init__(self, simulator, *args, **kwargs):
+        Args:
+            simulator (cirq.Simulator): The local simulator to use for quantum program execution.
+            args: Additional positional arguments for configuring the simulation.
+            kwargs: Additional keyword arguments for configuring the simulation.
+        """
         self.simulator = simulator
         self.args = list(args)
         self.kwargs = kwargs
@@ -35,8 +40,19 @@ class LocalExecutionManager(ExecutionManager):
     def result(
         self,
     ) -> Union[GateModelTaskResult, AnnealingTaskResult, AnalogHamiltonianSimulationTaskResult,]:
+        """Get the quantum task result.
+
+        Returns:
+            Union[GateModelQuantumTaskResult, AnnealingQuantumTaskResult,
+            PhotonicModelQuantumTaskResult]:
+            The result of the quantum task execution using the local simulator.
+        """
         return self.simulator.run(*self.args, **self.kwargs)
 
     def cancel(self) -> None:
-        """Cancel the quantum task."""
+        """Cancel the quantum task.
+
+        Raises:
+            NotImplementedError: LocalExecutionManager does not support cancelling.
+        """
         raise NotImplementedError("LocalQuantumTask does not support cancelling")

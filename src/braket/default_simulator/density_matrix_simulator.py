@@ -21,7 +21,7 @@ from braket.device_schema.simulators import (
 from braket.default_simulator import DensityMatrixSimulation
 from braket.default_simulator.local_execution_manager import LocalExecutionManager
 from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.simulator.quantum_task import ExecutionManager
+from braket.simulator.execution_manager import ExecutionManager
 
 
 class DensityMatrixSimulator(BaseLocalSimulator):

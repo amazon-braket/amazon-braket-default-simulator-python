@@ -50,7 +50,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.rydberg_coefficient 
 from braket.default_simulator.local_execution_manager import LocalExecutionManager
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.simulator.quantum_task import ExecutionManager
+from braket.simulator.execution_manager import ExecutionManager
 
 
 class RydbergAtomSimulator(BaseLocalSimulator):
