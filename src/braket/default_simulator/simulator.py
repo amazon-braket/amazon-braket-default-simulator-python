@@ -147,6 +147,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return self.run_openqasm(circuit_ir, *args, **kwargs)
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
+    def execution_manager(self):
+        raise NotImplementedError
+
     def create_program_context(self) -> AbstractProgramContext:
         return ProgramContext()
 

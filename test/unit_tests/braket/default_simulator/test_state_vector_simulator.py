@@ -29,7 +29,14 @@ from braket.ir.jaqcd import StateVector, Variance
 from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.task_result import AdditionalMetadata, TaskMetadata
 
-from braket.default_simulator import DefaultSimulator, StateVectorSimulator, observables
+from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator import RydbergAtomSimulator
+from braket.default_simulator import (
+    DefaultSimulator,
+    DensityMatrixSimulator,
+    StateVectorSimulator,
+    observables,
+)
+from braket.default_simulator.local_execution_manager import LocalExecutionManager
 
 CircuitData = namedtuple("CircuitData", "circuit_ir probability_zero")
 
@@ -1269,3 +1276,22 @@ def test_missing_input():
     missing_input = "Missing input variable 'in_int'."
     with pytest.raises(NameError, match=missing_input):
         simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+
+
+@pytest.mark.parametrize(
+    "simulator", [(StateVectorSimulator()), (DensityMatrixSimulator()), (RydbergAtomSimulator())]
+)
+def test_local_execution_manager(simulator):
+    # Call the execution_manager method with some arguments
+    manager = simulator.execution_manager(3, 4, arg1="val3", arg2="val4")
+
+    # Check if the returned object is an instance of LocalExecutionManager
+    assert isinstance(manager, LocalExecutionManager)
+
+    # Check if the simulator property of the manager is the
+    # same as the StateVectorSimulator instance
+    assert manager.simulator is simulator
+
+    # Check if the arguments were passed correctly to the manager
+    assert manager.args == [3, 4]
+    assert manager.kwargs == {"arg1": "val3", "arg2": "val4"}
