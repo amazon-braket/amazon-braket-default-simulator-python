@@ -1,3 +1,16 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 from copy import deepcopy
 from dataclasses import fields
 from functools import singledispatchmethod
@@ -6,8 +19,8 @@ from typing import Dict, Iterable, List, Optional, Union
 
 import numpy as np
 from braket.ir.openqasm.program_v1 import io_type
+from sympy import Symbol
 
-from ..gate_operations import BRAKET_GATES
 from ._helpers.arrays import (
     convert_range_def_to_range,
     create_empty_array,
@@ -82,11 +95,12 @@ from .parser.openqasm_ast import (
     ReturnStatement,
     SizeOf,
     SubroutineDefinition,
+    SymbolLiteral,
     UnaryExpression,
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
-from .program_context import ProgramContext
+from .program_context import AbstractProgramContext, ProgramContext
 
 
 class Interpreter:
@@ -100,7 +114,9 @@ class Interpreter:
     the ProgramContext object, which can be used for debugging or other customizability.
     """
 
-    def __init__(self, context: Optional[ProgramContext] = None, logger: Optional[Logger] = None):
+    def __init__(
+        self, context: Optional[AbstractProgramContext] = None, logger: Optional[Logger] = None
+    ):
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
@@ -110,6 +126,12 @@ class Interpreter:
         self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
     ) -> Circuit:
         """Interpret an OpenQASM program and build a Circuit IR."""
+        return self.run(source, inputs, is_file).circuit
+
+    def run(
+        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+    ) -> ProgramContext:
+        """Interpret an OpenQASM program and return the program state"""
         if inputs:
             self.context.load_inputs(inputs)
 
@@ -125,13 +147,6 @@ class Interpreter:
                 "This program uses OpenQASM language features that may "
                 "not be supported on QPUs or on-demand simulators."
             )
-        return self.context.circuit
-
-    def run(
-        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
-    ) -> ProgramContext:
-        """Interpret an OpenQASM program and return the program state"""
-        self.build_circuit(source, inputs, is_file)
         return self.context
 
     @singledispatchmethod
@@ -175,10 +190,14 @@ class Interpreter:
             raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
             if node.identifier.name not in self.context.inputs:
-                raise NameError(f"Missing input variable '{node.identifier.name}'.")
-            init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
-            declaration = ClassicalDeclaration(node.type, node.identifier, init_value)
-        self.visit(declaration)
+                # previously raised a NameError
+                init_value = wrap_value_into_literal(Symbol(node.identifier.name))
+                node_type = SymbolLiteral
+            else:
+                init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
+                node_type = node.type
+            declaration = ClassicalDeclaration(node_type, node.identifier, init_value)
+            self.visit(declaration)
 
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
@@ -217,6 +236,8 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Identifier) -> LiteralType:
+        if node.name.startswith("$"):
+            return node
         if node.name in builtin_constants:
             return builtin_constants[node.name]
         if not self.context.is_initialized(node.name):
@@ -468,6 +489,8 @@ class Interpreter:
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
+        elif isinstance(rvalue, SymbolLiteral):
+            pass
         else:
             rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)
@@ -517,7 +540,6 @@ class Interpreter:
     @visit.register
     def _(self, node: Pragma) -> None:
         parsed = self.context.parse_pragma(node.command)
-
         if node.command.startswith("braket result"):
             if not parsed:
                 raise TypeError(f"Result type {node.command.split()[2]} is not supported.")
@@ -525,8 +547,12 @@ class Interpreter:
         elif node.command.startswith("braket unitary"):
             unitary, target = parsed
             self.context.add_custom_unitary(unitary, target)
+        elif node.command.startswith("braket noise kraus"):
+            matrices, target = parsed
+            self.context.add_kraus_instruction(matrices, target)
         elif node.command.startswith("braket noise"):
-            self.context.add_noise_instruction(parsed)
+            noise_instruction, target, probabilities = parsed
+            self.context.add_noise_instruction(noise_instruction, target, probabilities)
         elif node.command.startswith("braket verbatim"):
             pass
         else:

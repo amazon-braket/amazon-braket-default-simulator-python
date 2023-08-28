@@ -1,3 +1,16 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import numpy as np
 import pytest
 from braket.ir.ahs.program_v1 import Program
@@ -162,7 +175,7 @@ zero_field = {
 }
 
 
-zero_program = convert_unit(
+big_program_with_only_driving_field = convert_unit(
     Program(
         setup={
             "ahs_register": {
@@ -180,8 +193,41 @@ zero_program = convert_unit(
 )
 
 
-def test_scipy_run_for_large_system():
-    result = device.run(zero_program, steps=1)
+big_program_with_only_shifting_field = convert_unit(
+    Program(
+        setup={
+            "ahs_register": {
+                "sites": [[0, i * a] for i in range(11)],
+                "filling": [1 for _ in range(11)],
+            }
+        },
+        hamiltonian={
+            "drivingFields": [],
+            "shiftingFields": [
+                {
+                    "magnitude": {
+                        "time_series": {
+                            "times": [0, duration * 1e-06],
+                            "values": [detuning_2 * 1e6, detuning_2 * 1e6],
+                        },
+                        "pattern": [1.0 for _ in range(11)],
+                    }
+                }
+            ],
+        },
+    )
+)
+
+
+@pytest.mark.parametrize(
+    "program, steps",
+    [
+        (big_program_with_only_driving_field, 1),
+        (big_program_with_only_shifting_field, 4),
+    ],
+)
+def test_scipy_run_for_large_system(program, steps):
+    result = device.run(program, steps=steps)
     assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
 
 

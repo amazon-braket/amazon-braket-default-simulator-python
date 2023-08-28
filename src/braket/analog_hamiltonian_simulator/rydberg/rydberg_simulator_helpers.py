@@ -1,5 +1,19 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import itertools
 import time
+import warnings
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -454,7 +468,7 @@ def _print_progress_bar(num_time_points: int, index_time: int, start_time: float
 
 
 def _get_hamiltonian(
-    index_time: int,
+    index_time: float,
     operators_coefficients: Tuple[
         List[scipy.sparse.csr_matrix],
         List[scipy.sparse.csr_matrix],
@@ -468,7 +482,7 @@ def _get_hamiltonian(
     """Get the Hamiltonian at a given time point
 
     Args:
-        index_time (int): The index of the current time point
+        index_time (float): The index of the current time point
         operators_coefficients (Tuple[
             List[csr_matrix],
             List[csr_matrix],
@@ -495,6 +509,44 @@ def _get_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
+
+    if len(rabi_coefs) > 0:
+        # If there is driving field, the maximum of index_time is the maximum time index
+        # for the driving field.
+        # Note that, if there is more than one driving field, we assume that they have the
+        # same number of coefficients
+        max_index_time = len(rabi_coefs[0]) - 1
+    else:
+        # If there is no driving field, then the maxium of index_time is the maxium time
+        # index for the shifting field.
+        # Note that, if there is more than one shifting field, we assume that they have the
+        # same number of coefficients
+        # Note that, if there is no driving field nor shifting field, the initial state will
+        # be returned, and the simulation would not reach here.
+        max_index_time = len(local_detuing_coefs[0]) - 1
+
+    # If the integrator uses intermediate time value that is larger than the maximum
+    # time value specified, the final time value is used as an approximation.
+    if index_time > max_index_time:
+        index_time = max_index_time
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "larger than the maximum time value specified. "
+            "The final time value of the specified range "
+            "is used as an approximation."
+        )
+
+    # If the integrator uses intermediate time value that is larger than the minimum
+    # time value specified, the final time value is used as an approximation.
+    if index_time < 0:
+        index_time = 0
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "smaller than the minimum time value specified. "
+            "The first time value of the specified range "
+            "is used as an approximation."
+        )
+
     hamiltonian = interaction_op
 
     # Add the driving fields
@@ -515,7 +567,7 @@ def _get_hamiltonian(
 
 
 def _apply_hamiltonian(
-    index_time: int,
+    index_time: float,
     operators_coefficients: Tuple[
         List[scipy.sparse.csr_matrix],
         List[scipy.sparse.csr_matrix],
@@ -530,7 +582,7 @@ def _apply_hamiltonian(
     """Applies the Hamiltonian at a given time point on a state.
 
     Args:
-        index_time (int): The index of the current time point
+        index_time (float): The index of the current time point
         operators_coefficients (Tuple[
             List[csr_matrix],
             List[csr_matrix],
@@ -557,6 +609,44 @@ def _apply_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
+
+    if len(rabi_coefs) > 0:
+        # If there is driving field, the maximum of index_time is the maximum time index
+        # for the driving field.
+        # Note that, if there is more than one driving field, we assume that they have the
+        # same number of coefficients
+        max_index_time = len(rabi_coefs[0]) - 1
+    else:
+        # If there is no driving field, then the maxium of index_time is the maxium time
+        # index for the shifting field.
+        # Note that, if there is more than one shifting field, we assume that they have the
+        # same number of coefficients
+        # Note that, if there is no driving field nor shifting field, the initial state will
+        # be returned, and the simulation would not reach here.
+        max_index_time = len(local_detuing_coefs[0]) - 1
+
+    # If the integrator uses intermediate time value that is larger than the maximum
+    # time value specified, the final time value is used as an approximation.
+    if index_time > max_index_time:
+        index_time = max_index_time
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "larger than the maximum time value specified. "
+            "The final time value of the specified range "
+            "is used as an approximation."
+        )
+
+    # If the integrator uses intermediate time value that is larger than the minimum
+    # time value specified, the final time value is used as an approximation.
+    if index_time < 0:
+        index_time = 0
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "smaller than the minimum time value specified. "
+            "The first time value of the specified range "
+            "is used as an approximation."
+        )
+
     output_register = interaction_op.dot(input_register)
 
     # Add the driving fields

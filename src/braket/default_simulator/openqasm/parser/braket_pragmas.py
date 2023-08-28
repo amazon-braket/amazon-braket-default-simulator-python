@@ -1,3 +1,16 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 from typing import List, Tuple
 
 import numpy as np
@@ -13,18 +26,6 @@ from braket.ir.jaqcd import (
 )
 from braket.ir.jaqcd.program_v1 import Results
 
-from ...noise_operations import (
-    AmplitudeDamping,
-    BitFlip,
-    Depolarizing,
-    GeneralizedAmplitudeDamping,
-    Kraus,
-    PauliChannel,
-    PhaseDamping,
-    PhaseFlip,
-    TwoQubitDephasing,
-    TwoQubitDepolarizing,
-)
 from .generated.BraketPragmasLexer import BraketPragmasLexer
 from .generated.BraketPragmasParser import BraketPragmasParser
 from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
@@ -191,23 +192,12 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         target = self.visit(ctx.target)
         probabilities = self.visit(ctx.probabilities())
         noise_instruction = ctx.noiseInstructionName().getText()
-        one_prob_noise_map = {
-            "bit_flip": BitFlip,
-            "phase_flip": PhaseFlip,
-            "pauli_channel": PauliChannel,
-            "depolarizing": Depolarizing,
-            "two_qubit_depolarizing": TwoQubitDepolarizing,
-            "two_qubit_dephasing": TwoQubitDephasing,
-            "amplitude_damping": AmplitudeDamping,
-            "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
-            "phase_damping": PhaseDamping,
-        }
-        return one_prob_noise_map[noise_instruction](target, *probabilities)
+        return noise_instruction, target, probabilities
 
     def visitKraus(self, ctx: BraketPragmasParser.KrausContext):
         target = self.visit(ctx.target)
         matrices = [self.visit(m) for m in ctx.matrices().children[::2]]
-        return Kraus(target, matrices)
+        return matrices, target
 
     def visitProbabilities(self, ctx: BraketPragmasParser.ProbabilitiesContext):
         return [float(prob.symbol.text) for prob in ctx.children[::2]]

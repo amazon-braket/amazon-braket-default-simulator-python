@@ -1,3 +1,16 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import time
 from typing import List
 
@@ -67,10 +80,11 @@ def rk_run(
         return states
 
     dt = simulation_times[1] - simulation_times[0]  # The time step for the simulation
-    start_time = 0
+
+    if progress_bar:  # print a lightweight progress bar
+        start_time = time.time()
     for index_time, _ in enumerate(simulation_times[1:]):
         if progress_bar:  # print a lightweight progress bar
-            start_time = time.time()
             _print_progress_bar(len(simulation_times), index_time, start_time)
 
         x = states[-1]
