@@ -1,11 +1,23 @@
+import functools as ft
 import itertools
 import time
-from typing import Dict, List, Tuple
+import warnings
+from enum import Enum
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import scipy.sparse
 from braket.ir.ahs.atom_arrangement import AtomArrangement
 from braket.ir.ahs.program_v1 import Program
+
+
+class noise_type(Enum):
+    ATOM_DETECTION = "atom_detection"
+    VACANCY_DETECTION = "vacancy_detection"
+    GROUND_STATE_DETECTION = "ground_state_detection"
+    RYDBERG_STATE_DETECTION = "rydberg_state_detection"
+    T_1 = "T_1"
+    T_2 = "T_2"
 
 
 def validate_config(config: str, atoms_coordinates: np.ndarray, blockade_radius: float) -> bool:
@@ -411,21 +423,63 @@ def _get_ops_coefs(
     )
 
 
-def sample_state(state: np.ndarray, shots: int) -> np.ndarray:
-    """Sample measurement outcomes from the quantum state `state`
+# TODO: consider creating a class for result post-processing and sampling
+def sample_result(
+    post_processed_info: Tuple[np.ndarray, np.ndarray, List[int], List[int], Union[float, int]],
+    shots: int,
+    noises: Dict[str, float],
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int], List[int],]:
+    """Sample measurement outcomes from the post-processed distributions
 
     Args:
-        state (ndarray): A state vector
+        post_processed_info (Tuple[
+            np.ndarray,
+            np.ndarray,
+            List[int],
+            List[int],
+            Union[float, int]
+            ]):  A tuple containing the post-processed pre-sequence distribution and
+            state distribution, index of filled sites and empty sites and vacancy detection
+            error rate.
         shots (int): The number of samples
+        noises (Dict[str, float], optional): A dictionary of noises and their parameters.
 
     Returns:
-        ndarray: The array for the sample results
+        Tuple[
+            np.ndarray,
+            np.ndarray,
+            np.ndarray,
+            List[int],
+            List[int],
+            ]: A tuple containing the sampled pre-sequences and vacant pose-sequences,
+            state frequencies and index of filled sites and empty sites.
     """
+    (pre_seq_dist, post_seq_dist, non_empty_sites, empty_sites, eps_vd) = post_processed_info
 
-    weights = (np.abs(state) ** 2).flatten()
-    weights /= sum(weights)
-    sample = np.random.multinomial(shots, weights)
-    return sample
+    num_qubits = len(non_empty_sites)
+    num_vacancies = len(empty_sites)
+
+    if (noise_type.ATOM_DETECTION in noises) or (noise_type.VACANCY_DETECTION in noises):
+        pre_sequences = np.random.binomial(
+            1, pre_seq_dist, size=(shots, num_qubits + num_vacancies)
+        )
+    else:
+        pre_sequences = pre_seq_dist.reshape((1, -1))
+
+    if noise_type.VACANCY_DETECTION in noises:
+        post_sequences_empty = np.random.binomial(1, eps_vd, size=(shots, num_vacancies))
+    else:
+        post_sequences_empty = np.zeros(num_vacancies).reshape((1, -1))
+
+    state_freq = np.random.multinomial(shots, post_seq_dist)
+
+    return (
+        pre_sequences,
+        post_sequences_empty,
+        state_freq,
+        non_empty_sites,
+        empty_sites,
+    )
 
 
 def _print_progress_bar(num_time_points: int, index_time: int, start_time: float) -> None:
@@ -454,7 +508,7 @@ def _print_progress_bar(num_time_points: int, index_time: int, start_time: float
 
 
 def _get_hamiltonian(
-    index_time: int,
+    index_time: float,
     operators_coefficients: Tuple[
         List[scipy.sparse.csr_matrix],
         List[scipy.sparse.csr_matrix],
@@ -468,7 +522,7 @@ def _get_hamiltonian(
     """Get the Hamiltonian at a given time point
 
     Args:
-        index_time (int): The index of the current time point
+        index_time (float): The index of the current time point
         operators_coefficients (Tuple[
             List[csr_matrix],
             List[csr_matrix],
@@ -495,6 +549,44 @@ def _get_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
+
+    if len(rabi_coefs) > 0:
+        # If there is driving field, the maximum of index_time is the maximum time index
+        # for the driving field.
+        # Note that, if there is more than one driving field, we assume that they have the
+        # same number of coefficients
+        max_index_time = len(rabi_coefs[0]) - 1
+    else:
+        # If there is no driving field, then the maxium of index_time is the maxium time
+        # index for the shifting field.
+        # Note that, if there is more than one shifting field, we assume that they have the
+        # same number of coefficients
+        # Note that, if there is no driving field nor shifting field, the initial state will
+        # be returned, and the simulation would not reach here.
+        max_index_time = len(local_detuing_coefs[0]) - 1
+
+    # If the integrator uses intermediate time value that is larger than the maximum
+    # time value specified, the final time value is used as an approximation.
+    if index_time > max_index_time:
+        index_time = max_index_time
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "larger than the maximum time value specified. "
+            "The final time value of the specified range "
+            "is used as an approximation."
+        )
+
+    # If the integrator uses intermediate time value that is larger than the minimum
+    # time value specified, the final time value is used as an approximation.
+    if index_time < 0:
+        index_time = 0
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "smaller than the minimum time value specified. "
+            "The first time value of the specified range "
+            "is used as an approximation."
+        )
+
     hamiltonian = interaction_op
 
     # Add the driving fields
@@ -515,7 +607,7 @@ def _get_hamiltonian(
 
 
 def _apply_hamiltonian(
-    index_time: int,
+    index_time: float,
     operators_coefficients: Tuple[
         List[scipy.sparse.csr_matrix],
         List[scipy.sparse.csr_matrix],
@@ -530,7 +622,7 @@ def _apply_hamiltonian(
     """Applies the Hamiltonian at a given time point on a state.
 
     Args:
-        index_time (int): The index of the current time point
+        index_time (float): The index of the current time point
         operators_coefficients (Tuple[
             List[csr_matrix],
             List[csr_matrix],
@@ -557,6 +649,44 @@ def _apply_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
+
+    if len(rabi_coefs) > 0:
+        # If there is driving field, the maximum of index_time is the maximum time index
+        # for the driving field.
+        # Note that, if there is more than one driving field, we assume that they have the
+        # same number of coefficients
+        max_index_time = len(rabi_coefs[0]) - 1
+    else:
+        # If there is no driving field, then the maxium of index_time is the maxium time
+        # index for the shifting field.
+        # Note that, if there is more than one shifting field, we assume that they have the
+        # same number of coefficients
+        # Note that, if there is no driving field nor shifting field, the initial state will
+        # be returned, and the simulation would not reach here.
+        max_index_time = len(local_detuing_coefs[0]) - 1
+
+    # If the integrator uses intermediate time value that is larger than the maximum
+    # time value specified, the final time value is used as an approximation.
+    if index_time > max_index_time:
+        index_time = max_index_time
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "larger than the maximum time value specified. "
+            "The final time value of the specified range "
+            "is used as an approximation."
+        )
+
+    # If the integrator uses intermediate time value that is larger than the minimum
+    # time value specified, the final time value is used as an approximation.
+    if index_time < 0:
+        index_time = 0
+        warnings.warn(
+            "The solver uses intermediate time value that is "
+            "smaller than the minimum time value specified. "
+            "The first time value of the specified range "
+            "is used as an approximation."
+        )
+
     output_register = interaction_op.dot(input_register)
 
     # Add the driving fields
@@ -570,5 +700,227 @@ def _apply_hamiltonian(
     # Add the shifting fields
     for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
         output_register -= local_detuning_coef[index_time] * local_detuning_op.dot(input_register)
+
+    return output_register
+
+
+def _find_configuration_index(
+    configuration: str,
+) -> int:
+    """Fining the decimal index corresponding to a configuration.
+
+    Args:
+        configuration (str): A configuration of atoms with each site being 'r' or 'g
+
+    Returns:
+        int: Corresponding decimal number. It is the index of the configuration
+        in an array of all configurations sorted in ascending order accroding to their
+        corresponding numerical values.
+    """
+    config_index = 0
+    num_qubit = len(configuration)
+    for idx in range(num_qubit):
+        if configuration[-1 - idx] == "r":
+            config_index += 2**idx
+    return config_index
+
+
+def apply_SPAM_noises(
+    pre_sequence: List[int],
+    state_dist: np.ndarray,
+    configurations: List[str],
+    noises: Dict[str, float] = {},
+) -> Tuple[np.ndarray, np.ndarray, List[int], List[int], Union[float, int]]:
+    """Post-processes the pre-sequence and state distribution to apply SPAM noise
+
+    Args:
+        pre_sequence (List[int]): The requested atom filling
+        state_dist (np.ndarray): The state distribution corresponding to the
+        evolved state. Must be normalized
+        configurations (List[str]): The list of configurations that comply with the blockade
+            approximation.
+        noises (Dict[str, float], optional): A dictionary of noises and their parameters.
+          Defaults to {}.
+
+    Raises:
+        ValueError: If the state distribution is not normalized
+
+    Returns:
+        Tuple[
+            np.ndarray,
+            np.ndarray,
+            List[int],
+            List[int],
+            Union[float, int]
+            ]: A tuple containing the post-processed pre-sequence distribution and
+            state distribution, index of filled sites and empty sites and vacancy detection
+            error rate.
+    """
+    pre_sequence = np.array(pre_sequence)
+
+    non_empty_sites = np.nonzero(pre_sequence)[0]
+    empty_sites = np.where(pre_sequence == 0)[0]
+
+    num_qubits = len(non_empty_sites)
+    num_vacancies = len(empty_sites)
+
+    if (noise_type.ATOM_DETECTION in noises) or (noise_type.VACANCY_DETECTION in noises):
+        eps_ad = noises.get(noise_type.ATOM_DETECTION, 0)
+        eps_vd = noises.get(noise_type.VACANCY_DETECTION, 0)
+
+        pre_seq_dist = np.zeros(num_qubits + num_vacancies)
+        pre_seq_dist[non_empty_sites] = 1 - eps_ad
+        pre_seq_dist[empty_sites] = eps_vd
+    else:  # no detection noise, just return the pre-sequence
+        eps_vd = 0
+        pre_seq_dist = pre_sequence
+
+    if not np.isclose(sum(state_dist), 1.0):
+        raise ValueError("State distribution must be normalized!")
+
+    full_space_size = 2**num_qubits  # size of the full Hilbert space
+    noisy_state_dist = np.zeros(full_space_size)
+
+    if full_space_size > len(configurations):  # blockade approximation in effect
+        valid_idx = [_find_configuration_index(config) for config in configurations]
+        noisy_state_dist[valid_idx] = state_dist
+    else:
+        noisy_state_dist = state_dist
+
+    if (noise_type.GROUND_STATE_DETECTION in noises) or (
+        noise_type.RYDBERG_STATE_DETECTION in noises
+    ):
+        # construct the confusion matrix to add noise to final distribution
+        eps_g = noises.get(noise_type.GROUND_STATE_DETECTION, 0)
+        eps_r = noises.get(noise_type.RYDBERG_STATE_DETECTION, 0)
+
+        # For a single qubit, this matrix will multiply the probability vector
+        # [P_ground_true ,P_rydberg_true], producing [P_ground_observed, P_rydberg_observed]
+        # according to the conditional probabilities eps_g and eps_r.
+        # The diagonal entries are the probability of correctly detecting each state.
+        confusion_mtx_qubit = np.array([[1 - eps_g, eps_r], [eps_g, 1 - eps_r]])
+
+        # We assume the detection of each qubit is independent from each other,
+        # so the confusion matrix for the full system is simply a kronecker product
+        # of copies of single-qubit confusion matrix.
+        confusion_mtx_full = ft.reduce(np.kron, [confusion_mtx_qubit for _ in range(num_qubits)])
+
+        # The dimension of noisy_state_dist is N = 2**n, the size of full Hilbert space
+        # The dimension of confusion_mtx_full is N by N.
+        # The dimension of noisy_state_dist is not changed by this transformation.
+        noisy_state_dist = confusion_mtx_full @ noisy_state_dist  # convert probability
+    # if no state detection noise, do not post-process the state distribution
+
+    # need to return the vacancy detection error rate for subsequent sampling of
+    # vacant sites with noise
+    return (pre_seq_dist, noisy_state_dist, non_empty_sites, empty_sites, eps_vd)
+
+
+def _get_lind_dict_T1(
+    targets: Tuple[int], configurations: List[str]
+) -> Dict[Tuple[int, int], float]:
+    lind_T1 = {}  # The Lind term in the basis of configurations, as a dictionary
+
+    # use dictionary to store index of configurations
+    configuration_index = {config: ind for ind, config in enumerate(configurations)}
+
+    # T1 decay terms
+    for ind_1, config_1 in enumerate(configurations):
+        for target in targets:
+            # Converts a single atom from "r" to "g".
+            if config_1[target] != "r":
+                continue
+
+            # Construct the state after applying the Lind operator
+            bit_list = list(config_1)
+            bit_list[target] = "g"
+            config_2 = "".join(bit_list)
+
+            # If the constructed state is in the Hilbert space,
+            # add the corresponding matrix element to the Lind operator.
+            if config_2 in configuration_index:
+                lind_T1[(configuration_index[config_2], ind_1)] = 1
+
+    return lind_T1
+
+
+def _get_lind_dict_T2(
+    targets: Tuple[int], configurations: List[str]
+) -> Dict[Tuple[int, int], float]:
+    lind_T2 = {}
+    target = targets[0]  # only one target site for T2 decay
+
+    for ind, config in enumerate(configurations):
+        if config[target] == "r":
+            lind_T2[(ind, ind)] = 1
+
+    return lind_T2
+
+
+def _get_ops_coefs_lind(
+    targets: List[int], configurations: List[str], noises: dict
+) -> Tuple[List[scipy.sparse.csr_matrix], np.ndarray]:
+    if (noise_type.T_1 not in noises) and (noise_type.T_2 not in noises):
+        warnings.warn(
+            "No quantum channel noise speficied, using density matrix simulator"
+            "is inefficient. Using the braket_ahs simulator is more efficient."
+        )
+
+    #  Get the lindblad operators as sparse matrices
+    lind_ops, lind_coefs = [], []
+
+    if noise_type.T_1 in noises:
+        T1 = noises[noise_type.T_1]
+        for target in targets:
+            L_target_T1 = _get_sparse_from_dict(
+                _get_lind_dict_T1((target,), configurations), len(configurations)
+            )
+            L_target_T1 = scipy.sparse.csr_matrix(L_target_T1, dtype=float)
+            lind_ops.append(L_target_T1)
+            lind_coefs.append(float(1 / T1))
+
+    if noise_type.T_2 in noises:
+        T2 = noises[noise_type.T_2]
+        for target in targets:
+            L_target_T2 = _get_sparse_from_dict(
+                _get_lind_dict_T2((target,), configurations), len(configurations)
+            )
+            L_target_T2 = scipy.sparse.csr_matrix(L_target_T2, dtype=float)
+            lind_ops.append(L_target_T2)
+            lind_coefs.append(float(2 / T2))
+
+    return (lind_ops, lind_coefs)
+
+
+def _apply_lindbladian(
+    index_time: int,
+    h0_operators_coefficients: Tuple[
+        List[scipy.sparse.csr_matrix],
+        List[scipy.sparse.csr_matrix],
+        List[scipy.sparse.csr_matrix],
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        scipy.sparse.csr_matrix,
+    ],
+    lind_operators_coefficients: Tuple[
+        List[scipy.sparse.csr_matrix],
+        np.ndarray,
+    ],
+    input_register: np.ndarray,
+) -> np.ndarray:
+    hamiltonian = _get_hamiltonian(index_time, h0_operators_coefficients)
+
+    hamiltonian_times_rho = hamiltonian @ input_register
+    output_register = -1j * (hamiltonian_times_rho - hamiltonian_times_rho.conj().T)
+
+    lind_ops, lind_coefs = lind_operators_coefficients
+
+    # Add Lindblad terms
+    for lind_op, lind_coef in zip(lind_ops, lind_coefs):
+        decay_term = lind_op.conj().T @ lind_op @ input_register
+        output_register += lind_coef * (
+            lind_op @ input_register @ lind_op.conj().T - 0.5 * (decay_term + decay_term.conj().T)
+        )
 
     return output_register

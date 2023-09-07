@@ -1,5 +1,4 @@
 import sys
-from typing import Dict
 
 import numpy as np
 from braket.device_schema import DeviceCapabilities
@@ -16,11 +15,12 @@ from braket.analog_hamiltonian_simulator.rydberg.constants import (
     TIME_UNIT,
     capabilities_constants,
 )
-from braket.analog_hamiltonian_simulator.rydberg.numpy_solver import rk_run
+from braket.analog_hamiltonian_simulator.rydberg.density_matrix_solver import (
+    dm_scipy_integrate_ode_run,
+)
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
     apply_SPAM_noises,
     get_blockade_configurations,
-    noise_type,
     sample_result,
 )
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_result_converter import (
@@ -29,7 +29,6 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_result_conver
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
     convert_unit,
 )
-from braket.analog_hamiltonian_simulator.rydberg.scipy_solver import scipy_integrate_ode_run
 from braket.analog_hamiltonian_simulator.rydberg.validators.blockade_radius import (
     validate_blockade_radius,
 )
@@ -41,8 +40,8 @@ from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
 
 
-class RydbergAtomSimulator(BaseLocalSimulator):
-    DEVICE_ID = "braket_ahs"
+class RydbergAtomSimulatorDM(BaseLocalSimulator):
+    DEVICE_ID = "braket_ahs_dm"
 
     def run(
         self,
@@ -60,37 +59,10 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         first_step: int = 0,
         max_step: int = 0,
         min_step: int = 0,
-        noises: Dict[noise_type, float] = {},
+        noises: dict = {},
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
-        """
-        Run the simulation for the dynamics of the Rydberg system, and return the result
-
-        Args:
-            program (Program): An analog simulation Hamiltonian for the Rydberg system simulated
-            shots (int): The number of shots. Default: 100
-            steps (int): The number of time points for the simulation. Default: 1000
-            rydberg_interaction_coef (float): The interaction coefficient. Default: 5.42e-24
-            blockade_radius (float): The blockade radius for the Rydberg system. Default: 0.0
-            progress_bar (bool): If true, a progress bar will be printed during the simulation.
-                Default: False
-            atol (float): Absolute tolerance for solution. Default: 1e-8
-            rtol (float): Relative tolerance for solution. Default: 1e-6
-            solver_method (str): Which solver to use, `adams` for non-stiff problems or `bdf`
-                for stiff problems. Default: "adams"
-            order (int): Maximum order used by the integrator, order <= 12 for Adams, <= 5 for BDF.
-                Default: 12
-            nsteps (int): Maximum number of (internally defined) steps allowed during one call to
-                the solver. Default: 1000
-            first_step (int): Default: 0
-            max_step (int): Limits for the step sizes used by the integrator. Default: 0
-            min_step (int): Default: 0
-
-        Returns:
-            AnalogHamiltonianSimulationTaskResult: The result of the simulation
-        """
-
         # Validate the given program against the capabilities
         validate_program(program, capabilities_constants())
 
@@ -122,47 +94,35 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             self.simulation_times = np.linspace(0, self.duration, steps)
 
         # Get valid configurations that comply with the blockade approximation
-        # full configurations are also returned for the reconstruction of full state vector,
-        # which is needed for noise sampling.
         self.atomArray = program.setup.ahs_register
         self.configurations = get_blockade_configurations(self.atomArray, self.blockade_radius)
 
         # Run the solver
-        # We shall adaptively change between numpy solver (RK6 method) and scipy solver
-        if len(self.configurations) <= 1000:
-            states = rk_run(
-                program,
-                self.configurations,
-                self.simulation_times,
-                self.rydberg_interaction_coef,
-                progress_bar=progress_bar,
-            )
-        else:
-            states = scipy_integrate_ode_run(
-                program,
-                self.configurations,
-                self.simulation_times,
-                self.rydberg_interaction_coef,
-                progress_bar=progress_bar,
-                atol=atol,
-                rtol=rtol,
-                solver_method=solver_method,
-                order=order,
-                nsteps=nsteps,
-                first_step=first_step,
-                max_step=max_step,
-                min_step=min_step,
-            )
+        states = dm_scipy_integrate_ode_run(
+            program,
+            self.configurations,
+            self.simulation_times,
+            self.rydberg_interaction_coef,
+            progress_bar=progress_bar,
+            atol=atol,
+            rtol=rtol,
+            solver_method=solver_method,
+            order=order,
+            nsteps=nsteps,
+            first_step=first_step,
+            max_step=max_step,
+            min_step=min_step,
+            noises=noises,
+        )
 
         # Convert the result type
         if shots == 0:
             raise NotImplementedError("shots=0 is not implemented")
         else:
-            # convert state to probabilities for post-processing
-            dist = np.abs(states[-1]) ** 2
+            # convert density matrix to probabilities for post-processing
+            dist = np.abs(np.diagonal(states[-1]))
             dist /= sum(dist)
 
-            # TODO: consider creating a class for result post-processing and sampling
             post_processed_info = apply_SPAM_noises(
                 self.atomArray.filling, dist, self.configurations, noises
             )
@@ -176,7 +136,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         return TaskMetadata(
             id="rydberg",
             shots=shots,
-            deviceId="rydbergLocalSimulator",
+            deviceId="rydbergLocalSimulatorDM",
         )
 
     @property

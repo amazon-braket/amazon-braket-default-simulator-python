@@ -37,7 +37,7 @@ setup(
         "scipy",
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
-        "amazon-braket-schemas>=1.16.1",
+        "amazon-braket-schemas>=1.18.0",
     ],
     entry_points={
         "braket.simulators": [
@@ -48,6 +48,11 @@ setup(
                 "braket_ahs = "
                 "braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator:"
                 "RydbergAtomSimulator",
+            ),
+            (
+                "braket_ahs_dm = "
+                "braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_dm:"
+                "RydbergAtomSimulatorDM",
             ),
         ]
     },
@@ -87,5 +92,6 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
 )
