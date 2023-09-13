@@ -10,12 +10,13 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
+
 import uuid
 import warnings
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Union
 
-from braket.device_schema import DeviceActionType, DeviceCapabilities
+from braket.device_schema import DeviceActionType
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
 from braket.ir.openqasm import Program as OpenQASMProgram
@@ -30,6 +31,7 @@ from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.native_interpreter import NativeInterpreter
+from braket.default_simulator.openqasm.program_context import AbstractProgramContext, ProgramContext
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
@@ -58,7 +60,65 @@ _NOISE_INSTRUCTIONS = frozenset(
 )
 
 
-class BaseLocalSimulator(BraketSimulator):
+class OpenQASMSimulator(BraketSimulator, ABC):
+    """An abstract simulator that runs an OpenQASM 3 program.
+
+    Translation of individual operations and observables from OpenQASM to the desired format
+    is handled by implementing the `AbstractProgramContext` interface. This implementation is
+    exposed by implementing the `create_program_context` method, which enables the `parse_program`
+    method to translate an entire OpenQASM program:
+
+    >>> class MyProgramContext(AbstractProgramContext):
+    >>>     def __init__(self):
+    >>>         ...
+    >>>
+    >>>     def add_gate_instruction(self, gate_name: str, target: Tuple[int], ...):
+    >>>         ...
+    >>>
+    >>>     # Implement other MyProgramContext interface methods
+    >>>
+    >>> class MySimulator(OpenQASMSimulator):
+    >>>     def create_program_context(self) -> AbstractProgramContext:
+    >>>         return MyProgramContext()
+    >>>
+    >>>     # Implement other BraketSimulator interface methods
+    >>>
+    >>> parsed = MySimulator().parse_program(program)
+
+    To register a simulator so the Amazon Braket SDK recognizes its name,
+    the name and class must be added as an entry point for "braket.simulators".
+    This is done by adding an entry to entry_points in the simulator package's setup.py:
+
+    >>> entry_points = {
+    >>>     "braket.simulators": [
+    >>>         "backend_name = <backend_class>"
+    >>>     ]
+    >>> }
+    """
+
+    @abstractmethod
+    def create_program_context(self) -> AbstractProgramContext:
+        """Creates a new program context to handle translation of OpenQASM into a desired format."""
+
+    def parse_program(self, program: OpenQASMProgram) -> AbstractProgramContext:
+        """Parses an OpenQASM program and returns a program context.
+
+        Args:
+            program (OpenQASMProgram): The program to parse.
+
+        Returns:
+            AbstractProgramContext: The program context after the program has been parsed.
+        """
+        is_file = program.source.endswith(".qasm")
+        interpreter = Interpreter(self.create_program_context())
+        return interpreter.run(
+            source=program.source,
+            inputs=program.inputs,
+            is_file=is_file,
+        )
+
+
+class BaseLocalSimulator(OpenQASMSimulator):
     def run(
         self, circuit_ir: Union[OpenQASMProgram, JaqcdProgram], *args, **kwargs
     ) -> GateModelTaskResult:
@@ -91,10 +151,8 @@ class BaseLocalSimulator(BraketSimulator):
             return self.run_openqasm(circuit_ir, *args, **kwargs)
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
-    @property
-    @abstractmethod
-    def properties(self) -> DeviceCapabilities:
-        """simulator properties"""
+    def create_program_context(self) -> AbstractProgramContext:
+        return ProgramContext()
 
     @abstractmethod
     def initialize_simulation(self, **kwargs) -> Simulation:
@@ -369,13 +427,7 @@ class BaseLocalSimulator(BraketSimulator):
                 as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
-        is_file = openqasm_ir.source.endswith(".qasm")
-        interpreter = Interpreter()
-        circuit = interpreter.build_circuit(
-            source=openqasm_ir.source,
-            inputs=openqasm_ir.inputs,
-            is_file=is_file,
-        )
+        circuit = self.parse_program(openqasm_ir).circuit
         qubit_count = circuit.num_qubits
 
         self._validate_ir_results_compatibility(

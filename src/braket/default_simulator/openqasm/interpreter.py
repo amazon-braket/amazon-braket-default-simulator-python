@@ -100,7 +100,7 @@ from .parser.openqasm_ast import (
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
-from .program_context import ProgramContext
+from .program_context import AbstractProgramContext, ProgramContext
 
 
 class Interpreter:
@@ -114,7 +114,9 @@ class Interpreter:
     the ProgramContext object, which can be used for debugging or other customizability.
     """
 
-    def __init__(self, context: Optional[ProgramContext] = None, logger: Optional[Logger] = None):
+    def __init__(
+        self, context: Optional[AbstractProgramContext] = None, logger: Optional[Logger] = None
+    ):
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
@@ -124,6 +126,12 @@ class Interpreter:
         self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
     ) -> Circuit:
         """Interpret an OpenQASM program and build a Circuit IR."""
+        return self.run(source, inputs, is_file).circuit
+
+    def run(
+        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+    ) -> ProgramContext:
+        """Interpret an OpenQASM program and return the program state"""
         if inputs:
             self.context.load_inputs(inputs)
 
@@ -139,13 +147,6 @@ class Interpreter:
                 "This program uses OpenQASM language features that may "
                 "not be supported on QPUs or on-demand simulators."
             )
-        return self.context.circuit
-
-    def run(
-        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
-    ) -> ProgramContext:
-        """Interpret an OpenQASM program and return the program state"""
-        self.build_circuit(source, inputs, is_file)
         return self.context
 
     @singledispatchmethod

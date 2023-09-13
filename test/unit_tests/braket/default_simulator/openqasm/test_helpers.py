@@ -12,18 +12,21 @@
 # language governing permissions and limitations under the License.
 
 import pytest
+from sympy import Symbol
 
 from braket.default_simulator.openqasm._helpers.casting import (
     cast_to,
     convert_string_to_bool_array,
     wrap_value_into_literal,
 )
+from braket.default_simulator.openqasm._helpers.functions import BuiltinFunctions
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     ArrayLiteral,
     BitstringLiteral,
     BooleanLiteral,
     FloatLiteral,
     IntegerLiteral,
+    SymbolLiteral,
 )
 
 
@@ -91,3 +94,15 @@ def test_wrap_array():
         [IntegerLiteral(1), IntegerLiteral(2), IntegerLiteral(3)]
     )
     assert wrap_value_into_literal([]) == ArrayLiteral([])
+
+
+def test_pow():
+    assert BuiltinFunctions.pow(FloatLiteral(4), FloatLiteral(0.5)) == FloatLiteral(2)
+    assert BuiltinFunctions.pow(IntegerLiteral(4), FloatLiteral(0.5)) == FloatLiteral(2)
+    assert BuiltinFunctions.pow(IntegerLiteral(2), IntegerLiteral(2)) == IntegerLiteral(4)
+    assert BuiltinFunctions.pow(SymbolLiteral(Symbol("x")), IntegerLiteral(2)) == SymbolLiteral(
+        Symbol("x") ** 2
+    )
+    assert BuiltinFunctions.pow(IntegerLiteral(2), SymbolLiteral(Symbol("x"))) == SymbolLiteral(
+        2 ** Symbol("x")
+    )

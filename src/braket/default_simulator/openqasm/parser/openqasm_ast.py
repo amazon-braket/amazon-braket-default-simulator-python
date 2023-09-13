@@ -97,7 +97,7 @@ __all__ = [
     "WhileLoop",
 ]
 
-from sympy import Symbol
+from sympy import Expr
 
 AccessControl = Enum("AccessControl", "const mutable")
 AssignmentOperator = Enum("AssignmentOperator", "= += -= *= /= &= |= ~= ^= <<= >>= %= **=")
@@ -1072,4 +1072,4 @@ class SymbolLiteral(Expression):
 
     """
 
-    value: Symbol
+    value: Expr
