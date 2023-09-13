@@ -33,20 +33,6 @@ from braket.default_simulator.noise_operations import (
     TwoQubitDepolarizing,
 )
 
-from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
-from braket.default_simulator.noise_operations import (
-    AmplitudeDamping,
-    BitFlip,
-    Depolarizing,
-    GeneralizedAmplitudeDamping,
-    Kraus,
-    PauliChannel,
-    PhaseDamping,
-    PhaseFlip,
-    TwoQubitDephasing,
-    TwoQubitDepolarizing,
-)
-
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
     convert_range_def_to_slice,
