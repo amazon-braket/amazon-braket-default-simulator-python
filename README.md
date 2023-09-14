@@ -2,17 +2,17 @@
 
 [![Latest Version](https://img.shields.io/pypi/v/amazon-braket-default-simulator.svg)](https://pypi.python.org/pypi/amazon-braket-default-simulator)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/amazon-braket-default-simulator.svg)](https://pypi.python.org/pypi/amazon-braket-default-simulator)
-[![Build status](https://github.com/aws/amazon-braket-default-simulator-python/actions/workflows/python-package.yml/badge.svg)](https://github.com/aws/amazon-braket-default-simulator-python/actions/workflows/python-package.yml)
-[![codecov](https://codecov.io/gh/aws/amazon-braket-default-simulator-python/branch/main/graph/badge.svg?token=FZEG1AQU3S)](https://codecov.io/gh/aws/amazon-braket-default-simulator-python)
+[![Build status](https://github.com/amazon-braket/amazon-braket-default-simulator-python/actions/workflows/python-package.yml/badge.svg)](https://github.com/amazon-braket/amazon-braket-default-simulator-python/actions/workflows/python-package.yml)
+[![codecov](https://codecov.io/gh/amazon-braket/amazon-braket-default-simulator-python/branch/main/graph/badge.svg?token=FZEG1AQU3S)](https://codecov.io/gh/amazon-braket/amazon-braket-default-simulator-python)
 [![Documentation Status](https://img.shields.io/readthedocs/amazon-braket-default-simulator-python.svg?logo=read-the-docs)](https://amazon-braket-default-simulator-python.readthedocs.io/en/latest/?badge=latest)
 
 The Amazon Braket Default Simulator is a Python open source library that provides an implementation of a quantum simulator 
-that you can run locally. You can use the simulator to test quantum tasks that you construct for the [Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python)
+that you can run locally. You can use the simulator to test quantum tasks that you construct for the [Amazon Braket SDK](https://github.com/amazon-braket/amazon-braket-sdk-python)
 before you submit them to the Amazon Braket service for execution.
 
 ## Setting up Amazon Braket Default Simulator Python
-You must have the [Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python) installed to use the local simulator.
-Follow the instructions in the [README](https://github.com/aws/amazon-braket-sdk-python/blob/main/README.md) for setup.
+You must have the [Amazon Braket SDK](https://github.com/amazon-braket/amazon-braket-sdk-python) installed to use the local simulator.
+Follow the instructions in the [README](https://github.com/amazon-braket/amazon-braket-sdk-python/blob/main/README.md) for setup.
 
 **Checking the version of the default simulator**
 
@@ -31,7 +31,7 @@ or alternatively from within Python:
 
 ## Usage
 The quantum simulator implementations `StateVectorSimulator` and `DensityMatrixSimulator` plug into the `LocalSimulator` interface in 
-[Amazon Braket SDK](https://github.com/aws/amazon-braket-sdk-python), with the `backend` parameters as `"braket_sv"` and `"braket_dm"`, respectively.
+[Amazon Braket SDK](https://github.com/amazon-braket/amazon-braket-sdk-python), with the `backend` parameters as `"braket_sv"` and `"braket_dm"`, respectively.
 Alternatively, to use `StateVectorSimulator`, you can instantiate `LocalSimulator` with no arguments or with `backend="default"`: 
 
 **Executing a circuit using the default simulator**

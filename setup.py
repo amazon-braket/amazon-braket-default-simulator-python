@@ -72,7 +72,7 @@ setup(
             "tox",
         ]
     },
-    url="https://github.com/aws/amazon-braket-default-simulator-python",
+    url="https://github.com/amazon-braket/amazon-braket-default-simulator-python",
     author="Amazon Web Services",
     description=(
         "An open source quantum circuit simulator to be run locally with the Amazon Braket SDK"
