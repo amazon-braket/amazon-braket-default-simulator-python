@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.20.0.post0 (2023-09-14)
+
+### Documentation Changes
+
+ * Replace aws org with amazon-braket
+ * change the sphinx requirement to be greater than 7.0.0
+
 ## v1.20.0 (2023-08-07)
 
 ### Features
