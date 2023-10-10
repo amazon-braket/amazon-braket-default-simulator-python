@@ -13,7 +13,6 @@
 
 import warnings
 from decimal import Decimal
-from typing import Dict, Tuple
 
 import numpy as np
 from braket.ir.ahs.atom_arrangement import AtomArrangement
@@ -25,7 +24,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 
 
 def _euclidean_distance(
-    site_1: Tuple[Decimal, Decimal], site_2: Tuple[Decimal, Decimal]
+    site_1: tuple[Decimal, Decimal], site_2: tuple[Decimal, Decimal]
 ) -> Decimal:
     # Compute the Euclidean distance between two sets of 2-D points, (x1, y1) and (x2, y2)
 
@@ -37,7 +36,7 @@ class AtomArrangementValidator(AtomArrangement):
 
     # Each site has two coordinates (minItems=maxItems=2)
     @root_validator(pre=True, skip_on_failure=True)
-    def sites_have_length_2(cls, values: Dict) -> Dict:
+    def sites_have_length_2(cls, values: dict) -> dict:
         """
         Validate that the sites in the atom arrangement have only two coordinates
 

@@ -12,9 +12,10 @@
 # language governing permissions and limitations under the License.
 
 import warnings
+from collections.abc import Iterable
 from copy import deepcopy
 from functools import singledispatch
-from typing import Any, Iterable, Type, Union
+from typing import Any, Union
 
 import numpy as np
 import sympy
@@ -45,7 +46,7 @@ LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, 
 
 
 @singledispatch
-def cast_to(into: Union[ClassicalType, Type[LiteralType]], variable: LiteralType) -> LiteralType:
+def cast_to(into: Union[ClassicalType, type[LiteralType]], variable: LiteralType) -> LiteralType:
     """Cast a variable into a given type. Order of parameters is to enable singledispatch"""
     if type(variable) == into:
         return variable

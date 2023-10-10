@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List
-
 import numpy as np
 
 from braket.default_simulator.operation import GateOperation, Observable
@@ -65,19 +63,19 @@ class StateVectorSimulation(Simulation):
         self._batch_size = batch_size
         self._post_observables = None
 
-    def evolve(self, operations: List[GateOperation]) -> None:
+    def evolve(self, operations: list[GateOperation]) -> None:
         self._state_vector = StateVectorSimulation._apply_operations(
             self._state_vector, self._qubit_count, operations, self._batch_size
         )
 
-    def apply_observables(self, observables: List[Observable]) -> None:
+    def apply_observables(self, observables: list[Observable]) -> None:
         """Applies the diagonalizing matrices of the given observables
         to the state of the simulation.
 
         This method can only be called once.
 
         Args:
-            observables (List[Observable]): The observables to apply
+            observables (list[Observable]): The observables to apply
 
         Raises:
             RuntimeError: If this method is called more than once
@@ -96,7 +94,7 @@ class StateVectorSimulation(Simulation):
 
     @staticmethod
     def _apply_operations(
-        state: np.ndarray, qubit_count: int, operations: List[GateOperation], batch_size: int
+        state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
     ) -> np.ndarray:
         state_tensor = np.reshape(state, [2] * qubit_count)
         final = (
@@ -108,7 +106,7 @@ class StateVectorSimulation(Simulation):
         )
         return np.reshape(final, 2**qubit_count)
 
-    def retrieve_samples(self) -> List[int]:
+    def retrieve_samples(self) -> list[int]:
         return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
 
     @property

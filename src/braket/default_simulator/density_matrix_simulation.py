@@ -11,7 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List, Tuple, Union
+from typing import Union
 
 import numpy as np
 
@@ -41,19 +41,19 @@ class DensityMatrixSimulation(Simulation):
         self._density_matrix = initial_state
         self._post_observables = None
 
-    def evolve(self, operations: List[Union[GateOperation, KrausOperation]]) -> None:
+    def evolve(self, operations: list[Union[GateOperation, KrausOperation]]) -> None:
         self._density_matrix = DensityMatrixSimulation._apply_operations(
             self._density_matrix, self._qubit_count, operations
         )
 
-    def apply_observables(self, observables: List[Observable]) -> None:
+    def apply_observables(self, observables: list[Observable]) -> None:
         """Applies the diagonalizing matrices of the given observables
         to the state of the simulation.
 
         This method can only be called once.
 
         Args:
-            observables (List[Observable]): The observables to apply
+            observables (list[Observable]): The observables to apply
 
         Raises:
             RuntimeError: If this method is called more than once
@@ -72,14 +72,14 @@ class DensityMatrixSimulation(Simulation):
 
     @staticmethod
     def _apply_operations(
-        state: np.ndarray, qubit_count: int, operations: List[Union[GateOperation, KrausOperation]]
+        state: np.ndarray, qubit_count: int, operations: list[Union[GateOperation, KrausOperation]]
     ) -> np.ndarray:
         """Applies the gate and noise operations to the density matrix.
 
         Args:
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubits in the circuit
-            operations (List[Union[GateOperation, KrausOperation]]): list of GateOperation and
+            operations (list[Union[GateOperation, KrausOperation]]): list of GateOperation and
                 KrausOperation to be applied to the density matrix
 
         Returns:
@@ -107,7 +107,7 @@ class DensityMatrixSimulation(Simulation):
 
         return np.reshape(dm_tensor, (2**qubit_count, 2**qubit_count))
 
-    def retrieve_samples(self) -> List[int]:
+    def retrieve_samples(self) -> list[int]:
         return np.random.choice(
             self._density_matrix.shape[0], p=self.probabilities, size=self._shots
         )
@@ -167,7 +167,7 @@ class DensityMatrixSimulation(Simulation):
 
     @staticmethod
     def _apply_gate(
-        state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: Tuple[int, ...]
+        state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: tuple[int, ...]
     ) -> np.ndarray:
         r"""Apply a matrix M to a density matrix D according to:
 
@@ -178,7 +178,7 @@ class DensityMatrixSimulation(Simulation):
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubits in the circuit
             matrix (np.ndarray): matrix to be applied to the density matrix
-            targets (Tuple[int,...]): qubits of the density matrix the matrix applied to.
+            targets (tuple[int,...]): qubits of the density matrix the matrix applied to.
 
         Returns:
             np.ndarray: output density matrix
@@ -195,7 +195,7 @@ class DensityMatrixSimulation(Simulation):
 
     @staticmethod
     def _apply_gate_superop(
-        state: np.ndarray, qubit_count: int, superop: np.ndarray, targets: Tuple[int, ...]
+        state: np.ndarray, qubit_count: int, superop: np.ndarray, targets: tuple[int, ...]
     ) -> np.ndarray:
         """Apply a superoperator to a density matrix
 
@@ -203,7 +203,7 @@ class DensityMatrixSimulation(Simulation):
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubits in the circuit
             superop (np.ndarray): superoperator to be applied to the density matrix
-            targets (Tuple[int,...]): qubits of the density matrix the superoperator applied to.
+            targets (tuple[int,...]): qubits of the density matrix the superoperator applied to.
 
         Returns:
             np.ndarray: output density matrix
@@ -214,7 +214,7 @@ class DensityMatrixSimulation(Simulation):
 
     @staticmethod
     def _apply_kraus(
-        state: np.ndarray, qubit_count: int, matrices: List[np.ndarray], targets: Tuple[int, ...]
+        state: np.ndarray, qubit_count: int, matrices: list[np.ndarray], targets: tuple[int, ...]
     ) -> np.ndarray:
         r"""Apply a list of matrices {E_i} to a density matrix D according to:
 
@@ -224,8 +224,8 @@ class DensityMatrixSimulation(Simulation):
         Args:
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubits in the circuit
-            matrices (List[np.ndarray]): matrices to be applied to the density matrix
-            targets (Tuple[int,...]): qubits of the density matrix the matrices applied to.
+            matrices (list[np.ndarray]): matrices to be applied to the density matrix
+            targets (tuple[int,...]): qubits of the density matrix the matrices applied to.
 
         Returns:
             np.ndarray: output density matrix

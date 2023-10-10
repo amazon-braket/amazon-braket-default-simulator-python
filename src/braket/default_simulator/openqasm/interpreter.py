@@ -11,11 +11,12 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import fields
 from functools import singledispatchmethod
 from logging import Logger, getLogger
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 from braket.ir.openqasm.program_v1 import io_type
@@ -123,13 +124,13 @@ class Interpreter:
         self._uses_advanced_language_features = False
 
     def build_circuit(
-        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+        self, source: str, inputs: Optional[dict[str, io_type]] = None, is_file: bool = False
     ) -> Circuit:
         """Interpret an OpenQASM program and build a Circuit IR."""
         return self.run(source, inputs, is_file).circuit
 
     def run(
-        self, source: str, inputs: Optional[Dict[str, io_type]] = None, is_file: bool = False
+        self, source: str, inputs: Optional[dict[str, io_type]] = None, is_file: bool = False
     ) -> ProgramContext:
         """Interpret an OpenQASM program and return the program state"""
         if inputs:
@@ -150,7 +151,7 @@ class Interpreter:
         return self.context
 
     @singledispatchmethod
-    def visit(self, node: Union[QASMNode, List[QASMNode]]) -> Optional[QASMNode]:
+    def visit(self, node: Union[QASMNode, list[QASMNode]]) -> Optional[QASMNode]:
         """Generic visit function for an AST node"""
         if node is None:
             return
@@ -162,7 +163,7 @@ class Interpreter:
         return node
 
     @visit.register
-    def _(self, node_list: list) -> List[QASMNode]:
+    def _(self, node_list: list) -> list[QASMNode]:
         """Generic visit function for a list of AST nodes"""
         return [n for n in [self.visit(node) for node in node_list] if n is not None]
 
@@ -308,7 +309,7 @@ class Interpreter:
             node.body = self.inline_gate_def_body(node.body)
         self.context.add_gate(node.name.name, node)
 
-    def inline_gate_def_body(self, body: List[QuantumStatement]) -> List[QuantumStatement]:
+    def inline_gate_def_body(self, body: list[QuantumStatement]) -> list[QuantumStatement]:
         inlined_body = []
         for statement in body:
             if isinstance(statement, QuantumPhase):
@@ -630,9 +631,9 @@ class Interpreter:
     def handle_builtin_gate(
         self,
         gate_name: str,
-        arguments: List[FloatLiteral],
-        qubits: List[Union[Identifier, IndexedIdentifier]],
-        modifiers: List[QuantumGateModifier],
+        arguments: list[FloatLiteral],
+        qubits: list[Union[Identifier, IndexedIdentifier]],
+        modifiers: list[QuantumGateModifier],
     ) -> None:
         """Add unitary operation to the circuit"""
         self.context.add_builtin_gate(

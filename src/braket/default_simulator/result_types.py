@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 from braket.ir import jaqcd
@@ -86,17 +86,17 @@ class TargetedResultType(ResultType, ABC):
     Holds an observable that may target qubits.
     """
 
-    def __init__(self, targets: Optional[List[int]] = None):
+    def __init__(self, targets: Optional[list[int]] = None):
         """
         Args:
-            targets (List[int], optional): The target qubits of the result type.
+            targets (list[int], optional): The target qubits of the result type.
                 If None, no specific qubits are targeted.
         """
         self._targets = targets
 
     @property
-    def targets(self) -> Optional[Tuple[int, ...]]:
-        """Tuple[int], optional: The target qubits of the result type, if any."""
+    def targets(self) -> Optional[tuple[int, ...]]:
+        """tuple[int], optional: The target qubits of the result type, if any."""
         return self._targets
 
 
@@ -119,10 +119,10 @@ class ObservableResultType(TargetedResultType, ABC):
         return self._observable
 
     @property
-    def targets(self) -> Optional[Tuple[int, ...]]:
+    def targets(self) -> Optional[tuple[int, ...]]:
         return self._observable.measured_qubits
 
-    def calculate(self, simulation: Simulation) -> Union[float, List[float]]:
+    def calculate(self, simulation: Simulation) -> Union[float, list[float]]:
         """Calculates the result type using the underlying observable.
 
         Returns a real number if the observable has defined targets,
@@ -133,7 +133,7 @@ class ObservableResultType(TargetedResultType, ABC):
             simulation (Simulation): The simulation to use in the calculation.
 
         Returns:
-            Union[float, List[float]]: The value of the result type;
+            Union[float, list[float]]: The value of the result type;
             will be a real due to self-adjointness of observable.
         """
         if self._observable.measured_qubits:
@@ -184,10 +184,10 @@ class DensityMatrix(TargetedResultType):
     Simply returns the given density matrix.
     """
 
-    def __init__(self, targets: Optional[List[int]] = None):
+    def __init__(self, targets: Optional[list[int]] = None):
         """
         Args:
-            targets (Optional[List[int]]): The qubit indices on which the reduced density matrix
+            targets (Optional[list[int]]): The qubit indices on which the reduced density matrix
                 are desired. If no targets are specified, the full density matrix is calculated.
                 Default: `None`
         """
@@ -226,14 +226,14 @@ class Amplitude(ResultType):
     Extracts the amplitudes of the desired computational basis states.
     """
 
-    def __init__(self, states: List[str]):
+    def __init__(self, states: list[str]):
         """
         Args:
-            states (List[str]): The computational basis states whose amplitudes are desired
+            states (list[str]): The computational basis states whose amplitudes are desired
         """
         self._states = states
 
-    def calculate(self, simulation: StateVectorSimulation) -> Dict[str, complex]:
+    def calculate(self, simulation: StateVectorSimulation) -> dict[str, complex]:
         """Return the amplitudes of the desired computational basis states in the state
         of the given simulation.
 
@@ -242,7 +242,7 @@ class Amplitude(ResultType):
                 will be returned
 
         Returns:
-            Dict[str, complex]: A dict keyed on computational basis states as bitstrings,
+            dict[str, complex]: A dict keyed on computational basis states as bitstrings,
             with corresponding values the amplitudes
         """
         state = simulation.state_vector
@@ -259,10 +259,10 @@ class Probability(TargetedResultType):
     Computes the marginal probabilities of computational basis states on the desired qubits.
     """
 
-    def __init__(self, targets: Optional[List[int]] = None):
+    def __init__(self, targets: Optional[list[int]] = None):
         """
         Args:
-            targets (Optional[List[int]]): The qubit indices on which probabilities are desired.
+            targets (Optional[list[int]]): The qubit indices on which probabilities are desired.
                 If no targets are specified, the probabilities are calculated on the entire state.
                 Default: `None`
         """
@@ -323,7 +323,7 @@ def _(variance: jaqcd.Variance):
 
 
 def _from_braket_observable(
-    ir_observable: List[Union[str, List[List[List[float]]]]], ir_targets: Optional[List[int]] = None
+    ir_observable: list[Union[str, list[list[list[float]]]]], ir_targets: Optional[list[int]] = None
 ) -> Observable:
     targets = list(ir_targets) if ir_targets else None
     if len(ir_observable) == 1:
@@ -340,8 +340,8 @@ def _from_braket_observable(
 
 
 def _from_single_observable(
-    observable: Union[str, List[List[List[float]]]],
-    targets: Optional[List[int]] = None,
+    observable: Union[str, list[list[list[float]]]],
+    targets: Optional[list[int]] = None,
     # IR tensor product observables are decoupled from targets
     is_factor: bool = False,
 ) -> Observable:
@@ -367,7 +367,7 @@ def _from_single_observable(
             raise ValueError(f"Invalid observable specified: {observable}, targets: {targets}")
 
 
-def _actual_targets(targets: List[int], num_qubits: int, is_factor: bool):
+def _actual_targets(targets: list[int], num_qubits: int, is_factor: bool):
     if not is_factor:
         return targets
     try:
