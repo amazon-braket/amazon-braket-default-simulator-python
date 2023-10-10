@@ -12,7 +12,6 @@
 # language governing permissions and limitations under the License.
 
 import time
-from typing import List
 
 import numpy as np
 from braket.ir.ahs.program_v1 import Program
@@ -41,8 +40,8 @@ _INV_EIGVECS_A = np.linalg.inv(_EIGVECS_A)
 
 def rk_run(
     program: Program,
-    configurations: List[str],
-    simulation_times: List[float],
+    configurations: list[str],
+    simulation_times: list[float],
     rydberg_interaction_coef: float,
     progress_bar: bool = False,
 ) -> np.ndarray:
@@ -51,9 +50,9 @@ def rk_run(
 
     Args:
         program (Program): An analog simulation program for a Rydberg system
-        configurations (List[str]): The list of configurations that comply with the
+        configurations (list[str]): The list of configurations that comply with the
             blockade approximation.
-        simulation_times (List[float]): The list of time points
+        simulation_times (list[float]): The list of time points
         rydberg_interaction_coef (float): The interaction coefficient
         progress_bar (bool): If true, a progress bar will be printed during the simulation.
             Default: False

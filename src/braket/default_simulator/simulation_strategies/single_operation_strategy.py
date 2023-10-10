@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List
-
 import numpy as np
 
 from braket.default_simulator.linalg_utils import multiply_matrix
@@ -20,7 +18,7 @@ from braket.default_simulator.operation import GateOperation
 
 
 def apply_operations(
-    state: np.ndarray, qubit_count: int, operations: List[GateOperation]
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
     """Applies operations to a state vector one at a time.
 
@@ -28,7 +26,7 @@ def apply_operations(
         state (np.ndarray): The state vector to apply the given operations to, as a type
             (num_qubits, 0) tensor
         qubit_count (int): Unused parameter; in signature for backwards-compatibility
-        operations (List[GateOperation]): The operations to apply to the state vector
+        operations (list[GateOperation]): The operations to apply to the state vector
 
     Returns:
         np.ndarray: The state vector after applying the given operations, as a type

@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import itertools
-from typing import List, Tuple
 
 import braket.ir.jaqcd as braket_instruction
 import numpy as np
@@ -36,13 +35,13 @@ class BitFlip(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         k0 = np.sqrt(1 - self._probability) * np.array([[1, 0], [0, 1]])
         k1 = np.sqrt(self._probability) * np.array([[0, 1], [1, 0]])
         return [k0, k1]
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -63,13 +62,13 @@ class PhaseFlip(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         k0 = np.sqrt(1 - self._probability) * np.array([[1.0, 0.0], [0.0, 1.0]])
         k1 = np.sqrt(self._probability) * np.array([[1.0, 0.0], [0.0, -1.0]])
         return [k0, k1]
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -92,7 +91,7 @@ class PauliChannel(KrausOperation):
         self._probZ = probZ
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         K0 = np.sqrt(1 - self._probX - self._probY - self._probZ) * np.array(
             [[1.0, 0.0], [0.0, 1.0]]
         )
@@ -102,7 +101,7 @@ class PauliChannel(KrausOperation):
         return [K0, K1, K2, K3]
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -125,7 +124,7 @@ class Depolarizing(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         K0 = np.sqrt(1 - self._probability) * np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
         K1 = np.sqrt(self._probability / 3) * np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
         K2 = (
@@ -135,7 +134,7 @@ class Depolarizing(KrausOperation):
         return [K0, K1, K2, K3]
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -156,7 +155,7 @@ class TwoQubitDepolarizing(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
         SX = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
         SY = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
@@ -172,7 +171,7 @@ class TwoQubitDepolarizing(KrausOperation):
         return K_list
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -193,7 +192,7 @@ class TwoQubitDephasing(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
         SZ = np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
         K0 = np.sqrt(1 - self._probability) * np.kron(SI, SI)
@@ -204,7 +203,7 @@ class TwoQubitDephasing(KrausOperation):
         return [K0, K1, K2, K3]
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -225,13 +224,13 @@ class AmplitudeDamping(KrausOperation):
         self._gamma = gamma
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex)
         K1 = np.array([[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex)
         return [K0, K1]
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -253,7 +252,7 @@ class GeneralizedAmplitudeDamping(KrausOperation):
         self._probability = probability
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         K0 = np.sqrt(self._probability) * np.array(
             [[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex
         )
@@ -267,7 +266,7 @@ class GeneralizedAmplitudeDamping(KrausOperation):
         return [K0, K1, K2, K3]
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -294,13 +293,13 @@ class PhaseDamping(KrausOperation):
         self._gamma = gamma
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex)
         K1 = np.array([[0.0, 0.0], [0.0, np.sqrt(self._gamma)]], dtype=complex)
         return [K0, K1]
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
     @property
@@ -327,11 +326,11 @@ class Kraus(KrausOperation):
         self._matrices = clone
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         return self._matrices
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
 
@@ -372,11 +371,11 @@ class TwoQubitPauliChannel(KrausOperation):
         self._matrices = K_list
 
     @property
-    def matrices(self) -> List[np.ndarray]:
+    def matrices(self) -> list[np.ndarray]:
         return self._matrices
 
     @property
-    def targets(self) -> Tuple[int, ...]:
+    def targets(self) -> tuple[int, ...]:
         return self._targets
 
 

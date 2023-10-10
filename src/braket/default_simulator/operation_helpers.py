@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from functools import lru_cache, singledispatch
-from typing import List, Tuple, Union
+from typing import Union
 
 import numpy as np
 
@@ -55,11 +55,11 @@ def pauli_eigenvalues(num_qubits: int) -> np.ndarray:
     return np.concatenate([pauli_eigenvalues(num_qubits - 1), -pauli_eigenvalues(num_qubits - 1)])
 
 
-def ir_matrix_to_ndarray(matrix: List[List[List[float]]]) -> np.ndarray:
+def ir_matrix_to_ndarray(matrix: list[list[list[float]]]) -> np.ndarray:
     """Converts a JAQCD matrix into a numpy array.
 
     Args:
-        matrix (List[List[List[float]]]: The IR representation of a matrix
+        matrix (list[list[list[float]]]: The IR representation of a matrix
 
     Returns:
         np.ndarray: The numpy ndarray representation of the matrix
@@ -67,12 +67,12 @@ def ir_matrix_to_ndarray(matrix: List[List[List[float]]]) -> np.ndarray:
     return np.array([[complex(element[0], element[1]) for element in row] for row in matrix])
 
 
-def check_matrix_dimensions(matrix: np.ndarray, targets: Tuple[int, ...]) -> None:
+def check_matrix_dimensions(matrix: np.ndarray, targets: tuple[int, ...]) -> None:
     """Checks that the matrix is of the correct shape to act on the targets.
 
     Args:
         matrix (np.ndarray): The matrix to check
-        targets (Tuple[int, ...]): The target qubits the matrix acts on
+        targets (tuple[int, ...]): The target qubits the matrix acts on
 
     Raises:
         ValueError: If the matrix is not a square matrix or operates on a space
@@ -114,11 +114,11 @@ def check_hermitian(matrix: np.ndarray):
         raise ValueError(f"{matrix} is not Hermitian")
 
 
-def check_cptp(matrices: List[np.ndarray]):
+def check_cptp(matrices: list[np.ndarray]):
     """Checks that the given matrices define a CPTP map.
 
     Args:
-        matrices (List[np.ndarray]): The matrices to check
+        matrices (list[np.ndarray]): The matrices to check
 
     Raises:
         ValueError: If the matrices do not define a CPTP map

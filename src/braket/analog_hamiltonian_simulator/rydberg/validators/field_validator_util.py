@@ -13,17 +13,16 @@
 
 import warnings
 from decimal import Decimal
-from typing import List
 
 
 def validate_value_range_with_warning(
-    values: List[Decimal], min_value: Decimal, max_value: Decimal, name: str
+    values: list[Decimal], min_value: Decimal, max_value: Decimal, name: str
 ) -> None:
     """
     Validate the given list of values against the allowed range
 
     Args:
-        values (List[Decimal]): The given list of values to be validated
+        values (list[Decimal]): The given list of values to be validated
         min_value (Decimal): The minimal value allowed
         max_value (Decimal): The maximal value allowed
         name (str): The name of the field corresponds to the values

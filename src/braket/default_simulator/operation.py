@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from scipy.linalg import fractional_matrix_power
@@ -27,8 +27,8 @@ class Operation(ABC):
 
     @property
     @abstractmethod
-    def targets(self) -> Tuple[int, ...]:
-        """Tuple[int, ...]: The indices of the qubits the operation applies to.
+    def targets(self) -> tuple[int, ...]:
+        """tuple[int, ...]: The indices of the qubits the operation applies to.
 
         Note: For an index to be a target of an observable, the observable must have a nontrivial
         (i.e. non-identity) action on that index. For example, a tensor product observable with a
@@ -78,8 +78,8 @@ class KrausOperation(Operation, ABC):
 
     @property
     @abstractmethod
-    def matrices(self) -> List[np.ndarray]:
-        """List[np.ndarray]: A list of matrices representing Kraus operators."""
+    def matrices(self) -> list[np.ndarray]:
+        """list[np.ndarray]: A list of matrices representing Kraus operators."""
 
     def __eq__(self, other):
         return self.targets == other.targets and np.allclose(self.matrices, other.matrices)
@@ -91,8 +91,8 @@ class Observable(Operation, ABC):
     """
 
     @property
-    def measured_qubits(self) -> Tuple[int, ...]:
-        """Tuple[int, ...]: The indices of the qubits that are measured for this observable.
+    def measured_qubits(self) -> tuple[int, ...]:
+        """tuple[int, ...]: The indices of the qubits that are measured for this observable.
 
         Unlike `targets`, this includes indices on which the observable acts trivially.
         For example, a tensor product observable made entirely of n Z factors will have
@@ -158,7 +158,7 @@ class Observable(Operation, ABC):
         """
 
     @abstractmethod
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> Tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
         """The gates that diagonalize the observable in the computational basis.
 
         Args:
@@ -167,7 +167,7 @@ class Observable(Operation, ABC):
                 for each target qubit. This only makes sense for single-qubit observables.
 
         Returns:
-            Tuple[GateOperation, ...]: The gates that diagonalize the observable in the
+            tuple[GateOperation, ...]: The gates that diagonalize the observable in the
             computational basis, if it is not already in the computational basis.
             If there is no explicit target, this method returns a tuple of gates
             acting on every qubit.

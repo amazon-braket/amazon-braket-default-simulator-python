@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import Dict
-
 from braket.ir.ahs.physical_field import PhysicalField
 from braket.ir.ahs.program_v1 import Program
 
@@ -66,7 +64,7 @@ def convert_unit(program: Program) -> Program:
     return new_program
 
 
-def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> Dict:
+def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> dict:
     """
     For a given field, convert the unit of time from second to microsecond,
     and convert the unit of values from Hz to MHz if `convertvalues` =True
@@ -77,7 +75,7 @@ def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) ->
             otherwise convert the unit of time from second to microsecond. Default: True.
 
     Returns:
-        Dict: The field with units converted
+        dict: The field with units converted
 
     """
     times = [float(time) / TIME_UNIT for time in field.time_series.times]

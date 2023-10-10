@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
@@ -35,8 +35,8 @@ class Circuit:
 
     def __init__(
         self,
-        instructions: Optional[List[GateOperation]] = None,
-        results: Optional[List[Results]] = None,
+        instructions: Optional[list[GateOperation]] = None,
+        results: Optional[list[Results]] = None,
     ):
         self.instructions = []
         self.results = []

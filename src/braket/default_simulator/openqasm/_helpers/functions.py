@@ -14,8 +14,6 @@
 """
 Evaluating expressions
 """
-from typing import Type
-
 from ..parser.openqasm_ast import (
     ArrayLiteral,
     AssignmentOperator,
@@ -157,7 +155,7 @@ builtin_functions = {
 }
 
 
-def resolve_type_hierarchy(x: LiteralType, y: LiteralType) -> Type[LiteralType]:
+def resolve_type_hierarchy(x: LiteralType, y: LiteralType) -> type[LiteralType]:
     """Determine output type of expression, for example: 1 + 1.0 == 2.0"""
     return max(type(x), type(y), key=type_hierarchy.index)
 

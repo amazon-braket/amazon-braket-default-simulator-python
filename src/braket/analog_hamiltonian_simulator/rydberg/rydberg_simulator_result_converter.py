@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List
-
 import numpy as np
 from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
     AnalogHamiltonianSimulationShotMeasurement,
@@ -25,16 +23,16 @@ from braket.task_result.task_metadata_v1 import TaskMetadata
 
 def convert_result(
     dist: np.ndarray,
-    pre_sequence: List[int],
-    configurations: List[str],
+    pre_sequence: list[int],
+    configurations: list[str],
     task_Metadata: TaskMetadata,
 ) -> AnalogHamiltonianSimulationTaskResult:
     """Convert a given sampled distribution to the analog simulation result schema
 
     Args:
         dist (ndarray): The sample results to convert
-        pre_sequence (List[int]): the same pre-sequence measurement results used for all shots
-        configurations (List[str]): The list of configurations that comply with the blockade
+        pre_sequence (list[int]): the same pre-sequence measurement results used for all shots
+        configurations (list[str]): The list of configurations that comply with the blockade
             approximation.
         task_Metadata (TaskMetadata): The metadata for the task
 
