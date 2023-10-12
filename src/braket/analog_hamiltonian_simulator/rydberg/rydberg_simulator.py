@@ -20,7 +20,7 @@ from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
     AnalogHamiltonianSimulationTaskResult,
 )
 from braket.task_result.task_metadata_v1 import TaskMetadata
-from pydantic import create_model  # This is temporary for defining properties below
+from pydantic.v1 import create_model  # This is temporary for defining properties below
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import (
     RYDBERG_INTERACTION_COEF,

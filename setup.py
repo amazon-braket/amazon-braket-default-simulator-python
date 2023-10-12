@@ -33,7 +33,7 @@ setup(
     install_requires=[
         "numpy",
         "opt_einsum",
-        "pydantic",
+        "pydantic>2",
         "scipy",
         "sympy",
         # pinned for compatibility with strawberry fields

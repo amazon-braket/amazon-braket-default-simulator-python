@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from braket.ir.ahs.shifting_field import ShiftingField
-from pydantic.class_validators import root_validator
+from pydantic.v1.class_validators import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
