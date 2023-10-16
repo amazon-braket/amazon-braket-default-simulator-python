@@ -167,7 +167,7 @@ def _get_target_permutation(targets: Sequence[int]) -> Sequence[int]:
     )
 
 
-def measurement_sample(prob, target_count) -> Tuple[int]:
+def measurement_sample(prob, target_count) -> tuple[int]:
     basis_states = np.array(list(itertools.product([0, 1], repeat=target_count)))
     outcome_idx = np.random.choice(list(range(2**target_count)), p=prob)
     return tuple(basis_states[outcome_idx])
