@@ -14,7 +14,8 @@
 import uuid
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Union
+from collections.abc import Callable
+from typing import Any, Union
 
 from braket.device_schema import DeviceActionType
 from braket.ir.jaqcd import Program as JaqcdProgram
@@ -159,13 +160,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """Initializes simulation with keyword arguments"""
 
     def _validate_ir_results_compatibility(
-        self, results: List[Results], device_action_type
+        self, results: list[Results], device_action_type
     ) -> None:
         """
         Validate that requested result types are valid for the simulator.
 
         Args:
-            results (List[Results]): Requested result types.
+            results (list[Results]): Requested result types.
 
         Raises:
             TypeError: If any the specified result types are not supported
@@ -183,7 +184,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
     @staticmethod
     def _validate_shots_and_ir_results(
         shots: int,
-        results: List[Results],
+        results: list[Results],
         qubit_count: int,
     ) -> None:
         """
@@ -191,7 +192,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         Args:
             shots (int): Shots for the simulation.
-            results (List[Results]): Specified result types.
+            results (list[Results]): Specified result types.
             qubit_count (int): Number of qubits for the simulation.
 
         Raises:
@@ -215,12 +216,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
                     )
 
     @staticmethod
-    def _validate_amplitude_states(states: List[str], qubit_count: int) -> None:
+    def _validate_amplitude_states(states: list[str], qubit_count: int) -> None:
         """
         Validate states in an amplitude result type are valid.
 
         Args:
-            states (List[str]): List of binary strings representing quantum states.
+            states (list[str]): List of binary strings representing quantum states.
             qubit_count (int): Number of qubits for the simulation.
 
         Raises:
@@ -234,15 +235,15 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 )
 
     @staticmethod
-    def _translate_result_types(results: List[Results]) -> List[ResultType]:
+    def _translate_result_types(results: list[Results]) -> list[ResultType]:
         return [from_braket_result_type(result) for result in results]
 
     @staticmethod
     def _generate_results(
-        results: List[Results],
-        result_types: List[ResultType],
+        results: list[Results],
+        result_types: list[ResultType],
         simulation: Simulation,
-    ) -> List[ResultTypeValue]:
+    ) -> list[ResultTypeValue]:
         return [
             ResultTypeValue.construct(
                 type=results[index],
@@ -253,7 +254,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
     def _create_results_obj(
         self,
-        results: List[Dict[str, Any]],
+        results: list[dict[str, Any]],
         openqasm_ir: OpenQASMProgram,
         simulation: Simulation,
     ) -> GateModelTaskResult:
@@ -272,7 +273,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         )
 
     @staticmethod
-    def _validate_operation_qubits(operations: List[Operation]) -> None:
+    def _validate_operation_qubits(operations: list[Operation]) -> None:
         qubits_referenced = {target for operation in operations for target in operation.targets}
         if max(qubits_referenced) >= len(qubits_referenced):
             raise ValueError(
@@ -282,7 +283,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
     @staticmethod
     def _validate_result_types_qubits_exist(
-        targeted_result_types: List[TargetedResultType], qubit_count: int
+        targeted_result_types: list[TargetedResultType], qubit_count: int
     ) -> None:
         for result_type in targeted_result_types:
             targets = result_type.targets
@@ -352,13 +353,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
                         raise NameError(f"Missing input variable '{missing_input}'.")
 
     @staticmethod
-    def _get_measured_qubits(qubit_count: int) -> List[int]:
+    def _get_measured_qubits(qubit_count: int) -> list[int]:
         return list(range(qubit_count))
 
     @staticmethod
     def _tensor_product_index_dict(
-        observable: TensorProduct, callable: Callable[[Observable], Any]
-    ) -> Dict[int, Any]:
+        observable: TensorProduct, func: Callable[[Observable], Any]
+    ) -> dict[int, Any]:
         obj_dict = {}
         i = 0
         factors = list(observable.factors)
@@ -369,12 +370,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 if factors:
                     total += len(factors[0].measured_qubits)
             if factors:
-                obj_dict[i] = callable(factors[0])
+                obj_dict[i] = func(factors[0])
             i += 1
         return obj_dict
 
     @staticmethod
-    def _observable_hash(observable: Observable) -> Union[str, Dict[int, str]]:
+    def _observable_hash(observable: Observable) -> Union[str, dict[int, str]]:
         if isinstance(observable, Hermitian):
             return str(hash(str(observable.matrix.tostring())))
         elif isinstance(observable, TensorProduct):
@@ -386,14 +387,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return str(observable.__class__.__name__)
 
     @staticmethod
-    def _formatted_measurements(simulation: Simulation) -> List[List[str]]:
+    def _formatted_measurements(simulation: Simulation) -> list[list[str]]:
         """Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (Simulation): Simulation to use for obtaining the measurements.
 
         Returns:
-            List[List[str]]: List containing the measurements, where each measurement consists
+            list[list[str]]: List containing the measurements, where each measurement consists
             of a list of measured values of qubits.
         """
         return [
