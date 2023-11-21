@@ -24,4 +24,5 @@ jobs:
         pip install -e .[test]
     - name: Run code format checks
       run: |
-        tox -e linters
+        black --check .
+        flake8
