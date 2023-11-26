@@ -1075,13 +1075,15 @@ def test_gphase():
 
 def test_no_neg_ctrl_phase():
     qasm = """
-    gate bad_phase a {
-        negctrl @ gphase(π/2);
-    }
+    qubit q;
+    h q;
+    negctrl @ gphase(π) q;
+    h q;
     """
-    no_negctrl = "negctrl modifier undefined for gphase operation"
-    with pytest.raises(ValueError, match=no_negctrl):
-        Interpreter().run(qasm)
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(1, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [0, -1])
 
 
 def test_if():
