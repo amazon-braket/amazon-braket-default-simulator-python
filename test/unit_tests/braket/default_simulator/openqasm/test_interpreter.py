@@ -306,10 +306,12 @@ def test_array_declaration():
         base_type=IntType(), dimensions=[IntegerLiteral(2)]
     )
     assert context.get_type("multi_dim") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)),
+        dimensions=[IntegerLiteral(2), IntegerLiteral(2)],
     )
     assert context.get_type("by_ref") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)),
+        dimensions=[IntegerLiteral(2), IntegerLiteral(2)],
     )
     assert context.get_type("with_expressions") == ArrayType(
         base_type=UintType(IntegerLiteral(8)),
@@ -402,7 +404,8 @@ def test_indexed_expression():
     context = Interpreter().run(qasm)
 
     assert context.get_type("multi_dim") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)),
+        dimensions=[IntegerLiteral(2), IntegerLiteral(2)],
     )
     assert context.get_type("int_from_array") == IntType(IntegerLiteral(8))
     assert context.get_type("array_from_array") == ArrayType(
@@ -412,7 +415,8 @@ def test_indexed_expression():
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(3)]
     )
     assert context.get_type("using_set_multi_dim") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(3), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)),
+        dimensions=[IntegerLiteral(3), IntegerLiteral(2)],
     )
 
     assert context.get_value("multi_dim") == ArrayLiteral(
@@ -649,7 +653,12 @@ def test_indexed_identifier():
         ]
     )
     assert context.get_value("two") == ArrayLiteral(
-        [BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(True), BooleanLiteral(False)]
+        [
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+            BooleanLiteral(True),
+            BooleanLiteral(False),
+        ]
     )
 
 
@@ -1073,7 +1082,7 @@ def test_gphase():
     assert np.allclose(simulation.state_vector, [-1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
 
 
-def test_no_neg_ctrl_phase():
+def test_neg_ctrl_phase():
     qasm = """
     qubit q;
     h q;
@@ -1781,10 +1790,20 @@ def test_subroutine_classical_passed_by_value():
     """
     context = Interpreter().run(qasm)
     assert context.get_value("before") == ArrayLiteral(
-        [BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False)]
+        [
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+        ]
     )
     assert context.get_value("after") == ArrayLiteral(
-        [BooleanLiteral(True), BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False)]
+        [
+            BooleanLiteral(True),
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+        ]
     )
 
 

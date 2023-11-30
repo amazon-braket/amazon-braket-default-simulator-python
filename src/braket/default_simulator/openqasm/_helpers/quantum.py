@@ -54,7 +54,7 @@ def is_controlled(phase: QuantumPhase) -> bool:
     return False
 
 
-def convert_phase_to_gate(controlled_phase: QuantumPhase) -> QuantumGate | list[QuantumGate]:
+def convert_phase_to_gate(controlled_phase: QuantumPhase) -> Union[QuantumGate, list[QuantumGate]]:
     """Convert a controlled quantum phase into a quantum gate"""
     ctrl_modifiers = get_ctrl_modifiers(controlled_phase.modifiers)
     first_ctrl_modifier = ctrl_modifiers[-1]
