@@ -453,7 +453,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumPhase) -> None:
-        self._uses_advanced_language_features = True
         node.argument = self.visit(node.argument)
         node.modifiers = self.visit(node.modifiers)
         if is_inverted(node):

@@ -1978,7 +1978,6 @@ def test_noise():
     (
         "const int x = 4;",
         "qubit[2] q; h q[0:1];",
-        "gphase(0.15);",
         "gate my_x q { x q; }",
         "qubit[2] q; ctrl @ x q[0], q[1];",
         "qubit q; if (1) { x q; }",
