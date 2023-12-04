@@ -54,12 +54,14 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     BoolType,
     FloatLiteral,
     FloatType,
+    GateModifierName,
     Identifier,
     IndexedIdentifier,
     IntegerLiteral,
     IntType,
     QuantumGate,
     QuantumGateDefinition,
+    QuantumGateModifier,
     SymbolLiteral,
     UintType,
 )
@@ -1084,15 +1086,50 @@ def test_gphase():
 
 def test_neg_ctrl_phase():
     qasm = """
-    qubit q;
-    h q;
-    negctrl @ gphase(π) q;
-    h q;
+    gate some_ctrl_gphase(λ) a, b { ctrl @ negctrl @ gphase(λ) a, b; }
+    qubit[2] q;
+    x q[0];
+    h q[1];
+    some_ctrl_gphase(π) q[0], q[1];
+    h q[1];
     """
-    circuit = Interpreter().build_circuit(qasm)
-    simulation = StateVectorSimulation(1, 1, 1)
+    context = Interpreter().run(qasm)
+    circuit = context.circuit
+    simulation = StateVectorSimulation(2, 1, 1)
     simulation.evolve(circuit.instructions)
-    assert np.allclose(simulation.state_vector, [0, -1])
+    assert np.allclose(simulation.state_vector, [0, 0, 0, -1])
+
+    assert context.get_gate_definition("some_ctrl_gphase") == QuantumGateDefinition(
+        name=Identifier("some_ctrl_gphase"),
+        arguments=[Identifier("λ")],
+        qubits=[Identifier("a"), Identifier("b")],
+        body=[
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("x"),
+                arguments=[],
+                qubits=[Identifier("b")],
+            ),
+            QuantumGate(
+                modifiers=[
+                    QuantumGateModifier(modifier=GateModifierName.ctrl, argument=IntegerLiteral(1))
+                ],
+                name=Identifier("U"),
+                arguments=[
+                    IntegerLiteral(0),
+                    IntegerLiteral(0),
+                    Identifier("λ"),
+                ],
+                qubits=[Identifier("a"), Identifier("b")],
+            ),
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("x"),
+                arguments=[],
+                qubits=[Identifier("b")],
+            ),
+        ],
+    )
 
 
 def test_if():

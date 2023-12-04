@@ -77,9 +77,9 @@ def convert_phase_to_gate(controlled_phase: QuantumPhase) -> Union[QuantumGate, 
     if first_ctrl_modifier.modifier == GateModifierName.negctrl:
         X = QuantumGate(
             [],
-            Identifier("U"),
-            [Identifier("π"), IntegerLiteral(0), Identifier("π")],
-            controlled_phase.qubits,
+            Identifier("x"),
+            [],
+            [controlled_phase.qubits[-1]],
         )
         return [X, ctrl_phaseshift, X]
     else:
