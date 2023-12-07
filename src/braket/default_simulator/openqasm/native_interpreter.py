@@ -69,7 +69,7 @@ class NativeInterpreter(Interpreter):
     def _(self, node: QuantumMeasurement) -> Union[BooleanLiteral, ArrayLiteral]:
         self.logger.debug(f"Quantum measurement: {node}")
         self.simulation.evolve(self.context.pop_instructions())
-        targets = self.context.get_qubits(node.qubit)
+        targets = self.context.get_qubits(self.visit(node.qubit))
         outcome = self.simulation.measure(targets)
         if len(targets) > 1 or (
             isinstance(node.qubit, IndexedIdentifier)
