@@ -63,7 +63,7 @@ class TimeSeriesValidator(TimeSeries):
         for i in range(len(times) - 1):
             if times[i] >= times[i + 1]:
                 raise ValueError(
-                    f"Time point {i} ({times[i]}) and time point {i+1} ({times[i+1]}) "
+                    f"Time point {i} ({times[i]}) and time point {i + 1} ({times[i + 1]}) "
                     "must be monotonically increasing."
                 )
         return values

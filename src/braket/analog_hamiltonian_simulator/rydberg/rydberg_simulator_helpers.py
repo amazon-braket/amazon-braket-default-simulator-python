@@ -458,8 +458,8 @@ def _print_progress_bar(num_time_points: int, index_time: int, start_time: float
             (current_time - start_time) / (index_time + 1) * (num_time_points - (index_time + 1))
         )
         print(
-            f"{100 * (index_time+1)/num_time_points}% finished, "
-            f"elapsed time = {(current_time-start_time)} seconds, "
+            f"{100 * (index_time + 1) / num_time_points}% finished, "
+            f"elapsed time = {(current_time - start_time)} seconds, "
             f"ETA = {estimate_time_arrival} seconds ",
             flush=True,
             end="\r",
