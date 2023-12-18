@@ -351,6 +351,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
                     except TypeError:
                         missing_input = param.free_symbols.pop()
                         raise NameError(f"Missing input variable '{missing_input}'.")
+            for qubit in instruction.targets:
+                try:
+                    float(qubit)
+                except TypeError:
+                    missing_input = qubit.free_symbols.pop()
+                    raise NameError(f"Missing input variable '{missing_input}'.")
 
     @staticmethod
     def _get_measured_qubits(qubit_count: int) -> list[int]:

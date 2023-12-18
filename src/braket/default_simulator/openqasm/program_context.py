@@ -12,13 +12,13 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from functools import singledispatchmethod
 from typing import Any, Optional, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
-from sympy import Expr
+from sympy import Expr, Symbol
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
 from braket.default_simulator.noise_operations import (
@@ -47,6 +47,7 @@ from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ClassicalType,
+    DiscreteSet,
     FloatLiteral,
     GateModifierName,
     Identifier,
@@ -57,6 +58,7 @@ from .parser.openqasm_ast import (
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
+    SymbolLiteral,
 )
 
 
@@ -113,29 +115,73 @@ class QubitTable(Table):
         corresponding to the elements referenced by the indexed identifier.
         """
         name = identifier.name.name
+        indices = self.get_qubit_indices(identifier)
+        primary_index = indices[0]
+
+        if isinstance(primary_index, (IntegerLiteral, SymbolLiteral)):
+            target = (self[name][0] + primary_index.value,)
+        elif isinstance(primary_index, RangeDefinition):
+            target = tuple(np.array(self[name])[convert_range_def_to_slice(primary_index)])
+        # Discrete set
+        else:
+            index_list = convert_discrete_set_to_list(primary_index)
+            target = tuple([self[name][0] + index for index in index_list])
+
+        if len(indices) == 2:
+            # used for gate calls on registers, index will be IntegerLiteral
+            secondary_index = indices[1].value
+            target = (target[secondary_index],)
+
+        # validate indices manually, since we use addition instead of indexing to
+        # accommodate symbolic indices
+        for q in target:
+            if isinstance(q, int) and (relative_index := q - self[name][0]) >= len(self[name]):
+                raise IndexError(
+                    f"Index {relative_index} out of bounds for qubit '{name}' "
+                    f"with size {len(self[name])}"
+                )
+        return target
+
+    @staticmethod
+    def get_qubit_indices(
+        identifier: IndexedIdentifier,
+    ) -> list[IntegerLiteral | RangeDefinition | DiscreteSet]:
         primary_index = identifier.indices[0]
         if isinstance(primary_index, list):
             if len(primary_index) != 1:
                 raise IndexError("Cannot index multiple dimensions for qubits.")
             primary_index = primary_index[0]
-        if isinstance(primary_index, IntegerLiteral):
-            target = (self[name][primary_index.value],)
-        elif isinstance(primary_index, RangeDefinition):
-            target = tuple(np.array(self[name])[convert_range_def_to_slice(primary_index)])
-        # Discrete set
-        else:
-            target = tuple(np.array(self[name])[convert_discrete_set_to_list(primary_index)])
 
         if len(identifier.indices) == 1:
-            return target
+            return [primary_index]
         elif len(identifier.indices) == 2:
             # used for gate calls on registers, index will be IntegerLiteral
-            secondary_index = identifier.indices[1][0].value
-            return (target[secondary_index],)
+            secondary_index = identifier.indices[1][0]
+            return [primary_index, secondary_index]
         else:
             raise IndexError("Cannot index multiple dimensions for qubits.")
 
+    def get_indices_length(
+        self,
+        indices: Sequence[IntegerLiteral | SymbolLiteral | RangeDefinition | DiscreteSet],
+    ):
+        last_index = indices[-1]
+
+        if isinstance(last_index, (IntegerLiteral, SymbolLiteral)):
+            return 1
+        elif isinstance(last_index, RangeDefinition):
+            buffer = np.sign(last_index.step.value) if last_index.step is not None else 1
+            start = last_index.start.value if last_index.start is not None else 0
+            stop = last_index.end.value + buffer
+            step = last_index.step.value if last_index.step is not None else 1
+            return (stop - start) // step
+        elif isinstance(last_index, DiscreteSet):
+            return len(last_index.values)
+
     def get_qubit_size(self, identifier: Union[Identifier, IndexedIdentifier]) -> int:
+        if isinstance(identifier, IndexedIdentifier):
+            indices = self.get_qubit_indices(identifier)
+            return self.get_indices_length(indices)
         return len(self.get_by_identifier(identifier))
 
 
