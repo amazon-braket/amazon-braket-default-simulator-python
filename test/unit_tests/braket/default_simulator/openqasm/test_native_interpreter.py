@@ -23,6 +23,7 @@ from braket.default_simulator.openqasm.native_interpreter import NativeInterpret
         "for int q in [0:2 - 1] {\n    reset __qubits__[q];\n}",
         "array[int[32], 2] __arr_0__ = {0, 1};\nfor int q in __arr_0__ {\n    reset __qubits__[q];\n}",
         "reset __qubits__[0];\nreset __qubits__[1];",
+        "reset __qubits__;",
     ),
 )
 def test_reset(reset_instructions):
