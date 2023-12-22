@@ -96,7 +96,7 @@ class NativeInterpreter(Interpreter):
     def _(self, node: QuantumReset) -> None:
         self.logger.debug(f"Quantum reset: {node}")
         self.simulation.evolve(self.context.pop_instructions())
-        targets = self.context.get_qubits(node.qubits)
+        targets = self.context.get_qubits(self.visit(node.qubits))
         outcome = self.simulation.measure(targets)
         for qubit, result in zip(targets, outcome):
             if result:
