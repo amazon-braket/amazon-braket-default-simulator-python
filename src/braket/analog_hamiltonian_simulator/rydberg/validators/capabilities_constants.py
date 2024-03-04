@@ -14,10 +14,10 @@
 from decimal import Decimal
 
 from pydantic.main import BaseModel
-
+from pydantic import PositiveInt
 
 class CapabilitiesConstants(BaseModel):
-    DIMENSIONS = 2
+    DIMENSIONS: PositiveInt = 2
     BOUNDING_BOX_SIZE_X: Decimal
     BOUNDING_BOX_SIZE_Y: Decimal
     MAX_TIME: Decimal
