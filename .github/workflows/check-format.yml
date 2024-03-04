@@ -17,12 +17,11 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.x'
+        python-version: '3.11'
     - name: Install dependencies
       run: |
         pip install --upgrade pip
-        pip install -e .[test]
+        pip install tox
     - name: Run code format checks
       run: |
-        black --check .
-        flake8
+        tox -e linters_check

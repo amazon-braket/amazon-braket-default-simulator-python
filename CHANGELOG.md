@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.20.3 (2024-03-04)
+
+### Bug Fixes and Other Changes
+
+ * add in setuptools for publishing to pypi
+
+## v1.20.2 (2024-03-02)
+
+### Bug Fixes and Other Changes
+
+ * add tox read only linters
+
 ## v1.20.1 (2023-10-11)
 
 ### Bug Fixes and Other Changes
