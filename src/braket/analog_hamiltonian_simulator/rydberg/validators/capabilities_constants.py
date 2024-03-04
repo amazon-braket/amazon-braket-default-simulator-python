@@ -13,8 +13,9 @@
 
 from decimal import Decimal
 
-from pydantic.main import BaseModel
 from pydantic import PositiveInt
+from pydantic.main import BaseModel
+
 
 class CapabilitiesConstants(BaseModel):
     DIMENSIONS: PositiveInt = 2
