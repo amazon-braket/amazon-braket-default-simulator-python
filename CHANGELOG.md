@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.20.4 (2024-03-04)
+
+### Bug Fixes and Other Changes
+
+ * make the dimension a PositiveInt for typing
+
 ## v1.20.3 (2024-03-04)
 
 ### Bug Fixes and Other Changes
