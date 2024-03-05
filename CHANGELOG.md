@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.20.5 (2024-03-05)
+
+### Bug Fixes and Other Changes
+
+ * update schema version to latest in setup.py
+
 ## v1.20.4 (2024-03-04)
 
 ### Bug Fixes and Other Changes
