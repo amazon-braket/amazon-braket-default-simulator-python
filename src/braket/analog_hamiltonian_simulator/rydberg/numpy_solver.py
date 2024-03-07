@@ -37,6 +37,19 @@ _STAGES = int(_ORDER / 2)
 _EIGVALS_A, _EIGVECS_A = np.linalg.eig(_A)
 _INV_EIGVECS_A = np.linalg.inv(_EIGVECS_A)
 
+_SOLVER_CACHE = {}
+
+def _solve_and_cache(identity_mat: np.ndarray, eigen_mat: np.ndarray) -> np.ndarray:
+    """
+    """
+    identity_mat_key = hash(identity_mat.data.tobytes())
+    eigen_mat_key = hash(eigen_mat.data.tobytes())
+    if (identity_mat_key, eigen_mat_key) not in _SOLVER_CACHE:
+        solved_map = np.linalg.solve(identity_mat, eigen_mat)
+        _SOLVER_CACHE[(identity_mat_key, eigen_mat_key)] = solved_map
+        return solved_map
+    else:
+        return _SOLVER_CACHE[(identity_mat_key, eigen_mat_key)]
 
 def rk_run(
     program: Program,
@@ -107,7 +120,7 @@ def rk_run(
         ]
 
         dk_tilde = [
-            np.linalg.solve(
+            _solve_and_cache(
                 np.eye(size_hilbert_space) + 1j * dt * _EIGVALS_A[i] * hamiltonian,
                 np.sum([_INV_EIGVECS_A[i][j] * kx[j] for j in range(_STAGES)], axis=0),
             )
@@ -130,3 +143,4 @@ def rk_run(
         states.append(state)
 
     return states
+
