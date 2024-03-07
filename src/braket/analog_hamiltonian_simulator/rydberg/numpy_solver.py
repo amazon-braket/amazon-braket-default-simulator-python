@@ -41,7 +41,9 @@ _SOLVER_CACHE = {}
 
 
 def _solve_and_cache(identity_mat: np.ndarray, eigen_mat: np.ndarray) -> np.ndarray:
-    """ """
+    """Caches the solved matrices and returns the value. Will calculate the value if not
+    already present.
+    """
     identity_mat_key = hash(identity_mat.data.tobytes())
     eigen_mat_key = hash(eigen_mat.data.tobytes())
     if (identity_mat_key, eigen_mat_key) not in _SOLVER_CACHE:
