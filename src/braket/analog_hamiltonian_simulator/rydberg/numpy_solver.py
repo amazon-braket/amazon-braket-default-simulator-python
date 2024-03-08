@@ -24,11 +24,13 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers impor
 
 # define the Butcher tableau
 _ORDER = 6
-_A = np.array([
-    [5 / 36, 2 / 9 - 1 / np.sqrt(15), 5 / 36 - np.sqrt(15) / 30],
-    [5 / 36 + np.sqrt(15) / 24, 2 / 9, 5 / 36 - np.sqrt(15) / 24],
-    [5 / 36 + np.sqrt(15) / 30, 2 / 9 + 1 / np.sqrt(15), 5 / 36],
-])
+_A = np.array(
+    [
+        [5 / 36, 2 / 9 - 1 / np.sqrt(15), 5 / 36 - np.sqrt(15) / 30],
+        [5 / 36 + np.sqrt(15) / 24, 2 / 9, 5 / 36 - np.sqrt(15) / 24],
+        [5 / 36 + np.sqrt(15) / 30, 2 / 9 + 1 / np.sqrt(15), 5 / 36],
+    ]
+)
 _B = np.array([5 / 18, 4 / 9, 5 / 18])
 _C = np.array([1 / 2 - np.sqrt(15) / 10, 1 / 2, 1 / 2 + np.sqrt(15) / 10])
 
