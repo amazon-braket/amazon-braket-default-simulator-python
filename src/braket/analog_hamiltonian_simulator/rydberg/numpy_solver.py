@@ -77,6 +77,8 @@ def rk_run(
 
     states = [state]  # The history of all intermediate states
 
+    stage_range = range(_STAGES)
+
     if len(simulation_times) == 1:
         return states
 
@@ -84,7 +86,7 @@ def rk_run(
 
     if progress_bar:  # print a lightweight progress bar
         start_time = time.time()
-    for index_time, _ in enumerate(simulation_times[1:]):
+    for index_time in range(len(simulation_times) - 1):
         if progress_bar:  # print a lightweight progress bar
             _print_progress_bar(len(simulation_times), index_time, start_time)
 
@@ -99,26 +101,26 @@ def rk_run(
         x2 = -1j * hamiltonian.dot(x1)
         x3 = -1j * hamiltonian.dot(x2)
 
-        kk = [x1 + _C[i] * dt * x2 for i in range(_STAGES)]
+        kk = [x1 + _C[i] * dt * x2 for i in stage_range]
 
         kx = [
             kk[i]
             - x1
-            - dt * np.sum([_A[i][j] * (x2 + _C[j] * dt * x3) for j in range(_STAGES)], axis=0)
-            for i in range(_STAGES)
+            - dt * np.sum([_A[i][j] * (x2 + _C[j] * dt * x3) for j in stage_range], axis=0)
+            for i in stage_range
         ]
 
         dk_tilde = [
             np.linalg.solve(
                 np.eye(size_hilbert_space) + 1j * dt * _EIGVALS_A[i] * hamiltonian,
-                np.sum([_INV_EIGVECS_A[i][j] * kx[j] for j in range(_STAGES)], axis=0),
+                np.sum([_INV_EIGVECS_A[i][j] * kx[j] for j in stage_range], axis=0),
             )
-            for i in range(_STAGES)
+            for i in stage_range
         ]
 
         dk = [
-            np.sum([_EIGVECS_A[i][j] * dk_tilde[j] for j in range(_STAGES)], axis=0)
-            for i in range(_STAGES)
+            np.sum([_EIGVECS_A[i][j] * dk_tilde[j] for j in stage_range], axis=0)
+            for i in stage_range
         ]
 
         delta_state = dt * _B.dot(np.subtract(kk, dk))  # The update of the state
