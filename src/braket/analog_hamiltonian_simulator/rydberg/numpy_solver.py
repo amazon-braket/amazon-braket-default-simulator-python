@@ -24,13 +24,13 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers impor
 
 # define the Butcher tableau
 _ORDER = 6
-_A = [
+_A = np.array([
     [5 / 36, 2 / 9 - 1 / np.sqrt(15), 5 / 36 - np.sqrt(15) / 30],
     [5 / 36 + np.sqrt(15) / 24, 2 / 9, 5 / 36 - np.sqrt(15) / 24],
     [5 / 36 + np.sqrt(15) / 30, 2 / 9 + 1 / np.sqrt(15), 5 / 36],
-]
-_B = [5 / 18, 4 / 9, 5 / 18]
-_C = [1 / 2 - np.sqrt(15) / 10, 1 / 2, 1 / 2 + np.sqrt(15) / 10]
+])
+_B = np.array([5 / 18, 4 / 9, 5 / 18])
+_C = np.array([1 / 2 - np.sqrt(15) / 10, 1 / 2, 1 / 2 + np.sqrt(15) / 10])
 
 _STAGES = int(_ORDER / 2)
 
@@ -119,9 +119,7 @@ def rk_run(
             for i in range(_STAGES)
         ]
 
-        kk = np.array(kk) - dk
-
-        delta_state = dt * np.array(_B).dot(kk)  # The update of the state
+        delta_state = dt * _B.dot(np.subtract(kk, dk))  # The update of the state
 
         # The end of the implicit RK method for updating the state
 
