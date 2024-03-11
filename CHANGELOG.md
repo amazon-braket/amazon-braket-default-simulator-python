@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.20.6 (2024-03-11)
+
+### Bug Fixes and Other Changes
+
+ * typing issue for apply_hamiltonian
+
 ## v1.20.5 (2024-03-05)
 
 ### Bug Fixes and Other Changes
