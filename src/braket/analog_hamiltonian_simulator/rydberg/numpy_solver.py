@@ -72,7 +72,7 @@ def rk_run(
 
     # Define the initial state for the simulation
     size_hilbert_space = len(configurations)
-    size_hilbert_space_eye_mat = np.eye(size_hilbert_space)
+    eye_size_hilbert_space = np.eye(size_hilbert_space)
     state = np.zeros(size_hilbert_space)
     state[0] = 1
 
@@ -113,7 +113,7 @@ def rk_run(
 
         dk_tilde = [
             np.linalg.solve(
-                size_hilbert_space_eye_mat + 1j * dt * _EIGVALS_A[i] * hamiltonian,
+                eye_size_hilbert_space + 1j * dt * _EIGVALS_A[i] * hamiltonian,
                 np.sum([_INV_EIGVECS_A[i][j] * kx[j] for j in stage_range], axis=0),
             )
             for i in stage_range
