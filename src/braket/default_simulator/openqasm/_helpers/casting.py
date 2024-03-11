@@ -13,9 +13,9 @@
 
 import warnings
 from collections.abc import Iterable
+from copy import copy
 from functools import singledispatch
 from typing import Any, Union
-from copy import copy
 
 import numpy as np
 import sympy
