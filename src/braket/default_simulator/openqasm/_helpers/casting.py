@@ -13,9 +13,9 @@
 
 import warnings
 from collections.abc import Iterable
-from copy import deepcopy
 from functools import singledispatch
 from typing import Any, Union
+from copy import copy
 
 import numpy as np
 import sympy
@@ -77,7 +77,7 @@ def _(
         or len(variable.values) != size
     ):
         raise ValueError(f"Invalid array to cast to bit register of size {size}: {variable}.")
-    return ArrayLiteral(deepcopy(variable.values))
+    return ArrayLiteral(copy(variable.values))
 
 
 @cast_to.register
