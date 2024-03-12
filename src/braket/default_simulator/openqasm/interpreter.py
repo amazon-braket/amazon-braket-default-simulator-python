@@ -470,11 +470,16 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumMeasurement) -> None:
-        """Doesn't do anything, but may add more functionality in the future"""
+        qubit = node.qubit
+        if isinstance(qubit, IndexedIdentifier):
+            qubit_value = qubit.indices[0][0].value
+            self.context.add_measure(qubit_value)
+        else:  # Identifier
+            self.context.add_measure()
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
-        """Doesn't do anything, but may add more functionality in the future"""
+        self.visit(node.measure)
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:

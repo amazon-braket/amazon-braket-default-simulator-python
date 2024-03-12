@@ -302,7 +302,7 @@ def test_properties():
                     "supportPhysicalQubits": False,
                     "supportsPartialVerbatimBox": False,
                     "requiresContiguousQubitIndices": True,
-                    "requiresAllQubitsMeasurement": True,
+                    "requiresAllQubitsMeasurement": False,
                     "supportsUnassignedMeasurements": True,
                     "disabledQubitRewiringSupported": False,
                 },

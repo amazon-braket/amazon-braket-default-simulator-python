@@ -890,3 +890,9 @@ class ProgramContext(AbstractProgramContext):
 
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
+
+    def add_measure(self, target: int = None):
+        if target is None:
+            self._circuit.add_measure(list(range(self.num_qubits)))
+        else:
+            self._circuit.add_measure(target)

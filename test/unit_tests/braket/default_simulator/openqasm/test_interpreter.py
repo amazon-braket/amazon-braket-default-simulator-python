@@ -1997,3 +1997,23 @@ def test_basis_rotation_hermitian():
         Hadamard([2]),
         *hermitian.diagonalizing_gates(),
     ]
+
+
+def test_measurement():
+    qasm = """
+    bit[1] b;
+    qubit[2] q;
+    h q[0];
+    h q[1];
+    b[0] = measure q[0];
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.measured_qubits == [0]
+
+    qasm = """
+    bit[3] b;
+    qubit[3] q;
+    b = measure q;
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.measured_qubits == [0, 1, 2]

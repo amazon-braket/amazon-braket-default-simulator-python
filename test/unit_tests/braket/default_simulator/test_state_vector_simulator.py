@@ -240,7 +240,7 @@ def test_properties():
                     "supportPhysicalQubits": False,
                     "supportsPartialVerbatimBox": False,
                     "requiresContiguousQubitIndices": True,
-                    "requiresAllQubitsMeasurement": True,
+                    "requiresAllQubitsMeasurement": False,
                     "supportsUnassignedMeasurements": True,
                     "disabledQubitRewiringSupported": False,
                 },
@@ -1269,3 +1269,19 @@ def test_missing_input():
     missing_input = "Missing input variable 'in_int'."
     with pytest.raises(NameError, match=missing_input):
         simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+
+
+def test_measure_targets():
+    qasm = """
+    qubit[2] q;
+    bit[1] b;
+    h q[0];
+    cnot q[0], q[1];
+    b[0] = measure q[0];
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert 400 < np.sum(measurements, axis=0)[0] < 600
+    assert len(measurements[0]) == 1
+    assert result.measuredQubits == [0]

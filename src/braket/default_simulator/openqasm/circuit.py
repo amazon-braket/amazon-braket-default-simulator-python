@@ -41,6 +41,7 @@ class Circuit:
         self.instructions = []
         self.results = []
         self.qubit_set = set()
+        self.measured_qubits = []
 
         if instructions:
             for instruction in instructions:
@@ -59,6 +60,12 @@ class Circuit:
         """
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
+
+    def add_measure(self, target: int | list[int]):
+        if isinstance(target, list):
+            self.measured_qubits += target
+        else:
+            self.measured_qubits.append(target)
 
     def add_result(self, result: Results) -> None:
         """
