@@ -387,13 +387,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
     @staticmethod
     def _formatted_measurements(
-        simulation: Simulation, measured_qubits: list[int] | None = None
+        simulation: Simulation, measured_qubits: Union[list[int], None] = None
     ) -> list[list[str]]:
         """Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (Simulation): Simulation to use for obtaining the measurements.
-            measured_qubits (list[int | None]): The qubits that were measured.
+            measured_qubits (list[int] | None): The qubits that were measured.
 
         Returns:
             list[list[str]]: List containing the measurements, where each measurement consists
