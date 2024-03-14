@@ -1999,21 +1999,122 @@ def test_basis_rotation_hermitian():
     ]
 
 
-def test_measurement():
-    qasm = """
-    bit[1] b;
-    qubit[2] q;
-    h q[0];
-    h q[1];
-    b[0] = measure q[0];
-    """
+@pytest.mark.parametrize(
+    "qasm, expected",
+    [
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "b[0] = measure q[0];",
+                ]
+            ),
+            [0],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[3] b;",
+                    "qubit[3] q;",
+                    "b = measure q;",
+                ]
+            ),
+            [0, 1, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "b[0] = measure q[0:1];",
+                ]
+            ),
+            [0, 1],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[3] b;",
+                    "qubit[3] q;",
+                    "h q[0];",
+                    "cnot q[0], q[1];",
+                    "cnot q[1], q[2];",
+                    "b[0] = measure q[0];",
+                    "b[1] = measure q[1];",
+                    "b[2] = measure q[2];",
+                ]
+            ),
+            [0, 1, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[3] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "cnot q[1], q[2];",
+                    "b[0] = measure q[{0, 2}];",
+                ]
+            ),
+            [0, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "h $0;",
+                    "cnot $0, $1;",
+                    "b[0] = measure $0;",
+                ]
+            ),
+            [0],
+        ),
+    ],
+)
+def test_measurement(qasm, expected):
     circuit = Interpreter().build_circuit(qasm)
-    assert circuit.measured_qubits == [0]
+    assert circuit.measured_qubits == expected
 
-    qasm = """
-    bit[3] b;
-    qubit[3] q;
-    b = measure q;
-    """
-    circuit = Interpreter().build_circuit(qasm)
-    assert circuit.measured_qubits == [0, 1, 2]
+
+@pytest.mark.parametrize(
+    "qasm, expected",
+    [
+        (
+            "\n".join(
+                [
+                    "bit[3] b;",
+                    "qubit[2] q;",
+                    "h q[0];",
+                    "cnot q[0], q[1];",
+                    "b[2] = measure q[1];",
+                    "b[0] = measure q[0];",
+                    "b[1] = measure q[0];",
+                ]
+            ),
+            "Qubit 0 is already measured or captured.",
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[3] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "cnot q[1], q[2];",
+                    "b[0] = measure q[::-1];",
+                ]
+            ),
+            "Cannot measure non qubit or register values.",
+        ),
+    ],
+)
+def test_measurement_exceptions(qasm, expected):
+    with pytest.raises(ValueError, match=expected):
+        Interpreter().build_circuit(qasm)

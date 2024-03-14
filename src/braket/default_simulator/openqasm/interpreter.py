@@ -470,15 +470,12 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumMeasurement) -> None:
-        qubit = node.qubit
-        if isinstance(qubit, IndexedIdentifier):
-            qubit_value = qubit.indices[0][0].value
-            self.context.add_measure(qubit_value)
-        else:  # Identifier
-            self.context.add_measure()
+        qubits = self.context.get_qubits(node.qubit)
+        self.context.add_measure(qubits)
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
+        """The measure is performed but the assignment is ignored"""
         self.visit(node.measure)
 
     @visit.register

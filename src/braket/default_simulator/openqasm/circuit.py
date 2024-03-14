@@ -61,11 +61,11 @@ class Circuit:
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
 
-    def add_measure(self, target: int | list[int]):
-        if isinstance(target, list):
-            self.measured_qubits += target
-        else:
-            self.measured_qubits.append(target)
+    def add_measure(self, target: tuple[int]):
+        for qubit in target:
+            if qubit in self.measured_qubits:
+                raise ValueError(f"Qubit {qubit} is already measured or captured.")
+        self.measured_qubits += [qubit for qubit in target]
 
     def add_result(self, result: Results) -> None:
         """
