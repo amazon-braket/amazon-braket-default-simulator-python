@@ -470,7 +470,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumMeasurement) -> None:
-        qubits = self.context.get_qubits(node.qubit)
+        qubits = self.context.get_qubits(self.visit(node.qubit))
         self.context.add_measure(qubits)
 
     @visit.register

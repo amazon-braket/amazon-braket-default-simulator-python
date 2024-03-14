@@ -42,8 +42,6 @@ def convert_range_def_to_slice(range_def: RangeDefinition) -> slice:
     """Convert AST node into Python slice object"""
     buffer = np.sign(range_def.step.value) if range_def.step is not None else 1
     start = range_def.start.value if range_def.start is not None else None
-    if isinstance(range_def.end, UnaryExpression):
-        raise ValueError("Cannot measure non qubit or register values.")
     stop = (
         range_def.end.value + buffer
         if not (range_def.end is None or range_def.end.value == -1)

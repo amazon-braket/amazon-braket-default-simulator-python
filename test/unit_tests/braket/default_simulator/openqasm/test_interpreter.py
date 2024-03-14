@@ -2068,13 +2068,50 @@ def test_basis_rotation_hermitian():
             "\n".join(
                 [
                     "bit[1] b;",
-                    "qubit[2] q;",
                     "h $0;",
                     "cnot $0, $1;",
                     "b[0] = measure $0;",
                 ]
             ),
             [0],
+        ),
+        (
+            "\n".join(
+                [
+                    "qubit[5] q;",
+                    "for int i in [0:2] {",
+                    "   measure q[i];",
+                    "}",
+                ]
+            ),
+            [0, 1, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[3] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "cnot q[1], q[2];",
+                    "measure q[::-1];",  # This should reverse the qubits.
+                ]
+            ),
+            [0, 1, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[3] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "cnot q[1], q[2];",
+                    "measure q[1];",
+                    "measure q[0];",
+                ]
+            ),
+            [1, 0],
         ),
     ],
 )
@@ -2104,14 +2141,13 @@ def test_measurement(qasm, expected):
             "\n".join(
                 [
                     "bit[1] b;",
-                    "qubit[3] q;",
+                    "qubit[1] q;",
                     "h q[0];",
-                    "h q[1];",
-                    "cnot q[1], q[2];",
-                    "b[0] = measure q[::-1];",
+                    "b[0] = measure q[0];",
+                    "measure q;",
                 ]
             ),
-            "Cannot measure non qubit or register values.",
+            "Qubit 0 is already measured or captured.",
         ),
     ],
 )

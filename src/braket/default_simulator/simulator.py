@@ -267,9 +267,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             resultTypes=results,
             measurements=self._formatted_measurements(simulation, measured_qubits),
             measuredQubits=(
-                measured_qubits
-                if measured_qubits
-                else self._get_measured_qubits(simulation.qubit_count)
+                measured_qubits if measured_qubits else self._get_all_qubits(simulation.qubit_count)
             ),
         )
 
@@ -354,7 +352,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                         raise NameError(f"Missing input variable '{missing_input}'.")
 
     @staticmethod
-    def _get_measured_qubits(qubit_count: int) -> list[int]:
+    def _get_all_qubits(qubit_count: int) -> list[int]:
         return list(range(qubit_count))
 
     @staticmethod
@@ -389,12 +387,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
     @staticmethod
     def _formatted_measurements(
-        simulation: Simulation, measured_qubits: list[int] = None
+        simulation: Simulation, measured_qubits: list[int] | None = None
     ) -> list[list[str]]:
         """Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (Simulation): Simulation to use for obtaining the measurements.
+            measured_qubits (list[int | None]): The qubits that were measured.
 
         Returns:
             list[list[str]]: List containing the measurements, where each measurement consists
@@ -405,7 +404,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
             for sample in simulation.retrieve_samples()
         ]
-        #  Gets the subset or measurements from the full measurements
+        #  Gets the subset of measurements from the full measurements
         if measured_qubits is not None and measured_qubits != []:
             measurements = [[row[i] for i in measured_qubits] for row in measurements]
         return measurements
