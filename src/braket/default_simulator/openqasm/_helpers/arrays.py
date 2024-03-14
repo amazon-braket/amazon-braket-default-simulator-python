@@ -33,7 +33,6 @@ from ..parser.openqasm_ast import (
     IntType,
     RangeDefinition,
     UintType,
-    UnaryExpression,
 )
 from .casting import LiteralType, cast_to, convert_string_to_bool_array
 
