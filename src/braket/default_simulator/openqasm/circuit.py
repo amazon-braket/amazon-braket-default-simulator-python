@@ -65,7 +65,7 @@ class Circuit:
         for qubit in target:
             if qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
-        self.measured_qubits += [qubit for qubit in target]
+            self.measured_qubits.append(qubit)
 
     def add_result(self, result: Results) -> None:
         """
