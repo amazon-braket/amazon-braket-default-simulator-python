@@ -571,7 +571,7 @@ def _apply_hamiltonian(
         list[scipy.sparse.csr_matrix],
         list[scipy.sparse.csr_matrix],
         list[scipy.sparse.csr_matrix],
-        np.ndarray,
+        list[scipy.sparse.csr_matrix],
         np.ndarray,
         np.ndarray,
         scipy.sparse.csr_matrix,
@@ -586,7 +586,7 @@ def _apply_hamiltonian(
             list[csr_matrix],
             list[csr_matrix],
             list[csr_matrix],
-            ndarray,
+            list[csr_matrix],
             ndarray,
             ndarray,
             csr_matrix
@@ -608,8 +608,7 @@ def _apply_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
-
-    if len(rabi_coefs) > 0:
+    if len(rabi_coefs):
         # If there is driving field, the maximum of index_time is the maximum time index
         # for the driving field.
         # Note that, if there is more than one driving field, we assume that they have the

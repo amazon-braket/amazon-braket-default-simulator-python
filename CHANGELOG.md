@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.20.6 (2024-03-11)
+
+### Bug Fixes and Other Changes
+
+ * typing issue for apply_hamiltonian
+
+## v1.20.5 (2024-03-05)
+
+### Bug Fixes and Other Changes
+
+ * update schema version to latest in setup.py
+
+## v1.20.4 (2024-03-04)
+
+### Bug Fixes and Other Changes
+
+ * make the dimension a PositiveInt for typing
+
+## v1.20.3 (2024-03-04)
+
+### Bug Fixes and Other Changes
+
+ * add in setuptools for publishing to pypi
+
+## v1.20.2 (2024-03-02)
+
+### Bug Fixes and Other Changes
+
+ * add tox read only linters
+
 ## v1.20.1 (2023-10-11)
 
 ### Bug Fixes and Other Changes

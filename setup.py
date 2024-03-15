@@ -38,7 +38,7 @@ setup(
         "sympy",
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
-        "amazon-braket-schemas>=1.18.0",
+        "amazon-braket-schemas>=1.20.2",
     ],
     entry_points={
         "braket.simulators": [
