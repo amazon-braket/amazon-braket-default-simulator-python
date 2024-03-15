@@ -2100,6 +2100,16 @@ def test_basis_rotation_hermitian():
             ),
             [1, 0],
         ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "b[0] = measure q[1:5];",
+                ]
+            ),
+            [1],
+        ),
     ],
 )
 def test_measurement(qasm, expected):
@@ -2140,4 +2150,46 @@ def test_measurement(qasm, expected):
 )
 def test_measurement_exceptions(qasm, expected):
     with pytest.raises(ValueError, match=expected):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_invalid_qubit():
+    qasm = """
+    bit[1] b;
+    qubit[1] q;
+    h q[0];
+    measure x;
+    """
+    expected = "Undefined key: x"
+    with pytest.raises(KeyError, match=expected):
+        Interpreter().build_circuit(qasm)
+
+
+@pytest.mark.parametrize(
+    "qasm, expected",
+    [
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "b[0] = measure q[5];",
+                ]
+            ),
+            "qubit register index `5` out of range for qubit register `q`.",
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "b[0] = measure q[{1, 5}];",
+                ]
+            ),
+            "qubit register index `5` out of range for qubit register `q`.",
+        ),
+    ],
+)
+def test_measure_qubit_out_of_range(qasm, expected):
+    with pytest.raises(IndexError, match=expected):
         Interpreter().build_circuit(qasm)

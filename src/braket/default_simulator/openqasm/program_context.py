@@ -119,12 +119,22 @@ class QubitTable(Table):
                 raise IndexError("Cannot index multiple dimensions for qubits.")
             primary_index = primary_index[0]
         if isinstance(primary_index, IntegerLiteral):
+            if primary_index.value >= len(self[name]):
+                raise IndexError(
+                    f"qubit register index `{primary_index.value}` out of range for qubit register `{name}`."
+                )
             target = (self[name][primary_index.value],)
         elif isinstance(primary_index, RangeDefinition):
             target = tuple(np.array(self[name])[convert_range_def_to_slice(primary_index)])
         # Discrete set
         else:
-            target = tuple(np.array(self[name])[convert_discrete_set_to_list(primary_index)])
+            indices = convert_discrete_set_to_list(primary_index)
+            for index in indices:
+                if index >= len(self[name]):
+                    raise IndexError(
+                        f"qubit register index `{index}` out of range for qubit register `{name}`."
+                    )
+            target = tuple(np.array(self[name])[indices])
 
         if len(identifier.indices) == 1:
             return target
