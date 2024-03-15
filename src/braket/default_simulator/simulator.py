@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any, Union
 
+import numpy as np
 from braket.device_schema import DeviceActionType
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
@@ -406,7 +407,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         ]
         #  Gets the subset of measurements from the full measurements
         if measured_qubits is not None and measured_qubits != []:
-            measurements = [[row[i] for i in measured_qubits] for row in measurements]
+            measurements = np.array(measurements)[:, measured_qubits].tolist()
         return measurements
 
     def run_openqasm(

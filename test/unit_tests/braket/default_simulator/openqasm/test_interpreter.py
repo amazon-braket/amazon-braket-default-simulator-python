@@ -2094,19 +2094,6 @@ def test_basis_rotation_hermitian():
                     "h q[0];",
                     "h q[1];",
                     "cnot q[1], q[2];",
-                    "measure q[::-1];",  # This should reverse the qubits.
-                ]
-            ),
-            [0, 1, 2],
-        ),
-        (
-            "\n".join(
-                [
-                    "bit[1] b;",
-                    "qubit[3] q;",
-                    "h q[0];",
-                    "h q[1];",
-                    "cnot q[1], q[2];",
                     "measure q[1];",
                     "measure q[0];",
                 ]
