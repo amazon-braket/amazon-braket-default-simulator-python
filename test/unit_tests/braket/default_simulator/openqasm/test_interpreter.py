@@ -2172,11 +2172,11 @@ def test_measure_invalid_qubit():
             "\n".join(
                 [
                     "bit[1] b;",
-                    "qubit[2] q;",
+                    "qubit[1] q;",
                     "b[0] = measure q[5];",
                 ]
             ),
-            "qubit register index `5` out of range for qubit register `q`.",
+            "qubit register index `5` out of range for qubit register of length 1 `q`.",
         ),
         (
             "\n".join(
@@ -2186,7 +2186,7 @@ def test_measure_invalid_qubit():
                     "b[0] = measure q[{1, 5}];",
                 ]
             ),
-            "qubit register index `5` out of range for qubit register `q`.",
+            "qubit register index `5` out of range for qubit register of length 2 `q`.",
         ),
     ],
 )
