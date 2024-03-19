@@ -302,7 +302,7 @@ def test_properties():
                     "supportPhysicalQubits": False,
                     "supportsPartialVerbatimBox": False,
                     "requiresContiguousQubitIndices": True,
-                    "requiresAllQubitsMeasurement": True,
+                    "requiresAllQubitsMeasurement": False,
                     "supportsUnassignedMeasurements": True,
                     "disabledQubitRewiringSupported": False,
                 },
@@ -779,3 +779,19 @@ def test_adjoint_gradient_pragma_dm1():
 
     with pytest.raises(TypeError, match=ag_not_supported):
         simulator.run(prog, shots=0)
+
+
+def test_measure_targets():
+    qasm = """
+    qubit[2] q;
+    bit[1] b;
+    h q[0];
+    cnot q[0], q[1];
+    b[0] = measure q[0];
+    """
+    simulator = DensityMatrixSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert 400 < np.sum(measurements, axis=0)[0] < 600
+    assert len(measurements[0]) == 1
+    assert result.measuredQubits == [0]

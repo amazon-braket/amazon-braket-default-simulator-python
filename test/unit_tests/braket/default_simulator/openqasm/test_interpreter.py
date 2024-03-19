@@ -1997,3 +1997,199 @@ def test_basis_rotation_hermitian():
         Hadamard([2]),
         *hermitian.diagonalizing_gates(),
     ]
+
+
+@pytest.mark.parametrize(
+    "qasm, expected",
+    [
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "b[0] = measure q[0];",
+                ]
+            ),
+            [0],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[3] b;",
+                    "qubit[3] q;",
+                    "b = measure q;",
+                ]
+            ),
+            [0, 1, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "b[0] = measure q[0:1];",
+                ]
+            ),
+            [0, 1],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[3] b;",
+                    "qubit[3] q;",
+                    "h q[0];",
+                    "cnot q[0], q[1];",
+                    "cnot q[1], q[2];",
+                    "b[0] = measure q[0];",
+                    "b[1] = measure q[1];",
+                    "b[2] = measure q[2];",
+                ]
+            ),
+            [0, 1, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[3] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "cnot q[1], q[2];",
+                    "b[0] = measure q[{0, 2}];",
+                ]
+            ),
+            [0, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "h $0;",
+                    "cnot $0, $1;",
+                    "b[0] = measure $0;",
+                ]
+            ),
+            [0],
+        ),
+        (
+            "\n".join(
+                [
+                    "qubit[5] q;",
+                    "for int i in [0:2] {",
+                    "   measure q[i];",
+                    "}",
+                ]
+            ),
+            [0, 1, 2],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[3] q;",
+                    "h q[0];",
+                    "h q[1];",
+                    "cnot q[1], q[2];",
+                    "measure q[1];",
+                    "measure q[0];",
+                ]
+            ),
+            [1, 0],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "b[0] = measure q[1:5];",
+                ]
+            ),
+            [1],
+        ),
+    ],
+)
+def test_measurement(qasm, expected):
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.measured_qubits == expected
+
+
+@pytest.mark.parametrize(
+    "qasm, expected",
+    [
+        (
+            "\n".join(
+                [
+                    "bit[3] b;",
+                    "qubit[2] q;",
+                    "h q[0];",
+                    "cnot q[0], q[1];",
+                    "b[2] = measure q[1];",
+                    "b[0] = measure q[0];",
+                    "b[1] = measure q[0];",
+                ]
+            ),
+            "Qubit 0 is already measured or captured.",
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[1] q;",
+                    "h q[0];",
+                    "b[0] = measure q[0];",
+                    "measure q;",
+                ]
+            ),
+            "Qubit 0 is already measured or captured.",
+        ),
+    ],
+)
+def test_measurement_exceptions(qasm, expected):
+    with pytest.raises(ValueError, match=expected):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_invalid_qubit():
+    qasm = """
+    bit[1] b;
+    qubit[1] q;
+    h q[0];
+    measure x;
+    """
+    expected = "Undefined key: x"
+    with pytest.raises(KeyError, match=expected):
+        Interpreter().build_circuit(qasm)
+
+
+@pytest.mark.parametrize(
+    "qasm, expected",
+    [
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[1] q;",
+                    "b[0] = measure q[5];",
+                ]
+            ),
+            "qubit register index `5` out of range for qubit register of length 1 `q`.",
+        ),
+        (
+            "\n".join(
+                [
+                    "bit[1] b;",
+                    "qubit[2] q;",
+                    "b[0] = measure q[{1, 5}];",
+                ]
+            ),
+            "qubit register index `5` out of range for qubit register of length 2 `q`.",
+        ),
+    ],
+)
+def test_measure_qubit_out_of_range(qasm, expected):
+    with pytest.raises(IndexError, match=expected):
+        Interpreter().build_circuit(qasm)

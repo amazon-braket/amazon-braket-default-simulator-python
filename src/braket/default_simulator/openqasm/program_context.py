@@ -114,17 +114,28 @@ class QubitTable(Table):
         """
         name = identifier.name.name
         primary_index = identifier.indices[0]
+
+        def validate_qubit_in_range(qubit: int):
+            if qubit >= len(self[name]):
+                raise IndexError(
+                    f"qubit register index `{qubit}` out of range for qubit register of length {len(self[name])} `{name}`."
+                )
+
         if isinstance(primary_index, list):
             if len(primary_index) != 1:
                 raise IndexError("Cannot index multiple dimensions for qubits.")
             primary_index = primary_index[0]
         if isinstance(primary_index, IntegerLiteral):
+            validate_qubit_in_range(primary_index.value)
             target = (self[name][primary_index.value],)
         elif isinstance(primary_index, RangeDefinition):
             target = tuple(np.array(self[name])[convert_range_def_to_slice(primary_index)])
         # Discrete set
         else:
-            target = tuple(np.array(self[name])[convert_discrete_set_to_list(primary_index)])
+            indices = convert_discrete_set_to_list(primary_index)
+            for index in indices:
+                validate_qubit_in_range(index)
+            target = tuple(np.array(self[name])[indices])
 
         if len(identifier.indices) == 1:
             return target
@@ -830,6 +841,9 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
+    def add_measure(self, target: tuple[int]):
+        """Add qubit targets to be measured"""
+
 
 class ProgramContext(AbstractProgramContext):
     def __init__(self, circuit: Optional[Circuit] = None):
@@ -890,3 +904,6 @@ class ProgramContext(AbstractProgramContext):
 
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
+
+    def add_measure(self, target: tuple[int]):
+        self._circuit.add_measure(target)
