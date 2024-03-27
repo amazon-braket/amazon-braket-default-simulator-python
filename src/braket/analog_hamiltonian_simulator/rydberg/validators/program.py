@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from braket.ir.ahs.program_v1 import Program
-from pydantic import root_validator
+from pydantic.v1 import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,

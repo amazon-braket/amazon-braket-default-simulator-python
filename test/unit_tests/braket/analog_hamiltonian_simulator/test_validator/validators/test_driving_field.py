@@ -13,7 +13,7 @@
 
 import pytest
 from braket.ir.ahs.driving_field import DrivingField
-from pydantic.error_wrappers import ValidationError
+from pydantic.v1.error_wrappers import ValidationError
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.driving_field import (
     DrivingFieldValidator,

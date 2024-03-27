@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from braket.ir.ahs.hamiltonian import Hamiltonian
-from pydantic import root_validator
+from pydantic.v1 import root_validator
 
 
 class HamiltonianValidator(Hamiltonian):

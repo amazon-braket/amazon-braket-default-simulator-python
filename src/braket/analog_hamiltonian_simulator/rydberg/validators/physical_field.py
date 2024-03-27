@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from braket.ir.ahs.physical_field import PhysicalField
-from pydantic.class_validators import root_validator
+from pydantic.v1.class_validators import root_validator
 
 
 class PhysicalFieldValidator(PhysicalField):

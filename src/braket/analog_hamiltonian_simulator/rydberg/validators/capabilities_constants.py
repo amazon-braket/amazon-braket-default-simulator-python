@@ -14,7 +14,7 @@
 from decimal import Decimal
 
 from pydantic import PositiveInt
-from pydantic.main import BaseModel
+from pydantic.v1.main import BaseModel
 
 
 class CapabilitiesConstants(BaseModel):

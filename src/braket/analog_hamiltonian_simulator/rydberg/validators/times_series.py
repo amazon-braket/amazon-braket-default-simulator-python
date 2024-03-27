@@ -14,7 +14,7 @@
 import warnings
 
 from braket.ir.ahs.time_series import TimeSeries
-from pydantic.class_validators import root_validator
+from pydantic.v1.class_validators import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
