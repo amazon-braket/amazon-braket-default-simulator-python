@@ -33,12 +33,12 @@ setup(
     install_requires=[
         "numpy",
         "opt_einsum",
-        "pydantic<2",
+        "pydantic>2",
         "scipy",
         "sympy",
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
-        "amazon-braket-schemas>=1.20.2",
+        "amazon-braket-schemas>=1.20.4",
     ],
     entry_points={
         "braket.simulators": [
