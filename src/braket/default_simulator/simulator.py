@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any, Union
 
+import numpy as np
 from braket.device_schema import DeviceActionType
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
@@ -257,6 +258,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         results: list[dict[str, Any]],
         openqasm_ir: OpenQASMProgram,
         simulation: Simulation,
+        measured_qubits: list[int] = None,
     ) -> GateModelTaskResult:
         return GateModelTaskResult.construct(
             taskMetadata=TaskMetadata(
@@ -268,8 +270,10 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 action=openqasm_ir,
             ),
             resultTypes=results,
-            measurements=self._formatted_measurements(simulation),
-            measuredQubits=self._get_measured_qubits(simulation.qubit_count),
+            measurements=self._formatted_measurements(simulation, measured_qubits),
+            measuredQubits=(
+                measured_qubits if measured_qubits else self._get_all_qubits(simulation.qubit_count)
+            ),
         )
 
     @staticmethod
@@ -359,7 +363,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                     raise NameError(f"Missing input variable '{missing_input}'.")
 
     @staticmethod
-    def _get_measured_qubits(qubit_count: int) -> list[int]:
+    def _get_all_qubits(qubit_count: int) -> list[int]:
         return list(range(qubit_count))
 
     @staticmethod
@@ -393,20 +397,28 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return str(observable.__class__.__name__)
 
     @staticmethod
-    def _formatted_measurements(simulation: Simulation) -> list[list[str]]:
+    def _formatted_measurements(
+        simulation: Simulation, measured_qubits: Union[list[int], None] = None
+    ) -> list[list[str]]:
         """Retrieves formatted measurements obtained from the specified simulation.
 
         Args:
             simulation (Simulation): Simulation to use for obtaining the measurements.
+            measured_qubits (list[int] | None): The qubits that were measured.
 
         Returns:
             list[list[str]]: List containing the measurements, where each measurement consists
             of a list of measured values of qubits.
         """
-        return [
+        # Get the full measurements
+        measurements = [
             list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
             for sample in simulation.retrieve_samples()
         ]
+        #  Gets the subset of measurements from the full measurements
+        if measured_qubits is not None and measured_qubits != []:
+            measurements = np.array(measurements)[:, measured_qubits].tolist()
+        return measurements
 
     def run_openqasm(
         self,
@@ -436,6 +448,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """
         circuit = self.parse_program(openqasm_ir).circuit
         qubit_count = circuit.num_qubits
+        measured_qubits = circuit.measured_qubits
 
         self._validate_ir_results_compatibility(
             circuit.results,
@@ -476,7 +489,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         else:
             simulation.evolve(circuit.basis_rotation_instructions)
 
-        return self._create_results_obj(results, openqasm_ir, simulation)
+        return self._create_results_obj(results, openqasm_ir, simulation, measured_qubits)
 
     def run_program(
         self,

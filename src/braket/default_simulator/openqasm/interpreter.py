@@ -471,12 +471,14 @@ class Interpreter:
         return node
 
     @visit.register
-    def _(self, node: QuantumMeasurement) -> Union[BooleanLiteral, ArrayLiteral]:
-        """Doesn't do anything, but may add more functionality in the future"""
+    def _(self, node: QuantumMeasurement) -> None:
+        qubits = self.context.get_qubits(self.visit(node.qubit))
+        self.context.add_measure(qubits)
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
-        """Doesn't do anything, but may add more functionality in the future"""
+        """The measure is performed but the assignment is ignored"""
+        self.visit(node.measure)
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
