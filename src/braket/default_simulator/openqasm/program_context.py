@@ -11,14 +11,16 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from functools import singledispatchmethod
 from typing import Any, Optional, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
-from sympy import Expr
+from sympy import Expr, Symbol
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
 from braket.default_simulator.noise_operations import (
@@ -42,11 +44,12 @@ from ._helpers.arrays import (
     get_type_width,
     update_value,
 )
-from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
+from ._helpers.casting import LiteralType, convert_to_output, get_identifier_name, is_none_like
 from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ClassicalType,
+    DiscreteSet,
     FloatLiteral,
     GateModifierName,
     Identifier,
@@ -57,6 +60,7 @@ from .parser.openqasm_ast import (
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
+    SymbolLiteral,
 )
 
 
@@ -113,7 +117,8 @@ class QubitTable(Table):
         corresponding to the elements referenced by the indexed identifier.
         """
         name = identifier.name.name
-        primary_index = identifier.indices[0]
+        indices = self.get_qubit_indices(identifier)
+        primary_index = indices[0]
 
         def validate_qubit_in_range(qubit: int):
             if qubit >= len(self[name]):
@@ -121,32 +126,76 @@ class QubitTable(Table):
                     f"qubit register index `{qubit}` out of range for qubit register of length {len(self[name])} `{name}`."
                 )
 
-        if isinstance(primary_index, list):
-            if len(primary_index) != 1:
-                raise IndexError("Cannot index multiple dimensions for qubits.")
-            primary_index = primary_index[0]
-        if isinstance(primary_index, IntegerLiteral):
-            validate_qubit_in_range(primary_index.value)
-            target = (self[name][primary_index.value],)
+        if isinstance(primary_index, (IntegerLiteral, SymbolLiteral)):
+            if isinstance(primary_index, IntegerLiteral):
+                validate_qubit_in_range(primary_index.value)
+            target = (self[name][0] + primary_index.value,)
         elif isinstance(primary_index, RangeDefinition):
             target = tuple(np.array(self[name])[convert_range_def_to_slice(primary_index)])
         # Discrete set
         else:
-            indices = convert_discrete_set_to_list(primary_index)
-            for index in indices:
-                validate_qubit_in_range(index)
-            target = tuple(np.array(self[name])[indices])
+            index_list = convert_discrete_set_to_list(primary_index)
+            for index in index_list:
+                if isinstance(index, int):
+                    validate_qubit_in_range(index)
+            target = tuple([self[name][0] + index for index in index_list])
+
+        if len(indices) == 2:
+            # used for gate calls on registers, index will be IntegerLiteral
+            secondary_index = indices[1].value
+            target = (target[secondary_index],)
+
+        # validate indices manually, since we use addition instead of indexing to
+        # accommodate symbolic indices
+        for q in target:
+            if isinstance(q, int) and (relative_index := q - self[name][0]) >= len(self[name]):
+                raise IndexError(
+                    f"qubit register index `{relative_index}` out of range for qubit register "
+                    f"of length {len(self[name])} `{name}`."
+                )
+        return target
+
+    @staticmethod
+    def get_qubit_indices(
+        identifier: IndexedIdentifier,
+    ) -> list[IntegerLiteral | RangeDefinition | DiscreteSet]:
+        primary_index = identifier.indices[0]
+
+        if isinstance(primary_index, list):
+            if len(primary_index) != 1:
+                raise IndexError("Cannot index multiple dimensions for qubits.")
+            primary_index = primary_index[0]
 
         if len(identifier.indices) == 1:
-            return target
+            return [primary_index]
         elif len(identifier.indices) == 2:
             # used for gate calls on registers, index will be IntegerLiteral
-            secondary_index = identifier.indices[1][0].value
-            return (target[secondary_index],)
+            secondary_index = identifier.indices[1][0]
+            return [primary_index, secondary_index]
         else:
             raise IndexError("Cannot index multiple dimensions for qubits.")
 
+    def get_indices_length(
+        self,
+        indices: Sequence[IntegerLiteral | SymbolLiteral | RangeDefinition | DiscreteSet],
+    ):
+        last_index = indices[-1]
+
+        if isinstance(last_index, (IntegerLiteral, SymbolLiteral)):
+            return 1
+        elif isinstance(last_index, RangeDefinition):
+            buffer = np.sign(last_index.step.value) if last_index.step is not None else 1
+            start = last_index.start.value if last_index.start is not None else 0
+            stop = last_index.end.value + buffer
+            step = last_index.step.value if last_index.step is not None else 1
+            return (stop - start) // step
+        elif isinstance(last_index, DiscreteSet):
+            return len(last_index.values)
+
     def get_qubit_size(self, identifier: Union[Identifier, IndexedIdentifier]) -> int:
+        if isinstance(identifier, IndexedIdentifier):
+            indices = self.get_qubit_indices(identifier)
+            return self.get_indices_length(indices)
         return len(self.get_by_identifier(identifier))
 
 
@@ -422,6 +471,7 @@ class AbstractProgramContext(ABC):
         self.qubit_mapping = QubitTable()
         self.scope_manager = ScopeManager(self)
         self.inputs = {}
+        self.outputs = {}
         self.num_qubits = 0
 
     @property
@@ -843,6 +893,24 @@ class AbstractProgramContext(ABC):
 
     def add_measure(self, target: tuple[int]):
         """Add qubit targets to be measured"""
+
+    def pop_instructions(self):
+        instructions = self.circuit.instructions
+        self.circuit.instructions = []
+        return instructions
+
+    def add_output(self, output_name: str):
+        self.outputs[output_name] = []
+
+    def save_output_values(self):
+        if not self.outputs:
+            self.outputs = {
+                v: []
+                for v in self.symbol_table.current_scope
+                if isinstance(self.get_type(v), ClassicalType)
+            }
+        for output, shot_data in self.outputs.items():
+            shot_data.append(convert_to_output(self.get_value(output)))
 
 
 class ProgramContext(AbstractProgramContext):

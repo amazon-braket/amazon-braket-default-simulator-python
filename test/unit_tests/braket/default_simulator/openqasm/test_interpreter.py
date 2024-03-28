@@ -24,7 +24,7 @@ from sympy import Symbol
 from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.gate_operations import CX, Hadamard, PauliX
 from braket.default_simulator.gate_operations import PauliY as Y
-from braket.default_simulator.gate_operations import RotX, U, Unitary
+from braket.default_simulator.gate_operations import PauliZ, RotX, U, Unitary
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -1487,7 +1487,7 @@ def test_bad_float_declaration():
     qasm = """
     float[4] x = π;
     """
-    invalid_float = "Float size must be one of {16, 32, 64}."
+    invalid_float = "Float size must be one of {16, 32, 64, 128}."
     with pytest.raises(ValueError, match=invalid_float):
         Interpreter().run(qasm)
 
@@ -1997,6 +1997,36 @@ def test_basis_rotation_hermitian():
         Hadamard([2]),
         *hermitian.diagonalizing_gates(),
     ]
+
+
+def test_qubit_inputs():
+    qasm = """
+    input int qi;
+    
+    qubit[3] qs;
+    
+    x qs[qi];
+    // unknown target size unsupported
+    // h qs[1:qi];
+    z qs[{qi, qi + 1}];
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.instructions == [
+        PauliX(targets=(Symbol("qi"),)),
+        PauliZ(targets=(Symbol("qi"),)),
+        PauliZ(targets=(Symbol("qi") + 1,)),
+    ]
+
+
+def test_qubit_inputs_unknown_target_size():
+    qasm = """
+    input int qi;
+    qubit[3] qs;    
+    h qs[1:qi];
+    """
+    unknown_register_size = "Undetermined qubit register size"
+    with pytest.raises(NotImplementedError, match=unknown_register_size):
+        Interpreter().build_circuit(qasm)
 
 
 @pytest.mark.parametrize(

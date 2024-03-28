@@ -954,7 +954,8 @@ def test_simulator_run_observable_references_invalid_qubit(ir, qubit_count):
             simulator.run(ir, qubit_count=qubit_count, shots=shots_count)
     else:
         # index error since you're indexing from a logical qubit
-        with pytest.raises(IndexError):
+        out_of_bounds = "qubit register index `2` out of range for qubit register of length 2 `q`."
+        with pytest.raises(IndexError, match=out_of_bounds):
             simulator.run(ir, shots=shots_count)
 
 

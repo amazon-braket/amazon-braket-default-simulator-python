@@ -380,6 +380,8 @@ class Interpreter:
         qubit_lengths = np.array(
             [self.context.qubit_mapping.get_qubit_size(qubit) for qubit in qubits]
         )
+        if any(not isinstance(qubit_length, np.integer) for qubit_length in qubit_lengths):
+            raise NotImplementedError("Undetermined qubit register size")
         register_lengths = qubit_lengths[qubit_lengths > 1]
         if register_lengths.size:
             reg_length = register_lengths[0]

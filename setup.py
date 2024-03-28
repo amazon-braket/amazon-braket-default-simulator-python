@@ -32,6 +32,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "numpy",
+        "openqasm3",
         "opt_einsum",
         "pydantic>2",
         "scipy",

@@ -32,6 +32,7 @@ from braket.task_result import (
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.native_interpreter import NativeInterpreter
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext, ProgramContext
 from braket.default_simulator.operation import Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
@@ -146,6 +147,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 are requested when shots>0.
         """
         if isinstance(circuit_ir, OpenQASMProgram):
+            if kwargs.get("mcm", False):
+                del kwargs["mcm"]
+                return self.run_program(circuit_ir, *args, **kwargs)
             return self.run_openqasm(circuit_ir, *args, **kwargs)
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
@@ -351,6 +355,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
                     except TypeError:
                         missing_input = param.free_symbols.pop()
                         raise NameError(f"Missing input variable '{missing_input}'.")
+            for qubit in instruction.targets:
+                try:
+                    float(qubit)
+                except TypeError:
+                    missing_input = qubit.free_symbols.pop()
+                    raise NameError(f"Missing input variable '{missing_input}'.")
 
     @staticmethod
     def _get_all_qubits(qubit_count: int) -> list[int]:
@@ -480,6 +490,44 @@ class BaseLocalSimulator(OpenQASMSimulator):
             simulation.evolve(circuit.basis_rotation_instructions)
 
         return self._create_results_obj(results, openqasm_ir, simulation, measured_qubits)
+
+    def run_program(
+        self,
+        openqasm_ir: OpenQASMProgram,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
+    ) -> GateModelTaskResult:
+        """Executes the program specified by the supplied `circuit_ir` on the simulator.
+
+        Args:
+            openqasm_ir (Program): ir representation of a braket circuit specifying the
+                instructions to execute.
+            shots (int): The number of times to run the circuit.
+            batch_size (int): The size of the circuit partitions to contract,
+                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
+                Must be a positive integer.
+                Defaults to 1, which means gates are applied one at a time without any
+                optimized contraction.
+        Returns:
+            GateModelTaskResult: object that represents the result
+
+        Raises:
+            ValueError: If result types are not specified in the IR or sample is specified
+                as a result type when shots=0. Or, if StateVector and Amplitude result types
+                are requested when shots>0.
+        """
+        is_file = openqasm_ir.source.endswith(".qasm")
+        simulation = self.initialize_simulation(qubit_count=0, shots=shots, batch_size=batch_size)
+        interpreter = NativeInterpreter(simulation=simulation)
+
+        context = interpreter.simulate(
+            source=openqasm_ir.source,
+            inputs=openqasm_ir.inputs,
+            is_file=is_file,
+            shots=shots,
+        )
+        return context
 
     def run_jaqcd(
         self,

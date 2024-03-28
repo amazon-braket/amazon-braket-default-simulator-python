@@ -88,3 +88,9 @@ class Simulation:
     def probabilities(self) -> np.ndarray:
         """np.ndarray: The probabilities of each computational basis state."""
         raise NotImplementedError("probabilities has not been implemented.")
+
+    def add_qubits(self, num_qubits: int) -> None:
+        raise NotImplementedError("add_qubits has not been implemented.")
+
+    def reset(self) -> None:
+        raise NotImplementedError("reset has not been implemented.")

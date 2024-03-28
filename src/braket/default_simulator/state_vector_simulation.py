@@ -13,6 +13,12 @@
 
 import numpy as np
 
+from braket.default_simulator.gate_operations import PauliX
+from braket.default_simulator.linalg_utils import (
+    marginal_probability,
+    measurement_collapse_sv,
+    measurement_sample,
+)
 from braket.default_simulator.operation import GateOperation, Observable
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulation_strategies import (
@@ -164,3 +170,28 @@ class StateVectorSimulation(Simulation):
             np.ndarray: The probabilities of each computational basis state.
         """
         return np.abs(state) ** 2
+
+    def add_qubits(self, num_qubits: int) -> None:
+        expanded_dims = np.expand_dims(self.state_vector, -1)
+        expanded_qubits = np.append(
+            expanded_dims, np.zeros((expanded_dims.size, 2**num_qubits - 1)), axis=-1
+        )
+        self._state_vector = expanded_qubits.flatten()
+        self._qubit_count += num_qubits
+
+    def measure(self, targets: tuple[int]):
+        mprob = marginal_probability(self.probabilities, targets)
+        outcome = measurement_sample(mprob, len(targets))
+        self._state_vector = measurement_collapse_sv(
+            self._state_vector,
+            targets,
+            outcome,
+        )
+        return outcome
+
+    def reset(self) -> None:
+        self._state_vector = np.array([1], dtype=complex)
+        self._qubit_count = 0
+
+    def flip(self, target: int) -> None:
+        self.evolve([PauliX([target])])
