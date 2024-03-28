@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.21.2 (2024-03-28)
+
+### Bug Fixes and Other Changes
+
+ * support pydantic 2.x
+
 ## v1.21.1 (2024-03-27)
 
 ### Bug Fixes and Other Changes
