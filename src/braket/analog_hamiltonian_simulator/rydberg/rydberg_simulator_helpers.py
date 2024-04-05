@@ -245,12 +245,19 @@ def _get_sparse_ops(
     local_detuning_ops = []
     for shifting_field in program.hamiltonian.shiftingFields:
         temp = 0
-        for site in range(len(shifting_field.magnitude.pattern)):
-            strength = shifting_field.magnitude.pattern[site]
+        for site, (filling, strength) in enumerate(
+                zip(
+                    program.setup.ahs_register.filling, 
+                    shifting_field.magnitude.pattern
+                )
+            ):
+            # If the site is not filled, we move on to the next filled site
+            if filling == 0:
+                continue
             opt = _get_sparse_from_dict(
                 _get_detuning_dict((site,), configurations), len(configurations)
             )
-            temp += float(strength) * scipy.sparse.csr_matrix(opt, dtype=float)
+            temp += float(strength) * scipy.sparse.csr_matrix(opt, dtype=float)        
 
         local_detuning_ops.append(temp)
 
