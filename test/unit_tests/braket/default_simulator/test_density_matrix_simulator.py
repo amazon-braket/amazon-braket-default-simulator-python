@@ -820,10 +820,7 @@ def test_measure_with_qubits_not_used():
     qubit[4] q;
     h q[0];
     cnot q[0], q[1];
-    b[0] = measure q[0];
-    b[1] = measure q[1];
-    b[2] = measure q[2];
-    b[3] = measure q[3];
+    b = measure q;
     """
     simulator = DensityMatrixSimulator()
     result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
