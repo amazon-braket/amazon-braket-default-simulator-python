@@ -15,12 +15,14 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from copy import copy
 from typing import Any, Union
 
 import numpy as np
 from braket.device_schema import DeviceActionType
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
+from braket.ir.jaqcd.shared_models import MultiTarget, OptionalMultiTarget
 from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.task_result import (
     AdditionalMetadata,
@@ -254,6 +256,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         results: list[dict[str, Any]],
         openqasm_ir: OpenQASMProgram,
         simulation: Simulation,
+        used_qubits: list[int],
         measured_qubits: list[int] = None,
     ) -> GateModelTaskResult:
         return GateModelTaskResult.construct(
@@ -267,9 +270,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             ),
             resultTypes=results,
             measurements=self._formatted_measurements(simulation, measured_qubits),
-            measuredQubits=(
-                measured_qubits if measured_qubits else self._get_all_qubits(simulation.qubit_count)
-            ),
+            measuredQubits=(measured_qubits if measured_qubits else used_qubits),
         )
 
     @staticmethod
@@ -407,8 +408,44 @@ class BaseLocalSimulator(OpenQASMSimulator):
         ]
         #  Gets the subset of measurements from the full measurements
         if measured_qubits is not None and measured_qubits != []:
-            measurements = np.array(measurements)[:, measured_qubits].tolist()
+            if max(measured_qubits) != len(measured_qubits) - 1:
+                qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(measured_qubits)
+                mapped_measured_qubits = [qubit_map[q] for q in measured_qubits]
+            else:
+                mapped_measured_qubits = measured_qubits
+            measurements = np.array(measurements)[:, mapped_measured_qubits].tolist()
         return measurements
+
+    def _map_to_contiguous_qubits(self, circuit: Circuit) -> Circuit:
+        """Map the qubits in operations and result types to contiguous qubits.
+
+        Args:
+            circuit (Circuit): Circuit which qubits are not contiguous.
+
+        Returns:
+            Circuit: Circuit qubits mapped to with contiguous qubits.
+        """
+        qubit_map = self._contiguous_qubit_mapping(circuit.qubit_set)
+
+        new_instructions = []
+        for ins in circuit.instructions:
+            new_ins = copy(ins)
+            new_ins._targets = tuple([qubit_map[q] for q in ins.targets])
+            new_instructions.append(new_ins)
+
+        new_results = []
+        for result in circuit.results:
+            new_result = copy(result)
+            if isinstance(new_result, (MultiTarget, OptionalMultiTarget)):
+                new_result.targets = [qubit_map[q] for q in result.targets]
+            new_results.append(new_result)
+
+        new_circuit = Circuit(new_instructions, new_results)
+        return new_circuit
+
+    @staticmethod
+    def _contiguous_qubit_mapping(qubit_set: list[int]) -> dict[int, int]:
+        return {q: i for i, q in enumerate(sorted(qubit_set))}
 
     def run_openqasm(
         self,
@@ -438,7 +475,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """
         circuit = self.parse_program(openqasm_ir).circuit
         qubit_count = circuit.num_qubits
+        used_qubits = sorted(list(circuit.qubit_set))
         measured_qubits = circuit.measured_qubits
+
+        if max(circuit.qubit_set) != len(circuit.qubit_set) - 1:
+            circuit = self._map_to_contiguous_qubits(circuit)
 
         self._validate_ir_results_compatibility(
             circuit.results,
@@ -479,7 +520,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
         else:
             simulation.evolve(circuit.basis_rotation_instructions)
 
-        return self._create_results_obj(results, openqasm_ir, simulation, measured_qubits)
+        return self._create_results_obj(
+            results, openqasm_ir, simulation, used_qubits, measured_qubits
+        )
 
     def run_jaqcd(
         self,
@@ -552,4 +595,5 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 simulation,
             )
 
-        return self._create_results_obj(results, circuit_ir, simulation)
+        used_qubit = self._get_all_qubits(simulation.qubit_count)
+        return self._create_results_obj(results, circuit_ir, simulation, used_qubit)

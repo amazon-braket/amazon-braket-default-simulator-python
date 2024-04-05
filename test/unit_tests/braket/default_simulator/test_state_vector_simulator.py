@@ -239,7 +239,7 @@ def test_properties():
                     ],
                     "supportPhysicalQubits": False,
                     "supportsPartialVerbatimBox": False,
-                    "requiresContiguousQubitIndices": True,
+                    "requiresContiguousQubitIndices": False,
                     "requiresAllQubitsMeasurement": False,
                     "supportsUnassignedMeasurements": True,
                     "disabledQubitRewiringSupported": False,
@@ -1285,3 +1285,57 @@ def test_measure_targets():
     assert 400 < np.sum(measurements, axis=0)[0] < 600
     assert len(measurements[0]) == 1
     assert result.measuredQubits == [0]
+
+
+def test_non_contiguous_qubits_with_measurements():
+    qasm = """
+    OPENQASM 3.0;
+    bit[2] b;
+    qubit[4] q;
+    x q[2];
+    z q[3];
+    b[0] = measure q[3];
+    b[1] = measure q[2];
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=100)
+    measurements = np.array(result.measurements, dtype=int)
+    assert measurements.shape == (100, 2)
+    assert all([all(m == [0, 1]) for m in measurements])
+    assert result.measuredQubits == [3, 2]
+
+
+def test_non_contiguous_qubits_with_observable():
+    qasm = """
+    OPENQASM 3.0;
+    qubit[16] q;
+    h q[14];
+    z q[14];
+    z q[15];
+    #pragma braket result expectation x(q[14])
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=100)
+    measurements = np.array(result.measurements, dtype=int)
+    assert measurements.shape == (100, 2)
+    assert all([all(m == [1, 0]) for m in measurements])
+    assert result.measuredQubits == [14, 15]
+
+
+def test_non_contiguous_qubits_with_observable_shots0():
+    qasm = """
+    OPENQASM 3.0;
+    qubit[16] q;
+    h q[14];
+    z q[14];
+    z q[15];
+    #pragma braket result expectation x(q[14])
+    #pragma braket result state_vector
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=0)
+    measurements = np.array(result.measurements, dtype=int)
+    assert measurements.shape == (0,)
+    assert result.measuredQubits == [14, 15]
+    assert np.isclose(result.resultTypes[0].value, -1)
+    assert np.allclose(result.resultTypes[1].value, [np.sqrt(1 / 2), 0, -np.sqrt(1 / 2), 0])
