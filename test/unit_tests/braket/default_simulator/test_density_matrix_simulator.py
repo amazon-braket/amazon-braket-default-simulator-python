@@ -301,7 +301,7 @@ def test_properties():
                     ],
                     "supportPhysicalQubits": False,
                     "supportsPartialVerbatimBox": False,
-                    "requiresContiguousQubitIndices": True,
+                    "requiresContiguousQubitIndices": False,
                     "requiresAllQubitsMeasurement": False,
                     "supportsUnassignedMeasurements": True,
                     "disabledQubitRewiringSupported": False,
@@ -795,3 +795,21 @@ def test_measure_targets():
     assert 400 < np.sum(measurements, axis=0)[0] < 600
     assert len(measurements[0]) == 1
     assert result.measuredQubits == [0]
+
+
+def test_non_contiguous_qubits_with_shots0():
+    qasm = """
+    OPENQASM 3.0;
+    qubit[3] q;
+    h q[2];
+    #pragma braket noise bit_flip(0.0) q[2]
+    #pragma braket result expectation x(q[2])
+    #pragma braket result density_matrix q[2]
+    """
+    simulator = DensityMatrixSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=0)
+    measurements = np.array(result.measurements, dtype=int)
+    assert measurements.shape == (0,)
+    assert result.measuredQubits == [2]
+    assert np.isclose(result.resultTypes[0].value, 1)
+    assert np.allclose(result.resultTypes[1].value, [[0.5, 0.5], [0.5, 0.5]])

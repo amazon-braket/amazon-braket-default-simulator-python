@@ -1322,7 +1322,7 @@ def test_non_contiguous_qubits_with_observable():
     assert result.measuredQubits == [14, 15]
 
 
-def test_non_contiguous_qubits_with_observable_shots0():
+def test_non_contiguous_qubits_with_shots0():
     qasm = """
     OPENQASM 3.0;
     qubit[16] q;
