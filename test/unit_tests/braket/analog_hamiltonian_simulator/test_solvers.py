@@ -161,3 +161,84 @@ def test_failed_scipy_run():
             "the allowed number of substeps by increasing "
             "the parameter `nsteps`."
         )
+
+# Test a program with vacant site specified before a filled site
+        
+# Define a global pi-pulse
+driving_field_pi_pulse = {
+    "amplitude": {
+        "pattern": "uniform",
+        "time_series": {"times": [0, tmax], "values": [np.pi/tmax, np.pi/tmax]},
+    },
+    "phase": {
+        "pattern": "uniform",
+        "time_series": {"times": [0, tmax], "values": [0, 0]},
+    },
+    "detuning": {
+        "pattern": "uniform",
+        "time_series": {"times": [0, tmax], "values": [0, 0]},
+    },
+}
+
+# Define the waveform for shifting field with large detuning values
+shifting_field_time_series = {
+    "times": [0, tmax], 
+    "values": [1e10, 1e10],
+}
+
+# Define an atom arrangement with two different labelings
+# where one of the site is filled  without LD, and the other
+# site is empty and with strong LD
+
+# Case 1: the first site is filled, and the second site is empty
+ahs_register_1 = {"sites": [[0, 0], [10e-6, 0]], "filling": [1, 0]}
+
+# Case 2: the first site is filled, and the second site is empty
+# Note that the registers in case 1 and 2 are physically the same 
+# but with different labelings
+ahs_register_2 = {"sites": [[10e-6, 0], [0, 0]], "filling": [0, 1]}
+
+# Define the programs for the two cases
+# such that only the empty site experience the strong shifting field
+def get_program_with_vacant_site_pi_pulse(
+    ahs_register, 
+    shifting_field_time_series = shifting_field_time_series,
+    driving_field_pi_pulse = driving_field_pi_pulse
+):
+    pattern = list(1 - np.array(ahs_register["filling"]))
+    shifting_field = {
+        "magnitude": {
+            "pattern": pattern,
+            "time_series": shifting_field_time_series
+        }
+    }
+    return convert_unit(
+        Program(
+            setup={"ahs_register": ahs_register},
+            hamiltonian={
+                "drivingFields": [driving_field_pi_pulse], 
+                "shiftingFields": [shifting_field]
+            },
+        )
+    )
+
+program_1 = get_program_with_vacant_site_pi_pulse(ahs_register_1)
+program_2 = get_program_with_vacant_site_pi_pulse(ahs_register_2)
+
+# Test the result, we should see that the filled site is excited to 
+# the Rydberg state
+
+@pytest.mark.parametrize(
+    "solver, program",
+    [
+        [scipy_integrate_ode_run, program_1],
+        [scipy_integrate_ode_run, program_2],
+        [rk_run, program_1],
+        [rk_run, program_2]
+    ],
+)
+def test_program_with_vacant_site_pi_pulse(solver, program):
+    states = solver(program, ['g', 'r'], simulation_times, rydberg_interaction_coef)
+    final_prob = [np.abs(i) ** 2 for i in states[-1]]
+    true_final_prob = [0, 1]
+    assert np.allclose(final_prob, true_final_prob, atol=1e-2)

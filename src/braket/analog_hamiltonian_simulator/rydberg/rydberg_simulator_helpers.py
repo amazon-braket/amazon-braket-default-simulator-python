@@ -257,7 +257,7 @@ def _get_sparse_ops(
             opt = _get_sparse_from_dict(
                 _get_detuning_dict((site,), configurations), len(configurations)
             )
-            temp += float(strength) * scipy.sparse.csr_matrix(opt, dtype=float)        
+            temp += float(strength) * scipy.sparse.csr_matrix(opt, dtype=float)
 
         local_detuning_ops.append(temp)
 
