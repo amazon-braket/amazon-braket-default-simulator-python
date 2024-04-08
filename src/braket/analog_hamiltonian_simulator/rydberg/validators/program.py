@@ -26,7 +26,11 @@ class ProgramValidator(Program):
     @root_validator(pre=True, skip_on_failure=True)
     def shifting_field_pattern_has_the_same_length_as_atom_array_sites(cls, values):
         num_sites = len(values["setup"]["ahs_register"]["sites"])
-        for idx, shifting_field in enumerate(values["hamiltonian"]["shiftingFields"] if "shiftingFields" in values["hamiltonian"].keys() else values["hamiltonian"]["localDetuning"]):
+        for idx, shifting_field in enumerate(
+            values["hamiltonian"]["shiftingFields"]
+            if "shiftingFields" in values["hamiltonian"].keys()
+            else values["hamiltonian"]["localDetuning"]
+        ):
             pattern_size = len(shifting_field["magnitude"]["pattern"])
             if num_sites != pattern_size:
                 raise ValueError(
