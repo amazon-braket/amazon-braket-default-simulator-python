@@ -1,7 +1,19 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import itertools
 import time
 import warnings
-from typing import Dict, List, Tuple
 
 import numpy as np
 import scipy.sparse
@@ -34,7 +46,7 @@ def validate_config(config: str, atoms_coordinates: np.ndarray, blockade_radius:
     return True
 
 
-def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float) -> List[str]:
+def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float) -> list[str]:
     """Return the lattice configurations complying with the blockade approximation
 
     Args:
@@ -42,7 +54,7 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
         blockade_radius (float): The Rydberg blockade radius
 
     Returns:
-        List[str]: A list of bit strings, each of them corresponding to a valid
+        list[str]: A list of bit strings, each of them corresponding to a valid
         configuration complying with the blockade approximation. The length of
         each configuration is the same as the number of atoms in the lattice,
         with 'r' and 'g' indicating the Rydberg and ground states, respectively.
@@ -75,18 +87,18 @@ def get_blockade_configurations(lattice: AtomArrangement, blockade_radius: float
 
 
 def _get_interaction_dict(
-    program: Program, rydberg_interaction_coef: float, configurations: List[str]
-) -> Dict[Tuple[int, int], float]:
+    program: Program, rydberg_interaction_coef: float, configurations: list[str]
+) -> dict[tuple[int, int], float]:
     """Return the dict contains the Rydberg interaction strength for all configurations.
 
     Args:
         program (Program): An analog simulation program for Rydberg system with the interaction term
         rydberg_interaction_coef (float): The interaction coefficient
-        configurations (List[str]): The list of configurations that comply with the blockade
+        configurations (list[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
-        Dict[Tuple[int, int], float]: The dictionary for the interaction operator
+        dict[tuple[int, int], float]: The dictionary for the interaction operator
     """
 
     # The coordinates for atoms in the filled sites
@@ -120,17 +132,17 @@ def _get_interaction_dict(
 
 
 def _get_detuning_dict(
-    targets: Tuple[int], configurations: List[str]
-) -> Dict[Tuple[int, int], float]:
+    targets: tuple[int], configurations: list[str]
+) -> dict[tuple[int, int], float]:
     """Return the dict contains the detuning operators for a set of target atoms.
 
     Args:
-        targets (Tuple[int]): The target atoms of the detuning operator
-        configurations (List[str]): The list of configurations that comply with the blockade
+        targets (tuple[int]): The target atoms of the detuning operator
+        configurations (list[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
-        Dict[Tuple[int, int], float]: The dictionary for the detuning operator
+        dict[tuple[int, int], float]: The dictionary for the detuning operator
     """
 
     detuning = {}  # The detuning term in the basis of configurations, as a dictionary
@@ -143,16 +155,16 @@ def _get_detuning_dict(
     return detuning
 
 
-def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple[int, int], float]:
+def _get_rabi_dict(targets: tuple[int], configurations: list[str]) -> dict[tuple[int, int], float]:
     """Return the dict for the Rabi operators for a set of target atoms.
 
     Args:
-        targets (Tuple[int]): The target atoms of the detuning operator
-        configurations (List[str]): The list of configurations that comply with the blockade
+        targets (tuple[int]): The target atoms of the detuning operator
+        configurations (list[str]): The list of configurations that comply with the blockade
             approximation.
 
     Returns:
-        Dict[Tuple[int, int], float]: The dictionary for the Rabi operator
+        dict[tuple[int, int], float]: The dictionary for the Rabi operator
 
     Note:
         We only save the lower triangular part of the matrix that corresponds
@@ -185,12 +197,12 @@ def _get_rabi_dict(targets: Tuple[int], configurations: List[str]) -> Dict[Tuple
 
 
 def _get_sparse_from_dict(
-    matrix_dict: Dict[Tuple[int, int], float], matrix_dimension: int
+    matrix_dict: dict[tuple[int, int], float], matrix_dimension: int
 ) -> scipy.sparse.csr_matrix:
     """Convert a dict to a CSR sparse matrix
 
     Args:
-        matrix_dict (Dict[Tuple[int, int], float]): The dict for the sparse matrix
+        matrix_dict (dict[tuple[int, int], float]): The dict for the sparse matrix
         matrix_dimension (int): The size of the sparse matrix
 
     Returns:
@@ -205,24 +217,24 @@ def _get_sparse_from_dict(
 
 
 def _get_sparse_ops(
-    program: Program, configurations: List[str], rydberg_interaction_coef: float
-) -> Tuple[
-    List[scipy.sparse.csr_matrix],
-    List[scipy.sparse.csr_matrix],
+    program: Program, configurations: list[str], rydberg_interaction_coef: float
+) -> tuple[
+    list[scipy.sparse.csr_matrix],
+    list[scipy.sparse.csr_matrix],
     scipy.sparse.csr_matrix,
-    List[scipy.sparse.csr_matrix],
+    list[scipy.sparse.csr_matrix],
 ]:
     """Returns the sparse matrices for Rabi, detuning, interaction and local detuning detuning
     operators
 
     Args:
         program (Program): An analog simulation program for Rydberg system
-        configurations (List[str]): The list of configurations that comply with the blockade
+        configurations (list[str]): The list of configurations that comply with the blockade
             approximation.
         rydberg_interaction_coef (float): The interaction coefficient
 
     Returns:
-        Tuple[List[csr_matrix],List[csr_matrix],csr_matrix,List[csr_matrix]]: A tuple containing
+        tuple[list[csr_matrix],list[csr_matrix],csr_matrix,list[csr_matrix]]: A tuple containing
         the list of Rabi operators, the list of detuing operators,
         the interaction operator and the list of local detuing operators
 
@@ -265,15 +277,15 @@ def _get_sparse_ops(
 
 
 def _interpolate_time_series(
-    t: float, times: List[float], values: List[float], method: str = "piecewise_linear"
+    t: float, times: list[float], values: list[float], method: str = "piecewise_linear"
 ) -> float:
     """Interpolates the value of a series of time-value pairs at the given time via linear
         interpolation.
 
     Args:
         t (float): The given time point
-        times (List[float]): The list of time points
-        values (List[float]): The list of values
+        times (list[float]): The list of time points
+        values (list[float]): The list of values
         method (str): The method for interpolation, either "piecewise_linear" or
             "piecewise_constant." Default: "piecewise_linear"
 
@@ -294,17 +306,17 @@ def _interpolate_time_series(
 
 
 def _get_coefs(
-    program: Program, simulation_times: List[float]
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    program: Program, simulation_times: list[float]
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Returns the coefficients for the Rabi operators, detuning operators and local detuning
     operators for all the time points in the analog simulation program.
 
     Args:
         program (Program): An analog simulation program for Rydberg system
-        simulation_times (List[float]): The list of time points
+        simulation_times (list[float]): The list of time points
 
     Returns:
-        Tuple[ndarray, ndarray, ndarray]: A tuple containing
+        tuple[ndarray, ndarray, ndarray]: A tuple containing
         the list of Rabi frequencies, the list of global detuings and
         the list of local detunings
     """
@@ -366,13 +378,13 @@ def _get_coefs(
 
 def _get_ops_coefs(
     program: Program,
-    configurations: List[str],
+    configurations: list[str],
     rydberg_interaction_coef: float,
-    simulation_times: List[float],
-) -> Tuple[
-    List[scipy.sparse.csr_matrix],
-    List[scipy.sparse.csr_matrix],
-    List[scipy.sparse.csr_matrix],
+    simulation_times: list[float],
+) -> tuple[
+    list[scipy.sparse.csr_matrix],
+    list[scipy.sparse.csr_matrix],
+    list[scipy.sparse.csr_matrix],
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -384,16 +396,16 @@ def _get_ops_coefs(
 
     Args:
         program (Program): An analog simulation program for Rydberg system
-        configurations (List[str]): The list of configurations that comply to the
+        configurations (list[str]): The list of configurations that comply to the
             blockade approximation.
         rydberg_interaction_coef (float): The interaction coefficient
-        simulation_times (List[float]): The list of time points
+        simulation_times (list[float]): The list of time points
 
     Returns:
-        Tuple[
-            List[csr_matrix],
-            List[csr_matrix],
-            List[csr_matrix],
+        tuple[
+            list[csr_matrix],
+            list[csr_matrix],
+            list[csr_matrix],
             ndarray,
             ndarray,
             ndarray,
@@ -453,8 +465,8 @@ def _print_progress_bar(num_time_points: int, index_time: int, start_time: float
             (current_time - start_time) / (index_time + 1) * (num_time_points - (index_time + 1))
         )
         print(
-            f"{100 * (index_time+1)/num_time_points}% finished, "
-            f"elapsed time = {(current_time-start_time)} seconds, "
+            f"{100 * (index_time + 1) / num_time_points}% finished, "
+            f"elapsed time = {(current_time - start_time)} seconds, "
             f"ETA = {estimate_time_arrival} seconds ",
             flush=True,
             end="\r",
@@ -463,10 +475,10 @@ def _print_progress_bar(num_time_points: int, index_time: int, start_time: float
 
 def _get_hamiltonian(
     index_time: float,
-    operators_coefficients: Tuple[
-        List[scipy.sparse.csr_matrix],
-        List[scipy.sparse.csr_matrix],
-        List[scipy.sparse.csr_matrix],
+    operators_coefficients: tuple[
+        list[scipy.sparse.csr_matrix],
+        list[scipy.sparse.csr_matrix],
+        list[scipy.sparse.csr_matrix],
         np.ndarray,
         np.ndarray,
         np.ndarray,
@@ -477,10 +489,10 @@ def _get_hamiltonian(
 
     Args:
         index_time (float): The index of the current time point
-        operators_coefficients (Tuple[
-            List[csr_matrix],
-            List[csr_matrix],
-            List[csr_matrix],
+        operators_coefficients (tuple[
+            list[csr_matrix],
+            list[csr_matrix],
+            list[csr_matrix],
             ndarray,
             ndarray,
             ndarray,
@@ -562,11 +574,11 @@ def _get_hamiltonian(
 
 def _apply_hamiltonian(
     index_time: float,
-    operators_coefficients: Tuple[
-        List[scipy.sparse.csr_matrix],
-        List[scipy.sparse.csr_matrix],
-        List[scipy.sparse.csr_matrix],
-        np.ndarray,
+    operators_coefficients: tuple[
+        list[scipy.sparse.csr_matrix],
+        list[scipy.sparse.csr_matrix],
+        list[scipy.sparse.csr_matrix],
+        list[scipy.sparse.csr_matrix],
         np.ndarray,
         np.ndarray,
         scipy.sparse.csr_matrix,
@@ -577,11 +589,11 @@ def _apply_hamiltonian(
 
     Args:
         index_time (float): The index of the current time point
-        operators_coefficients (Tuple[
-            List[csr_matrix],
-            List[csr_matrix],
-            List[csr_matrix],
-            ndarray,
+        operators_coefficients (tuple[
+            list[csr_matrix],
+            list[csr_matrix],
+            list[csr_matrix],
+            list[csr_matrix],
             ndarray,
             ndarray,
             csr_matrix
@@ -603,8 +615,7 @@ def _apply_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
-
-    if len(rabi_coefs) > 0:
+    if len(rabi_coefs):
         # If there is driving field, the maximum of index_time is the maximum time index
         # for the driving field.
         # Note that, if there is more than one driving field, we assume that they have the

@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List
-
 import numpy as np
 import opt_einsum
 
@@ -20,7 +18,7 @@ from braket.default_simulator.operation import GateOperation
 
 
 def apply_operations(
-    state: np.ndarray, qubit_count: int, operations: List[GateOperation], batch_size: int
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
 ) -> np.ndarray:
     r"""Applies operations to a state vector in batches of size :math:`batch\_size`.
 
@@ -45,7 +43,7 @@ def apply_operations(
         state (np.ndarray): The state vector to apply :math:`operations` to, as a type
             :math:`(qubit\_count, 0)` tensor
         qubit_count (int): The number of qubits in the state
-        operations (List[GateOperation]): The operations to apply to the state vector
+        operations (list[GateOperation]): The operations to apply to the state vector
         batch_size: The number of operations to contract in each batch
 
     Returns:
@@ -62,7 +60,7 @@ def apply_operations(
 
 
 def _contract_operations(
-    state: np.ndarray, qubit_count: int, operations: List[GateOperation]
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
     contraction_parameters = [state, list(range(qubit_count))]
     index_substitutions = {i: i for i in range(qubit_count)}

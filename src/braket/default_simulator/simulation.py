@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List
-
 import numpy as np
 
 from braket.default_simulator.operation import GateOperation, Observable
@@ -51,12 +49,12 @@ class Simulation:
         """
         return self._shots
 
-    def evolve(self, operations: List[GateOperation]) -> None:
+    def evolve(self, operations: list[GateOperation]) -> None:
         """Evolves the state of the simulation under the action of
         the specified gate operations.
 
         Args:
-            operations (List[GateOperation]): Gate operations to apply for
+            operations (list[GateOperation]): Gate operations to apply for
                 evolving the state of the simulation.
 
         Note:
@@ -75,12 +73,12 @@ class Simulation:
         """
         raise NotImplementedError("expectation has not been implemented.")
 
-    def retrieve_samples(self) -> List[int]:
+    def retrieve_samples(self) -> list[int]:
         """Retrieves samples of states from the state of the simulation,
         based on the probabilities.
 
         Returns:
-            List[int]: List of states sampled according to their probabilities
+            list[int]: List of states sampled according to their probabilities
             in the state. Each integer represents the decimal encoding of the
             corresponding computational basis state.
         """

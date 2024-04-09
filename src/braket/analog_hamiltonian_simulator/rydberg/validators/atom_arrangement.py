@@ -1,10 +1,22 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import warnings
 from decimal import Decimal
-from typing import Dict, Tuple
 
 import numpy as np
 from braket.ir.ahs.atom_arrangement import AtomArrangement
-from pydantic.class_validators import root_validator
+from pydantic.v1.class_validators import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
@@ -12,7 +24,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 
 
 def _euclidean_distance(
-    site_1: Tuple[Decimal, Decimal], site_2: Tuple[Decimal, Decimal]
+    site_1: tuple[Decimal, Decimal], site_2: tuple[Decimal, Decimal]
 ) -> Decimal:
     # Compute the Euclidean distance between two sets of 2-D points, (x1, y1) and (x2, y2)
 
@@ -24,7 +36,7 @@ class AtomArrangementValidator(AtomArrangement):
 
     # Each site has two coordinates (minItems=maxItems=2)
     @root_validator(pre=True, skip_on_failure=True)
-    def sites_have_length_2(cls, values: Dict) -> Dict:
+    def sites_have_length_2(cls, values: dict) -> dict:
         """
         Validate that the sites in the atom arrangement have only two coordinates
 

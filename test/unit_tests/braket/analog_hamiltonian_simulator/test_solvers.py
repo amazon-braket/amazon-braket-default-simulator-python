@@ -232,6 +232,7 @@ def test_solvers_non_constant_program(solver):
 
     assert np.allclose(final_prob, true_final_prob_2, atol=1e-2)
 
+
 # Test a program with the following properties
 # 1. It has vacant site and a local detuning field
 # 2. The vacant site is added to the register before another filled site

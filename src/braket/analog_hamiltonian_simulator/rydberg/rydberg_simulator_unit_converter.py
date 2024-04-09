@@ -1,4 +1,15 @@
-from typing import Dict
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
 
 from braket.ir.ahs.physical_field import PhysicalField
 from braket.ir.ahs.program_v1 import Program
@@ -53,7 +64,7 @@ def convert_unit(program: Program) -> Program:
     return new_program
 
 
-def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> Dict:
+def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> dict:
     """
     For a given field, convert the unit of time from second to microsecond,
     and convert the unit of values from Hz to MHz if `convertvalues` =True
@@ -64,7 +75,7 @@ def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) ->
             otherwise convert the unit of time from second to microsecond. Default: True.
 
     Returns:
-        Dict: The field with units converted
+        dict: The field with units converted
 
     """
     times = [float(time) / TIME_UNIT for time in field.time_series.times]

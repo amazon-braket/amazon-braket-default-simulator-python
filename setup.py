@@ -25,7 +25,7 @@ setup(
     name="amazon-braket-default-simulator",
     version=version,
     license="Apache License 2.0",
-    python_requires=">= 3.8",
+    python_requires=">= 3.9",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     package_data={"": ["*.g4", "*.inc"]},
@@ -33,11 +33,12 @@ setup(
     install_requires=[
         "numpy",
         "opt_einsum",
-        "pydantic>=1.9,<2.0",
+        "pydantic>2",
         "scipy",
+        "sympy",
         # pinned for compatibility with strawberry fields
         "antlr4-python3-runtime==4.9.2",
-        "amazon-braket-schemas>=1.18.0",
+        "amazon-braket-schemas>=1.21.0",
     ],
     entry_points={
         "braket.simulators": [
@@ -70,7 +71,7 @@ setup(
             "tox",
         ]
     },
-    url="https://github.com/aws/amazon-braket-default-simulator-python",
+    url="https://github.com/amazon-braket/amazon-braket-default-simulator-python",
     author="Amazon Web Services",
     description=(
         "An open source quantum circuit simulator to be run locally with the Amazon Braket SDK"
@@ -84,7 +85,6 @@ setup(
         "Natural Language :: English",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",

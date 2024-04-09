@@ -1,5 +1,108 @@
 # Changelog
 
+## v1.21.3 (2024-04-08)
+
+### Bug Fixes and Other Changes
+
+ * make shifting fields backwards compatible with change to localDe…
+
+## v1.21.2 (2024-03-28)
+
+### Bug Fixes and Other Changes
+
+ * support pydantic 2.x
+
+## v1.21.1 (2024-03-27)
+
+### Bug Fixes and Other Changes
+
+ * constrain the schemas for upgrading Pydantic
+
+## v1.21.0 (2024-03-19)
+
+### Features
+
+ * allow support for a subset of measurements
+
+## v1.20.6 (2024-03-11)
+
+### Bug Fixes and Other Changes
+
+ * typing issue for apply_hamiltonian
+
+## v1.20.5 (2024-03-05)
+
+### Bug Fixes and Other Changes
+
+ * update schema version to latest in setup.py
+
+## v1.20.4 (2024-03-04)
+
+### Bug Fixes and Other Changes
+
+ * make the dimension a PositiveInt for typing
+
+## v1.20.3 (2024-03-04)
+
+### Bug Fixes and Other Changes
+
+ * add in setuptools for publishing to pypi
+
+## v1.20.2 (2024-03-02)
+
+### Bug Fixes and Other Changes
+
+ * add tox read only linters
+
+## v1.20.1 (2023-10-11)
+
+### Bug Fixes and Other Changes
+
+ * Use builtins for type hints
+
+## v1.20.0.post0 (2023-09-14)
+
+### Documentation Changes
+
+ * Replace aws org with amazon-braket
+ * change the sphinx requirement to be greater than 7.0.0
+
+## v1.20.0 (2023-08-07)
+
+### Features
+
+ * Create OpenQASMSimulator class
+ * symbolic built-in functions and constants
+
+### Documentation Changes
+
+ * License header in all code files
+
+## v1.19.1 (2023-08-03)
+
+### Bug Fixes and Other Changes
+
+ * Support `angle` declarations
+
+## v1.19.0.post0 (2023-07-28)
+
+### Documentation Changes
+
+ * update type annotation for handle_parameter_value
+
+## v1.19.0 (2023-07-25)
+
+### Features
+
+ * Support symbolic expressions
+
+## v1.18.3 (2023-07-24)
+
+### Bug Fixes and Other Changes
+
+ * indentation
+ * Support for unbounded parametric circuits
+
 ## v1.18.2 (2023-07-11)
 
 ### Bug Fixes and Other Changes

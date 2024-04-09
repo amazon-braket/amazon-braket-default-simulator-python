@@ -1,5 +1,18 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 from functools import singledispatch
-from typing import List, Optional, Type, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -90,7 +103,7 @@ def _(value: IntegerLiteral, index: IndexElement, type_width: IntegerLiteral) ->
     return get_elements(binary_rep, index)
 
 
-def create_empty_array(dims: List[IntegerLiteral]) -> ArrayLiteral:
+def create_empty_array(dims: list[IntegerLiteral]) -> ArrayLiteral:
     """Create an empty Array of given dimensions"""
     if len(dims) == 1:
         return ArrayLiteral([None] * dims[0].value)
@@ -105,7 +118,7 @@ def convert_index(index: Union[RangeDefinition, IntegerLiteral]) -> Union[int, s
         return index.value
 
 
-def flatten_indices(indices: List[IndexElement]) -> list:
+def flatten_indices(indices: list[IndexElement]) -> list:
     """Convert a[i][j][k] to the equivalent a[i, j, k]"""
     return sum((index for index in indices), [])
 
@@ -135,8 +148,8 @@ def unwrap_var_type(var_type: ClassicalType) -> ClassicalType:
 def update_value(
     current_value: Union[ArrayLiteral, BitstringLiteral],
     value: LiteralType,
-    update_indices: List[IndexElement],
-    var_type: Union[ClassicalType, Type[LiteralType]],
+    update_indices: list[IndexElement],
+    var_type: Union[ClassicalType, type[LiteralType]],
 ) -> LiteralType:
     """Update an Array, for example: a[4, 1:] = {1, 2, 3}"""
     # current value will be an ArrayLiteral or BitstringLiteral
@@ -174,7 +187,7 @@ def update_value(
 def _(
     current_value: IntegerLiteral,
     value: LiteralType,
-    update_indices: List[IndexElement],
+    update_indices: list[IndexElement],
     var_type: Union[IntType, UintType],
 ):
     # called recursively, replacing the whole integer

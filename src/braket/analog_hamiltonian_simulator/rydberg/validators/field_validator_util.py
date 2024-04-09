@@ -1,16 +1,28 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import warnings
 from decimal import Decimal
-from typing import List
 
 
 def validate_value_range_with_warning(
-    values: List[Decimal], min_value: Decimal, max_value: Decimal, name: str
+    values: list[Decimal], min_value: Decimal, max_value: Decimal, name: str
 ) -> None:
     """
     Validate the given list of values against the allowed range
 
     Args:
-        values (List[Decimal]): The given list of values to be validated
+        values (list[Decimal]): The given list of values to be validated
         min_value (Decimal): The minimal value allowed
         max_value (Decimal): The maximal value allowed
         name (str): The name of the field corresponds to the values
