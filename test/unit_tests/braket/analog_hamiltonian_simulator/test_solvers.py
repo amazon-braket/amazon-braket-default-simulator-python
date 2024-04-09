@@ -162,6 +162,62 @@ def test_failed_scipy_run():
             "the parameter `nsteps`."
         )
 
+# Test solver with non-constant amplitude and detuning
+
+# We use a single atom and set amplitude and detuning equal
+# to each other, so that the evolution can be solved exactly
+
+theta = np.pi / 2  # could be arbitrary value
+
+amplitude_2 = {
+    "pattern": "uniform",
+    "time_series": {"times": [0, tmax / 2, tmax], "values": [0.0, theta / tmax, 0.0]},
+}
+
+detuning_2 = {
+    "pattern": "uniform",
+    "time_series": {"times": [0, tmax / 2, tmax], "values": [0.0, theta / tmax, 0.0]},
+}
+
+phase_2 = {"pattern": "uniform", "time_series": {"times": [0, tmax], "values": [0, 0]}}
+
+driving_field_2 = {"amplitude": amplitude_2, "phase": phase_2, "detuning": detuning_2}
+
+setup_2 = {"ahs_register": {"sites": [[0, 0]], "filling": [1]}}
+hamiltonian_2 = {"drivingFields": [driving_field_2], "shiftingFields": []}
+
+program_2 = convert_unit(
+    Program(
+        setup=setup_2,
+        hamiltonian=hamiltonian_2,
+    )
+)
+
+theory_value_1 = (np.sin(1 / 2 * theta / np.sqrt(2)) / np.sqrt(2)) ** 2
+theory_value_0 = 1 - theory_value_1
+
+configurations_2 = ["g", "r"]
+true_final_prob_2 = [theory_value_0, theory_value_1]
+
+
+@pytest.mark.parametrize(
+    "solver",
+    [
+        scipy_integrate_ode_run,
+        rk_run,
+    ],
+)
+def test_solvers_non_constant_program(solver):
+    states = solver(
+        program_2,
+        configurations_2,
+        simulation_times,
+        rydberg_interaction_coef,
+    )
+    final_prob = [np.abs(i) ** 2 for i in states[-1]]
+
+    assert np.allclose(final_prob, true_final_prob_2, atol=1e-2)
+
 # Test a program with the following properties
 # 1. It has vacant site and a local detuning field
 # 2. The vacant site is added to the register before another filled site
