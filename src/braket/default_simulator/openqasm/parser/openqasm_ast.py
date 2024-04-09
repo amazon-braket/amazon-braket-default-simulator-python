@@ -97,6 +97,8 @@ __all__ = [
     "WhileLoop",
 ]
 
+from sympy import Expr
+
 AccessControl = Enum("AccessControl", "const mutable")
 AssignmentOperator = Enum("AssignmentOperator", "= += -= *= /= &= |= ~= ^= <<= >>= %= **=")
 BinaryOperator = Enum("BinaryOperator", "> < >= <= == != && || | ^ & << >> + - * / % **")
@@ -1057,3 +1059,17 @@ class Pragma(QASMNode):
     """
 
     command: str
+
+
+@dataclass
+class SymbolLiteral(Expression):
+    """
+    A symbol literal for parametric interpretation
+
+    Example::
+
+        Symbol("theta")
+
+    """
+
+    value: Expr

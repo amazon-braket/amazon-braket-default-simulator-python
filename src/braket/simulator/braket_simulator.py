@@ -15,20 +15,20 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 from braket.device_schema import DeviceCapabilities
-from braket.ir.annealing import Problem
+from braket.ir.ahs import Program as AHSProgram
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.openqasm import Program as OQ3Program
-from braket.task_result import AnnealingTaskResult, GateModelTaskResult
+from braket.task_result import AnalogHamiltonianSimulationTaskResult, GateModelTaskResult
 
 
 class BraketSimulator(ABC):
     """An abstract simulator that locally runs a quantum task.
 
-    The task can be either a circuit-based program or an annealing problem,
-    specified by the given IR.
+    The task can be either a quantum circuit defined in an OpenQASM or JAQCD program,
+    or an analog Hamiltonian simulation (AHS) program.
 
     For users creating their own simulator: to register a simulator so the
-    Braket SDK recognizes its name, the name and class must added as an
+    Braket SDK recognizes its name, the name and class must be added as an
     entry point for "braket.simulators". This is done by adding an entry to
     entry_points in the simulator package's setup.py:
 
@@ -43,8 +43,8 @@ class BraketSimulator(ABC):
 
     @abstractmethod
     def run(
-        self, ir: Union[JaqcdProgram, OQ3Program, Problem], *args, **kwargs
-    ) -> Union[GateModelTaskResult, AnnealingTaskResult]:
+        self, ir: Union[OQ3Program, AHSProgram, JaqcdProgram], *args, **kwargs
+    ) -> Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]:
         """
         Run the task specified by the given IR.
 
@@ -52,11 +52,11 @@ class BraketSimulator(ABC):
         such as number of qubits.
 
         Args:
-            ir (Union[JaqcdProgram, OQ3Program, Problem]): The IR representation of the program
+            ir (Union[OQ3Program, AHSProgram, JaqcdProgram]): The IR representation of the program
 
         Returns:
-            Union[GateModelTaskResult, AnnealingTaskResult]: An object representing
-            the results of the simulation.
+            Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]: An object
+            representing the results of the simulation.
         """
 
     @property

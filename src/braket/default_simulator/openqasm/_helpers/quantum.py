@@ -1,4 +1,17 @@
-from typing import List, Union
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
+from typing import Union
 
 from ..parser.openqasm_ast import (
     FloatLiteral,
@@ -63,7 +76,7 @@ def convert_phase_to_gate(controlled_phase: QuantumPhase) -> QuantumGate:
     )
 
 
-def get_ctrl_modifiers(modifiers: List[QuantumGateModifier]) -> List[QuantumGateModifier]:
+def get_ctrl_modifiers(modifiers: list[QuantumGateModifier]) -> list[QuantumGateModifier]:
     """Get the control modifiers from a list of quantum gate modifiers"""
     return [
         mod
@@ -72,18 +85,18 @@ def get_ctrl_modifiers(modifiers: List[QuantumGateModifier]) -> List[QuantumGate
     ]
 
 
-def get_pow_modifiers(modifiers: List[QuantumGateModifier]) -> List[QuantumGateModifier]:
+def get_pow_modifiers(modifiers: list[QuantumGateModifier]) -> list[QuantumGateModifier]:
     """Get the power modifiers from a list of quantum gate modifiers"""
     return [mod for mod in modifiers if mod.modifier == GateModifierName.pow]
 
 
 def modify_body(
-    body: List[QuantumStatement],
+    body: list[QuantumStatement],
     do_invert: bool,
-    ctrl_modifiers: List[QuantumGateModifier],
-    ctrl_qubits: List[Identifier],
-    pow_modifiers: List[QuantumGateModifier],
-) -> List[QuantumStatement]:
+    ctrl_modifiers: list[QuantumGateModifier],
+    ctrl_qubits: list[Identifier],
+    pow_modifiers: list[QuantumGateModifier],
+) -> list[QuantumStatement]:
     """Apply modifiers information to the definition body of a quantum gate"""
     if do_invert:
         body = list(reversed(body))

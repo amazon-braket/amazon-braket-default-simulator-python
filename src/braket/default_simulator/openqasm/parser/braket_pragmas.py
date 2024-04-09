@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import List, Tuple
-
 import numpy as np
 from antlr4 import CommonTokenStream, InputStream
 from braket.ir.jaqcd import (
@@ -83,7 +81,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         states = self.visit(ctx.getChild(1))
         return multistate_result_type_map[result_type](states=states)
 
-    def visitMultiState(self, ctx: BraketPragmasParser.MultiStateContext) -> List[str]:
+    def visitMultiState(self, ctx: BraketPragmasParser.MultiStateContext) -> list[str]:
         # unquote and skip commas
         states = [x.getText()[1:-1] for x in list(ctx.getChildren())[::2]]
         return states
@@ -104,7 +102,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     def visitStandardObservableIdentifier(
         self,
         ctx: BraketPragmasParser.StandardObservableIdentifierContext,
-    ) -> Tuple[Tuple[str], int]:
+    ) -> tuple[tuple[str], int]:
         observable = ctx.standardObservableName().getText()
         target_tuple = self.visit(ctx.indexedIdentifier())
         if len(target_tuple) != 1:
@@ -114,13 +112,13 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     def visitStandardObservableAll(
         self,
         ctx: BraketPragmasParser.StandardObservableAllContext,
-    ) -> Tuple[Tuple[str], None]:
+    ) -> tuple[tuple[str], None]:
         observable = ctx.standardObservableName().getText()
         return (observable,), None
 
     def visitTensorProductObservable(
         self, ctx: BraketPragmasParser.TensorProductObservableContext
-    ) -> Tuple[Tuple[str], Tuple[int]]:
+    ) -> tuple[tuple[str], tuple[int]]:
         observables, targets = zip(
             *(self.visit(ctx.getChild(i)) for i in range(0, ctx.getChildCount(), 2))
         )
@@ -130,7 +128,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
 
     def visitHermitianObservable(
         self, ctx: BraketPragmasParser.HermitianObservableContext
-    ) -> Tuple[Tuple[List[List[float]]], int]:
+    ) -> tuple[tuple[list[list[float]]], int]:
         matrix = self.visit(ctx.twoDimMatrix())
         matrix = np.expand_dims(matrix, axis=-1)
         converted = np.append(matrix.real, matrix.imag, axis=-1).tolist()
@@ -139,14 +137,14 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
 
     def visitIndexedIdentifier(
         self, ctx: BraketPragmasParser.IndexedIdentifierContext
-    ) -> Tuple[int]:
+    ) -> tuple[int]:
         parsable = f"target {''.join(x.getText() for x in ctx.getChildren())};"
         parsed_statement = parse(parsable)
         identifier = parsed_statement.statements[0].qubits[0]
         target = self.qubit_table.get_by_identifier(identifier)
         return target
 
-    def visitComplexOneValue(self, ctx: BraketPragmasParser.ComplexOneValueContext) -> List[float]:
+    def visitComplexOneValue(self, ctx: BraketPragmasParser.ComplexOneValueContext) -> list[float]:
         sign = -1 if ctx.neg else 1
         value = ctx.value.text
         imag = False
@@ -159,7 +157,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
 
     def visitComplexTwoValues(
         self, ctx: BraketPragmasParser.ComplexTwoValuesContext
-    ) -> List[float]:
+    ) -> list[float]:
         real = float(ctx.real.text)
         imag = float(ctx.imag.text[:-2])  # exclude "im"
         if ctx.neg:
@@ -172,12 +170,12 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
 
     def visitBraketUnitaryPragma(
         self, ctx: BraketPragmasParser.BraketUnitaryPragmaContext
-    ) -> Tuple[np.ndarray, Tuple[int]]:
+    ) -> tuple[np.ndarray, tuple[int]]:
         target = self.visit(ctx.multiTarget())
         matrix = self.visit(ctx.twoDimMatrix())
         return matrix, target
 
-    def visitRow(self, ctx: BraketPragmasParser.RowContext) -> List[complex]:
+    def visitRow(self, ctx: BraketPragmasParser.RowContext) -> list[complex]:
         numbers = ctx.children[1::2]
         return [x[0] + x[1] * 1j for x in [self.visit(number) for number in numbers]]
 

@@ -12,11 +12,13 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from functools import singledispatchmethod
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
+from sympy import Expr
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
 from braket.default_simulator.noise_operations import (
@@ -76,7 +78,7 @@ class Table:
     def __setitem__(self, key: str, value: Any):
         self._dict[key] = value
 
-    def items(self) -> Iterable[Tuple[str, Any]]:
+    def items(self) -> Iterable[tuple[str, Any]]:
         return self._dict.items()
 
     def _longest_key_length(self) -> int:
@@ -96,7 +98,7 @@ class QubitTable(Table):
         super().__init__("Qubits")
 
     @singledispatchmethod
-    def get_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]) -> Tuple[int]:
+    def get_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]) -> tuple[int]:
         """
         Convenience method to get an element with a possibly indexed identifier.
         """
@@ -105,24 +107,35 @@ class QubitTable(Table):
         return self[identifier.name]
 
     @get_by_identifier.register
-    def _(self, identifier: IndexedIdentifier) -> Tuple[int]:
+    def _(self, identifier: IndexedIdentifier) -> tuple[int]:
         """
         When identifier is an IndexedIdentifier, function returns a tuple
         corresponding to the elements referenced by the indexed identifier.
         """
         name = identifier.name.name
         primary_index = identifier.indices[0]
+
+        def validate_qubit_in_range(qubit: int):
+            if qubit >= len(self[name]):
+                raise IndexError(
+                    f"qubit register index `{qubit}` out of range for qubit register of length {len(self[name])} `{name}`."
+                )
+
         if isinstance(primary_index, list):
             if len(primary_index) != 1:
                 raise IndexError("Cannot index multiple dimensions for qubits.")
             primary_index = primary_index[0]
         if isinstance(primary_index, IntegerLiteral):
+            validate_qubit_in_range(primary_index.value)
             target = (self[name][primary_index.value],)
         elif isinstance(primary_index, RangeDefinition):
             target = tuple(np.array(self[name])[convert_range_def_to_slice(primary_index)])
         # Discrete set
         else:
-            target = tuple(np.array(self[name])[convert_discrete_set_to_list(primary_index)])
+            indices = convert_discrete_set_to_list(primary_index)
+            for index in indices:
+                validate_qubit_in_range(index)
+            target = tuple(np.array(self[name])[indices])
 
         if len(identifier.indices) == 1:
             return target
@@ -157,7 +170,7 @@ class ScopedTable(Table):
         return len(self._scopes) == 1
 
     @property
-    def current_scope(self) -> Dict[str, Any]:
+    def current_scope(self) -> dict[str, Any]:
         return self._scopes[-1]
 
     def __getitem__(self, item: str):
@@ -188,14 +201,14 @@ class ScopedTable(Table):
                 return
         raise KeyError(f"Undefined key: {key}")
 
-    def get_scope(self, key: str) -> Dict[str, Any]:
+    def get_scope(self, key: str) -> dict[str, Any]:
         """Get the smallest scope containing the given key"""
         for scope in reversed(self._scopes):
             if key in scope:
                 return scope
         raise KeyError(f"Undefined key: {key}")
 
-    def items(self) -> Iterable[Tuple[str, Any]]:
+    def items(self) -> Iterable[tuple[str, Any]]:
         items = {}
         for scope in reversed(self._scopes):
             for key, value in scope.items():
@@ -236,7 +249,7 @@ class SymbolTable(ScopedTable):
     def add_symbol(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, LiteralType, Type[Identifier]],
+        symbol_type: Union[ClassicalType, LiteralType, type[Identifier]],
         const: bool = False,
     ) -> None:
         """
@@ -263,7 +276,7 @@ class SymbolTable(ScopedTable):
         """
         return self[name]
 
-    def get_type(self, name: str) -> Union[ClassicalType, Type[LiteralType]]:
+    def get_type(self, name: str) -> Union[ClassicalType, type[LiteralType]]:
         """
         Get the type of a symbol by name.
 
@@ -330,7 +343,7 @@ class VariableTable(ScopedTable):
         name: str,
         value: Any,
         var_type: ClassicalType,
-        indices: Optional[List[IndexElement]] = None,
+        indices: Optional[list[IndexElement]] = None,
     ) -> None:
         """Update value of a variable, optionally providing an index"""
         current_value = self[name]
@@ -422,12 +435,12 @@ class AbstractProgramContext(ABC):
             for x in (self.symbol_table, self.variable_table, self.gate_table, self.qubit_mapping)
         )
 
-    def load_inputs(self, inputs: Dict[str, Any]) -> None:
+    def load_inputs(self, inputs: dict[str, Any]) -> None:
         """
         Load inputs for the circuit
 
         Args:
-            inputs (Dict[str, Any]): A dictionary containing the inputs to be loaded
+            inputs (dict[str, Any]): A dictionary containing the inputs to be loaded
         """
         for key, value in inputs.items():
             self.inputs[key] = value
@@ -444,7 +457,7 @@ class AbstractProgramContext(ABC):
     def declare_variable(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, Type[LiteralType], Type[Identifier]],
+        symbol_type: Union[ClassicalType, type[LiteralType], type[Identifier]],
         value: Optional[Any] = None,
         const: bool = False,
     ) -> None:
@@ -453,7 +466,7 @@ class AbstractProgramContext(ABC):
 
         Args:
             name (str): The name of the variable
-            symbol_type(Union[ClassicalType, Type[LiteralType], Type[Identifier]]): The type of the variable.
+            symbol_type(Union[ClassicalType, type[LiteralType], type[Identifier]]): The type of the variable.
             value (Optional[Any]): The initial value of the variable . Defaults to None.
             const (bool): Flag indicating if the variable is constant. Defaults to False.
         """
@@ -505,7 +518,7 @@ class AbstractProgramContext(ABC):
     def in_global_scope(self):
         return self.symbol_table.in_global_scope
 
-    def get_type(self, name: str) -> Union[ClassicalType, Type[LiteralType]]:
+    def get_type(self, name: str) -> Union[ClassicalType, type[LiteralType]]:
         """
         Get symbol type by name
 
@@ -513,7 +526,7 @@ class AbstractProgramContext(ABC):
             name (str): The name of the symbol.
 
         Returns:
-            Union[ClassicalType, Type[LiteralType]]: The type of the symbol.
+            Union[ClassicalType, type[LiteralType]]: The type of the symbol.
         """
         return self.symbol_table.get_type(name)
 
@@ -601,7 +614,7 @@ class AbstractProgramContext(ABC):
         self.num_qubits += num_qubits
         self.declare_qubit_alias(name, Identifier(name))
 
-    def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]) -> Tuple[int]:
+    def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]) -> tuple[int]:
         """
         Get qubit indices from a qubit identifier, possibly referring to a sub-index of
         a qubit register
@@ -610,7 +623,7 @@ class AbstractProgramContext(ABC):
             qubits (Union[Identifier, IndexedIdentifier]): The identifier of the qubits.
 
         Returns:
-            Tuple[int]: The indices of the qubits.
+            tuple[int]: The indices of the qubits.
 
         Raises:
             KeyError: If the qubit identifier is not found.
@@ -711,7 +724,7 @@ class AbstractProgramContext(ABC):
     def add_phase(
         self,
         phase: FloatLiteral,
-        qubits: Optional[List[Union[Identifier, IndexedIdentifier]]] = None,
+        qubits: Optional[list[Union[Identifier, IndexedIdentifier]]] = None,
     ) -> None:
         """Add quantum phase instruction to the circuit"""
         # if targets overlap, duplicates will be ignored
@@ -727,28 +740,28 @@ class AbstractProgramContext(ABC):
         Abstract method to add phase instruction to the circuit
 
         Args:
-            target (int or List[int]): The target qubit or qubits to which the phase instruction is applied
+            target (int or list[int]): The target qubit or qubits to which the phase instruction is applied
             phase_value (float): The phase value to be applied
         """
 
     def add_builtin_gate(
         self,
         gate_name: str,
-        parameters: List[FloatLiteral],
-        qubits: List[Union[Identifier, IndexedIdentifier]],
-        modifiers: Optional[List[QuantumGateModifier]] = None,
+        parameters: list[FloatLiteral],
+        qubits: list[Union[Identifier, IndexedIdentifier]],
+        modifiers: Optional[list[QuantumGateModifier]] = None,
     ) -> None:
         """
         Add a builtin gate instruction to the circuit
 
         Args:
             gate_name (str): The name of the built-in gate.
-            parameters (List[FloatLiteral]): The list of the gate parameters.
-            qubits (List[Union[Identifier, IndexedIdentifier]]): The list of qubits the gate acts on.
-            modifiers (Optional[List[QuantumGateModifier]]): The list of gate modifiers (optional).
+            parameters (list[FloatLiteral]): The list of the gate parameters.
+            qubits (list[Union[Identifier, IndexedIdentifier]]): The list of qubits the gate acts on.
+            modifiers (Optional[list[QuantumGateModifier]]): The list of gate modifiers (optional).
         """
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
-        params = np.array([param.value for param in parameters])
+        params = np.array([self.handle_parameter_value(param.value) for param in parameters])
         num_inv_modifiers = modifiers.count(QuantumGateModifier(GateModifierName.inv, None))
         power = 1
         if num_inv_modifiers % 2:
@@ -769,15 +782,24 @@ class AbstractProgramContext(ABC):
             gate_name, target, params, ctrl_modifiers=ctrl_modifiers, power=power
         )
 
+    def handle_parameter_value(self, value: Union[float, Expr]) -> Any:
+        """Convert parameter value to required format. Default conversion is noop.
+        Args:
+            value (Union[float, Expr]): Value of the parameter
+        """
+        if isinstance(value, Expr):
+            return value.evalf()
+        return value
+
     @abstractmethod
     def add_gate_instruction(
-        self, gate_name: str, target: Tuple[int, ...], params, ctrl_modifiers: List[int], power: int
+        self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
     ):
         """Abstract method to add Braket gate to the circuit.
         Args:
             gate_name (str): name of the built-in Braket gate.
-            target (Tuple[int]): control_qubits + target_qubits.
-            ctrl_modifiers (List[int]): Quantum state on which to control the
+            target (tuple[int]): control_qubits + target_qubits.
+            ctrl_modifiers (list[int]): Quantum state on which to control the
                 operation. Must be a binary sequence of same length as number of qubits in
                 `control-qubits` in target. For example "0101", [0, 1, 0, 1], 5 all represent
                 controlling on qubits 0 and 2 being in the \\|0⟩ state and qubits 1 and 3 being
@@ -788,36 +810,39 @@ class AbstractProgramContext(ABC):
     def add_custom_unitary(
         self,
         unitary: np.ndarray,
-        target: Tuple[int, ...],
+        target: tuple[int, ...],
     ) -> None:
         """Abstract method to add a custom Unitary instruction to the circuit
         Args:
             unitary (np.ndarray): unitary matrix
-            target (Tuple[int, ...]): control_qubits + target_qubits
+            target (tuple[int, ...]): control_qubits + target_qubits
         """
         raise NotImplementedError
 
     def add_noise_instruction(
-        self, noise_instruction: str, target: List[int], probabilities: List[float]
+        self, noise_instruction: str, target: list[int], probabilities: list[float]
     ):
         """Abstract method to add a noise instruction to the circuit
 
         Args:
             noise_instruction (str): The name of the noise operation
-            target (List[int]): The target qubit or qubits to which the noise operation is applied.
-            probabilities (List[float]): The probabilities associated with each possible outcome
+            target (list[int]): The target qubit or qubits to which the noise operation is applied.
+            probabilities (list[float]): The probabilities associated with each possible outcome
                 of the noise operation.
         """
         raise NotImplementedError
 
-    def add_kraus_instruction(self, matrices: List[np.ndarray], target: List[int]):
+    def add_kraus_instruction(self, matrices: list[np.ndarray], target: list[int]):
         """Abstract method to add a Kraus instruction to the circuit
 
         Args:
-            matrices (List[ndarray]): The matrices defining the Kraus operation
-            target (List[int]): The target qubit or qubits to which the Kraus operation is applied.
+            matrices (list[ndarray]): The matrices defining the Kraus operation
+            target (list[int]): The target qubit or qubits to which the Kraus operation is applied.
         """
         raise NotImplementedError
+
+    def add_measure(self, target: tuple[int]):
+        """Add qubit targets to be measured"""
 
 
 class ProgramContext(AbstractProgramContext):
@@ -838,12 +863,12 @@ class ProgramContext(AbstractProgramContext):
         user_defined_gate = self.is_user_defined_gate(name)
         return name in BRAKET_GATES and not user_defined_gate
 
-    def add_phase_instruction(self, target: Tuple[int], phase_value: int):
+    def add_phase_instruction(self, target: tuple[int], phase_value: int):
         phase_instruction = GPhase(target, phase_value)
         self._circuit.add_instruction(phase_instruction)
 
     def add_gate_instruction(
-        self, gate_name: str, target: Tuple[int, ...], params, ctrl_modifiers: List[int], power: int
+        self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
     ):
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
@@ -853,13 +878,13 @@ class ProgramContext(AbstractProgramContext):
     def add_custom_unitary(
         self,
         unitary: np.ndarray,
-        target: Tuple[int, ...],
+        target: tuple[int, ...],
     ) -> None:
         instruction = Unitary(target, unitary)
         self._circuit.add_instruction(instruction)
 
     def add_noise_instruction(
-        self, noise_instruction: str, target: List[int], probabilities: List[float]
+        self, noise_instruction: str, target: list[int], probabilities: list[float]
     ):
         one_prob_noise_map = {
             "bit_flip": BitFlip,
@@ -874,8 +899,11 @@ class ProgramContext(AbstractProgramContext):
         }
         self._circuit.add_instruction(one_prob_noise_map[noise_instruction](target, *probabilities))
 
-    def add_kraus_instruction(self, matrices: List[np.ndarray], target: List[int]):
+    def add_kraus_instruction(self, matrices: list[np.ndarray], target: list[int]):
         self._circuit.add_instruction(Kraus(target, matrices))
 
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
+
+    def add_measure(self, target: tuple[int]):
+        self._circuit.add_measure(target)

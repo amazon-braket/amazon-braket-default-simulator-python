@@ -1,7 +1,20 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import warnings
 
 from braket.ir.ahs.time_series import TimeSeries
-from pydantic.class_validators import root_validator
+from pydantic.v1.class_validators import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
@@ -50,7 +63,7 @@ class TimeSeriesValidator(TimeSeries):
         for i in range(len(times) - 1):
             if times[i] >= times[i + 1]:
                 raise ValueError(
-                    f"Time point {i} ({times[i]}) and time point {i+1} ({times[i+1]}) "
+                    f"Time point {i} ({times[i]}) and time point {i + 1} ({times[i + 1]}) "
                     "must be monotonically increasing."
                 )
         return values

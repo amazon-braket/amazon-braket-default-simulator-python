@@ -1,3 +1,16 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import cmath
 import json
 import re
@@ -227,7 +240,7 @@ def test_properties():
                     "supportPhysicalQubits": False,
                     "supportsPartialVerbatimBox": False,
                     "requiresContiguousQubitIndices": True,
-                    "requiresAllQubitsMeasurement": True,
+                    "requiresAllQubitsMeasurement": False,
                     "supportsUnassignedMeasurements": True,
                     "disabledQubitRewiringSupported": False,
                 },
@@ -1241,3 +1254,34 @@ def test_adjoint_gradient_pragma_sv1():
 
     with pytest.raises(TypeError, match=ag_not_supported):
         simulator.run(prog, shots=0)
+
+
+def test_missing_input():
+    qasm = """
+    input int[8] in_int;
+    int[8] doubled;
+
+    doubled = in_int * 2;
+    qubit q;
+    rx(doubled) q;
+    """
+    simulator = StateVectorSimulator()
+    missing_input = "Missing input variable 'in_int'."
+    with pytest.raises(NameError, match=missing_input):
+        simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+
+
+def test_measure_targets():
+    qasm = """
+    qubit[2] q;
+    bit[1] b;
+    h q[0];
+    cnot q[0], q[1];
+    b[0] = measure q[0];
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert 400 < np.sum(measurements, axis=0)[0] < 600
+    assert len(measurements[0]) == 1
+    assert result.measuredQubits == [0]

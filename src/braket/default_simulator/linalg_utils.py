@@ -12,7 +12,8 @@
 # language governing permissions and limitations under the License.
 
 import itertools
-from typing import List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 
@@ -26,9 +27,9 @@ _SLICES = (
 def multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
-    targets: Tuple[int, ...],
-    controls: Optional[Tuple[int]] = (),
-    control_state: Optional[Tuple[int]] = (),
+    targets: tuple[int, ...],
+    controls: Optional[tuple[int, ...]] = (),
+    control_state: Optional[tuple[int, ...]] = (),
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
     controlling the operation as specified.
@@ -36,9 +37,9 @@ def multiply_matrix(
     Args:
         state (np.ndarray): The state to multiply the matrix by.
         matrix (np.ndarray): The matrix to apply to the state.
-        targets (Tuple[int]): The qubits to apply the state on.
-        controls (Optional[Tuple[int]]): The qubits to control the operation on. Default ().
-        control_state (Optional[Tuple[int]]): A tuple of same length as `controls` with either
+        targets (tuple[int]): The qubits to apply the state on.
+        controls (Optional[tuple[int]]): The qubits to control the operation on. Default ().
+        control_state (Optional[tuple[int]]): A tuple of same length as `controls` with either
             a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
             Default (1,) * len(controls).
 
@@ -61,14 +62,14 @@ def multiply_matrix(
 def _multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
-    targets: Tuple[int, ...],
+    targets: tuple[int, ...],
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
     Args:
         state (np.ndarray): The state to multiply the matrix by.
         matrix (np.ndarray): The matrix to apply to the state.
-        targets (Tuple[int]): The qubits to apply the state on.
+        targets (tuple[int]): The qubits to apply the state on.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
@@ -100,7 +101,7 @@ def marginal_probability(
 
     Args:
         probabilities (np.ndarray): The probability distribution to marginalize.
-        targets (List[int]): The qubits of the marginal distribution;
+        targets (list[int]): The qubits of the marginal distribution;
             if no targets are specified, then the probability of all basis states is returned.
 
     Returns:
@@ -126,7 +127,7 @@ def marginal_probability(
 
 def partial_trace(
     density_matrix: np.ndarray,
-    targets: Optional[List[int]] = None,
+    targets: Optional[list[int]] = None,
 ) -> np.ndarray:
     """Returns the reduced density matrix for the target qubits.
 
@@ -135,7 +136,7 @@ def partial_trace(
     Args:
         density_matrix (np.ndarray): The density matrix to reduce,
             as a tensor product of qubit states.
-        targets (List[int]): The qubits of the output reduced density matrix;
+        targets (list[int]): The qubits of the output reduced density matrix;
             if no target qubits are supplied, this method returns the trace of the density matrix.
 
     Returns:

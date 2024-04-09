@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
@@ -35,12 +35,13 @@ class Circuit:
 
     def __init__(
         self,
-        instructions: Optional[List[GateOperation]] = None,
-        results: Optional[List[Results]] = None,
+        instructions: Optional[list[GateOperation]] = None,
+        results: Optional[list[Results]] = None,
     ):
         self.instructions = []
         self.results = []
         self.qubit_set = set()
+        self.measured_qubits = []
 
         if instructions:
             for instruction in instructions:
@@ -59,6 +60,12 @@ class Circuit:
         """
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
+
+    def add_measure(self, target: tuple[int]):
+        for qubit in target:
+            if qubit in self.measured_qubits:
+                raise ValueError(f"Qubit {qubit} is already measured or captured.")
+            self.measured_qubits.append(qubit)
 
     def add_result(self, result: Results) -> None:
         """

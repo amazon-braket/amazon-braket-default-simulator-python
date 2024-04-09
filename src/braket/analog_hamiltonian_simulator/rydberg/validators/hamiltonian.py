@@ -1,5 +1,18 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 from braket.ir.ahs.hamiltonian import Hamiltonian
-from pydantic import root_validator
+from pydantic.v1 import root_validator
 
 
 class HamiltonianValidator(Hamiltonian):
@@ -14,7 +27,11 @@ class HamiltonianValidator(Hamiltonian):
 
     @root_validator(pre=True, skip_on_failure=True)
     def max_one_shifting_field(cls, values):
-        shifting_fields = values["shiftingFields"]
+        shifting_fields = (
+            values["shiftingFields"]
+            if "shiftingFields" in values.keys()
+            else values["localDetuning"]
+        )
         if len(shifting_fields) > 1:
             raise ValueError(
                 f"At most one shifting field should be specified; {len(shifting_fields)} are given."
@@ -31,7 +48,11 @@ class HamiltonianValidator(Hamiltonian):
                 end_times[f"{name} of driving field {index}"] = field[name]["time_series"]["times"][
                     -1
                 ]
-        for index, field in enumerate(values["shiftingFields"]):
+        for index, field in enumerate(
+            values["shiftingFields"]
+            if "shiftingFields" in values.keys()
+            else values["localDetuning"]
+        ):
             for name in s_field_names:
                 end_times[f"{name} of shifting field {index}"] = field[name]["time_series"][
                     "times"
