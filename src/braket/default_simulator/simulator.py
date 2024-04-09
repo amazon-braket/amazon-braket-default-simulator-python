@@ -408,15 +408,15 @@ class BaseLocalSimulator(OpenQASMSimulator):
         #  Gets the subset of measurements from the full measurements
         if measured_qubits is not None and measured_qubits != []:
             if any(qubit in range(simulation.qubit_count) for qubit in measured_qubits):
-                measured_qubits_in_circuit = [
-                    qubit for qubit in measured_qubits if qubit < simulation.qubit_count
-                ]
-                measured_qubits_not_in_circuit = [
-                    qubit for qubit in measured_qubits if qubit >= simulation.qubit_count
-                ]
-                measurements = np.array(measurements)[:, measured_qubits_in_circuit].tolist()
+                measured_qubits = np.array(measured_qubits)
+                in_circuit_mask = measured_qubits < simulation.qubit_count
+                measured_qubits_in_circuit = measured_qubits[in_circuit_mask]
+                measured_qubits_not_in_circuit = measured_qubits[~in_circuit_mask]
+
+                measurements_array = np.array(measurements)
+                selected_measurements = measurements_array[:, measured_qubits_in_circuit]
                 measurements = np.pad(
-                    measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
+                    selected_measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
                 ).tolist()
             else:
                 measurements = np.zeros(
