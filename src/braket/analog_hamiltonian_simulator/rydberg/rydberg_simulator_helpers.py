@@ -245,11 +245,10 @@ def _get_sparse_ops(
     local_detuning_ops = []
     for shifting_field in program.hamiltonian.shiftingFields:
         temp = 0
-        filled_site = 0 # Index of the filled site
+        filled_site = 0  # Index of the filled site
         for filling, strength in zip(
-                program.setup.ahs_register.filling, 
-                shifting_field.magnitude.pattern
-            ):
+            program.setup.ahs_register.filling, shifting_field.magnitude.pattern
+        ):
             # If the site is not filled, we move on to the next filled site
             if filling == 0:
                 continue
