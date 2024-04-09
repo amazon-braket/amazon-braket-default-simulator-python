@@ -408,10 +408,10 @@ class BaseLocalSimulator(OpenQASMSimulator):
         #  Gets the subset of measurements from the full measurements
         if measured_qubits is not None and measured_qubits != []:
             measured_qubits_in_circuit = [
-                qubit for qubit in measured_qubits if qubit in range(simulation.qubit_count)
+                qubit for qubit in measured_qubits if qubit < simulation.qubit_count
             ]
             measured_qubits_not_in_circuit = [
-                qubit for qubit in measured_qubits if qubit not in range(simulation.qubit_count)
+                qubit for qubit in measured_qubits if qubit >= simulation.qubit_count
             ]
 
             # get the list of measurements of qubits with gates on the circuit
