@@ -1299,8 +1299,9 @@ def test_measure_no_gates():
     simulator = StateVectorSimulator()
     result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
     measurements = np.array(result.measurements, dtype=int)
-    assert np.sum(measurements, axis=0)[2] == 0
-    assert len(measurements[0]) == 4
+    assert np.all(measurements == np.zeros((1000, 4)))
+    # assert np.sum(measurements, axis=0)[2] == 0
+    # assert len(measurements[0]) == 4
     assert result.measuredQubits == [0, 1, 2, 3]
 
 
