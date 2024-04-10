@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.21.3 (2024-04-08)
+
+### Bug Fixes and Other Changes
+
+ * make shifting fields backwards compatible with change to localDe…
+
 ## v1.21.2 (2024-03-28)
 
 ### Bug Fixes and Other Changes
