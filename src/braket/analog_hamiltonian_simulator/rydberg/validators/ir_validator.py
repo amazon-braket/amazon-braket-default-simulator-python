@@ -23,13 +23,13 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.driving_field import
     DrivingFieldValidator,
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.hamiltonian import HamiltonianValidator
+from braket.analog_hamiltonian_simulator.rydberg.validators.local_detuning import (
+    LocalDetuningValidator,
+)
 from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field import (
     PhysicalFieldValidator,
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.program import ProgramValidator
-from braket.analog_hamiltonian_simulator.rydberg.validators.local_detuning import (
-    LocalDetuningValidator,
-)
 from braket.analog_hamiltonian_simulator.rydberg.validators.times_series import TimeSeriesValidator
 
 
