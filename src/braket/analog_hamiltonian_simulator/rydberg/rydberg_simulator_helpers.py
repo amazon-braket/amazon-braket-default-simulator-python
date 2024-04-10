@@ -255,10 +255,10 @@ def _get_sparse_ops(
     # Get the shifting fields as sparse matrices.
     # Shifting field is an array of operators, which has only one element for now
     local_detuning_ops = []
-    for shifting_field in program.hamiltonian.shiftingFields:
+    for local_detuning in program.hamiltonian.localDetuning:
         temp = 0
-        for site in range(len(shifting_field.magnitude.pattern)):
-            strength = shifting_field.magnitude.pattern[site]
+        for site in range(len(local_detuning.magnitude.pattern)):
+            strength = local_detuning.magnitude.pattern[site]
             opt = _get_sparse_from_dict(
                 _get_detuning_dict((site,), configurations), len(configurations)
             )
@@ -352,8 +352,8 @@ def _get_coefs(
 
     # add shifting fields
     local_detuing_coefs = []
-    for shifting_field in program.hamiltonian.shiftingFields:
-        magnitude = shifting_field.magnitude.time_series
+    for local_detuning in program.hamiltonian.localDetuning:
+        magnitude = local_detuning.magnitude.time_series
 
         local_detuing_coef = np.array(
             [
