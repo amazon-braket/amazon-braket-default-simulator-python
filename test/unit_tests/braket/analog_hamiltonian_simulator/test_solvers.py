@@ -231,3 +231,83 @@ def test_solvers_non_constant_program(solver):
     final_prob = [np.abs(i) ** 2 for i in states[-1]]
 
     assert np.allclose(final_prob, true_final_prob_2, atol=1e-2)
+
+
+# Test a program with the following properties
+# 1. It has vacant site and a local detuning field
+# 2. The vacant site is added to the register before another filled site
+
+# Define a global pi-pulse
+driving_field_pi_pulse = {
+    "amplitude": {
+        "pattern": "uniform",
+        "time_series": {"times": [0, tmax], "values": [np.pi / tmax, np.pi / tmax]},
+    },
+    "phase": {
+        "pattern": "uniform",
+        "time_series": {"times": [0, tmax], "values": [0, 0]},
+    },
+    "detuning": {
+        "pattern": "uniform",
+        "time_series": {"times": [0, tmax], "values": [0, 0]},
+    },
+}
+
+# Define the waveform for shifting field with large detuning values
+shifting_field_time_series = {
+    "times": [0, tmax],
+    "values": [1e10, 1e10],
+}
+
+# Define an atom arrangement with two different labelings
+# Case 1: the first site is filled, and the second site is empty
+ahs_register_1 = {"sites": [[0, 0], [10e-4, 0], [20e-4, 0]], "filling": [1, 1, 0]}
+pattern_1 = [0, 1, 1]
+
+# Case 2: the first site is filled, and the second site is empty
+# Note that the registers in case 1 and 2 are physically the same
+# but with different labelings
+ahs_register_2 = {"sites": [[20e-4, 0], [0, 0], [10e-4, 0]], "filling": [0, 1, 1]}
+pattern_2 = [1, 0, 1]
+
+
+# Define the programs for the two cases
+def get_program_with_vacant_site_pi_pulse(
+    ahs_register,
+    pattern,
+    shifting_field_time_series=shifting_field_time_series,
+    driving_field_pi_pulse=driving_field_pi_pulse,
+):
+    shifting_field = {"magnitude": {"pattern": pattern, "time_series": shifting_field_time_series}}
+    return convert_unit(
+        Program(
+            setup={"ahs_register": ahs_register},
+            hamiltonian={
+                "drivingFields": [driving_field_pi_pulse],
+                "shiftingFields": [shifting_field],
+            },
+        )
+    )
+
+
+program_with_vacant_site_1 = get_program_with_vacant_site_pi_pulse(ahs_register_1, pattern_1)
+program_with_vacant_site_2 = get_program_with_vacant_site_pi_pulse(ahs_register_2, pattern_2)
+
+# Test the result. Upon inspection, we conclude that the state should be 'rg'
+# for both cases.
+
+
+@pytest.mark.parametrize(
+    "solver, program",
+    [
+        [scipy_integrate_ode_run, program_with_vacant_site_1],
+        [scipy_integrate_ode_run, program_with_vacant_site_2],
+        [rk_run, program_with_vacant_site_1],
+        [rk_run, program_with_vacant_site_2],
+    ],
+)
+def test_program_with_vacant_site_pi_pulse(solver, program):
+    states = solver(program, ["gg", "gr", "rg", "rr"], simulation_times, rydberg_interaction_coef)
+    final_prob = [np.abs(i) ** 2 for i in states[-1]]
+    true_final_prob = [0, 0, 1, 0]
+    assert np.allclose(final_prob, true_final_prob, atol=1e-2)
