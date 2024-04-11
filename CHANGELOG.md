@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.21.5 (2024-04-11)
+
+### Bug Fixes and Other Changes
+
+ * Fix a bug in the AHS local simulator when using local detuning with certain pattern with empty sites
+
 ## v1.21.4 (2024-04-10)
 
 ### Bug Fixes and Other Changes
