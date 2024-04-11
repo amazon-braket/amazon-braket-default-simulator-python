@@ -69,6 +69,58 @@ def mock_program_data():
     return Program.parse_obj(data)
 
 
+# False example with net detuning larger than the MAX_NET_DETUNING
+@pytest.fixture
+def mock_program_with_large_net_detuning_data():
+    data = {
+        "setup": {
+            "ahs_register": {
+                "sites": [[0, 0], [0, 1e-6]],
+                "filling": [1, 1],
+            }
+        },
+        "hamiltonian": {
+            "drivingFields": [
+                {
+                    "amplitude": {
+                        "pattern": "uniform",
+                        "time_series": {
+                            "times": [0, 1e-07, 3.9e-06, 4e-06],
+                            "values": [0, 12566400.0, 12566400.0, 0],
+                        },
+                    },
+                    "phase": {
+                        "pattern": "uniform",
+                        "time_series": {
+                            "times": [0, 1e-07, 3.9e-06, 4e-06],
+                            "values": [0, 0, -16.0832, -16.0832],
+                        },
+                    },
+                    "detuning": {
+                        "pattern": "uniform",
+                        "time_series": {
+                            "times": [0, 1e-07, 3.9e-06, 4e-06],
+                            "values": [-125000000, -125000000, 125000000, 125000000],
+                        },
+                    },
+                }
+            ],
+            "shiftingFields": [
+                {
+                    "magnitude": {
+                        "time_series": {
+                            "times": [0, 1e-07, 3.9e-06, 4e-06],
+                            "values": [-125000000, -125000000, 125000000, 125000000],
+                        },
+                        "pattern": [0.0, 1.0],
+                    }
+                }
+            ],
+        },
+    }
+    return Program.parse_obj(data)
+
+
 def test_program(program_data, device_capabilities_constants):
     try:
         ProgramValidator(capabilities=device_capabilities_constants, **program_data.dict())
@@ -91,6 +143,26 @@ def test_program_shifting_field_pattern_has_the_same_length_as_atom_array_sites(
     error_message = "The length of pattern (3) of shifting field 0 must equal the number "
     "of atom array sites (4)."
     _assert_program(mock_program_data.dict(), error_message, device_capabilities_constants)
+
+
+def test_mock_program_with_large_net_detuning_data(
+    mock_program_with_large_net_detuning_data: Program, device_capabilities_constants
+):
+
+    warning_message = (
+        f"Atom {1} has net detuning {-250000000.0} rad/s "
+        f"at time {0} seconds, which is outside the typical range "
+        f"[{-device_capabilities_constants.MAX_NET_DETUNING}, "
+        f"{device_capabilities_constants.MAX_NET_DETUNING}]."
+        f"Numerical instabilities may occur during simulation."
+    )
+
+    with pytest.warns(UserWarning) as e:
+        ProgramValidator(
+            capabilities=device_capabilities_constants,
+            **mock_program_with_large_net_detuning_data.dict(),
+        )
+    assert warning_message in str(e[-1].message)
 
 
 def _assert_program(data, error_message, device_capabilities_constants):
