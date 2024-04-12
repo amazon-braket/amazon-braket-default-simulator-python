@@ -52,7 +52,7 @@ program_1 = convert_unit(
         setup=setup1,
         hamiltonian={
             "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
-            "shiftingFields": [{"magnitude": shift_1}],
+            "localDetuning": [{"magnitude": shift_1}],
         },
     )
 )
@@ -110,7 +110,7 @@ def test_get_ops_coefs(para):
     phase_times, phase_values = phase.time_series.times, phase.time_series.values
     detuning = program.hamiltonian.drivingFields[0].detuning
     detuning_times, detuning_values = detuning.time_series.times, detuning.time_series.values
-    shift = program.hamiltonian.shiftingFields[0].magnitude
+    shift = program.hamiltonian.localDetuning[0].magnitude
     shift_times, shift_values = shift.time_series.times, shift.time_series.values
 
     true_rabi_coefs = []

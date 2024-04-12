@@ -80,7 +80,7 @@ program_full = Program(
     setup=setup,
     hamiltonian={
         "drivingFields": [{"amplitude": amplitude, "phase": phase, "detuning": detuning}],
-        "shiftingFields": [{"magnitude": shift}],
+        "localDetuning": [{"magnitude": shift}],
     },
 )
 
@@ -88,15 +88,15 @@ empty_program = Program(
     setup=setup,
     hamiltonian={
         "drivingFields": [],
-        "shiftingFields": [],
+        "localDetuning": [],
     },
 )
 
-program_only_shiftingFields = Program(
+program_only_localDetuning = Program(
     setup=setup,
     hamiltonian={
         "drivingFields": [],
-        "shiftingFields": [{"magnitude": shift}],
+        "localDetuning": [{"magnitude": shift}],
     },
 )
 
@@ -104,7 +104,7 @@ program_only_drivingFields = Program(
     setup=setup,
     hamiltonian={
         "drivingFields": [{"amplitude": amplitude, "phase": phase, "detuning": detuning}],
-        "shiftingFields": [],
+        "localDetuning": [],
     },
 )
 
@@ -123,7 +123,7 @@ def test_device_initialization():
     [
         (program_full, rydberg_interaction_coef, a * 1e-6),
         (empty_program, rydberg_interaction_coef, a * 1e-6),
-        (program_only_shiftingFields, rydberg_interaction_coef, a * 1e-6),
+        (program_only_localDetuning, rydberg_interaction_coef, a * 1e-6),
         (program_only_drivingFields, rydberg_interaction_coef, a * 1e-6),
     ],
 )
@@ -142,7 +142,7 @@ def test_success_run(program, rydberg_interaction_coef, blockade_radius):
     [
         (program_full),
         (empty_program),
-        (program_only_shiftingFields),
+        (program_only_localDetuning),
         (program_only_drivingFields),
     ],
 )
@@ -156,7 +156,7 @@ def test_success_run_without_args(program):
     [
         (program_full, "shots=0 is not implemented"),
         (empty_program, "shots=0 is not implemented"),
-        (program_only_shiftingFields, "shots=0 is not implemented"),
+        (program_only_localDetuning, "shots=0 is not implemented"),
         (program_only_drivingFields, "shots=0 is not implemented"),
     ],
 )
@@ -187,13 +187,13 @@ big_program_with_only_driving_field = convert_unit(
             "drivingFields": [
                 {"amplitude": zero_field, "phase": zero_field, "detuning": zero_field}
             ],
-            "shiftingFields": [],
+            "localDetuning": [],
         },
     )
 )
 
 
-big_program_with_only_shifting_field = convert_unit(
+big_program_with_only_local_detuning = convert_unit(
     Program(
         setup={
             "ahs_register": {
@@ -203,7 +203,7 @@ big_program_with_only_shifting_field = convert_unit(
         },
         hamiltonian={
             "drivingFields": [],
-            "shiftingFields": [
+            "localDetuning": [
                 {
                     "magnitude": {
                         "time_series": {
@@ -223,7 +223,7 @@ big_program_with_only_shifting_field = convert_unit(
     "program, steps",
     [
         (big_program_with_only_driving_field, 1),
-        (big_program_with_only_shifting_field, 4),
+        (big_program_with_only_local_detuning, 4),
     ],
 )
 def test_scipy_run_for_large_system(program, steps):
