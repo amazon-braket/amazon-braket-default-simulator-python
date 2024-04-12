@@ -39,7 +39,7 @@ class ProgramValidator(Program):
             pattern_size = len(local_detuning["magnitude"]["pattern"])
             if num_sites != pattern_size:
                 raise ValueError(
-                    f"The length of pattern ({pattern_size}) of shifting field {idx} must equal "
+                    f"The length of pattern ({pattern_size}) of local detuning {idx} must equal "
                     f"the number of atom array sites ({num_sites})."
                 )
         return values
