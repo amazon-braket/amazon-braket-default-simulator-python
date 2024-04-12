@@ -45,7 +45,7 @@ program_1 = Program(
     setup=setup_1,
     hamiltonian={
         "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
-        "shiftingFields": [{"magnitude": shift_1}],
+        "localDetuning": [{"magnitude": shift_1}],
     },
 )
 
@@ -151,20 +151,20 @@ def test_convert_unit(program):
                     },
                 }
             ],
-            "shiftingFields": [
+            "localDetuning": [
                 {
                     "magnitude": {
-                        "pattern": program.hamiltonian.shiftingFields[0].magnitude.pattern,
+                        "pattern": program.hamiltonian.localDetuning[0].magnitude.pattern,
                         "time_series": {
                             "times": [
                                 float(time) / TIME_UNIT
-                                for time in program.hamiltonian.shiftingFields[
+                                for time in program.hamiltonian.localDetuning[
                                     0
                                 ].magnitude.time_series.times
                             ],
                             "values": [
                                 float(value) / FIELD_UNIT
-                                for value in program.hamiltonian.shiftingFields[
+                                for value in program.hamiltonian.localDetuning[
                                     0
                                 ].magnitude.time_series.values
                             ],

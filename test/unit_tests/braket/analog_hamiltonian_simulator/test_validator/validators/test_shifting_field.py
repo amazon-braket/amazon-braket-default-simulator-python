@@ -12,16 +12,16 @@
 # language governing permissions and limitations under the License.
 
 import pytest
-from braket.ir.ahs.shifting_field import ShiftingField
+from braket.ir.ahs.local_detuning import LocalDetuning
 from pydantic.v1.error_wrappers import ValidationError
 
-from braket.analog_hamiltonian_simulator.rydberg.validators.shifting_field import (
-    ShiftingFieldValidator,
+from braket.analog_hamiltonian_simulator.rydberg.validators.local_detuning import (
+    LocalDetuningValidator,
 )
 
 
 @pytest.fixture
-def shifting_field_data():
+def local_detuning_data():
     return {
         "magnitude": {
             "time_series": {"times": [0, 1e-07], "values": [0, 0]},
@@ -30,15 +30,15 @@ def shifting_field_data():
     }
 
 
-def test_shifting_field(shifting_field_data, device_capabilities_constants):
+def test_local_detuning(local_detuning_data, device_capabilities_constants):
     try:
-        ShiftingFieldValidator(capabilities=device_capabilities_constants, **shifting_field_data)
+        LocalDetuningValidator(capabilities=device_capabilities_constants, **local_detuning_data)
     except ValidationError as e:
         pytest.fail(f"Validate test is failing : {str(e)}")
 
 
 @pytest.fixture
-def mock_shifting_field_data():
+def mock_local_detuning_data():
     data = {
         "magnitude": {
             "pattern": [],
@@ -48,20 +48,20 @@ def mock_shifting_field_data():
             },
         }
     }
-    return ShiftingField.parse_obj(data).dict()
+    return LocalDetuning.parse_obj(data).dict()
 
 
 @pytest.mark.parametrize(
     "field_name, error_message",
     [
-        ("magnitude", "Pattern of shifting field must be not be a string - test"),
+        ("magnitude", "Pattern of local detuning must not be a string - test"),
     ],
 )
-def test_shifting_field_magnitude_pattern_is_not_uniform(
-    field_name, error_message, mock_shifting_field_data, device_capabilities_constants
+def test_local_detuning_magnitude_pattern_is_not_uniform(
+    field_name, error_message, mock_local_detuning_data, device_capabilities_constants
 ):
-    mock_shifting_field_data[field_name]["pattern"] = "test"
-    _assert_shifting_field(mock_shifting_field_data, error_message, device_capabilities_constants)
+    mock_local_detuning_data[field_name]["pattern"] = "test"
+    _assert_local_detuning(mock_local_detuning_data, error_message, device_capabilities_constants)
 
 
 @pytest.mark.parametrize(
@@ -77,17 +77,17 @@ def test_shifting_field_magnitude_pattern_is_not_uniform(
         ),
     ],
 )
-def test_shifting_field_magnitude_pattern_within_bounds(
-    pattern, error_message, mock_shifting_field_data, device_capabilities_constants
+def test_local_detuning_magnitude_pattern_within_bounds(
+    pattern, error_message, mock_local_detuning_data, device_capabilities_constants
 ):
-    mock_shifting_field_data["magnitude"]["pattern"] = pattern
-    _assert_shifting_field(mock_shifting_field_data, error_message, device_capabilities_constants)
+    mock_local_detuning_data["magnitude"]["pattern"] = pattern
+    _assert_local_detuning(mock_local_detuning_data, error_message, device_capabilities_constants)
 
 
-def test_shifting_field_empty(mock_shifting_field_data, device_capabilities_constants):
+def test_local_detuning_empty(mock_local_detuning_data, device_capabilities_constants):
     try:
-        ShiftingFieldValidator(
-            capabilities=device_capabilities_constants, **mock_shifting_field_data
+        LocalDetuningValidator(
+            capabilities=device_capabilities_constants, **mock_local_detuning_data
         )
     except ValidationError as e:
         pytest.fail(f"Validate shifting field empty test is failing : {str(e)}")
@@ -108,22 +108,22 @@ def test_shifting_field_empty(mock_shifting_field_data, device_capabilities_cons
         ),
     ],
 )
-def test_shifting_field_magnitude_values_within_range(
-    values, warning_message, mock_shifting_field_data, device_capabilities_constants
+def test_local_detuning_magnitude_values_within_range(
+    values, warning_message, mock_local_detuning_data, device_capabilities_constants
 ):
-    mock_shifting_field_data["magnitude"]["time_series"]["values"] = values
-    _assert_shifting_field_warning_message(
-        mock_shifting_field_data, warning_message, device_capabilities_constants
+    mock_local_detuning_data["magnitude"]["time_series"]["values"] = values
+    _assert_local_detuning_warning_message(
+        mock_local_detuning_data, warning_message, device_capabilities_constants
     )
 
 
-def _assert_shifting_field(data, error_message, device_capabilities_constants):
+def _assert_local_detuning(data, error_message, device_capabilities_constants):
     with pytest.raises(ValidationError) as e:
-        ShiftingFieldValidator(capabilities=device_capabilities_constants, **data)
+        LocalDetuningValidator(capabilities=device_capabilities_constants, **data)
     assert error_message in str(e.value)
 
 
-def _assert_shifting_field_warning_message(data, warning_message, device_capabilities_constants):
+def _assert_local_detuning_warning_message(data, warning_message, device_capabilities_constants):
     with pytest.warns(UserWarning) as e:
-        ShiftingFieldValidator(capabilities=device_capabilities_constants, **data)
+        LocalDetuningValidator(capabilities=device_capabilities_constants, **data)
     assert warning_message in str(e[-1].message)

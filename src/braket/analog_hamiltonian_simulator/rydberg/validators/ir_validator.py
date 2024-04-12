@@ -23,13 +23,13 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.driving_field import
     DrivingFieldValidator,
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.hamiltonian import HamiltonianValidator
+from braket.analog_hamiltonian_simulator.rydberg.validators.local_detuning import (
+    LocalDetuningValidator,
+)
 from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field import (
     PhysicalFieldValidator,
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.program import ProgramValidator
-from braket.analog_hamiltonian_simulator.rydberg.validators.shifting_field import (
-    ShiftingFieldValidator,
-)
 from braket.analog_hamiltonian_simulator.rydberg.validators.times_series import TimeSeriesValidator
 
 
@@ -59,8 +59,8 @@ def validate_program(program: Program, device_capabilities: CapabilitiesConstant
 
         PhysicalFieldValidator(**detuning.dict())
         TimeSeriesValidator(capabilities=device_capabilities, **detuning.time_series.dict())
-    for s_fields in program.hamiltonian.shiftingFields:
-        ShiftingFieldValidator(capabilities=device_capabilities, **s_fields.dict())
+    for s_fields in program.hamiltonian.localDetuning:
+        LocalDetuningValidator(capabilities=device_capabilities, **s_fields.dict())
         magnitude = s_fields.magnitude
         PhysicalFieldValidator(**magnitude.dict())
         TimeSeriesValidator(capabilities=device_capabilities, **magnitude.time_series.dict())
