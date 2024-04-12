@@ -55,7 +55,7 @@ class ProgramValidator(Program):
         del program["capabilities"]
         program = Program.parse_obj(program)
         driving_fields = program.hamiltonian.drivingFields
-        local_detuning = program.hamiltonian.shiftingFields
+        local_detuning = program.hamiltonian.localDetuning
 
         # If no local detuning, return
         if not len(local_detuning):
