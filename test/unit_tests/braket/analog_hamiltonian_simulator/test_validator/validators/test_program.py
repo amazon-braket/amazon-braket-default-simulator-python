@@ -53,7 +53,7 @@ def mock_program_data():
                     },
                 }
             ],
-            "shiftingFields": [
+            "localDetuning": [
                 {
                     "magnitude": {
                         "time_series": {
@@ -105,7 +105,7 @@ def mock_program_with_large_net_detuning_data():
                     },
                 }
             ],
-            "shiftingFields": [
+            "localDetuning": [
                 {
                     "magnitude": {
                         "time_series": {
@@ -128,11 +128,11 @@ def test_program(program_data, device_capabilities_constants):
         pytest.fail(f"Validate test is failing : {str(e)}")
 
 
-def test_program_shifting_field_pattern_has_the_same_length_as_atom_array_sites(
+def test_program_local_detuning_pattern_has_the_same_length_as_atom_array_sites(
     mock_program_data: Program, device_capabilities_constants
 ):
     mock_program_data.setup.ahs_register.sites = [[0, 0], [0, 4e-6], [5e-6, 0], [5e-6, 4e-6]]
-    mock_program_data.hamiltonian.shiftingFields = [
+    mock_program_data.hamiltonian.localDetuning = [
         {
             "magnitude": {
                 "time_series": {"times": [], "values": []},
@@ -140,7 +140,7 @@ def test_program_shifting_field_pattern_has_the_same_length_as_atom_array_sites(
             }
         }
     ]
-    error_message = "The length of pattern (3) of shifting field 0 must equal the number "
+    error_message = "The length of pattern (3) of local detuning 0 must equal the number "
     "of atom array sites (4)."
     _assert_program(mock_program_data.dict(), error_message, device_capabilities_constants)
 
