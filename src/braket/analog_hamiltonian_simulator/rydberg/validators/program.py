@@ -73,7 +73,7 @@ class ProgramValidator(Program):
         # Get the time-dependent functions for the detuning and shifts
         _, detuning_coefs, shift_coefs = _get_coefs(program, time_points)
 
-        # Get the shift pattern
+        # Get the detuning pattern
         detuning_patterns = [local_detune.magnitude.pattern for local_detune in local_detuning]
 
         # For each time point, check that each atom has net detuning less than the threshold
@@ -84,7 +84,7 @@ class ProgramValidator(Program):
                 for detuning_coef in detuning_coefs:
                     detuning_to_check += detuning_coef[time_ind]
 
-                # Get the contributions from local shift at the time point
+                # Get the contributions from local detuning at the time point
                 for detuning_pattern, shift_coef in zip(detuning_patterns, shift_coefs):
                     detuning_to_check += shift_coef[time_ind] * float(detuning_pattern[atom_index])
 
