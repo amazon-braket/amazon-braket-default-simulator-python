@@ -1150,11 +1150,11 @@ class GPhase(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return cmath.exp(self._angle * 1j) * np.eye(2 ** len(self._targets))
+        return cmath.exp(self._angle * 1j) * np.eye(2 ** len(self.targets))
 
     @property
     def targets(self) -> tuple[int, ...]:
-        return self._targets
+        return (self._targets[0],)
 
 
 BRAKET_GATES = {
