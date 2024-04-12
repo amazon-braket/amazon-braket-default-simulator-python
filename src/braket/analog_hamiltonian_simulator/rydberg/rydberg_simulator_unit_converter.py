@@ -36,9 +36,9 @@ def convert_unit(program: Program) -> Program:
 
     hamiltonian = program.hamiltonian
     driving_fields = hamiltonian.drivingFields
-    shifting_fields = hamiltonian.shiftingFields
+    local_detunings = hamiltonian.localDetuning
 
-    new_driving_fields, new_shifting_fields = [], []
+    new_driving_fields, new_local_detunings = [], []
     for driving_field in driving_fields:
         new_amplitude = _convert_unit_for_field(driving_field.amplitude)
         new_phase = _convert_unit_for_field(driving_field.phase, False)
@@ -50,12 +50,12 @@ def convert_unit(program: Program) -> Program:
         }
         new_driving_fields.append(new_driving_field)
 
-    for shifting_field in shifting_fields:
-        new_magnitude = _convert_unit_for_field(shifting_field.magnitude)
-        new_shifting_field = {"magnitude": new_magnitude}
-        new_shifting_fields.append(new_shifting_field)
+    for local_detuning in local_detunings:
+        new_magnitude = _convert_unit_for_field(local_detuning.magnitude)
+        new_local_detuning = {"magnitude": new_magnitude}
+        new_local_detunings.append(new_local_detuning)
 
-    new_hamiltonian = {"drivingFields": new_driving_fields, "shiftingFields": new_shifting_fields}
+    new_hamiltonian = {"drivingFields": new_driving_fields, "localDetuning": new_local_detunings}
 
     new_program = Program(
         setup=new_setup,

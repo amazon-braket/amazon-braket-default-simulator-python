@@ -57,7 +57,7 @@ def program_data():
                     },
                 }
             ],
-            "shiftingFields": [
+            "localDetuning": [
                 {
                     "magnitude": {
                         "time_series": {"times": [0, 4e-6], "values": [0, 0]},

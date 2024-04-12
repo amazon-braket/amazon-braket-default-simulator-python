@@ -53,7 +53,7 @@ def mock_program_data():
                     },
                 }
             ],
-            "shiftingFields": [
+            "localDetuning": [
                 {
                     "magnitude": {
                         "time_series": {
@@ -76,11 +76,11 @@ def test_program(program_data, device_capabilities_constants):
         pytest.fail(f"Validate test is failing : {str(e)}")
 
 
-def test_program_shifting_field_pattern_has_the_same_length_as_atom_array_sites(
+def test_program_local_detuning_pattern_has_the_same_length_as_atom_array_sites(
     mock_program_data: Program, device_capabilities_constants
 ):
     mock_program_data.setup.ahs_register.sites = [[0, 0], [0, 4e-6], [5e-6, 0], [5e-6, 4e-6]]
-    mock_program_data.hamiltonian.shiftingFields = [
+    mock_program_data.hamiltonian.localDetuning = [
         {
             "magnitude": {
                 "time_series": {"times": [], "values": []},

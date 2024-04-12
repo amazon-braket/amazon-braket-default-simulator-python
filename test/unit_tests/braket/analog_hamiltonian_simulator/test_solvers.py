@@ -53,8 +53,8 @@ magnitude = {
     "pattern": [1 / 4, 1 / 4],
     "time_series": {"times": [0, tmax], "values": [detuning_value, detuning_value]},
 }
-shifting_field = {"magnitude": magnitude}
-hamiltonian = {"drivingFields": [driving_field], "shiftingFields": [shifting_field]}
+local_detuning = {"magnitude": magnitude}
+hamiltonian = {"drivingFields": [driving_field], "localDetuning": [local_detuning]}
 
 setup = {"ahs_register": {"sites": [[0, 0], [0, a]], "filling": [1, 1]}}
 
@@ -114,7 +114,7 @@ empty_program = Program(
             "filling": [1 for _ in range(11)],
         }
     },
-    hamiltonian={"drivingFields": [], "shiftingFields": []},
+    hamiltonian={"drivingFields": [], "localDetuning": []},
 )
 
 configurations_big_lattice = get_blockade_configurations(empty_program.setup.ahs_register, 0)
@@ -198,7 +198,7 @@ phase_2 = {"pattern": "uniform", "time_series": {"times": [0, tmax], "values": [
 driving_field_2 = {"amplitude": amplitude_2, "phase": phase_2, "detuning": detuning_2}
 
 setup_2 = {"ahs_register": {"sites": [[0, 0]], "filling": [1]}}
-hamiltonian_2 = {"drivingFields": [driving_field_2], "shiftingFields": []}
+hamiltonian_2 = {"drivingFields": [driving_field_2], "localDetuning": []}
 
 program_2 = convert_unit(
     Program(
