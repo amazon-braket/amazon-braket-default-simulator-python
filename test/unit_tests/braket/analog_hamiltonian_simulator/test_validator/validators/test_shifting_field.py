@@ -54,7 +54,7 @@ def mock_local_detuning_data():
 @pytest.mark.parametrize(
     "field_name, error_message",
     [
-        ("magnitude", "Pattern of shifting field must be not be a string - test"),
+        ("magnitude", "Pattern of local detuning must not be a string - test"),
     ],
 )
 def test_local_detuning_magnitude_pattern_is_not_uniform(

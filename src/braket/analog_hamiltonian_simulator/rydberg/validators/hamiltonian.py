@@ -27,9 +27,7 @@ class HamiltonianValidator(Hamiltonian):
 
     @root_validator(pre=True, skip_on_failure=True)
     def max_one_local_detuning(cls, values):
-        local_detunings = (
-            values["localDetuning"]
-        )
+        local_detunings = values["localDetuning"]
         if len(local_detunings) > 1:
             raise ValueError(
                 f"At most one shifting field should be specified; {len(local_detunings)} are given."
@@ -46,9 +44,7 @@ class HamiltonianValidator(Hamiltonian):
                 end_times[f"{name} of driving field {index}"] = field[name]["time_series"]["times"][
                     -1
                 ]
-        for index, field in enumerate(
-            values["localDetuning"]
-        ):
+        for index, field in enumerate(values["localDetuning"]):
             for name in s_field_names:
                 end_times[f"{name} of shifting field {index}"] = field[name]["time_series"][
                     "times"

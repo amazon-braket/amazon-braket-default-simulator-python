@@ -30,7 +30,7 @@ class LocalDetuningValidator(LocalDetuning):
         magnitude = values["magnitude"]
         pattern = magnitude["pattern"]
         if isinstance(pattern, str):
-            raise ValueError(f"Pattern of local detuning must not be be a string - {pattern}")
+            raise ValueError(f"Pattern of local detuning must not be a string - {pattern}")
         return values
 
     @root_validator(pre=True, skip_on_failure=True)
