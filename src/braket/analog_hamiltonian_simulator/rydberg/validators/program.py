@@ -29,14 +29,14 @@ class ProgramValidator(Program):
 
     # The pattern of the shifting field must have the same length as the lattice_sites
     @root_validator(pre=True, skip_on_failure=True)
-    def shifting_field_pattern_has_the_same_length_as_atom_array_sites(cls, values):
+    def local_detuning_pattern_has_the_same_length_as_atom_array_sites(cls, values):
         num_sites = len(values["setup"]["ahs_register"]["sites"])
-        for idx, shifting_field in enumerate(
-            values["hamiltonian"]["shiftingFields"]
-            if "shiftingFields" in values["hamiltonian"].keys()
+        for idx, local_detuning in enumerate(
+            values["hamiltonian"]["localDetuning"]
+            if "localDetuning" in values["hamiltonian"].keys()
             else values["hamiltonian"]["localDetuning"]
         ):
-            pattern_size = len(shifting_field["magnitude"]["pattern"])
+            pattern_size = len(local_detuning["magnitude"]["pattern"])
             if num_sites != pattern_size:
                 raise ValueError(
                     f"The length of pattern ({pattern_size}) of shifting field {idx} must equal "
