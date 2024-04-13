@@ -43,10 +43,6 @@ class Identity(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.eye(2)
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.I)
 def _i(instruction) -> Identity:
@@ -66,10 +62,6 @@ class Hadamard(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 1], [1, -1]]) / math.sqrt(2)
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.H)
@@ -91,10 +83,6 @@ class PauliX(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.array([[0, 1], [1, 0]])
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.X)
 def _pauli_x(instruction) -> PauliX:
@@ -115,10 +103,6 @@ class PauliY(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.array([[0, -1j], [1j, 0]])
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.Y)
 def _pauli_y(instruction) -> PauliY:
@@ -138,10 +122,6 @@ class PauliZ(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, -1]])
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.Z)
@@ -170,10 +150,6 @@ class CV(GateOperation):
             ]
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.CV)
 def _cv(instruction) -> CV:
@@ -193,10 +169,6 @@ class CX(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.CNot)
@@ -218,10 +190,6 @@ class CY(GateOperation):
     def _base_matrix(self):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.CY)
 def _cy(instruction) -> CY:
@@ -241,10 +209,6 @@ class CZ(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.CZ)
@@ -273,10 +237,6 @@ class ECR(GateOperation):
             )
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.ECR)
 def _ecr(instruction) -> ECR:
@@ -296,10 +256,6 @@ class S(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, 1j]], dtype=complex)
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.S)
@@ -321,10 +277,6 @@ class Si(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, -1j]], dtype=complex)
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.Si)
 def _si(instruction) -> Si:
@@ -344,10 +296,6 @@ class T(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(1j * math.pi / 4)]], dtype=complex)
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.T)
@@ -369,10 +317,6 @@ class Ti(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(-1j * math.pi / 4)]], dtype=complex)
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.Ti)
 def _ti(instruction) -> Ti:
@@ -393,10 +337,6 @@ class V(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.array([[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]], dtype=complex)
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.V)
 def _v(instruction) -> V:
@@ -416,10 +356,6 @@ class Vi(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array(([[0.5 - 0.5j, 0.5 + 0.5j], [0.5 + 0.5j, 0.5 - 0.5j]]), dtype=complex)
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.Vi)
@@ -442,10 +378,6 @@ class PhaseShift(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(1j * self._angle)]])
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.PhaseShift)
 def _phase_shift(instruction) -> PhaseShift:
@@ -466,10 +398,6 @@ class CPhaseShift(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, 1.0, 1.0, cmath.exp(1j * self._angle)])
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift)
@@ -492,10 +420,6 @@ class CPhaseShift00(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.diag([cmath.exp(1j * self._angle), 1.0, 1.0, 1.0])
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift00)
 def _c_phase_shift_00(instruction) -> CPhaseShift00:
@@ -517,10 +441,6 @@ class CPhaseShift01(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, cmath.exp(1j * self._angle), 1.0, 1.0])
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift01)
 def _c_phase_shift_01(instruction) -> CPhaseShift01:
@@ -541,10 +461,6 @@ class CPhaseShift10(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, 1.0, cmath.exp(1j * self._angle), 1.0])
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift10)
@@ -569,10 +485,6 @@ class RotX(GateOperation):
         i_sin_half_angle = 1j * math.sin(self._angle / 2)
         return np.array([[cos_half_angle, -i_sin_half_angle], [-i_sin_half_angle, cos_half_angle]])
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.Rx)
 def _rot_x(instruction) -> RotX:
@@ -595,10 +507,6 @@ class RotY(GateOperation):
         cos_half_angle = math.cos(self._angle / 2)
         sin_half_angle = math.sin(self._angle / 2)
         return np.array([[cos_half_angle, -sin_half_angle], [sin_half_angle, cos_half_angle]])
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.Ry)
@@ -623,10 +531,6 @@ class RotZ(GateOperation):
         negative_phase = cmath.exp(-1j * self._angle / 2)
         return np.array([[negative_phase, 0], [0, positive_phase]])
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.Rz)
 def _rot_z(instruction) -> RotZ:
@@ -646,10 +550,6 @@ class Swap(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.Swap)
@@ -679,10 +579,6 @@ class ISwap(GateOperation):
             dtype=complex,
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.ISwap)
 def _iswap(instruction) -> ISwap:
@@ -711,10 +607,6 @@ class PSwap(GateOperation):
             ],
             dtype=complex,
         )
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.PSwap)
@@ -750,10 +642,6 @@ class XY(GateOperation):
             dtype=complex,
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.XY)
 def _xy(instruction) -> XY:
@@ -786,10 +674,6 @@ class XX(GateOperation):
                 [-i_sin_angle, 0, 0, cos_angle],
             ]
         )
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.XX)
@@ -824,10 +708,6 @@ class YY(GateOperation):
             ]
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.YY)
 def _yy(instruction) -> YY:
@@ -861,10 +741,6 @@ class ZZ(GateOperation):
             ]
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.ZZ)
 def _zz(instruction) -> ZZ:
@@ -896,10 +772,6 @@ class CCNot(GateOperation):
             ],
             dtype=complex,
         )
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.CCNot)
@@ -933,10 +805,6 @@ class CSwap(GateOperation):
             dtype=complex,
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 @_from_braket_instruction.register(braket_instruction.CSwap)
 def _cswap(instruction) -> CSwap:
@@ -967,10 +835,6 @@ class GPi(GateOperation):
             ]
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 class GPi2(GateOperation):
     """
@@ -995,10 +859,6 @@ class GPi2(GateOperation):
                 [-1j * np.exp(1j * self._angle), 1],
             ]
         ) / np.sqrt(2)
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 class MS(GateOperation):
@@ -1049,10 +909,6 @@ class MS(GateOperation):
             ]
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 class Unitary(GateOperation):
     """Arbitrary unitary gate"""
@@ -1071,10 +927,6 @@ class Unitary(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array(self._matrix)
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 @_from_braket_instruction.register(braket_instruction.Unitary)
@@ -1132,10 +984,6 @@ class U(GateOperation):
             ]
         )
 
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
-
 
 class GPhase(GateOperation):
     """
@@ -1151,10 +999,6 @@ class GPhase(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return cmath.exp(self._angle * 1j) * np.eye(2 ** len(self._targets))
-
-    @property
-    def targets(self) -> tuple[int, ...]:
-        return self._targets
 
 
 BRAKET_GATES = {
