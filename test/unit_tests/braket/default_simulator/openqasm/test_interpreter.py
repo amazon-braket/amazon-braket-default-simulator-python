@@ -1017,7 +1017,7 @@ def test_pow():
         pow(two) @ cx c, a;
     }
     gate cxx_2 c, a {
-        pow(1./2) @ pow(4) @ cx c, a;
+        pow(1./2.) @ pow(4) @ cx c, a;
     }
     gate cxxx c, a {
         pow(1) @ pow(two) @ cx c, a;
@@ -1029,8 +1029,8 @@ def test_pow():
     qubit q4;
     qubit q5;
 
-    pow(1/2.) @ x q1;   // half flip
-    pow(1./2.) @ x q1;  // half flip
+    pow(1./2) @ x q1;   // half flip
+    pow(1/2.) @ x q1;  // half flip
     cx q1, q2;          // flip
     cxx_1 q1, q3;       // don't flip
     cxx_2 q1, q4;       // don't flip
