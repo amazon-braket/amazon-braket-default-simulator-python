@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.21.6 (2024-04-15)
+
+### Bug Fixes and Other Changes
+
+ * Gates inherit `targets`
+ * Make `GPhase` more efficient
+ * rename shifting field to local detuning
+
 ## v1.21.5 (2024-04-11)
 
 ### Bug Fixes and Other Changes
