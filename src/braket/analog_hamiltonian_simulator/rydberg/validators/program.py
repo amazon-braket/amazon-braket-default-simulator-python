@@ -34,7 +34,7 @@ def _check_threshold(
 ):
     # Given a set of global detuning coefficients (global_detuning_coefs),
     # a set of local detuning patterns (local_detuning_patterns)
-    # and values (local_detuning_coefs), check that all the atoms have net detuninig
+    # and values (local_detuning_coefs), check that all the atoms have net detuning
     # within the capability at all the time points
 
     for time_ind, time in enumerate(time_points):
