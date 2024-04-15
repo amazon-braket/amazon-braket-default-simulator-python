@@ -24,6 +24,56 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 )
 
 
+def _check_threshold(
+    values,
+    time_points,
+    global_detuning_coefs,
+    local_detuning_patterns,
+    local_detuning_coefs,
+    capabilities,
+):
+    # Given a set of global detuning coefficients (global_detuning_coefs),
+    # a set of local detuning patterns (local_detuning_patterns)
+    # and values (local_detuning_coefs), check that all the atoms have net detuninig
+    # within the capability at all the time points
+
+    for time_ind, time in enumerate(time_points):
+
+        # Get the contributions from all the global detunings
+        # (there could be multiple global driving fields) at the time point
+        values_global_detuning = sum(
+            [detuning_coef[time_ind] for detuning_coef in global_detuning_coefs]
+        )
+
+        for atom_index in range(len(local_detuning_patterns[0])):
+            # Get the contributions from local detuning at the time point
+            values_local_detuning = sum(
+                [
+                    shift_coef[time_ind] * float(detuning_pattern[atom_index])
+                    for detuning_pattern, shift_coef in zip(
+                        local_detuning_patterns, local_detuning_coefs
+                    )
+                ]
+            )
+
+            # The net detuning is the sum of both the global and local detunings
+            detuning_to_check = np.real(values_local_detuning + values_global_detuning)
+
+            # Issue a warning if the absolute value of the net detuning is
+            # beyond MAX_NET_DETUNING
+            if abs(detuning_to_check) > capabilities.MAX_NET_DETUNING:
+                warnings.warn(
+                    f"Atom {atom_index} has net detuning {detuning_to_check} rad/s "
+                    f"at time {time} seconds, which is outside the typical range "
+                    f"[{-capabilities.MAX_NET_DETUNING}, {capabilities.MAX_NET_DETUNING}]."
+                    f"Numerical instabilities may occur during simulation."
+                )
+
+                # Return immediately if there is an atom has net detuning
+                # exceeding MAX_NET_DETUNING at a time point
+                return values
+
+
 class ProgramValidator(Program):
     capabilities: CapabilitiesConstants
 
@@ -74,41 +124,21 @@ class ProgramValidator(Program):
         time_points = sorted(all_times)
 
         # Get the time-dependent functions for the detuning and shifts
-        _, detuning_coefs, shift_coefs = _get_coefs(program, time_points)
+        _, global_detuning_coefs, local_detuning_coefs = _get_coefs(program, time_points)
 
         # Get the detuning pattern
-        detuning_patterns = [local_detune.magnitude.pattern for local_detune in local_detuning]
+        local_detuning_patterns = [
+            local_detune.magnitude.pattern for local_detune in local_detuning
+        ]
 
         # For each time point, check that each atom has net detuning less than the threshold
-        for time_ind, time in enumerate(time_points):
-
-            # Get the contributions from all the global detunings
-            # (there could be multiple global driving fields) at the time point
-            values_global_detuning = sum(
-                [detuning_coef[time_ind] for detuning_coef in detuning_coefs]
-            )
-
-            for atom_index in range(len(detuning_patterns[0])):
-                # Get the contributions from local detuning at the time point
-                values_local_detuning = sum(
-                    [
-                        shift_coef[time_ind] * float(detuning_pattern[atom_index])
-                        for detuning_pattern, shift_coef in zip(detuning_patterns, shift_coefs)
-                    ]
-                )
-
-                # The net detuning is the sum of both the global and local detunings
-                detuning_to_check = np.real(values_local_detuning + values_global_detuning)
-
-                # Issue a warning if the absolute value of the net detuning is
-                # beyond MAX_NET_DETUNING
-                if abs(detuning_to_check) > capabilities.MAX_NET_DETUNING:
-                    warnings.warn(
-                        f"Atom {atom_index} has net detuning {detuning_to_check} rad/s "
-                        f"at time {time} seconds, which is outside the typical range "
-                        f"[{-capabilities.MAX_NET_DETUNING}, {capabilities.MAX_NET_DETUNING}]."
-                        f"Numerical instabilities may occur during simulation."
-                    )
-                    return values
+        _check_threshold(
+            values,
+            time_points,
+            global_detuning_coefs,
+            local_detuning_patterns,
+            local_detuning_coefs,
+            capabilities,
+        )
 
         return values
