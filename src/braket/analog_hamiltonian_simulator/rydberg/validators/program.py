@@ -45,7 +45,7 @@ class ProgramValidator(Program):
         return values
 
     # If there is local detuning, the net value of detuning for each atom
-    # should not exceed a certain value
+    # should not exceed a max detuning value
     @root_validator(pre=True, skip_on_failure=True)
     def net_detuning_must_not_exceed_max_net_detuning(cls, values):
         capabilities = values["capabilities"]  # device_capabilities
