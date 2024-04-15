@@ -53,7 +53,7 @@ program_1 = convert_unit(
         setup=setup_1,
         hamiltonian={
             "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
-            "shiftingFields": [{"magnitude": shift_1}],
+            "localDetuning": [{"magnitude": shift_1}],
         },
     )
 )
@@ -102,7 +102,7 @@ program_2 = convert_unit(
         setup=setup_2,
         hamiltonian={
             "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
-            "shiftingFields": [{"magnitude": shift_1}],
+            "localDetuning": [{"magnitude": shift_1}],
         },
     )
 )
@@ -125,7 +125,7 @@ program_3 = convert_unit(
         setup=setup3,
         hamiltonian={
             "drivingFields": [{"amplitude": amplitude_1, "phase": phase_1, "detuning": detuning_1}],
-            "shiftingFields": [{"magnitude": shift_1}],
+            "localDetuning": [{"magnitude": shift_1}],
         },
     )
 )

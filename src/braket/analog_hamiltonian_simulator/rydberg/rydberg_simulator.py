@@ -120,9 +120,9 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             self.duration = float(
                 program.hamiltonian.drivingFields[0].amplitude.time_series.times[-1]
             )
-        elif len(program.hamiltonian.shiftingFields) == 1:
+        elif len(program.hamiltonian.localDetuning) == 1:
             self.duration = float(
-                program.hamiltonian.shiftingFields[0].magnitude.time_series.times[-1]
+                program.hamiltonian.localDetuning[0].magnitude.time_series.times[-1]
             )
 
         if self.duration == 0:

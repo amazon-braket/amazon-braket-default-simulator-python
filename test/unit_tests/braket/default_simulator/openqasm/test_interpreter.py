@@ -22,7 +22,7 @@ import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.gate_operations import CX, Hadamard, PauliX
+from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX
 from braket.default_simulator.gate_operations import PauliY as Y
 from braket.default_simulator.gate_operations import PauliZ, RotX, U, Unitary
 from braket.default_simulator.noise_operations import (
@@ -877,8 +877,21 @@ def test_gate_inv():
     inv @ t q;
     """
     circuit = Interpreter().build_circuit(qasm)
-    collapsed = np.linalg.multi_dot([instruction.matrix for instruction in circuit.instructions])
-    assert np.allclose(collapsed, np.eye(2**circuit.num_qubits))
+    coeff = np.linalg.multi_dot(
+        [
+            instruction.matrix
+            for instruction in circuit.instructions
+            if isinstance(instruction, GPhase)
+        ]
+    )[0][0]
+    collapsed = np.linalg.multi_dot(
+        [
+            instruction.matrix
+            for instruction in circuit.instructions
+            if not isinstance(instruction, GPhase)
+        ]
+    )
+    assert np.allclose(coeff * collapsed, np.eye(2**circuit.num_qubits))
 
 
 def test_gate_ctrl():
