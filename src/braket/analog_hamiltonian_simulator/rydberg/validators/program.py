@@ -80,18 +80,27 @@ class ProgramValidator(Program):
 
         # For each time point, check that each atom has net detuning less than the threshold
         for time_ind, time in enumerate(time_points):
+
+            # Get the contributions from all the global detunings
+            # (there could be multiple global driving fields) at the time point
+            values_global_detuning = sum(
+                [detuning_coef[time_ind] for detuning_coef in detuning_coefs]
+            )
+
             for atom_index in range(len(detuning_patterns[0])):
-                # Get the contributions from global detuning at the time point
-                detuning_to_check = 0
-                for detuning_coef in detuning_coefs:
-                    detuning_to_check += detuning_coef[time_ind]
-
                 # Get the contributions from local detuning at the time point
-                for detuning_pattern, shift_coef in zip(detuning_patterns, shift_coefs):
-                    detuning_to_check += shift_coef[time_ind] * float(detuning_pattern[atom_index])
+                values_local_detuning = sum(
+                    [
+                        shift_coef[time_ind] * float(detuning_pattern[atom_index])
+                        for detuning_pattern, shift_coef in zip(detuning_patterns, shift_coefs)
+                    ]
+                )
 
-                # Issue a warning if the net detuning is beyond MAX_NET_DETUNING
-                detuning_to_check = np.real(detuning_to_check)
+                # The net detuning is the sum of both the global and local detunings
+                detuning_to_check = np.real(values_local_detuning + values_global_detuning)
+
+                # Issue a warning if the absolute value of the net detuning is
+                # beyond MAX_NET_DETUNING
                 if abs(detuning_to_check) > capabilities.MAX_NET_DETUNING:
                     warnings.warn(
                         f"Atom {atom_index} has net detuning {detuning_to_check} rad/s "
