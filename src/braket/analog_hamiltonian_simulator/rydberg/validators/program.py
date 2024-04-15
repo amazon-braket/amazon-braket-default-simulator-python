@@ -57,7 +57,9 @@ class ProgramValidator(Program):
         driving_fields = program.hamiltonian.drivingFields
         local_detuning = program.hamiltonian.localDetuning
 
-        # If no local detuning, return
+        # If no local detuning, we simply return the values
+        # because there are separate validators to validate
+        # the global driving fields in the program
         if not len(local_detuning):
             return values
 
