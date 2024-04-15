@@ -728,10 +728,7 @@ class AbstractProgramContext(ABC):
     ) -> None:
         """Add quantum phase instruction to the circuit"""
         # if targets overlap, duplicates will be ignored
-        if not qubits:
-            target = range(self.num_qubits)
-        else:
-            target = set(sum((self.get_qubits(q) for q in qubits), ()))
+        target = set(sum((self.get_qubits(q) for q in qubits), ())) if qubits else []
         self.add_phase_instruction(target, phase.value)
 
     @abstractmethod
