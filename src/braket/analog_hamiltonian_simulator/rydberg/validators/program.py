@@ -68,9 +68,10 @@ class ProgramValidator(Program):
         ]
 
         # Merge the time points for different shifting terms and detuning term
-        time_points = sorted(list(set(sum(detuning_times, []))))
+        all_times = set(sum(detuning_times, []))
         for driving_field in driving_fields:
-            time_points = sorted(list(set(time_points + driving_field.detuning.time_series.times)))
+            all_times.update(driving_field.detuning.time_series.times)
+        time_points = sorted(all_times)
 
         # Get the time-dependent functions for the detuning and shifts
         _, detuning_coefs, shift_coefs = _get_coefs(program, time_points)
