@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.22.0 (2024-04-16)
+
+### Features
+
+ * local detuning validation for ahs
+
 ## v1.21.6 (2024-04-15)
 
 ### Bug Fixes and Other Changes
