@@ -1322,3 +1322,38 @@ def test_measure_with_qubits_not_used():
     assert np.sum(measurements, axis=0)[3] == 0
     assert len(measurements[0]) == 4
     assert result.measuredQubits == [0, 1, 2, 3]
+
+
+@pytest.mark.parametrize(
+    "operation, min_value, max_value",
+    [
+        ["rx(pi + pi) q[0];", 0, 0],
+        ["rx(pi - pi) q[0];", 0, 0],
+        ["rx(-pi + pi) q[0];", 0, 0],
+        ["rx(pi * 2) q[0];", 0, 0],
+        ["rx(pi / 2) q[0];", 400, 600],
+        ["rx(-pi / 2) q[0];", 400, 600],
+        ["rx(pi) q[0];", 1000, 1000],
+        ["rx(-pi) q[0];", 1000, 1000],
+        ["rx(pi + 2 * pi) q[0];", 1000, 1000],
+        ["rx(pi + pi / 2) q[0];", 400, 600],
+        ["rx((pi / 4) + (pi / 2) / 2) q[0];", 400, 600],
+        ["rx(0) q[0];", 0, 0],
+        ["rx(0 + 0) q[0];", 0, 0],
+        ["rx((1.1 + 2.04) / 2) q[0];", 400, 600],
+        ["rx((6 - 2.86) * 0.5) q[0];", 400, 600],
+    ],
+)
+def test_rotation_parameter_expressions(operation, min_value, max_value):
+    qasm = f"""
+    OPENQASM 3.0;
+    bit[1] b;
+    qubit[1] q;
+    {operation}
+    b[0] = measure q[0];
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert min_value <= np.sum(measurements, axis=0)[0] <= max_value
+    assert len(measurements[0]) == 1
