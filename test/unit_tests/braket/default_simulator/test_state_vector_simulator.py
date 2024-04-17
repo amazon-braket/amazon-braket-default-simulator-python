@@ -1327,6 +1327,12 @@ def test_measure_with_qubits_not_used():
 @pytest.mark.parametrize(
     "operation, min_value, max_value",
     [
+        ["rx(π) q[0];", 1000, 1000],
+        ["rx(pi) q[0];", 1000, 1000],
+        ["rx(ℇ) q[0];", 800, 1000],
+        ["rx(euler) q[0];", 800, 1000],
+        ["rx(τ) q[0];", 0, 0],
+        ["rx(tau) q[0];", 0, 0],
         ["rx(pi + pi) q[0];", 0, 0],
         ["rx(pi - pi) q[0];", 0, 0],
         ["rx(-pi + pi) q[0];", 0, 0],
