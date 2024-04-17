@@ -1348,6 +1348,7 @@ def test_measure_with_qubits_not_used():
         ["rx(0 + 0) q[0];", 0, 0],
         ["rx((1.1 + 2.04) / 2) q[0];", 400, 600],
         ["rx((6 - 2.86) * 0.5) q[0];", 400, 600],
+        ["rx(pi ** 2) q[0];", 800, 1000],
     ],
 )
 def test_rotation_parameter_expressions(operation, min_value, max_value):
