@@ -1327,27 +1327,27 @@ def test_measure_with_qubits_not_used():
 @pytest.mark.parametrize(
     "operation, state_vector",
     [
-        ["rx(π) q[0];", np.array([0, -1j])],
-        ["rx(pi) q[0];", np.array([0, -1j])],
-        ["rx(ℇ) q[0];", np.array([0.21007866,  -0.97768449j])],
-        ["rx(euler) q[0];", np.array([0.21007866, -0.97768449j])],
-        ["rx(τ) q[0];", np.array([-1, 0])],
-        ["rx(tau) q[0];", np.array([-1, 0])],
-        ["rx(pi + pi) q[0];", np.array([-1, 0])],
-        ["rx(pi - pi) q[0];", np.array([1, 0])],
-        ["rx(-pi + pi) q[0];", np.array([1, 0])],
-        ["rx(pi * 2) q[0];", np.array([-1, 0])],
-        ["rx(pi / 2) q[0];", np.array([0.70710678, -0.70710678j])],
-        ["rx(-pi / 2) q[0];", np.array([0.70710678, 0.70710678j])],
-        ["rx(-pi) q[0];", np.array([0, 1j])],
-        ["rx(pi + 2 * pi) q[0];", np.array([0, 1j])],
-        ["rx(pi + pi / 2) q[0];",np.array([-0.70710678, -0.70710678j])],
-        ["rx((pi / 4) + (pi / 2) / 2) q[0];", np.array([0.70710678, -0.70710678j])],
-        ["rx(0) q[0];", np.array([1, 0])],
-        ["rx(0 + 0) q[0];", np.array([1, 0])],
-        ["rx((1.1 + 2.04) / 2) q[0];", np.array([0.70738827, -0.70682518j])],
-        ["rx((6 - 2.86) * 0.5) q[0];", np.array([0.70738827, -0.70682518j])],
-        ["rx(pi ** 2) q[0];", np.array([0.22058404, 0.97536797j])],
+        ["rx(π) q[0];",[0, -1j]],
+        ["rx(pi) q[0];", [0, -1j]],
+        ["rx(ℇ) q[0];", [0.21007866,  -0.97768449j]],
+        ["rx(euler) q[0];", [0.21007866, -0.97768449j]],
+        ["rx(τ) q[0];", [-1, 0]],
+        ["rx(tau) q[0];", [-1, 0]],
+        ["rx(pi + pi) q[0];", [-1, 0]],
+        ["rx(pi - pi) q[0];", [1, 0]],
+        ["rx(-pi + pi) q[0];", [1, 0]],
+        ["rx(pi * 2) q[0];", [-1, 0]],
+        ["rx(pi / 2) q[0];", [0.70710678, -0.70710678j]],
+        ["rx(-pi / 2) q[0];", [0.70710678, 0.70710678j]],
+        ["rx(-pi) q[0];", [0, 1j]],
+        ["rx(pi + 2 * pi) q[0];", [0, 1j]],
+        ["rx(pi + pi / 2) q[0];", [-0.70710678, -0.70710678j]],
+        ["rx((pi / 4) + (pi / 2) / 2) q[0];", [0.70710678, -0.70710678j]],
+        ["rx(0) q[0];", [1, 0]],
+        ["rx(0 + 0) q[0];", [1, 0]],
+        ["rx((1.1 + 2.04) / 2) q[0];", [0.70738827, -0.70682518j]],
+        ["rx((6 - 2.86) * 0.5) q[0];", [0.70738827, -0.70682518j]],
+        ["rx(pi ** 2) q[0];", [0.22058404, 0.97536797j]],
     ],
 )
 def test_rotation_parameter_expressions(operation, state_vector):
@@ -1361,4 +1361,4 @@ def test_rotation_parameter_expressions(operation, state_vector):
     simulator = StateVectorSimulator()
     result = simulator.run(OpenQASMProgram(source=qasm), shots=0)
     assert result.resultTypes[0].type == StateVector()
-    assert np.allclose(result.resultTypes[0].value, state_vector)
+    assert np.allclose(result.resultTypes[0].value, np.array(state_vector))
