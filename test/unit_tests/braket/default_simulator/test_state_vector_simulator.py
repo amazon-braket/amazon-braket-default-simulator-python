@@ -1327,9 +1327,9 @@ def test_measure_with_qubits_not_used():
 @pytest.mark.parametrize(
     "operation, state_vector",
     [
-        ["rx(π) q[0];",[0, -1j]],
+        ["rx(π) q[0];", [0, -1j]],
         ["rx(pi) q[0];", [0, -1j]],
-        ["rx(ℇ) q[0];", [0.21007866,  -0.97768449j]],
+        ["rx(ℇ) q[0];", [0.21007866, -0.97768449j]],
         ["rx(euler) q[0];", [0.21007866, -0.97768449j]],
         ["rx(τ) q[0];", [-1, 0]],
         ["rx(tau) q[0];", [-1, 0]],
