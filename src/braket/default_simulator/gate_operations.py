@@ -822,7 +822,7 @@ class PRx(GateOperation):
             power=power,
         )
         self.angle_1 = angle_1
-        slef.angle_2 = angle_2
+        self.angle_2 = angle_2
 
     @property
     def _base_matrix(self) -> np.ndarray:
@@ -1065,6 +1065,7 @@ BRAKET_GATES = {
     "zz": ZZ,
     "ccnot": CCNot,
     "cswap": CSwap,
+    "prx": PRx,
     "gpi": GPi,
     "gpi2": GPi2,
     "ms": MS,
