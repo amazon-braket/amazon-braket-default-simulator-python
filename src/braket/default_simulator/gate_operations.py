@@ -810,6 +810,36 @@ class CSwap(GateOperation):
 def _cswap(instruction) -> CSwap:
     return CSwap([instruction.control, *instruction.targets])
 
+class PRx(GateOperation):
+    """
+    PhaseRx gate.
+    """
+
+    def __init__(self, targets, angle_1, angle_2, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
+        self.angle_1 = angle_1
+        slef.angle_2 = angle_2
+
+    @property
+    def _base_matrix(self) -> np.ndarray:
+        theta = self.angle_1
+        phi = self.angle_2
+        return np.array(
+            [
+                [
+                    np.cos(theta / 2),
+                    -1j * np.exp(-1j * phi) * np.sin(theta / 2),
+                ],
+                [
+                    -1j * np.exp(1j * phi) * np.sin(theta / 2),
+                    np.cos(theta / 2),
+                ],
+            ]
+        )
 
 class GPi(GateOperation):
     """

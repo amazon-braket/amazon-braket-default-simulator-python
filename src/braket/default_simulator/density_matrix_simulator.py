@@ -85,6 +85,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                                 "ms",
                                 "pswap",
                                 "phaseshift",
+                                "prx",
                                 "rx",
                                 "ry",
                                 "rz",
