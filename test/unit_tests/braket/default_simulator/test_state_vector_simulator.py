@@ -156,6 +156,7 @@ def test_properties():
                         "ms",
                         "pswap",
                         "phaseshift",
+                        "prx",
                         "rx",
                         "ry",
                         "rz",

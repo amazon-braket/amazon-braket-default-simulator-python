@@ -811,6 +811,38 @@ def _cswap(instruction) -> CSwap:
     return CSwap([instruction.control, *instruction.targets])
 
 
+class PRx(GateOperation):
+    """
+    PhaseRx gate.
+    """
+
+    def __init__(self, targets, angle_1, angle_2, ctrl_modifiers=(), power=1):
+        super().__init__(
+            targets=targets,
+            ctrl_modifiers=ctrl_modifiers,
+            power=power,
+        )
+        self._angle_1 = angle_1
+        self._angle_2 = angle_2
+
+    @property
+    def _base_matrix(self) -> np.ndarray:
+        theta = self._angle_1
+        phi = self._angle_2
+        return np.array(
+            [
+                [
+                    np.cos(theta / 2),
+                    -1j * np.exp(-1j * phi) * np.sin(theta / 2),
+                ],
+                [
+                    -1j * np.exp(1j * phi) * np.sin(theta / 2),
+                    np.cos(theta / 2),
+                ],
+            ]
+        )
+
+
 class GPi(GateOperation):
     """
     IonQ GPi gate.
@@ -1035,6 +1067,7 @@ BRAKET_GATES = {
     "zz": ZZ,
     "ccnot": CCNot,
     "cswap": CSwap,
+    "prx": PRx,
     "gpi": GPi,
     "gpi2": GPi2,
     "ms": MS,
