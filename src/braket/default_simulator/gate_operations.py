@@ -810,6 +810,7 @@ class CSwap(GateOperation):
 def _cswap(instruction) -> CSwap:
     return CSwap([instruction.control, *instruction.targets])
 
+
 class PRx(GateOperation):
     """
     PhaseRx gate.
@@ -840,6 +841,7 @@ class PRx(GateOperation):
                 ],
             ]
         )
+
 
 class GPi(GateOperation):
     """
