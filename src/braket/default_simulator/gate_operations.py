@@ -821,13 +821,13 @@ class PRx(GateOperation):
             ctrl_modifiers=ctrl_modifiers,
             power=power,
         )
-        self.angle_1 = angle_1
-        self.angle_2 = angle_2
+        self._angle_1 = angle_1
+        self._angle_2 = angle_2
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        theta = self.angle_1
-        phi = self.angle_2
+        theta = self._angle_1
+        phi = self._angle_2
         return np.array(
             [
                 [
