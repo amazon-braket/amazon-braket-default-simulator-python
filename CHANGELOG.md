@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.23.0 (2024-04-22)
+
+### Features
+
+ * add phaserx gate
+
 ## v1.22.0 (2024-04-16)
 
 ### Features
