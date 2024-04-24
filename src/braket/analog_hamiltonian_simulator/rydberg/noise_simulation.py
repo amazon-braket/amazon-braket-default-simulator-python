@@ -397,6 +397,7 @@ def ahs_noise_simulation(
     
     # measurements = [get_shot_measurement([program, noise_model, steps]) for _ in range(shots)]
 
+    print("test")
     with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
         measurements = p.map(get_shot_measurement, [[program, noise_model, steps] for _ in range(shots)])
     
