@@ -982,7 +982,7 @@ class U(GateOperation):
         theta: float,
         phi: float,
         lambda_: float,
-        ctrl_modifiers: list[int],
+        ctrl_modifiers: Sequence[int] = (),
         power: float = 1,
     ):
         super().__init__(
