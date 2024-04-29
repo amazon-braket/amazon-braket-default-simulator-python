@@ -390,4 +390,4 @@ def ahs_noise_simulation(
         taskMetadata=task_metadata, measurements=measurements
     )
     
-    return AnalogHamiltonianSimulationQuantumTaskResult(ahs_task_result, additional_metadata=None)
+    return AnalogHamiltonianSimulationQuantumTaskResult.from_object(ahs_task_result, additional_metadata=None)
