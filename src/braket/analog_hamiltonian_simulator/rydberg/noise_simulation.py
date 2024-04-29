@@ -146,6 +146,93 @@ def apply_lattice_initialization_errors(
     
     return erroneous_sites, erroneous_filling, pre_seq    
 
+import scipy
+
+def apply_amplitude_errors(
+    amplitude: TimeSeries,
+    steps: int,
+    rabi_error_rel: float,
+    rabi_ramp_correction: list,
+    amplitude_max = amplitude_max
+) -> TimeSeries:
+    """
+    Apply noises to the amplitude
+
+    Args:
+        amplitude (TimeSeries): The time series for the amplitude
+        steps (int): The number of time steps in the simulation
+        rabi_error_rel (float): The amplitude error as a relative value
+        rabi_ramp_correction (List): The dynamic correction to ramped amplitude 
+            as relative values
+        
+    Returns:
+        noisy_amplitude (TimeSeries): The time series of the noisy amplitude
+    """    
+    
+    amplitude_times = amplitude.time_series.times()
+    amplitude_values = amplitude.time_series.values()
+    
+    # Rewrite the rabi_ramp_correction as a function of slopes
+    rabi_ramp_correction_slopes = [amplitude_max / float(corr.rampTime)
+        for corr in rabi_ramp_correction
+    ]
+    rabi_ramp_correction_fracs = [float(corr.rabiCorrection)
+        for corr in rabi_ramp_correction
+    ]    
+    rabi_ramp_correction_slopes = rabi_ramp_correction_slopes[::-1]
+    rabi_ramp_correction_fracs = rabi_ramp_correction_fracs[::-1]
+    
+    # Helper function to find the correction factor for a given slope
+    get_frac = scipy.interpolate.interp1d(rabi_ramp_correction_slopes, 
+                                   rabi_ramp_correction_fracs, 
+                                   bounds_error=False, 
+                                   fill_value="extrapolate"
+                                  )
+        
+    noisy_amplitude_times = np.linspace(0, amplitude_times[-1], steps)
+    noisy_amplitude_values = []
+    
+    # First apply the rabi ramp correction
+    for ind in range(len(amplitude_times)):
+        if ind == 0:
+            continue
+            
+        # First determine the correction factor from the slope
+        t1, t2 = amplitude_times[ind-1], amplitude_times[ind]
+        v1, v2 = amplitude_values[ind-1], amplitude_values[ind]
+        slope = (v2 - v1) / (t2 - t1)
+        if np.abs(slope) > 0:
+            frac = get_frac(np.abs(slope)) * np.sign(slope)        
+        else:
+            frac = 1.0
+        
+        # Next, determine the coefficients for the quadratic correction
+        if frac >= 1.0:
+            a, b, c = 0, 0, v2
+        else:
+            # Determine the coefficients for the quadratic correction
+            # of the form f(t) = a*t^2 + b * t + c 
+            # such that f(t1) = v1 and f(t2) = v2 and 
+            # a/3*(t2^3-t1^3) + b/2*(t2^2-t1^2) + c(t2-t1) = frac * (t2-t1) * (v2-v1)/2
+            
+            a = 3 * (v1 + frac * v1 + v2 - frac * v2)/(t1 - t2)**2
+            c = (t2 * v1 * ((2 + 3 * frac) * t1 + t2) + t1 * v2 * (t1 + (2 - 3 * frac) * t2))/(t1 - t2)**2
+            b = (v2 - c - a * t2**2) / t2    
+        
+        # Finally, put values into noisy_amplitude_values
+        for t in noisy_amplitude_times:
+            if t1 <= t and t <= t2:
+                noisy_amplitude_values.append(a * t**2 + b * t + c)
+
+                
+    # Next apply amplitude error
+    rabi_errors = 1 + rabi_error_rel * np.random.normal(size=len(noisy_amplitude_values))
+    noisy_amplitude_values = np.multiply(noisy_amplitude_values, rabi_errors)
+    noisy_amplitude_values = [max(0, value) for value in noisy_amplitude_values] # amplitude has to be non-negative
+                
+    noisy_amplitude = TimeSeries.from_lists(noisy_amplitude_times, noisy_amplitude_values)
+    
+    return noisy_amplitude
 
 def apply_detuning_errors(
     detuning: TimeSeries,
@@ -188,11 +275,6 @@ def apply_detuning_errors(
                                            )
                                           )
     
-    # h = Pattern([np.random.uniform() for _ in filling])
-    # detuning_local = TimeSeries()
-    # detuning_local.put(0.0, detuning_inhomogeneity)
-    # detuning_local.put(detuning_times[-1], detuning_inhomogeneity)
-    
     # Assemble the local shift
     shift = ShiftingField(
         magnitude=Field(
@@ -204,110 +286,11 @@ def apply_detuning_errors(
     return noisy_detuning, shift
 
 
-def determine_a_b_c(t1, t2, v1, v2, f):
-    a = 3 * (v1 + f * v1 + v2 - f * v2)/(t1 - t2)**2
-    c = (t2 * v1 * ((2 + 3 * f) * t1 + t2) + t1 * v2 * (t1 + (2 - 3 * f) * t2))/(t1 - t2)**2
-    b = (v2 - c - a * t2**2) / t2
-        
-    return a, b, c
-    
-    
-    
-def apply_amplitude_errors(
-    amplitude: TimeSeries,
-    steps: int,
-    rabi_error_rel: float,
-    rabi_ramp_correction: List,
-    amplitude_max = amplitude_max
-) -> TimeSeries:
-    """
-    Apply noises to the amplitude
-
-    Args:
-        amplitude (TimeSeries): The time series for the amplitude
-        steps (int): The number of time steps in the simulation
-        rabi_error_rel (float): The amplitude error as a relative value
-        rabi_ramp_correction (List): The dynamic correction to ramped amplitude 
-            as relative values
-        
-    Returns:
-        noisy_amplitude (TimeSeries): The time series of the noisy amplitude
-    """    
-    
-    amplitude_times = amplitude.time_series.times()
-    amplitude_values = amplitude.time_series.values()
-    
-    # Rewrite the rabi_ramp_correction as a function of slopes
-    rabi_ramp_correction_slopes = [amplitude_max / float(corr.rampTime)
-        for corr in rabi_ramp_correction
-    ]
-    rabi_ramp_correction_fracs = [float(corr.rabiCorrection)
-        for corr in rabi_ramp_correction
-    ]    
-    rabi_ramp_correction_slopes = rabi_ramp_correction_slopes[::-1]
-    rabi_ramp_correction_fracs = rabi_ramp_correction_fracs[::-1]
-    # print(rabi_ramp_correction_slopes)
-    # print(rabi_ramp_correction_fracs)
-        
-    noisy_amplitude_times = np.linspace(0, amplitude_times[-1], steps)
-    noisy_amplitude_values = []
-    
-    # First apply the rabi ramp correction
-    for ind in range(len(amplitude_times)):
-        if ind == 0:
-            continue
-            
-        # First determine the correction factor from the slope
-        t1, t2 = amplitude_times[ind-1], amplitude_times[ind]
-        v1, v2 = amplitude_values[ind-1], amplitude_values[ind]
-        slope = (v2 - v1) / (t2 - t1)
-        # print(f"ind, slope, sign(slope) = {ind}, {slope}, {np.sign(slope)}")
-        slope_ind = np.searchsorted(
-            rabi_ramp_correction_slopes,
-            np.abs(slope)
-        )
-        
-        if slope_ind == 0:
-            frac = 1.0
-        elif slope_ind == len(rabi_ramp_correction_slopes):
-            # raise ValueError("The amplitude slew rate is larger than the maximum allowed value")
-            frac = 1.0
-        else:
-            fracs_diff = rabi_ramp_correction_fracs[slope_ind] - rabi_ramp_correction_fracs[slope_ind-1]
-            slope_diff = rabi_ramp_correction_slopes[slope_ind] - rabi_ramp_correction_slopes[slope_ind-1]
-            frac = rabi_ramp_correction_fracs[slope_ind-1] + (np.abs(slope) - rabi_ramp_correction_slopes[slope_ind-1]) * fracs_diff / slope_diff
-            frac *= np.sign(slope)
-        
-        # print(f"slope_ind, frac = {slope_ind}, {frac}")
-        
-        # Next, determine the coefficients for the quadratic correction
-        if frac == 1.0:
-            a, b, c = 0, 0, v2
-        else:
-            a, b, c = determine_a_b_c(t1, t2, v1, v2, frac)
-        
-        # Finally, put values into noisy_amplitude_values
-        for t in noisy_amplitude_times:
-            if t1 <= t and t <= t2:
-                noisy_amplitude_values.append(a * t**2 + b * t + c)
-
-                
-    # Next apply amplitude error
-    rabi_errors = 1 + rabi_error_rel * np.random.normal(size=len(noisy_amplitude_values))
-    noisy_amplitude_values = np.multiply(noisy_amplitude_values, rabi_errors)
-    noisy_amplitude_values = [max(0, value) for value in noisy_amplitude_values] # amplitude has to be non-negative
-                
-    noisy_amplitude = TimeSeries.from_lists(noisy_amplitude_times, noisy_amplitude_values)
-    
-    return noisy_amplitude
-
-
 def apply_rydberg_noise(
     program: AnalogHamiltonianSimulation,
     performance: Performance,
     steps: int,
 ):
-    # program_ir = program.to_ir()
     
     detuning_error = float(performance.rydberg.rydbergGlobal.detuningError)
     detuning_inhomogeneity = float(performance.rydberg.rydbergGlobal.detuningInhomogeneity)
@@ -334,6 +317,12 @@ def apply_rydberg_noise(
                         )
     
     return noisy_drive, shift
+
+def apply_measurement_errors(postseq: list[int], performance: Performance) -> list[int]:
+    grd_det_error = float(performance.rydberg.rydbergGlobal.groundDetectionError)
+    ryd_det_error = float(performance.rydberg.rydbergGlobal.rydbergDetectionError)
+
+    return apply_binomial_noise(postseq, ryd_det_error, grd_det_error)    
 
 def get_shot_measurement(
     args,
@@ -363,15 +352,14 @@ def get_shot_measurement(
 
     result = simulator.run(noisy_program, shots=1, steps=steps).result()
 
-
-    # preseq = result.measurements[0].pre_sequence
     postseq = result.measurements[0].post_sequence
+    new_postseq = apply_measurement_errors(postseq, performance)
 
-    # Aplly groundDetectionError and rydbergDetectionError
-    grd_det_error = float(performance.rydberg.rydbergGlobal.groundDetectionError)
-    ryd_det_error = float(performance.rydberg.rydbergGlobal.rydbergDetectionError)
+    # # Aplly groundDetectionError and rydbergDetectionError
+    # grd_det_error = float(performance.rydberg.rydbergGlobal.groundDetectionError)
+    # ryd_det_error = float(performance.rydberg.rydbergGlobal.rydbergDetectionError)
 
-    new_postseq = apply_binomial_noise(postseq, ryd_det_error, grd_det_error)
+    # new_postseq = apply_binomial_noise(postseq, ryd_det_error, grd_det_error)
 
 
     shot_measurement = AnalogHamiltonianSimulationShotMeasurement(
@@ -395,8 +383,6 @@ def ahs_noise_simulation(
         deviceId="rydbergLocalSimulator",
     )            
     
-    # measurements = [get_shot_measurement([program, noise_model, steps]) for _ in range(shots)]
-
     with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
         measurements = p.map(get_shot_measurement, [[program, noise_model, steps] for _ in range(shots)])
     
