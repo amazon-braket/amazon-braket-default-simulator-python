@@ -391,3 +391,62 @@ def ahs_noise_simulation(
     )
     
     return AnalogHamiltonianSimulationQuantumTaskResult.from_object(ahs_task_result)
+
+
+def convert_ir_program_back(program_ir):
+    program_ir_dict = program_ir.dict()
+
+    ahs_register = program_ir_dict['setup']['ahs_register']
+    hamiltonian = program_ir_dict['hamiltonian']
+
+    # for register
+    sites = ahs_register['sites']
+    fillings = ahs_register['filling']
+    register = AtomArrangement()
+
+    for site, filling in zip(sites, fillings):
+        if filling == 1:
+            register.add((float(site[0]), float(site[1])))
+        else:
+            register.add((float(site[0]), float(site[1])), site_type=SiteType.VACANT)
+
+    # for drive
+    amplitude_values = hamiltonian['drivingFields'][0]['amplitude']["time_series"]["values"]
+    amplitude_times = hamiltonian['drivingFields'][0]['amplitude']["time_series"]["times"]
+    detuning_values = hamiltonian['drivingFields'][0]['detuning']["time_series"]["values"]
+    detuning_times = hamiltonian['drivingFields'][0]['detuning']["time_series"]["times"]
+    phase_values = hamiltonian['drivingFields'][0]['phase']["time_series"]["values"]
+    phase_times = hamiltonian['drivingFields'][0]['phase']["time_series"]["times"]
+
+    amplitude_values = [float(i) for i in amplitude_values]
+    amplitude_times = [float(i) for i in amplitude_times]
+    detuning_values = [float(i) for i in detuning_values]
+    detuning_times = [float(i) for i in detuning_times]
+    phase_values = [float(i) for i in phase_values]
+    phase_times = [float(i) for i in phase_times]
+
+
+    amplitude = TimeSeries.from_lists(amplitude_times, amplitude_values)
+    detuning = TimeSeries.from_lists(detuning_times, detuning_values)
+    phase = TimeSeries.from_lists(phase_times, phase_values)
+
+    drive = DrivingField(
+        amplitude=amplitude,
+        phase=phase,
+        detuning=detuning
+    )
+
+    local_detuning_values = hamiltonian['localDetuning'][0]['magnitude']["time_series"]["values"]
+    local_detuning_times = hamiltonian['localDetuning'][0]['magnitude']["time_series"]["times"]
+    pattern = hamiltonian['localDetuning'][0]['magnitude']['pattern']
+
+    local_detuning_values = [float(i) for i in local_detuning_values]
+    local_detuning_times = [float(i) for i in local_detuning_times]
+    pattern = [float(i) for i in pattern]
+
+    local_detuning = LocalDetuning.from_lists(local_detuning_times, local_detuning_values, pattern)
+
+    program = AnalogHamiltonianSimulation(
+        hamiltonian=drive + local_detuning,
+        register=register
+    )   
