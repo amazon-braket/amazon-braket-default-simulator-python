@@ -93,7 +93,7 @@ class NoisyRydbergAtomSimulator(BaseLocalSimulator):
         self,
         program: Program,
         shots: int = 100,
-        steps: int = 1000,
+        steps: int = 100,
         *args,
         **kwargs        
     ) -> AnalogHamiltonianSimulationTaskResult:
