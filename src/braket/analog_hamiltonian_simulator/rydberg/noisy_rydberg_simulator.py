@@ -53,7 +53,7 @@ from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.device_schema.quera.quera_ahs_paradigm_properties_v1 import Performance
 
 from braket.aws import AwsDevice 
-import multiprocesing as mp
+import multiprocessing as mp
 
 qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
 capabilities = qpu.properties.paradigm
@@ -62,6 +62,7 @@ performance = capabilities.performance
 
 from braket.analog_hamiltonian_simulator.rydberg.noise_simulation import (get_shot_measurement, convert_ir_program_back)
 
+from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 
 
 def ahs_noise_simulation_v2(
@@ -93,6 +94,8 @@ class NoisyRydbergAtomSimulator(BaseLocalSimulator):
         program: Program,
         shots: int = 100,
         steps: int = 1000,
+        *args,
+        **kwargs        
     ) -> AnalogHamiltonianSimulationTaskResult:
 
         # reconstruct the AHSprogram

@@ -392,7 +392,6 @@ def ahs_noise_simulation(
     
     return AnalogHamiltonianSimulationQuantumTaskResult.from_object(ahs_task_result)
 
-
 def convert_ir_program_back(program_ir):
     program_ir_dict = program_ir.dict()
 
@@ -436,17 +435,25 @@ def convert_ir_program_back(program_ir):
         detuning=detuning
     )
 
-    local_detuning_values = hamiltonian['localDetuning'][0]['magnitude']["time_series"]["values"]
-    local_detuning_times = hamiltonian['localDetuning'][0]['magnitude']["time_series"]["times"]
-    pattern = hamiltonian['localDetuning'][0]['magnitude']['pattern']
+    if len(hamiltonian['localDetuning']) > 0:
+    
+        local_detuning_values = hamiltonian['localDetuning'][0]['magnitude']["time_series"]["values"]
+        local_detuning_times = hamiltonian['localDetuning'][0]['magnitude']["time_series"]["times"]
+        pattern = hamiltonian['localDetuning'][0]['magnitude']['pattern']
 
-    local_detuning_values = [float(i) for i in local_detuning_values]
-    local_detuning_times = [float(i) for i in local_detuning_times]
-    pattern = [float(i) for i in pattern]
+        local_detuning_values = [float(i) for i in local_detuning_values]
+        local_detuning_times = [float(i) for i in local_detuning_times]
+        pattern = [float(i) for i in pattern]
 
-    local_detuning = LocalDetuning.from_lists(local_detuning_times, local_detuning_values, pattern)
+        local_detuning = LocalDetuning.from_lists(local_detuning_times, local_detuning_values, pattern)
+        
+        hamiltonian=drive + local_detuning
+    else:
+        hamiltonian=drive
 
     program = AnalogHamiltonianSimulation(
-        hamiltonian=drive + local_detuning,
+        hamiltonian=hamiltonian,
         register=register
     )   
+    
+    return program
