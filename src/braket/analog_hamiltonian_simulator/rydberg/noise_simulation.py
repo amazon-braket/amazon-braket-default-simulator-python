@@ -376,7 +376,6 @@ def ahs_noise_simulation(
     shots: int = 1000,
     steps: int = 100,
 ):
-    print(f"ahs_noise_simulation, shots={shots}, steps={steps}")
     task_metadata = TaskMetadata(
         id="rydberg",
         shots=shots,
