@@ -68,10 +68,10 @@ from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 def ahs_noise_simulation_v2(
     program: AnalogHamiltonianSimulation,
     noise_model: Performance,
-    shots: int = 1000,
+    shots: int = 100,
     steps: int = 100,
 ):
-    
+    print(f"ahs_noise_simulation_v2, shots={shots}")
     task_metadata = TaskMetadata(
         id="rydberg",
         shots=shots,
