@@ -1017,7 +1017,7 @@ def test_pow():
         pow(two) @ cx c, a;
     }
     gate cxx_2 c, a {
-        pow(1/2) @ pow(4) @ cx c, a;
+        pow(1./2.) @ pow(4) @ cx c, a;
     }
     gate cxxx c, a {
         pow(1) @ pow(two) @ cx c, a;
@@ -1029,18 +1029,19 @@ def test_pow():
     qubit q4;
     qubit q5;
 
-    pow(1/2) @ x q1;       // half flip
-    pow(1/2) @ x q1;       // half flip
-    cx q1, q2;   // flip
-    cxx_1 q1, q3;    // don't flip
-    cxx_2 q1, q4;    // don't flip
-    cnot q1, q5;    // flip
-    x q3;       // flip
-    x q4;       // flip
-
-    s q1;   // sqrt z
-    s q1;   // again
-    inv @ z q1; // inv z
+    pow(1./2) @ x q1;   // half flip
+    pow(1/2.) @ x q1;  // half flip
+    cx q1, q2;          // flip
+    cxx_1 q1, q3;       // don't flip
+    cxx_2 q1, q4;       // don't flip
+    cnot q1, q5;        // flip
+    x q3;               // flip
+    x q4;               // flip
+    pow(1/2) @ x q5;    // don't flip
+    
+    s q1;               // sqrt z
+    s q1;               // again
+    inv @ z q1;         // inv z
     """
     circuit = Interpreter().build_circuit(qasm)
     simulation = StateVectorSimulation(5, 1, 1)
