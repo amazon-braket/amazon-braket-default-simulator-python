@@ -96,6 +96,10 @@ class NoisyRydbergAtomSimulator(BaseLocalSimulator):
         else:
             self._performance = performance
 
+    @property
+    def performance(self):
+        return self._performance
+
     def run(
         self,
         program: Program,
