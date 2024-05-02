@@ -64,6 +64,7 @@ from braket.analog_hamiltonian_simulator.rydberg.noise_simulation import (get_sh
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 
+from braket.aws import AwsDevice 
 
 def ahs_noise_simulation_v2(
     program: AnalogHamiltonianSimulation,
@@ -88,6 +89,13 @@ def ahs_noise_simulation_v2(
 class NoisyRydbergAtomSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_ahs_noisy"
 
+    def __init__(self, performance=None):
+        if performance is None:
+            self._qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
+            self._performance = self._qpu.properties.paradigm.performance    
+        else:
+            self._performance = performance
+
     def run(
         self,
         program: Program,
@@ -96,11 +104,10 @@ class NoisyRydbergAtomSimulator(BaseLocalSimulator):
         *args,
         **kwargs        
     ) -> AnalogHamiltonianSimulationTaskResult:
-
         # reconstruct the AHSprogram
         program_non_ir = convert_ir_program_back(program)
 
-        return ahs_noise_simulation_v2(program_non_ir, performance, shots, steps)
+        return ahs_noise_simulation_v2(program_non_ir, self.performance, shots, steps)
 
     @property
     def properties(self) -> DeviceCapabilities:
