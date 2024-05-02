@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.23.2 (2024-05-02)
+
+### Bug Fixes and Other Changes
+
+ * Integer division for `IntegerLiteral`s
+
 ## v1.23.1 (2024-04-29)
 
 ### Bug Fixes and Other Changes
