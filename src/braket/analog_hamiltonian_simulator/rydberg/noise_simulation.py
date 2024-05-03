@@ -33,11 +33,11 @@ import multiprocessing as mp
 # from braket.aws import AwsQuantumTask
 
 
-# # For noise simulation
-# from braket.aws import AwsDevice 
+# For noise simulation
+from braket.aws import AwsDevice 
 
-# qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
-# capabilities = qpu.properties.paradigm
+qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
+capabilities = qpu.properties.paradigm
 # performance = capabilities.performance
 
 
