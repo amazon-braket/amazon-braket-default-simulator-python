@@ -49,18 +49,17 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.rydberg_coefficient 
 )
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.devices.local_simulator import LocalSimulator
 
 from braket.device_schema.quera.quera_ahs_paradigm_properties_v1 import Performance
 
 from braket.aws import AwsDevice 
 import multiprocessing as mp
 
-from pprint import pprint as pp
+qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
+capabilities = qpu.properties.paradigm
 
-# qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
-# capabilities = qpu.properties.paradigm
-
-# performance = capabilities.performance
+performance = capabilities.performance
 
 from braket.analog_hamiltonian_simulator.rydberg.noise_simulation import (get_shot_measurement, convert_ir_program_back)
 
@@ -80,9 +79,6 @@ def ahs_noise_simulation_v2(
         deviceId="NoisyRydbergLocalSimulator",
     )            
 
-    print("ahs_noise_simulation_v2")
-    pp(noise_model.dict())
-
     with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
         measurements = p.map(get_shot_measurement, [[program, noise_model, steps] for _ in range(shots)])
     
@@ -94,17 +90,10 @@ def ahs_noise_simulation_v2(
 class NoisyRydbergAtomSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_ahs_noisy"
 
-    def __init__(self):
-        super(NoisyRydbergAtomSimulator, self).__init__()
-
-        if self._noise_model is None:
-            print("i am here")
-            self._qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
-            self._noise_model = self._qpu.properties.paradigm.performance
-
     def run(
         self,
         program: Program,
+        my_noise_model: Performance = performance,
         shots: int = 100,
         steps: int = 100,
         *args,
@@ -113,11 +102,7 @@ class NoisyRydbergAtomSimulator(BaseLocalSimulator):
         # reconstruct the AHSprogram
         program_non_ir = convert_ir_program_back(program)
 
-        print("run")
-        pp(self._noise_model.dict())
-
-
-        return ahs_noise_simulation_v2(program_non_ir, self._noise_model, shots, steps)
+        return ahs_noise_simulation_v2(program_non_ir, my_noise_model, shots, steps)
 
     @property
     def properties(self) -> DeviceCapabilities:

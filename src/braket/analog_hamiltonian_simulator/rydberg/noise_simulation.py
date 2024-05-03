@@ -32,8 +32,6 @@ from braket.devices import LocalSimulator
 import multiprocessing as mp
 # from braket.aws import AwsQuantumTask
 
-from pprint import pprint as pp
-
 # For noise simulation
 from braket.aws import AwsDevice 
 
@@ -333,8 +331,7 @@ def get_shot_measurement(
     # steps: int = 100,    
 ):
     program, noise_model, steps = args[0], args[1], args[2]
-    print("get_shot_measurement")
-    pp(noise_model.dict())
+
     # sites, fillings, preseq = apply_lattice_noise(program, noise_model.lattice)
     # drive, shift = apply_rydberg_noise(program, noise_model.rydberg)
     sites, fillings, preseq = apply_lattice_initialization_errors(program, noise_model)
