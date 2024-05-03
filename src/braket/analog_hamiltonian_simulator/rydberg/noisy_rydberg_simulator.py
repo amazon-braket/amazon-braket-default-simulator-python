@@ -94,14 +94,13 @@ def ahs_noise_simulation_v2(
 class NoisyRydbergAtomSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_ahs_noisy"
 
-    def __init__(self, performance=None):
+    def __init__(self):
         super(NoisyRydbergAtomSimulator, self).__init__()
-        if performance is None:
+
+        if self._noise_model is None:
             print("i am here")
             self._qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
-            self._noise_model = self._qpu.properties.paradigm.performance    
-        else:
-            self._noise_model = performance
+            self._noise_model = self._qpu.properties.paradigm.performance
 
     def run(
         self,
