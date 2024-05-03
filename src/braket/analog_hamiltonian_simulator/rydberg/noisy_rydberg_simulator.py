@@ -55,10 +55,12 @@ from braket.device_schema.quera.quera_ahs_paradigm_properties_v1 import Performa
 from braket.aws import AwsDevice 
 import multiprocessing as mp
 
-qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
-capabilities = qpu.properties.paradigm
+from pprint import pprint as pp
 
-performance = capabilities.performance
+# qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
+# capabilities = qpu.properties.paradigm
+
+# performance = capabilities.performance
 
 from braket.analog_hamiltonian_simulator.rydberg.noise_simulation import (get_shot_measurement, convert_ir_program_back)
 
@@ -77,7 +79,10 @@ def ahs_noise_simulation_v2(
         shots=shots,
         deviceId="NoisyRydbergLocalSimulator",
     )            
-    
+
+    print("ahs_noise_simulation_v2")
+    pp(noise_model.dict())
+
     with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
         measurements = p.map(get_shot_measurement, [[program, noise_model, steps] for _ in range(shots)])
     
@@ -107,6 +112,10 @@ class NoisyRydbergAtomSimulator(BaseLocalSimulator):
     ) -> AnalogHamiltonianSimulationTaskResult:
         # reconstruct the AHSprogram
         program_non_ir = convert_ir_program_back(program)
+
+        print("ahs_noise_simulation_v2")
+        pp(self._noise_model.dict())
+
 
         return ahs_noise_simulation_v2(program_non_ir, self._noise_model, shots, steps)
 
