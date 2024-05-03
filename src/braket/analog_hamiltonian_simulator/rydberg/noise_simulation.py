@@ -42,12 +42,12 @@ capabilities = qpu.properties.paradigm
 
 
 amplitude_max = float(capabilities.rydberg.rydbergGlobal.rabiFrequencyRange[-1])
-detuning_slew_rate_max = float(capabilities.rydberg.rydbergGlobal.detuningSlewRateMax)
-amplitude_slew_rate_max = float(capabilities.rydberg.rydbergGlobal.rabiFrequencySlewRateMax)
-time_separation_min = float(capabilities.rydberg.rydbergGlobal.timeDeltaMin)
-height = float(capabilities.lattice.area.height)
-width = float(capabilities.lattice.area.width)
-C6 = float(capabilities.rydberg.c6Coefficient)
+# detuning_slew_rate_max = float(capabilities.rydberg.rydbergGlobal.detuningSlewRateMax)
+# amplitude_slew_rate_max = float(capabilities.rydberg.rydbergGlobal.rabiFrequencySlewRateMax)
+# time_separation_min = float(capabilities.rydberg.rydbergGlobal.timeDeltaMin)
+# height = float(capabilities.lattice.area.height)
+# width = float(capabilities.lattice.area.width)
+# C6 = float(capabilities.rydberg.c6Coefficient)
 
 def apply_site_position_error(
     sites: List[List[float]], 
@@ -332,6 +332,7 @@ def get_shot_measurement(
     # steps: int = 100,    
 ):
     program, noise_model, steps = args[0], args[1], args[2]
+    pp(noise_model.dict())
     # sites, fillings, preseq = apply_lattice_noise(program, noise_model.lattice)
     # drive, shift = apply_rydberg_noise(program, noise_model.rydberg)
     sites, fillings, preseq = apply_lattice_initialization_errors(program, noise_model)
