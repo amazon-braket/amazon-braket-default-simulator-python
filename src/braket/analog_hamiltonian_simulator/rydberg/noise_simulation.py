@@ -33,12 +33,12 @@ import multiprocessing as mp
 # from braket.aws import AwsQuantumTask
 
 
-# For noise simulation
-from braket.aws import AwsDevice 
+# # For noise simulation
+# from braket.aws import AwsDevice 
 
-qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
-capabilities = qpu.properties.paradigm
-performance = capabilities.performance
+# qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
+# capabilities = qpu.properties.paradigm
+# performance = capabilities.performance
 
 
 amplitude_max = float(capabilities.rydberg.rydbergGlobal.rabiFrequencyRange[-1])
@@ -353,7 +353,7 @@ def get_shot_measurement(
     result = simulator.run(noisy_program, shots=1, steps=steps).result()
 
     postseq = result.measurements[0].post_sequence
-    new_postseq = apply_measurement_errors(postseq, performance)
+    new_postseq = apply_measurement_errors(postseq, noise_model)
 
     # # Aplly groundDetectionError and rydbergDetectionError
     # grd_det_error = float(performance.rydberg.rydbergGlobal.groundDetectionError)
