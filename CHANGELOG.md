@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.23.2 (2024-05-02)
+
+### Bug Fixes and Other Changes
+
+ * Integer division for `IntegerLiteral`s
+
+## v1.23.1 (2024-04-29)
+
+### Bug Fixes and Other Changes
+
+ * Optional ctrl for `U`, add tests
+
+## v1.23.0 (2024-04-22)
+
+### Features
+
+ * add phaserx gate
+
+## v1.22.0 (2024-04-16)
+
+### Features
+
+ * local detuning validation for ahs
+
 ## v1.21.6 (2024-04-15)
 
 ### Bug Fixes and Other Changes
