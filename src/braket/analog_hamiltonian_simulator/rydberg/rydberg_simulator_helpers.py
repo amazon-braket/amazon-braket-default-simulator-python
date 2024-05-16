@@ -558,11 +558,9 @@ def _get_hamiltonian(
     for rabi_op, rabi_coef, detuning_op, detuning_coef in zip(
         rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
     ):
-        hamiltonian += (
-            rabi_op * rabi_coef[index_time] / 2
-            + (rabi_op.T.conj() * np.conj(rabi_coef[index_time]) / 2)
-            - detuning_op * detuning_coef[index_time]
-        )
+        hamiltonian += rabi_op * rabi_coef[index_time] / 2
+        hamiltonian += rabi_op.T.conj() * np.conj(rabi_coef[index_time]) / 2
+        hamiltonian -= detuning_op * detuning_coef[index_time]
 
     # Add local detuning
     for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
