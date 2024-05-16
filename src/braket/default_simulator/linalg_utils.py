@@ -48,12 +48,11 @@ def multiply_matrix(
     """
     if not controls:
         return _multiply_matrix(state, matrix, targets)
-
     control_state = control_state or (1,) * len(controls)
     num_qubits = len(state.shape)
     control_slices = {i: _SLICES[state] for i, state in zip(controls, control_state)}
     ctrl_index = tuple(
-        control_slices[i] if i in controls else _NO_CONTROL_SLICE for i in range(num_qubits)
+        control_slices[i] if i in control_slices else _NO_CONTROL_SLICE for i in range(num_qubits)
     )
     state[ctrl_index] = _multiply_matrix(state[ctrl_index], matrix, targets)
     return state
@@ -62,7 +61,7 @@ def multiply_matrix(
 def _multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
-    targets: tuple[int, ...],
+    targets: np.ndarray,
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
@@ -74,9 +73,10 @@ def _multiply_matrix(
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
-    gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
+    num_targets = len(targets)
+    gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
     axes = (
-        np.arange(len(targets), 2 * len(targets)),
+        np.arange(num_targets, 2 * num_targets),
         targets,
     )
     product = np.tensordot(gate_matrix, state, axes=axes)
