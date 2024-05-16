@@ -15,7 +15,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from copy import copy
+from copy import deepcopy
 from typing import Any, Union
 
 import numpy as np
@@ -429,13 +429,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         new_instructions = []
         for ins in circuit.instructions:
-            new_ins = copy(ins)
+            new_ins = deepcopy(ins)
             new_ins._targets = tuple([qubit_map[q] for q in ins.targets])
             new_instructions.append(new_ins)
 
         new_results = []
         for result in circuit.results:
-            new_result = copy(result)
+            new_result = deepcopy(result)
             if isinstance(new_result, (MultiTarget, OptionalMultiTarget)):
                 new_result.targets = [qubit_map[q] for q in result.targets]
             new_results.append(new_result)
@@ -477,6 +477,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         qubit_count = circuit.num_qubits
         used_qubits = sorted(list(circuit.qubit_set))
         measured_qubits = circuit.measured_qubits
+        results = circuit.results
 
         if max(circuit.qubit_set) != len(circuit.qubit_set) - 1:
             circuit = self._map_to_contiguous_qubits(circuit)
@@ -495,7 +496,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         operations = circuit.instructions
         BaseLocalSimulator._validate_operation_qubits(operations)
 
-        results = circuit.results
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
@@ -504,14 +504,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         if not shots:
             result_types = BaseLocalSimulator._translate_result_types(results)
-            BaseLocalSimulator._validate_result_types_qubits_exist(
-                [
-                    result_type
-                    for result_type in result_types
-                    if isinstance(result_type, TargetedResultType)
-                ],
-                qubit_count,
-            )
             results = BaseLocalSimulator._generate_results(
                 circuit.results,
                 result_types,
