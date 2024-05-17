@@ -7,7 +7,6 @@ from braket.ahs.shifting_field import ShiftingField
 from braket.ahs.field import Field
 from braket.ahs.pattern import Pattern
 
-from typing import Dict, List, Tuple
 from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import AnalogHamiltonianSimulationQuantumTaskResult
 from braket.ahs.atom_arrangement import AtomArrangement
 
@@ -49,19 +48,19 @@ amplitude_max = float(capabilities.rydberg.rydbergGlobal.rabiFrequencyRange[-1])
 # C6 = float(capabilities.rydberg.c6Coefficient)
 
 def apply_site_position_error(
-    sites: List[List[float]], 
+    sites: list[list[float]], 
     site_position_error: float
-) -> List[List[float]]:
+) -> list[list[float]]:
     """
     Apply site position error to a list of 2D coordinates
 
     Args:
-        sites (List[List[float]]): A list of 2D coordinates
+        sites (list[list[float]]): A list of 2D coordinates
         site_position_error: The site position error, the systematic and pattern-dependent
             error between specified and actual lattice site positions
 
     Returns:
-        erroneous_sites (List[List[float]]): A list of 2D erroneous coordinates
+        erroneous_sites (list[list[float]]): A list of 2D erroneous coordinates
     """
     erroneous_sites = []
     for site in sites:
@@ -69,17 +68,17 @@ def apply_site_position_error(
         
     return erroneous_sites
 
-def apply_binomial_noise(arr: List[int], p01: float, p10: float):
+def apply_binomial_noise(arr: list[int], p01: float, p10: float):
     """
     Return the noisy array of an otherwise noiseless array subject to a binomial noise
 
     Args:
-        arr (List[int]): An noiseless array
+        arr (list[int]): An noiseless array
         p01 (float): The probability of mistakenly switching 0 as 1
         p10 (float): The probability of mistakenly switching 1 as 0
         
     Returns:
-        noisy_arr (List[int]): The noisy array
+        noisy_arr (list[int]): The noisy array
     """
     noisy_arr = []
     for val in arr:
@@ -93,14 +92,16 @@ def apply_binomial_noise(arr: List[int], p01: float, p10: float):
     return noisy_arr
 
 
+from braket.device_schema.quera.quera_ahs_paradigm_properties_v1 import Performance
+
 def apply_lattice_initialization_errors(
     program: AnalogHamiltonianSimulation,
     performance: Performance, 
     typical_error: bool = True
-) -> Tuple[
-    List[List[float]], 
-    List[int],
-    List[int]
+) -> tuple[
+    list[list[float]], 
+    list[int],
+    list[int]
 ]:
     """
     Apply noises for initializing the atomic lattice
@@ -112,13 +113,11 @@ def apply_lattice_initialization_errors(
             the worst-case values for the parameters. Default True.
         
     Returns:
-        erroneous_sites (List[List[float]]): A list of 2D erroneous coordinates
-        erroneous_filling (List[int]): A list of erroneous filling
-        pre_seq (List[int]): The pre-sequence
+        erroneous_sites (list[list[float]]): A list of 2D erroneous coordinates
+        erroneous_filling (list[int]): A list of erroneous filling
+        pre_seq (list[int]): The pre-sequence
     """
-    
-    # program_ir = program.to_ir()
-    
+        
     site_position_err = float(performance.lattice.sitePositionError)
     ground_prep_err = float(performance.rydberg.rydbergGlobal.groundPrepError)
     if typical_error:
@@ -132,8 +131,6 @@ def apply_lattice_initialization_errors(
         atom_det_false_positive = float(performance.lattice.atomDetectionErrorFalsePositiveWorst)
         atom_det_false_negative = float(performance.lattice.atomDetectionErrorFalseNegativeWorst)        
     
-    # sites = [[float(site[0]), float(site[1])] for site in program_ir.setup.ahs_register.sites]
-    # filling = program_ir.setup.ahs_register.filling
     sites = [[x, y] for (x, y) in zip(program.register.coordinate_list(0), program.register.coordinate_list(1))]
     filling = program.to_ir().setup.ahs_register.filling
     
@@ -144,6 +141,8 @@ def apply_lattice_initialization_errors(
     erroneous_filling = apply_binomial_noise(erroneous_filling, 0, ground_prep_err)
     
     return erroneous_sites, erroneous_filling, pre_seq    
+
+import scipy
 
 import scipy
 
@@ -161,7 +160,7 @@ def apply_amplitude_errors(
         amplitude (TimeSeries): The time series for the amplitude
         steps (int): The number of time steps in the simulation
         rabi_error_rel (float): The amplitude error as a relative value
-        rabi_ramp_correction (List): The dynamic correction to ramped amplitude 
+        rabi_ramp_correction (list): The dynamic correction to ramped amplitude 
             as relative values
         
     Returns:
@@ -235,24 +234,24 @@ def apply_amplitude_errors(
 
 def apply_detuning_errors(
     detuning: TimeSeries,
-    filling: List[int],
+    filling: list[int],
     steps: int,
     detuning_error: float,
     detuning_inhomogeneity: float
-) -> Tuple[TimeSeries, ShiftingField]:
+) -> tuple[TimeSeries, LocalDetuning]:
     """
     Apply noises to the detuning
 
     Args:
         detuning (TimeSeries): The time series for the detuning
-        filling (List[int]): The filling of the atom array
+        filling (list[int]): The filling of the atom array
         steps (int): The number of time steps in the simulation
         detuning_error (float): The detuning error
         detuning_inhomogeneity (float): The detuning inhomogeneity
         
     Returns:
         noisy_detuning (TimeSeries): The time series of the noisy detuning
-        shift (ShiftingField): The shifting field used to simulate the detuning inhomogeneity
+        local_detuning (LocalDetuning): The local detuning used to simulate the detuning inhomogeneity
     """    
     
     detuning_times = detuning.time_series.times()
@@ -266,23 +265,23 @@ def apply_detuning_errors(
     
     noisy_detuning = TimeSeries.from_lists(noisy_detuning_times, noisy_detuning_values)
     
-    # Apply detuningInhomogeneity        
-    h = Pattern([1 for _ in filling])
+    # Apply detuning inhomogeneity        
+    h = Pattern([np.random.rand() for _ in filling])
     detuning_local = TimeSeries.from_lists(noisy_detuning_times, 
-                                           detuning_inhomogeneity * np.random.normal(
-                                               size=len(noisy_detuning_times)
+                                           detuning_inhomogeneity * np.ones(
+                                               len(noisy_detuning_times)
                                            )
                                           )
-    
-    # Assemble the local shift
-    shift = ShiftingField(
+
+    # Assemble the local detuning
+    local_detuning = LocalDetuning(
         magnitude=Field(
             time_series=detuning_local,
             pattern=h
         )
     )
     
-    return noisy_detuning, shift
+    return noisy_detuning, local_detuning
 
 
 def apply_rydberg_noise(
@@ -294,7 +293,7 @@ def apply_rydberg_noise(
     detuning_error = float(performance.rydberg.rydbergGlobal.detuningError)
     detuning_inhomogeneity = float(performance.rydberg.rydbergGlobal.detuningInhomogeneity)
     
-    noisy_detuning, shift = apply_detuning_errors(program.hamiltonian.detuning,
+    noisy_detuning, local_detuning = apply_detuning_errors(program.hamiltonian.detuning,
                                                   program.to_ir().setup.ahs_register.filling,
                                                   steps, 
                                                   detuning_error, 
@@ -303,19 +302,18 @@ def apply_rydberg_noise(
     
     rabi_error_rel = float(performance.rydberg.rydbergGlobal.rabiFrequencyGlobalErrorRel)
     rabi_ramp_correction = performance.rydberg.rydbergGlobal.rabiAmplitudeRampCorrection
-    noisy_amplitude = program.hamiltonian.amplitude
-    # noisy_amplitude = apply_amplitude_errors(program.hamiltonian.amplitude,
-    #                                          steps,
-    #                                          rabi_error_rel,
-    #                                          rabi_ramp_correction
-    #                                         )
+    noisy_amplitude = apply_amplitude_errors(program.hamiltonian.amplitude,
+                                             steps,
+                                             rabi_error_rel,
+                                             rabi_ramp_correction
+                                            )
            
     noisy_drive = DrivingField(amplitude = noisy_amplitude, 
                          detuning = noisy_detuning,
                          phase = program.hamiltonian.phase
                         )
     
-    return noisy_drive, shift
+    return noisy_drive, local_detuning
 
 def apply_measurement_errors(postseq: list[int], performance: Performance) -> list[int]:
     grd_det_error = float(performance.rydberg.rydbergGlobal.groundDetectionError)
