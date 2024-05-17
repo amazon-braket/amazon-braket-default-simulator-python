@@ -37,7 +37,7 @@ from braket.aws import AwsDevice
 
 qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
 capabilities = qpu.properties.paradigm
-performance = capabilities.performance
+# performance = capabilities.performance
 
 
 amplitude_max = float(capabilities.rydberg.rydbergGlobal.rabiFrequencyRange[-1])
