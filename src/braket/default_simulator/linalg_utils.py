@@ -46,9 +46,11 @@ def multiply_matrix(
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
+    targets = np.array(targets)
     if not controls:
         return _multiply_matrix(state, matrix, targets)
     control_state = control_state or (1,) * len(controls)
+
     num_qubits = len(state.shape)
     control_slices = {i: _SLICES[state] for i, state in zip(controls, control_state)}
     ctrl_index = tuple(
@@ -85,7 +87,7 @@ def _multiply_matrix(
     unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
     permutation = list(targets) + unused_idxs
     # Invert the permutation to put the indices in the correct place
-    inverse_permutation = np.argsort(permutation)
+    inverse_permutation = np.argsort(permutation, kind="mergesort")
     return np.transpose(product, inverse_permutation)
 
 
