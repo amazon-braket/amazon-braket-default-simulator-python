@@ -473,9 +473,10 @@ class BaseLocalSimulator(OpenQASMSimulator):
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
         )
-        simulation.evolve(operations)
-
-        if not shots:
+        if shots:
+            simulation.evolve(operations + circuit.basis_rotation_instructions)
+        else:
+            simulation.evolve(operations)
             result_types = BaseLocalSimulator._translate_result_types(results)
             BaseLocalSimulator._validate_result_types_qubits_exist(
                 [
@@ -490,8 +491,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 result_types,
                 simulation,
             )
-        else:
-            simulation.evolve(circuit.basis_rotation_instructions)
 
         return self._create_results_obj(results, openqasm_ir, simulation, measured_qubits)
 

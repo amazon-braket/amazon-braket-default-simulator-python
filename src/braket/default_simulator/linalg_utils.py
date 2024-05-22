@@ -81,13 +81,13 @@ def _multiply_matrix(
         np.arange(num_targets, 2 * num_targets),
         targets,
     )
-    product = np.tensordot(gate_matrix, state, axes=axes)
 
+    product = np.tensordot(gate_matrix, state, axes=axes)
     # Axes given in `operation.targets` are in the first positions.
     unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
     permutation = list(targets) + unused_idxs
     # Invert the permutation to put the indices in the correct place
-    inverse_permutation = np.argsort(permutation, kind="mergesort")
+    inverse_permutation = np.argsort(permutation)
     return np.transpose(product, inverse_permutation)
 
 
