@@ -53,7 +53,7 @@ def multiply_matrix(
     num_qubits = len(state.shape)
     control_slices = {i: _SLICES[state] for i, state in zip(controls, control_state)}
     ctrl_index = tuple(
-        control_slices[i] if i in control_slices else _NO_CONTROL_SLICE for i in range(num_qubits)
+        control_slices[i] if i in controls else _NO_CONTROL_SLICE for i in range(num_qubits)
     )
     state[ctrl_index] = _multiply_matrix(state[ctrl_index], matrix, targets)
     return state
