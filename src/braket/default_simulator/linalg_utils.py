@@ -46,7 +46,6 @@ def multiply_matrix(
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
-    targets = np.array(targets)
     if not controls:
         return _multiply_matrix(state, matrix, targets)
     control_state = control_state or (1,) * len(controls)
@@ -87,8 +86,7 @@ def _multiply_matrix(
     unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
     permutation = list(targets) + unused_idxs
     # Invert the permutation to put the indices in the correct place
-    inverse_permutation = np.argsort(permutation)
-    return np.transpose(product, inverse_permutation)
+    return np.transpose(product, np.argsort(permutation))
 
 
 def marginal_probability(
