@@ -247,8 +247,13 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QubitDeclaration) -> None:
-        size = self.visit(node.size).value if node.size else 1
-        self.context.add_qubits(node.qubit.name, size)
+        size_arg = self.visit(node.size)
+        if isinstance(size_arg, ArrayLiteral) and size_arg:
+            size = "".join(str(cast_to(IntegerLiteral, qubit).value) for qubit in size_arg.values)
+            self.context.add_qubits(node.qubit.name, int(size, 2))
+        else:
+            size = size_arg.value if size_arg else 1
+            self.context.add_qubits(node.qubit.name, size)
 
     @visit.register
     def _(self, node: QuantumReset) -> None:
