@@ -90,8 +90,10 @@ def _(into: IntType, variable: LiteralType) -> IntegerLiteral:
     else:
         value = variable.value
         if into.size is not None:
-            limit = 2 ** (into.size.value - 1)
-            value = int(np.sign(value) * (np.abs(int(value)) % limit))
+            limit = 2**into.size.value
+            value = int(value) % limit
+            if (value) >= limit / 2:
+                value -= limit
             if value != variable.value:
                 warnings.warn(
                     f"Integer overflow for value {variable.value} and size {into.size.value}."
