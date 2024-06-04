@@ -63,3 +63,33 @@ class BraketSimulator(ABC):
     @abstractmethod
     def properties(self) -> DeviceCapabilities:
         """DeviceCapabilities: Properties of the device."""
+
+
+class MultiSimulator(BraketSimulator):
+    """An abstract simulator that can run multiple tasks locally.
+
+    The purpose of this interface is to take advantage of any circuit batching (or more generally,
+    multithreading/multiprocessing) that the backend can leverage to improve performance.
+
+    The tasks can be either quantum circuits defined as OpenQASM or JAQCD programs,
+    or analog Hamiltonian simulation (AHS) programs.
+    """
+
+    @abstractmethod
+    def run_multiple(
+        self, payloads: list[Union[OQ3Program, AHSProgram, JaqcdProgram]], *args, **kwargs
+    ) -> list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]:
+        """
+        Run the tasks specified by the given IR payloads.
+
+        Extra arguments will contain any additional information necessary to run the tasks,
+        such as number of qubits.
+
+        Args:
+            payloads (list[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
+                of the programs
+
+        Returns:
+            list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]: A list of
+            result objects, with the ith object being the result of the ith program.
+        """

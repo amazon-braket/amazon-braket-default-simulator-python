@@ -13,7 +13,7 @@
 
 import uuid
 import warnings
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Callable
 from typing import Any, Union
 
@@ -61,7 +61,7 @@ _NOISE_INSTRUCTIONS = frozenset(
 )
 
 
-class OpenQASMSimulator(BraketSimulator, ABC):
+class OpenQASMSimulator(BraketSimulator):
     """An abstract simulator that runs an OpenQASM 3 program.
 
     Translation of individual operations and observables from OpenQASM to the desired format
