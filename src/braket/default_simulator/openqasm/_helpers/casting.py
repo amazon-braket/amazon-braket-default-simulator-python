@@ -86,7 +86,7 @@ def _(into: IntType, variable: LiteralType) -> IntegerLiteral:
     if isinstance(variable, ArrayLiteral):
         value = int("".join("01"[x.value] for x in variable.values[1:]), base=2)
         if variable.values[0].value:
-            value *= -1
+            value -= 2 ** (len(variable.values) - 1)
     else:
         value = variable.value
         if into.size is not None:

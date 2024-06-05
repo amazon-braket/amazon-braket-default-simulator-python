@@ -186,6 +186,9 @@ def test_signed_int_cast():
     uint[8] y0 = 128;
     int[8] y1 = y0;
     uint[8] y2 = y1;
+
+    int[3] z0 = "100";
+    int[3] z1 = "111";
     """
 
     context = Interpreter().run(qasm)
@@ -197,6 +200,9 @@ def test_signed_int_cast():
     assert context.get_value("y0") == IntegerLiteral(128)
     assert context.get_value("y1") == IntegerLiteral(-128)
     assert context.get_value("y2") == IntegerLiteral(128)
+
+    assert context.get_value("z0") == IntegerLiteral(-4)
+    assert context.get_value("z1") == IntegerLiteral(-1)
 
 
 def test_float_declaration():
@@ -700,7 +706,7 @@ def test_update_bits_int():
     """
     context = Interpreter().run(qasm)
     assert context.get_value("x") == IntegerLiteral(3)
-    assert context.get_value("y") == IntegerLiteral(-2)
+    assert context.get_value("y") == IntegerLiteral(-6)
     assert context.get_value("z") == IntegerLiteral(10)
 
 
