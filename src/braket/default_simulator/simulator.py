@@ -119,135 +119,43 @@ class OpenQASMSimulator(BraketSimulator, ABC):
         )
 
 
-class BaseLocalSimulator(OpenQASMSimulator):
-    def run(
-        self, circuit_ir: Union[OpenQASMProgram, JaqcdProgram], *args, **kwargs
+class CustomLocalSimulator(BaseLocalSimulator):
+    def _validate_operation_qubits(self, operations: list) -> None:
+        qubits_referenced = {target for operation in operations for target in operation.targets}
+        max_qubit_index = max(qubits_referenced) if qubits_referenced else -1
+        if max_qubit_index >= len(qubits_referenced):
+            raise ValueError("Qubit indices in a circuit must be within the valid range.")
+
+    def run_openqasm(
+        self,
+        openqasm_ir: OpenQASMProgram,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
     ) -> GateModelTaskResult:
-        """
-        Simulate a circuit using either OpenQASM or Jaqcd.
+        circuit = self.parse_program(openqasm_ir).circuit
+        qubit_count = circuit.num_qubits
+        measured_qubits = circuit.measured_qubits
 
-        Args:
-            circuit_ir (Union[OpenQASMProgram, JaqcdProgram]): Circuit specification.
-            qubit_count (int, jaqcd-only): Number of qubits.
-            shots (int, optional): The number of shots to simulate. Default is 0, which
-                performs a full analytical simulation.
-            batch_size (int, optional): The size of the circuit partitions to contract,
-                if applying multiple gates at a time is desired; see `StateVectorSimulation`.
-                Must be a positive integer.
-                Defaults to 1, which means gates are applied one at a time without any
-                optimized contraction.
+        operations = circuit.instructions
+        self._validate_operation_qubits(operations)
 
-        Returns:
-            GateModelTaskResult: object that represents the result
+        simulation = self.initialize_simulation(
+            qubit_count=qubit_count, shots=shots, batch_size=batch_size
+        )
+        simulation.evolve(operations)
 
-        Raises:
-            ValueError: If result types are not specified in the IR or sample is specified
-                as a result type when shots=0. Or, if StateVector and Amplitude result types
-                are requested when shots>0.
-        """
-        if isinstance(circuit_ir, OpenQASMProgram):
-            return self.run_openqasm(circuit_ir, *args, **kwargs)
-        return self.run_jaqcd(circuit_ir, *args, **kwargs)
+        results = []
 
-    def create_program_context(self) -> AbstractProgramContext:
-        return ProgramContext()
-
-    @abstractmethod
-    def initialize_simulation(self, **kwargs) -> Simulation:
-        """Initializes simulation with keyword arguments"""
-
-    def _validate_ir_results_compatibility(
-        self, results: list[Results], device_action_type
-    ) -> None:
-        """
-        Validate that requested result types are valid for the simulator.
-
-        Args:
-            results (list[Results]): Requested result types.
-
-        Raises:
-            TypeError: If any the specified result types are not supported
-        """
-        if results:
-            circuit_result_types_name = [result.__class__.__name__ for result in results]
-            supported_result_types = self.properties.action[device_action_type].supportedResultTypes
-            supported_result_types_name = [result.name for result in supported_result_types]
-            for name in circuit_result_types_name:
-                if name not in supported_result_types_name:
-                    raise TypeError(
-                        f"result type {name} is not supported by {self.__class__.__name__}"
-                    )
-
-    @staticmethod
-    def _validate_shots_and_ir_results(
-        shots: int,
-        results: list[Results],
-        qubit_count: int,
-    ) -> None:
-        """
-        Validated that requested result types are valid for given shots and qubit count.
-
-        Args:
-            shots (int): Shots for the simulation.
-            results (list[Results]): Specified result types.
-            qubit_count (int): Number of qubits for the simulation.
-
-        Raises:
-            ValueError: If any of the requested result types are incompatible with the
-                qubit count or number of shots.
-        """
-        if not shots:
-            if not results:
-                raise ValueError("Result types must be specified in the IR when shots=0")
-            for rt in results:
-                if rt.type in ["sample"]:
-                    raise ValueError("sample can only be specified when shots>0")
-                if rt.type == "amplitude":
-                    BaseLocalSimulator._validate_amplitude_states(rt.states, qubit_count)
-        elif shots and results:
-            for rt in results:
-                if rt.type in ["statevector", "amplitude", "densitymatrix"]:
-                    raise ValueError(
-                        "statevector, amplitude and densitymatrix result "
-                        "types not available when shots>0"
-                    )
-
-    @staticmethod
-    def _validate_amplitude_states(states: list[str], qubit_count: int) -> None:
-        """
-        Validate states in an amplitude result type are valid.
-
-        Args:
-            states (list[str]): List of binary strings representing quantum states.
-            qubit_count (int): Number of qubits for the simulation.
-
-        Raises:
-            ValueError: If any of the states is not the correct size for the number of qubits.
-        """
-        for state in states:
-            if len(state) != qubit_count:
-                raise ValueError(
-                    f"Length of state {state} for result type amplitude"
-                    f" must be equivalent to number of qubits {qubit_count} in circuit"
-                )
-
-    @staticmethod
-    def _translate_result_types(results: list[Results]) -> list[ResultType]:
-        return [from_braket_result_type(result) for result in results]
-
-    @staticmethod
-    def _generate_results(
-        results: list[Results],
-        result_types: list[ResultType],
-        simulation: Simulation,
-    ) -> list[ResultTypeValue]:
-        return [
-            ResultTypeValue.construct(
-                type=results[index],
-                value=result_types[index].calculate(simulation),
+        if not shots and circuit.results:
+            result_types = self._translate_result_types(circuit.results)
+            self._validate_result_types_qubits_exist(
+                [result_type for result_type in result_types if isinstance(result_type, TargetedResultType)],
+                qubit_count,
             )
-            for index in range(len(results))
-        ]
+            results = self._generate_results(circuit.results, result_types, simulation)
+
+        return self._create_results_obj(results, openqasm_ir, simulation, measured_qubits)
 
     def _create_results_obj(
         self,
@@ -272,14 +180,38 @@ class BaseLocalSimulator(OpenQASMSimulator):
             ),
         )
 
-    @staticmethod
-    def _validate_operation_qubits(operations: list[Operation]) -> None:
-        qubits_referenced = {target for operation in operations for target in operation.targets}
-        if qubits_referenced and max(qubits_referenced) >= len(qubits_referenced):
-            raise ValueError(
-                "Non-contiguous qubit indices supplied; "
-                "qubit indices in a circuit must be contiguous."
-            )
+    def _validate_result_types_qubits_exist(
+        self, targeted_result_types: list[TargetedResultType], qubit_count: int
+    ) -> None:
+        for result_type in targeted_result_types:
+            targets = result_type.targets
+            if targets and max(targets) >= qubit_count:
+                raise ValueError(f"Result type ({result_type.__class__.__name__}) references invalid qubits {targets}")
+
+    def _formatted_measurements(
+        self, simulation: Simulation, measured_qubits: Union[list[int], None] = None
+    ) -> list[list[str]]:
+        measurements = [
+            list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
+            for sample in simulation.retrieve_samples()
+        ]
+        if measured_qubits is not None and measured_qubits != []:
+            if any(qubit in range(simulation.qubit_count) for qubit in measured_qubits):
+                measured_qubits = np.array(measured_qubits)
+                in_circuit_mask = measured_qubits < simulation.qubit_count
+                measured_qubits_in_circuit = measured_qubits[in_circuit_mask]
+                measured_qubits_not_in_circuit = measured_qubits[~in_circuit_mask]
+
+                measurements_array = np.array(measurements)
+                selected_measurements = measurements_array[:, measured_qubits_in_circuit]
+                measurements = np.pad(
+                    selected_measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
+                ).tolist()
+            else:
+                measurements = np.zeros(
+                    (simulation.shots, len(measured_qubits)), dtype=int
+                ).tolist()
+        return measurements
 
     @staticmethod
     def _validate_result_types_qubits_exist(
