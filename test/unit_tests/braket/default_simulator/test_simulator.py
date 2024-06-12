@@ -13,6 +13,8 @@
 
 import numpy as np
 import pytest
+from braket.circuits import Circuit
+from braket.devices import LocalSimulator
 
 from braket.default_simulator import observables
 from braket.default_simulator.result_types import DensityMatrix, Expectation, Probability, Variance
@@ -64,3 +66,11 @@ def test_base_local_simulator_abstract():
     )
     with pytest.raises(TypeError, match=abstract_methods):
         BaseLocalSimulator()
+
+
+def test_discontinous_qubits_local_simulator():
+    circuit = Circuit().x(2).cnot(2, 9)
+    result = LocalSimulator().run(circuit, shots=1).result()
+
+    assert result.measured_qubits == [2, 9]
+    assert result.measurement_probabilities == {"11": 1.0}

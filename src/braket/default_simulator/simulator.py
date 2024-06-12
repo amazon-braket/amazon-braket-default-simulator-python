@@ -15,12 +15,14 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from copy import deepcopy
 from typing import Any, Union
 
 import numpy as np
 from braket.device_schema import DeviceActionType
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
+from braket.ir.jaqcd.shared_models import MultiTarget, OptionalMultiTarget
 from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.task_result import (
     AdditionalMetadata,
@@ -386,6 +388,38 @@ class BaseLocalSimulator(OpenQASMSimulator):
         else:
             return str(observable.__class__.__name__)
 
+    def _map_circuit_to_contiguous_qubits(self, circuit: Circuit) -> Circuit:
+        """
+        Maps the qubits in operations and result types to contiguous qubits.
+
+        Args:
+            circuit (Circuit): The circuit containing the operations and result types.
+
+        Returns:
+            Circuit: The circuit with qubits in operations and result types mapped to contiguous qubits.
+        """
+        qubit_map = self._contiguous_qubit_mapping(circuit.qubit_set)
+
+        new_instructions = []
+        for ins in circuit.instructions:
+            new_ins = deepcopy(ins)
+            new_ins._targets = tuple([qubit_map[q] for q in ins.targets])
+            new_instructions.append(new_ins)
+
+        new_results = []
+        for result in circuit.results:
+            new_result = deepcopy(result)
+            if isinstance(new_result, (MultiTarget, OptionalMultiTarget)):
+                new_result.targets = [qubit_map[q] for q in result.targets]
+            new_results.append(new_result)
+
+        new_circuit = Circuit(new_instructions, new_results)
+        return new_circuit
+
+    @staticmethod
+    def _contiguous_qubit_mapping(qubit_set: list[int]) -> dict[int, int]:
+        return {q: i for i, q in enumerate(sorted(qubit_set))}
+
     @staticmethod
     def _formatted_measurements(
         simulation: Simulation, measured_qubits: Union[list[int], None] = None
@@ -407,7 +441,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
         ]
         #  Gets the subset of measurements from the full measurements
         if measured_qubits is not None and measured_qubits != []:
-            if any(qubit in range(simulation.qubit_count) for qubit in measured_qubits):
+            if max(measured_qubits) != len(measured_qubits) - 1:
+                qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(measured_qubits)
+                mapped_measured_qubits = [qubit_map[q] for q in measured_qubits]
+                measurements = np.array(measurements)[:, mapped_measured_qubits].tolist()
+
+            elif any(qubit in range(simulation.qubit_count) for qubit in measured_qubits):
                 measured_qubits = np.array(measured_qubits)
                 in_circuit_mask = measured_qubits < simulation.qubit_count
                 measured_qubits_in_circuit = measured_qubits[in_circuit_mask]
@@ -464,6 +503,10 @@ class BaseLocalSimulator(OpenQASMSimulator):
         )
         self._validate_input_provided(circuit)
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit.results, qubit_count)
+
+        circuit_qubit_set = circuit.qubit_set
+        if circuit_qubit_set and max(circuit_qubit_set) != len(circuit_qubit_set) - 1:
+            circuit = self._map_circuit_to_contiguous_qubits(circuit)
 
         operations = circuit.instructions
         BaseLocalSimulator._validate_operation_qubits(operations)
