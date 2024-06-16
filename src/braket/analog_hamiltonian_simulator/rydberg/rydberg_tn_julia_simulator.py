@@ -18,9 +18,8 @@ from typing import Union
 import numpy as np
 from braket.device_schema import DeviceCapabilities
 from braket.ir.ahs.program_v1 import Program
-from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
-    AnalogHamiltonianSimulationTaskResult,
-)
+
+from braket.task_result.additional_metadata import AdditionalMetadata
 from braket.task_result.task_metadata_v1 import TaskMetadata
 from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
     AnalogHamiltonianSimulationShotMeasurement,
@@ -112,7 +111,6 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         uuid = np.random.randint(1000000)
         folder = f"{folder}/{uuid}"
         os.mkdir(folder)
-        print(folder)
         
         json_data = json.loads(program.json())
         json_string = json.dumps(json_data, indent=4) 
@@ -141,12 +139,18 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             )
             measurements.append(shot_measurement)
             
+        with open(f"{folder}/summary.txt", "r") as text_file:
+            summary = text_file.read()
+
+        print(summary)
+            
         # Delete the files
         subprocess.run(['rm', '-r', folder])
 
 
         return AnalogHamiltonianSimulationTaskResult(
-            taskMetadata=task_metadata, measurements=measurements
+            taskMetadata=task_metadata, 
+            measurements=measurements,
         )
 
     def run_batch(
@@ -179,6 +183,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
                 steps = steps,
                 my_noise_model = my_noise_model,
                 if_apply_noise = if_apply_noise,
+                blockade_radius=blockade_radius,
                 *args,
                 **kwargs
             )
