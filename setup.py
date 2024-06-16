@@ -55,6 +55,11 @@ setup(
                 "braket.analog_hamiltonian_simulator.rydberg.noisy_rydberg_simulator:"
                 "NoisyRydbergAtomSimulator",
             ),
+            (
+                "braket_ahs_tn = "
+                "braket.analog_hamiltonian_simulator.rydberg.rydberg_tn_julia_simulator:"
+                "RydbergAtomTNSimulator",
+            ),            
         ]
     },
     extras_require={
