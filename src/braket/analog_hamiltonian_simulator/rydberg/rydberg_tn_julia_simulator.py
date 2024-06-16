@@ -110,7 +110,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         # folder = os.path.dirname(os.path.realpath(__file__))
         folder = os.getcwd()
         uuid = np.random.randint(1000000)
-        folder = f"{folder}/{uuid}/"
+        folder = f"{folder}/{uuid}"
         os.mkdir(folder)
         print(folder)
         
