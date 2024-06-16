@@ -87,7 +87,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         self,
         program: Program,
         shots: int = 1000,
-        steps: int = 100,
+        steps: int = 80,
         blockade_radius: float = 12e-6,
         my_noise_model: Performance = qpu.properties.paradigm.performance,
         if_apply_noise: bool = False,
@@ -122,7 +122,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
 
         # Run with Julia
         with open(f"{folder}/tn_solver.jl", "w") as text_file:
-            txt = 'using BraketAHS; run_program("' + filename + '",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}, " + 'if_compute_correlators=false, if_compute_energies=false)'
+            txt = 'using BraketAHS; run_program("' + filename + '",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}" + ')'
             text_file.write(txt)
         subprocess.run(['julia', f'{folder}/tn_solver.jl', filename])
         
@@ -152,10 +152,12 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
     def run_batch(
         self,
         programs: list[Program],
-        shots: int = 100,
-        steps: int = 100,
+        shots: int = 1000,
+        steps: int = 80,
+        blockade_radius: float = 12e-6,
         my_noise_model: Performance = qpu.properties.paradigm.performance,
         if_apply_noise: bool = False,
+        max_bond_dim: int = 4,
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
