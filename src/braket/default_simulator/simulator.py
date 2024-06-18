@@ -388,7 +388,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
         else:
             return str(observable.__class__.__name__)
 
-    def _map_circuit_to_contiguous_qubits(self, circuit: Circuit) -> Circuit:
+    @classmethod
+    def _map_circuit_to_contiguous_qubits(cls, circuit: Circuit) -> Circuit:
         """
         Maps the qubits in operations and result types to contiguous qubits.
 
@@ -399,7 +400,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             Circuit: The circuit with qubits in operations and result types mapped 
             to contiguous qubits.
         """
-        qubit_map = self._contiguous_qubit_mapping(circuit.qubit_set)
+        qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(circuit.qubit_set)
 
         new_instructions = []
         for ins in circuit.instructions:
@@ -507,7 +508,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         circuit_qubit_set = circuit.qubit_set
         if circuit_qubit_set and max(circuit_qubit_set) != len(circuit_qubit_set) - 1:
-            circuit = self._map_circuit_to_contiguous_qubits(circuit)
+            circuit = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
 
         operations = circuit.instructions
         BaseLocalSimulator._validate_operation_qubits(operations)
