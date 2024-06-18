@@ -83,35 +83,34 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_ahs_tn"
 
     def run(
-        self,
+        self, 
         program: Program,
         shots: int = 1000,
         steps: int = 80,
+        rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 12e-6,
-        my_noise_model: Performance = qpu.properties.paradigm.performance,
-        if_apply_noise: bool = False,
-        max_bond_dim: int = 4,
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
-
+        
         task_metadata = TaskMetadata(
             id="rydberg",
             shots=shots,
             deviceId="RydbergAtomTNSimulator",
-        )                
-
-        # Validate the input
-        if isinstance(program, Program) is False:
-            raise TypeError("`program` has the wrong type, it has to be a Program.")
+        )
+        
+        max_bond_dim = 4
             
         # Convert the program into json and save it
         # folder = os.path.dirname(os.path.realpath(__file__))
         folder = os.getcwd()
-        uuid = np.random.randint(1000000)
+        # uuid = np.random.randint(1000000)
+        uuid = os.getpid()
         folder = f"{folder}/{uuid}"
+        
         os.mkdir(folder)
         
+
         json_data = json.loads(program.json())
         json_string = json.dumps(json_data, indent=4) 
         filename = f"{folder}/ahs_program.json"
@@ -147,49 +146,10 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         # Delete the files
         subprocess.run(['rm', '-r', folder])
 
-
         return AnalogHamiltonianSimulationTaskResult(
             taskMetadata=task_metadata, 
             measurements=measurements,
         )
-
-    def run_batch(
-        self,
-        programs: list[Program],
-        shots: int = 1000,
-        steps: int = 80,
-        blockade_radius: float = 12e-6,
-        my_noise_model: Performance = qpu.properties.paradigm.performance,
-        if_apply_noise: bool = False,
-        max_bond_dim: int = 4,
-        *args,
-        **kwargs
-    ) -> AnalogHamiltonianSimulationTaskResult:
-
-        # Validate the input
-        if isinstance(programs, list) is False:
-            raise TypeError("`program` has the wrong type, it has to be a list of Programs.")
-        else:
-            for item in programs:
-                if isinstance(program, Program) is False:
-                    raise TypeError("`program` has the wrong type, it has to be a list of Programs.")
-
-        def _run_internal_wrap(
-            program: Program,
-        ) -> AnalogHamiltonianSimulationTaskResult:
-            return self.run(
-                program,
-                shots = shots,
-                steps = steps,
-                my_noise_model = my_noise_model,
-                if_apply_noise = if_apply_noise,
-                blockade_radius=blockade_radius,
-                *args,
-                **kwargs
-            )
-
-        with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
-            results = p.map(_run_internal_wrap, programs)
 
 
     @property
