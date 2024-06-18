@@ -397,7 +397,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             circuit (Circuit): The circuit containing the operations and result types.
 
         Returns:
-            Circuit: The circuit with qubits in operations and result types mapped 
+            Circuit: The circuit with qubits in operations and result types mapped
             to contiguous qubits.
         """
         qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(circuit.qubit_set)
