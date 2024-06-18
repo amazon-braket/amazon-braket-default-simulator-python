@@ -402,21 +402,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """
         qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(circuit.qubit_set)
 
-        new_instructions = []
         for ins in circuit.instructions:
-            new_ins = deepcopy(ins)
-            new_ins._targets = tuple([qubit_map[q] for q in ins.targets])
-            new_instructions.append(new_ins)
+            ins._targets = tuple([qubit_map[q] for q in ins.targets])
 
-        new_results = []
         for result in circuit.results:
-            new_result = deepcopy(result)
-            if isinstance(new_result, (MultiTarget, OptionalMultiTarget)):
-                new_result.targets = [qubit_map[q] for q in result.targets]
-            new_results.append(new_result)
-
-        new_circuit = Circuit(new_instructions, new_results)
-        return new_circuit
+            if isinstance(result, (MultiTarget, OptionalMultiTarget)):
+                result.targets = [qubit_map[q] for q in result.targets]
+        return circuit
 
     @staticmethod
     def _contiguous_qubit_mapping(qubit_set: list[int]) -> dict[int, int]:
