@@ -274,15 +274,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         )
 
     @staticmethod
-    def _validate_operation_qubits(operations: list[Operation]) -> None:
-        qubits_referenced = BaseLocalSimulator.get_qubits_referenced(operations)
-        if qubits_referenced and max(qubits_referenced) >= len(qubits_referenced):
-            raise ValueError(
-                "Non-contiguous qubit indices supplied; "
-                "qubit indices in a circuit must be contiguous."
-            )
-
-    @staticmethod
     def get_qubits_referenced(operations: list[Operation]) -> set[int]:
         return {target for operation in operations for target in operation.targets}
 
@@ -633,14 +624,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         circuit = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
 
-        operations = circuit.instructions
-        BaseLocalSimulator._validate_operation_qubits(operations)
-
         results = circuit.results
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
         )
+        operations = circuit.instructions
         simulation.evolve(operations)
 
         if not shots:
@@ -710,8 +699,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         if shots > 0 and circuit_ir.basis_rotation_instructions:
             for instruction in circuit_ir.basis_rotation_instructions:
                 operations.append(from_braket_instruction(instruction))
-
-        BaseLocalSimulator._validate_operation_qubits(operations)
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
