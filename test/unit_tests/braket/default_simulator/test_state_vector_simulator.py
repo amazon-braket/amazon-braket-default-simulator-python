@@ -51,6 +51,13 @@ def grcs_16_qubit(ir_type):
 
 
 @pytest.fixture
+def discontiguous_jaqcd():
+    with open("test/resources/discontiguous_jaqcd.json") as jaqcd_definition:
+        data = json.load(jaqcd_definition)
+        return json.dumps(data)
+
+
+@pytest.fixture
 def bell_ir(ir_type):
     return (
         JaqcdProgram.parse_raw(
@@ -1364,20 +1371,8 @@ def test_rotation_parameter_expressions(operation, state_vector):
     assert np.allclose(result.resultTypes[0].value, np.array(state_vector))
 
 
-def test_discontinous_qubits():
-    prg = JaqcdProgram.parse_raw(
-        json.dumps(
-            {
-                "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
-                "instructions": [
-                    {"target": 2, "type": "x"},
-                    {"control": 2, "target": 9, "type": "cnot"},
-                ],
-                "results": [],
-                "basis_rotation_instructions": [],
-            }
-        )
-    )
+def test_discontiguous_qubits(discontiguous_jaqcd):
+    prg = JaqcdProgram.parse_raw(discontiguous_jaqcd)
     result = StateVectorSimulator().run(prg, qubit_count=2, shots=1).result()
 
     assert result.measured_qubits == [2, 9]
