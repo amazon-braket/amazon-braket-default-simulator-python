@@ -64,4 +64,3 @@ def test_base_local_simulator_abstract():
     )
     with pytest.raises(TypeError, match=abstract_methods):
         BaseLocalSimulator()
-

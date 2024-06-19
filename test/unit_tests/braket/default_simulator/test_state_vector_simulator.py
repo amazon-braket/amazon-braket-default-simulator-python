@@ -900,7 +900,6 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
         ),
     ],
 )
-@pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_non_contiguous_qubits(ir, qubit_count):
     # not relevant for openqasm, since it handles qubit allocation
     simulator = StateVectorSimulator()
