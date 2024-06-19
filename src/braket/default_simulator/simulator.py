@@ -417,7 +417,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             operations = [
                 from_braket_instruction(instruction) for instruction in circuit.instructions
             ]
-            if cls.has_basis_rotation_instructions(circuit):
+            if circuit.basis_rotation_instructions:
                 operations.extend(
                     from_braket_instruction(instruction)
                     for instruction in circuit.basis_rotation_instructions
@@ -483,7 +483,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         for ins in circuit.instructions:
             cls._map_instruction_attributes(ins, qubit_map)
 
-        if cls.has_basis_rotation_instructions(circuit):
+        if circuit.basis_rotation_instructions:
             for ins in circuit.basis_rotation_instructions:
                 ins.target = qubit_map[ins.target]
 
@@ -507,21 +507,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         if hasattr(instruction, "targets"):
             instruction.targets = [qubit_map[q] for q in instruction.targets]
-
-    @classmethod
-    def has_basis_rotation_instructions(cls, circuit):
-        """
-        Checks if the given circuit has basis rotation instructions.
-
-        Args:
-            circuit: The circuit to check for basis rotation instructions.
-
-        Returns:
-            bool: True if the circuit has basis rotation instructions, False otherwise.
-        """
-        return (
-            hasattr(circuit, "basis_rotation_instructions") and circuit.basis_rotation_instructions
-        )
 
     @staticmethod
     def _contiguous_qubit_mapping(qubit_set: list[int]) -> dict[int, int]:
