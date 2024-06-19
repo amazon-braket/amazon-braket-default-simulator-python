@@ -274,7 +274,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         )
 
     @staticmethod
-    def get_qubits_referenced(operations: list[Operation]) -> set[int]:
+    def _get_qubits_referenced(operations: list[Operation]) -> set[int]:
         return {target for operation in operations for target in operation.targets}
 
     @staticmethod
@@ -422,7 +422,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                     from_braket_instruction(instruction)
                     for instruction in circuit.basis_rotation_instructions
                 )
-            return BaseLocalSimulator.get_qubits_referenced(operations)
+            return BaseLocalSimulator._get_qubits_referenced(operations)
 
     @classmethod
     def _map_instructions_to_qubits(cls, circuit: Union[Circuit, JaqcdProgram], qubit_map: dict):
