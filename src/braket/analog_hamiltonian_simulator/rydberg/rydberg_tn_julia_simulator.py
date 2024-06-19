@@ -121,11 +121,16 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         with open(f"{folder}/tn_solver.jl", "w") as text_file:
             txt = 'using BraketAHS; run_program("' + filename + '",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}" + ')'
             text_file.write(txt)
-        subprocess.run(['julia', f'{folder}/tn_solver.jl', filename])
+            
+        print("i am here")
+        subprocess.run(['julia', '-t', '16', f'{folder}/tn_solver.jl', filename])
         
         # Get the shot measurement
         preSequence = program.setup.ahs_register.filling
-        postseqs = np.array(pandas.read_csv(f"{folder}/mps_samples.csv"), dtype=int)
+        
+        # postseqs = np.array(pandas.read_csv(f"{folder}/mps_samples.csv"), dtype=int)
+        postseqs = np.loadtxt(f"{folder}/mps_samples.txt", dtype='int', delimiter='\t')
+
         postseqs = [list(item) for item in postseqs]
 
         measurements = []
