@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.23.3 (2024-06-19)
+
+### Bug Fixes and Other Changes
+
+ * fix signed integer casting
+
 ## v1.23.2 (2024-05-02)
 
 ### Bug Fixes and Other Changes
