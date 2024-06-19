@@ -456,7 +456,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
     @classmethod
     def _map_circuit_instructions(cls, circuit: Circuit, qubit_map: dict):
         """
-        Maps the targets of each instruction in the circuit to the corresponding qubits in the qubit_map.
+        Maps the targets of each instruction in the circuit to the corresponding qubits in the
+        qubit_map.
 
         Args:
             circuit (Circuit): The circuit containing the instructions.
@@ -481,7 +482,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
     @classmethod
     def _map_jaqcd_instructions(cls, circuit: JaqcdProgram, qubit_map: dict):
         """
-        Maps the attributes of each instruction in the JaqcdProgram to the corresponding qubits in the qubit_map.
+        Maps the attributes of each instruction in the JaqcdProgram to the corresponding qubits in
+        the qubit_map.
 
         Args:
             circuit (JaqcdProgram): The JaqcdProgram containing the instructions.
