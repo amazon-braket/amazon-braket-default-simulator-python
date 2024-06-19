@@ -405,7 +405,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             ins._targets = tuple([qubit_map[q] for q in ins.targets])
 
         for result in circuit.results:
-            if isinstance(result, (MultiTarget, OptionalMultiTarget)):
+            if isinstance(result, (MultiTarget, OptionalMultiTarget)) and result.targets:
                 result.targets = [qubit_map[q] for q in result.targets]
         return circuit
 
@@ -497,9 +497,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         self._validate_input_provided(circuit)
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit.results, qubit_count)
 
-        circuit_qubit_set = circuit.qubit_set
-        if circuit_qubit_set and max(circuit_qubit_set) != len(circuit_qubit_set) - 1:
-            circuit = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
+        circuit = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
 
         operations = circuit.instructions
         BaseLocalSimulator._validate_operation_qubits(operations)
