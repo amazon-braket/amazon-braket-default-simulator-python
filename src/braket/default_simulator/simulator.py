@@ -446,33 +446,74 @@ class BaseLocalSimulator(OpenQASMSimulator):
             to contiguous qubits.
         """
         if isinstance(circuit, Circuit):
-            for ins in circuit.instructions:
-                ins._targets = tuple([qubit_map[q] for q in ins.targets])
-
-            for result in circuit.results:
-                if isinstance(result, (MultiTarget, OptionalMultiTarget)) and result.targets:
-                    result.targets = [qubit_map[q] for q in result.targets]
-
+            cls._map_circuit_instructions(circuit, qubit_map)
+            cls._map_circuit_results(circuit, qubit_map)
         else:
-            # JaqcdProgram
-            for ins in circuit.instructions:
-                if hasattr(ins, "control"):
-                    ins.control = qubit_map[ins.control]
-
-                if hasattr(ins, "controls"):
-                    ins.controls = [qubit_map[q] for q in ins.controls]
-
-                if hasattr(ins, "target"):
-                    ins.target = qubit_map[ins.target]
-
-                if hasattr(ins, "targets"):
-                    ins.targets = [qubit_map[q] for q in ins.targets]
-
-            if cls.has_basis_rotation_instructions(circuit):
-                for ins in circuit.basis_rotation_instructions:
-                    ins.target = qubit_map[ins.target]
+            cls._map_jaqcd_instructions(circuit, qubit_map)
 
         return circuit
+
+    @classmethod
+    def _map_circuit_instructions(cls, circuit: Circuit, qubit_map: dict):
+        """
+        Maps the targets of each instruction in the circuit to the corresponding qubits in the qubit_map.
+
+        Args:
+            circuit (Circuit): The circuit containing the instructions.
+            qubit_map (dict): A dictionary mapping original qubits to new qubits.
+        """
+        for ins in circuit.instructions:
+            ins._targets = tuple([qubit_map[q] for q in ins.targets])
+
+    @classmethod
+    def _map_circuit_results(cls, circuit: Circuit, qubit_map: dict):
+        """
+        Maps the targets of each result in the circuit to the corresponding qubits in the qubit_map.
+
+        Args:
+            circuit (Circuit): The circuit containing the results.
+            qubit_map (dict): A dictionary mapping original qubits to new qubits.
+        """
+        for result in circuit.results:
+            if isinstance(result, (MultiTarget, OptionalMultiTarget)) and result.targets:
+                result.targets = [qubit_map[q] for q in result.targets]
+
+    @classmethod
+    def _map_jaqcd_instructions(cls, circuit: JaqcdProgram, qubit_map: dict):
+        """
+        Maps the attributes of each instruction in the JaqcdProgram to the corresponding qubits in the qubit_map.
+
+        Args:
+            circuit (JaqcdProgram): The JaqcdProgram containing the instructions.
+            qubit_map (dict): A dictionary mapping original qubits to new qubits.
+        """
+        for ins in circuit.instructions:
+            cls._map_instruction_attributes(ins, qubit_map)
+
+        if cls.has_basis_rotation_instructions(circuit):
+            for ins in circuit.basis_rotation_instructions:
+                ins.target = qubit_map[ins.target]
+
+    @classmethod
+    def _map_instruction_attributes(cls, instruction, qubit_map: dict):
+        """
+        Maps the qubit attributes of an instruction to the corresponding qubits in the qubit_map.
+
+        Args:
+            instruction: The instruction whose qubit attributes need to be mapped.
+            qubit_map (dict): A dictionary mapping original qubits to new qubits.
+        """
+        if hasattr(instruction, "control"):
+            instruction.control = qubit_map[instruction.control]
+
+        if hasattr(instruction, "controls"):
+            instruction.controls = [qubit_map[q] for q in instruction.controls]
+
+        if hasattr(instruction, "target"):
+            instruction.target = qubit_map[instruction.target]
+
+        if hasattr(instruction, "targets"):
+            instruction.targets = [qubit_map[q] for q in instruction.targets]
 
     @classmethod
     def has_basis_rotation_instructions(cls, circuit):
