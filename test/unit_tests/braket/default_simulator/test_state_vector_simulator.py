@@ -1363,3 +1363,23 @@ def test_rotation_parameter_expressions(operation, state_vector):
     result = simulator.run(OpenQASMProgram(source=qasm), shots=0)
     assert result.resultTypes[0].type == StateVector()
     assert np.allclose(result.resultTypes[0].value, np.array(state_vector))
+
+
+def test_run_multiple():
+    payloads = [
+        OpenQASMProgram(
+            source=f"""
+            OPENQASM 3.0;
+            bit[1] b;
+            qubit[1] q;
+            {gate} q[0];
+            #pragma braket result state_vector
+            """
+        )
+        for gate in ["h", "z", "x"]
+    ]
+    simulator = StateVectorSimulator()
+    results = simulator.run_multiple(payloads, shots=0)
+    assert np.allclose(results[0].resultTypes[0].value, np.array([1, 1]) / np.sqrt(2))
+    assert np.allclose(results[1].resultTypes[0].value, np.array([1, 0]))
+    assert np.allclose(results[2].resultTypes[0].value, np.array([0, 1]))

@@ -831,3 +831,23 @@ def test_measure_with_qubits_not_used():
     assert np.sum(measurements, axis=0)[3] == 0
     assert len(measurements[0]) == 4
     assert result.measuredQubits == [0, 1, 2, 3]
+
+
+def test_run_multiple():
+    payloads = [
+        OpenQASMProgram(
+            source=f"""
+            OPENQASM 3.0;
+            bit[1] b;
+            qubit[1] q;
+            {gate} q[0];
+            #pragma braket result density_matrix
+            """
+        )
+        for gate in ["h", "z", "x"]
+    ]
+    simulator = DensityMatrixSimulator()
+    results = simulator.run_multiple(payloads, shots=0)
+    assert np.allclose(results[0].resultTypes[0].value, np.array([[0.5, 0.5], [0.5, 0.5]]))
+    assert np.allclose(results[1].resultTypes[0].value, np.array([[1, 0], [0, 0]]))
+    assert np.allclose(results[2].resultTypes[0].value, np.array([[0, 0], [0, 1]]))

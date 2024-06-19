@@ -12,7 +12,9 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Union
+from multiprocessing import Pool
+from os import cpu_count
+from typing import Optional, Union
 
 from braket.device_schema import DeviceCapabilities
 from braket.ir.ahs import Program as AHSProgram
@@ -58,6 +60,40 @@ class BraketSimulator(ABC):
             Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]: An object
             representing the results of the simulation.
         """
+
+    def run_multiple(
+        self,
+        payloads: list[Union[OQ3Program, AHSProgram, JaqcdProgram]],
+        max_parallel: Optional[int] = None,
+        *args,
+        **kwargs,
+    ) -> list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]:
+        """
+        Run the tasks specified by the given IR payloads.
+
+        Extra arguments will contain any additional information necessary to run the tasks,
+        such as number of qubits.
+
+        Args:
+            payloads (list[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
+                of the programs
+            max_parallel (Optional[int]): The maximum number of payloads to run in parallel.
+                Default is the number of CPUs.
+
+        Returns:
+            list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]: A list of
+            result objects, with the ith object being the result of the ith program.
+        """
+        max_parallel = max_parallel or cpu_count()
+        with Pool(min(max_parallel, len(payloads))) as pool:
+            param_list = [(task, args, kwargs) for task in payloads]
+            results = pool.starmap(self._run_wrapped, param_list)
+        return results
+
+    def _run_wrapped(
+        self, ir: Union[OQ3Program, AHSProgram, JaqcdProgram], args, kwargs
+    ):  # pragma: no cover
+        return self.run(ir, *args, **kwargs)
 
     @property
     @abstractmethod
