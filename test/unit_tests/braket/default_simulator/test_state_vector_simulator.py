@@ -1362,3 +1362,23 @@ def test_rotation_parameter_expressions(operation, state_vector):
     result = simulator.run(OpenQASMProgram(source=qasm), shots=0)
     assert result.resultTypes[0].type == StateVector()
     assert np.allclose(result.resultTypes[0].value, np.array(state_vector))
+
+
+def test_discontinous_qubits():
+    prg = JaqcdProgram.parse_raw(
+        json.dumps(
+            {
+                "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
+                "instructions": [
+                    {"target": 2, "type": "x"},
+                    {"control": 2, "target": 9, "type": "cnot"},
+                ],
+                "results": [],
+                "basis_rotation_instructions": [],
+            }
+        )
+    )
+    result = StateVectorSimulator().run(prg, qubit_count=2, shots=1).result()
+
+    assert result.measured_qubits == [2, 9]
+    assert result.measurement_probabilities == {"11": 1.0}
