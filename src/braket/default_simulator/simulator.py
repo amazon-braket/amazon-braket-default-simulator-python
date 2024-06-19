@@ -567,12 +567,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         ]
         #  Gets the subset of measurements from the full measurements
         if measured_qubits is not None and measured_qubits != []:
-            if max(measured_qubits) != len(measured_qubits) - 1:
-                qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(measured_qubits)
-                mapped_measured_qubits = [qubit_map[q] for q in measured_qubits]
-                measurements = np.array(measurements)[:, mapped_measured_qubits].tolist()
-
-            elif any(qubit in range(simulation.qubit_count) for qubit in measured_qubits):
+            if any(qubit in range(simulation.qubit_count) for qubit in measured_qubits):
                 measured_qubits = np.array(measured_qubits)
                 in_circuit_mask = measured_qubits < simulation.qubit_count
                 measured_qubits_in_circuit = measured_qubits[in_circuit_mask]
@@ -583,6 +578,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 measurements = np.pad(
                     selected_measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
                 ).tolist()
+
+            elif simulation.qubit_count > 0:
+                qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(measured_qubits)
+                mapped_measured_qubits = [qubit_map[q] for q in measured_qubits]
+                measurements = np.array(measurements)[:, mapped_measured_qubits].tolist()
+
             else:
                 measurements = np.zeros(
                     (simulation.shots, len(measured_qubits)), dtype=int
