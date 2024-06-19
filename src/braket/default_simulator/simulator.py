@@ -21,7 +21,7 @@ import numpy as np
 from braket.device_schema import DeviceActionType
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
-from braket.ir.jaqcd.shared_models import MultiTarget, OptionalMultiTarget, SingleTarget
+from braket.ir.jaqcd.shared_models import MultiTarget, OptionalMultiTarget
 from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.task_result import (
     AdditionalMetadata,
@@ -456,11 +456,17 @@ class BaseLocalSimulator(OpenQASMSimulator):
         else:
             # JaqcdProgram
             for ins in circuit.instructions:
-                if isinstance(ins, (MultiTarget, OptionalMultiTarget)):
-                    ins.targets = [qubit_map[q] for q in ins.targets]
+                if hasattr(ins, "control"):
+                    ins.control = qubit_map[ins.control]
 
-                elif isinstance(ins, SingleTarget):
+                if hasattr(ins, "controls"):
+                    ins.controls = [qubit_map[q] for q in ins.controls]
+
+                if hasattr(ins, "target"):
                     ins.target = qubit_map[ins.target]
+
+                if hasattr(ins, "targets"):
+                    ins.targets = [qubit_map[q] for q in ins.targets]
 
             if cls.has_basis_rotation_instructions(circuit):
                 for ins in circuit.basis_rotation_instructions:

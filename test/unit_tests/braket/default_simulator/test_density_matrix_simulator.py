@@ -842,7 +842,7 @@ def test_measure_with_qubits_not_used():
 
 def test_discontiguous_qubits(discontiguous_jaqcd):
     prg = JaqcdProgram.parse_raw(discontiguous_jaqcd)
-    result = DensityMatrixSimulator().run(prg, qubit_count=2, shots=1).result()
+    result = DensityMatrixSimulator().run(prg, qubit_count=2, shots=1)
 
-    assert result.measured_qubits == [2, 9]
-    assert result.measurement_probabilities == {"11": 1.0}
+    assert result.measuredQubits == [0, 1]
+    assert result.measurements == [["1", "1"]]
