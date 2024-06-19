@@ -15,7 +15,6 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from copy import deepcopy
 from typing import Any, Union
 
 import numpy as np
