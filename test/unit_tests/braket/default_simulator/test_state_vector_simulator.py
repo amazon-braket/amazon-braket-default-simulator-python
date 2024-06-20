@@ -58,6 +58,11 @@ def discontiguous_jaqcd():
 
 
 @pytest.fixture
+def discontiguous_qasm():
+    return OpenQASMProgram(source="test/resources/discontiguous.qasm")
+
+
+@pytest.fixture
 def bell_ir(ir_type):
     return (
         JaqcdProgram.parse_raw(
@@ -1377,3 +1382,12 @@ def test_discontiguous_qubits(discontiguous_jaqcd):
 
     assert result.measuredQubits == [0, 1]
     assert result.measurements == [["1", "1"]]
+
+
+def test_discontiguous_qubits_openqasm(discontiguous_qasm):
+    simulator = StateVectorSimulator()
+    result = simulator.run(discontiguous_qasm, shots=1000)
+
+    measurements = np.array(result.measurements, dtype=int)
+    assert len(measurements[0]) == 5
+    assert result.measuredQubits == [0, 1, 2, 3, 4]
