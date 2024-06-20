@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.23.4 (2024-06-20)
+
+### Bug Fixes and Other Changes
+
+ * use numpy for float comparison
+
 ## v1.23.3 (2024-06-19)
 
 ### Bug Fixes and Other Changes
