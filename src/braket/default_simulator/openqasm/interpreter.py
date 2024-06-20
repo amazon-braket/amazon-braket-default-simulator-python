@@ -27,6 +27,7 @@ from ._helpers.arrays import (
     create_empty_array,
     get_elements,
     get_type_width,
+    flatten_indices
 )
 from ._helpers.casting import (
     LiteralType,
@@ -471,12 +472,22 @@ class Interpreter:
     @visit.register
     def _(self, node: QuantumMeasurement) -> None:
         qubits = self.context.get_qubits(self.visit(node.qubit))
-        self.context.add_measure(qubits)
-
+        return qubits
+    
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
         """The measure is performed but the assignment is ignored"""
-        self.visit(node.measure)
+        qubits = self.visit(node.measure)
+        targets = None
+        if(node.target):
+            if isinstance(node.target, IndexedIdentifier):
+                indices = flatten_indices(node.target.indices)
+                for elem in indices:
+                    target_idx = elem.value
+                    targets = targets.append(target_idx) if targets else [target_idx]
+            
+        self.context.add_measure(qubits, targets)
+
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
