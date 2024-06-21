@@ -120,7 +120,13 @@ def convert_index(index: Union[RangeDefinition, IntegerLiteral]) -> Union[int, s
 
 def flatten_indices(indices: list[IndexElement]) -> list:
     """Convert a[i][j][k] to the equivalent a[i, j, k]"""
-    return sum((index for index in indices), [])
+    result = []
+    for index in indices:
+        if isinstance(index, DiscreteSet):
+            result.append(index)
+        else:
+            result += index
+    return result
 
 
 def unwrap_var_type(var_type: ClassicalType) -> ClassicalType:

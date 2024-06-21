@@ -478,14 +478,32 @@ class Interpreter:
     def _(self, node: QuantumMeasurementStatement) -> None:
         """The measure is performed but the assignment is ignored"""
         qubits = self.visit(node.measure)
-        targets = None
+        targets = []
         if(node.target):
             if isinstance(node.target, IndexedIdentifier):
                 indices = flatten_indices(node.target.indices)
-                for elem in indices:
+                if (len(node.target.indices) != 1):
+                    raise ValueError("Multi-Dimensional indexing not supported for classical registers.")
+                elem = indices[0]
+                if isinstance(elem, DiscreteSet):
+                    self._uses_advanced_language_features = True
+                    target_indices = [self.visit(val).value for val in elem.values]
+                    targets.extend(target_indices)
+                elif isinstance(elem, RangeDefinition):
+                        self._uses_advanced_language_features = True
+                        target_indices = convert_range_def_to_range(self.visit(elem))
+                        targets.extend(target_indices)
+                else:
                     target_idx = elem.value
-                    targets = targets.append(target_idx) if targets else [target_idx]
-            
+                    targets.append(target_idx)
+                        
+        if not len(targets):
+            targets = None
+        
+        if targets and len(targets) != len(qubits):
+            raise ValueError(
+                f"Number of qubits ({len(qubits)}) does not match number of provided classical targets ({len(targets)})"
+            )
         self.context.add_measure(qubits, targets)
 
 

@@ -2045,7 +2045,7 @@ def test_basis_rotation_hermitian():
                     "qubit[2] q;",
                     "h q[0];",
                     "h q[1];",
-                    "b[0] = measure q[0:1];",
+                    "b[0:1] = measure q[0:1];",
                 ]
             ),
             [0, 1],
@@ -2073,7 +2073,7 @@ def test_basis_rotation_hermitian():
                     "h q[0];",
                     "h q[1];",
                     "cnot q[1], q[2];",
-                    "b[0] = measure q[{0, 2}];",
+                    "b[{0, 2}] = measure q[{0, 2}];",
                 ]
             ),
             [0, 2],

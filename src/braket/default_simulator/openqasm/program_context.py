@@ -903,4 +903,4 @@ class ProgramContext(AbstractProgramContext):
         self._circuit.add_result(result)
 
     def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
-        self._circuit.add_measure(target)
+        self._circuit.add_measure(target, classical_targets)
