@@ -382,8 +382,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
         else:
             return str(observable.__class__.__name__)
 
-    @classmethod
-    def _map_circuit_to_contiguous_qubits(cls, circuit: Union[Circuit, JaqcdProgram]) -> Circuit:
+    @staticmethod
+    def _map_circuit_to_contiguous_qubits(circuit: Union[Circuit, JaqcdProgram]) -> Circuit:
         """
         Maps the qubits in operations and result types to contiguous qubits.
 
@@ -395,13 +395,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
             Circuit: The circuit with qubits in operations and result types mapped
             to contiguous qubits.
         """
-        circuit_qubit_set = cls._get_circuit_qubit_set(circuit)
+        circuit_qubit_set = BaseLocalSimulator._get_circuit_qubit_set(circuit)
         qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(circuit_qubit_set)
-        cls._map_instructions_to_qubits(circuit, qubit_map)
+        BaseLocalSimulator._map_instructions_to_qubits(circuit, qubit_map)
         return circuit
 
-    @classmethod
-    def _get_circuit_qubit_set(cls, circuit: Union[Circuit, JaqcdProgram]) -> set:
+    @staticmethod
+    def _get_circuit_qubit_set(circuit: Union[Circuit, JaqcdProgram]) -> set:
         """
         Returns the set of qubits used in the given circuit.
 
@@ -424,8 +424,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 )
             return BaseLocalSimulator._get_qubits_referenced(operations)
 
-    @classmethod
-    def _map_instructions_to_qubits(cls, circuit: Union[Circuit, JaqcdProgram], qubit_map: dict):
+    @staticmethod
+    def _map_instructions_to_qubits(circuit: Union[Circuit, JaqcdProgram], qubit_map: dict):
         """
         Maps the qubits in operations and result types to contiguous qubits.
 
@@ -437,15 +437,15 @@ class BaseLocalSimulator(OpenQASMSimulator):
             to contiguous qubits.
         """
         if isinstance(circuit, Circuit):
-            cls._map_circuit_instructions(circuit, qubit_map)
-            cls._map_circuit_results(circuit, qubit_map)
+            BaseLocalSimulator._map_circuit_instructions(circuit, qubit_map)
+            BaseLocalSimulator._map_circuit_results(circuit, qubit_map)
         else:
-            cls._map_jaqcd_instructions(circuit, qubit_map)
+            BaseLocalSimulator._map_jaqcd_instructions(circuit, qubit_map)
 
         return circuit
 
-    @classmethod
-    def _map_circuit_instructions(cls, circuit: Circuit, qubit_map: dict):
+    @staticmethod
+    def _map_circuit_instructions(circuit: Circuit, qubit_map: dict):
         """
         Maps the targets of each instruction in the circuit to the corresponding qubits in the
         qubit_map.
@@ -457,8 +457,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
         for ins in circuit.instructions:
             ins._targets = tuple([qubit_map[q] for q in ins.targets])
 
-    @classmethod
-    def _map_circuit_results(cls, circuit: Circuit, qubit_map: dict):
+    @staticmethod
+    def _map_circuit_results(circuit: Circuit, qubit_map: dict):
         """
         Maps the targets of each result in the circuit to the corresponding qubits in the qubit_map.
 
@@ -470,8 +470,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
             if isinstance(result, (MultiTarget, OptionalMultiTarget)) and result.targets:
                 result.targets = [qubit_map[q] for q in result.targets]
 
-    @classmethod
-    def _map_jaqcd_instructions(cls, circuit: JaqcdProgram, qubit_map: dict):
+    @staticmethod
+    def _map_jaqcd_instructions(circuit: JaqcdProgram, qubit_map: dict):
         """
         Maps the attributes of each instruction in the JaqcdProgram to the corresponding qubits in
         the qubit_map.
@@ -481,14 +481,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
             qubit_map (dict): A dictionary mapping original qubits to new qubits.
         """
         for ins in circuit.instructions:
-            cls._map_instruction_attributes(ins, qubit_map)
+            BaseLocalSimulator._map_instruction_attributes(ins, qubit_map)
 
         if circuit.basis_rotation_instructions:
             for ins in circuit.basis_rotation_instructions:
                 ins.target = qubit_map[ins.target]
 
-    @classmethod
-    def _map_instruction_attributes(cls, instruction, qubit_map: dict):
+    @staticmethod
+    def _map_instruction_attributes(instruction, qubit_map: dict):
         """
         Maps the qubit attributes of an instruction to the corresponding qubits in the qubit_map.
 
