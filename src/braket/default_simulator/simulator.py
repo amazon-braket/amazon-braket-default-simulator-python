@@ -483,8 +483,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
         for ins in circuit.instructions:
             BaseLocalSimulator._map_instruction_attributes(ins, qubit_map)
 
-        for ins in circuit.results:
-            BaseLocalSimulator._map_instruction_attributes(ins, qubit_map)
+        if hasattr(circuit, "results") and circuit.results:
+            for ins in circuit.results:
+                BaseLocalSimulator._map_instruction_attributes(ins, qubit_map)
 
         if circuit.basis_rotation_instructions:
             for ins in circuit.basis_rotation_instructions:
