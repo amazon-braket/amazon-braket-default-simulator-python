@@ -845,7 +845,7 @@ def test_measure_with_qubits_not_used():
     assert result.measuredQubits == [0, 1, 2, 3]
 
 
-def test_discontiguous_qubits(discontiguous_jaqcd):
+def test_discontiguous_qubits_jaqcd(discontiguous_jaqcd):
     prg = JaqcdProgram.parse_raw(discontiguous_jaqcd)
     result = DensityMatrixSimulator().run(prg, qubit_count=2, shots=1)
 

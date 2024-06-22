@@ -490,10 +490,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
     @staticmethod
     def _map_instruction_attributes(instruction, qubit_map: dict):
         """
-        Maps the qubit attributes of an instruction to the corresponding qubits in the qubit_map.
+        Maps the qubit attributes of an instruction from JaqcdProgram to the corresponding
+        qubits in the qubit_map.
 
         Args:
-            instruction: The instruction whose qubit attributes need to be mapped.
+            instruction: The Jaqcd instruction whose qubit attributes need to be mapped.
             qubit_map (dict): A dictionary mapping original qubits to new qubits.
         """
         if hasattr(instruction, "control"):

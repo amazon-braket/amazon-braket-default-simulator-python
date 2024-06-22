@@ -1376,7 +1376,7 @@ def test_rotation_parameter_expressions(operation, state_vector):
     assert np.allclose(result.resultTypes[0].value, np.array(state_vector))
 
 
-def test_discontiguous_qubits(discontiguous_jaqcd):
+def test_discontiguous_qubits_jaqcd(discontiguous_jaqcd):
     prg = JaqcdProgram.parse_raw(discontiguous_jaqcd)
     result = StateVectorSimulator().run(prg, qubit_count=2, shots=1)
 
