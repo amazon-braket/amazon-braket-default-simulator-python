@@ -1407,3 +1407,16 @@ def test_discontiguous_qubits_jaqcd_multiple_controls():
 
     assert result.measuredQubits == [0, 1, 2]
     assert result.measurements == [["1", "1", "1"]]
+
+
+def test_discontiguous_qubits_jaqcd_multiple_targets():
+    jaqcd_program = {
+        "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
+        "instructions": [{"type": "x", "target": 3}, {"type": "swap", "targets": [3, 4]}],
+        "results": [{"type": "expectation", "observable": ["z"], "targets": [4]}],
+    }
+    prg = JaqcdProgram.parse_raw(json.dumps(jaqcd_program))
+    result = StateVectorSimulator().run(prg, qubit_count=2, shots=0)
+
+    assert result.measuredQubits == [0, 1]
+    assert result.resultTypes[0].value == -1
