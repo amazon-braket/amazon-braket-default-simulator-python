@@ -1390,13 +1390,13 @@ def test_run_multiple():
         print(measurements)
         print(expected)
         assert len(measurements) == payload_args[0]
-        assert all(np.alltrue(expected == actual) for actual in measurements)
+        assert all(np.all(expected == actual) for actual in measurements)
     for result, payload_kwargs, expected in zip(
         simulator.run_multiple(payloads, kwargs=kwargs), kwargs, expected_measurements
     ):
         measurements = np.array(result.measurements, dtype=int)
         assert len(measurements) == payload_kwargs["shots"]
-        assert all(np.alltrue(expected == actual) for actual in measurements)
+        assert all(np.all(expected == actual) for actual in measurements)
 
 
 def test_run_multiple_wrong_num_args():
