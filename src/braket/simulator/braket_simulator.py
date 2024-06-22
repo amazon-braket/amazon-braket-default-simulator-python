@@ -12,9 +12,10 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping, Sequence
 from multiprocessing import Pool
 from os import cpu_count
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from braket.device_schema import DeviceCapabilities
 from braket.ir.ahs import Program as AHSProgram
@@ -65,8 +66,8 @@ class BraketSimulator(ABC):
         self,
         payloads: list[Union[OQ3Program, AHSProgram, JaqcdProgram]],
         max_parallel: Optional[int] = None,
-        *args,
-        **kwargs,
+        args: Optional[Sequence[Sequence[Any]]] = None,
+        kwargs: Optional[Sequence[Mapping[str, Any]]] = None,
     ) -> list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]:
         """
         Run the tasks specified by the given IR payloads.
@@ -79,15 +80,31 @@ class BraketSimulator(ABC):
                 of the programs
             max_parallel (Optional[int]): The maximum number of payloads to run in parallel.
                 Default is the number of CPUs.
+            args (Optional[Sequence[Sequence[Any]]]): The positional args to include with
+                each payload; the nth entry of this sequence corresponds to the nth payload.
+                If specified, the length of args must be equal to the length of payloads.
+                Default: None.
+            kwargs (Optional[Sequence[Mapping[str, Any]]]): The keyword args to include with
+                each payload; the nth entry of this sequence corresponds to the nth payload.
+                If specified, the length of kwargs must be equal to the length of payloads.
+                Default: None.
 
         Returns:
             list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]: A list of
             result objects, with the ith object being the result of the ith program.
         """
         max_parallel = max_parallel or cpu_count()
+        if args and len(args) != len(payloads):
+            raise ValueError("The number of arguments must equal the number of payloads.")
+        if kwargs and len(kwargs) != len(payloads):
+            raise ValueError("The number of keyword arguments must equal the number of payloads.")
+        get_nth_args = (lambda n: args[n]) if args else lambda _: []
+        get_nth_kwargs = (lambda n: kwargs[n]) if kwargs else lambda _: {}
         with Pool(min(max_parallel, len(payloads))) as pool:
-            param_list = [(task, args, kwargs) for task in payloads]
-            results = pool.starmap(self._run_wrapped, param_list)
+            results = pool.starmap(
+                self._run_wrapped,
+                [(payloads[i], get_nth_args(i), get_nth_kwargs(i)) for i in range(len(payloads))],
+            )
         return results
 
     def _run_wrapped(
