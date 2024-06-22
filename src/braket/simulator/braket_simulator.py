@@ -65,9 +65,9 @@ class BraketSimulator(ABC):
     def run_multiple(
         self,
         payloads: Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]],
-        max_parallel: Optional[int] = None,
         args: Optional[Sequence[Sequence[Any]]] = None,
         kwargs: Optional[Sequence[Mapping[str, Any]]] = None,
+        max_parallel: Optional[int] = None,
     ) -> list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]:
         """
         Run the tasks specified by the given IR payloads.
@@ -78,8 +78,6 @@ class BraketSimulator(ABC):
         Args:
             payloads (Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
                 of the programs
-            max_parallel (Optional[int]): The maximum number of payloads to run in parallel.
-                Default is the number of CPUs.
             args (Optional[Sequence[Sequence[Any]]]): The positional args to include with
                 each payload; the nth entry of this sequence corresponds to the nth payload.
                 If specified, the length of args must be equal to the length of payloads.
@@ -88,6 +86,8 @@ class BraketSimulator(ABC):
                 each payload; the nth entry of this sequence corresponds to the nth payload.
                 If specified, the length of kwargs must be equal to the length of payloads.
                 Default: None.
+            max_parallel (Optional[int]): The maximum number of payloads to run in parallel.
+                Default is the number of CPUs.
 
         Returns:
             list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]: A list of
