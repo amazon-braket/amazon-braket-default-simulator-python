@@ -1391,3 +1391,19 @@ def test_discontiguous_qubits_openqasm(discontiguous_qasm):
     measurements = np.array(result.measurements, dtype=int)
     assert len(measurements[0]) == 5
     assert result.measuredQubits == [0, 1, 2, 3, 4]
+
+
+def test_discontiguous_qubits_jaqcd_multiple_controls():
+    jaqcd_program = {
+        "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
+        "instructions": [
+            {"type": "x", "target": 3},
+            {"type": "x", "target": 4},
+            {"type": "ccnot", "controls": [3, 4], "target": 5},
+        ],
+    }
+    prg = JaqcdProgram.parse_raw(json.dumps(jaqcd_program))
+    result = StateVectorSimulator().run(prg, qubit_count=3, shots=1)
+
+    assert result.measuredQubits == [0, 1, 2]
+    assert result.measurements == [["1", "1", "1"]]
