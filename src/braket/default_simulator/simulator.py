@@ -502,16 +502,16 @@ class BaseLocalSimulator(OpenQASMSimulator):
             qubit_map (dict): A dictionary mapping original qubits to new qubits.
         """
         if hasattr(instruction, "control"):
-            instruction.control = qubit_map[instruction.control]
+            instruction.control = qubit_map.get(instruction.control, instruction.control)
 
-        if hasattr(instruction, "controls"):
-            instruction.controls = [qubit_map[q] for q in instruction.controls]
+        if hasattr(instruction, "controls") and instruction.controls:
+            instruction.controls = [qubit_map.get(q, q) for q in instruction.controls]
 
         if hasattr(instruction, "target"):
-            instruction.target = qubit_map[instruction.target]
+            instruction.target = qubit_map.get(instruction.target, instruction.target)
 
-        if hasattr(instruction, "targets"):
-            instruction.targets = [qubit_map[q] for q in instruction.targets]
+        if hasattr(instruction, "targets") and instruction.targets:
+            instruction.targets = [qubit_map.get(q, q) for q in instruction.targets]
 
     @staticmethod
     def _contiguous_qubit_mapping(qubit_set: list[int]) -> dict[int, int]:
