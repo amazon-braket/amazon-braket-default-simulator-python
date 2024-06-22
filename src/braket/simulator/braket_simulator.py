@@ -64,7 +64,7 @@ class BraketSimulator(ABC):
 
     def run_multiple(
         self,
-        payloads: list[Union[OQ3Program, AHSProgram, JaqcdProgram]],
+        payloads: Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]],
         max_parallel: Optional[int] = None,
         args: Optional[Sequence[Sequence[Any]]] = None,
         kwargs: Optional[Sequence[Mapping[str, Any]]] = None,
@@ -76,7 +76,7 @@ class BraketSimulator(ABC):
         such as number of qubits.
 
         Args:
-            payloads (list[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
+            payloads (Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
                 of the programs
             max_parallel (Optional[int]): The maximum number of payloads to run in parallel.
                 Default is the number of CPUs.
