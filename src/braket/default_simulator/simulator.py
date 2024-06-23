@@ -560,11 +560,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
                     selected_measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
                 ).tolist()
 
-            elif simulation.qubit_count > 0:
-                qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(measured_qubits)
-                mapped_measured_qubits = [qubit_map[q] for q in measured_qubits]
-                measurements = np.array(measurements)[:, mapped_measured_qubits].tolist()
-
             else:
                 measurements = np.zeros(
                     (simulation.shots, len(measured_qubits)), dtype=int
