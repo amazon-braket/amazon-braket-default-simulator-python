@@ -880,7 +880,7 @@ def test_run_multiple_wrong_num_args():
     args = [[2], [5], [10], [15]]
     simulator = DensityMatrixSimulator()
     with pytest.raises(ValueError):
-        simulator.run_multiple([payload] * 3, args=args)
+        simulator.run_multiple([payload] * (len(args) - 1), args=args)
 
 
 def test_run_multiple_wrong_num_kwargs():
@@ -896,4 +896,4 @@ def test_run_multiple_wrong_num_kwargs():
     kwargs = [{"shots": 3}, {"shots": 6}]
     simulator = DensityMatrixSimulator()
     with pytest.raises(ValueError):
-        simulator.run_multiple([payload] * 3, kwargs=kwargs)
+        simulator.run_multiple([payload] * (len(kwargs) + 1), kwargs=kwargs)
