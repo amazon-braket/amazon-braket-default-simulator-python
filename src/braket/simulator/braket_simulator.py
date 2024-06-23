@@ -73,7 +73,7 @@ class BraketSimulator(ABC):
         Run the tasks specified by the given IR payloads.
 
         Extra arguments will contain any additional information necessary to run the tasks,
-        such as number of qubits.
+        such as number of shots.
 
         Args:
             payloads (Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
