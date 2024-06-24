@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.24.0 (2024-06-24)
+
+### Features
+
+ * support non-contiguous qubit indices local simulator
+
 ## v1.23.4 (2024-06-20)
 
 ### Bug Fixes and Other Changes
