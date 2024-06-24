@@ -239,7 +239,7 @@ class StateVectorSimulator(BaseLocalSimulator):
                         ],
                         "supportPhysicalQubits": False,
                         "supportsPartialVerbatimBox": False,
-                        "requiresContiguousQubitIndices": True,
+                        "requiresContiguousQubitIndices": False,
                         "requiresAllQubitsMeasurement": False,
                         "supportsUnassignedMeasurements": True,
                         "disabledQubitRewiringSupported": False,

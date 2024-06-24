@@ -76,6 +76,18 @@ def grcs_8_qubit(ir_type):
 
 
 @pytest.fixture
+def discontiguous_jaqcd():
+    with open("test/resources/discontiguous_jaqcd.json") as jaqcd_definition:
+        data = json.load(jaqcd_definition)
+        return json.dumps(data)
+
+
+@pytest.fixture
+def discontiguous_qasm():
+    return OpenQASMProgram(source="test/resources/discontiguous.qasm")
+
+
+@pytest.fixture
 def bell_ir(ir_type):
     return (
         JaqcdProgram.parse_raw(
@@ -302,7 +314,7 @@ def test_properties():
                     ],
                     "supportPhysicalQubits": False,
                     "supportsPartialVerbatimBox": False,
-                    "requiresContiguousQubitIndices": True,
+                    "requiresContiguousQubitIndices": False,
                     "requiresAllQubitsMeasurement": False,
                     "supportsUnassignedMeasurements": True,
                     "disabledQubitRewiringSupported": False,
@@ -831,3 +843,20 @@ def test_measure_with_qubits_not_used():
     assert np.sum(measurements, axis=0)[3] == 0
     assert len(measurements[0]) == 4
     assert result.measuredQubits == [0, 1, 2, 3]
+
+
+def test_discontiguous_qubits_jaqcd(discontiguous_jaqcd):
+    prg = JaqcdProgram.parse_raw(discontiguous_jaqcd)
+    result = DensityMatrixSimulator().run(prg, qubit_count=2, shots=1)
+
+    assert result.measuredQubits == [0, 1]
+    assert result.measurements == [["1", "1"]]
+
+
+def test_discontiguous_qubits_openqasm(discontiguous_qasm):
+    simulator = DensityMatrixSimulator()
+    result = simulator.run(discontiguous_qasm, shots=1000)
+
+    measurements = np.array(result.measurements, dtype=int)
+    assert len(measurements[0]) == 5
+    assert result.measuredQubits == [0, 1, 2, 3, 4]
