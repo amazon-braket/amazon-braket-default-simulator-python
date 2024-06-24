@@ -21,6 +21,7 @@ import numpy as np
 from braket.device_schema import DeviceActionType
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
+from braket.ir.jaqcd.shared_models import MultiTarget, OptionalMultiTarget
 from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.task_result import (
     AdditionalMetadata,
@@ -273,13 +274,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
         )
 
     @staticmethod
-    def _validate_operation_qubits(operations: list[Operation]) -> None:
-        qubits_referenced = {target for operation in operations for target in operation.targets}
-        if qubits_referenced and max(qubits_referenced) >= len(qubits_referenced):
-            raise ValueError(
-                "Non-contiguous qubit indices supplied; "
-                "qubit indices in a circuit must be contiguous."
-            )
+    def _get_qubits_referenced(operations: list[Operation]) -> set[int]:
+        return {target for operation in operations for target in operation.targets}
 
     @staticmethod
     def _validate_result_types_qubits_exist(
@@ -387,6 +383,151 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return str(observable.__class__.__name__)
 
     @staticmethod
+    def _map_circuit_to_contiguous_qubits(circuit: Union[Circuit, JaqcdProgram]) -> Circuit:
+        """
+        Maps the qubits in operations and result types to contiguous qubits.
+
+        Args:
+            circuit (Union[Circuit, JaqcdProgram]): The circuit containing the operations and
+            result types.
+
+        Returns:
+            Circuit: The circuit with qubits in operations and result types mapped
+            to contiguous qubits.
+        """
+        circuit_qubit_set = BaseLocalSimulator._get_circuit_qubit_set(circuit)
+        qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(circuit_qubit_set)
+        BaseLocalSimulator._map_instructions_to_qubits(circuit, qubit_map)
+        return circuit
+
+    @staticmethod
+    def _get_circuit_qubit_set(circuit: Union[Circuit, JaqcdProgram]) -> set:
+        """
+        Returns the set of qubits used in the given circuit.
+
+        Args:
+            circuit (Union[Circuit, JaqcdProgram]): The circuit from which to extract the qubit set.
+
+        Returns:
+            set: The set of qubits used in the circuit.
+        """
+        if isinstance(circuit, Circuit):
+            return circuit.qubit_set
+        else:
+            operations = [
+                from_braket_instruction(instruction) for instruction in circuit.instructions
+            ]
+            if circuit.basis_rotation_instructions:
+                operations.extend(
+                    from_braket_instruction(instruction)
+                    for instruction in circuit.basis_rotation_instructions
+                )
+            return BaseLocalSimulator._get_qubits_referenced(operations)
+
+    @staticmethod
+    def _map_instructions_to_qubits(circuit: Union[Circuit, JaqcdProgram], qubit_map: dict):
+        """
+        Maps the qubits in operations and result types to contiguous qubits.
+
+        Args:
+            circuit (Circuit): The circuit containing the operations and result types.
+
+        Returns:
+            Circuit: The circuit with qubits in operations and result types mapped
+            to contiguous qubits.
+        """
+        if isinstance(circuit, Circuit):
+            BaseLocalSimulator._map_circuit_instructions(circuit, qubit_map)
+            BaseLocalSimulator._map_circuit_results(circuit, qubit_map)
+        else:
+            BaseLocalSimulator._map_jaqcd_instructions(circuit, qubit_map)
+
+        return circuit
+
+    @staticmethod
+    def _map_circuit_instructions(circuit: Circuit, qubit_map: dict):
+        """
+        Maps the targets of each instruction in the circuit to the corresponding qubits in the
+        qubit_map.
+
+        Args:
+            circuit (Circuit): The circuit containing the instructions.
+            qubit_map (dict): A dictionary mapping original qubits to new qubits.
+        """
+        for ins in circuit.instructions:
+            ins._targets = tuple([qubit_map[q] for q in ins.targets])
+
+    @staticmethod
+    def _map_circuit_results(circuit: Circuit, qubit_map: dict):
+        """
+        Maps the targets of each result in the circuit to the corresponding qubits in the qubit_map.
+
+        Args:
+            circuit (Circuit): The circuit containing the results.
+            qubit_map (dict): A dictionary mapping original qubits to new qubits.
+        """
+        for result in circuit.results:
+            if isinstance(result, (MultiTarget, OptionalMultiTarget)) and result.targets:
+                result.targets = [qubit_map[q] for q in result.targets]
+
+    @staticmethod
+    def _map_jaqcd_instructions(circuit: JaqcdProgram, qubit_map: dict):
+        """
+        Maps the attributes of each instruction in the JaqcdProgram to the corresponding qubits in
+        the qubit_map.
+
+        Args:
+            circuit (JaqcdProgram): The JaqcdProgram containing the instructions.
+            qubit_map (dict): A dictionary mapping original qubits to new qubits.
+        """
+        for ins in circuit.instructions:
+            BaseLocalSimulator._map_instruction_attributes(ins, qubit_map)
+
+        if hasattr(circuit, "results") and circuit.results:
+            for ins in circuit.results:
+                BaseLocalSimulator._map_instruction_attributes(ins, qubit_map)
+
+        if circuit.basis_rotation_instructions:
+            for ins in circuit.basis_rotation_instructions:
+                ins.target = qubit_map[ins.target]
+
+    @staticmethod
+    def _map_instruction_attributes(instruction, qubit_map: dict):
+        """
+        Maps the qubit attributes of an instruction from JaqcdProgram to the corresponding
+        qubits in the qubit_map.
+
+        Args:
+            instruction: The Jaqcd instruction whose qubit attributes need to be mapped.
+            qubit_map (dict): A dictionary mapping original qubits to new qubits.
+        """
+        if hasattr(instruction, "control"):
+            instruction.control = qubit_map.get(instruction.control, instruction.control)
+
+        if hasattr(instruction, "controls") and instruction.controls:
+            instruction.controls = [qubit_map.get(q, q) for q in instruction.controls]
+
+        if hasattr(instruction, "target"):
+            instruction.target = qubit_map.get(instruction.target, instruction.target)
+
+        if hasattr(instruction, "targets") and instruction.targets:
+            instruction.targets = [qubit_map.get(q, q) for q in instruction.targets]
+
+    @staticmethod
+    def _contiguous_qubit_mapping(qubit_set: list[int]) -> dict[int, int]:
+        """
+        Maping of qubits to contiguous integers. The qubit mapping may be discontiguous or
+        contiguous.
+
+        Args:
+            qubit_set (list[int]): List of qubits to be mapped.
+
+        Returns:
+            dict[int, int]: Dictionary where keys are qubits and values are contiguous integers.
+        """
+        return {q: i for i, q in enumerate(sorted(qubit_set))}
+
+    @staticmethod
     def _formatted_measurements(
         simulation: Simulation, measured_qubits: Union[list[int], None] = None
     ) -> list[list[str]]:
@@ -418,6 +559,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 measurements = np.pad(
                     selected_measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
                 ).tolist()
+
             else:
                 measurements = np.zeros(
                     (simulation.shots, len(measured_qubits)), dtype=int
@@ -465,14 +607,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
         self._validate_input_provided(circuit)
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit.results, qubit_count)
 
-        operations = circuit.instructions
-        BaseLocalSimulator._validate_operation_qubits(operations)
+        circuit = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
 
         results = circuit.results
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
         )
+        operations = circuit.instructions
         simulation.evolve(operations)
 
         if not shots:
@@ -533,6 +675,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
         )
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit_ir.results, qubit_count)
 
+        circuit_ir = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit_ir)
+
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
         ]
@@ -540,8 +684,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         if shots > 0 and circuit_ir.basis_rotation_instructions:
             for instruction in circuit_ir.basis_rotation_instructions:
                 operations.append(from_braket_instruction(instruction))
-
-        BaseLocalSimulator._validate_operation_qubits(operations)
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size
