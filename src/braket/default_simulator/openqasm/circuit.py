@@ -69,7 +69,8 @@ class Circuit:
             if qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
             self.measured_qubits.append(qubit)
-            self.target_classical_indices.append(classical_targets[index] if classical_targets else index)
+            self.target_classical_indices.append(classical_targets[index] if classical_targets else \
+                                                 max(index, len(self.target_classical_indices)))
 
     def add_result(self, result: Results) -> None:
         """
