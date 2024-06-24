@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 from typing import Optional
+from collections.abc import Iterable
 
 import numpy as np
 from braket.ir.jaqcd.program_v1 import Results
@@ -42,6 +43,7 @@ class Circuit:
         self.results = []
         self.qubit_set = set()
         self.measured_qubits = []
+        self.target_classical_indices = []
 
         if instructions:
             for instruction in instructions:
@@ -61,11 +63,14 @@ class Circuit:
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
 
-    def add_measure(self, target: tuple[int]):
-        for qubit in target:
+    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
+        print("target: ", target, " classical_targets: ", classical_targets)
+        for index, qubit in enumerate(target):
             if qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
             self.measured_qubits.append(qubit)
+            self.target_classical_indices.append(classical_targets[index] if classical_targets else \
+                                                 max(index, len(self.target_classical_indices)))
 
     def add_result(self, result: Results) -> None:
         """
