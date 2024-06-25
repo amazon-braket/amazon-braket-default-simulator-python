@@ -89,6 +89,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         steps: int = 80,
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 12e-6,
+        max_bond_dim = 4
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
@@ -99,7 +100,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             deviceId="RydbergAtomTNSimulator",
         )
         
-        max_bond_dim = 4
+        
             
         # Convert the program into json and save it
         # folder = os.path.dirname(os.path.realpath(__file__))
