@@ -89,7 +89,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         steps: int = 80,
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 12e-6,
-        max_bond_dim = 4
+        max_bond_dim = 4,
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
