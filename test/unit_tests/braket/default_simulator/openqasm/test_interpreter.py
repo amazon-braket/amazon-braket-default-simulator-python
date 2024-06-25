@@ -2240,3 +2240,36 @@ def test_measure_invalid_qubit():
 def test_measure_qubit_out_of_range(qasm, expected):
     with pytest.raises(IndexError, match=expected):
         Interpreter().build_circuit(qasm)
+
+
+
+@pytest.mark.parametrize(
+    "qasm,error_message", 
+    [
+        (
+            "\n".join(
+                [
+                    "OPENQASM 3.0;"
+                    "bit[2] b;",
+                    "qubit[1] q;",
+                    "b[{0, 1}] = measure q[0];"
+                ]
+            ), 
+            re.escape("Number of qubits (1) does not match number of provided classical targets (2)")
+        ), 
+        (
+            "\n".join(
+                [
+                    "OPENQASM 3.0;"
+                    "bit[2] b;",
+                    "qubit[2] q;",
+                    "b[0][2] = measure q[1];"
+                ]
+            ), 
+            re.escape("Multi-Dimensional indexing not supported for classical registers.")
+        )
+    ]
+)
+def test_invalid_measurement_with_classical_indices(qasm, error_message):
+    with pytest.raises(ValueError, match=error_message):
+        Interpreter().build_circuit(qasm)
