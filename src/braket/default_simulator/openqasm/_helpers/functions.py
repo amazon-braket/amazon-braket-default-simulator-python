@@ -98,10 +98,16 @@ operator_maps = {
             [BooleanLiteral(xv.value ^ yv.value) for xv, yv in zip(x.values, y.values)]
         ),
         getattr(BinaryOperator, "<<"): lambda x, y: ArrayLiteral(
-            x.values[y.value :] + [BooleanLiteral(False) for _ in range(y.value)]
+            x.values[len(y.values) :] + [BooleanLiteral(False) for _ in range(len(y.values))]
+            if isinstance(y, ArrayLiteral)
+            else x.values[y.value :] + [BooleanLiteral(False) for _ in range(y.value)]
         ),
         getattr(BinaryOperator, ">>"): lambda x, y: ArrayLiteral(
-            [BooleanLiteral(False) for _ in range(y.value)] + x.values[: len(x.values) - y.value]
+            [BooleanLiteral(False) for _ in range(len(y.values))]
+            + x.values[: len(x.values) - len(y.values)]
+            if isinstance(y, ArrayLiteral)
+            else [BooleanLiteral(False) for _ in range(y.value)]
+            + x.values[: len(x.values) - y.value]
         ),
         getattr(UnaryOperator, "~"): lambda x: ArrayLiteral(
             [BooleanLiteral(not v.value) for v in x.values]
