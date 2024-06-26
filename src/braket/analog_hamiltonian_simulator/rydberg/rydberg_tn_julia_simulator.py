@@ -125,7 +125,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             
         print("i am here")
         subprocess.run(['julia', '-t', '16', f'{folder}/tn_solver.jl', filename], shell=True, check=True, capture_output=True)
-        
+        print("i am here 2")
         # Get the shot measurement
         preSequence = program.setup.ahs_register.filling
         
