@@ -857,7 +857,7 @@ def test_noncontiguous_qubits_openqasm(qasm_file_name):
         OpenQASMProgram(source=f"test/resources/{qasm_file_name}.qasm"), shots=shots
     )
 
-    assert result.measuredQubits == [0, 1]
+    assert result.measuredQubits == [2, 8]
     measurements = np.array(result.measurements, dtype=int)
     assert measurements.shape == (shots, 2)
     assert all(

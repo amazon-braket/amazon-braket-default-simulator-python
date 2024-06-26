@@ -256,6 +256,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         openqasm_ir: OpenQASMProgram,
         simulation: Simulation,
         measured_qubits: list[int] = None,
+        mapped_measured_qubits: list[int] = None,
     ) -> GateModelTaskResult:
         return GateModelTaskResult.construct(
             taskMetadata=TaskMetadata(
@@ -267,10 +268,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 action=openqasm_ir,
             ),
             resultTypes=results,
-            measurements=self._formatted_measurements(simulation, measured_qubits),
-            measuredQubits=(
-                measured_qubits if measured_qubits else self._get_all_qubits(simulation.qubit_count)
-            ),
+            measurements=self._formatted_measurements(simulation, mapped_measured_qubits),
+            measuredQubits=(measured_qubits or list(range(simulation.qubit_count))),
         )
 
     @staticmethod
@@ -349,10 +348,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
                         raise NameError(f"Missing input variable '{missing_input}'.")
 
     @staticmethod
-    def _get_all_qubits(qubit_count: int) -> list[int]:
-        return list(range(qubit_count))
-
-    @staticmethod
     def _tensor_product_index_dict(
         observable: TensorProduct, func: Callable[[Observable], Any]
     ) -> dict[int, Any]:
@@ -383,7 +378,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return str(observable.__class__.__name__)
 
     @staticmethod
-    def _map_circuit_to_contiguous_qubits(circuit: Union[Circuit, JaqcdProgram]) -> Circuit:
+    def _map_circuit_to_contiguous_qubits(circuit: Union[Circuit, JaqcdProgram]) -> dict[int, int]:
         """
         Maps the qubits in operations and result types to contiguous qubits.
 
@@ -392,13 +387,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
             result types.
 
         Returns:
-            Circuit: The circuit with qubits in operations and result types mapped
-            to contiguous qubits.
+            dict[int, int]: Map of qubit index to corresponding contiguous index
         """
         circuit_qubit_set = BaseLocalSimulator._get_circuit_qubit_set(circuit)
         qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(circuit_qubit_set)
         BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
-        return circuit
+        return qubit_map
 
     @staticmethod
     def _get_circuit_qubit_set(circuit: Union[Circuit, JaqcdProgram]) -> set[int]:
@@ -440,7 +434,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         if isinstance(circuit, Circuit):
             BaseLocalSimulator._map_circuit_instructions(circuit, qubit_map)
             BaseLocalSimulator._map_circuit_results(circuit, qubit_map)
-            circuit.measured_qubits = [qubit_map[q] for q in circuit.measured_qubits]
         else:
             BaseLocalSimulator._map_jaqcd_instructions(circuit, qubit_map)
         return circuit
@@ -587,11 +580,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
-        circuit = BaseLocalSimulator._map_circuit_to_contiguous_qubits(
-            self.parse_program(openqasm_ir).circuit
-        )
+        circuit = self.parse_program(openqasm_ir).circuit
+        qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
         qubit_count = circuit.num_qubits
         measured_qubits = circuit.measured_qubits
+        mapped_measured_qubits = (
+            [qubit_map[q] for q in measured_qubits] if measured_qubits else None
+        )
 
         self._validate_ir_results_compatibility(
             circuit.results,
@@ -630,7 +625,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
         else:
             simulation.evolve(circuit.basis_rotation_instructions)
 
-        return self._create_results_obj(results, openqasm_ir, simulation, measured_qubits)
+        return self._create_results_obj(
+            results, openqasm_ir, simulation, measured_qubits, mapped_measured_qubits
+        )
 
     def run_jaqcd(
         self,
@@ -669,8 +666,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             device_action_type=DeviceActionType.JAQCD,
         )
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit_ir.results, qubit_count)
-
-        circuit_ir = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit_ir)
+        BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit_ir)
 
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
