@@ -51,15 +51,10 @@ def grcs_16_qubit(ir_type):
 
 
 @pytest.fixture
-def discontiguous_jaqcd():
-    with open("test/resources/discontiguous_jaqcd.json") as jaqcd_definition:
+def noncontiguous_jaqcd():
+    with open("test/resources/noncontiguous_jaqcd.json") as jaqcd_definition:
         data = json.load(jaqcd_definition)
         return json.dumps(data)
-
-
-@pytest.fixture
-def discontiguous_qasm():
-    return OpenQASMProgram(source="test/resources/discontiguous.qasm")
 
 
 @pytest.fixture
@@ -1319,21 +1314,22 @@ def test_measure_no_gates():
 
 def test_measure_with_qubits_not_used():
     qasm = """
-    bit[4] b;
-    qubit[4] q;
-    h q[0];
-    cnot q[0], q[1];
+    bit[5] b;
+    qubit[5] q;
+    h q[1];
+    cnot q[1], q[3];
     b = measure q;
     """
     simulator = StateVectorSimulator()
     result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
     measurements = np.array(result.measurements, dtype=int)
-    assert 400 < np.sum(measurements, axis=0)[0] < 600
     assert 400 < np.sum(measurements, axis=0)[1] < 600
+    assert 400 < np.sum(measurements, axis=0)[3] < 600
+    assert np.sum(measurements, axis=0)[0] == 0
     assert np.sum(measurements, axis=0)[2] == 0
-    assert np.sum(measurements, axis=0)[3] == 0
-    assert len(measurements[0]) == 4
-    assert result.measuredQubits == [0, 1, 2, 3]
+    assert np.sum(measurements, axis=0)[4] == 0
+    assert len(measurements[0]) == 5
+    assert result.measuredQubits == [0, 1, 2, 3, 4]
 
 
 @pytest.mark.parametrize(
@@ -1376,24 +1372,27 @@ def test_rotation_parameter_expressions(operation, state_vector):
     assert np.allclose(result.resultTypes[0].value, np.array(state_vector))
 
 
-def test_discontiguous_qubits_jaqcd(discontiguous_jaqcd):
-    prg = JaqcdProgram.parse_raw(discontiguous_jaqcd)
+def test_noncontiguous_qubits_jaqcd(noncontiguous_jaqcd):
+    prg = JaqcdProgram.parse_raw(noncontiguous_jaqcd)
     result = StateVectorSimulator().run(prg, qubit_count=2, shots=1)
 
     assert result.measuredQubits == [0, 1]
-    assert result.measurements == [["1", "1"]]
+    assert result.measurements in ([["0", "0"]], [["1", "1"]])
 
 
-def test_discontiguous_qubits_openqasm(discontiguous_qasm):
+@pytest.mark.parametrize("qasm_file_name", ["noncontiguous_virtual", "noncontiguous_physical"])
+def test_noncontiguous_qubits_openqasm(qasm_file_name):
     simulator = StateVectorSimulator()
-    result = simulator.run(discontiguous_qasm, shots=1000)
+    result = simulator.run(
+        OpenQASMProgram(source=f"test/resources/{qasm_file_name}.qasm"), shots=1000
+    )
 
     measurements = np.array(result.measurements, dtype=int)
-    assert len(measurements[0]) == 5
-    assert result.measuredQubits == [0, 1, 2, 3, 4]
+    assert len(measurements[0]) == 2
+    assert result.measuredQubits == [0, 1]
 
 
-def test_discontiguous_qubits_jaqcd_multiple_controls():
+def test_noncontiguous_qubits_jaqcd_multiple_controls():
     jaqcd_program = {
         "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
         "instructions": [
@@ -1409,7 +1408,7 @@ def test_discontiguous_qubits_jaqcd_multiple_controls():
     assert result.measurements == [["1", "1", "1"]]
 
 
-def test_discontiguous_qubits_jaqcd_multiple_targets():
+def test_noncontiguous_qubits_jaqcd_multiple_targets():
     jaqcd_program = {
         "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
         "instructions": [{"type": "x", "target": 3}, {"type": "swap", "targets": [3, 4]}],

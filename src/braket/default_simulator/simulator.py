@@ -397,11 +397,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """
         circuit_qubit_set = BaseLocalSimulator._get_circuit_qubit_set(circuit)
         qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(circuit_qubit_set)
-        BaseLocalSimulator._map_instructions_to_qubits(circuit, qubit_map)
+        BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
         return circuit
 
     @staticmethod
-    def _get_circuit_qubit_set(circuit: Union[Circuit, JaqcdProgram]) -> set:
+    def _get_circuit_qubit_set(circuit: Union[Circuit, JaqcdProgram]) -> set[int]:
         """
         Returns the set of qubits used in the given circuit.
 
@@ -409,7 +409,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             circuit (Union[Circuit, JaqcdProgram]): The circuit from which to extract the qubit set.
 
         Returns:
-            set: The set of qubits used in the circuit.
+            set[int]: The set of qubits used in the circuit.
         """
         if isinstance(circuit, Circuit):
             return circuit.qubit_set
@@ -425,12 +425,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return BaseLocalSimulator._get_qubits_referenced(operations)
 
     @staticmethod
-    def _map_instructions_to_qubits(circuit: Union[Circuit, JaqcdProgram], qubit_map: dict):
+    def _map_circuit_qubits(circuit: Union[Circuit, JaqcdProgram], qubit_map: dict[int, int]):
         """
         Maps the qubits in operations and result types to contiguous qubits.
 
         Args:
             circuit (Circuit): The circuit containing the operations and result types.
+            qubit_map (dict[int, int]): The mapping from qubits to their contiguous indices.
 
         Returns:
             Circuit: The circuit with qubits in operations and result types mapped
@@ -439,9 +440,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
         if isinstance(circuit, Circuit):
             BaseLocalSimulator._map_circuit_instructions(circuit, qubit_map)
             BaseLocalSimulator._map_circuit_results(circuit, qubit_map)
+            circuit.measured_qubits = [qubit_map[q] for q in circuit.measured_qubits]
         else:
             BaseLocalSimulator._map_jaqcd_instructions(circuit, qubit_map)
-
         return circuit
 
     @staticmethod
@@ -514,13 +515,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
             instruction.targets = [qubit_map.get(q, q) for q in instruction.targets]
 
     @staticmethod
-    def _contiguous_qubit_mapping(qubit_set: list[int]) -> dict[int, int]:
+    def _contiguous_qubit_mapping(qubit_set: set[int]) -> dict[int, int]:
         """
         Maping of qubits to contiguous integers. The qubit mapping may be discontiguous or
         contiguous.
 
         Args:
-            qubit_set (list[int]): List of qubits to be mapped.
+            qubit_set (set[int]): List of qubits to be mapped.
 
         Returns:
             dict[int, int]: Dictionary where keys are qubits and values are contiguous integers.
@@ -548,22 +549,16 @@ class BaseLocalSimulator(OpenQASMSimulator):
         ]
         #  Gets the subset of measurements from the full measurements
         if measured_qubits is not None and measured_qubits != []:
-            if any(qubit in range(simulation.qubit_count) for qubit in measured_qubits):
-                measured_qubits = np.array(measured_qubits)
-                in_circuit_mask = measured_qubits < simulation.qubit_count
-                measured_qubits_in_circuit = measured_qubits[in_circuit_mask]
-                measured_qubits_not_in_circuit = measured_qubits[~in_circuit_mask]
+            measured_qubits = np.array(measured_qubits)
+            in_circuit_mask = measured_qubits < simulation.qubit_count
+            measured_qubits_in_circuit = measured_qubits[in_circuit_mask]
+            measured_qubits_not_in_circuit = measured_qubits[~in_circuit_mask]
 
-                measurements_array = np.array(measurements)
-                selected_measurements = measurements_array[:, measured_qubits_in_circuit]
-                measurements = np.pad(
-                    selected_measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
-                ).tolist()
-
-            else:
-                measurements = np.zeros(
-                    (simulation.shots, len(measured_qubits)), dtype=int
-                ).tolist()
+            measurements_array = np.array(measurements)
+            selected_measurements = measurements_array[:, measured_qubits_in_circuit]
+            measurements = np.pad(
+                selected_measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
+            ).tolist()
         return measurements
 
     def run_openqasm(
@@ -592,7 +587,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
-        circuit = self.parse_program(openqasm_ir).circuit
+        circuit = BaseLocalSimulator._map_circuit_to_contiguous_qubits(
+            self.parse_program(openqasm_ir).circuit
+        )
         qubit_count = circuit.num_qubits
         measured_qubits = circuit.measured_qubits
 
@@ -606,8 +603,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         )
         self._validate_input_provided(circuit)
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit.results, qubit_count)
-
-        circuit = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
 
         results = circuit.results
 
