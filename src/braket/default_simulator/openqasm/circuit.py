@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Optional
 
 import numpy as np
@@ -42,6 +43,7 @@ class Circuit:
         self.results = []
         self.qubit_set = set()
         self.measured_qubits = []
+        self.target_classical_indices = []
 
         if instructions:
             for instruction in instructions:
@@ -61,12 +63,17 @@ class Circuit:
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
 
-    def add_measure(self, target: tuple[int]):
-        for qubit in target:
+    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
+        for index, qubit in enumerate(target):
             if qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
             self.measured_qubits.append(qubit)
             self.qubit_set.add(qubit)
+            self.target_classical_indices.append(
+                classical_targets[index]
+                if classical_targets
+                else max(index, len(self.target_classical_indices))
+            )
 
     def add_result(self, result: Results) -> None:
         """

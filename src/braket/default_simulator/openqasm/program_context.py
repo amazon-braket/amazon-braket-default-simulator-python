@@ -838,7 +838,7 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
-    def add_measure(self, target: tuple[int]):
+    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
         """Add qubit targets to be measured"""
 
 
@@ -902,5 +902,5 @@ class ProgramContext(AbstractProgramContext):
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
 
-    def add_measure(self, target: tuple[int]):
-        self._circuit.add_measure(target)
+    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
+        self._circuit.add_measure(target, classical_targets)
