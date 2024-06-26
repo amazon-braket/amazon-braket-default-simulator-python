@@ -852,10 +852,15 @@ def test_noncontiguous_qubits_jaqcd(noncontiguous_jaqcd):
 @pytest.mark.parametrize("qasm_file_name", ["noncontiguous_virtual", "noncontiguous_physical"])
 def test_noncontiguous_qubits_openqasm(qasm_file_name):
     simulator = DensityMatrixSimulator()
+    shots = 1000
     result = simulator.run(
-        OpenQASMProgram(source=f"test/resources/{qasm_file_name}.qasm"), shots=1000
+        OpenQASMProgram(source=f"test/resources/{qasm_file_name}.qasm"), shots=shots
     )
 
-    measurements = np.array(result.measurements, dtype=int)
-    assert len(measurements[0]) == 2
     assert result.measuredQubits == [0, 1]
+    measurements = np.array(result.measurements, dtype=int)
+    assert measurements.shape == (shots, 2)
+    assert all(
+        (np.allclose(measurement, [0, 0]) or np.allclose(measurement, [1, 1]))
+        for measurement in measurements
+    )
