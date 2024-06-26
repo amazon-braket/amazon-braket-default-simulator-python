@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.24.1 (2024-06-26)
+
+### Bug Fixes and Other Changes
+
+ * Use csr_matrix.getH() instead of H
+
 ## v1.24.0 (2024-06-24)
 
 ### Features
