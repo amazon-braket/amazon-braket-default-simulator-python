@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.25.0 (2024-06-26)
+
+### Features
+
+ * Track classical register indices for measurements
+
+### Bug Fixes and Other Changes
+
+ * Include measured in noncontiguous qubit map
+
 ## v1.24.1 (2024-06-26)
 
 ### Bug Fixes and Other Changes
