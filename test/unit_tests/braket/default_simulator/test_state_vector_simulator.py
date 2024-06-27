@@ -1448,8 +1448,6 @@ def test_run_multiple():
         simulator.run_multiple(payloads, args=args), args, expected_measurements
     ):
         measurements = np.array(result.measurements, dtype=int)
-        print(measurements)
-        print(expected)
         assert len(measurements) == payload_args[0]
         assert all(np.all(expected == actual) for actual in measurements)
     for result, payload_kwargs, expected in zip(
