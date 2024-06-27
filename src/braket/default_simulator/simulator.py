@@ -657,7 +657,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 are requested when shots>0.
         """
         if qubit_count is not None:
-            warnings.warn("qubit_count is deprecated and can be set to None")
+            warnings.warn(
+                f"qubit_count is deprecated for {type(self).__name__} and can be set to None"
+            )
         self._validate_ir_results_compatibility(
             circuit_ir.results,
             device_action_type=DeviceActionType.JAQCD,
