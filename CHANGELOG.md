@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.26.0 (2024-06-27)
+
+### Features
+
+ * Introduce `run_multiple` method
+
+### Bug Fixes and Other Changes
+
+ * Ignore `qubit_count` parameter for JAQCD
+
 ## v1.25.0 (2024-06-26)
 
 ### Features
