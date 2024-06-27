@@ -12,10 +12,10 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from multiprocessing import Pool
 from os import cpu_count
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from braket.device_schema import DeviceCapabilities
 from braket.ir.ahs import Program as AHSProgram
@@ -52,7 +52,7 @@ class BraketSimulator(ABC):
         Run the task specified by the given IR.
 
         Extra arguments will contain any additional information necessary to run the task,
-        such as number of qubits.
+        such as the extra parameters for AHS simulations.
 
         Args:
             ir (Union[OQ3Program, AHSProgram, JaqcdProgram]): The IR representation of the program
@@ -65,27 +65,19 @@ class BraketSimulator(ABC):
     def run_multiple(
         self,
         payloads: Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]],
-        args: Optional[Sequence[Sequence[Any]]] = None,
-        kwargs: Optional[Sequence[Mapping[str, Any]]] = None,
         max_parallel: Optional[int] = None,
+        *args,
+        **kwargs,
     ) -> list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]:
         """
         Run the tasks specified by the given IR payloads.
 
         Extra arguments will contain any additional information necessary to run the tasks,
-        such as number of shots.
+        such as the extra parameters for AHS simulations.
 
         Args:
             payloads (Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
                 of the programs
-            args (Optional[Sequence[Sequence[Any]]]): The positional args to include with
-                each payload; the nth entry of this sequence corresponds to the nth payload.
-                If specified, the length of args must be equal to the length of payloads.
-                Default: None.
-            kwargs (Optional[Sequence[Mapping[str, Any]]]): The keyword args to include with
-                each payload; the nth entry of this sequence corresponds to the nth payload.
-                If specified, the length of kwargs must be equal to the length of payloads.
-                Default: None.
             max_parallel (Optional[int]): The maximum number of payloads to run in parallel.
                 Default is the number of CPUs.
 
@@ -94,17 +86,9 @@ class BraketSimulator(ABC):
             result objects, with the ith object being the result of the ith program.
         """
         max_parallel = max_parallel or cpu_count()
-        if args and len(args) != len(payloads):
-            raise ValueError("The number of arguments must equal the number of payloads.")
-        if kwargs and len(kwargs) != len(payloads):
-            raise ValueError("The number of keyword arguments must equal the number of payloads.")
-        get_nth_args = (lambda n: args[n]) if args else lambda _: []
-        get_nth_kwargs = (lambda n: kwargs[n]) if kwargs else lambda _: {}
         with Pool(min(max_parallel, len(payloads))) as pool:
-            results = pool.starmap(
-                self._run_wrapped,
-                [(payloads[i], get_nth_args(i), get_nth_kwargs(i)) for i in range(len(payloads))],
-            )
+            param_list = [(task, args, kwargs) for task in payloads]
+            results = pool.starmap(self._run_wrapped, param_list)
         return results
 
     def _run_wrapped(

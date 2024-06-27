@@ -129,7 +129,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         Args:
             circuit_ir (Union[OpenQASMProgram, JaqcdProgram]): Circuit specification.
-            qubit_count (int, jaqcd-only): Number of qubits.
             shots (int, optional): The number of shots to simulate. Default is 0, which
                 performs a full analytical simulation.
             batch_size (int, optional): The size of the circuit partitions to contract,
@@ -632,7 +631,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
     def run_jaqcd(
         self,
         circuit_ir: JaqcdProgram,
-        qubit_count: int,
+        qubit_count: Any = None,
         shots: int = 0,
         *,
         batch_size: int = 1,
@@ -642,7 +641,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         Args:
             circuit_ir (Program): ir representation of a braket circuit specifying the
                 instructions to execute.
-            qubit_count (int): Unused parameter; in signature for backwards-compatibility
+            qubit_count (Any): Unused parameter; in signature for backwards-compatibility
             shots (int): The number of times to run the circuit.
             batch_size (int): The size of the circuit partitions to contract,
                 if applying multiple gates at a time is desired; see `StateVectorSimulation`.
@@ -657,6 +656,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
+        if qubit_count is not None:
+            warnings.warn("qubit_count is deprecated and can be set to None")
         self._validate_ir_results_compatibility(
             circuit_ir.results,
             device_action_type=DeviceActionType.JAQCD,

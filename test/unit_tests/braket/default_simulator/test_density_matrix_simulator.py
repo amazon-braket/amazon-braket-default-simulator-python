@@ -133,7 +133,8 @@ def test_simulator_run_bell_pair(bell_ir, caplog):
     simulator = DensityMatrixSimulator()
     shots_count = 10000
     if isinstance(bell_ir, JaqcdProgram):
-        result = simulator.run(bell_ir, qubit_count=2, shots=shots_count)
+        # Ignore qubit_count
+        result = simulator.run(bell_ir, shots=shots_count)
     else:
         result = simulator.run(bell_ir, shots=shots_count)
 
@@ -870,60 +871,16 @@ def test_run_multiple():
         OpenQASMProgram(
             source=f"""
             OPENQASM 3.0;
-            bit[2] b;
-            qubit[2] q;
-            {gates[0]} q[0];
-            {gates[1]} q[1];
-            b = measure q;
+            bit[1] b;
+            qubit[1] q;
+            {gate} q[0];
+            #pragma braket result density_matrix
             """
         )
-        for gates in [("x", "z"), ("z", "x"), ("x", "x")]
+        for gate in ["h", "z", "x"]
     ]
-    args = [[2], [5], [10]]
-    kwargs = [{"shots": 3}, {"shots": 6}, {"shots": 9}]
-    expected_measurements = [[1, 0], [0, 1], [1, 1]]
     simulator = DensityMatrixSimulator()
-    for result, payload_args, expected in zip(
-        simulator.run_multiple(payloads, args=args), args, expected_measurements
-    ):
-        measurements = np.array(result.measurements, dtype=int)
-        assert len(measurements) == payload_args[0]
-        assert all(np.all(expected == actual) for actual in measurements)
-    for result, payload_kwargs, expected in zip(
-        simulator.run_multiple(payloads, kwargs=kwargs), kwargs, expected_measurements
-    ):
-        measurements = np.array(result.measurements, dtype=int)
-        assert len(measurements) == payload_kwargs["shots"]
-        assert all(np.all(expected == actual) for actual in measurements)
-
-
-def test_run_multiple_wrong_num_args():
-    payload = OpenQASMProgram(
-        source="""
-            OPENQASM 3.0;
-            bit[1] b;
-            qubit[1] q;
-            h q[0];
-            b = measure q;
-            """
-    )
-    args = [[2], [5], [10], [15]]
-    simulator = DensityMatrixSimulator()
-    with pytest.raises(ValueError):
-        simulator.run_multiple([payload] * (len(args) - 1), args=args)
-
-
-def test_run_multiple_wrong_num_kwargs():
-    payload = OpenQASMProgram(
-        source="""
-            OPENQASM 3.0;
-            bit[1] b;
-            qubit[1] q;
-            h q[0];
-            b = measure q;
-            """
-    )
-    kwargs = [{"shots": 3}, {"shots": 6}]
-    simulator = DensityMatrixSimulator()
-    with pytest.raises(ValueError):
-        simulator.run_multiple([payload] * (len(kwargs) + 1), kwargs=kwargs)
+    results = simulator.run_multiple(payloads, shots=0)
+    assert np.allclose(results[0].resultTypes[0].value, np.array([[0.5, 0.5], [0.5, 0.5]]))
+    assert np.allclose(results[1].resultTypes[0].value, np.array([[1, 0], [0, 0]]))
+    assert np.allclose(results[2].resultTypes[0].value, np.array([[0, 0], [0, 1]]))
