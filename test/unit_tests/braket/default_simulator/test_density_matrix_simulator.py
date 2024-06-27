@@ -133,7 +133,8 @@ def test_simulator_run_bell_pair(bell_ir, caplog):
     simulator = DensityMatrixSimulator()
     shots_count = 10000
     if isinstance(bell_ir, JaqcdProgram):
-        result = simulator.run(bell_ir, qubit_count=2, shots=shots_count)
+        # Ignore qubit_count
+        result = simulator.run(bell_ir, shots=shots_count)
     else:
         result = simulator.run(bell_ir, shots=shots_count)
 
@@ -392,7 +393,6 @@ def test_properties():
             "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
         }
     )
-    print(expected_properties)
     assert simulator.properties == expected_properties
 
 
@@ -864,3 +864,23 @@ def test_noncontiguous_qubits_openqasm(qasm_file_name):
         (np.allclose(measurement, [0, 0]) or np.allclose(measurement, [1, 1]))
         for measurement in measurements
     )
+
+
+def test_run_multiple():
+    payloads = [
+        OpenQASMProgram(
+            source=f"""
+            OPENQASM 3.0;
+            bit[1] b;
+            qubit[1] q;
+            {gate} q[0];
+            #pragma braket result density_matrix
+            """
+        )
+        for gate in ["h", "z", "x"]
+    ]
+    simulator = DensityMatrixSimulator()
+    results = simulator.run_multiple(payloads, shots=0)
+    assert np.allclose(results[0].resultTypes[0].value, np.array([[0.5, 0.5], [0.5, 0.5]]))
+    assert np.allclose(results[1].resultTypes[0].value, np.array([[1, 0], [0, 0]]))
+    assert np.allclose(results[2].resultTypes[0].value, np.array([[0, 0], [0, 1]]))
