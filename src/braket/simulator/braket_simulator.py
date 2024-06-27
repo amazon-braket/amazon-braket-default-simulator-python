@@ -79,7 +79,7 @@ class BraketSimulator(ABC):
             payloads (Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
                 of the programs
             max_parallel (Optional[int]): The maximum number of payloads to run in parallel.
-                Default is the number of CPUs.
+                Default is the number of logical CPUs.
 
         Returns:
             list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]: A list of
@@ -87,7 +87,7 @@ class BraketSimulator(ABC):
         """
         max_parallel = max_parallel or cpu_count()
         with Pool(min(max_parallel, len(payloads))) as pool:
-            param_list = [(task, args, kwargs) for task in payloads]
+            param_list = [(payload, args, kwargs) for payload in payloads]
             results = pool.starmap(self._run_wrapped, param_list)
         return results
 
