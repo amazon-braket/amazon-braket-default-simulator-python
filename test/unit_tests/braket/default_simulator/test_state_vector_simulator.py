@@ -101,7 +101,8 @@ def test_simulator_run_bell_pair(bell_ir, batch_size, caplog):
     simulator = StateVectorSimulator()
     shots_count = 10000
     if isinstance(bell_ir, JaqcdProgram):
-        result = simulator.run(bell_ir, qubit_count=2, shots=shots_count, batch_size=batch_size)
+        # Ignore qubit_count
+        result = simulator.run(bell_ir, qubit_count=10, shots=shots_count, batch_size=batch_size)
     else:
         result = simulator.run(bell_ir, shots=shots_count, batch_size=batch_size)
 
@@ -749,14 +750,6 @@ def test_simulator_run_amplitude_shots():
 
 def test_simulator_run_amplitude_no_shots_invalid_states():
     simulator = StateVectorSimulator()
-    jaqcd = JaqcdProgram.parse_raw(
-        json.dumps(
-            {
-                "instructions": [{"type": "h", "target": 0}],
-                "results": [{"type": "amplitude", "states": ["0"]}],
-            }
-        )
-    )
     qasm = OpenQASMProgram(
         source="""
         qubit[2] q;
@@ -766,9 +759,17 @@ def test_simulator_run_amplitude_no_shots_invalid_states():
         """
     )
     with pytest.raises(ValueError):
-        simulator.run(jaqcd, qubit_count=2, shots=0)
-    with pytest.raises(ValueError):
         simulator.run(qasm, shots=0)
+    jaqcd = JaqcdProgram.parse_raw(
+        json.dumps(
+            {
+                "instructions": [{"type": "h", "target": 0}, {"type": "i", "target": 1}],
+                "results": [{"type": "amplitude", "states": ["0"]}],
+            }
+        )
+    )
+    with pytest.raises(ValueError):
+        simulator.run(jaqcd, qubit_count=2, shots=0)
 
 
 def test_simulator_run_statevector_shots():

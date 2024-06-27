@@ -642,7 +642,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         Args:
             circuit_ir (Program): ir representation of a braket circuit specifying the
                 instructions to execute.
-            qubit_count (int): The number of qubits to simulate.
+            qubit_count (int): Unused parameter; in signature for backwards-compatibility
             shots (int): The number of times to run the circuit.
             batch_size (int): The size of the circuit partitions to contract,
                 if applying multiple gates at a time is desired; see `StateVectorSimulation`.
@@ -665,8 +665,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
             circuit_ir,
             device_action_type=DeviceActionType.JAQCD,
         )
+        qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit_ir)
+        qubit_count = len(qubit_map)
         BaseLocalSimulator._validate_shots_and_ir_results(shots, circuit_ir.results, qubit_count)
-        BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit_ir)
 
         operations = [
             from_braket_instruction(instruction) for instruction in circuit_ir.instructions
