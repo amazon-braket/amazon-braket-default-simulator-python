@@ -109,7 +109,7 @@ def scipy_integrate_ode_run(
     if progress_bar:  # print a lightweight progress bar
         start_time = time.time()
 
-    for index_time, _ in enumerate(simulation_times[1:]):
+    for index_time in range(len(simulation_times) - 1):
         if progress_bar:  # print a lightweight progress bar
             _print_progress_bar(len(simulation_times), index_time, start_time)
 

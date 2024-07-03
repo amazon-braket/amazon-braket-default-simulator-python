@@ -45,6 +45,9 @@ LOCAL_MAGNITUDE_SEQUENCE_VALUE_MAX = 125000000.0
 MAGNITUDE_PATTERN_VALUE_MIN = 0.0
 MAGNITUDE_PATTERN_VALUE_MAX = 1.0
 
+# Maximum net detuning for all atoms
+MAX_NET_DETUNING = 2e8
+
 
 def capabilities_constants() -> CapabilitiesConstants:
     return CapabilitiesConstants(
@@ -60,4 +63,5 @@ def capabilities_constants() -> CapabilitiesConstants:
         LOCAL_MAGNITUDE_SEQUENCE_VALUE_MAX=LOCAL_MAGNITUDE_SEQUENCE_VALUE_MAX,
         MAGNITUDE_PATTERN_VALUE_MIN=MAGNITUDE_PATTERN_VALUE_MIN,
         MAGNITUDE_PATTERN_VALUE_MAX=MAGNITUDE_PATTERN_VALUE_MAX,
+        MAX_NET_DETUNING=MAX_NET_DETUNING,
     )

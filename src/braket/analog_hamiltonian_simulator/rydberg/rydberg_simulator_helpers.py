@@ -252,17 +252,23 @@ def _get_sparse_ops(
     interaction_dict = _get_interaction_dict(program, rydberg_interaction_coef, configurations)
     interaction_op = _get_sparse_from_dict(interaction_dict, len(configurations))
 
-    # Get the shifting fields as sparse matrices.
-    # Shifting field is an array of operators, which has only one element for now
+    # Get local detuning as sparse matrices.
+    # Local detuning is an array of operators, which has only one element for now
     local_detuning_ops = []
-    for shifting_field in program.hamiltonian.shiftingFields:
+    for local_detuning in program.hamiltonian.localDetuning:
         temp = 0
-        for site in range(len(shifting_field.magnitude.pattern)):
-            strength = shifting_field.magnitude.pattern[site]
+        filled_site = 0  # Index of the filled site
+        for filling, strength in zip(
+            program.setup.ahs_register.filling, local_detuning.magnitude.pattern
+        ):
+            # If the site is not filled, we move on to the next filled site
+            if filling == 0:
+                continue
             opt = _get_sparse_from_dict(
-                _get_detuning_dict((site,), configurations), len(configurations)
+                _get_detuning_dict((filled_site,), configurations), len(configurations)
             )
             temp += float(strength) * scipy.sparse.csr_matrix(opt, dtype=float)
+            filled_site += 1
 
         local_detuning_ops.append(temp)
 
@@ -350,10 +356,10 @@ def _get_coefs(
         )
         detuning_coefs.append(detuning_coef)
 
-    # add shifting fields
+    # add local detuning
     local_detuing_coefs = []
-    for shifting_field in program.hamiltonian.shiftingFields:
-        magnitude = shifting_field.magnitude.time_series
+    for local_detuning in program.hamiltonian.localDetuning:
+        magnitude = local_detuning.magnitude.time_series
 
         local_detuing_coef = np.array(
             [
@@ -458,8 +464,8 @@ def _print_progress_bar(num_time_points: int, index_time: int, start_time: float
             (current_time - start_time) / (index_time + 1) * (num_time_points - (index_time + 1))
         )
         print(
-            f"{100 * (index_time+1)/num_time_points}% finished, "
-            f"elapsed time = {(current_time-start_time)} seconds, "
+            f"{100 * (index_time + 1) / num_time_points}% finished, "
+            f"elapsed time = {(current_time - start_time)} seconds, "
             f"ETA = {estimate_time_arrival} seconds ",
             flush=True,
             end="\r",
@@ -517,10 +523,10 @@ def _get_hamiltonian(
         max_index_time = len(rabi_coefs[0]) - 1
     else:
         # If there is no driving field, then the maxium of index_time is the maxium time
-        # index for the shifting field.
-        # Note that, if there is more than one shifting field, we assume that they have the
+        # index for local detuning.
+        # Note that, if there is more than one local detuning, we assume that they have the
         # same number of coefficients
-        # Note that, if there is no driving field nor shifting field, the initial state will
+        # Note that, if there is no driving field nor local detuning, the initial state will
         # be returned, and the simulation would not reach here.
         max_index_time = len(local_detuing_coefs[0]) - 1
 
@@ -558,7 +564,7 @@ def _get_hamiltonian(
             - detuning_op * detuning_coef[index_time]
         )
 
-    # Add the shifting fields
+    # Add local detuning
     for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
         hamiltonian -= local_detuning_op * local_detuning_coef[index_time]
 
@@ -571,7 +577,7 @@ def _apply_hamiltonian(
         list[scipy.sparse.csr_matrix],
         list[scipy.sparse.csr_matrix],
         list[scipy.sparse.csr_matrix],
-        np.ndarray,
+        list[scipy.sparse.csr_matrix],
         np.ndarray,
         np.ndarray,
         scipy.sparse.csr_matrix,
@@ -586,7 +592,7 @@ def _apply_hamiltonian(
             list[csr_matrix],
             list[csr_matrix],
             list[csr_matrix],
-            ndarray,
+            list[csr_matrix],
             ndarray,
             ndarray,
             csr_matrix
@@ -608,8 +614,7 @@ def _apply_hamiltonian(
     ) = operators_coefficients
 
     index_time = int(index_time)
-
-    if len(rabi_coefs) > 0:
+    if len(rabi_coefs):
         # If there is driving field, the maximum of index_time is the maximum time index
         # for the driving field.
         # Note that, if there is more than one driving field, we assume that they have the
@@ -617,10 +622,10 @@ def _apply_hamiltonian(
         max_index_time = len(rabi_coefs[0]) - 1
     else:
         # If there is no driving field, then the maxium of index_time is the maxium time
-        # index for the shifting field.
-        # Note that, if there is more than one shifting field, we assume that they have the
+        # index for local detuning.
+        # Note that, if there is more than one local detuning, we assume that they have the
         # same number of coefficients
-        # Note that, if there is no driving field nor shifting field, the initial state will
+        # Note that, if there is no driving field nor local detuning, the initial state will
         # be returned, and the simulation would not reach here.
         max_index_time = len(local_detuing_coefs[0]) - 1
 
@@ -653,10 +658,10 @@ def _apply_hamiltonian(
         rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
     ):
         output_register += (rabi_coef[index_time] / 2) * rabi_op.dot(input_register)
-        output_register += (np.conj(rabi_coef[index_time]) / 2) * rabi_op.H.dot(input_register)
+        output_register += (np.conj(rabi_coef[index_time]) / 2) * rabi_op.getH().dot(input_register)
         output_register -= detuning_coef[index_time] * detuning_op.dot(input_register)
 
-    # Add the shifting fields
+    # Add local detuning
     for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
         output_register -= local_detuning_coef[index_time] * local_detuning_op.dot(input_register)
 

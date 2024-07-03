@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import pytest
-from pydantic.error_wrappers import ValidationError
+from pydantic.v1.error_wrappers import ValidationError
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.hamiltonian import HamiltonianValidator
 
@@ -45,7 +45,7 @@ def hamiltonian_data():
                 },
             }
         ],
-        "shiftingFields": [
+        "localDetuning": [
             {
                 "magnitude": {
                     "time_series": {"times": [0, 4e-6], "values": [0, 0]},
@@ -67,7 +67,7 @@ def test_hamiltonian(hamiltonian_data):
 def empty_hamiltonian():
     return {
         "drivingFields": [],
-        "shiftingFields": [],
+        "localDetuning": [],
     }
 
 
@@ -128,13 +128,13 @@ def test_hamiltonian_max_one_driving_field():
                 },
             },
         ],
-        "shiftingFields": [],
+        "localDetuning": [],
     }
     error_message = "At most one driving field should be specified; 2 are given."
     _assert_hamiltonian(error_message, hamiltonian_data)
 
 
-def test_hamiltonian_max_one_shifting_field():
+def test_hamiltonian_max_one_local_detuning():
     hamiltonian_data = {
         "drivingFields": [
             {
@@ -161,7 +161,7 @@ def test_hamiltonian_max_one_shifting_field():
                 },
             }
         ],
-        "shiftingFields": [
+        "localDetuning": [
             {
                 "magnitude": {
                     "time_series": {"times": [0, 4e-6], "values": [0, 0]},
@@ -180,7 +180,7 @@ def test_hamiltonian_max_one_shifting_field():
     _assert_hamiltonian(error_message, hamiltonian_data)
 
 
-def test_hamiltonian_all_sequences_in_driving_and_shifting_fields_have_the_same_last_timepoint(
+def test_hamiltonian_all_sequences_in_driving_and_local_detunings_have_the_same_last_timepoint(
     hamiltonian_data,
 ):
     hamiltonian_data["drivingFields"][0]["amplitude"]["time_series"]["times"] = [

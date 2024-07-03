@@ -1,5 +1,147 @@
 # Changelog
 
+## v1.26.0 (2024-06-27)
+
+### Features
+
+ * Introduce `run_multiple` method
+
+### Bug Fixes and Other Changes
+
+ * Ignore `qubit_count` parameter for JAQCD
+
+## v1.25.0 (2024-06-26)
+
+### Features
+
+ * Track classical register indices for measurements
+
+### Bug Fixes and Other Changes
+
+ * Include measured in noncontiguous qubit map
+
+## v1.24.1 (2024-06-26)
+
+### Bug Fixes and Other Changes
+
+ * Use csr_matrix.getH() instead of H
+
+## v1.24.0 (2024-06-24)
+
+### Features
+
+ * support non-contiguous qubit indices local simulator
+
+## v1.23.4 (2024-06-20)
+
+### Bug Fixes and Other Changes
+
+ * use numpy for float comparison
+
+## v1.23.3 (2024-06-19)
+
+### Bug Fixes and Other Changes
+
+ * fix signed integer casting
+
+## v1.23.2 (2024-05-02)
+
+### Bug Fixes and Other Changes
+
+ * Integer division for `IntegerLiteral`s
+
+## v1.23.1 (2024-04-29)
+
+### Bug Fixes and Other Changes
+
+ * Optional ctrl for `U`, add tests
+
+## v1.23.0 (2024-04-22)
+
+### Features
+
+ * add phaserx gate
+
+## v1.22.0 (2024-04-16)
+
+### Features
+
+ * local detuning validation for ahs
+
+## v1.21.6 (2024-04-15)
+
+### Bug Fixes and Other Changes
+
+ * Gates inherit `targets`
+ * Make `GPhase` more efficient
+ * rename shifting field to local detuning
+
+## v1.21.5 (2024-04-11)
+
+### Bug Fixes and Other Changes
+
+ * Fix a bug in the AHS local simulator when using local detuning with certain pattern with empty sites
+
+## v1.21.4 (2024-04-10)
+
+### Bug Fixes and Other Changes
+
+ * support measurements on qubits without gates
+
+## v1.21.3 (2024-04-08)
+
+### Bug Fixes and Other Changes
+
+ * make shifting fields backwards compatible with change to localDe…
+
+## v1.21.2 (2024-03-28)
+
+### Bug Fixes and Other Changes
+
+ * support pydantic 2.x
+
+## v1.21.1 (2024-03-27)
+
+### Bug Fixes and Other Changes
+
+ * constrain the schemas for upgrading Pydantic
+
+## v1.21.0 (2024-03-19)
+
+### Features
+
+ * allow support for a subset of measurements
+
+## v1.20.6 (2024-03-11)
+
+### Bug Fixes and Other Changes
+
+ * typing issue for apply_hamiltonian
+
+## v1.20.5 (2024-03-05)
+
+### Bug Fixes and Other Changes
+
+ * update schema version to latest in setup.py
+
+## v1.20.4 (2024-03-04)
+
+### Bug Fixes and Other Changes
+
+ * make the dimension a PositiveInt for typing
+
+## v1.20.3 (2024-03-04)
+
+### Bug Fixes and Other Changes
+
+ * add in setuptools for publishing to pypi
+
+## v1.20.2 (2024-03-02)
+
+### Bug Fixes and Other Changes
+
+ * add tox read only linters
+
 ## v1.20.1 (2023-10-11)
 
 ### Bug Fixes and Other Changes

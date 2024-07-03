@@ -16,7 +16,7 @@ from decimal import Decimal
 
 import numpy as np
 from braket.ir.ahs.atom_arrangement import AtomArrangement
-from pydantic.class_validators import root_validator
+from pydantic.v1.class_validators import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,

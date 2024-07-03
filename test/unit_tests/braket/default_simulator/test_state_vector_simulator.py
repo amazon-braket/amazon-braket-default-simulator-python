@@ -51,6 +51,13 @@ def grcs_16_qubit(ir_type):
 
 
 @pytest.fixture
+def noncontiguous_jaqcd():
+    with open("test/resources/noncontiguous_jaqcd.json") as jaqcd_definition:
+        data = json.load(jaqcd_definition)
+        return json.dumps(data)
+
+
+@pytest.fixture
 def bell_ir(ir_type):
     return (
         JaqcdProgram.parse_raw(
@@ -94,7 +101,8 @@ def test_simulator_run_bell_pair(bell_ir, batch_size, caplog):
     simulator = StateVectorSimulator()
     shots_count = 10000
     if isinstance(bell_ir, JaqcdProgram):
-        result = simulator.run(bell_ir, qubit_count=2, shots=shots_count, batch_size=batch_size)
+        # Ignore qubit_count
+        result = simulator.run(bell_ir, shots=shots_count, batch_size=batch_size)
     else:
         result = simulator.run(bell_ir, shots=shots_count, batch_size=batch_size)
 
@@ -156,6 +164,7 @@ def test_properties():
                         "ms",
                         "pswap",
                         "phaseshift",
+                        "prx",
                         "rx",
                         "ry",
                         "rz",
@@ -239,8 +248,8 @@ def test_properties():
                     ],
                     "supportPhysicalQubits": False,
                     "supportsPartialVerbatimBox": False,
-                    "requiresContiguousQubitIndices": True,
-                    "requiresAllQubitsMeasurement": True,
+                    "requiresContiguousQubitIndices": False,
+                    "requiresAllQubitsMeasurement": False,
                     "supportsUnassignedMeasurements": True,
                     "disabledQubitRewiringSupported": False,
                 },
@@ -741,14 +750,6 @@ def test_simulator_run_amplitude_shots():
 
 def test_simulator_run_amplitude_no_shots_invalid_states():
     simulator = StateVectorSimulator()
-    jaqcd = JaqcdProgram.parse_raw(
-        json.dumps(
-            {
-                "instructions": [{"type": "h", "target": 0}],
-                "results": [{"type": "amplitude", "states": ["0"]}],
-            }
-        )
-    )
     qasm = OpenQASMProgram(
         source="""
         qubit[2] q;
@@ -758,9 +759,17 @@ def test_simulator_run_amplitude_no_shots_invalid_states():
         """
     )
     with pytest.raises(ValueError):
-        simulator.run(jaqcd, qubit_count=2, shots=0)
-    with pytest.raises(ValueError):
         simulator.run(qasm, shots=0)
+    jaqcd = JaqcdProgram.parse_raw(
+        json.dumps(
+            {
+                "instructions": [{"type": "h", "target": 0}, {"type": "i", "target": 1}],
+                "results": [{"type": "amplitude", "states": ["0"]}],
+            }
+        )
+    )
+    with pytest.raises(ValueError):
+        simulator.run(jaqcd, qubit_count=2, shots=0)
 
 
 def test_simulator_run_statevector_shots():
@@ -899,7 +908,6 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
         ),
     ],
 )
-@pytest.mark.xfail(raises=ValueError)
 def test_simulator_run_non_contiguous_qubits(ir, qubit_count):
     # not relevant for openqasm, since it handles qubit allocation
     simulator = StateVectorSimulator()
@@ -1269,3 +1277,171 @@ def test_missing_input():
     missing_input = "Missing input variable 'in_int'."
     with pytest.raises(NameError, match=missing_input):
         simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+
+
+def test_measure_targets():
+    qasm = """
+    qubit[2] q;
+    bit[1] b;
+    h q[0];
+    cnot q[0], q[1];
+    b[0] = measure q[0];
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert 400 < np.sum(measurements, axis=0)[0] < 600
+    assert len(measurements[0]) == 1
+    assert result.measuredQubits == [0]
+
+
+def test_measure_no_gates():
+    qasm = """
+    bit[4] b;
+    qubit[4] q;
+    b[0] = measure q[0];
+    b[1] = measure q[1];
+    b[2] = measure q[2];
+    b[3] = measure q[3];
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert np.all(measurements == np.zeros((1000, 4)))
+    # assert np.sum(measurements, axis=0)[2] == 0
+    # assert len(measurements[0]) == 4
+    assert result.measuredQubits == [0, 1, 2, 3]
+
+
+def test_measure_with_qubits_not_used():
+    qasm = """
+    bit[5] b;
+    qubit[5] q;
+    h q[1];
+    cnot q[1], q[3];
+    b = measure q;
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
+    measurements = np.array(result.measurements, dtype=int)
+    assert 400 < np.sum(measurements, axis=0)[1] < 600
+    assert 400 < np.sum(measurements, axis=0)[3] < 600
+    assert np.sum(measurements, axis=0)[0] == 0
+    assert np.sum(measurements, axis=0)[2] == 0
+    assert np.sum(measurements, axis=0)[4] == 0
+    assert len(measurements[0]) == 5
+    assert result.measuredQubits == [0, 1, 2, 3, 4]
+
+
+@pytest.mark.parametrize(
+    "operation, state_vector",
+    [
+        ["rx(π) q[0];", [0, -1j]],
+        ["rx(pi) q[0];", [0, -1j]],
+        ["rx(ℇ) q[0];", [0.21007866, -0.97768449j]],
+        ["rx(euler) q[0];", [0.21007866, -0.97768449j]],
+        ["rx(τ) q[0];", [-1, 0]],
+        ["rx(tau) q[0];", [-1, 0]],
+        ["rx(pi + pi) q[0];", [-1, 0]],
+        ["rx(pi - pi) q[0];", [1, 0]],
+        ["rx(-pi + pi) q[0];", [1, 0]],
+        ["rx(pi * 2) q[0];", [-1, 0]],
+        ["rx(pi / 2) q[0];", [0.70710678, -0.70710678j]],
+        ["rx(-pi / 2) q[0];", [0.70710678, 0.70710678j]],
+        ["rx(-pi) q[0];", [0, 1j]],
+        ["rx(pi + 2 * pi) q[0];", [0, 1j]],
+        ["rx(pi + pi / 2) q[0];", [-0.70710678, -0.70710678j]],
+        ["rx((pi / 4) + (pi / 2) / 2) q[0];", [0.70710678, -0.70710678j]],
+        ["rx(0) q[0];", [1, 0]],
+        ["rx(0 + 0) q[0];", [1, 0]],
+        ["rx((1.1 + 2.04) / 2) q[0];", [0.70738827, -0.70682518j]],
+        ["rx((6 - 2.86) * 0.5) q[0];", [0.70738827, -0.70682518j]],
+        ["rx(pi ** 2) q[0];", [0.22058404, 0.97536797j]],
+    ],
+)
+def test_rotation_parameter_expressions(operation, state_vector):
+    qasm = f"""
+    OPENQASM 3.0;
+    bit[1] b;
+    qubit[1] q;
+    {operation}
+    #pragma braket result state_vector
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=0)
+    assert result.resultTypes[0].type == StateVector()
+    assert np.allclose(result.resultTypes[0].value, np.array(state_vector))
+
+
+def test_noncontiguous_qubits_jaqcd(noncontiguous_jaqcd):
+    prg = JaqcdProgram.parse_raw(noncontiguous_jaqcd)
+    result = StateVectorSimulator().run(prg, qubit_count=2, shots=1)
+
+    assert result.measuredQubits == [0, 1]
+    assert result.measurements in ([["0", "0"]], [["1", "1"]])
+
+
+@pytest.mark.parametrize("qasm_file_name", ["noncontiguous_virtual", "noncontiguous_physical"])
+def test_noncontiguous_qubits_openqasm(qasm_file_name):
+    simulator = StateVectorSimulator()
+    shots = 1000
+    result = simulator.run(
+        OpenQASMProgram(source=f"test/resources/{qasm_file_name}.qasm"), shots=shots
+    )
+
+    assert result.measuredQubits == [2, 8]
+    measurements = np.array(result.measurements, dtype=int)
+    assert measurements.shape == (shots, 2)
+    assert all(
+        (np.allclose(measurement, [0, 0]) or np.allclose(measurement, [1, 1]))
+        for measurement in measurements
+    )
+
+
+def test_noncontiguous_qubits_jaqcd_multiple_controls():
+    jaqcd_program = {
+        "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
+        "instructions": [
+            {"type": "x", "target": 3},
+            {"type": "x", "target": 4},
+            {"type": "ccnot", "controls": [3, 4], "target": 5},
+        ],
+    }
+    prg = JaqcdProgram.parse_raw(json.dumps(jaqcd_program))
+    result = StateVectorSimulator().run(prg, qubit_count=3, shots=1)
+
+    assert result.measuredQubits == [0, 1, 2]
+    assert result.measurements == [["1", "1", "1"]]
+
+
+def test_noncontiguous_qubits_jaqcd_multiple_targets():
+    jaqcd_program = {
+        "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
+        "instructions": [{"type": "x", "target": 3}, {"type": "swap", "targets": [3, 4]}],
+        "results": [{"type": "expectation", "observable": ["z"], "targets": [4]}],
+    }
+    prg = JaqcdProgram.parse_raw(json.dumps(jaqcd_program))
+    result = StateVectorSimulator().run(prg, qubit_count=2, shots=0)
+
+    assert result.measuredQubits == [0, 1]
+    assert result.resultTypes[0].value == -1
+
+
+def test_run_multiple():
+    payloads = [
+        OpenQASMProgram(
+            source=f"""
+            OPENQASM 3.0;
+            bit[1] b;
+            qubit[1] q;
+            {gate} q[0];
+            #pragma braket result state_vector
+            """
+        )
+        for gate in ["h", "z", "x"]
+    ]
+    simulator = StateVectorSimulator()
+    results = simulator.run_multiple(payloads, shots=0)
+    assert np.allclose(results[0].resultTypes[0].value, np.array([1, 1]) / np.sqrt(2))
+    assert np.allclose(results[1].resultTypes[0].value, np.array([1, 0]))
+    assert np.allclose(results[2].resultTypes[0].value, np.array([0, 1]))

@@ -33,7 +33,7 @@ operator_maps = {
         getattr(BinaryOperator, "+"): lambda x, y: IntegerLiteral(x.value + y.value),
         getattr(BinaryOperator, "-"): lambda x, y: IntegerLiteral(x.value - y.value),
         getattr(BinaryOperator, "*"): lambda x, y: IntegerLiteral(x.value * y.value),
-        getattr(BinaryOperator, "/"): lambda x, y: IntegerLiteral(x.value / y.value),
+        getattr(BinaryOperator, "/"): lambda x, y: IntegerLiteral(x.value // y.value),
         getattr(BinaryOperator, "%"): lambda x, y: IntegerLiteral(x.value % y.value),
         getattr(BinaryOperator, "**"): lambda x, y: IntegerLiteral(x.value**y.value),
         getattr(UnaryOperator, "-"): lambda x: IntegerLiteral(-x.value),

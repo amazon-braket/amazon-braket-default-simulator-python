@@ -49,6 +49,10 @@ class GateOperation(Operation, ABC):
         self._power = power
 
     @property
+    def targets(self) -> tuple[int, ...]:
+        return self._targets
+
+    @property
     @abstractmethod
     def _base_matrix(self) -> np.ndarray:
         """np.ndarray: The matrix representation of the operation."""

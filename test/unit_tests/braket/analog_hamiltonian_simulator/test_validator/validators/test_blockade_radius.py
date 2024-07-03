@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import pytest
-from pydantic.error_wrappers import ValidationError
+from pydantic.v1.error_wrappers import ValidationError
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.blockade_radius import (
     validate_blockade_radius,
