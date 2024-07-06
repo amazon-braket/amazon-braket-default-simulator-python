@@ -107,9 +107,10 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         folder = os.getcwd()
         # uuid = np.random.randint(1000000)
         uuid = os.getpid()
-        folder = f"{folder}/{uuid}"
-        
-        os.mkdir(folder)
+        folder = f"{folder}/.{uuid}"
+
+        if os.path.exists(folder) is False:
+            os.mkdir(folder)
         
 
         json_data = json.loads(program.json())
