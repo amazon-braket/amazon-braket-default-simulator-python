@@ -104,34 +104,36 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             
         # Convert the program into json and save it
         # folder = os.path.dirname(os.path.realpath(__file__))
-        folder = os.getcwd()
+        # folder = os.getcwd()
         # uuid = np.random.randint(1000000)
         uuid = os.getpid()
-        folder = f"{folder}/.{uuid}"
+        # folder = f"{folder}/.{uuid}"
+        folder = f".{uuid}"
 
         if os.path.exists(folder) is False:
             os.mkdir(folder)
-        
 
+        os.chdir(folder)
+        
         json_data = json.loads(program.json())
         json_string = json.dumps(json_data, indent=4) 
-        filename = f"{folder}/ahs_program.json"
+        filename = f"ahs_program.json"
         with open(filename, "w") as json_file:
             json_file.write(json_string)
 
         # Run with Julia
-        with open(f"{folder}/tn_solver.jl", "w") as text_file:
-            txt = 'using BraketAHS; run_program("' + filename + '",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}" + ')'
+        with open(f"tn_solver.jl", "w") as text_file:
+            txt = 'using BraketAHS; run_program("ahs_program.json",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}" + ')'
             text_file.write(txt)
             
         print("i am here")
-        subprocess.run(['julia', '-t', '16', f'{folder}/tn_solver.jl', filename], shell=True, check=True, capture_output=True)
+        subprocess.run(['julia', '-t', '16', 'tn_solver.jl', filename], shell=True, check=True, capture_output=True)
         print("i am here 2")
         # Get the shot measurement
         preSequence = program.setup.ahs_register.filling
         
         # postseqs = np.array(pandas.read_csv(f"{folder}/mps_samples.csv"), dtype=int)
-        postseqs = np.loadtxt(f"{folder}/mps_samples.txt", dtype='int', delimiter='\t')
+        postseqs = np.loadtxt("mps_samples.txt", dtype='int', delimiter='\t')
 
         postseqs = [list(item) for item in postseqs]
 
@@ -145,10 +147,10 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             )
             measurements.append(shot_measurement)
             
-        with open(f"{folder}/summary.txt", "r") as text_file:
-            summary = text_file.read()
+        # with open(f"{folder}/summary.txt", "r") as text_file:
+        #     summary = text_file.read()
 
-        print(summary)
+        # print(summary)
             
         # Delete the files
         subprocess.run(['rm', '-r', folder])
