@@ -146,7 +146,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             measurements.append(shot_measurement)
             
         # Delete the files
-        subprocess.run(['rm', '-r', folder])
+        # subprocess.run(['rm', '-r', folder])
 
         return AnalogHamiltonianSimulationTaskResult(
             taskMetadata=task_metadata, 
