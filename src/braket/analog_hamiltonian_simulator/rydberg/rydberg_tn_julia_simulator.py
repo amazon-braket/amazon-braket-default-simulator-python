@@ -103,11 +103,10 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             
         # Convert the program into json and save it
         # folder = os.path.dirname(os.path.realpath(__file__))
-        # folder = os.getcwd()
-        # uuid = np.random.randint(1000000)
+        folder = os.getcwd()
         uuid = os.getpid()
-        # folder = f"{folder}/.{uuid}"
-        folder = f".{uuid}"
+        folder = f"{folder}/.{uuid}"
+        # folder = f".{uuid}"
 
         if os.path.exists(folder) is False:
             os.mkdir(folder)
