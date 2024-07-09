@@ -120,16 +120,12 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         with open(filename, "w") as json_file:
             json_file.write(json_string)
 
-        print(os.listdir(), flush=True)
-
         # Run with Julia
         with open(f"tn_solver.jl", "w") as text_file:
             txt = 'using BraketAHS; run_program("ahs_program.json",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}" + ')'
             text_file.write(txt)
             
         subprocess.run(['julia', '-t', '16', 'tn_solver.jl'])
-
-        print(os.listdir(), flush=True)
         
         # Get the shot measurement
         preSequence = program.setup.ahs_register.filling
