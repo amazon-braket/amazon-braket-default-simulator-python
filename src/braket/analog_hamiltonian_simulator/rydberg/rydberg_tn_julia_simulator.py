@@ -99,9 +99,6 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             deviceId="RydbergAtomTNSimulator",
         )
         
-        print("wtf")
-        print([shots, steps, rydberg_interaction_coef, blockade_radius, max_bond_dim])
-            
         # Convert the program into json and save it
         uuid = os.getpid()
         folder = f".{uuid}"
@@ -111,7 +108,6 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
 
         os.chdir(folder)
 
-        
         json_data = json.loads(program.json())
         json_string = json.dumps(json_data, indent=4) 
         filename = f"ahs_program.json"
