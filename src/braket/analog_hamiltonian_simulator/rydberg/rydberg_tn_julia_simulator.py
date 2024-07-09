@@ -66,7 +66,6 @@ import multiprocessing as mp
 from pprint import pprint as pp
 
 import subprocess
-import pandas
 
 qpu = AwsDevice("arn:aws:braket:us-east-1::device/qpu/quera/Aquila")
 capabilities = qpu.properties.paradigm
