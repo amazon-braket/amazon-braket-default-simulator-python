@@ -99,7 +99,8 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             deviceId="RydbergAtomTNSimulator",
         )
         
-        
+        print("wtf")
+        print([shots, steps, rydberg_interaction_coef, blockade_radius, max_bond_dim])
             
         # Convert the program into json and save it
         uuid = os.getpid()
