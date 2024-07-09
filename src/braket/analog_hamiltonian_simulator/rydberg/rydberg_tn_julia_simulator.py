@@ -113,13 +113,14 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
 
         os.chdir(folder)
 
-        print(os.listdir(), flush=True)
         
         json_data = json.loads(program.json())
         json_string = json.dumps(json_data, indent=4) 
         filename = f"ahs_program.json"
         with open(filename, "w") as json_file:
             json_file.write(json_string)
+
+        print(os.listdir(), flush=True)
 
         # Run with Julia
         with open(f"tn_solver.jl", "w") as text_file:
