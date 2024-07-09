@@ -113,7 +113,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
 
         os.chdir(folder)
 
-        print(os.listdir())
+        print(os.listdir(), flush=True)
         
         json_data = json.loads(program.json())
         json_string = json.dumps(json_data, indent=4) 
@@ -128,7 +128,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             
         subprocess.run(['julia', '-t', '16', 'tn_solver.jl'])
 
-        print(os.listdir())
+        print(os.listdir(), flush=True)
         
         # Get the shot measurement
         preSequence = program.setup.ahs_register.filling
