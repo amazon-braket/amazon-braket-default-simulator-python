@@ -85,9 +85,9 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         self, 
         program: Program,
         shots: int = 1000,
-        steps: int = 40,
+        steps: int = 2, #40,
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
-        blockade_radius: float = 9.2e-6,
+        blockade_radius: float = 1e-6, #9.2e-6,
         max_bond_dim = 4,
         *args,
         **kwargs
