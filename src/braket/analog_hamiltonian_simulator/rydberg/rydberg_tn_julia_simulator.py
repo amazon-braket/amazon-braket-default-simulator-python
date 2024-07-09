@@ -103,15 +103,17 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             
         # Convert the program into json and save it
         # folder = os.path.dirname(os.path.realpath(__file__))
-        folder = os.getcwd()
+        # folder = os.getcwd()
         uuid = os.getpid()
-        folder = f"{folder}/.{uuid}"
-        # folder = f".{uuid}"
+        # folder = f"{folder}/.{uuid}"
+        folder = f".{uuid}"
 
         if os.path.exists(folder) is False:
             os.mkdir(folder)
 
         os.chdir(folder)
+
+        print(os.listdir())
         
         json_data = json.loads(program.json())
         json_string = json.dumps(json_data, indent=4) 
@@ -125,6 +127,8 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
             text_file.write(txt)
             
         subprocess.run(['julia', '-t', '16', 'tn_solver.jl'])
+
+        print(os.listdir())
         
         # Get the shot measurement
         preSequence = program.setup.ahs_register.filling
