@@ -85,9 +85,9 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         self, 
         program: Program,
         shots: int = 1000,
-        steps: int = 2, #40,
+        steps: int = 40,
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
-        blockade_radius: float = 1e-6, #9.2e-6,
+        blockade_radius: float = 9.2e-6,
         max_bond_dim = 4,
         *args,
         **kwargs
@@ -102,10 +102,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         
             
         # Convert the program into json and save it
-        # folder = os.path.dirname(os.path.realpath(__file__))
-        # folder = os.getcwd()
         uuid = os.getpid()
-        # folder = f"{folder}/.{uuid}"
         folder = f".{uuid}"
 
         if os.path.exists(folder) is False:
