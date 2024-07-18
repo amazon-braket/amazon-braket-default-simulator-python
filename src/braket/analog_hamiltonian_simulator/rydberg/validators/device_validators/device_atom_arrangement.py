@@ -5,6 +5,9 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field impor
     PhysicalField
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.device_capabilities_constants import DeviceCapabilitiesConstants
+from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util import (
+    validate_value_precision
+)
 from pydantic.v1.class_validators import root_validator
 from decimal import Decimal
 from typing import Tuple
@@ -69,7 +72,7 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
         capabilities = values["capabilities"]
         sorted_sites = sorted(sites, key=lambda xy: xy[1])
         min_allowed_distance = capabilities.MIN_ROW_DISTANCE
-        if values["feature_access"]:
+        if capabilities.LOCAL_RYDBERG_CAPABILITIES:
             min_allowed_distance = Decimal("0.000002")
         for s1, s2 in zip(sorted_sites[:-1], sorted_sites[1:]):
             row_distance = _y_distance(s1, s2)
@@ -94,12 +97,3 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
             )
         return values
     
-    @root_validator(pre=True, skip_on_failure=True)
-    def phase_value_precision_is_correct(cls, values):
-        phase = values["phase"]
-        capabilities = values["capabilities"]
-        phase_obj = PhysicalField.parse_obj(phase)
-        validate_value_precision(
-            phase_obj.time_series.values, capabilities.GLOBAL_PHASE_VALUE_PRECISION, "phase"
-        )
-        return values

@@ -22,7 +22,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.de
 from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.device_driving_field import (
     DeviceDrivingFieldValidator
 )
-from braket.analog_hamiltonian_simulator.rydberg.validators.hamiltonian import HamiltonianValidator
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.device_hamiltonian import DeviceHamiltonianValidator
 from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.device_local_detuning import (
     DeviceLocalDetuningValidator
 )
@@ -45,7 +45,7 @@ def validate_program(program: Program, device_capabilities: DeviceCapabilitiesCo
 
     ProgramValidator(capabilities=device_capabilities, **program.dict())
     DeviceAtomArrangementValidator(capabilities=device_capabilities, **program.setup.ahs_register.dict())
-    HamiltonianValidator(**program.hamiltonian.dict())
+    DeviceHamiltonianValidator(LOCAL_RYDBERG_CAPABILITIES=device_capabilities.LOCAL_RYDBERG_CAPABILITIES, **program.hamiltonian.dict())
     for d_fields in program.hamiltonian.drivingFields:
         DeviceDrivingFieldValidator(capabilities=device_capabilities, **d_fields.dict())
         amplitude = d_fields.amplitude
