@@ -1,7 +1,7 @@
 from braket.analog_hamiltonian_simulator.rydberg.validators.driving_field import (
     DrivingFieldValidator
 )
-from device_capabilities_constants import DeviceCapabilitiesConstants
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.device_capabilities_constants import DeviceCapabilitiesConstants
 from pydantic.v1.class_validators import root_validator
 from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field import (
     PhysicalField

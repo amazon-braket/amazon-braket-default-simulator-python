@@ -4,7 +4,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.atom_arrangement imp
 from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field import (
     PhysicalField
 )
-from device_capabilities_constants import DeviceCapabilitiesConstants
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.device_capabilities_constants import DeviceCapabilitiesConstants
 from pydantic.v1.class_validators import root_validator
 from decimal import Decimal
 from typing import Tuple
@@ -16,7 +16,7 @@ def _y_distance(site_1: Tuple[Decimal, Decimal], site_2: Tuple[Decimal, Decimal]
     return Decimal(abs(site_1[1] - site_2[1]))
 
 
-class DeviceAtomArrangement(AtomArrangementValidator):
+class DeviceAtomArrangementValidator(AtomArrangementValidator):
     capabilities: DeviceCapabilitiesConstants
     
     @root_validator(pre=True, skip_on_failure=True)

@@ -10,13 +10,23 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util
     validate_time_separation
 )
 from pydantic.v1.class_validators import root_validator
-from device_capabilities_constants import (
-    DeviceCapabilitiesConstants
-)
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.\
+    device_capabilities_constants import DeviceCapabilitiesConstants
+
 
 class DeviceLocalDetuningValidator(LocalDetuningValidator): 
     capabilities: DeviceCapabilitiesConstants
 
+    @root_validator(pre=True, skip_on_failure=True)
+    def check_local_rydberg_capabilities(cls, values):
+        capabilities = values["capabilities"]
+        if not capabilities.LOCAL_RYDBERG_CAPABILITIES:
+            raise ValueError(
+        "Local Rydberg capabilities information has not been \
+            provided for local detuning."
+    )
+            
+            
     # Rule: The number of locally-addressed sites must not exceed rydberg.local.number_local_detuning_sites
     @root_validator(pre=True, skip_on_failure=True)
     def magnitude_pattern_have_not_too_many_nonzeros(cls, values):
@@ -79,4 +89,4 @@ class DeviceLocalDetuningValidator(LocalDetuningValidator):
                 raise ValueError(
                     f"The values of the shifting field magnitude time series at the first and last time points are {start_value}, {end_value}; they both must be both 0."
                 )
-        return values
+        return values    

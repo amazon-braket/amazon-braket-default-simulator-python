@@ -3,6 +3,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 )
 from decimal import Decimal
 from pydantic import PositiveInt
+from typing import Optional
 
 
 class DeviceCapabilitiesConstants(CapabilitiesConstants):
@@ -16,8 +17,15 @@ class DeviceCapabilitiesConstants(CapabilitiesConstants):
     GLOBAL_DETUNING_VALUE_PRECISION: Decimal
     GLOBAL_DETUNING_SLOPE_MAX: Decimal
     
-    LOCAL_MAGNITUDE_SLOPE_MAX: Decimal
-    LOCAL_MIN_DISTANCE_BETWEEN_SHIFTED_SITES: Decimal
-    LOCAL_TIME_PRECISION: Decimal
-    LOCAL_MIN_TIME_SEPARATION: Decimal
+    LOCAL_RYDBERG_CAPABILITIES: bool = False
+    LOCAL_MAGNITUDE_SLOPE_MAX: Optional[Decimal]
+    LOCAL_MIN_DISTANCE_BETWEEN_SHIFTED_SITES: Optional[Decimal]
+    LOCAL_TIME_PRECISION: Optional[Decimal]
+    LOCAL_MIN_TIME_SEPARATION: Optional[Decimal]
+    LOCAL_MAGNITUDE_SEQUENCE_VALUE_MIN: Optional[Decimal]
+    LOCAL_MAGNITUDE_SEQUENCE_VALUE_MAX: Optional[Decimal]
+    
+    MAGNITUDE_PATTERN_VALUE_MIN: Optional[Decimal]
+    MAGNITUDE_PATTERN_VALUE_MAX: Optional[Decimal]
+    MAX_NET_DETUNING: Optional[Decimal]
     
