@@ -51,6 +51,7 @@ def validate_program(program: Program, device_capabilities: DeviceCapabilitiesCo
         amplitude = d_fields.amplitude
         phase = d_fields.phase
         detuning = d_fields.detuning
+        
         PhysicalFieldValidator(**amplitude.dict())
         TimeSeriesValidator(capabilities=device_capabilities, **amplitude.time_series.dict())
 

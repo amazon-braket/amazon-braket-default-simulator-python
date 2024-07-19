@@ -28,15 +28,6 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
         if not sites:
             raise ValueError("Sites can not be empty.")
         return values
-
-
-    # Each site has two coordinates (minItems=maxItems=2)
-    @root_validator(pre=True, skip_on_failure=True)
-    def filling_not_empty(cls, values):
-        filling = values["filling"]
-        if not filling:
-            raise ValueError("Filling can not be empty.")
-        return values
     
     
     # The maximum allowable precision in the coordinates is SITE_PRECISION

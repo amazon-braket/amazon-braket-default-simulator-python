@@ -153,18 +153,6 @@ class DeviceDrivingFieldValidator(DrivingFieldValidator):
             detuning["time_series"]["times"], capabilities.GLOBAL_MIN_TIME_SEPARATION, "detuning"
         )
         return values
-    
-    @root_validator(pre=True, skip_on_failure=True)
-    def detuning_value_precision_is_correct(cls, values):
-        detuning = values["detuning"]
-        capabilities = values["capabilities"]
-        detuning_obj = PhysicalField.parse_obj(detuning)
-        validate_value_precision(
-            detuning_obj.time_series.values,
-            capabilities.GLOBAL_DETUNING_VALUE_PRECISION,
-            "detuning",
-        )
-        return values
 
     @root_validator(pre=True, skip_on_failure=True)
     def detuning_slopes_not_too_steep(cls, values):
