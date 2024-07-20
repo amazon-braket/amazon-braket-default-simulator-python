@@ -4,15 +4,17 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.local_detuning impor
 from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field import (
     PhysicalField
 )
-from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util import (
-    validate_time_precision, 
-    validate_max_absolute_slope, 
-    validate_time_separation
-)
 from pydantic.v1.class_validators import root_validator
 from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.\
     device_capabilities_constants import DeviceCapabilitiesConstants
 
+from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util import (
+    validate_time_precision,
+    validate_max_absolute_slope,
+    validate_time_separation
+)
+
+from pprint import pprint
 
 class DeviceLocalDetuningValidator(LocalDetuningValidator): 
     capabilities: DeviceCapabilitiesConstants
@@ -25,6 +27,7 @@ class DeviceLocalDetuningValidator(LocalDetuningValidator):
         "Local Rydberg capabilities information has not been \
             provided for local detuning."
     )
+        return values
             
             
     # Rule: The number of locally-addressed sites must not exceed rydberg.local.number_local_detuning_sites

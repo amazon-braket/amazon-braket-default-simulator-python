@@ -12,16 +12,10 @@ class DeviceHamiltonianValidator(HamiltonianValidator):
         LOCAL_RYDBERG_CAPABILITIES = values["LOCAL_RYDBERG_CAPABILITIES"]
         local_detuning = values.get("localDetuning", [])
         if not LOCAL_RYDBERG_CAPABILITIES:
-            if len(local_detuning) > 1:
+            if len(local_detuning) > 0:
                 raise ValueError(
-                    f"At most one local detuning specification can be provided;\
-                    {len(local_detuning)} are given."
-                    )
-            else:
-                if len(local_detuning) > 0:
-                    raise ValueError(
-                    f"Local detuning cannot be specified; \
+                f"Local detuning cannot be specified; \
 {len(local_detuning)} are given. Specifying local \
 detuning is an experimental capability, use Braket Direct to request access."
-                )
+            )
         return values

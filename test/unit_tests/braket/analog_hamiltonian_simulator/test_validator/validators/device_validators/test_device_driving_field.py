@@ -6,6 +6,31 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.driving_field \
     import DrivingField
 
 
+@pytest.fixture
+def driving_field_data():
+    return {
+        "amplitude": {
+            "pattern": "uniform",
+            "time_series": {
+                "times": [0, 1e-07, 3.9e-06, 4e-06],
+                "values": [0, 12566400.0, 12566400.0, 0],
+            },
+        },
+        "phase": {
+            "pattern": "uniform",
+            "time_series": {
+                "times": [0, 1e-07, 3.9e-06, 4e-06],
+                "values": [0, 0, -16.0832, -16.0832],
+            },
+        },
+        "detuning": {
+            "pattern": "uniform",
+            "time_series": {
+                "times": [0, 1e-07, 3.9e-06, 4e-06],
+                "values": [-125000000, -125000000, 125000000, 125000000],
+            },
+        },
+    }
     
 @pytest.fixture
 def mock_driving_field_data():
@@ -35,68 +60,75 @@ def mock_driving_field_data():
     return DrivingField.parse_obj(data).dict()
 
 
+def test_device_driving_field(driving_field_data, non_local_capabilities_constants):
+    try:
+        DeviceDrivingFieldValidator(capabilities=non_local_capabilities_constants, **driving_field_data)
+    except ValidationError as e:
+        pytest.fail(f"Validate test is failing : {str(e)}")
+
+
 @pytest.mark.parametrize(
     "times, field_name, error_message",
     [
         (
             [0.0, 12.1e-9],
             "amplitude",
-            "time point 1 (1.21E-8) of amplitude time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of amplitude time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9],
             "phase",
-            "time point 1 (1.21E-8) of phase time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of phase time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9],
             "detuning",
-            "time point 1 (1.21E-8) of detuning time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of detuning time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 4e-6],
             "amplitude",
-            "time point 1 (1.21E-8) of amplitude time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of amplitude time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 4e-6],
             "phase",
-            "time point 1 (1.21E-8) of phase time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of phase time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 4e-6],
             "detuning",
-            "time point 1 (1.21E-8) of detuning time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of detuning time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 22.1e-9],
             "amplitude",
-            "time point 1 (1.21E-8) of amplitude time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of amplitude time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 22.1e-9],
             "phase",
-            "time point 1 (1.21E-8) of phase time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of phase time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 22.1e-9],
             "detuning",
-            "time point 1 (1.21E-8) of detuning time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (1.21E-8) of detuning time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 22.1e-9, 12.1e-9],
             "amplitude",
-            "time point 1 (2.21E-8) of amplitude time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (2.21E-8) of amplitude time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 22.1e-9, 12.1e-9],
             "phase",
-            "time point 1 (2.21E-8) of phase time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (2.21E-8) of phase time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 22.1e-9, 12.1e-9],
             "detuning",
-            "time point 1 (2.21E-8) of detuning time_series is defined with too many digits; it must be an integer multple of 1E-9",
+            "time point 1 (2.21E-8) of detuning time_series is defined with too many digits; it must be an integer multiple of 1E-9",
         ),
     ],
 )
@@ -106,6 +138,31 @@ def test_driving_field_time_precision_is_correct(
 ):
     mock_driving_field_data[field_name]["time_series"]["times"] = times
     _assert_driving_field(mock_driving_field_data, error_message, non_local_capabilities_constants)
+
+def test_driving_field_no_detuning(mock_driving_field_data, non_local_capabilities_constants):
+    mock_driving_field_data["detuning"]["time_series"]["times"].clear()
+    mock_driving_field_data["detuning"]["time_series"]["values"].clear()
+    try:
+        DeviceDrivingFieldValidator(capabilities=non_local_capabilities_constants, **mock_driving_field_data)
+    except ValidationError as e:
+        pytest.fail(f"Validate test is failing : {str(e)}")
+        
+      
+@pytest.mark.parametrize(
+    "values, field_name, error_message", 
+    [
+        (
+            [0.0, 22.1e-9, 12,1e-9, 0.0], 
+            "amplitude", 
+            "Value 1 (2.21E-8) in amplitude time_series is defined with too many digits; it must be an integer multiple of 400.0",
+        )
+    ]
+)  
+def test_driving_field_value_precision_is_correct(
+    values, field_name, error_message, driving_field_data, non_local_capabilities_constants
+):
+    driving_field_data[field_name]["time_series"]["values"] = values
+    _assert_driving_field(driving_field_data, error_message, non_local_capabilities_constants)
 
 @pytest.mark.parametrize(
     "times, field_name, error_message",

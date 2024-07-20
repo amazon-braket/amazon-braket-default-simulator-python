@@ -28,7 +28,8 @@ class DeviceCapabilitiesConstants(CapabilitiesConstants):
     LOCAL_MIN_TIME_SEPARATION: Optional[Decimal]
     LOCAL_MAGNITUDE_SEQUENCE_VALUE_MIN: Optional[Decimal]
     LOCAL_MAGNITUDE_SEQUENCE_VALUE_MAX: Optional[Decimal]
-    
+    LOCAL_MAX_NONZERO_PATTERN_VALUES: Optional[Decimal]
+
     MAGNITUDE_PATTERN_VALUE_MIN: Optional[Decimal]
     MAGNITUDE_PATTERN_VALUE_MAX: Optional[Decimal]
     MAX_NET_DETUNING: Optional[Decimal]

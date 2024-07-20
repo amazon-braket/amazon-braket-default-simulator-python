@@ -5,9 +5,6 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field impor
     PhysicalField
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.device_capabilities_constants import DeviceCapabilitiesConstants
-from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util import (
-    validate_value_precision
-)
 from pydantic.v1.class_validators import root_validator
 from decimal import Decimal
 from typing import Tuple

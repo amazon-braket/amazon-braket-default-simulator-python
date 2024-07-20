@@ -35,9 +35,6 @@ class LocalDetuningValidator(LocalDetuning):
 
     @root_validator(pre=True, skip_on_failure=True)
     def magnitude_pattern_within_bounds(cls, values):
-        if  not capabilities.MAGNITUDE_PATTERN_VALUE_MIN or \
-            not capabilities.MAGNITUDE_PATTERN_VALUE_MAX: 
-            return values
         magnitude = values["magnitude"]
         capabilities = values["capabilities"]
         pattern = magnitude["pattern"]
@@ -54,9 +51,6 @@ class LocalDetuningValidator(LocalDetuning):
 
     @root_validator(pre=True, skip_on_failure=True)
     def magnitude_values_within_range(cls, values):
-        if  not capabilities.LOCAL_MAGNITUDE_SEQUENCE_VALUE_MIN or \
-            not capabilities.LOCAL_MAGNITUDE_SEQUENCE_VALUE_MAX: 
-            return values
         magnitude = values["magnitude"]
         capabilities = values["capabilities"]
         magnitude_values = magnitude["time_series"]["values"]
