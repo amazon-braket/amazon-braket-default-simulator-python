@@ -1,13 +1,14 @@
-from braket.analog_hamiltonian_simulator.rydberg.validators.atom_arrangement import (
-    AtomArrangementValidator
-)
-from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field import (
-    PhysicalField
-)
-from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators.device_capabilities_constants import DeviceCapabilitiesConstants
-from pydantic.v1.class_validators import root_validator
 from decimal import Decimal
 from typing import Tuple
+
+from pydantic.v1.class_validators import root_validator
+
+from braket.analog_hamiltonian_simulator.rydberg.validators.atom_arrangement import (
+    AtomArrangementValidator,
+)
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators import (
+    DeviceCapabilitiesConstants,
+)
 
 
 def _y_distance(site_1: Tuple[Decimal, Decimal], site_2: Tuple[Decimal, Decimal]) -> Decimal:
@@ -18,15 +19,14 @@ def _y_distance(site_1: Tuple[Decimal, Decimal], site_2: Tuple[Decimal, Decimal]
 
 class DeviceAtomArrangementValidator(AtomArrangementValidator):
     capabilities: DeviceCapabilitiesConstants
-    
+
     @root_validator(pre=True, skip_on_failure=True)
     def sites_not_empty(cls, values):
         sites = values["sites"]
         if not sites:
             raise ValueError("Sites can not be empty.")
         return values
-    
-    
+
     # The maximum allowable precision in the coordinates is SITE_PRECISION
     @root_validator(pre=True, skip_on_failure=True)
     def sites_defined_with_right_precision(cls, values):
@@ -37,10 +37,11 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
                 [Decimal(str(coordinate)) % capabilities.SITE_PRECISION == 0 for coordinate in s]
             ):
                 raise ValueError(
-                    f"Coordinates {idx}({s}) is defined with too high precision; they must be multiples of {capabilities.SITE_PRECISION} meters"
+                    f"Coordinates {idx}({s}) is defined with too high precision;\
+                        they must be multiples of {capabilities.SITE_PRECISION} meters"
                 )
         return values
-    
+
     # Number of sites must not exceeds MAX_SITES
     @root_validator(pre=True, skip_on_failure=True)
     def sites_not_too_many(cls, values):
@@ -49,11 +50,13 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
         num_sites = len(sites)
         if num_sites > capabilities.MAX_SITES:
             raise ValueError(
-                f"There are too many sites ({num_sites}); there must be at most {capabilities.MAX_SITES} sites"
+                f"There are too many sites ({num_sites}); there must be at most\
+                    {capabilities.MAX_SITES} sites"
             )
         return values
-    
-    # The y coordinates of any two lattice sites must either be equal or differ by at least MIN_ROW_DISTANCE.
+
+    # The y coordinates of any two lattice sites must either be equal
+    # or differ by at least MIN_ROW_DISTANCE.
     @root_validator(pre=True, skip_on_failure=True)
     def sites_in_rows(cls, values):
         sites = values["sites"]
@@ -68,11 +71,11 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
                 continue
             if row_distance < min_allowed_distance:
                 raise ValueError(
-                    f"Sites {s1} and site {s2} have y-separation ({row_distance}). It must either be exactly zero or not smaller than {min_allowed_distance} meters"
+                    f"Sites {s1} and site {s2} have y-separation ({row_distance}). It must\
+                        either be exactly zero or not smaller than {min_allowed_distance} meters"
                 )
         return values
-    
-    
+
     # The number of filled lattice sites must not exceed MAX_FILLED_SITES.
     @root_validator(pre=True, skip_on_failure=True)
     def atom_number_limit(cls, values):
@@ -81,7 +84,7 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
         qubits = sum(filling)
         if qubits > capabilities.MAX_FILLED_SITES:
             raise ValueError(
-                f"Filling has {qubits} '1' entries; is must have not more than {capabilities.MAX_FILLED_SITES}"
+                f"Filling has {qubits} '1' entries; is must have not\
+                    more than {capabilities.MAX_FILLED_SITES}"
             )
         return values
-    

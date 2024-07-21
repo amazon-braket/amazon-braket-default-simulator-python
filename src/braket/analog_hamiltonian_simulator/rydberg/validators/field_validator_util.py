@@ -104,14 +104,17 @@ def validate_net_detuning_with_warning(
                 # Return immediately if there is an atom has net detuning
                 # exceeding MAX_NET_DETUNING at a time point
                 return program
-            
+
+
 # Two time points cannot be too close, assuming the time points are sorted ascendingly
 def validate_time_separation(times: List[Decimal], min_time_separation: Decimal, name: str):
     for i in range(len(times) - 1):
         time_diff = times[i + 1] - times[i]
         if time_diff < min_time_separation:
             raise ValueError(
-                f"Time points of {name} time_series, {i} ({times[i]}) and {i+1} ({times[i+1]}), are too close; they are separated by {time_diff} seconds. It must be at least {min_time_separation} seconds"
+                f"Time points of {name} time_series, {i} ({times[i]}) and\
+                    {i + 1} ({times[i + 1]}), are too close; they are separated\
+                        by {time_diff} seconds. It must be at least {min_time_separation} seconds"
             )
 
 
@@ -120,23 +123,31 @@ def validate_value_precision(values: List[Decimal], max_precision: Decimal, name
     for idx, v in enumerate(values):
         if v % max_precision != 0:
             raise ValueError(
-                f"Value {idx} ({v}) in {name} time_series is defined with too many digits; it must be an integer multiple of {max_precision}"
+                f"Value {idx} ({v}) in {name} time_series is defined with too many digits;\
+                    it must be an integer multiple of {max_precision}"
             )
-            
+
+
 def validate_max_absolute_slope(
     times: List[Decimal], values: List[Decimal], max_slope: Decimal, name: str
 ):
-    # Raise ValueError if at any time the time series (times, values) rises/falls faster than allowed
+    # Raise ValueError if at any time the time series (times, values)
+    # rises/falls faster than allowed
     for idx in range(len(values) - 1):
         slope = (values[idx + 1] - values[idx]) / (times[idx + 1] - times[idx])
         if abs(slope) > max_slope:
             raise ValueError(
-                f"For the {name} field, rate of change of values (between the {idx}-th and the {idx+1}-th times) is {abs(slope)}, more than {max_slope}"
+                f"For the {name} field, rate of change of values\
+                    (between the {idx}-th and the {idx + 1}-th times)\
+                        is {abs(slope)}, more than {max_slope}"
             )
-            
+
+
 def validate_time_precision(times: List[Decimal], time_precision: Decimal, name: str):
     for idx, t in enumerate(times):
         if t % time_precision != 0:
             raise ValueError(
-                f"time point {idx} ({t}) of {name} time_series is defined with too many digits; it must be an integer multiple of {time_precision}"
+                f"time point {idx} ({t}) of {name} time_series is\
+                    defined with too many digits; it must be an\
+                        integer multiple of {time_precision}"
             )
