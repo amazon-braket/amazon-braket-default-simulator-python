@@ -1,1 +1,0 @@
-<ExceptionInfo ValidationError(model='DeviceHamiltonianValidator', errors=[{'loc': ('__root__',), 'msg': 'Local detuning cannot be sp...pecifying local detuning is an experimental capability, use Braket Direct to request access.', 'type': 'value_error'}]) tblen=2>
