@@ -1,6 +1,6 @@
 from pydantic.v1.class_validators import root_validator
 
-from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators import (
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_capabilities_constants import (
     DeviceCapabilitiesConstants,
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util import (
@@ -22,8 +22,8 @@ class DeviceLocalDetuningValidator(LocalDetuningValidator):
         capabilities = values["capabilities"]
         if not capabilities.LOCAL_RYDBERG_CAPABILITIES:
             raise ValueError(
-                "Local Rydberg capabilities information has not been \
-            provided for local detuning."
+                "Local Rydberg capabilities information has not been "
+                "provided for local detuning."
             )
         return values
 
@@ -37,8 +37,8 @@ class DeviceLocalDetuningValidator(LocalDetuningValidator):
         num_nonzeros = sum([p != 0.0 for p in pattern])
         if num_nonzeros > capabilities.LOCAL_MAX_NONZERO_PATTERN_VALUES:
             raise ValueError(
-                f"Number of nonzero magnitude pattern values is {num_nonzeros};\
-                    it must not be more than {capabilities.LOCAL_MAX_NONZERO_PATTERN_VALUES}"
+                f"Number of nonzero magnitude pattern values is {num_nonzeros}; "
+                f"it must not be more than {capabilities.LOCAL_MAX_NONZERO_PATTERN_VALUES}"
             )
         return values
 
@@ -90,8 +90,8 @@ class DeviceLocalDetuningValidator(LocalDetuningValidator):
             start_value, end_value = time_series_values[0], time_series_values[-1]
             if start_value != 0 or end_value != 0:
                 raise ValueError(
-                    f"The values of the shifting field magnitude time series at the first\
-                        and last time points are {start_value}, {end_value};\
-                            they both must be both 0."
+                    f"The values of the shifting field magnitude time series at the first "
+                    f"and last time points are {start_value}, {end_value}; "
+                    f"they both must be nonzero."
                 )
         return values

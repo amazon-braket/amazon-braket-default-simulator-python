@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators import (
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_capabilities_constants import (
     DeviceCapabilitiesConstants,
 )
 

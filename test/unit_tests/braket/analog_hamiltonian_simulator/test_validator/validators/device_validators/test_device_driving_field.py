@@ -77,74 +77,74 @@ def test_device_driving_field(driving_field_data, non_local_capabilities_constan
         (
             [0.0, 12.1e-9],
             "amplitude",
-            "time point 1 (1.21E-8) of amplitude time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of amplitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9],
             "phase",
-            "time point 1 (1.21E-8) of phase time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of phase time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9],
             "detuning",
-            "time point 1 (1.21E-8) of detuning time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of detuning time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 4e-6],
             "amplitude",
-            "time point 1 (1.21E-8) of amplitude time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of amplitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 4e-6],
             "phase",
-            "time point 1 (1.21E-8) of phase time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of phase time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 4e-6],
             "detuning",
-            "time point 1 (1.21E-8) of detuning time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of detuning time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 22.1e-9],
             "amplitude",
-            "time point 1 (1.21E-8) of amplitude time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of amplitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 22.1e-9],
             "phase",
-            "time point 1 (1.21E-8) of phase time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of phase time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 22.1e-9],
             "detuning",
-            "time point 1 (1.21E-8) of detuning time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of detuning time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 22.1e-9, 12.1e-9],
             "amplitude",
-            "time point 1 (2.21E-8) of amplitude time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (2.21E-8) of amplitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 22.1e-9, 12.1e-9],
             "phase",
-            "time point 1 (2.21E-8) of phase time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (2.21E-8) of phase time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 22.1e-9, 12.1e-9],
             "detuning",
-            "time point 1 (2.21E-8) of detuning time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (2.21E-8) of detuning time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
     ],
 )
@@ -174,8 +174,8 @@ def test_driving_field_no_detuning(mock_driving_field_data, non_local_capabiliti
         (
             [0.0, 22.1e-9, 12, 1e-9, 0.0],
             "amplitude",
-            "Value 1 (2.21E-8) in amplitude time_series is\
-                defined with too many digits; it must be an integer multiple of 400.0",
+            "Value 1 (2.21E-8) in amplitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 400.0",
         )
     ],
 )
@@ -192,38 +192,38 @@ def test_driving_field_value_precision_is_correct(
         (
             [0.0, 9e-9, 25e-9],
             "amplitude",
-            "Time points of amplitude time_series, 0 (0.0) and 1 (9e-09), are too close;\
-                they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
+            "Time points of amplitude time_series, 0 (0.0) and 1 (9e-09), are too close; "
+            "they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
         ),
         (
             [0.0, 9e-9, 25e-9],
             "phase",
-            "Time points of phase time_series, 0 (0.0) and 1 (9e-09), are too close;\
-                they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
+            "Time points of phase time_series, 0 (0.0) and 1 (9e-09), are too close; "
+            "they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
         ),
         (
             [0.0, 9e-9, 25e-9],
             "detuning",
-            "Time points of detuning time_series, 0 (0.0) and 1 (9e-09), are too close;\
-                they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
+            "Time points of detuning time_series, 0 (0.0) and 1 (9e-09), are too close; "
+            "they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
         ),
         (
             [0.0, 9e-9, 25e-9, 30e-9],
             "amplitude",
-            "Time points of amplitude time_series, 0 (0.0) and 1 (9e-09), are too close;\
-                they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
+            "Time points of amplitude time_series, 0 (0.0) and 1 (9e-09), are too close; "
+            "they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
         ),
         (
             [0.0, 9e-9, 25e-9, 30e-9],
             "phase",
-            "Time points of phase time_series, 0 (0.0) and 1 (9e-09), are too close;\
-                they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
+            "Time points of phase time_series, 0 (0.0) and 1 (9e-09), are too close; "
+            "they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
         ),
         (
             [0.0, 9e-9, 25e-9, 30e-9],
             "detuning",
-            "Time points of detuning time_series, 0 (0.0) and 1 (9e-09), are too close;\
-                they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
+            "Time points of detuning time_series, 0 (0.0) and 1 (9e-09), are too close; "
+            "they are separated by 9e-09 seconds. It must be at least 1E-8 seconds",
         ),
     ],
 )
@@ -242,20 +242,20 @@ def test_driving_field_timepoint_not_too_close(
         (
             [2.5e7, 2.5e7, 2.5e7, 0.0],
             "amplitude",
-            "The values of the Rabi frequency at the first and last time points\
-                are 25000000.0, 0.0; they both must be both 0.",
+            "The values of the Rabi frequency at the first and last time points "
+            "are 25000000.0, 0.0; they both must be nonzero.",
         ),
         (
             [0.0, 2.5e7, 2.5e7, 2.5e7],
             "amplitude",
-            "The values of the Rabi frequency at the first and last time points\
-                are 0.0, 25000000.0; they both must be both 0.",
+            "The values of the Rabi frequency at the first and last time points "
+            "are 0.0, 25000000.0; they both must be nonzero.",
         ),
         (
             [2.5e7, 2.5e7, 2.5e7, 2.5e7],
             "amplitude",
-            "The values of the Rabi frequency at the first and last time points\
-                are 25000000.0, 25000000.0; they both must be both 0.",
+            "The values of the Rabi frequency at the first and last time points "
+            "are 25000000.0, 25000000.0; they both must be nonzero.",
         ),
     ],
 )
@@ -274,25 +274,25 @@ def test_driving_field_amplitude_start_and_end_values(
             [0.0, 2.5e7, 0.0],
             [0.0, 0.01e-6, 2.0e-6],
             "amplitude",
-            "For the amplitude field, rate of change of values\
-                (between the 0-th and the 1-th times)\
-                    is 2500000000000000.0, more than 250000000000000",
+            "For the amplitude field, rate of change of values "
+            "(between the 0-th and the 1-th times) "
+            "is 2500000000000000.0, more than 250000000000000",
         ),
         (
             [0.0, 2.5e7, 2.5e7, 0.0],
             [0.0, 0.01e-6, 3.2e-6, 3.21e-6],
             "amplitude",
-            "For the amplitude field, rate of change of values\
-                (between the 0-th and the 1-th times)\
-                    is 2500000000000000.0, more than 250000000000000",
+            "For the amplitude field, rate of change of values "
+            "(between the 0-th and the 1-th times) "
+            "is 2500000000000000.0, more than 250000000000000",
         ),
         (
             [0.0, 2.5e7, 2.5e7, 0.0],
             [0.0, 0.01e-6, 3.2e-6, 3.21e-6],
             "detuning",
-            "For the detuning field, rate of change of values\
-                (between the 0-th and the 1-th times)\
-                    is 2500000000000000.0, more than 250000000000000",
+            "For the detuning field, rate of change of values "
+            "(between the 0-th and the 1-th times) "
+            "is 2500000000000000.0, more than 250000000000000",
         ),
     ],
 )

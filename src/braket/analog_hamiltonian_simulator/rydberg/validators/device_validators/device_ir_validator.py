@@ -13,9 +13,11 @@
 
 from braket.ir.ahs.program_v1 import Program
 
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_capabilities_constants import (
+    DeviceCapabilitiesConstants,
+)
 from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators import (
     DeviceAtomArrangementValidator,
-    DeviceCapabilitiesConstants,
     DeviceDrivingFieldValidator,
     DeviceHamiltonianValidator,
     DeviceLocalDetuningValidator,

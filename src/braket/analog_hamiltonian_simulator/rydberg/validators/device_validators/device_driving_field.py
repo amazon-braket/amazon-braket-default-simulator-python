@@ -1,6 +1,6 @@
 from pydantic.v1.class_validators import root_validator
 
-from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators import (
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_capabilities_constants import (
     DeviceCapabilitiesConstants,
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.driving_field import (
@@ -29,8 +29,8 @@ class DeviceDrivingFieldValidator(DrivingFieldValidator):
             start_value, end_value = time_series_values[0], time_series_values[-1]
             if start_value != 0 or end_value != 0:
                 raise ValueError(
-                    f"The values of the Rabi frequency at the first and last time points are \
-                        {start_value}, {end_value}; they both must be both 0."
+                    f"The values of the Rabi frequency at the first and last time points are "
+                    f"{start_value}, {end_value}; they both must be nonzero."
                 )
         return values
 

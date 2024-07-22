@@ -6,7 +6,7 @@ from pydantic.v1.class_validators import root_validator
 from braket.analog_hamiltonian_simulator.rydberg.validators.atom_arrangement import (
     AtomArrangementValidator,
 )
-from braket.analog_hamiltonian_simulator.rydberg.validators.device_validators import (
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_capabilities_constants import (
     DeviceCapabilitiesConstants,
 )
 
@@ -37,8 +37,8 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
                 [Decimal(str(coordinate)) % capabilities.SITE_PRECISION == 0 for coordinate in s]
             ):
                 raise ValueError(
-                    f"Coordinates {idx}({s}) is defined with too high precision;\
-                        they must be multiples of {capabilities.SITE_PRECISION} meters"
+                    f"Coordinates {idx}({s}) is defined with too high precision;"
+                    f"they must be multiples of {capabilities.SITE_PRECISION} meters"
                 )
         return values
 
@@ -50,8 +50,8 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
         num_sites = len(sites)
         if num_sites > capabilities.MAX_SITES:
             raise ValueError(
-                f"There are too many sites ({num_sites}); there must be at most\
-                    {capabilities.MAX_SITES} sites"
+                f"There are too many sites ({num_sites}); there must be at most "
+                f"{capabilities.MAX_SITES} sites"
             )
         return values
 
@@ -71,8 +71,8 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
                 continue
             if row_distance < min_allowed_distance:
                 raise ValueError(
-                    f"Sites {s1} and site {s2} have y-separation ({row_distance}). It must\
-                        either be exactly zero or not smaller than {min_allowed_distance} meters"
+                    f"Sites {s1} and site {s2} have y-separation ({row_distance}). It must "
+                    f"either be exactly zero or not smaller than {min_allowed_distance} meters"
                 )
         return values
 
@@ -84,7 +84,7 @@ class DeviceAtomArrangementValidator(AtomArrangementValidator):
         qubits = sum(filling)
         if qubits > capabilities.MAX_FILLED_SITES:
             raise ValueError(
-                f"Filling has {qubits} '1' entries; is must have not\
-                    more than {capabilities.MAX_FILLED_SITES}"
+                f"Filling has {qubits} '1' entries; it must have not "
+                f"more than {capabilities.MAX_FILLED_SITES}"
             )
         return values

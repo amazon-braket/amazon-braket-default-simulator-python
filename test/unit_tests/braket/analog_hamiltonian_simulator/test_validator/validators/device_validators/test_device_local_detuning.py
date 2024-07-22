@@ -53,8 +53,9 @@ def test_validation_no_time_series(mock_local_detuning_data, capabilities_with_l
 
 
 def test_validation_no_detuning_data(mock_local_detuning_data, non_local_capabilities_constants):
-    error_message = "Local Rydberg capabilities information has not been \
-            provided for local detuning."
+    error_message = (
+        "Local Rydberg capabilities information has not been " "provided for local detuning."
+    )
     non_local_capabilities_constants.LOCAL_RYDBERG_CAPABILITIES = False
     with pytest.raises(ValueError) as e:
         DeviceLocalDetuningValidator(
@@ -80,16 +81,16 @@ def test_shifting_field_magnitude_pattern_have_not_too_many_nonzeros(
         (
             [0.0, 2.5e7, 0.0],
             [0.0, 0.01e-6, 2.0e-6],
-            "For the magnitude field, rate of change of values\
-                (between the 0-th and the 1-th times)\
-                    is 2500000000000000.0, more than 1256600000000000.0",
+            "For the magnitude field, rate of change of values "
+            "(between the 0-th and the 1-th times) "
+            "is 2500000000000000.0, more than 1256600000000000.0",
         ),
         (
             [0.0, 2.5e7, 2.5e7, 0.0],
             [0.0, 0.01e-6, 3.2e-6, 3.21e-6],
-            "For the magnitude field, rate of change of values\
-                (between the 0-th and the 1-th times)\
-                    is 2500000000000000.0, more than 1256600000000000.0",
+            "For the magnitude field, rate of change of values "
+            "(between the 0-th and the 1-th times) "
+            "is 2500000000000000.0, more than 1256600000000000.0",
         ),
     ],
 )
@@ -106,23 +107,23 @@ def test_local_detuning_slopes_not_too_steep(
     [
         (
             [0.0, 12.1e-9],
-            "time point 1 (1.21E-8) of magnitude time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of magnitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 4e-6],
-            "time point 1 (1.21E-8) of magnitude time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of magnitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 12.1e-9, 22.1e-9],
-            "time point 1 (1.21E-8) of magnitude time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (1.21E-8) of magnitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
         (
             [0.0, 22.1e-9, 12.1e-9],
-            "time point 1 (2.21E-8) of magnitude time_series is\
-                defined with too many digits; it must be an integer multiple of 1E-9",
+            "time point 1 (2.21E-8) of magnitude time_series is "
+            "defined with too many digits; it must be an integer multiple of 1E-9",
         ),
     ],
 )
@@ -140,18 +141,18 @@ def test_shifting_field_magnitude_time_precision_is_correct(
     [
         (
             [0.0, 1.0, 2.0],
-            "The values of the shifting field magnitude time series at\
-                the first and last time points are 0.0, 2.0; they both must be both 0.",
+            "The values of the shifting field magnitude time series at "
+            "the first and last time points are 0.0, 2.0; they both must be nonzero.",
         ),
         (
             [0.2, 1.0, 0],
-            "The values of the shifting field magnitude time series at\
-                the first and last time points are 0.2, 0; they both must be both 0.",
+            "The values of the shifting field magnitude time series at "
+            "the first and last time points are 0.2, 0; they both must be nonzero.",
         ),
         (
             [0.0, 0.0, 1e-5],
-            "The values of the shifting field magnitude time series at\
-                the first and last time points are 0.0, 1e-05; they both must be both 0.",
+            "The values of the shifting field magnitude time series at "
+            "the first and last time points are 0.0, 1e-05; they both must be nonzero.",
         ),
     ],
 )
