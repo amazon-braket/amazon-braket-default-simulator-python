@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from copy import deepcopy
+from typing import Union
 
 from braket.ir.ahs.program_v1 import Program
 from pydantic.v1 import root_validator
@@ -20,13 +21,16 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers impor
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
 )
+from braket.analog_hamiltonian_simulator.rydberg.validators.device_capabilities_constants import (
+    DeviceCapabilitiesConstants,
+)
 from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util import (
     validate_net_detuning_with_warning,
 )
 
 
 class ProgramValidator(Program):
-    capabilities: CapabilitiesConstants
+    capabilities: Union[CapabilitiesConstants, DeviceCapabilitiesConstants]
 
     # The pattern of the shifting field must have the same length as the lattice_sites
     @root_validator(pre=True, skip_on_failure=True)
@@ -61,7 +65,7 @@ class ProgramValidator(Program):
         # If no local detuning, we simply return the values
         # because there are separate validators to validate
         # the global driving fields in the program
-        if not len(local_detuning):
+        if not len(local_detuning) or not capabilities.MAX_NET_DETUNING:
             return values
 
         detuning_times = [
