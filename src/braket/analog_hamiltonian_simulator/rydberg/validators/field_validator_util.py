@@ -108,16 +108,16 @@ def validate_net_detuning_with_warning(
 
 def validate_time_separation(times: List[Decimal], min_time_separation: Decimal, name: str) -> None:
     """
-    Used in Device Emulation; Validate that the time points in a time series are separated by at 
-    least min_time_separation. 
-    
+    Used in Device Emulation; Validate that the time points in a time series are separated by at
+    least min_time_separation.
+
     Args:
-        times (List[Decimal]): A list of time points in a time series. 
-        min_time_separation (Decimal): The minimal amount of time any two time points should be 
-            separated by. 
+        times (List[Decimal]): A list of time points in a time series.
+        min_time_separation (Decimal): The minimal amount of time any two time points should be
+            separated by.
         name (str): The name of the time series, used for logging.
-    
-    Raises: 
+
+    Raises:
         ValueError: If any two subsequent time points (assuming the time points are sorted
         in ascending order) are separated by less than min_time_separation.
     """
@@ -130,17 +130,18 @@ def validate_time_separation(times: List[Decimal], min_time_separation: Decimal,
                 f"by {time_diff} seconds. It must be at least {min_time_separation} seconds"
             )
 
+
 def validate_value_precision(values: List[Decimal], max_precision: Decimal, name: str) -> None:
     """
     Used in Device Emulation; Validate that the precision of a set of values do not
     exceed max_precision.
-    
+
     Args:
-        times (List[Decimal]): A list of values from a time series to validate. 
-        max_precision (Decimal): The maximum allowed precision. 
+        times (List[Decimal]): A list of values from a time series to validate.
+        max_precision (Decimal): The maximum allowed precision.
         name (str): The name of the time series, used for logging.
-    
-    Raises: 
+
+    Raises:
         ValueError: If any of the given values is defined with precision exceeding max_precision.
     """
     for idx, v in enumerate(values):
@@ -150,20 +151,21 @@ def validate_value_precision(values: List[Decimal], max_precision: Decimal, name
                 f"it must be an integer multiple of {max_precision}"
             )
 
+
 def validate_max_absolute_slope(
     times: List[Decimal], values: List[Decimal], max_slope: Decimal, name: str
 ):
     """
-    Used in Device Emulation; Validate that the magnitude of the slope between any 
+    Used in Device Emulation; Validate that the magnitude of the slope between any
     two subsequent points in a time series (time points provided in ascending order) does not
     exceed max_slope.
-    
+
     Args:
-        times (List[Decimal]): A list of time points in a time series. 
+        times (List[Decimal]): A list of time points in a time series.
         max_slope (Decimal): The maximum allowed rate of change between points in the time series.
         name (str): The name of the time series, used for logging.
-    
-    Raises: 
+
+    Raises:
         ValueError: if at any time the time series (times, values)
         rises/falls faster than allowed.
     """
@@ -176,17 +178,18 @@ def validate_max_absolute_slope(
                 f"is {abs(slope)}, more than {max_slope}"
             )
 
+
 def validate_time_precision(times: List[Decimal], time_precision: Decimal, name: str):
     """
     Used in Device Emulation; Validate that the precision of a set of time points do not
     exceed max_precision.
-    
+
     Args:
-        times (List[Decimal]): A list of time points to validate. 
-        max_precision (Decimal): The maximum allowed precision. 
+        times (List[Decimal]): A list of time points to validate.
+        max_precision (Decimal): The maximum allowed precision.
         name (str): The name of the time series, used for logging.
-    
-    Raises: 
+
+    Raises:
         ValueError: If any of the given time points is defined with
         precision exceeding max_precision.
     """
