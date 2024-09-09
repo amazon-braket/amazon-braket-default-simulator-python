@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from decimal import Decimal
+from typing import Optional
 
 from pydantic import PositiveInt
 from pydantic.v1.main import BaseModel
@@ -33,4 +34,4 @@ class CapabilitiesConstants(BaseModel):
 
     MAGNITUDE_PATTERN_VALUE_MIN: Decimal
     MAGNITUDE_PATTERN_VALUE_MAX: Decimal
-    MAX_NET_DETUNING: Decimal
+    MAX_NET_DETUNING: Optional[Decimal]
