@@ -81,7 +81,7 @@ def ahs_noise_simulation_v2(
         deviceId="NoisyRydbergLocalSimulator",
     )            
 
-    with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
+    with mp.Pool(processes=mp.cpu_count()-1, initializer=np.random.seed) as p:
         measurements = p.map(get_shot_measurement, [[program, noise_model, steps] for _ in range(shots)])
     
     return AnalogHamiltonianSimulationTaskResult(
