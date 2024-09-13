@@ -118,8 +118,8 @@ class NoisyRydbergAtomTNSimulator(BaseLocalSimulator):
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 9.2e-6,
         max_bond_dim = 4,
-        apply_noise: bool = True
-        noise_model: Performance = None
+        apply_noise: bool = True,
+        noise_model: Performance = None,
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
