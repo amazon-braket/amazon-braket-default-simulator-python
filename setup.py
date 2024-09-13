@@ -59,6 +59,11 @@ setup(
                 "braket_ahs_tn = "
                 "braket.analog_hamiltonian_simulator.rydberg.rydberg_tn_julia_simulator:"
                 "RydbergAtomTNSimulator",
+            ),
+            (
+                "braket_ahs_tn_noisy = "
+                "braket.analog_hamiltonian_simulator.rydberg.rydberg_tn_julia_noisy_simulator:"
+                "NoisyRydbergAtomTNSimulator",
             ),            
         ]
     },

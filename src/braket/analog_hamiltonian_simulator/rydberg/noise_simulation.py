@@ -369,6 +369,54 @@ def get_shot_measurement(
     )       
     return shot_measurement
 
+def get_shot_measurement_tn(
+    args,
+    # simulator = LocalSimulator("braket_ahs")
+    # program: AnalogHamiltonianSimulation,
+    # noise_model: Performance,
+    # steps: int = 100,    
+):
+    program, noise_model, steps, simulator, blockade_radius, max_bond_dim = args[0], args[1], args[2], args[3], args[4], args[5]
+
+    # sites, fillings, preseq = apply_lattice_noise(program, noise_model.lattice)
+    # drive, shift = apply_rydberg_noise(program, noise_model.rydberg)
+    sites, fillings, preseq = apply_lattice_initialization_errors(program, noise_model)
+    drive, shift = apply_rydberg_noise(program, noise_model, steps)
+
+    # Assemble the noisy program
+    register = AtomArrangement()
+    for (site, filling) in zip(sites, fillings):
+        if filling == 1:
+            register.add(site)
+        else:
+            register.add(site, site_type=SiteType.VACANT)
+
+    noisy_program = AnalogHamiltonianSimulation(
+        register=register, 
+        hamiltonian=drive+shift
+    )
+
+    result = simulator.run(noisy_program, shots=1, steps=steps, blockade_radius=blockade_radius, max_bond_dim=max_bond_dim).result()
+
+    postseq = result.measurements[0].post_sequence
+    new_postseq = apply_measurement_errors(postseq, noise_model)
+
+    # # Aplly groundDetectionError and rydbergDetectionError
+    # grd_det_error = float(performance.rydberg.rydbergGlobal.groundDetectionError)
+    # ryd_det_error = float(performance.rydberg.rydbergGlobal.rydbergDetectionError)
+
+    # new_postseq = apply_binomial_noise(postseq, ryd_det_error, grd_det_error)
+
+
+    shot_measurement = AnalogHamiltonianSimulationShotMeasurement(
+        shotMetadata=AnalogHamiltonianSimulationShotMetadata(shotStatus="Success"),
+        shotResult=AnalogHamiltonianSimulationShotResult(
+            preSequence=preseq, postSequence=new_postseq
+        ),
+    )       
+    return shot_measurement
+
+
 def ahs_noise_simulation(
     program: AnalogHamiltonianSimulation,
     noise_model: Performance,
