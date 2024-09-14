@@ -99,7 +99,7 @@ def ahs_noise_simulation_v2(
     )
 
     with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
-        measurements = p.map(get_shot_measurement, [[program, noise_model, steps, LocalSimulator("braket_ahs_tn"), blockade_radius, max_bond_dim] for _ in range(shots)])
+        measurements = p.map(get_shot_measurement_tn, [[program, noise_model, steps, LocalSimulator("braket_ahs_tn"), blockade_radius, max_bond_dim] for _ in range(shots)])
     
     return AnalogHamiltonianSimulationTaskResult(
         taskMetadata=task_metadata, measurements=measurements
@@ -109,7 +109,6 @@ def ahs_noise_simulation_v2(
 class NoisyRydbergAtomTNSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_ahs_tn_noisy"
 
-
     def run(
         self, 
         program: Program,
@@ -118,96 +117,117 @@ class NoisyRydbergAtomTNSimulator(BaseLocalSimulator):
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 9.2e-6,
         max_bond_dim = 4,
-        apply_noise: bool = True,
-        noise_model: Performance = None,
+        # apply_noise: bool = True,
+        # noise_model: Performance = None,
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
         
-        if apply_noise:
-            if noise_model is None:
-                noise_model = qpu.properties.paradigm.performance
+        noise_model = qpu.properties.paradigm.performance
 
-            program_non_ir = convert_ir_program_back(program)
-            return ahs_noise_simulation_v2(program_non_ir, noise_model, shots, steps, blockade_radius=blockade_radius, max_bond_dim=max_bond_dim)
+        program_non_ir = convert_ir_program_back(program)
+        return ahs_noise_simulation_v2(program_non_ir, noise_model, shots, steps, blockade_radius=blockade_radius, max_bond_dim=max_bond_dim)
 
 
-        else:
-            return self.noiseless_run(
-                program, 
-                shots=shots,
-                steps=steps,
-                rydberg_interaction_coef=rydberg_interaction_coef,
-                blockade_radius=blockade_radius,
-                max_bond_dim=max_bond_dim,
-                *args,
-                **kwargs
-            )
 
-    def noiseless_run(
-        self, 
-        program: Program,
-        shots: int = 1000,
-        steps: int = 60,
-        rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
-        blockade_radius: float = 9.2e-6,
-        max_bond_dim = 4,
-        *args,
-        **kwargs
-    ) -> AnalogHamiltonianSimulationTaskResult:
+    # def run(
+    #     self, 
+    #     program: Program,
+    #     shots: int = 1000,
+    #     steps: int = 60,
+    #     rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
+    #     blockade_radius: float = 9.2e-6,
+    #     max_bond_dim = 4,
+    #     apply_noise: bool = True,
+    #     noise_model: Performance = None,
+    #     *args,
+    #     **kwargs
+    # ) -> AnalogHamiltonianSimulationTaskResult:
         
-        task_metadata = TaskMetadata(
-            id="rydberg",
-            shots=shots,
-            deviceId="NoisyRydbergAtomTNSimulator",
-        )
+    #     if apply_noise:
+    #         if noise_model is None:
+    #             noise_model = qpu.properties.paradigm.performance
+
+    #         program_non_ir = convert_ir_program_back(program)
+    #         return ahs_noise_simulation_v2(program_non_ir, noise_model, shots, steps, blockade_radius=blockade_radius, max_bond_dim=max_bond_dim)
+
+
+    #     else:
+    #         return self.noiseless_run(
+    #             program, 
+    #             shots=shots,
+    #             steps=steps,
+    #             rydberg_interaction_coef=rydberg_interaction_coef,
+    #             blockade_radius=blockade_radius,
+    #             max_bond_dim=max_bond_dim,
+    #             *args,
+    #             **kwargs
+    #         )
+
+    # def noiseless_run(
+    #     self, 
+    #     program: Program,
+    #     shots: int = 1000,
+    #     steps: int = 60,
+    #     rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
+    #     blockade_radius: float = 9.2e-6,
+    #     max_bond_dim = 4,
+    #     *args,
+    #     **kwargs
+    # ) -> AnalogHamiltonianSimulationTaskResult:
         
-        # Convert the program into json and save it
-        uuid = os.getpid()
-        folder = f".{uuid}"
+    #     task_metadata = TaskMetadata(
+    #         id="rydberg",
+    #         shots=shots,
+    #         deviceId="NoisyRydbergAtomTNSimulator",
+    #     )
+        
+    #     # Convert the program into json and save it
+    #     uuid = os.getpid()
+    #     folder = f".{uuid}"
 
-        if os.path.exists(folder) is False:
-            os.mkdir(folder)
+    #     if os.path.exists(folder) is False:
+    #         os.mkdir(folder)
 
-        os.chdir(folder)
+    #     os.chdir(folder)
 
-        json_data = json.loads(program.json())
-        json_string = json.dumps(json_data, indent=4) 
-        filename = f"ahs_program.json"
-        with open(filename, "w") as json_file:
-            json_file.write(json_string)
+    #     json_data = json.loads(program.json())
+    #     json_string = json.dumps(json_data, indent=4) 
+    #     filename = f"ahs_program.json"
+    #     with open(filename, "w") as json_file:
+    #         json_file.write(json_string)
 
-        # Run with Julia
-        with open(f"tn_solver.jl", "w") as text_file:
-            txt = 'using BraketAHS; run_program("ahs_program.json",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}" + ')'
-            text_file.write(txt)
+    #     # Run with Julia
+    #     with open(f"tn_solver.jl", "w") as text_file:
+    #         txt = 'using BraketAHS; run_program("ahs_program.json",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}" + ')'
+    #         text_file.write(txt)
             
-        subprocess.run(['julia', '-t', '16', 'tn_solver.jl'])
+    #     subprocess.run(['julia', '-t', '16', 'tn_solver.jl'])
         
-        # Get the shot measurement
-        preSequence = program.setup.ahs_register.filling
+    #     # Get the shot measurement
+    #     preSequence = program.setup.ahs_register.filling
         
-        postseqs = np.loadtxt("mps_samples.txt", dtype='int', delimiter='\t')
-        postseqs = np.transpose(postseqs)
-        postseqs = [list(item) for item in postseqs]
+    #     postseqs = np.loadtxt("mps_samples.txt", dtype='int', delimiter='\t')
+    #     postseqs = np.transpose(postseqs)
+    #     postseqs = [list(item) for item in postseqs]
 
-        measurements = []
-        for postseq in postseqs:
-            shot_measurement = AnalogHamiltonianSimulationShotMeasurement(
-                shotMetadata=AnalogHamiltonianSimulationShotMetadata(shotStatus="Success"),
-                shotResult=AnalogHamiltonianSimulationShotResult(
-                    preSequence=preSequence, postSequence=postseq
-                ),
-            )
-            measurements.append(shot_measurement)
+    #     measurements = []
+    #     for postseq in postseqs:
+    #         shot_measurement = AnalogHamiltonianSimulationShotMeasurement(
+    #             shotMetadata=AnalogHamiltonianSimulationShotMetadata(shotStatus="Success"),
+    #             shotResult=AnalogHamiltonianSimulationShotResult(
+    #                 preSequence=preSequence, postSequence=postseq
+    #             ),
+    #         )
+    #         measurements.append(shot_measurement)
             
-        # Delete the files
-        # subprocess.run(['rm', '-r', folder])
+    #     # Delete the files
+    #     # subprocess.run(['rm', '-r', folder])
 
-        return AnalogHamiltonianSimulationTaskResult(
-            taskMetadata=task_metadata, 
-            measurements=measurements,
-        )
+    #     return AnalogHamiltonianSimulationTaskResult(
+    #         taskMetadata=task_metadata, 
+    #         measurements=measurements,
+    #     )
 
 
     @property
