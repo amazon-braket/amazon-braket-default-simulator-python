@@ -109,6 +109,8 @@ def ahs_noise_simulation_v2(
 class NoisyRydbergAtomTNSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_ahs_tn_noisy"
 
+    print("i am at braket_ahs_tn_noisy")
+
     def run(
         self, 
         program: Program,
