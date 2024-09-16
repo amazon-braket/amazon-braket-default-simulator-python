@@ -89,9 +89,12 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 9.2e-6,
         max_bond_dim = 4,
+        solver = "tebd", # 
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
+        
+        assert solver in ['tebd', 'tdvp']
         
         task_metadata = TaskMetadata(
             id="rydberg",
@@ -116,7 +119,16 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
 
         # Run with Julia
         with open(f"tn_solver.jl", "w") as text_file:
-            txt = 'using BraketAHS; run_program("ahs_program.json",' + f"interaction_radius={blockade_radius}, " + f"n_tau_steps={steps}, " + f"shots={shots}, " + f"max_bond_dim={max_bond_dim}" + ')'
+            txt = (
+                'using BraketAHS; '
+                'run_program("ahs_program.json",'
+                f"interaction_radius={blockade_radius}, "
+                f"n_tau_steps={steps}, "
+                f"shots={shots}, "
+                f"max_bond_dim={max_bond_dim}"
+                f"solver={solver}"
+                ')'
+            )
             text_file.write(txt)
             
         subprocess.run(['julia', '-t', '16', 'tn_solver.jl'])

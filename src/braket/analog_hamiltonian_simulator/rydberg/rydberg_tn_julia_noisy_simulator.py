@@ -91,7 +91,9 @@ def ahs_noise_simulation_v2(
     steps: int = 100,
     blockade_radius: float = 9.2e-6,
     max_bond_dim = 4,
+    solver="tebd",
 ):
+    assert solver in ['tebd', 'tdvp']
     task_metadata = TaskMetadata(
         id="rydberg",
         shots=shots,
@@ -99,7 +101,7 @@ def ahs_noise_simulation_v2(
     )
 
     with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
-        measurements = p.map(get_shot_measurement_tn, [[program, noise_model, steps, LocalSimulator("braket_ahs_tn"), blockade_radius, max_bond_dim] for _ in range(shots)])
+        measurements = p.map(get_shot_measurement_tn, [[program, noise_model, steps, blockade_radius, max_bond_dim, solver] for _ in range(shots)])
     
     return AnalogHamiltonianSimulationTaskResult(
         taskMetadata=task_metadata, measurements=measurements
@@ -119,18 +121,18 @@ class NoisyRydbergAtomTNSimulator(BaseLocalSimulator):
         rydberg_interaction_coef: float = RYDBERG_INTERACTION_COEF,
         blockade_radius: float = 9.2e-6,
         max_bond_dim = 4,
+        solver="tebd",
         # apply_noise: bool = True,
         # noise_model: Performance = None,
         *args,
         **kwargs
     ) -> AnalogHamiltonianSimulationTaskResult:
         
+        assert solver in ['tebd', 'tdvp']
         noise_model = qpu.properties.paradigm.performance
 
         program_non_ir = convert_ir_program_back(program)
-        return ahs_noise_simulation_v2(program_non_ir, noise_model, shots, steps, blockade_radius=blockade_radius, max_bond_dim=max_bond_dim)
-
-
+        return ahs_noise_simulation_v2(program_non_ir, noise_model, shots, steps, blockade_radius=blockade_radius, max_bond_dim=max_bond_dim, solver=solver)
 
     # def run(
     #     self, 
