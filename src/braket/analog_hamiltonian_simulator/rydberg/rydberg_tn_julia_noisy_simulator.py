@@ -101,7 +101,7 @@ def ahs_noise_simulation_v2(
     )
 
     with mp.Pool(processes=mp.cpu_count(), initializer=np.random.seed) as p:
-        measurements = p.map(get_shot_measurement_tn, [[program, noise_model, steps, blockade_radius, max_bond_dim, solver] for _ in range(shots)])
+        measurements = p.map(get_shot_measurement_tn, [[program, noise_model, steps, blockade_radius, max_bond_dim, solver, LocalSimulator("braket_ahs_tn")] for _ in range(shots)])
     
     return AnalogHamiltonianSimulationTaskResult(
         taskMetadata=task_metadata, measurements=measurements

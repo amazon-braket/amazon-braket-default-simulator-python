@@ -371,12 +371,12 @@ def get_shot_measurement(
 
 def get_shot_measurement_tn(
     args,
-    simulator = LocalSimulator("braket_ahs_tn"),
+    # simulator = LocalSimulator("braket_ahs_tn"),
     # program: AnalogHamiltonianSimulation,
     # noise_model: Performance,
     # steps: int = 100,    
 ):
-    program, noise_model, steps, blockade_radius, max_bond_dim, solver = args[0], args[1], args[2], args[3], args[4], args[5]
+    program, noise_model, steps, blockade_radius, max_bond_dim, solver, simulator = args[0], args[1], args[2], args[3], args[4], args[5], args[6]
 
     # sites, fillings, preseq = apply_lattice_noise(program, noise_model.lattice)
     # drive, shift = apply_rydberg_noise(program, noise_model.rydberg)
