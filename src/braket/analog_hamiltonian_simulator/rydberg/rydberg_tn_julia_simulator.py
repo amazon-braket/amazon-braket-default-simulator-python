@@ -119,17 +119,6 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
 
         # Run with Julia
         with open(f"tn_solver.jl", "w") as text_file:
-            # txt = (
-            #     'using BraketAHS; '
-            #     'run_program("ahs_program.json",'
-            #     f"interaction_radius={blockade_radius}, "
-            #     f"n_tau_steps={steps}, "
-            #     f"shots={shots}, "
-            #     f"max_bond_dim={max_bond_dim}, "
-            #     f"solver={solver}"
-            #     ')'
-            # )
-
             txt = (
                 'using BraketAHS; '
                 'run_program("ahs_program.json",'
@@ -140,8 +129,6 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
                 f"solver=\"{solver}\""
                 ')'
             )
-                        
-            print(txt)
             text_file.write(txt)
             
         subprocess.run(['julia', '-t', '16', 'tn_solver.jl'])
