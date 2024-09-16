@@ -129,6 +129,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
                 f"solver={solver}"
                 ')'
             )
+            print(txt)
             text_file.write(txt)
             
         subprocess.run(['julia', '-t', '16', 'tn_solver.jl'])
