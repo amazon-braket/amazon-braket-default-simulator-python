@@ -125,7 +125,7 @@ class RydbergAtomTNSimulator(BaseLocalSimulator):
                 f"interaction_radius={blockade_radius}, "
                 f"n_tau_steps={steps}, "
                 f"shots={shots}, "
-                f"max_bond_dim={max_bond_dim}"
+                f"max_bond_dim={max_bond_dim}, "
                 f"solver={solver}"
                 ')'
             )
