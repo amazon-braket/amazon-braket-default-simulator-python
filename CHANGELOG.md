@@ -1,5 +1,67 @@
 # Changelog
 
+## v1.26.0 (2024-06-27)
+
+### Features
+
+ * Introduce `run_multiple` method
+
+### Bug Fixes and Other Changes
+
+ * Ignore `qubit_count` parameter for JAQCD
+
+## v1.25.0 (2024-06-26)
+
+### Features
+
+ * Track classical register indices for measurements
+
+### Bug Fixes and Other Changes
+
+ * Include measured in noncontiguous qubit map
+
+## v1.24.1 (2024-06-26)
+
+### Bug Fixes and Other Changes
+
+ * Use csr_matrix.getH() instead of H
+
+## v1.24.0 (2024-06-24)
+
+### Features
+
+ * support non-contiguous qubit indices local simulator
+
+## v1.23.4 (2024-06-20)
+
+### Bug Fixes and Other Changes
+
+ * use numpy for float comparison
+
+## v1.23.3 (2024-06-19)
+
+### Bug Fixes and Other Changes
+
+ * fix signed integer casting
+
+## v1.23.2 (2024-05-02)
+
+### Bug Fixes and Other Changes
+
+ * Integer division for `IntegerLiteral`s
+
+## v1.23.1 (2024-04-29)
+
+### Bug Fixes and Other Changes
+
+ * Optional ctrl for `U`, add tests
+
+## v1.23.0 (2024-04-22)
+
+### Features
+
+ * add phaserx gate
+
 ## v1.22.0 (2024-04-16)
 
 ### Features

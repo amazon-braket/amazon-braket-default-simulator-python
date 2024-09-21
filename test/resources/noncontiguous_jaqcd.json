@@ -1,0 +1,9 @@
+{
+    "braketSchemaHeader": {"name": "braket.ir.jaqcd.program", "version": "1"},
+    "instructions": [
+        {"target": 2, "type": "h"},
+        {"control": 2, "target": 9, "type": "cnot"}
+    ],
+    "results": [],
+    "basis_rotation_instructions": []
+}

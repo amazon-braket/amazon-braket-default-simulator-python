@@ -12,7 +12,10 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Union
+from collections.abc import Sequence
+from multiprocessing import Pool
+from os import cpu_count
+from typing import Optional, Union
 
 from braket.device_schema import DeviceCapabilities
 from braket.ir.ahs import Program as AHSProgram
@@ -49,7 +52,7 @@ class BraketSimulator(ABC):
         Run the task specified by the given IR.
 
         Extra arguments will contain any additional information necessary to run the task,
-        such as number of qubits.
+        such as the extra parameters for AHS simulations.
 
         Args:
             ir (Union[OQ3Program, AHSProgram, JaqcdProgram]): The IR representation of the program
@@ -58,6 +61,40 @@ class BraketSimulator(ABC):
             Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]: An object
             representing the results of the simulation.
         """
+
+    def run_multiple(
+        self,
+        programs: Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]],
+        max_parallel: Optional[int] = None,
+        *args,
+        **kwargs,
+    ) -> list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]:
+        """
+        Run the tasks specified by the given IR programs.
+
+        Extra arguments will contain any additional information necessary to run the tasks,
+        such as the extra parameters for AHS simulations.
+
+        Args:
+            programs (Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
+                of the programs
+            max_parallel (Optional[int]): The maximum number of programs to run in parallel.
+                Default is the number of logical CPUs.
+
+        Returns:
+            list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]: A list of
+            result objects, with the ith object being the result of the ith program.
+        """
+        max_parallel = max_parallel or cpu_count()
+        with Pool(min(max_parallel, len(programs))) as pool:
+            param_list = [(program, args, kwargs) for program in programs]
+            results = pool.starmap(self._run_wrapped, param_list)
+        return results
+
+    def _run_wrapped(
+        self, ir: Union[OQ3Program, AHSProgram, JaqcdProgram], args, kwargs
+    ):  # pragma: no cover
+        return self.run(ir, *args, **kwargs)
 
     @property
     @abstractmethod

@@ -86,12 +86,14 @@ def _(into: IntType, variable: LiteralType) -> IntegerLiteral:
     if isinstance(variable, ArrayLiteral):
         value = int("".join("01"[x.value] for x in variable.values[1:]), base=2)
         if variable.values[0].value:
-            value *= -1
+            value -= 2 ** (len(variable.values) - 1)
     else:
         value = variable.value
         if into.size is not None:
-            limit = 2 ** (into.size.value - 1)
-            value = int(np.sign(value) * (np.abs(int(value)) % limit))
+            limit = 2**into.size.value
+            value = int(value) % limit
+            if (value) >= limit / 2:
+                value -= limit
             if value != variable.value:
                 warnings.warn(
                     f"Integer overflow for value {variable.value} and size {into.size.value}."
