@@ -108,7 +108,8 @@ class DensityMatrixSimulation(Simulation):
         return np.reshape(dm_tensor, (2**qubit_count, 2**qubit_count))
 
     def retrieve_samples(self) -> list[int]:
-        return np.random.choice(
+        rng_generator = np.random.default_rng()
+        return rng_generator.choice(
             self._density_matrix.shape[0], p=self.probabilities, size=self._shots
         )
 
