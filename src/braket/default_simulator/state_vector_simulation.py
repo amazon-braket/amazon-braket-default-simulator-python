@@ -107,7 +107,8 @@ class StateVectorSimulation(Simulation):
         return np.reshape(final, 2**qubit_count)
 
     def retrieve_samples(self) -> list[int]:
-        return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
+        rng_generator = np.random.default_rng()
+        return rng_generator.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
 
     @property
     def state_vector(self) -> np.ndarray:
