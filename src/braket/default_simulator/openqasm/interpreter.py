@@ -312,7 +312,8 @@ class Interpreter:
 
     def inline_gate_def_body(self, body: list[QuantumStatement]) -> list[QuantumStatement]:
         inlined_body = []
-        for statement in body:
+        statement = body.pop(0) if body else None
+        while statement is not None:
             if isinstance(statement, QuantumPhase):
                 statement.argument = self.visit(statement.argument)
                 statement.modifiers = self.visit(statement.modifiers)
@@ -320,6 +321,10 @@ class Interpreter:
                     statement = invert_phase(statement)
                 if is_controlled(statement):
                     statement = convert_phase_to_gate(statement)
+                    if isinstance(statement, list):
+                        for gate in reversed(statement):
+                            body.insert(0, gate)
+                        continue
                 # statement is a quantum phase instruction
                 else:
                     inlined_body.append(statement)
@@ -359,6 +364,7 @@ class Interpreter:
                         ctrl_qubits,
                         pow_modifiers,
                     )
+            statement = body.pop(0) if body else None
         return inlined_body
 
     @visit.register
