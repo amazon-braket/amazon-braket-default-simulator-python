@@ -104,3 +104,99 @@ def validate_net_detuning_with_warning(
                 # Return immediately if there is an atom has net detuning
                 # exceeding MAX_NET_DETUNING at a time point
                 return program
+
+
+def validate_time_separation(times: List[Decimal], min_time_separation: Decimal, name: str) -> None:
+    """
+    Used in Device Emulation; Validate that the time points in a time series are separated by at
+    least min_time_separation.
+
+    Args:
+        times (List[Decimal]): A list of time points in a time series.
+        min_time_separation (Decimal): The minimal amount of time any two time points should be
+            separated by.
+        name (str): The name of the time series, used for logging.
+
+    Raises:
+        ValueError: If any two subsequent time points (assuming the time points are sorted
+        in ascending order) are separated by less than min_time_separation.
+    """
+    for i in range(len(times) - 1):
+        time_diff = times[i + 1] - times[i]
+        if time_diff < min_time_separation:
+            raise ValueError(
+                f"Time points of {name} time_series, {i} ({times[i]}) and "
+                f"{i + 1} ({times[i + 1]}), are too close; they are separated "
+                f"by {time_diff} seconds. It must be at least {min_time_separation} seconds"
+            )
+
+
+def validate_value_precision(values: List[Decimal], max_precision: Decimal, name: str) -> None:
+    """
+    Used in Device Emulation; Validate that the precision of a set of values do not
+    exceed max_precision.
+
+    Args:
+        times (List[Decimal]): A list of values from a time series to validate.
+        max_precision (Decimal): The maximum allowed precision.
+        name (str): The name of the time series, used for logging.
+
+    Raises:
+        ValueError: If any of the given values is defined with precision exceeding max_precision.
+    """
+    for idx, v in enumerate(values):
+        if v % max_precision != 0:
+            raise ValueError(
+                f"Value {idx} ({v}) in {name} time_series is defined with too many digits; "
+                f"it must be an integer multiple of {max_precision}"
+            )
+
+
+def validate_max_absolute_slope(
+    times: List[Decimal], values: List[Decimal], max_slope: Decimal, name: str
+):
+    """
+    Used in Device Emulation; Validate that the magnitude of the slope between any
+    two subsequent points in a time series (time points provided in ascending order) does not
+    exceed max_slope.
+
+    Args:
+        times (List[Decimal]): A list of time points in a time series.
+        max_slope (Decimal): The maximum allowed rate of change between points in the time series.
+        name (str): The name of the time series, used for logging.
+
+    Raises:
+        ValueError: if at any time the time series (times, values)
+        rises/falls faster than allowed.
+    """
+    for idx in range(len(values) - 1):
+        slope = (values[idx + 1] - values[idx]) / (times[idx + 1] - times[idx])
+        if abs(slope) > max_slope:
+            raise ValueError(
+                f"For the {name} field, rate of change of values "
+                f"(between the {idx}-th and the {idx + 1}-th times) "
+                f"is {abs(slope)}, more than {max_slope}"
+            )
+
+
+def validate_time_precision(times: List[Decimal], time_precision: Decimal, name: str):
+    """
+    Used in Device Emulation; Validate that the precision of a set of time points do not
+    exceed max_precision.
+
+    Args:
+        times (List[Decimal]): A list of time points to validate.
+        max_precision (Decimal): The maximum allowed precision.
+        name (str): The name of the time series, used for logging.
+
+    Raises:
+        ValueError: If any of the given time points is defined with
+        precision exceeding max_precision.
+    """
+    for idx, t in enumerate(times):
+        if t % time_precision != 0:
+            raise ValueError(
+                f"time point {idx} ({t}) of {name} time_series is "
+                f"defined with too many digits; it must be an "
+                f"integer multiple of {time_precision}"
+            )
