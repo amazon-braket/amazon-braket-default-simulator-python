@@ -84,7 +84,7 @@ def _multiply_matrix(
     # Axes given in `operation.targets` are in the first positions.
     unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
     # Invert the permutation to put the indices in the correct place
-    inverse_permutation = np.argsort(list(targets) + unused_idxs)
+    inverse_permutation = np.argsort([*targets, * unused_idxs])
     return np.transpose(product, inverse_permutation)
 
 
