@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.26.1 (2024-11-25)
+
+### Bug Fixes and Other Changes
+
+ * update numpy random function to use a generator
+
 ## v1.26.0 (2024-06-27)
 
 ### Features
