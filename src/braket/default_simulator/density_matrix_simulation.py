@@ -185,11 +185,11 @@ class DensityMatrixSimulation(Simulation):
             np.ndarray: output density matrix
         """
         # left product
-        state = multiply_matrix(state, np.reshape(matrix, [2] * len(targets) * 2), targets)
+        state = multiply_matrix(state, matrix, targets)
         # right product
         state = multiply_matrix(
             state,
-            np.reshape(matrix.conjugate(), [2] * len(targets) * 2),
+            matrix.conjugate(),
             tuple(i + qubit_count for i in targets),
         )
         return state
