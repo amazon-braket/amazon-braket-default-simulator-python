@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.26.2 (2024-12-06)
+
+### Bug Fixes and Other Changes
+
+ * remove redundant reshape
+
 ## v1.26.1 (2024-11-25)
 
 ### Bug Fixes and Other Changes
