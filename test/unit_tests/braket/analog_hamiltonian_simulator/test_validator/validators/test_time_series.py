@@ -72,12 +72,12 @@ def test_time_series_times_start_with_0(times, error_message, device_capabilitie
         (
             [0.0, 25.0e-6],
             "Max time is 2.5e-05 seconds which is bigger than the typical scale "
-            "(0.000020 seconds). The time points should  be specified in SI units.",
+            "(0.00002 seconds). The time points should be specified in SI units.",
         ),
         (
             [0.0, 0.000025],
             "Max time is 2.5e-05 seconds which is bigger than the typical scale "
-            "(0.000020 seconds). The time points should  be specified in SI units.",
+            "(0.00002 seconds). The time points should be specified in SI units.",
         ),
     ],
 )
