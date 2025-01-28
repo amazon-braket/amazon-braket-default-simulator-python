@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.26.3 (2025-01-28)
+
+### Bug Fixes and Other Changes
+
+ * Feature/rydberg longer evolution time
+
 ## v1.26.2 (2024-12-06)
 
 ### Bug Fixes and Other Changes
