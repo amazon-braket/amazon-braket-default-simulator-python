@@ -60,7 +60,7 @@ setup(
             "isort",
             "pre-commit",
             "pylint",
-            "pytest==7.1.2",
+            "pytest==7.2.0",
             "pytest-benchmark",
             "pytest-cov",
             "pytest-rerunfailures",
