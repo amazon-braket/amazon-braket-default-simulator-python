@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.26.4 (2025-02-08)
+
+### Bug Fixes and Other Changes
+
+ * update pytest version to fix security vuln
+ * Failing linting CI test
+
 ## v1.26.3 (2025-01-28)
 
 ### Bug Fixes and Other Changes
