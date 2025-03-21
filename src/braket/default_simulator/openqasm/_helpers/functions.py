@@ -14,6 +14,7 @@
 """
 Evaluating expressions
 """
+
 from ..parser.openqasm_ast import (
     ArrayLiteral,
     AssignmentOperator,

@@ -17,7 +17,6 @@ from functools import singledispatchmethod
 from typing import Any, Optional, Union
 
 import numpy as np
-from braket.ir.jaqcd.program_v1 import Results
 from sympy import Expr
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
@@ -33,6 +32,7 @@ from braket.default_simulator.noise_operations import (
     TwoQubitDephasing,
     TwoQubitDepolarizing,
 )
+from braket.ir.jaqcd.program_v1 import Results
 
 from ._helpers.arrays import (
     convert_discrete_set_to_list,

@@ -54,10 +54,6 @@ setup(
     },
     extras_require={
         "test": [
-            "black",
-            "flake8",
-            "flake8-rst-docstrings",
-            "isort",
             "pre-commit",
             "pylint",
             "pytest==7.2.0",
@@ -65,6 +61,7 @@ setup(
             "pytest-cov",
             "pytest-rerunfailures",
             "pytest-xdist",
+            "ruff",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",

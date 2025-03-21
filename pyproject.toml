@@ -1,7 +1,12 @@
-[tool.black]
+[tool.ruff]
+target-version = "py39"
 line-length = 100
-extend-exclude = '''
-(
-  generated/*
-)
-'''
+lint.isort = { known-first-party = [
+  "braket",
+] }
+lint.extend-select = ["I", "UP", "PERF"]
+lint.preview = true
+lint.ignore = ["UP045", "UP007"]
+lint.per-file-ignores."src/braket/default_simulator/openqasm/parser/generated/qasm3Parser.py" = ["F405", "F403"] # Imports for classes need to be limited later
+lint.per-file-ignores."src/braket/default_simulator/openqasm/parser/generated/BraketPragmasParser.py" = ["E741", "F405", "F403"]
+lint.per-file-ignores."src/braket/default_simulator/openqasm/parser/generated/BraketPragmasLexer.py" = ["E741", "F405", "F403"]

@@ -19,8 +19,9 @@ from logging import Logger, getLogger
 from typing import Optional, Union
 
 import numpy as np
-from braket.ir.openqasm.program_v1 import io_type
 from sympy import Symbol
+
+from braket.ir.openqasm.program_v1 import io_type
 
 from ._helpers.arrays import (
     convert_range_def_to_range,
@@ -138,7 +139,7 @@ class Interpreter:
             self.context.load_inputs(inputs)
 
         if is_file:
-            with open(source, encoding="utf-8", mode="r") as f:
+            with open(source, encoding="utf-8") as f:
                 source = f.read()
 
         program = parse(source)
@@ -565,7 +566,7 @@ class Interpreter:
     @visit.register
     def _(self, node: Include) -> None:
         self._uses_advanced_language_features = True
-        with open(node.filename, encoding="utf-8", mode="r") as f:
+        with open(node.filename, encoding="utf-8") as f:
             included = f.read()
             parsed = parse(included)
             self.visit(parsed)

@@ -18,17 +18,6 @@ from collections.abc import Callable
 from typing import Any, Union
 
 import numpy as np
-from braket.device_schema import DeviceActionType
-from braket.ir.jaqcd import Program as JaqcdProgram
-from braket.ir.jaqcd.program_v1 import Results
-from braket.ir.jaqcd.shared_models import MultiTarget, OptionalMultiTarget
-from braket.ir.openqasm import Program as OpenQASMProgram
-from braket.task_result import (
-    AdditionalMetadata,
-    GateModelTaskResult,
-    ResultTypeValue,
-    TaskMetadata,
-)
 
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit import Circuit
@@ -42,7 +31,18 @@ from braket.default_simulator.result_types import (
     from_braket_result_type,
 )
 from braket.default_simulator.simulation import Simulation
+from braket.device_schema import DeviceActionType
+from braket.ir.jaqcd import Program as JaqcdProgram
+from braket.ir.jaqcd.program_v1 import Results
+from braket.ir.jaqcd.shared_models import MultiTarget, OptionalMultiTarget
+from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.simulator import BraketSimulator
+from braket.task_result import (
+    AdditionalMetadata,
+    GateModelTaskResult,
+    ResultTypeValue,
+    TaskMetadata,
+)
 
 _NOISE_INSTRUCTIONS = frozenset(
     instr.lower().replace("_", "")
@@ -677,8 +677,10 @@ class BaseLocalSimulator(OpenQASMSimulator):
         ]
 
         if shots > 0 and circuit_ir.basis_rotation_instructions:
-            for instruction in circuit_ir.basis_rotation_instructions:
-                operations.append(from_braket_instruction(instruction))
+            operations.extend(
+                from_braket_instruction(instruction)
+                for instruction in circuit_ir.basis_rotation_instructions
+            )
 
         simulation = self.initialize_simulation(
             qubit_count=qubit_count, shots=shots, batch_size=batch_size

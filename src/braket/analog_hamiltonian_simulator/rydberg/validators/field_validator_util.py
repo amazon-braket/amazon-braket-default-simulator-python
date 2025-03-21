@@ -13,14 +13,13 @@
 
 import warnings
 from decimal import Decimal
-from typing import List
 
 import numpy as np
-from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
 )
+from braket.ir.ahs.program_v1 import Program
 
 
 def validate_value_range_with_warning(
@@ -50,7 +49,7 @@ def validate_net_detuning_with_warning(
     program: Program,
     time_points: np.ndarray,
     global_detuning_coefs: np.ndarray,
-    local_detuning_patterns: List,
+    local_detuning_patterns: list,
     local_detuning_coefs: np.ndarray,
     capabilities: CapabilitiesConstants,
 ) -> Program:
@@ -70,7 +69,6 @@ def validate_net_detuning_with_warning(
     """
 
     for time_ind, time in enumerate(time_points):
-
         # Get the contributions from all the global detunings
         # (there could be multiple global driving fields) at the time point
         values_global_detuning = sum(

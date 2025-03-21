@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 from contextlib import contextmanager
-from typing import List, TypeVar, Union
+from typing import TypeVar, Union
 
 try:
     from antlr4 import CommonTokenStream, InputStream, ParserRuleContext, RecognitionException
@@ -144,7 +144,7 @@ class QASMNodeVisitor(qasm3ParserVisitor):
         # loops, if/else and manual scoping constructs.  Each "context" always
         # contains at least one scope: the base ``ParserRuleContext`` that
         # opened it.
-        self._contexts: List[List[ParserRuleContext]] = []
+        self._contexts: list[list[ParserRuleContext]] = []
 
     @contextmanager
     def _push_context(self, ctx: ParserRuleContext):
@@ -204,7 +204,7 @@ class QASMNodeVisitor(qasm3ParserVisitor):
             command=ctx.RemainingLineContent().getText() if ctx.RemainingLineContent() else None,
         )
 
-    def visitScope(self, ctx: qasm3Parser.ScopeContext) -> List[ast.Statement]:
+    def visitScope(self, ctx: qasm3Parser.ScopeContext) -> list[ast.Statement]:
         return [self.visit(statement) for statement in ctx.statement()]
 
     @span
@@ -769,7 +769,7 @@ class QASMNodeVisitor(qasm3ParserVisitor):
         if ctx.COMPLEX():
             base = self.visit(ctx.scalarType()) if ctx.scalarType() else None
             if base is not None and not isinstance(base, ast.FloatType):
-                _raise_from_context(ctx.scalarType(), f"invalid type of complex components")
+                _raise_from_context(ctx.scalarType(), "invalid type of complex components")
             return ast.ComplexType(base_type=base)
         _raise_from_context(ctx, "unhandled type: {ctx.getText()}")
 
@@ -788,7 +788,7 @@ class QASMNodeVisitor(qasm3ParserVisitor):
                 ast.ComplexType,
             ),
         ):
-            _raise_from_context(ctx.scalarType(), f"invalid scalar type for array")
+            _raise_from_context(ctx.scalarType(), "invalid scalar type for array")
         return ast.ArrayType(
             base_type=base,
             dimensions=[self.visit(expression) for expression in ctx.expressionList().expression()],
@@ -863,5 +863,5 @@ class QASMNodeVisitor(qasm3ParserVisitor):
 
     def visitStatementOrScope(
         self, ctx: qasm3Parser.StatementOrScopeContext
-    ) -> List[ast.Statement]:
+    ) -> list[ast.Statement]:
         return self.visit(ctx.scope()) if ctx.scope() else [self.visit(ctx.statement())]

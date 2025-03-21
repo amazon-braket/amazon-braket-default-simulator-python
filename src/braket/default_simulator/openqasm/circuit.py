@@ -17,12 +17,12 @@ from collections.abc import Iterable
 from typing import Optional
 
 import numpy as np
-from braket.ir.jaqcd.program_v1 import Results
-from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 from braket.default_simulator.observables import Hermitian, Identity, TensorProduct
 from braket.default_simulator.operation import GateOperation, KrausOperation
 from braket.default_simulator.result_types import _from_braket_observable
+from braket.ir.jaqcd.program_v1 import Results
+from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 
 class Circuit:
@@ -107,7 +107,7 @@ class Circuit:
                         if target != measured_qubits:
                             raise ValueError("Qubit part of incompatible results targets")
                         # must ensure observable is the same
-                        if type(previously_measured) != type(observable):
+                        if type(previously_measured) is not type(observable):
                             raise ValueError("Conflicting result types applied to a single qubit")
                         # including matrix value for Hermitians
                         if isinstance(observable, Hermitian):
@@ -135,7 +135,7 @@ class Circuit:
                         braket_obs = _from_braket_observable(observables, [q])
                         process_observable(braket_obs)
 
-        for target, obs in observable_map.items():
+        for obs in observable_map.values():
             diagonalizing_gates = obs.diagonalizing_gates(self.num_qubits)
             basis_rotation_instructions.extend(diagonalizing_gates)
 

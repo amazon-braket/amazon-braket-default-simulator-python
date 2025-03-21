@@ -48,7 +48,7 @@ LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, 
 @singledispatch
 def cast_to(into: Union[ClassicalType, type[LiteralType]], variable: LiteralType) -> LiteralType:
     """Cast a variable into a given type. Order of parameters is to enable singledispatch"""
-    if type(variable) == into:
+    if type(variable) is into:
         return variable
     if into == BooleanLiteral or isinstance(into, BoolType):
         return BooleanLiteral(bool(variable.value))

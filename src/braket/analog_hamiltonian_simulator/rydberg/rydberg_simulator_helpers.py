@@ -17,6 +17,7 @@ import warnings
 
 import numpy as np
 import scipy.sparse
+
 from braket.ir.ahs.atom_arrangement import AtomArrangement
 from braket.ir.ahs.program_v1 import Program
 

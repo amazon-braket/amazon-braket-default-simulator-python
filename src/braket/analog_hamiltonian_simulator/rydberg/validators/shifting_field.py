@@ -11,7 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from braket.ir.ahs.local_detuning import LocalDetuning
 from pydantic.v1.class_validators import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
@@ -20,6 +19,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util import (
     validate_value_range_with_warning,
 )
+from braket.ir.ahs.local_detuning import LocalDetuning
 
 
 class LocalDetuningValidator(LocalDetuning):

@@ -18,7 +18,6 @@ from functools import singledispatch
 from typing import Any, Optional, Union
 
 import numpy as np
-from braket.ir import jaqcd
 
 from braket.default_simulator.linalg_utils import marginal_probability, partial_trace
 from braket.default_simulator.observables import (
@@ -34,6 +33,7 @@ from braket.default_simulator.operation import Observable
 from braket.default_simulator.operation_helpers import ir_matrix_to_ndarray
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
+from braket.ir import jaqcd
 
 
 def from_braket_result_type(result_type) -> ResultType:
