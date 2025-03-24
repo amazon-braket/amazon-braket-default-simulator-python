@@ -41,7 +41,7 @@ def _from_braket_instruction(instruction):
     raise NotImplementedError(f"Instruction {instruction} not recognized")
 
 
-@lru_cache()
+@lru_cache
 def pauli_eigenvalues(num_qubits: int) -> np.ndarray:
     """The eigenvalues of Pauli operators and their tensor products.
 

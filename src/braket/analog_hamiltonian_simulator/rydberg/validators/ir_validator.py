@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from braket.ir.ahs.program_v1 import Program
-
 from braket.analog_hamiltonian_simulator.rydberg.validators.atom_arrangement import (
     AtomArrangementValidator,
 )
@@ -31,6 +29,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.physical_field impor
 )
 from braket.analog_hamiltonian_simulator.rydberg.validators.program import ProgramValidator
 from braket.analog_hamiltonian_simulator.rydberg.validators.times_series import TimeSeriesValidator
+from braket.ir.ahs.program_v1 import Program
 
 
 def validate_program(program: Program, device_capabilities: CapabilitiesConstants) -> None:
