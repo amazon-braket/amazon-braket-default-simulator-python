@@ -77,17 +77,9 @@ def _multiply_matrix(
     """
     num_targets = len(targets)
 
-    if num_targets == 1 and matrix.shape == (2, 2):
-        axes = ([1], [targets[0]])
-        product = np.tensordot(matrix, state, axes=axes)
-    elif num_targets == 2 and matrix.shape == (4, 4):
-        gate_matrix = matrix.reshape(2, 2, 2, 2)
-        axes = ([2, 3], targets)
-        product = np.tensordot(gate_matrix, state, axes=axes)
-    else:
-        gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
-        axes = (np.arange(num_targets, 2 * num_targets), targets)
-        product = np.tensordot(gate_matrix, state, axes=axes)
+    gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
+    axes = (np.arange(num_targets, 2 * num_targets), targets)
+    product = np.tensordot(gate_matrix, state, axes=axes)
 
     inverse_perm = _compute_inverse_permutation(tuple(targets), len(state.shape))
     return np.transpose(product, inverse_perm)
