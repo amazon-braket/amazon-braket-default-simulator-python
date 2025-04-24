@@ -14,14 +14,9 @@
 import itertools
 from collections.abc import Sequence
 from typing import Optional
+from functools import cache
 
 import numpy as np
-
-_SLICES = (
-    _NEG_CONTROL_SLICE := slice(None, 1),
-    _CONTROL_SLICE := slice(1, None),
-    _NO_CONTROL_SLICE := slice(None, None),
-)
 
 
 def multiply_matrix(
@@ -50,13 +45,19 @@ def multiply_matrix(
         return _multiply_matrix(state, matrix, targets)
 
     control_state = control_state or (1,) * len(controls)
-    num_qubits = len(state.shape)
-    control_slices = {i: _SLICES[state] for i, state in zip(controls, control_state)}
-    ctrl_index = tuple(
-        control_slices[i] if i in controls else _NO_CONTROL_SLICE for i in range(num_qubits)
-    )
-    state[ctrl_index] = _multiply_matrix(state[ctrl_index], matrix, targets)
+    
+    ctrl_slices = [slice(None)] * len(state.shape)
+    for i, state_val in zip(controls, control_state):
+        ctrl_slices[i] = slice(None, 1) if state_val == 0 else slice(1, None)
+    
+    state[tuple(ctrl_slices)] = _multiply_matrix(state[tuple(ctrl_slices)], matrix, targets)
     return state
+
+@cache
+def _compute_inverse_permutation(targets, num_qubits):
+    """Compute and cache the inverse permutation for a given target configuration."""
+    unused_idxs = [idx for idx in range(num_qubits) if idx not in targets]
+    return np.argsort([*targets, *unused_idxs])
 
 
 def _multiply_matrix(
@@ -74,19 +75,22 @@ def _multiply_matrix(
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
-    gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
-    axes = (
-        np.arange(len(targets), 2 * len(targets)),
-        targets,
-    )
-    product = np.tensordot(gate_matrix, state, axes=axes)
+    num_targets = len(targets)
 
-    # Axes given in `operation.targets` are in the first positions.
-    unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
-    # Invert the permutation to put the indices in the correct place
-    inverse_permutation = np.argsort([*targets, *unused_idxs])
-    return np.transpose(product, inverse_permutation)
+    if num_targets == 1 and matrix.shape == (2, 2):
+        axes = ([1], [targets[0]])
+        product = np.tensordot(matrix, state, axes=axes)
+    elif num_targets == 2 and matrix.shape == (4, 4):
+        gate_matrix = matrix.reshape(2, 2, 2, 2)
+        axes = ([2, 3], targets)
+        product = np.tensordot(gate_matrix, state, axes=axes)
+    else:
+        gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
+        axes = (np.arange(num_targets, 2 * num_targets), targets)
+        product = np.tensordot(gate_matrix, state, axes=axes)
 
+    inverse_perm = _compute_inverse_permutation(tuple(targets), len(state.shape))
+    return np.transpose(product, inverse_perm)
 
 def marginal_probability(
     probabilities: np.ndarray,
