@@ -86,11 +86,29 @@ class DensityMatrixSimulation(Simulation):
             np.ndarray: output density matrix
         """
         dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
-        for operation in operations:
-            targets = operation.targets
 
-            if isinstance(operation, (GateOperation, Observable)):
-                matrix = operation.matrix
+        i = 0
+        while i < len(operations):
+            current_op = operations[i]
+            targets = current_op.targets
+
+            # Check if this is a gate operation that could be fused
+            if isinstance(current_op, (GateOperation, Observable)):
+                matrix = current_op.matrix
+                j = i + 1
+                fused = False
+                while j < len(operations):
+                    next_op = operations[j]
+                    if (
+                        isinstance(next_op, (GateOperation, Observable))
+                        and next_op.targets == targets
+                    ):
+                        matrix = next_op.matrix @ matrix  # Order matters: later gates first
+                        fused = True
+                        j += 1
+                    else:
+                        break
+
                 if len(targets) > 3:
                     dm_tensor = DensityMatrixSimulation._apply_gate(
                         dm_tensor, qubit_count, matrix, targets
@@ -100,10 +118,13 @@ class DensityMatrixSimulation(Simulation):
                         dm_tensor, qubit_count, np.kron(matrix, matrix.conjugate()), targets
                     )
 
-            if isinstance(operation, KrausOperation):
+                i = j if fused else i + 1
+
+            elif isinstance(current_op, KrausOperation):
                 dm_tensor = DensityMatrixSimulation._apply_kraus(
-                    dm_tensor, qubit_count, operation.matrices, targets
+                    dm_tensor, qubit_count, current_op.matrices, targets
                 )
+                i += 1
 
         return np.reshape(dm_tensor, (2**qubit_count, 2**qubit_count))
 
@@ -184,14 +205,13 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             np.ndarray: output density matrix
         """
+        shifted_targets = tuple(i + qubit_count for i in targets)
+        matrix_conj = matrix.conjugate()
+
         # left product
         state = multiply_matrix(state, matrix, targets)
         # right product
-        state = multiply_matrix(
-            state,
-            matrix.conjugate(),
-            tuple(i + qubit_count for i in targets),
-        )
+        state = multiply_matrix(state, matrix_conj, shifted_targets)
         return state
 
     @staticmethod

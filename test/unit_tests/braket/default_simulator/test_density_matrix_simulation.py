@@ -19,8 +19,9 @@ import pytest
 from braket.default_simulator import gate_operations, noise_operations, observables
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
 
-sx = np.matrix([[0, 1], [1, 0]])
-si = np.matrix([[1, 0], [0, 1]])
+sx = np.array([[0, 1], [1, 0]])
+si = np.array([[1, 0], [0, 1]])
+matrix_2q = np.kron(sx, si).reshape(4, 4)
 matrix_4q = np.kron(np.kron(sx, si), np.kron(si, si))
 matrix_5q = np.kron(sx, np.kron(np.kron(sx, si), np.kron(si, si)))
 density_matrix_4q = np.zeros((16, 16))
@@ -223,3 +224,133 @@ def test_simulation_retrieve_samples():
     assert 0.4 < counter[0] / (counter[0] + counter[3]) < 0.6
     assert 0.4 < counter[3] / (counter[0] + counter[3]) < 0.6
     assert counter[0] + counter[3] == 10000
+
+
+@pytest.mark.parametrize(
+    "qubit_count, operations, shots, expected_outcomes, tolerance",
+    [
+        (
+            2,
+            [gate_operations.Hadamard([0]), gate_operations.CX([0, 1])],
+            10000,
+            {0: 0.5, 3: 0.5},
+            0.1,
+        ),
+        (
+            1,
+            [
+                gate_operations.PauliX([0]),
+                gate_operations.PauliY([0]),
+                gate_operations.PauliX([0]),
+                gate_operations.PauliY([0]),
+            ],
+            5000,
+            {0: 1.0},
+            0.05,
+        ),
+        (
+            3,
+            [gate_operations.Hadamard([i]) for i in range(3)]
+            + [gate_operations.CX([0, 1]), gate_operations.CX([1, 2])],
+            8000,
+            {0: 0.5, 7: 0.5},
+            0.4,
+        ),
+        (
+            1,
+            [
+                gate_operations.RotX([0], np.pi / 4),
+                gate_operations.RotY([0], np.pi / 3),
+                gate_operations.RotZ([0], np.pi / 2),
+            ],
+            5000,
+            {0: 0.5, 1: 0.5},
+            0.2,
+        ),
+        (
+            2,
+            [
+                gate_operations.Hadamard([0]),
+                gate_operations.Hadamard([1]),
+                gate_operations.S([0]),
+                gate_operations.T([1]),
+                noise_operations.BitFlip([0], 0.05),
+            ],
+            5000,
+            {0: 0.25, 1: 0.25, 2: 0.25, 3: 0.25},
+            0.15,  # Wider tolerance due to noise
+        ),
+    ],
+)
+def test_parameterized_simulation(qubit_count, operations, shots, expected_outcomes, tolerance):
+    """Test the quantum simulation with various circuits and optimizations."""
+    simulation = DensityMatrixSimulation(qubit_count, shots)
+
+    simulation.evolve(operations)
+
+    counter = Counter(simulation.retrieve_samples())
+    total_shots = sum(counter.values())
+
+    assert simulation.qubit_count == qubit_count
+    assert total_shots == shots
+
+    for outcome, expected_prob in expected_outcomes.items():
+        observed_prob = counter.get(outcome, 0) / total_shots
+        assert abs(observed_prob - expected_prob) < tolerance
+
+
+@pytest.mark.parametrize(
+    "test_case, qubit_count, operations1, operations2, samples",
+    [
+        (
+            "X gate fusion",
+            1,
+            [gate_operations.PauliX([0]), gate_operations.PauliX([0])],
+            [],
+            1000,
+        ),
+        (
+            "Rotation fusion",
+            1,
+            [gate_operations.RotX([0], np.pi / 4), gate_operations.RotX([0], np.pi / 4)],
+            [gate_operations.RotX([0], np.pi / 2)],
+            1000,
+        ),
+        (
+            "Multi-qubit fusion",
+            2,
+            [gate_operations.CX([0, 1]), gate_operations.CX([0, 1])],
+            [],
+            1000,
+        ),
+    ],
+)
+def test_gate_fusion_equivalence(test_case, qubit_count, operations1, operations2, samples):
+    """Test that gate fusion produces equivalent results."""
+    sim1 = DensityMatrixSimulation(qubit_count, samples)
+    sim2 = DensityMatrixSimulation(qubit_count, samples)
+
+    sim1.evolve(operations1)
+    sim2.evolve(operations2)
+
+    counter1 = Counter(sim1.retrieve_samples())
+    counter2 = Counter(sim2.retrieve_samples())
+
+    for outcome in set(counter1.keys()) | set(counter2.keys()):
+        prob1 = counter1.get(outcome, 0) / samples
+        prob2 = counter2.get(outcome, 0) / samples
+        assert abs(prob1 - prob2) < 0.2
+
+
+def test_custom_density_matrix():
+    """Test simulation with a custom initial density matrix."""
+    qubit_count = 4
+    shots = 3000
+
+    simulation = DensityMatrixSimulation(qubit_count, shots)
+    simulation._density_matrix = density_matrix_4q.copy()
+
+    simulation.evolve([gate_operations.PauliX([0])])
+
+    counter = Counter(simulation.retrieve_samples())
+    assert counter.get(0, 0) / shots > 0.9

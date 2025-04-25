@@ -13,8 +13,8 @@
 
 import itertools
 from collections.abc import Sequence
-from typing import Optional
 from functools import cache
+from typing import Optional
 
 import numpy as np
 
@@ -45,13 +45,14 @@ def multiply_matrix(
         return _multiply_matrix(state, matrix, targets)
 
     control_state = control_state or (1,) * len(controls)
-    
+
     ctrl_slices = [slice(None)] * len(state.shape)
     for i, state_val in zip(controls, control_state):
         ctrl_slices[i] = slice(None, 1) if state_val == 0 else slice(1, None)
-    
+
     state[tuple(ctrl_slices)] = _multiply_matrix(state[tuple(ctrl_slices)], matrix, targets)
     return state
+
 
 @cache
 def _compute_inverse_permutation(targets, num_qubits):
@@ -83,6 +84,7 @@ def _multiply_matrix(
 
     inverse_perm = _compute_inverse_permutation(tuple(targets), len(state.shape))
     return np.transpose(product, inverse_perm)
+
 
 def marginal_probability(
     probabilities: np.ndarray,
