@@ -73,9 +73,6 @@ class GateOperation(Operation, ABC):
             for param in possible_parameters
         )
 
-    def __hash__(self):
-        return hash(self._targets, self.maxtrix)
-
 
 class KrausOperation(Operation, ABC):
     """

@@ -84,12 +84,12 @@ def apply_operations(
     return state
 
 
-def _is_controlled(op):
+def _is_controlled(op: GateOperation):
     """Check if an operation has control modifiers."""
     return hasattr(op, "_ctrl_modifiers") and len(op._ctrl_modifiers) > 0
 
 
-def _apply_controlled(state, op):
+def _apply_controlled(state: np.ndarray, op: GateOperation):
     """Apply a controlled operation to the state."""
     matrix = op.matrix
     all_targets = op.targets
@@ -101,18 +101,7 @@ def _apply_controlled(state, op):
 
 
 def _process_batch(state, qubit_count, operations):
-    """Process a batch of operations."""
-    if len(operations) <= 2:
-        for op in operations:
-            state = multiply_matrix(state, op.matrix, op.targets, [], [])
-        return state
-
-    return _contract_operations(state, qubit_count, operations)
-
-
-def _contract_operations(
-    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
-) -> np.ndarray:
+    """Process a batch of operations efficiently based on batch size."""
     if len(operations) <= 2:
         for op in operations:
             state = multiply_matrix(state, op.matrix, op.targets, [], [])
@@ -122,6 +111,8 @@ def _contract_operations(
     index_substitutions = {i: i for i in range(qubit_count)}
     next_index = qubit_count
 
+    matrix_cache = {}
+
     for operation in operations:
         matrix = operation.matrix
         targets = operation.targets
@@ -130,13 +121,18 @@ def _contract_operations(
         contravariant = list(range(next_index, next_index + len(targets)))
         indices = contravariant + covariant
 
-        matrix_dim = int(np.log2(matrix.shape[0]))
-        target_shape = [2] * (2 * matrix_dim)
-        matrix_as_tensor = np.reshape(matrix, target_shape)
+        matrix_key = id(matrix)
+        if matrix_key not in matrix_cache:
+            matrix_dim = int(np.log2(matrix.shape[0]))
+            matrix_cache[matrix_key] = np.reshape(matrix, [2] * (2 * matrix_dim))
 
-        contraction_parameters += [matrix_as_tensor, indices]
+        matrix_as_tensor = matrix_cache[matrix_key]
+        contraction_parameters.extend([matrix_as_tensor, indices])
+
+        for i, target in enumerate(targets):
+            index_substitutions[target] = contravariant[i]
+
         next_index += len(targets)
-        index_substitutions.update({targets[i]: contravariant[i] for i in range(len(targets))})
 
     new_indices = [index_substitutions[i] for i in range(qubit_count)]
     contraction_parameters.append(new_indices)
