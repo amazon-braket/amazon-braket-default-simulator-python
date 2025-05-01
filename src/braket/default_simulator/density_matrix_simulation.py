@@ -120,7 +120,7 @@ class DensityMatrixSimulation(Simulation):
 
                 i = j if fused else i + 1
 
-            elif isinstance(current_op, KrausOperation):
+            if isinstance(current_op, KrausOperation):
                 dm_tensor = DensityMatrixSimulation._apply_kraus(
                     dm_tensor, qubit_count, current_op.matrices, targets
                 )
