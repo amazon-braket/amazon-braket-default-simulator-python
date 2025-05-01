@@ -54,37 +54,54 @@ def apply_operations(
     if not operations:
         return state
 
+    if batch_size <= 1:
+        for op in operations:
+            if _is_controlled(op):
+                state = _apply_controlled(state, op)
+            else:
+                state = multiply_matrix(state, op.matrix, op.targets, [], [])
+        return state
+
     current_batch = []
 
     for op in operations:
-        has_controls = hasattr(op, "_ctrl_modifiers") and len(op._ctrl_modifiers) > 0
-
-        if has_controls:
+        if _is_controlled(op):
             if current_batch:
-                state = _process_batch(state, qubit_count, current_batch, batch_size)
+                state = _process_batch(state, qubit_count, current_batch)
                 current_batch = []
 
-            matrix = op.matrix
-            all_targets = op.targets
-            num_ctrl = len(op._ctrl_modifiers)
-            control_state = op._ctrl_modifiers
-            controls = all_targets[:num_ctrl]
-            targets = all_targets[num_ctrl:]
-            state = multiply_matrix(state, matrix, targets, controls, control_state)
+            state = _apply_controlled(state, op)
         else:
             current_batch.append(op)
 
             if len(current_batch) >= batch_size:
-                state = _process_batch(state, qubit_count, current_batch, batch_size)
+                state = _process_batch(state, qubit_count, current_batch)
                 current_batch = []
 
     if current_batch:
-        state = _process_batch(state, qubit_count, current_batch, batch_size)
+        state = _process_batch(state, qubit_count, current_batch)
 
     return state
 
 
-def _process_batch(state, qubit_count, operations, batch_size):
+def _is_controlled(op):
+    """Check if an operation has control modifiers."""
+    return hasattr(op, "_ctrl_modifiers") and len(op._ctrl_modifiers) > 0
+
+
+def _apply_controlled(state, op):
+    """Apply a controlled operation to the state."""
+    matrix = op.matrix
+    all_targets = op.targets
+    num_ctrl = len(op._ctrl_modifiers)
+    control_state = op._ctrl_modifiers
+    controls = all_targets[:num_ctrl]
+    targets = all_targets[num_ctrl:]
+    return multiply_matrix(state, matrix, targets, controls, control_state)
+
+
+def _process_batch(state, qubit_count, operations):
+    """Process a batch of operations."""
     if len(operations) <= 2:
         for op in operations:
             state = multiply_matrix(state, op.matrix, op.targets, [], [])
@@ -96,6 +113,11 @@ def _process_batch(state, qubit_count, operations, batch_size):
 def _contract_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
+    if len(operations) <= 2:
+        for op in operations:
+            state = multiply_matrix(state, op.matrix, op.targets, [], [])
+        return state
+
     contraction_parameters = [state, list(range(qubit_count))]
     index_substitutions = {i: i for i in range(qubit_count)}
     next_index = qubit_count
@@ -105,14 +127,11 @@ def _contract_operations(
         targets = operation.targets
 
         covariant = [index_substitutions[i] for i in targets]
-
         contravariant = list(range(next_index, next_index + len(targets)))
-
         indices = contravariant + covariant
 
         matrix_dim = int(np.log2(matrix.shape[0]))
         target_shape = [2] * (2 * matrix_dim)
-
         matrix_as_tensor = np.reshape(matrix, target_shape)
 
         contraction_parameters += [matrix_as_tensor, indices]
@@ -121,4 +140,5 @@ def _contract_operations(
 
     new_indices = [index_substitutions[i] for i in range(qubit_count)]
     contraction_parameters.append(new_indices)
-    return opt_einsum.contract(*contraction_parameters)
+
+    return opt_einsum.contract(*contraction_parameters, optimize="greedy")
