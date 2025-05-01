@@ -14,11 +14,12 @@
 import numpy as np
 import opt_einsum
 
+from braket.default_simulator.linalg_utils import multiply_matrix
 from braket.default_simulator.operation import GateOperation
 
 
 def apply_operations(
-    state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int = 1
 ) -> np.ndarray:
     r"""Applies operations to a state vector in batches of size :math:`batch\_size`.
 
@@ -44,19 +45,52 @@ def apply_operations(
             :math:`(qubit\_count, 0)` tensor
         qubit_count (int): The number of qubits in the state
         operations (list[GateOperation]): The operations to apply to the state vector
-        batch_size: The number of operations to contract in each batch
+        batch_size (int): The number of operations to contract in each batch. Defaults to 1.
 
     Returns:
         np.ndarray: The state vector after applying the given operations, as a type
         (num_qubits, 0) tensor
     """
-    # TODO: Write algorithm to determine partition size based on operations and qubit count
-    partitions = [operations[i : i + batch_size] for i in range(0, len(operations), batch_size)]
+    if not operations:
+        return state
 
-    for partition in partitions:
-        state = _contract_operations(state, qubit_count, partition)
+    current_batch = []
+
+    for op in operations:
+        has_controls = hasattr(op, "_ctrl_modifiers") and len(op._ctrl_modifiers) > 0
+
+        if has_controls:
+            if current_batch:
+                state = _process_batch(state, qubit_count, current_batch, batch_size)
+                current_batch = []
+
+            matrix = op.matrix
+            all_targets = op.targets
+            num_ctrl = len(op._ctrl_modifiers)
+            control_state = op._ctrl_modifiers
+            controls = all_targets[:num_ctrl]
+            targets = all_targets[num_ctrl:]
+            state = multiply_matrix(state, matrix, targets, controls, control_state)
+        else:
+            current_batch.append(op)
+
+            if len(current_batch) >= batch_size:
+                state = _process_batch(state, qubit_count, current_batch, batch_size)
+                current_batch = []
+
+    if current_batch:
+        state = _process_batch(state, qubit_count, current_batch, batch_size)
 
     return state
+
+
+def _process_batch(state, qubit_count, operations, batch_size):
+    if len(operations) <= 2:
+        for op in operations:
+            state = multiply_matrix(state, op.matrix, op.targets, [], [])
+        return state
+
+    return _contract_operations(state, qubit_count, operations)
 
 
 def _contract_operations(
@@ -65,25 +99,26 @@ def _contract_operations(
     contraction_parameters = [state, list(range(qubit_count))]
     index_substitutions = {i: i for i in range(qubit_count)}
     next_index = qubit_count
+
     for operation in operations:
         matrix = operation.matrix
         targets = operation.targets
 
-        # Lower indices, which will be traced out
         covariant = [index_substitutions[i] for i in targets]
 
-        # Upper indices, which will replace the contracted indices in the state vector
-        contravariant = list(range(next_index, next_index + len(covariant)))
+        contravariant = list(range(next_index, next_index + len(targets)))
 
         indices = contravariant + covariant
-        # `matrix` as type-(len(contravariant), len(covariant)) tensor
-        matrix_as_tensor = np.reshape(matrix, [2] * len(indices))
+
+        matrix_dim = int(np.log2(matrix.shape[0]))
+        target_shape = [2] * (2 * matrix_dim)
+
+        matrix_as_tensor = np.reshape(matrix, target_shape)
 
         contraction_parameters += [matrix_as_tensor, indices]
-        next_index += len(covariant)
+        next_index += len(targets)
         index_substitutions.update({targets[i]: contravariant[i] for i in range(len(targets))})
 
-    # Ensure state is in correct order
     new_indices = [index_substitutions[i] for i in range(qubit_count)]
     contraction_parameters.append(new_indices)
     return opt_einsum.contract(*contraction_parameters)
