@@ -108,8 +108,12 @@ def bell_ir(ir_type):
     )
 
 
-def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit, caplog):
-    simulator = DensityMatrixSimulator()
+@pytest.fixture(scope='module')
+def simulator():
+    return DensityMatrixSimulator()
+
+
+def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit, caplog, simulator):
     shots_count = 10000
     if isinstance(noisy_circuit_2_qubit, JaqcdProgram):
         result = simulator.run(noisy_circuit_2_qubit, qubit_count=2, shots=shots_count)
@@ -129,8 +133,7 @@ def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit, caplog):
     assert not caplog.text
 
 
-def test_simulator_run_bell_pair(bell_ir, caplog):
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_bell_pair(bell_ir, caplog, simulator):
     shots_count = 10000
     if isinstance(bell_ir, JaqcdProgram):
         # Ignore qubit_count
@@ -152,16 +155,14 @@ def test_simulator_run_bell_pair(bell_ir, caplog):
 
 
 @pytest.mark.xfail(raises=ValueError)
-def test_simulator_run_no_results_no_shots(bell_ir):
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_no_results_no_shots(bell_ir, simulator):
     if isinstance(bell_ir, JaqcdProgram):
         simulator.run(bell_ir, qubit_count=2, shots=0)
     else:
         simulator.run(bell_ir, shots=0)
 
 
-def test_simulator_run_grcs_8(grcs_8_qubit):
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_grcs_8(grcs_8_qubit, simulator):
     if isinstance(grcs_8_qubit.circuit_ir, JaqcdProgram):
         result = simulator.run(grcs_8_qubit.circuit_ir, qubit_count=8, shots=0)
     else:
@@ -170,8 +171,7 @@ def test_simulator_run_grcs_8(grcs_8_qubit):
     assert cmath.isclose(density_matrix[0][0].real, grcs_8_qubit.probability_zero, abs_tol=1e-7)
 
 
-def test_properties():
-    simulator = DensityMatrixSimulator()
+def test_properties(simulator):
     observables = ["x", "y", "z", "h", "i", "hermitian"]
     max_shots = sys.maxsize
     qubit_count = 13
@@ -460,8 +460,7 @@ def bell_ir_with_result(ir_type):
 
 @pytest.mark.parametrize("result_type", invalid_ir_result_types)
 @pytest.mark.xfail(raises=TypeError)
-def test_simulator_run_invalid_ir_result_types(result_type):
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_invalid_ir_result_types(result_type, simulator):
     ir = JaqcdProgram.parse_raw(
         json.dumps({"instructions": [{"type": "h", "target": 0}], "results": [result_type]})
     )
@@ -476,8 +475,7 @@ def test_simulator_run_invalid_ir_result_types(result_type):
         '#pragma braket result amplitude "0"',
     ),
 )
-def test_simulator_run_invalid_ir_result_types_openqasm(result_type):
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_invalid_ir_result_types_openqasm(result_type, simulator):
     ir = OpenQASMProgram(
         source=f"""
         qubit q;
@@ -489,8 +487,7 @@ def test_simulator_run_invalid_ir_result_types_openqasm(result_type):
         simulator.run(ir, qubit_count=2, shots=100)
 
 
-def test_simulator_run_densitymatrix_shots():
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_densitymatrix_shots(simulator):
     jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
             {"instructions": [{"type": "h", "target": 0}], "results": [{"type": "densitymatrix"}]}
@@ -509,8 +506,7 @@ def test_simulator_run_densitymatrix_shots():
         simulator.run(qasm, shots=100)
 
 
-def test_simulator_run_result_types_shots(caplog):
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_result_types_shots(caplog, simulator):
     jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
             {
@@ -541,8 +537,7 @@ def test_simulator_run_result_types_shots(caplog):
     assert not caplog.text
 
 
-def test_simulator_run_result_types_shots_basis_rotation_gates(caplog):
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_result_types_shots_basis_rotation_gates(caplog, simulator):
     jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
             {
@@ -575,8 +570,7 @@ def test_simulator_run_result_types_shots_basis_rotation_gates(caplog):
 
 
 @pytest.mark.xfail(raises=ValueError)
-def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
-    simulator = DensityMatrixSimulator()
+def test_simulator_run_result_types_shots_basis_rotation_gates_value_error(simulator):
     ir = JaqcdProgram.parse_raw(
         json.dumps(
             {
@@ -594,8 +588,7 @@ def test_simulator_run_result_types_shots_basis_rotation_gates_value_error():
 
 
 @pytest.mark.parametrize("targets", [(None), ([1]), ([0])])
-def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, caplog):
-    simulator = DensityMatrixSimulator()
+def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, caplog, simulator):
     ir = bell_ir_with_result(targets)
     if isinstance(ir, JaqcdProgram):
         result = simulator.run(ir, qubit_count=2, shots=0)
@@ -612,8 +605,7 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, caplog):
     assert not caplog.text
 
 
-def test_simulator_fails_samples_0_shots():
-    simulator = DensityMatrixSimulator()
+def test_simulator_fails_samples_0_shots(simulator):
     jaqcd = JaqcdProgram.parse_raw(
         json.dumps(
             {
@@ -696,8 +688,7 @@ def test_simulator_fails_samples_0_shots():
         ),
     ],
 )
-def test_simulator_valid_observables(result_types, expected):
-    simulator = DensityMatrixSimulator()
+def test_simulator_valid_observables(result_types, expected, simulator):
     prog = JaqcdProgram.parse_raw(
         json.dumps(
             {
@@ -755,8 +746,7 @@ def test_simulator_valid_observables(result_types, expected):
         ),
     ],
 )
-def test_simulator_valid_observables_qasm(result_types, expected, caplog):
-    simulator = DensityMatrixSimulator()
+def test_simulator_valid_observables_qasm(result_types, expected, caplog, simulator):
     prog = OpenQASMProgram(
         source=f"""
         qubit[2] q;
@@ -771,8 +761,7 @@ def test_simulator_valid_observables_qasm(result_types, expected, caplog):
     assert not caplog.text
 
 
-def test_adjoint_gradient_pragma_dm1():
-    simulator = DensityMatrixSimulator()
+def test_adjoint_gradient_pragma_dm1(simulator):
     prog = OpenQASMProgram(
         source="""
         input float alpha;
@@ -789,7 +778,7 @@ def test_adjoint_gradient_pragma_dm1():
         simulator.run(prog, shots=0)
 
 
-def test_measure_targets():
+def test_measure_targets(simulator):
     qasm = """
     qubit[2] q;
     bit[1] b;
@@ -797,7 +786,6 @@ def test_measure_targets():
     cnot q[0], q[1];
     b[0] = measure q[0];
     """
-    simulator = DensityMatrixSimulator()
     result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
     measurements = np.array(result.measurements, dtype=int)
     assert 400 < np.sum(measurements, axis=0)[0] < 600
@@ -805,7 +793,7 @@ def test_measure_targets():
     assert result.measuredQubits == [0]
 
 
-def test_measure_no_gates():
+def test_measure_no_gates(simulator):
     qasm = """
     bit[4] b;
     qubit[4] q;
@@ -814,14 +802,13 @@ def test_measure_no_gates():
     b[2] = measure q[2];
     b[3] = measure q[3];
     """
-    simulator = DensityMatrixSimulator()
     result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
     measurements = np.array(result.measurements, dtype=int)
     assert np.all(measurements == np.zeros((1000, 4)))
     assert result.measuredQubits == [0, 1, 2, 3]
 
 
-def test_measure_with_qubits_not_used():
+def test_measure_with_qubits_not_used(simulator):
     qasm = """
     bit[5] b;
     qubit[5] q;
@@ -829,7 +816,6 @@ def test_measure_with_qubits_not_used():
     cnot q[1], q[3];
     b = measure q;
     """
-    simulator = DensityMatrixSimulator()
     result = simulator.run(OpenQASMProgram(source=qasm), shots=1000)
     measurements = np.array(result.measurements, dtype=int)
     assert 400 < np.sum(measurements, axis=0)[1] < 600
@@ -850,8 +836,7 @@ def test_noncontiguous_qubits_jaqcd(noncontiguous_jaqcd):
 
 
 @pytest.mark.parametrize("qasm_file_name", ["noncontiguous_virtual", "noncontiguous_physical"])
-def test_noncontiguous_qubits_openqasm(qasm_file_name):
-    simulator = DensityMatrixSimulator()
+def test_noncontiguous_qubits_openqasm(qasm_file_name, simulator):
     shots = 1000
     result = simulator.run(
         OpenQASMProgram(source=f"test/resources/{qasm_file_name}.qasm"), shots=shots
@@ -866,7 +851,7 @@ def test_noncontiguous_qubits_openqasm(qasm_file_name):
     )
 
 
-def test_run_multiple():
+def test_run_multiple(simulator):
     payloads = [
         OpenQASMProgram(
             source=f"""
@@ -879,7 +864,6 @@ def test_run_multiple():
         )
         for gate in ["h", "z", "x"]
     ]
-    simulator = DensityMatrixSimulator()
     results = simulator.run_multiple(payloads, shots=0)
     assert np.allclose(results[0].resultTypes[0].value, np.array([[0.5, 0.5], [0.5, 0.5]]))
     assert np.allclose(results[1].resultTypes[0].value, np.array([[1, 0], [0, 0]]))
