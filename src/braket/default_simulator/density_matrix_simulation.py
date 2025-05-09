@@ -60,12 +60,12 @@ class DensityMatrixSimulation(Simulation):
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
-        operations = list(
-            sum(
+        operations = [
+            *sum(
                 [observable.diagonalizing_gates(self._qubit_count) for observable in observables],
                 (),
             )
-        )
+        ]
         self._post_observables = DensityMatrixSimulation._apply_operations(
             self._density_matrix, self._qubit_count, operations
         )
@@ -85,25 +85,29 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             np.ndarray: output density matrix
         """
+        if not operations:
+            return state
+
         dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
 
         i = 0
-        while i < len(operations):
+        n = len(operations)
+        while i < n:
             current_op = operations[i]
             targets = current_op.targets
 
-            # Check if this is a gate operation that could be fused
             if isinstance(current_op, (GateOperation, Observable)):
                 matrix = current_op.matrix
                 j = i + 1
                 fused = False
-                while j < len(operations):
+
+                while j < n and j < i + 10:
                     next_op = operations[j]
                     if (
                         isinstance(next_op, (GateOperation, Observable))
                         and next_op.targets == targets
                     ):
-                        matrix = next_op.matrix @ matrix  # Order matters: later gates first
+                        matrix = next_op.matrix @ matrix
                         fused = True
                         j += 1
                     else:

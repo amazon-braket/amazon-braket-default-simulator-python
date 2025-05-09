@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+
 import numpy as np
 import opt_einsum
 
@@ -67,7 +68,7 @@ def apply_operations(
     for op in operations:
         if _is_controlled(op):
             if current_batch:
-                state = _process_batch(state, qubit_count, current_batch)
+                state = _process_optimized_batch(state, qubit_count, current_batch)
                 current_batch = []
 
             state = _apply_controlled(state, op)
@@ -75,18 +76,18 @@ def apply_operations(
             current_batch.append(op)
 
             if len(current_batch) >= batch_size:
-                state = _process_batch(state, qubit_count, current_batch)
+                state = _process_optimized_batch(state, qubit_count, current_batch)
                 current_batch = []
 
     if current_batch:
-        state = _process_batch(state, qubit_count, current_batch)
+        state = _process_optimized_batch(state, qubit_count, current_batch)
 
     return state
 
 
 def _is_controlled(op: GateOperation):
     """Check if an operation has control modifiers."""
-    return hasattr(op, "_ctrl_modifiers") and len(op._ctrl_modifiers) > 0
+    return hasattr(op, "_ctrl_modifiers") and len(op._ctrl_modifiers)
 
 
 def _apply_controlled(state: np.ndarray, op: GateOperation):
@@ -100,34 +101,29 @@ def _apply_controlled(state: np.ndarray, op: GateOperation):
     return multiply_matrix(state, matrix, targets, controls, control_state)
 
 
-def _process_batch(state, qubit_count, operations):
-    """Process a batch of operations efficiently based on batch size."""
+def _process_optimized_batch(state, qubit_count, operations):
+    """Process a batch of operations with optimized tensor contraction."""
     if len(operations) <= 2:
         for op in operations:
             state = multiply_matrix(state, op.matrix, op.targets, [], [])
         return state
 
-    contraction_parameters = [state, list(range(qubit_count))]
+    contraction_parameters = [state, [*range(qubit_count)]]
     index_substitutions = {i: i for i in range(qubit_count)}
     next_index = qubit_count
-
-    matrix_cache = {}
 
     for operation in operations:
         matrix = operation.matrix
         targets = operation.targets
 
         covariant = [index_substitutions[i] for i in targets]
-        contravariant = list(range(next_index, next_index + len(targets)))
+        contravariant = [*range(next_index, next_index + len(targets))]
         indices = contravariant + covariant
 
-        matrix_key = id(matrix)
-        if matrix_key not in matrix_cache:
-            matrix_dim = int(np.log2(matrix.shape[0]))
-            matrix_cache[matrix_key] = np.reshape(matrix, [2] * (2 * matrix_dim))
+        matrix_dim = int(np.log2(matrix.shape[0]))
+        shape = [2] * (2 * matrix_dim)
 
-        matrix_as_tensor = matrix_cache[matrix_key]
-        contraction_parameters.extend([matrix_as_tensor, indices])
+        contraction_parameters.extend([np.reshape(matrix, shape), indices])
 
         for i, target in enumerate(targets):
             index_substitutions[target] = contravariant[i]

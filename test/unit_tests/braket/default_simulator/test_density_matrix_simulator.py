@@ -108,7 +108,7 @@ def bell_ir(ir_type):
     )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def simulator():
     return DensityMatrixSimulator()
 
