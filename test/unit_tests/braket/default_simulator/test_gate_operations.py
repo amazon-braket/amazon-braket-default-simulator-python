@@ -13,6 +13,7 @@
 
 import braket.ir.jaqcd as instruction
 import pytest
+import numpy as np
 
 from braket.default_simulator import gate_operations
 from braket.default_simulator.operation_helpers import check_unitary, from_braket_instruction
@@ -80,4 +81,6 @@ def test_gate_operation(ir_instruction, targets, operation_type):
     operation_instance = from_braket_instruction(ir_instruction)
     assert isinstance(operation_instance, operation_type)
     assert operation_instance.targets == targets
+    assert np.array_equal(operation_instance._base_matrix.conj(), operation_instance._base_matrix_conj)
     check_unitary(operation_instance.matrix)
+    check_unitary(operation_instance.matrix_conj)

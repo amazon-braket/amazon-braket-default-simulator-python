@@ -58,8 +58,22 @@ class GateOperation(Operation, ABC):
         """np.ndarray: The matrix representation of the operation."""
 
     @property
+    @abstractmethod
+    def _base_matrix_conj(self) -> np.ndarray:
+        """np.ndarray: The conjugate matrix representation of the operation."""
+
+    @property
     def matrix(self) -> np.ndarray:
         unitary = self._base_matrix
+        if int(self._power) == self._power:
+            unitary = np.linalg.matrix_power(unitary, int(self._power))
+        else:
+            unitary = fractional_matrix_power(unitary, self._power)
+        return unitary
+    
+    @property
+    def matrix_conj(self) -> np.ndarray:
+        unitary = self._base_matrix_conj
         if int(self._power) == self._power:
             unitary = np.linalg.matrix_power(unitary, int(self._power))
         else:

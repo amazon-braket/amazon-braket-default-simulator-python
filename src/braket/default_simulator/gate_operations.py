@@ -42,6 +42,11 @@ class Identity(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.eye(2)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.eye(2)
+    
 
 
 @_from_braket_instruction.register(braket_instruction.I)
@@ -61,6 +66,10 @@ class Hadamard(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
+        return np.array([[1, 1], [1, -1]]) / math.sqrt(2)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
         return np.array([[1, 1], [1, -1]]) / math.sqrt(2)
 
 
@@ -82,6 +91,10 @@ class PauliX(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[0, 1], [1, 0]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.array([[0, 1], [1, 0]])
 
 
 @_from_braket_instruction.register(braket_instruction.X)
@@ -102,6 +115,10 @@ class PauliY(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[0, -1j], [1j, 0]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.array([[0, 1j], [-1j, 0]])
 
 
 @_from_braket_instruction.register(braket_instruction.Y)
@@ -121,6 +138,10 @@ class PauliZ(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
+        return np.array([[1, 0], [0, -1]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
         return np.array([[1, 0], [0, -1]])
 
 
@@ -149,6 +170,16 @@ class CV(GateOperation):
                 [0, 0, 0.5 - 0.5j, 0.5 + 0.5j],
             ]
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.array([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0.5 - 0.5j, 0.5 + 0.5j],
+            [0, 0, 0.5 + 0.5j, 0.5 - 0.5j],
+        ])
+    
 
 
 @_from_braket_instruction.register(braket_instruction.CV)
@@ -168,6 +199,10 @@ class CX(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
 
@@ -189,6 +224,10 @@ class CY(GateOperation):
     @property
     def _base_matrix(self):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1j], [0, 0, -1j, 0]])
 
 
 @_from_braket_instruction.register(braket_instruction.CY)
@@ -208,6 +247,10 @@ class CZ(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
 
@@ -236,6 +279,13 @@ class ECR(GateOperation):
                 dtype=complex,
             )
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return (1/np.sqrt(2) * np.array([[0, 0, 1, -1.0j], 
+                          [0, 0, -1.0j, 1], 
+                          [1, 1.0j, 0, 0], 
+                          [1.0j, 1, 0, 0]], dtype=complex))
 
 
 @_from_braket_instruction.register(braket_instruction.ECR)
@@ -256,6 +306,10 @@ class S(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, 1j]], dtype=complex)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.array([[1, 0], [0, -1j]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.S)
@@ -276,6 +330,10 @@ class Si(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, -1j]], dtype=complex)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.array([[1, 0], [0, 1j]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.Si)
@@ -296,6 +354,10 @@ class T(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(1j * math.pi / 4)]], dtype=complex)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.array([[1, 0], [0, cmath.exp(-1j * math.pi / 4)]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.T)
@@ -316,6 +378,10 @@ class Ti(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(-1j * math.pi / 4)]], dtype=complex)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return np.array([[1, 0], [0, cmath.exp(1j * math.pi / 4)]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.Ti)
@@ -336,6 +402,10 @@ class V(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]], dtype=complex)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.V)
@@ -356,6 +426,10 @@ class Vi(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array(([[0.5 - 0.5j, 0.5 + 0.5j], [0.5 + 0.5j, 0.5 - 0.5j]]), dtype=complex)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.Vi)
@@ -377,6 +451,10 @@ class PhaseShift(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0], [0, cmath.exp(1j * self._angle)]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.PhaseShift)
@@ -398,6 +476,10 @@ class CPhaseShift(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, 1.0, 1.0, cmath.exp(1j * self._angle)])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift)
@@ -419,6 +501,10 @@ class CPhaseShift00(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.diag([cmath.exp(1j * self._angle), 1.0, 1.0, 1.0])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift00)
@@ -440,6 +526,10 @@ class CPhaseShift01(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, cmath.exp(1j * self._angle), 1.0, 1.0])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift01)
@@ -461,6 +551,10 @@ class CPhaseShift10(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.diag([1.0, 1.0, cmath.exp(1j * self._angle), 1.0])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift10)
@@ -484,6 +578,10 @@ class RotX(GateOperation):
         cos_half_angle = math.cos(self._angle / 2)
         i_sin_half_angle = 1j * math.sin(self._angle / 2)
         return np.array([[cos_half_angle, -i_sin_half_angle], [-i_sin_half_angle, cos_half_angle]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.Rx)
@@ -507,6 +605,10 @@ class RotY(GateOperation):
         cos_half_angle = math.cos(self._angle / 2)
         sin_half_angle = math.sin(self._angle / 2)
         return np.array([[cos_half_angle, -sin_half_angle], [sin_half_angle, cos_half_angle]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.Ry)
@@ -530,6 +632,10 @@ class RotZ(GateOperation):
         positive_phase = cmath.exp(1j * self._angle / 2)
         negative_phase = cmath.exp(-1j * self._angle / 2)
         return np.array([[negative_phase, 0], [0, positive_phase]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.Rz)
@@ -550,6 +656,10 @@ class Swap(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.Swap)
@@ -578,6 +688,10 @@ class ISwap(GateOperation):
             ],
             dtype=complex,
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.ISwap)
@@ -607,6 +721,10 @@ class PSwap(GateOperation):
             ],
             dtype=complex,
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.PSwap)
@@ -641,6 +759,10 @@ class XY(GateOperation):
             ],
             dtype=complex,
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.XY)
@@ -674,6 +796,10 @@ class XX(GateOperation):
                 [-i_sin_angle, 0, 0, cos_angle],
             ]
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.XX)
@@ -707,6 +833,10 @@ class YY(GateOperation):
                 [i_sin_angle, 0, 0, cos_angle],
             ]
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.YY)
@@ -740,6 +870,10 @@ class ZZ(GateOperation):
                 [0, 0, 0, negative_phase],
             ]
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.ZZ)
@@ -772,6 +906,10 @@ class CCNot(GateOperation):
             ],
             dtype=complex,
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.CCNot)
@@ -804,6 +942,10 @@ class CSwap(GateOperation):
             ],
             dtype=complex,
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.CSwap)
@@ -841,6 +983,10 @@ class PRx(GateOperation):
                 ],
             ]
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 class GPi(GateOperation):
@@ -866,6 +1012,10 @@ class GPi(GateOperation):
                 [np.exp(1j * self._angle), 0],
             ]
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 class GPi2(GateOperation):
@@ -891,6 +1041,10 @@ class GPi2(GateOperation):
                 [-1j * np.exp(1j * self._angle), 1],
             ]
         ) / np.sqrt(2)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 class MS(GateOperation):
@@ -940,6 +1094,10 @@ class MS(GateOperation):
                 ],
             ]
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 class Unitary(GateOperation):
@@ -959,6 +1117,10 @@ class Unitary(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return np.array(self._matrix)
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 @_from_braket_instruction.register(braket_instruction.Unitary)
@@ -1015,6 +1177,10 @@ class U(GateOperation):
                 ],
             ]
         )
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 class GPhase(GateOperation):
@@ -1031,6 +1197,10 @@ class GPhase(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return cmath.exp(self._angle * 1j) * np.eye(2 ** len(self._targets))
+    
+    @property
+    def _base_matrix_conj(self) -> np.ndarray:
+        return self._base_matrix.conj()
 
 
 BRAKET_GATES = {

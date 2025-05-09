@@ -98,6 +98,7 @@ class DensityMatrixSimulation(Simulation):
 
             if isinstance(current_op, (GateOperation, Observable)):
                 matrix = current_op.matrix
+                matrix_conj = current_op.matrix_conj
                 j = i + 1
                 fused = False
 
@@ -115,11 +116,11 @@ class DensityMatrixSimulation(Simulation):
 
                 if len(targets) > 3:
                     dm_tensor = DensityMatrixSimulation._apply_gate(
-                        dm_tensor, qubit_count, matrix, targets
+                        dm_tensor, qubit_count, matrix, matrix_conj, targets
                     )
                 else:
                     dm_tensor = DensityMatrixSimulation._apply_gate_superop(
-                        dm_tensor, qubit_count, np.kron(matrix, matrix.conjugate()), targets
+                        dm_tensor, qubit_count, np.kron(matrix, matrix_conj), targets
                     )
 
                 i = j if fused else i + 1
@@ -193,7 +194,7 @@ class DensityMatrixSimulation(Simulation):
 
     @staticmethod
     def _apply_gate(
-        state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: tuple[int, ...]
+        state: np.ndarray, qubit_count: int, matrix: np.ndarray, matrix_conj: np.ndarray, targets: tuple[int, ...]
     ) -> np.ndarray:
         r"""Apply a matrix M to a density matrix D according to:
 
@@ -210,7 +211,6 @@ class DensityMatrixSimulation(Simulation):
             np.ndarray: output density matrix
         """
         shifted_targets = tuple(i + qubit_count for i in targets)
-        matrix_conj = matrix.conjugate()
 
         # left product
         state = multiply_matrix(state, matrix, targets)
@@ -257,7 +257,7 @@ class DensityMatrixSimulation(Simulation):
         """
         if len(targets) > 4:
             new_state = sum(
-                DensityMatrixSimulation._apply_gate(state, qubit_count, matrix, targets)
+                DensityMatrixSimulation._apply_gate(state, qubit_count, matrix, matrix.conj(), targets)
                 for matrix in matrices
             )
         else:
