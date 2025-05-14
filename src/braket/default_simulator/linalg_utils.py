@@ -82,8 +82,7 @@ def _multiply_matrix(
     axes = (np.arange(num_targets, 2 * num_targets), targets)
     product = np.tensordot(gate_matrix, state, axes=axes)
 
-    inverse_perm = _compute_inverse_permutation(targets, len(state.shape))
-    return np.transpose(product, inverse_perm)
+    return np.transpose(product, _compute_inverse_permutation(targets, len(state.shape)))
 
 
 def marginal_probability(

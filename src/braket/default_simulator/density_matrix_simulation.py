@@ -233,7 +233,7 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             np.ndarray: output density matrix
         """
-        targets_new = targets + tuple([target + qubit_count for target in targets])
+        targets_new = targets + tuple(target + qubit_count for target in targets)
         state = multiply_matrix(state, np.reshape(superop, [2] * len(targets_new) * 2), targets_new)
         return state
 
