@@ -107,7 +107,7 @@ class DensityMatrixSimulation(Simulation):
                         isinstance(next_op, (GateOperation, Observable))
                         and next_op.targets == targets
                     ):
-                        matrix = next_op.matrix @ matrix
+                        matrix = next_op.matrix @ matrix  # order matters
                         fused = True
                         j += 1
                     else:

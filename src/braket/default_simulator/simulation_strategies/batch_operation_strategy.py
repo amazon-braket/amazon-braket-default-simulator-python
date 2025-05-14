@@ -55,43 +55,42 @@ def apply_operations(
     if not operations:
         return state
 
-    if batch_size <= 1:
-        for op in operations:
-            if _is_controlled(op):
-                state = _apply_controlled(state, op)
-            else:
-                state = multiply_matrix(state, op.matrix, op.targets, [], [])
-        return state
+    if batch_size == 1:
+        return _apply_operations_sequential(state, operations)
 
-    current_batch = []
+    return _apply_operations_batched(state, qubit_count, operations, batch_size)
 
+
+def _apply_operations_sequential(state: np.ndarray, operations: list[GateOperation]) -> np.ndarray:
+    """Apply operations sequentially without batching."""
     for op in operations:
-        if _is_controlled(op):
-            if current_batch:
-                state = _process_optimized_batch(state, qubit_count, current_batch)
-                current_batch = []
-
-            state = _apply_controlled(state, op)
-        else:
-            current_batch.append(op)
-
-            if len(current_batch) >= batch_size:
-                state = _process_optimized_batch(state, qubit_count, current_batch)
-                current_batch = []
-
-    if current_batch:
-        state = _process_optimized_batch(state, qubit_count, current_batch)
-
+        state = _apply_operation(state, op)
     return state
 
 
-def _is_controlled(op: GateOperation):
-    """Check if an operation has control modifiers."""
-    return hasattr(op, "_ctrl_modifiers") and len(op._ctrl_modifiers)
+def _apply_operations_batched(
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
+) -> np.ndarray:
+    """Apply operations in optimized batches."""
+    current_batch = []
+
+    def process_batch():
+        nonlocal state
+        if current_batch:
+            state = _process_optimized_batch(state, qubit_count, current_batch)
+            current_batch.clear()
+
+    for op in operations:
+        current_batch.append(op)
+        if len(current_batch) >= batch_size:
+            process_batch()
+
+    process_batch()
+    return state
 
 
-def _apply_controlled(state: np.ndarray, op: GateOperation):
-    """Apply a controlled operation to the state."""
+def _apply_operation(state: np.ndarray, op: GateOperation):
+    """Apply an operation to the state."""
     matrix = op.matrix
     all_targets = op.targets
     num_ctrl = len(op._ctrl_modifiers)
@@ -133,4 +132,4 @@ def _process_optimized_batch(state, qubit_count, operations):
     new_indices = [index_substitutions[i] for i in range(qubit_count)]
     contraction_parameters.append(new_indices)
 
-    return opt_einsum.contract(*contraction_parameters, optimize="greedy")
+    return opt_einsum.contract(*contraction_parameters, optimize="auto")
