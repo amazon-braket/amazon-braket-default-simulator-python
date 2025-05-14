@@ -55,7 +55,7 @@ def multiply_matrix(
 
 
 @cache
-def _compute_inverse_permutation(targets, num_qubits):
+def _compute_inverse_permutation(targets: tuple, num_qubits: int):
     """Compute and cache the inverse permutation for a given target configuration."""
     unused_idxs = [idx for idx in range(num_qubits) if idx not in targets]
     return np.argsort([*targets, *unused_idxs])
@@ -82,7 +82,7 @@ def _multiply_matrix(
     axes = (np.arange(num_targets, 2 * num_targets), targets)
     product = np.tensordot(gate_matrix, state, axes=axes)
 
-    inverse_perm = _compute_inverse_permutation(tuple(targets), len(state.shape))
+    inverse_perm = _compute_inverse_permutation(targets, len(state.shape))
     return np.transpose(product, inverse_perm)
 
 

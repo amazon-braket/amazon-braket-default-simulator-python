@@ -101,7 +101,7 @@ class DensityMatrixSimulation(Simulation):
                 j = i + 1
                 fused = False
 
-                while j < n and j < i + 10:
+                while j < n:
                     next_op = operations[j]
                     if (
                         isinstance(next_op, (GateOperation, Observable))
