@@ -641,25 +641,14 @@ def _apply_hamiltonian(
             "is used as an approximation."
         )
 
-    # If the integrator uses intermediate time value that is larger than the minimum
-    # time value specified, the final time value is used as an approximation.
-    if index_time < 0:
-        index_time = 0
-        warnings.warn(
-            "The solver uses intermediate time value that is "
-            "smaller than the minimum time value specified. "
-            "The first time value of the specified range "
-            "is used as an approximation."
-        )
-
     output_register = interaction_op.dot(input_register)
 
     # Add the driving fields
     for rabi_op, rabi_coef, detuning_op, detuning_coef in zip(
         rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
     ):
-        output_register += (rabi_coef[index_time] / 2) * rabi_op.dot(input_register)
-        output_register += (np.conj(rabi_coef[index_time]) / 2) * rabi_op.getH().dot(input_register)
+        output_register += (rabi_coef[index_time] * 0.5) * rabi_op.dot(input_register)
+        output_register += (np.conj(rabi_coef[index_time]) * 0.5) * rabi_op.getH().dot(input_register)
         output_register -= detuning_coef[index_time] * detuning_op.dot(input_register)
 
     # Add local detuning
