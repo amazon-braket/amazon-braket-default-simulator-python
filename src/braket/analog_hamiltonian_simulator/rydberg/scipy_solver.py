@@ -96,7 +96,6 @@ def scipy_integrate_ode_run(
         return -1j * dt * _apply_hamiltonian(index_time, operators_coefficients, y)
 
     integrator = scipy.integrate.ode(f)
-    integrator = scipy.integrate.ode(f)
     integrator.set_integrator(
         "zvode",
         atol=atol,
