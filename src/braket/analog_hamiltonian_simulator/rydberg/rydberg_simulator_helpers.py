@@ -648,7 +648,9 @@ def _apply_hamiltonian(
         rabi_ops, rabi_coefs, detuning_ops, detuning_coefs
     ):
         output_register += (rabi_coef[index_time] * 0.5) * rabi_op.dot(input_register)
-        output_register += (np.conj(rabi_coef[index_time]) * 0.5) * rabi_op.getH().dot(input_register)
+        output_register += (np.conj(rabi_coef[index_time]) * 0.5) * rabi_op.getH().dot(
+            input_register
+        )
         output_register -= detuning_coef[index_time] * detuning_op.dot(input_register)
 
     # Add local detuning

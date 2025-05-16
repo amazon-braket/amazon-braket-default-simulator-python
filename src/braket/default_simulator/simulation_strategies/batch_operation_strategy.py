@@ -73,18 +73,13 @@ def _apply_operations_batched(
     """Apply operations in optimized batches."""
     current_batch = []
 
-    def process_batch():
-        nonlocal state
-        if current_batch:
-            state = _process_optimized_batch(state, qubit_count, current_batch)
-            current_batch.clear()
-
     for op in operations:
         current_batch.append(op)
         if len(current_batch) >= batch_size:
-            process_batch()
+            state = _process_optimized_batch(state, qubit_count, current_batch)
+            current_batch.clear()
 
-    process_batch()
+    state = _process_optimized_batch(state, qubit_count, current_batch)
     return state
 
 
@@ -118,8 +113,7 @@ def _process_optimized_batch(state, qubit_count, operations):
         contravariant = [*range(next_index, next_index + len(targets))]
         indices = contravariant + covariant
 
-        matrix_dim = int(np.log2(matrix.shape[0]))
-        shape = [2] * (2 * matrix_dim)
+        shape = [2] * (len(contravariant + covariant))
 
         contraction_parameters.extend([np.reshape(matrix, shape), indices])
 

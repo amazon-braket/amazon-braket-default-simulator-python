@@ -99,7 +99,6 @@ class DensityMatrixSimulation(Simulation):
             if isinstance(current_op, (GateOperation, Observable)):
                 matrix = current_op.matrix
                 j = i + 1
-                fused = False
 
                 while j < n:
                     next_op = operations[j]
@@ -108,7 +107,6 @@ class DensityMatrixSimulation(Simulation):
                         and next_op.targets == targets
                     ):
                         matrix = next_op.matrix @ matrix  # order matters
-                        fused = True
                         j += 1
                     else:
                         break
@@ -122,7 +120,7 @@ class DensityMatrixSimulation(Simulation):
                         dm_tensor, qubit_count, np.kron(matrix, matrix.conjugate()), targets
                     )
 
-                i = j if fused else i + 1
+                i = j
 
             if isinstance(current_op, KrausOperation):
                 dm_tensor = DensityMatrixSimulation._apply_kraus(

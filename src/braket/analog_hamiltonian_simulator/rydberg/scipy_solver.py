@@ -87,7 +87,7 @@ def scipy_integrate_ode_run(
     if num_times == 1:
         return states
 
-    dt = simulation_times[1] - simulation_times[0] # The time step for the simulation
+    dt = simulation_times[1] - simulation_times[0]  # The time step for the simulation
 
     # Define the function to be integrated, e.g. dy/dt = f(t, y).
     # Note that we we will use the index of the time point,
