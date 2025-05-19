@@ -18,6 +18,12 @@ from typing import Optional
 
 import numpy as np
 
+_SLICES = (
+    _NEG_CONTROL_SLICE := slice(None, 1),
+    _CONTROL_SLICE := slice(1, None),
+    _NO_CONTROL_SLICE := slice(None, None),
+)
+
 
 def multiply_matrix(
     state: np.ndarray,
@@ -46,9 +52,9 @@ def multiply_matrix(
 
     control_state = control_state or (1,) * len(controls)
 
-    ctrl_slices = [slice(None)] * len(state.shape)
+    ctrl_slices = [_NO_CONTROL_SLICE] * len(state.shape)
     for i, state_val in zip(controls, control_state):
-        ctrl_slices[i] = slice(None, 1) if state_val == 0 else slice(1, None)
+        ctrl_slices[i] = _NEG_CONTROL_SLICE if state_val == 0 else _CONTROL_SLICE
 
     state[tuple(ctrl_slices)] = _multiply_matrix(state[tuple(ctrl_slices)], matrix, targets)
     return state
@@ -82,7 +88,8 @@ def _multiply_matrix(
     axes = (np.arange(num_targets, 2 * num_targets), targets)
     product = np.tensordot(gate_matrix, state, axes=axes)
 
-    return np.transpose(product, _compute_inverse_permutation(targets, len(state.shape)))
+    inverse_perm = _compute_inverse_permutation(targets, len(state.shape))
+    return np.transpose(product, inverse_perm)
 
 
 def marginal_probability(
