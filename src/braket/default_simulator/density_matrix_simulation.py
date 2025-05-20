@@ -182,12 +182,9 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             np.ndarray: The probabilities of each computational basis state.
         """
-        prob = np.real(np.diag(state))
-        prob_list = prob.copy()
+        diag = np.real(np.diag(state))
         tol = 1e-20
-        prob_list[abs(prob_list) < tol] = 0.0
-        prob_list[prob_list < 0] = 0.0
-        return prob_list
+        return np.where((np.abs(diag) >= tol) & (diag >= 0), diag, 0.0)
 
     @staticmethod
     def _apply_gate(
