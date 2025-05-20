@@ -18,11 +18,11 @@ from typing import Optional
 
 import numpy as np
 
-_SLICES = (
-    _NEG_CONTROL_SLICE := slice(None, 1),
-    _CONTROL_SLICE := slice(1, None),
-    _NO_CONTROL_SLICE := slice(None, None),
-)
+
+_NEG_CONTROL_SLICE = slice(None, 1)
+_CONTROL_SLICE = slice(1, None)
+_NO_CONTROL_SLICE = slice(None, None)
+
 
 
 def multiply_matrix(
@@ -88,8 +88,7 @@ def _multiply_matrix(
     axes = (np.arange(num_targets, 2 * num_targets), targets)
     product = np.tensordot(gate_matrix, state, axes=axes)
 
-    inverse_perm = _compute_inverse_permutation(targets, len(state.shape))
-    return np.transpose(product, inverse_perm)
+    return np.transpose(product, _compute_inverse_permutation(targets, len(state.shape)))
 
 
 def marginal_probability(
