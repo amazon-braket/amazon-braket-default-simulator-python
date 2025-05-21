@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.26.5 (2025-05-21)
+
+### Bug Fixes and Other Changes
+
+ * typo detuing to detuning
+
 ## v1.26.4 (2025-02-08)
 
 ### Bug Fixes and Other Changes
