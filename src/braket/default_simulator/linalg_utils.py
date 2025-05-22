@@ -17,11 +17,18 @@ from typing import Optional
 
 import numpy as np
 
-_SLICES = (
-    _NEG_CONTROL_SLICE := slice(None, 1),
-    _CONTROL_SLICE := slice(1, None),
-    _NO_CONTROL_SLICE := slice(None, None),
-)
+_NEG_CONTROL_SLICE = slice(None, 1)
+_CONTROL_SLICE = slice(1, None)
+_NO_CONTROL_SLICE = slice(None, None)
+
+
+# Common matrices
+_CNOT_MATRIX = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+_CZ_MATRIX = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+_SWAP_MATRIX = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
+# Basis states
+BASIS_STATES = list(enumerate([(0, 0), (0, 1), (1, 0), (1, 1)]))
 
 
 def multiply_matrix(
@@ -50,13 +57,126 @@ def multiply_matrix(
         return _multiply_matrix(state, matrix, targets)
 
     control_state = control_state or (1,) * len(controls)
-    num_qubits = len(state.shape)
-    control_slices = {i: _SLICES[state] for i, state in zip(controls, control_state)}
-    ctrl_index = tuple(
-        control_slices[i] if i in controls else _NO_CONTROL_SLICE for i in range(num_qubits)
-    )
-    state[ctrl_index] = _multiply_matrix(state[ctrl_index], matrix, targets)
+
+    ctrl_slices = [_NO_CONTROL_SLICE] * len(state.shape)
+    for i, state_val in zip(controls, control_state):
+        ctrl_slices[i] = _NEG_CONTROL_SLICE if state_val == 0 else _CONTROL_SLICE
+
+    state[tuple(ctrl_slices)] = _multiply_matrix(state[tuple(ctrl_slices)], matrix, targets)
     return state
+
+
+def _apply_single_qubit_gate(state: np.ndarray, matrix: np.ndarray, target: int) -> np.ndarray:
+    """Applies single gates using array slicing.
+
+    Args:
+        state (np.ndarray): The state to multiply the matrix by.
+        matrix (np.ndarray): The matrix to apply to the state.
+        target (int): The qubit to apply the state on.
+
+    Returns:
+        np.ndarray: Modified state vector
+    """
+    a, b, c, d = matrix.flatten()
+
+    slices_0 = [slice(None)] * len(state.shape)
+    slices_0[target] = 0
+    slices_1 = [slice(None)] * len(state.shape)
+    slices_1[target] = 1
+
+    state_0 = state[tuple(slices_0)]
+    state_1 = state[tuple(slices_1)]
+
+    result = np.zeros_like(state)
+
+    result[tuple(slices_0)] = a * state_0 + b * state_1
+    result[tuple(slices_1)] = c * state_0 + d * state_1
+
+    return result
+
+
+def _apply_cnot(state: np.ndarray, control: int, target: int) -> np.ndarray:
+    """CNOT optimization path."""
+    slices_c1t0 = [slice(None)] * len(state.shape)
+    slices_c1t0[control] = 1
+    slices_c1t0[target] = 0
+
+    slices_c1t1 = [slice(None)] * len(state.shape)
+    slices_c1t1[control] = 1
+    slices_c1t1[target] = 1
+
+    temp = state[tuple(slices_c1t0)].copy()
+    state[tuple(slices_c1t0)] = state[tuple(slices_c1t1)]
+    state[tuple(slices_c1t1)] = temp
+
+    return state
+
+
+def _apply_cz(state: np.ndarray, control: int, target: int) -> np.ndarray:
+    """CZ gate optimization path."""
+    slices = [slice(None)] * len(state.shape)
+    slices[control] = 1
+    slices[target] = 1
+
+    state[tuple(slices)] *= -1
+
+    return state
+
+
+def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int) -> np.ndarray:
+    """Swap gate optimization path."""
+    perm = list(range(len(state.shape)))
+    perm[qubit_0], perm[qubit_1] = perm[qubit_1], perm[qubit_0]
+
+    return np.transpose(state, perm)
+
+
+def _apply_two_qubit_gate(
+    state: np.ndarray, matrix: np.ndarray, targets: tuple[int, int]
+) -> np.ndarray:
+    """Two-qubit gates optimization path.
+
+    Args:
+        state (np.ndarray): The state to multiply the matrix by.
+        matrix (np.ndarray): The matrix to apply to the state.
+        targets (tuple[int]): The qubits to apply the state on.
+
+    Returns:
+        np.ndarray: The state after the matrix has been applied.
+
+    """
+    target0, target1 = targets
+    n_qubits = len(state.shape)
+
+    if matrix.ndim != 2 or matrix.shape != (4, 4):
+        matrix = matrix.reshape(4, 4)
+
+    if np.allclose(matrix, _CNOT_MATRIX):
+        return _apply_cnot(state, target0, target1)
+
+    elif np.allclose(matrix, _CZ_MATRIX):
+        return _apply_cz(state, target0, target1)
+
+    elif np.allclose(matrix, _SWAP_MATRIX):
+        return _apply_swap(state, target0, target1)
+
+    result = np.zeros_like(state, dtype=complex)
+
+    for otter_i, (outter0, outter1) in BASIS_STATES:
+        out_slice = [slice(None)] * n_qubits
+        out_slice[target0] = outter0
+        out_slice[target1] = outter1
+
+        for inner_i, (inner0, inner1) in BASIS_STATES:
+            in_slice = [slice(None)] * n_qubits
+            in_slice[target0] = inner0
+            in_slice[target1] = inner1
+
+            coef = matrix[otter_i, inner_i]
+            if coef != 0:
+                result[tuple(out_slice)] += coef * state[tuple(in_slice)]
+
+    return result
 
 
 def _multiply_matrix(
@@ -74,18 +194,18 @@ def _multiply_matrix(
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
-    gate_matrix = np.reshape(matrix, [2] * len(targets) * 2)
-    axes = (
-        np.arange(len(targets), 2 * len(targets)),
-        targets,
-    )
-    product = np.tensordot(gate_matrix, state, axes=axes)
+    if len(targets) == 1:
+        return _apply_single_qubit_gate(state, matrix, targets[0])
+    elif len(targets) == 2:
+        return _apply_two_qubit_gate(state, matrix, targets)
 
-    # Axes given in `operation.targets` are in the first positions.
+    num_targets = len(targets)
+    gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
+    axes = (np.arange(num_targets, 2 * num_targets), targets)
+    product = np.tensordot(gate_matrix, state, axes=axes)
     unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
-    # Invert the permutation to put the indices in the correct place
-    inverse_permutation = np.argsort([*targets, *unused_idxs])
-    return np.transpose(product, inverse_permutation)
+
+    return np.transpose(product, np.argsort([*targets, *unused_idxs]))
 
 
 def marginal_probability(

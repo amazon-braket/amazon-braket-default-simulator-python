@@ -17,7 +17,6 @@ from braket.default_simulator.operation import GateOperation, Observable
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulation_strategies import (
     batch_operation_strategy,
-    single_operation_strategy,
 )
 
 
@@ -97,12 +96,8 @@ class StateVectorSimulation(Simulation):
         state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
     ) -> np.ndarray:
         state_tensor = np.reshape(state, [2] * qubit_count)
-        final = (
-            single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
-            if batch_size == 1
-            else batch_operation_strategy.apply_operations(
-                state_tensor, qubit_count, operations, batch_size
-            )
+        final = batch_operation_strategy.apply_operations(
+            state_tensor, qubit_count, operations, batch_size
         )
         return np.reshape(final, 2**qubit_count)
 

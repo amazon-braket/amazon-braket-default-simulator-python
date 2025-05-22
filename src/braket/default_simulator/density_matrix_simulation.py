@@ -60,12 +60,12 @@ class DensityMatrixSimulation(Simulation):
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
-        operations = list(
-            sum(
+        operations = [
+            *sum(
                 [observable.diagonalizing_gates(self._qubit_count) for observable in observables],
                 (),
             )
-        )
+        ]
         self._post_observables = DensityMatrixSimulation._apply_operations(
             self._density_matrix, self._qubit_count, operations
         )
@@ -85,12 +85,32 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             np.ndarray: output density matrix
         """
-        dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
-        for operation in operations:
-            targets = operation.targets
+        if not operations:
+            return state
 
-            if isinstance(operation, (GateOperation, Observable)):
-                matrix = operation.matrix
+        dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
+
+        i = 0
+        n = len(operations)
+        while i < n:
+            current_op = operations[i]
+            targets = current_op.targets
+
+            if isinstance(current_op, (GateOperation, Observable)):
+                matrix = current_op.matrix
+                j = i + 1
+
+                while j < n:
+                    next_op = operations[j]
+                    if (
+                        isinstance(next_op, (GateOperation, Observable))
+                        and next_op.targets == targets
+                    ):
+                        matrix = next_op.matrix @ matrix  # order matters
+                        j += 1
+                    else:
+                        break
+
                 if len(targets) > 3:
                     dm_tensor = DensityMatrixSimulation._apply_gate(
                         dm_tensor, qubit_count, matrix, targets
@@ -100,10 +120,13 @@ class DensityMatrixSimulation(Simulation):
                         dm_tensor, qubit_count, np.kron(matrix, matrix.conjugate()), targets
                     )
 
-            if isinstance(operation, KrausOperation):
+                i = j
+
+            if isinstance(current_op, KrausOperation):
                 dm_tensor = DensityMatrixSimulation._apply_kraus(
-                    dm_tensor, qubit_count, operation.matrices, targets
+                    dm_tensor, qubit_count, current_op.matrices, targets
                 )
+                i += 1
 
         return np.reshape(dm_tensor, (2**qubit_count, 2**qubit_count))
 
@@ -159,12 +182,9 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             np.ndarray: The probabilities of each computational basis state.
         """
-        prob = np.real(np.diag(state))
-        prob_list = prob.copy()
+        diag = np.real(np.diag(state))
         tol = 1e-20
-        prob_list[abs(prob_list) < tol] = 0.0
-        prob_list[prob_list < 0] = 0.0
-        return prob_list
+        return np.where((np.abs(diag) >= tol) & (diag >= 0), diag, 0.0)
 
     @staticmethod
     def _apply_gate(
@@ -184,14 +204,13 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             np.ndarray: output density matrix
         """
+        shifted_targets = tuple(i + qubit_count for i in targets)
+        matrix_conj = matrix.conjugate()
+
         # left product
         state = multiply_matrix(state, matrix, targets)
         # right product
-        state = multiply_matrix(
-            state,
-            matrix.conjugate(),
-            tuple(i + qubit_count for i in targets),
-        )
+        state = multiply_matrix(state, matrix_conj, shifted_targets)
         return state
 
     @staticmethod
@@ -209,7 +228,7 @@ class DensityMatrixSimulation(Simulation):
         Returns:
             np.ndarray: output density matrix
         """
-        targets_new = targets + tuple([target + qubit_count for target in targets])
+        targets_new = targets + tuple(target + qubit_count for target in targets)
         state = multiply_matrix(state, np.reshape(superop, [2] * len(targets_new) * 2), targets_new)
         return state
 

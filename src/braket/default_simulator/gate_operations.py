@@ -61,7 +61,7 @@ class Hadamard(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array([[1, 1], [1, -1]]) / math.sqrt(2)
+        return np.array([[1, 1], [1, -1]], dtype=complex) / math.sqrt(2)
 
 
 @_from_braket_instruction.register(braket_instruction.H)
@@ -81,7 +81,7 @@ class PauliX(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array([[0, 1], [1, 0]])
+        return np.array([[0, 1], [1, 0]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.X)
@@ -101,7 +101,7 @@ class PauliY(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array([[0, -1j], [1j, 0]])
+        return np.array([[0, -1j], [1j, 0]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.Y)
@@ -121,7 +121,7 @@ class PauliZ(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array([[1, 0], [0, -1]])
+        return np.array([[1, 0], [0, -1]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.Z)
@@ -147,7 +147,8 @@ class CV(GateOperation):
                 [0, 1, 0, 0],
                 [0, 0, 0.5 + 0.5j, 0.5 - 0.5j],
                 [0, 0, 0.5 - 0.5j, 0.5 + 0.5j],
-            ]
+            ],
+            dtype=complex,
         )
 
 
@@ -168,7 +169,7 @@ class CX(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.CNot)
@@ -188,7 +189,7 @@ class CY(GateOperation):
 
     @property
     def _base_matrix(self):
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.CY)
@@ -208,7 +209,7 @@ class CZ(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.CZ)
@@ -376,7 +377,7 @@ class PhaseShift(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array([[1, 0], [0, cmath.exp(1j * self._angle)]])
+        return np.array([[1, 0], [0, cmath.exp(1j * self._angle)]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.PhaseShift)
@@ -483,7 +484,10 @@ class RotX(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         cos_half_angle = math.cos(self._angle / 2)
         i_sin_half_angle = 1j * math.sin(self._angle / 2)
-        return np.array([[cos_half_angle, -i_sin_half_angle], [-i_sin_half_angle, cos_half_angle]])
+        return np.array(
+            [[cos_half_angle, -i_sin_half_angle], [-i_sin_half_angle, cos_half_angle]],
+            dtype=complex,
+        )
 
 
 @_from_braket_instruction.register(braket_instruction.Rx)
@@ -506,7 +510,9 @@ class RotY(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         cos_half_angle = math.cos(self._angle / 2)
         sin_half_angle = math.sin(self._angle / 2)
-        return np.array([[cos_half_angle, -sin_half_angle], [sin_half_angle, cos_half_angle]])
+        return np.array(
+            [[cos_half_angle, -sin_half_angle], [sin_half_angle, cos_half_angle]], dtype=complex
+        )
 
 
 @_from_braket_instruction.register(braket_instruction.Ry)
@@ -549,7 +555,7 @@ class Swap(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.Swap)
@@ -672,7 +678,8 @@ class XX(GateOperation):
                 [0, cos_angle, -i_sin_angle, 0],
                 [0, -i_sin_angle, cos_angle, 0],
                 [-i_sin_angle, 0, 0, cos_angle],
-            ]
+            ],
+            dtype=complex,
         )
 
 
@@ -705,7 +712,8 @@ class YY(GateOperation):
                 [0, cos_angle, -i_sin_angle, 0],
                 [0, -i_sin_angle, cos_angle, 0],
                 [i_sin_angle, 0, 0, cos_angle],
-            ]
+            ],
+            dtype=complex,
         )
 
 
@@ -738,7 +746,8 @@ class ZZ(GateOperation):
                 [0, positive_phase, 0, 0],
                 [0, 0, positive_phase, 0],
                 [0, 0, 0, negative_phase],
-            ]
+            ],
+            dtype=complex,
         )
 
 
@@ -839,7 +848,8 @@ class PRx(GateOperation):
                     -1j * np.exp(1j * phi) * np.sin(theta / 2),
                     np.cos(theta / 2),
                 ],
-            ]
+            ],
+            dtype=complex,
         )
 
 
@@ -864,7 +874,8 @@ class GPi(GateOperation):
             [
                 [0, np.exp(-1j * self._angle)],
                 [np.exp(1j * self._angle), 0],
-            ]
+            ],
+            dtype=complex,
         )
 
 
@@ -889,7 +900,8 @@ class GPi2(GateOperation):
             [
                 [1, -1j * np.exp(-1j * self._angle)],
                 [-1j * np.exp(1j * self._angle), 1],
-            ]
+            ],
+            dtype=complex,
         ) / np.sqrt(2)
 
 
@@ -938,7 +950,8 @@ class MS(GateOperation):
                     0,
                     np.cos(self._angle_3 / 2),
                 ],
-            ]
+            ],
+            dtype=complex,
         )
 
 
@@ -958,7 +971,7 @@ class Unitary(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        return np.array(self._matrix)
+        return np.array(self._matrix, dtype=complex)
 
 
 @_from_braket_instruction.register(braket_instruction.Unitary)
@@ -1013,7 +1026,8 @@ class U(GateOperation):
                     cmath.exp(1j * self._phi) * math.sin(self._theta / 2),
                     cmath.exp(1j * (self._phi + self._lambda)) * math.cos(self._theta / 2),
                 ],
-            ]
+            ],
+            dtype=complex,
         )
 
 

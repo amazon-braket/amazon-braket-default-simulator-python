@@ -14,11 +14,12 @@
 import numpy as np
 import opt_einsum
 
+from braket.default_simulator.linalg_utils import multiply_matrix
 from braket.default_simulator.operation import GateOperation
 
 
 def apply_operations(
-    state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int = 1
 ) -> np.ndarray:
     r"""Applies operations to a state vector in batches of size :math:`batch\_size`.
 
@@ -44,46 +45,84 @@ def apply_operations(
             :math:`(qubit\_count, 0)` tensor
         qubit_count (int): The number of qubits in the state
         operations (list[GateOperation]): The operations to apply to the state vector
-        batch_size: The number of operations to contract in each batch
+        batch_size (int): The number of operations to contract in each batch. Defaults to 1.
 
     Returns:
         np.ndarray: The state vector after applying the given operations, as a type
         (num_qubits, 0) tensor
     """
-    # TODO: Write algorithm to determine partition size based on operations and qubit count
-    partitions = [operations[i : i + batch_size] for i in range(0, len(operations), batch_size)]
+    if not operations:
+        return state
 
-    for partition in partitions:
-        state = _contract_operations(state, qubit_count, partition)
+    if batch_size == 1:
+        return _apply_operations_sequential(state, operations)
 
+    return _apply_operations_batched(state, qubit_count, operations, batch_size)
+
+
+def _apply_operations_sequential(state: np.ndarray, operations: list[GateOperation]) -> np.ndarray:
+    """Apply operations sequentially without batching."""
+    for op in operations:
+        state = _apply_operation(state, op)
     return state
 
 
-def _contract_operations(
-    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
+def _apply_operations_batched(
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
 ) -> np.ndarray:
-    contraction_parameters = [state, list(range(qubit_count))]
+    """Apply operations in optimized batches."""
+    current_batch = []
+
+    for op in operations:
+        current_batch.append(op)
+        if len(current_batch) >= batch_size:
+            state = _process_optimized_batch(state, qubit_count, current_batch)
+            current_batch.clear()
+
+    state = _process_optimized_batch(state, qubit_count, current_batch)
+    return state
+
+
+def _apply_operation(state: np.ndarray, op: GateOperation):
+    """Apply an operation to the state."""
+    matrix = op.matrix
+    all_targets = op.targets
+    num_ctrl = len(op._ctrl_modifiers)
+    control_state = op._ctrl_modifiers
+    controls = all_targets[:num_ctrl]
+    targets = all_targets[num_ctrl:]
+    return multiply_matrix(state, matrix, targets, controls, control_state)
+
+
+def _process_optimized_batch(state, qubit_count, operations):
+    """Process a batch of operations with optimized tensor contraction."""
+    if len(operations) <= 2:
+        for op in operations:
+            state = multiply_matrix(state, op.matrix, op.targets, [], [])
+        return state
+
+    contraction_parameters = [state, [*range(qubit_count)]]
     index_substitutions = {i: i for i in range(qubit_count)}
     next_index = qubit_count
+
     for operation in operations:
         matrix = operation.matrix
         targets = operation.targets
 
-        # Lower indices, which will be traced out
         covariant = [index_substitutions[i] for i in targets]
-
-        # Upper indices, which will replace the contracted indices in the state vector
-        contravariant = list(range(next_index, next_index + len(covariant)))
-
+        contravariant = [*range(next_index, next_index + len(targets))]
         indices = contravariant + covariant
-        # `matrix` as type-(len(contravariant), len(covariant)) tensor
-        matrix_as_tensor = np.reshape(matrix, [2] * len(indices))
 
-        contraction_parameters += [matrix_as_tensor, indices]
-        next_index += len(covariant)
-        index_substitutions.update({targets[i]: contravariant[i] for i in range(len(targets))})
+        shape = [2] * (len(contravariant + covariant))
 
-    # Ensure state is in correct order
+        contraction_parameters.extend([np.reshape(matrix, shape), indices])
+
+        for i, target in enumerate(targets):
+            index_substitutions[target] = contravariant[i]
+
+        next_index += len(targets)
+
     new_indices = [index_substitutions[i] for i in range(qubit_count)]
     contraction_parameters.append(new_indices)
-    return opt_einsum.contract(*contraction_parameters)
+
+    return opt_einsum.contract(*contraction_parameters, optimize="auto")
