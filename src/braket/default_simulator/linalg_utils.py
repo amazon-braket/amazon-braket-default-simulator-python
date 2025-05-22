@@ -21,13 +21,6 @@ _NEG_CONTROL_SLICE = slice(None, 1)
 _CONTROL_SLICE = slice(1, None)
 _NO_CONTROL_SLICE = slice(None, None)
 
-
-# Common matrices
-_CNOT_MATRIX = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-_CZ_MATRIX = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
-_SWAP_MATRIX = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-
-# Basis states
 BASIS_STATES = list(enumerate([(0, 0), (0, 1), (1, 0), (1, 1)]))
 
 
@@ -37,6 +30,7 @@ def multiply_matrix(
     targets: tuple[int, ...],
     controls: Optional[tuple[int, ...]] = (),
     control_state: Optional[tuple[int, ...]] = (),
+    out: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
     controlling the operation as specified.
@@ -49,30 +43,44 @@ def multiply_matrix(
         control_state (Optional[tuple[int]]): A tuple of same length as `controls` with either
             a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
             Default (1,) * len(controls).
+        result (Optional[np.ndarray]): Preallocated result array to reduce overhead of creating a new array each time.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
+
+    if out is None:
+        out = np.zeros_like(state, dtype=complex)
+
     if not controls:
-        return _multiply_matrix(state, matrix, targets)
+        return _multiply_matrix(state, matrix, targets, out)
 
     control_state = control_state or (1,) * len(controls)
 
     ctrl_slices = [_NO_CONTROL_SLICE] * len(state.shape)
     for i, state_val in zip(controls, control_state):
         ctrl_slices[i] = _NEG_CONTROL_SLICE if state_val == 0 else _CONTROL_SLICE
+    ctrl_tuple = tuple(ctrl_slices)
 
-    state[tuple(ctrl_slices)] = _multiply_matrix(state[tuple(ctrl_slices)], matrix, targets)
-    return state
+    np.copyto(out, state)
+
+    controlled_slice = out[ctrl_tuple]
+
+    _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice)
+
+    return out
 
 
-def _apply_single_qubit_gate(state: np.ndarray, matrix: np.ndarray, target: int) -> np.ndarray:
+def _apply_single_qubit_gate(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> np.ndarray:
     """Applies single gates using array slicing.
 
     Args:
         state (np.ndarray): The state to multiply the matrix by.
         matrix (np.ndarray): The matrix to apply to the state.
         target (int): The qubit to apply the state on.
+        out (np.ndarray): Output array to store result in.
 
     Returns:
         np.ndarray: Modified state vector
@@ -81,58 +89,60 @@ def _apply_single_qubit_gate(state: np.ndarray, matrix: np.ndarray, target: int)
 
     slices_0 = [slice(None)] * len(state.shape)
     slices_0[target] = 0
+    slices_0_tuple = tuple(slices_0)
+
     slices_1 = [slice(None)] * len(state.shape)
     slices_1[target] = 1
+    slices_1_tuple = tuple(slices_1)
 
-    state_0 = state[tuple(slices_0)]
-    state_1 = state[tuple(slices_1)]
+    out[slices_0_tuple] = a * state[slices_0_tuple] + b * state[slices_1_tuple]
+    out[slices_1_tuple] = c * state[slices_0_tuple] + d * state[slices_1_tuple]
 
-    result = np.zeros_like(state)
-
-    result[tuple(slices_0)] = a * state_0 + b * state_1
-    result[tuple(slices_1)] = c * state_0 + d * state_1
-
-    return result
+    return out
 
 
-def _apply_cnot(state: np.ndarray, control: int, target: int) -> np.ndarray:
+def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -> np.ndarray:
     """CNOT optimization path."""
+    np.copyto(out, state)
+
     slices_c1t0 = [slice(None)] * len(state.shape)
     slices_c1t0[control] = 1
     slices_c1t0[target] = 0
+    slices_c1t0_tuple = tuple(slices_c1t0)
 
     slices_c1t1 = [slice(None)] * len(state.shape)
     slices_c1t1[control] = 1
     slices_c1t1[target] = 1
+    slices_c1t1_tuple = tuple(slices_c1t1)
 
-    temp = state[tuple(slices_c1t0)].copy()
-    state[tuple(slices_c1t0)] = state[tuple(slices_c1t1)]
-    state[tuple(slices_c1t1)] = temp
+    temp = out[slices_c1t0_tuple].copy()
+    out[slices_c1t0_tuple] = out[slices_c1t1_tuple]
+    out[slices_c1t1_tuple] = temp
 
-    return state
+    return out
 
 
-def _apply_cz(state: np.ndarray, control: int, target: int) -> np.ndarray:
+def _apply_cz(state: np.ndarray, control: int, target: int, out: np.ndarray) -> np.ndarray:
     """CZ gate optimization path."""
+    np.copyto(out, state)
+
     slices = [slice(None)] * len(state.shape)
     slices[control] = 1
     slices[target] = 1
+    slices_tuple = tuple(slices)
 
-    state[tuple(slices)] *= -1
+    out[slices_tuple] *= -1
 
-    return state
+    return out
 
 
-def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int) -> np.ndarray:
+def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
     """Swap gate optimization path."""
-    perm = list(range(len(state.shape)))
-    perm[qubit_0], perm[qubit_1] = perm[qubit_1], perm[qubit_0]
-
-    return np.transpose(state, perm)
+    return np.swapaxes(state, qubit_0, qubit_1)
 
 
 def _apply_two_qubit_gate(
-    state: np.ndarray, matrix: np.ndarray, targets: tuple[int, int]
+    state: np.ndarray, matrix: np.ndarray, targets: tuple[int, int], out: np.ndarray
 ) -> np.ndarray:
     """Two-qubit gates optimization path.
 
@@ -140,6 +150,7 @@ def _apply_two_qubit_gate(
         state (np.ndarray): The state to multiply the matrix by.
         matrix (np.ndarray): The matrix to apply to the state.
         targets (tuple[int]): The qubits to apply the state on.
+        out (np.ndarray): Output array for result.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
@@ -151,38 +162,39 @@ def _apply_two_qubit_gate(
     if matrix.ndim != 2 or matrix.shape != (4, 4):
         matrix = matrix.reshape(4, 4)
 
-    if np.allclose(matrix, _CNOT_MATRIX):
-        return _apply_cnot(state, target0, target1)
+    if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
+        return _apply_cnot(state, target0, target1, out)
+    elif matrix[3, 3] == -1 and np.all(np.diag(matrix)[[0, 1, 2]] == 1):
+        return _apply_cz(state, target0, target1, out)
+    elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
+        return _apply_swap(state, target0, target1, out)
 
-    elif np.allclose(matrix, _CZ_MATRIX):
-        return _apply_cz(state, target0, target1)
+    out.fill(0)
 
-    elif np.allclose(matrix, _SWAP_MATRIX):
-        return _apply_swap(state, target0, target1)
-
-    result = np.zeros_like(state, dtype=complex)
+    slices = {}
+    for bits in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+        slice_list = [slice(None)] * n_qubits
+        slice_list[target0] = bits[0]
+        slice_list[target1] = bits[1]
+        slices[bits] = tuple(slice_list)
 
     for otter_i, (outter0, outter1) in BASIS_STATES:
-        out_slice = [slice(None)] * n_qubits
-        out_slice[target0] = outter0
-        out_slice[target1] = outter1
+        out_bits = (outter0, outter1)
 
         for inner_i, (inner0, inner1) in BASIS_STATES:
-            in_slice = [slice(None)] * n_qubits
-            in_slice[target0] = inner0
-            in_slice[target1] = inner1
-
             coef = matrix[otter_i, inner_i]
             if coef != 0:
-                result[tuple(out_slice)] += coef * state[tuple(in_slice)]
+                in_bits = (inner0, inner1)
+                out[slices[out_bits]] += coef * state[slices[in_bits]]
 
-    return result
+    return out
 
 
 def _multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
     targets: tuple[int, ...],
+    out: np.ndarray,  # FIX: Made non-optional
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
@@ -190,22 +202,25 @@ def _multiply_matrix(
         state (np.ndarray): The state to multiply the matrix by.
         matrix (np.ndarray): The matrix to apply to the state.
         targets (tuple[int]): The qubits to apply the state on.
+        out (np.ndarray): Output array for result.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
     if len(targets) == 1:
-        return _apply_single_qubit_gate(state, matrix, targets[0])
+        return _apply_single_qubit_gate(state, matrix, targets[0], out)
     elif len(targets) == 2:
-        return _apply_two_qubit_gate(state, matrix, targets)
+        return _apply_two_qubit_gate(state, matrix, targets, out)
 
     num_targets = len(targets)
     gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
     axes = (np.arange(num_targets, 2 * num_targets), targets)
+
     product = np.tensordot(gate_matrix, state, axes=axes)
     unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
 
-    return np.transpose(product, np.argsort([*targets, *unused_idxs]))
+    np.copyto(out, np.transpose(product, np.argsort([*targets, *unused_idxs])))
+    return out
 
 
 def marginal_probability(
