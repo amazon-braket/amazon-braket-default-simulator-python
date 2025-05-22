@@ -13,7 +13,6 @@
 
 import itertools
 from collections.abc import Sequence
-from functools import cache
 from typing import Optional
 
 import numpy as np
@@ -65,13 +64,6 @@ def multiply_matrix(
 
     state[tuple(ctrl_slices)] = _multiply_matrix(state[tuple(ctrl_slices)], matrix, targets)
     return state
-
-
-@cache
-def _compute_inverse_permutation(targets: tuple, num_qubits: int):
-    """Compute and cache the inverse permutation for a given target configuration."""
-    unused_idxs = [idx for idx in range(num_qubits) if idx not in targets]
-    return np.argsort([*targets, *unused_idxs])
 
 
 def _apply_single_qubit_gate(state: np.ndarray, matrix: np.ndarray, target: int) -> np.ndarray:
@@ -211,8 +203,9 @@ def _multiply_matrix(
     gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
     axes = (np.arange(num_targets, 2 * num_targets), targets)
     product = np.tensordot(gate_matrix, state, axes=axes)
+    unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
 
-    return np.transpose(product, _compute_inverse_permutation(targets, len(state.shape)))
+    return np.transpose(product, np.argsort([*targets, *unused_idxs]))
 
 
 def marginal_probability(
