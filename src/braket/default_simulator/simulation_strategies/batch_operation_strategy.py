@@ -62,9 +62,15 @@ def apply_operations(
 
 def _apply_operations_sequential(state: np.ndarray, operations: list[GateOperation]) -> np.ndarray:
     """Apply operations sequentially without batching."""
+    # Using a ping-pong buffer here to avoid mem usage
+    result = state.copy()
+    temp = np.zeros_like(state, dtype=complex)
+
     for op in operations:
-        state = _apply_operation(state, op)
-    return state
+        _apply_operation(result, op, temp)
+        result, temp = temp, result
+
+    return result
 
 
 def _apply_operations_batched(
@@ -83,7 +89,7 @@ def _apply_operations_batched(
     return state
 
 
-def _apply_operation(state: np.ndarray, op: GateOperation):
+def _apply_operation(state: np.ndarray, op: GateOperation, out: np.ndarray):
     """Apply an operation to the state."""
     matrix = op.matrix
     all_targets = op.targets
@@ -91,7 +97,7 @@ def _apply_operation(state: np.ndarray, op: GateOperation):
     control_state = op._ctrl_modifiers
     controls = all_targets[:num_ctrl]
     targets = all_targets[num_ctrl:]
-    return multiply_matrix(state, matrix, targets, controls, control_state)
+    return multiply_matrix(state, matrix, targets, controls, control_state, out)
 
 
 def _process_optimized_batch(state, qubit_count, operations):

@@ -43,7 +43,7 @@ def multiply_matrix(
         control_state (Optional[tuple[int]]): A tuple of same length as `controls` with either
             a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
             Default (1,) * len(controls).
-        result (Optional[np.ndarray]): Preallocated result array to reduce overhead of creating a new array each time.
+        out (Optional[np.ndarray]): Preallocated result array to reduce overhead of creating a new array each time.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
@@ -65,7 +65,6 @@ def multiply_matrix(
     np.copyto(out, state)
 
     controlled_slice = out[ctrl_tuple]
-
     _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice)
 
     return out
@@ -122,23 +121,25 @@ def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -
     return out
 
 
-def _apply_cz(state: np.ndarray, control: int, target: int, out: np.ndarray) -> np.ndarray:
-    """CZ gate optimization path."""
-    np.copyto(out, state)
-
-    slices = [slice(None)] * len(state.shape)
-    slices[control] = 1
-    slices[target] = 1
-    slices_tuple = tuple(slices)
-
-    out[slices_tuple] *= -1
-
+def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
+    """Swap gate optimization path."""
+    np.copyto(out, np.swapaxes(state, qubit_0, qubit_1))
     return out
 
 
-def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
-    """Swap gate optimization path."""
-    return np.swapaxes(state, qubit_0, qubit_1)
+def _apply_controlled_phase_shift(
+    state: np.ndarray, angle: float, controls: tuple[int, ...], target: int, out: np.ndarray
+) -> np.ndarray:
+    """Controlled phase shift optimization path."""
+    np.copyto(out, state)
+
+    slices = [slice(None)] * len(state.shape)
+    for c in controls:
+        slices[c] = 1
+    slices[target] = 1
+
+    out[tuple(slices)] *= np.exp(1j * angle)
+    return out
 
 
 def _apply_two_qubit_gate(
@@ -161,11 +162,11 @@ def _apply_two_qubit_gate(
 
     if matrix.ndim != 2 or matrix.shape != (4, 4):
         matrix = matrix.reshape(4, 4)
-
+    angle = np.angle(matrix[3, 3])
+    if np.allclose(np.diag(matrix), [1, 1, 1, np.exp(1j * angle)]):
+        return _apply_controlled_phase_shift(state, angle, (target0,), target1, out)
     if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
         return _apply_cnot(state, target0, target1, out)
-    elif matrix[3, 3] == -1 and np.all(np.diag(matrix)[[0, 1, 2]] == 1):
-        return _apply_cz(state, target0, target1, out)
     elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
         return _apply_swap(state, target0, target1, out)
 
@@ -194,7 +195,7 @@ def _multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
     targets: tuple[int, ...],
-    out: np.ndarray,  # FIX: Made non-optional
+    out: np.ndarray,
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
