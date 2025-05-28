@@ -113,12 +113,12 @@ def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -
     np.copyto(out, state)
 
     # Rather than allocate these arrays each time, preallocate these, update and reset them each time
-    slices_c1t0 = _SLICE_NONE_ARRAYS_0[len(state.shape)]
+    slices_c1t0 = _SLICE_NONE_ARRAYS_0[len(state.shape)].copy()
     slices_c1t0[control] = 1
     slices_c1t0[target] = 0
     slices_c1t0_tuple = tuple(slices_c1t0)
 
-    slices_c1t1 = _SLICE_NONE_ARRAYS_1[len(state.shape)]
+    slices_c1t1 = _SLICE_NONE_ARRAYS_1[len(state.shape)].copy()
     slices_c1t1[control] = 1
     slices_c1t1[target] = 1
     slices_c1t1_tuple = tuple(slices_c1t1)
@@ -126,11 +126,6 @@ def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -
     out[slices_c1t0_tuple] = out[slices_c1t1_tuple]
     out[slices_c1t1_tuple] = state[slices_c1t0_tuple]
 
-    # Clean up step
-    slices_c1t0[control] = slice(None)
-    slices_c1t0[target] = slice(None)
-    slices_c1t1[control] = slice(None)
-    slices_c1t1[target] = slice(None)
 
     return out
 
@@ -147,17 +142,12 @@ def _apply_controlled_phase_shift(
     """Controlled phase shift optimization path."""
     np.copyto(out, state)
 
-    slices = _SLICE_NONE_ARRAYS_0[len(state.shape)]
+    slices = _SLICE_NONE_ARRAYS_0[len(state.shape)].copy()
     for c in controls:
         slices[c] = 1
     slices[target] = 1
 
     out[tuple(slices)] *= np.exp(1j * angle)
-
-    # Clean up step
-    for c in controls:
-        slices[c] = slice(None)
-    slices[target] = slice(None)
 
     return out
 
@@ -187,22 +177,22 @@ def _apply_two_qubit_gate(
     diag = np.diag(matrix)
     angle = np.angle(matrix[3, 3])
 
-    if (
+
+    if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
+        return _apply_cnot(state, target0, target1, out)
+    elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
+        return _apply_swap(state, target0, target1, out)
+    elif (
         abs(diag[0] - 1) < 1e-10
         and abs(diag[1] - 1) < 1e-10
         and abs(diag[2] - 1) < 1e-10
         and abs(diag[3] - np.exp(1j * angle)) < 1e-10
     ):
         return _apply_controlled_phase_shift(state, angle, (target0,), target1, out)
-    elif matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
-        return _apply_cnot(state, target0, target1, out)
-    elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
-        return _apply_swap(state, target0, target1, out)
 
     # If there was a way around this, that would be great. Haven't figured one out yet.
     out.fill(0)
 
-    # TODO: Make this global/one time computed
     slices = {}
     for bits in [(0, 0), (0, 1), (1, 0), (1, 1)]:
         slice_list = [slice(None)] * n_qubits
