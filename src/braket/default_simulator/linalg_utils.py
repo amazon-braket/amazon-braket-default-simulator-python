@@ -21,7 +21,11 @@ _NEG_CONTROL_SLICE = slice(None, 1)
 _CONTROL_SLICE = slice(1, None)
 _NO_CONTROL_SLICE = slice(None, None)
 
-BASIS_STATES = list(enumerate([(0, 0), (0, 1), (1, 0), (1, 1)]))
+BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
+
+# Preallocate for up to 42 qubits
+_SLICE_NONE_ARRAYS_0 = {n: [slice(None)] * n for n in range(1, 43)}
+_SLICE_NONE_ARRAYS_1 = {n: [slice(None)] * n for n in range(1, 43)}
 
 
 def multiply_matrix(
@@ -84,19 +88,23 @@ def _apply_single_qubit_gate(
     Returns:
         np.ndarray: Modified state vector
     """
-    a, b, c, d = matrix.flatten()
+    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
 
-    slices_0 = [slice(None)] * len(state.shape)
+    # Rather than allocate these arrays each time, preallocate these, update and reset them each time
+    slices_0 = _SLICE_NONE_ARRAYS_0[len(state.shape)]
     slices_0[target] = 0
     slices_0_tuple = tuple(slices_0)
 
-    slices_1 = [slice(None)] * len(state.shape)
+    slices_1 = _SLICE_NONE_ARRAYS_0[len(state.shape)]
     slices_1[target] = 1
     slices_1_tuple = tuple(slices_1)
 
     out[slices_0_tuple] = a * state[slices_0_tuple] + b * state[slices_1_tuple]
     out[slices_1_tuple] = c * state[slices_0_tuple] + d * state[slices_1_tuple]
 
+    # Clean up step
+    slices_0[target] = slice(None)
+    slices_1[target] = slice(None)
     return out
 
 
@@ -104,19 +112,25 @@ def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -
     """CNOT optimization path."""
     np.copyto(out, state)
 
-    slices_c1t0 = [slice(None)] * len(state.shape)
+    # Rather than allocate these arrays each time, preallocate these, update and reset them each time
+    slices_c1t0 = _SLICE_NONE_ARRAYS_0[len(state.shape)]
     slices_c1t0[control] = 1
     slices_c1t0[target] = 0
     slices_c1t0_tuple = tuple(slices_c1t0)
 
-    slices_c1t1 = [slice(None)] * len(state.shape)
+    slices_c1t1 = _SLICE_NONE_ARRAYS_1[len(state.shape)]
     slices_c1t1[control] = 1
     slices_c1t1[target] = 1
     slices_c1t1_tuple = tuple(slices_c1t1)
 
-    temp = out[slices_c1t0_tuple].copy()
     out[slices_c1t0_tuple] = out[slices_c1t1_tuple]
-    out[slices_c1t1_tuple] = temp
+    out[slices_c1t1_tuple] = state[slices_c1t0_tuple]
+
+    # Clean up step
+    slices_c1t0[control] = slice(None)
+    slices_c1t0[target] = slice(None)
+    slices_c1t1[control] = slice(None)
+    slices_c1t1[target] = slice(None)
 
     return out
 
@@ -133,12 +147,18 @@ def _apply_controlled_phase_shift(
     """Controlled phase shift optimization path."""
     np.copyto(out, state)
 
-    slices = [slice(None)] * len(state.shape)
+    slices = _SLICE_NONE_ARRAYS_0[len(state.shape)]
     for c in controls:
         slices[c] = 1
     slices[target] = 1
 
     out[tuple(slices)] *= np.exp(1j * angle)
+
+    # Clean up step
+    for c in controls:
+        slices[c] = slice(None)
+    slices[target] = slice(None)
+
     return out
 
 
@@ -162,16 +182,27 @@ def _apply_two_qubit_gate(
 
     if matrix.ndim != 2 or matrix.shape != (4, 4):
         matrix = matrix.reshape(4, 4)
+
+    # Moving away from np.allclose here to avoid slightly more expensive checks
+    diag = np.diag(matrix)
     angle = np.angle(matrix[3, 3])
-    if np.allclose(np.diag(matrix), [1, 1, 1, np.exp(1j * angle)]):
+
+    if (
+        abs(diag[0] - 1) < 1e-10
+        and abs(diag[1] - 1) < 1e-10
+        and abs(diag[2] - 1) < 1e-10
+        and abs(diag[3] - np.exp(1j * angle)) < 1e-10
+    ):
         return _apply_controlled_phase_shift(state, angle, (target0,), target1, out)
-    if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
+    elif matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
         return _apply_cnot(state, target0, target1, out)
     elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
         return _apply_swap(state, target0, target1, out)
 
+    # If there was a way around this, that would be great. Haven't figured one out yet.
     out.fill(0)
 
+    # TODO: Make this global/one time computed
     slices = {}
     for bits in [(0, 0), (0, 1), (1, 0), (1, 1)]:
         slice_list = [slice(None)] * n_qubits
@@ -179,14 +210,14 @@ def _apply_two_qubit_gate(
         slice_list[target1] = bits[1]
         slices[bits] = tuple(slice_list)
 
-    for otter_i, (outter0, outter1) in BASIS_STATES:
-        out_bits = (outter0, outter1)
+    rows, cols = np.nonzero(matrix)
 
-        for inner_i, (inner0, inner1) in BASIS_STATES:
-            coef = matrix[otter_i, inner_i]
-            if coef != 0:
-                in_bits = (inner0, inner1)
-                out[slices[out_bits]] += coef * state[slices[in_bits]]
+    for k in range(len(rows)):
+        i, j = rows[k], cols[k]
+        coef = matrix[i, j]
+        out_bits = BASIS_MAPPING[i]
+        in_bits = BASIS_MAPPING[j]
+        out[slices[out_bits]] += coef * state[slices[in_bits]]
 
     return out
 
