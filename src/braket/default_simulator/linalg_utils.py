@@ -15,6 +15,7 @@ import itertools
 from collections.abc import Sequence
 from typing import Optional
 
+import numba as nb
 import numpy as np
 
 _NEG_CONTROL_SLICE = slice(None, 1)
@@ -74,10 +75,57 @@ def multiply_matrix(
     return out
 
 
+def _apply_single_qubit_gate_small(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+):
+    """Applies single gates using array slicing."""
+    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+    n_qubits = state.ndim
+
+    # Using preallocated memory here instead of remaking arrays.
+    slices_0 = _SLICE_NONE_ARRAYS_0[n_qubits]
+    slices_0[target] = 0
+    slices_0_tuple = tuple(slices_0)
+
+    slices_1 = _SLICE_NONE_ARRAYS_0[n_qubits]
+    slices_1[target] = 1
+    slices_1_tuple = tuple(slices_1)
+
+    out[slices_0_tuple] = a * state[slices_0_tuple] + b * state[slices_1_tuple]
+    out[slices_1_tuple] = c * state[slices_0_tuple] + d * state[slices_1_tuple]
+
+    # Clean up step
+    slices_0[target] = slice(None)
+    slices_1[target] = slice(None)
+
+    return out
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True)
+def _apply_single_qubit_gate_large(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+):
+    """Applies single gates using bit masking."""
+    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+    n_qubits = state.ndim
+    total_size = 1 << n_qubits
+    target_mask = 1 << (n_qubits - 1 - target)
+
+    for i in nb.prange(total_size):
+        idx0 = i & ~target_mask
+        idx1 = i | target_mask
+
+        if (i & target_mask) == 0:
+            out.flat[i] = a * state.flat[idx0] + b * state.flat[idx1]
+        else:
+            out.flat[i] = c * state.flat[idx0] + d * state.flat[idx1]
+    return out
+
+
 def _apply_single_qubit_gate(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> np.ndarray:
-    """Applies single gates using array slicing.
+    """Applies single gates based on qubit count.
 
     Args:
         state (np.ndarray): The state to multiply the matrix by.
@@ -88,44 +136,28 @@ def _apply_single_qubit_gate(
     Returns:
         np.ndarray: Modified state vector
     """
-    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+    n_qubits = state.ndim
 
-    # Rather than allocate these arrays each time, preallocate these, update and reset them each time
-    slices_0 = _SLICE_NONE_ARRAYS_0[len(state.shape)]
-    slices_0[target] = 0
-    slices_0_tuple = tuple(slices_0)
-
-    slices_1 = _SLICE_NONE_ARRAYS_0[len(state.shape)]
-    slices_1[target] = 1
-    slices_1_tuple = tuple(slices_1)
-
-    out[slices_0_tuple] = a * state[slices_0_tuple] + b * state[slices_1_tuple]
-    out[slices_1_tuple] = c * state[slices_0_tuple] + d * state[slices_1_tuple]
-
-    # Clean up step
-    slices_0[target] = slice(None)
-    slices_1[target] = slice(None)
-    return out
+    if n_qubits > 10:
+        return _apply_single_qubit_gate_large(state, matrix, target, out)
+    else:
+        return _apply_single_qubit_gate_small(state, matrix, target, out)
 
 
 def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -> np.ndarray:
     """CNOT optimization path."""
     np.copyto(out, state)
+    n_qubits = len(state.shape)
 
-    # Rather than allocate these arrays each time, preallocate these, update and reset them each time
-    slices_c1t0 = _SLICE_NONE_ARRAYS_0[len(state.shape)].copy()
-    slices_c1t0[control] = 1
-    slices_c1t0[target] = 0
-    slices_c1t0_tuple = tuple(slices_c1t0)
+    slices_c1t0 = tuple(
+        1 if i == control else (0 if i == target else slice(None)) for i in range(n_qubits)
+    )
+    slices_c1t1 = tuple(
+        1 if i == control else (1 if i == target else slice(None)) for i in range(n_qubits)
+    )
 
-    slices_c1t1 = _SLICE_NONE_ARRAYS_1[len(state.shape)].copy()
-    slices_c1t1[control] = 1
-    slices_c1t1[target] = 1
-    slices_c1t1_tuple = tuple(slices_c1t1)
-
-    out[slices_c1t0_tuple] = out[slices_c1t1_tuple]
-    out[slices_c1t1_tuple] = state[slices_c1t0_tuple]
-
+    out[slices_c1t0] = out[slices_c1t1]
+    out[slices_c1t1] = state[slices_c1t0]
 
     return out
 
@@ -136,12 +168,41 @@ def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) 
     return out
 
 
-def _apply_controlled_phase_shift(
-    state: np.ndarray, angle: float, controls: tuple[int, ...], target: int, out: np.ndarray
+@nb.njit(
+    parallel=True, fastmath=True, cache=True, nogil=True, error_model="numpy", boundscheck=False
+)
+def _apply_controlled_phase_shift_large(
+    state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
 ) -> np.ndarray:
-    """Controlled phase shift optimization path."""
-    np.copyto(out, state)
+    """C Phase shift gate optimization path for larger vectors."""
+    phase_factor = np.exp(1j * angle)
 
+    n_qubits = state.ndim
+    total_size = 1 << n_qubits
+
+    mask = 0
+    for c in controls:
+        mask |= 1 << (n_qubits - 1 - c)
+    mask |= 1 << (n_qubits - 1 - target)
+
+    block_size = 1 << min(20, n_qubits)
+
+    n_blocks = (total_size + block_size - 1) // block_size
+
+    for block in nb.prange(n_blocks):
+        start_idx = block * block_size
+        end_idx = min(start_idx + block_size, total_size)
+
+        for i in range(start_idx, end_idx):
+            if (i & mask) == mask:
+                out.flat[i] *= phase_factor
+    return out
+
+
+def _apply_controlled_phase_shift_small(
+    state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
+) -> np.ndarray:
+    """C Phase shift gate optimization path for smaller vectors."""
     slices = _SLICE_NONE_ARRAYS_0[len(state.shape)].copy()
     for c in controls:
         slices[c] = 1
@@ -150,6 +211,17 @@ def _apply_controlled_phase_shift(
     out[tuple(slices)] *= np.exp(1j * angle)
 
     return out
+
+
+def _apply_controlled_phase_shift(
+    state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
+) -> np.ndarray:
+    """C Phase shift gate optimization path."""
+    n_qubits = state.ndim
+    if n_qubits > 10:
+        return _apply_controlled_phase_shift_large(state, angle, controls, target, out)
+    else:
+        return _apply_controlled_phase_shift_small(state, angle, controls, target, out)
 
 
 def _apply_two_qubit_gate(
@@ -177,7 +249,6 @@ def _apply_two_qubit_gate(
     diag = np.diag(matrix)
     angle = np.angle(matrix[3, 3])
 
-
     if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
         return _apply_cnot(state, target0, target1, out)
     elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
@@ -188,6 +259,7 @@ def _apply_two_qubit_gate(
         and abs(diag[2] - 1) < 1e-10
         and abs(diag[3] - np.exp(1j * angle)) < 1e-10
     ):
+        np.copyto(out, state)
         return _apply_controlled_phase_shift(state, angle, (target0,), target1, out)
 
     # If there was a way around this, that would be great. Haven't figured one out yet.
