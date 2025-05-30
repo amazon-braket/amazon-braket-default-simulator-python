@@ -204,7 +204,17 @@ def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) 
 def _apply_controlled_phase_shift_large(
     state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
 ) -> np.ndarray:
-    """Simpler but highly optimized implementation."""
+    """C Phase shift gate optimization path for larger vectors using bit masks.
+    
+    Args:
+        state (np.ndarray): The state to multiply the matrix by.
+        matrix (np.ndarray): The matrix to apply to the state.
+        target (int): The qubit to apply the state on.
+        out (np.ndarray): Output array for result.
+
+    Returns:
+        np.ndarray: The state array with the controlled phase shift gate applied.
+    """
     phase_factor = np.exp(1j * angle)
     n_qubits = state.ndim
     
@@ -227,7 +237,7 @@ def _apply_controlled_phase_shift_large(
 def _apply_controlled_phase_shift_small(
     state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
 ) -> np.ndarray:
-    """C Phase shift gate optimization path for smaller vectors."""
+    """C Phase shift gate optimization path for smaller vectors using numpy slicing."""
     phase_factor = np.exp(1j * angle)
     np.copyto(out, state)
 
