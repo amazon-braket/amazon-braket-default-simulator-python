@@ -207,29 +207,20 @@ def _apply_controlled_phase_shift_large(
     """Simpler but highly optimized implementation."""
     phase_factor = np.exp(1j * angle)
     n_qubits = state.ndim
+    
+    mask = 1 << (n_qubits - 1 - target)
+    for c in controls:
+        mask |= 1 << (n_qubits - 1 - c)
 
     if state is not out:
         for i in nb.prange(state.size):
-            out.flat[i] = state.flat[i]
-
-    if len(controls) == 0:
-        target_mask = 1 << (n_qubits - 1 - target)
-        for i in nb.prange(1 << (n_qubits - 1)):
-            idx_with_target_set = (i & ~target_mask) | target_mask
-            out.flat[idx_with_target_set] *= phase_factor
-        return out
-
-    mask = 0
-    for c in controls:
-        mask |= 1 << (n_qubits - 1 - c)
-    mask |= 1 << (n_qubits - 1 - target)
-
-    total_size = 1 << n_qubits
-
-    for i in nb.prange(total_size):
-        if (i & mask) == mask:
-            out.flat[i] *= phase_factor
-
+            val = state.flat[i]
+            out.flat[i] = val * phase_factor if (i & mask) == mask else val
+    else:
+        for i in nb.prange(state.size):
+            if (i & mask) == mask:
+                out.flat[i] *= phase_factor
+    
     return out
 
 
