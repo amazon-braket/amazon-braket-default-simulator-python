@@ -158,10 +158,46 @@ def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -
     return out
 
 
-def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
-    """Swap gate optimization path."""
+def _apply_swap_small(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
+    """Swap gate implementation using numpy's swapaxes."""
     np.copyto(out, np.swapaxes(state, qubit_0, qubit_1))
     return out
+
+@nb.njit(parallel=True, fastmath=True, cache=True)
+def _apply_swap_large(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
+    """Swap gate implementation using bit manipulation."""
+    n_qubits = state.ndim
+    total_size = 1 << n_qubits
+    
+    mask_0 = 1 << (n_qubits - 1 - qubit_0)
+    mask_1 = 1 << (n_qubits - 1 - qubit_1)
+    
+    if state is not out:
+        for i in nb.prange(total_size):
+            out.flat[i] = state.flat[i]
+    
+    for i in nb.prange(total_size):
+        bit_0 = (i & mask_0) != 0
+        bit_1 = (i & mask_1) != 0
+        
+        if bit_0 != bit_1:
+            j = i ^ mask_0 ^ mask_1
+            
+            if i < j:
+                temp = out.flat[i]
+                out.flat[i] = out.flat[j]
+                out.flat[j] = temp
+    
+    return out
+
+def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
+    """Swap gate optimization path with size-based dispatch."""
+    n_qubits = state.ndim
+    
+    if n_qubits > 10:
+        return _apply_swap_large(state, qubit_0, qubit_1, out)
+    else:
+        return _apply_swap_small(state, qubit_0, qubit_1, out)
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
