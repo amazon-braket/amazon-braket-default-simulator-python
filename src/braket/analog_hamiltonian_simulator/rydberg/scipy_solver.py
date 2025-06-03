@@ -113,7 +113,6 @@ def scipy_integrate_ode_run(
         start_time = time.time()
         update_interval = max(1, num_times // 100)
 
-    # Main integration loop
     for index_time in range(num_times - 1):
         if not integrator.successful():
             raise Exception(
@@ -125,7 +124,7 @@ def scipy_integrate_ode_run(
         integrator.integrate(index_time + 1)
 
         state = integrator.y
-        state /= np.linalg.norm(state)
+        state /= np.linalg.norm(state)  # normalize the state
         states[index_time + 1] = state
 
         if progress_bar and (index_time % update_interval == 0 or index_time == num_times - 2):
