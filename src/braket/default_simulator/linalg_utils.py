@@ -102,17 +102,18 @@ def _apply_single_qubit_gate_large(
     """Applies single gates using bit masking."""
     a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
     n_qubits = state.ndim
-    total_size = 1 << n_qubits
+    total_size = state.size
     target_mask = 1 << (n_qubits - 1 - target)
 
     for i in nb.prange(total_size):
         idx0 = i & ~target_mask
         idx1 = i | target_mask
 
-        if (i & target_mask) == 0:
-            out.flat[i] = a * state.flat[idx0] + b * state.flat[idx1]
-        else:
-            out.flat[i] = c * state.flat[idx0] + d * state.flat[idx1]
+        if idx1 < total_size:
+            if (i & target_mask) == 0:
+                out.flat[i] = a * state.flat[idx0] + b * state.flat[idx1]
+            else:
+                out.flat[i] = c * state.flat[idx0] + d * state.flat[idx1]
     return out
 
 
@@ -163,37 +164,39 @@ def _apply_swap_small(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.nda
     np.copyto(out, np.swapaxes(state, qubit_0, qubit_1))
     return out
 
+
 @nb.njit(parallel=True, fastmath=True, cache=True)
 def _apply_swap_large(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
     """Swap gate implementation using bit manipulation."""
     n_qubits = state.ndim
     total_size = 1 << n_qubits
-    
+
     mask_0 = 1 << (n_qubits - 1 - qubit_0)
     mask_1 = 1 << (n_qubits - 1 - qubit_1)
-    
+
     if state is not out:
         for i in nb.prange(total_size):
             out.flat[i] = state.flat[i]
-    
+
     for i in nb.prange(total_size):
         bit_0 = (i & mask_0) != 0
         bit_1 = (i & mask_1) != 0
-        
+
         if bit_0 != bit_1:
             j = i ^ mask_0 ^ mask_1
-            
+
             if i < j:
                 temp = out.flat[i]
                 out.flat[i] = out.flat[j]
                 out.flat[j] = temp
-    
+
     return out
+
 
 def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
     """Swap gate optimization path with size-based dispatch."""
     n_qubits = state.ndim
-    
+
     if n_qubits > 10:
         return _apply_swap_large(state, qubit_0, qubit_1, out)
     else:
@@ -205,7 +208,7 @@ def _apply_controlled_phase_shift_large(
     state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
 ) -> np.ndarray:
     """C Phase shift gate optimization path for larger vectors using bit masks.
-    
+
     Args:
         state (np.ndarray): The state to multiply the matrix by.
         matrix (np.ndarray): The matrix to apply to the state.
@@ -217,7 +220,7 @@ def _apply_controlled_phase_shift_large(
     """
     phase_factor = np.exp(1j * angle)
     n_qubits = state.ndim
-    
+
     mask = 1 << (n_qubits - 1 - target)
     for c in controls:
         mask |= 1 << (n_qubits - 1 - c)
@@ -230,7 +233,7 @@ def _apply_controlled_phase_shift_large(
         for i in nb.prange(state.size):
             if (i & mask) == mask:
                 out.flat[i] *= phase_factor
-    
+
     return out
 
 
