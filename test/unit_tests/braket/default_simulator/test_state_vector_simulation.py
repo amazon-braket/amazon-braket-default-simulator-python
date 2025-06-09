@@ -266,6 +266,7 @@ def test_simulation_simple_circuits(
     for batch_size in range(1, len(instructions) + 2):
         simulation = StateVectorSimulation(qubit_count, 0, batch_size)
         simulation.evolve(instructions)
+        print(probability_amplitudes - simulation.probabilities)
         assert np.allclose(state_vector, simulation.state_vector)
         assert np.allclose(probability_amplitudes, simulation.probabilities)
 

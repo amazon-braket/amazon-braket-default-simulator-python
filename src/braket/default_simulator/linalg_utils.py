@@ -174,21 +174,15 @@ def _apply_swap_large(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.nda
     mask_0 = 1 << (n_qubits - 1 - qubit_0)
     mask_1 = 1 << (n_qubits - 1 - qubit_1)
 
-    if state is not out:
-        for i in nb.prange(total_size):
-            out.flat[i] = state.flat[i]
-
     for i in nb.prange(total_size):
+        j = i ^ mask_0 ^ mask_1
+
         bit_0 = (i & mask_0) != 0
         bit_1 = (i & mask_1) != 0
+        use_partner = bit_0 ^ bit_1
 
-        if bit_0 != bit_1:
-            j = i ^ mask_0 ^ mask_1
-
-            if i < j:
-                temp = out.flat[i]
-                out.flat[i] = out.flat[j]
-                out.flat[j] = temp
+        source_idx = use_partner * j + (1 - use_partner) * i
+        out.flat[i] = state.flat[source_idx]
 
     return out
 
@@ -219,20 +213,16 @@ def _apply_controlled_phase_shift_large(
         np.ndarray: The state array with the controlled phase shift gate applied.
     """
     phase_factor = np.exp(1j * angle)
+    phase_factor_minus_one = phase_factor - 1.0
     n_qubits = state.ndim
 
     mask = 1 << (n_qubits - 1 - target)
     for c in controls:
         mask |= 1 << (n_qubits - 1 - c)
 
-    if state is not out:
-        for i in nb.prange(state.size):
-            val = state.flat[i]
-            out.flat[i] = val * phase_factor if (i & mask) == mask else val
-    else:
-        for i in nb.prange(state.size):
-            if (i & mask) == mask:
-                out.flat[i] *= phase_factor
+    for i in nb.prange(state.size):
+        should_apply = (i & mask) == mask
+        out.flat[i] = (1.0 + should_apply * phase_factor_minus_one) * state.flat[i]
 
     return out
 
@@ -259,7 +249,7 @@ def _apply_controlled_phase_shift(
 ) -> np.ndarray:
     """C Phase shift gate optimization path."""
     n_qubits = state.ndim
-    if n_qubits > 10:
+    if n_qubits > 2:
         return _apply_controlled_phase_shift_large(state, angle, controls, target, out)
     else:
         return _apply_controlled_phase_shift_small(state, angle, controls, target, out)
