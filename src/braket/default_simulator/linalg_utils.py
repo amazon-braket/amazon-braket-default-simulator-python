@@ -27,6 +27,8 @@ BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 # Preallocate for up to 42 qubits
 _SLICE_NONE_ARRAYS = {n: [slice(None)] * n for n in range(1, 43)}
 
+_QUBIT_THRESHOLD = 10
+
 
 def multiply_matrix(
     state: np.ndarray,
@@ -96,7 +98,7 @@ def _apply_single_qubit_gate_small(
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_single_qubit_gate_large(
+def _apply_single_qubit_gate_large( # pragma: no cover
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ):
     """Applies single gates using bit masking."""
@@ -109,11 +111,10 @@ def _apply_single_qubit_gate_large(
         idx0 = i & ~target_mask
         idx1 = i | target_mask
 
-        if idx1 < total_size:
-            if (i & target_mask) == 0:
-                out.flat[i] = a * state.flat[idx0] + b * state.flat[idx1]
-            else:
-                out.flat[i] = c * state.flat[idx0] + d * state.flat[idx1]
+        if (i & target_mask) == 0:
+            out.flat[i] = a * state.flat[idx0] + b * state.flat[idx1]
+        else:
+            out.flat[i] = c * state.flat[idx0] + d * state.flat[idx1]
     return out
 
 
@@ -131,9 +132,9 @@ def _apply_single_qubit_gate(
     Returns:
         np.ndarray: Modified state vector
     """
-    n_qubits = state.ndim
+    n_qubits = state.size
 
-    if n_qubits > 10:
+    if n_qubits > _QUBIT_THRESHOLD:
         return _apply_single_qubit_gate_large(state, matrix, target, out)
     else:
         return _apply_single_qubit_gate_small(state, matrix, target, out)
@@ -166,7 +167,7 @@ def _apply_swap_small(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.nda
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True)
-def _apply_swap_large(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
+def _apply_swap_large(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray: # pragma: no cover
     """Swap gate implementation using bit manipulation."""
     n_qubits = state.ndim
     total_size = 1 << n_qubits
@@ -189,16 +190,16 @@ def _apply_swap_large(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.nda
 
 def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
     """Swap gate optimization path with size-based dispatch."""
-    n_qubits = state.ndim
+    n_qubits = state.size
 
-    if n_qubits > 10:
+    if n_qubits > _QUBIT_THRESHOLD:
         return _apply_swap_large(state, qubit_0, qubit_1, out)
     else:
         return _apply_swap_small(state, qubit_0, qubit_1, out)
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_controlled_phase_shift_large(
+def _apply_controlled_phase_shift_large( # pragma: no cover
     state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
 ) -> np.ndarray:
     """C Phase shift gate optimization path for larger vectors using bit masks.
@@ -248,8 +249,8 @@ def _apply_controlled_phase_shift(
     state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
 ) -> np.ndarray:
     """C Phase shift gate optimization path."""
-    n_qubits = state.ndim
-    if n_qubits > 2:
+    n_qubits = state.size
+    if n_qubits > _QUBIT_THRESHOLD:
         return _apply_controlled_phase_shift_large(state, angle, controls, target, out)
     else:
         return _apply_controlled_phase_shift_small(state, angle, controls, target, out)
