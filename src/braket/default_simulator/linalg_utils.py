@@ -27,7 +27,7 @@ BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 # Preallocate for up to 42 qubits
 _SLICE_NONE_ARRAYS = {n: [slice(None)] * n for n in range(1, 43)}
 
-_QUBIT_THRESHOLD = 10
+_QUBIT_THRESHOLD = nb.int32(10)
 
 
 def multiply_matrix(
