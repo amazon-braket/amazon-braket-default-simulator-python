@@ -1447,11 +1447,14 @@ def test_run_multiple():
     assert np.allclose(results[2].resultTypes[0].value, np.array([0, 1]))
 
 
-@pytest.mark.parametrize("n_qubits,qubit_0,qubit_1", [
-    (2, 0, 1),  # 2 qubits, swap 0 and 1
-    (3, 0, 2),  # 3 qubits, swap 0 and 2
-    (4, 1, 2),  # 4 qubits, swap 1 and 2
-])
+@pytest.mark.parametrize(
+    "n_qubits,qubit_0,qubit_1",
+    [
+        (2, 0, 1),  # 2 qubits, swap 0 and 1
+        (3, 0, 2),  # 3 qubits, swap 0 and 2
+        (4, 1, 2),  # 4 qubits, swap 1 and 2
+    ],
+)
 def test_run_multiple_swap_large(n_qubits, qubit_0, qubit_1):
     payload = OpenQASMProgram(
         source=f"""

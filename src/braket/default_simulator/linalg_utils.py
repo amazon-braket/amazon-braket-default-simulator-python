@@ -98,7 +98,7 @@ def _apply_single_qubit_gate_small(
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_single_qubit_gate_large( # pragma: no cover
+def _apply_single_qubit_gate_large(  # pragma: no cover
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ):
     """Applies single gates using bit masking."""
@@ -167,7 +167,9 @@ def _apply_swap_small(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.nda
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True)
-def _apply_swap_large(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray: # pragma: no cover
+def _apply_swap_large(
+    state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
+) -> np.ndarray:  # pragma: no cover
     """Swap gate implementation using bit manipulation."""
     n_qubits = state.ndim
     total_size = 1 << n_qubits
@@ -199,7 +201,7 @@ def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) 
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_controlled_phase_shift_large( # pragma: no cover
+def _apply_controlled_phase_shift_large(  # pragma: no cover
     state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
 ) -> np.ndarray:
     """C Phase shift gate optimization path for larger vectors using bit masks.
