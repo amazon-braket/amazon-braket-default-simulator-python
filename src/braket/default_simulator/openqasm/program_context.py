@@ -57,6 +57,7 @@ from .parser.openqasm_ast import (
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
+    QuantumStatement,
 )
 
 
@@ -840,6 +841,9 @@ class AbstractProgramContext(ABC):
 
     def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
         """Add qubit targets to be measured"""
+
+    def add_verbatim_marker(self, marker: QuantumStatement) -> None:
+        """Add verbatim markers"""
 
 
 class ProgramContext(AbstractProgramContext):
