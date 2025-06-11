@@ -55,9 +55,9 @@ from .parser.openqasm_ast import (
     IntegerLiteral,
     QuantumGateDefinition,
     QuantumGateModifier,
+    QuantumStatement,
     RangeDefinition,
     SubroutineDefinition,
-    QuantumStatement,
 )
 
 
