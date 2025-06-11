@@ -480,11 +480,12 @@ class Interpreter:
     
     @visit.register
     def _(self, node: VerbatimBoxStart) -> None:
-        self.context.circuit.add_instruction(VerbatimBoxStart())
+        self.context.add_verbatim_marker(node)
+
 
     @visit.register
     def _(self, node: VerbatimBoxEnd) -> None:
-        self.context.circuit.add_instruction(VerbatimBoxEnd())
+        self.context.add_verbatim_marker(node)
 
     @visit.register
     def _(self, node: Box) -> None:
