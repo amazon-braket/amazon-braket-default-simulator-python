@@ -64,6 +64,7 @@ from .parser.openqasm_ast import (
     BitstringLiteral,
     BitType,
     BooleanLiteral,
+    Box,
     BranchingStatement,
     Cast,
     ClassicalArgument,
@@ -100,6 +101,8 @@ from .parser.openqasm_ast import (
     SubroutineDefinition,
     SymbolLiteral,
     UnaryExpression,
+    VerbatimBoxEnd,
+    VerbatimBoxStart,
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
@@ -474,6 +477,21 @@ class Interpreter:
     def _(self, node: QuantumMeasurement) -> None:
         qubits = self.context.get_qubits(self.visit(node.qubit))
         return qubits
+    
+    @visit.register
+    def _(self, node: VerbatimBoxStart) -> None:
+        self.context.circuit.add_instruction(VerbatimBoxStart())
+
+    @visit.register
+    def _(self, node: VerbatimBoxEnd) -> None:
+        self.context.circuit.add_instruction(VerbatimBoxEnd())
+
+    @visit.register
+    def _(self, node: Box) -> None:
+        self.visit(VerbatimBoxStart())
+        for instr_node in node.body:
+            self.visit(instr_node)
+        self.visit(VerbatimBoxEnd())
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
