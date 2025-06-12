@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from braket.default_simulator.linalg_utils import multiply_matrix
+from braket.default_simulator.linalg_utils import QuantumGateDispatcher, multiply_matrix
 from braket.default_simulator.operation import GateOperation
 
 
@@ -32,6 +32,9 @@ def apply_operations(
     """
     result = state.copy()
     temp = np.zeros_like(state, dtype=complex)
+
+    dispatcher = QuantumGateDispatcher(qubit_count)
+
     for op in operations:
         matrix = op.matrix
         all_targets = op.targets
@@ -39,6 +42,6 @@ def apply_operations(
         control_state = op._ctrl_modifiers
         controls = all_targets[:num_ctrl]
         targets = all_targets[num_ctrl:]
-        multiply_matrix(result, matrix, targets, controls, control_state, temp)
+        multiply_matrix(result, matrix, targets, controls, control_state, temp, dispatcher)
         result, temp = temp, result
     return result

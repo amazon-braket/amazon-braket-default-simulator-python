@@ -14,7 +14,6 @@
 import numpy as np
 import opt_einsum
 
-from braket.default_simulator.linalg_utils import multiply_matrix
 from braket.default_simulator.operation import GateOperation
 
 

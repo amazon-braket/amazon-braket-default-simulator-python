@@ -30,6 +30,27 @@ _SLICE_NONE_ARRAYS = {n: [slice(None)] * n for n in range(1, 43)}
 _QUBIT_THRESHOLD = nb.int32(10)
 
 
+class QuantumGateDispatcher:
+    def __init__(self, n_qubits: int):
+        """
+        Makes a way to dispatch to different optimized functions based on qubit count.
+        """
+        self.n_qubits = n_qubits
+        self.use_large = n_qubits > _QUBIT_THRESHOLD
+
+        self.apply_single_qubit_gate = (
+            _apply_single_qubit_gate_large if self.use_large else _apply_single_qubit_gate_small
+        )
+
+        self.apply_swap = _apply_swap_large if self.use_large else _apply_swap_small
+
+        self.apply_controlled_phase_shift = (
+            _apply_controlled_phase_shift_large
+            if self.use_large
+            else _apply_controlled_phase_shift_small
+        )
+
+
 def multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
@@ -37,6 +58,7 @@ def multiply_matrix(
     controls: Optional[tuple[int, ...]] = (),
     control_state: Optional[tuple[int, ...]] = (),
     out: Optional[np.ndarray] = None,
+    dispatcher: Optional[QuantumGateDispatcher] = None,
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
     controlling the operation as specified.
@@ -50,16 +72,20 @@ def multiply_matrix(
             a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
             Default (1,) * len(controls).
         out (Optional[np.ndarray]): Preallocated result array to reduce overhead of creating a new array each time.
+        dispatcher(QuantumGateDispatcher): Dispatch to optimized functions based on qubit
+            count.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
+    if dispatcher is None:
+        dispatcher = QuantumGateDispatcher(state.size)
 
     if out is None:
         out = np.zeros_like(state, dtype=complex)
 
     if not controls:
-        return _multiply_matrix(state, matrix, targets, out)
+        return _multiply_matrix(state, matrix, targets, out, dispatcher)
 
     control_state = control_state or (1,) * len(controls)
 
@@ -71,7 +97,7 @@ def multiply_matrix(
     np.copyto(out, state)
 
     controlled_slice = out[ctrl_tuple]
-    _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice)
+    _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
 
     return out
 
@@ -116,28 +142,6 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
         else:
             out.flat[i] = c * state.flat[idx0] + d * state.flat[idx1]
     return out
-
-
-def _apply_single_qubit_gate(
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> np.ndarray:
-    """Applies single gates based on qubit count.
-
-    Args:
-        state (np.ndarray): The state to multiply the matrix by.
-        matrix (np.ndarray): The matrix to apply to the state.
-        target (int): The qubit to apply the state on.
-        out (np.ndarray): Output array to store result in.
-
-    Returns:
-        np.ndarray: Modified state vector
-    """
-    n_qubits = state.size
-
-    if n_qubits > _QUBIT_THRESHOLD:
-        return _apply_single_qubit_gate_large(state, matrix, target, out)
-    else:
-        return _apply_single_qubit_gate_small(state, matrix, target, out)
 
 
 def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -> np.ndarray:
@@ -190,16 +194,6 @@ def _apply_swap_large(
     return out
 
 
-def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
-    """Swap gate optimization path with size-based dispatch."""
-    n_qubits = state.size
-
-    if n_qubits > _QUBIT_THRESHOLD:
-        return _apply_swap_large(state, qubit_0, qubit_1, out)
-    else:
-        return _apply_swap_small(state, qubit_0, qubit_1, out)
-
-
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_controlled_phase_shift_large(  # pragma: no cover
     state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
@@ -247,19 +241,12 @@ def _apply_controlled_phase_shift_small(
     return out
 
 
-def _apply_controlled_phase_shift(
-    state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
-) -> np.ndarray:
-    """C Phase shift gate optimization path."""
-    n_qubits = state.size
-    if n_qubits > _QUBIT_THRESHOLD:
-        return _apply_controlled_phase_shift_large(state, angle, controls, target, out)
-    else:
-        return _apply_controlled_phase_shift_small(state, angle, controls, target, out)
-
-
 def _apply_two_qubit_gate(
-    state: np.ndarray, matrix: np.ndarray, targets: tuple[int, int], out: np.ndarray
+    state: np.ndarray,
+    matrix: np.ndarray,
+    targets: tuple[int, int],
+    out: np.ndarray,
+    dispatcher: QuantumGateDispatcher,
 ) -> np.ndarray:
     """Two-qubit gates optimization path.
 
@@ -268,6 +255,8 @@ def _apply_two_qubit_gate(
         matrix (np.ndarray): The matrix to apply to the state.
         targets (tuple[int]): The qubits to apply the state on.
         out (np.ndarray): Output array for result.
+        dispatcher(QuantumGateDispatcher): Dispatch to optimized functions based on qubit
+            count.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
@@ -286,14 +275,14 @@ def _apply_two_qubit_gate(
     if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
         return _apply_cnot(state, target0, target1, out)
     elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
-        return _apply_swap(state, target0, target1, out)
+        return dispatcher.apply_swap(state, target0, target1, out)
     elif (
         abs(diag[0] - 1) < 1e-10
         and abs(diag[1] - 1) < 1e-10
         and abs(diag[2] - 1) < 1e-10
         and abs(diag[3] - np.exp(1j * angle)) < 1e-10
     ):
-        return _apply_controlled_phase_shift(state, angle, (target0,), target1, out)
+        return dispatcher.apply_controlled_phase_shift(state, angle, (target0,), target1, out)
 
     out.fill(0)
 
@@ -321,6 +310,7 @@ def _multiply_matrix(
     matrix: np.ndarray,
     targets: tuple[int, ...],
     out: np.ndarray,
+    dispatcher: QuantumGateDispatcher,
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
@@ -329,14 +319,16 @@ def _multiply_matrix(
         matrix (np.ndarray): The matrix to apply to the state.
         targets (tuple[int]): The qubits to apply the state on.
         out (np.ndarray): Output array for result.
+        dispatcher(QuantumGateDispatcher): Dispatch to optimized functions based on qubit
+            count.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
     """
     if len(targets) == 1:
-        return _apply_single_qubit_gate(state, matrix, targets[0], out)
+        return dispatcher.apply_single_qubit_gate(state, matrix, targets[0], out)
     elif len(targets) == 2:
-        return _apply_two_qubit_gate(state, matrix, targets, out)
+        return _apply_two_qubit_gate(state, matrix, targets, out, dispatcher)
 
     num_targets = len(targets)
     gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
