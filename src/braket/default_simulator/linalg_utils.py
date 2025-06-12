@@ -317,14 +317,14 @@ def _apply_two_qubit_gate(
     if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
         return _apply_cnot(state, target0, target1, out)
     elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
-        return _apply_swap(state, target0, target1, out)
+        return dispatcher.apply_swap(state, target0, target1, out)
     elif (
         abs(diag[0] - 1) < 1e-10
         and abs(diag[1] - 1) < 1e-10
         and abs(diag[2] - 1) < 1e-10
         and abs(diag[3] - np.exp(1j * angle)) < 1e-10
     ):
-        return _apply_controlled_phase_shift(state, angle, (target0,), target1, out)
+        return dispatcher.apply_controlled_phase_shift(state, angle, (target0,), target1, out)
 
     out.fill(0)
 
