@@ -33,7 +33,7 @@ def apply_operations(
     result = state.copy()
     temp = np.zeros_like(state, dtype=complex)
 
-    dispatcher = QuantumGateDispatcher(qubit_count)
+    dispatcher = QuantumGateDispatcher(state.size)
 
     for op in operations:
         matrix = op.matrix
