@@ -158,8 +158,9 @@ def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -
     slice_list[target] = 1
     slices_c1t1 = tuple(slice_list)
 
+    temp = np.copy(out[slices_c1t0])
     out[slices_c1t0] = out[slices_c1t1]
-    out[slices_c1t1] = state[slices_c1t0]
+    out[slices_c1t1] = temp
 
     return out
 
