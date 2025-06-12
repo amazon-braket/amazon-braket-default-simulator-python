@@ -242,6 +242,27 @@ def _apply_controlled_phase_shift_small(
     return out
 
 
+def _apply_controlled_phase_shift(
+    state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
+) -> np.ndarray:
+    """C Phase shift gate optimization path."""
+    n_qubits = state.size
+    if n_qubits > _QUBIT_THRESHOLD:
+        return _apply_controlled_phase_shift_large(state, angle, controls, target, out)
+    else:
+        return _apply_controlled_phase_shift_small(state, angle, controls, target, out)
+
+
+def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
+    """Swap gate optimization path with size-based dispatch."""
+    n_qubits = state.size
+
+    if n_qubits > _QUBIT_THRESHOLD:
+        return _apply_swap_large(state, qubit_0, qubit_1, out)
+    else:
+        return _apply_swap_small(state, qubit_0, qubit_1, out)
+
+
 def _apply_two_qubit_gate(
     state: np.ndarray,
     matrix: np.ndarray,
@@ -276,14 +297,14 @@ def _apply_two_qubit_gate(
     if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
         return _apply_cnot(state, target0, target1, out)
     elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
-        return dispatcher.apply_swap(state, target0, target1, out)
+        return _apply_swap(state, target0, target1, out)
     elif (
         abs(diag[0] - 1) < 1e-10
         and abs(diag[1] - 1) < 1e-10
         and abs(diag[2] - 1) < 1e-10
         and abs(diag[3] - np.exp(1j * angle)) < 1e-10
     ):
-        return dispatcher.apply_controlled_phase_shift(state, angle, (target0,), target1, out)
+        return _apply_controlled_phase_shift(state, angle, (target0,), target1, out)
 
     out.fill(0)
 
