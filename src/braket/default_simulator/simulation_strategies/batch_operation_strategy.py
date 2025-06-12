@@ -54,23 +54,7 @@ def apply_operations(
     if not operations:
         return state
 
-    if batch_size == 1:
-        return _apply_operations_sequential(state, operations)
-
     return _apply_operations_batched(state, qubit_count, operations, batch_size)
-
-
-def _apply_operations_sequential(state: np.ndarray, operations: list[GateOperation]) -> np.ndarray:
-    """Apply operations sequentially without batching."""
-    # Using a ping-pong buffer here to avoid mem usage
-    result = state.copy()
-    temp = np.zeros_like(state, dtype=complex)
-
-    for op in operations:
-        _apply_operation(result, op, temp)
-        result, temp = temp, result
-
-    return result
 
 
 def _apply_operations_batched(
@@ -89,24 +73,8 @@ def _apply_operations_batched(
     return state
 
 
-def _apply_operation(state: np.ndarray, op: GateOperation, out: np.ndarray):
-    """Apply an operation to the state."""
-    matrix = op.matrix
-    all_targets = op.targets
-    num_ctrl = len(op._ctrl_modifiers)
-    control_state = op._ctrl_modifiers
-    controls = all_targets[:num_ctrl]
-    targets = all_targets[num_ctrl:]
-    return multiply_matrix(state, matrix, targets, controls, control_state, out)
-
-
 def _process_optimized_batch(state, qubit_count, operations):
     """Process a batch of operations with optimized tensor contraction."""
-    if len(operations) <= 2:
-        for op in operations:
-            state = multiply_matrix(state, op.matrix, op.targets, [], [])
-        return state
-
     contraction_parameters = [state, [*range(qubit_count)]]
     index_substitutions = {i: i for i in range(qubit_count)}
     next_index = qubit_count
