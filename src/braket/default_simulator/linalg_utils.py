@@ -242,27 +242,6 @@ def _apply_controlled_phase_shift_small(
     return out
 
 
-def _apply_controlled_phase_shift(
-    state: np.ndarray, angle: float, controls, target: int, out: np.ndarray
-) -> np.ndarray:
-    """C Phase shift gate optimization path."""
-    n_qubits = state.size
-    if n_qubits > _QUBIT_THRESHOLD:
-        return _apply_controlled_phase_shift_large(state, angle, controls, target, out)
-    else:
-        return _apply_controlled_phase_shift_small(state, angle, controls, target, out)
-
-
-def _apply_swap(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
-    """Swap gate optimization path with size-based dispatch."""
-    n_qubits = state.size
-
-    if n_qubits > _QUBIT_THRESHOLD:
-        return _apply_swap_large(state, qubit_0, qubit_1, out)
-    else:
-        return _apply_swap_small(state, qubit_0, qubit_1, out)
-
-
 def _apply_single_qubit_gate(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> np.ndarray:
