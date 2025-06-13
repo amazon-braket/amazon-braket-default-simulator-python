@@ -208,9 +208,9 @@ class DensityMatrixSimulation(Simulation):
         matrix_conj = matrix.conjugate()
 
         # left product
-        state = multiply_matrix(state, matrix, targets)
+        state, _ = multiply_matrix(state, matrix, targets)
         # right product
-        state = multiply_matrix(state, matrix_conj, shifted_targets)
+        state, _ = multiply_matrix(state, matrix_conj, shifted_targets)
         return state
 
     @staticmethod
@@ -229,7 +229,9 @@ class DensityMatrixSimulation(Simulation):
             np.ndarray: output density matrix
         """
         targets_new = targets + tuple(target + qubit_count for target in targets)
-        state = multiply_matrix(state, np.reshape(superop, [2] * len(targets_new) * 2), targets_new)
+        state, _ = multiply_matrix(
+            state, np.reshape(superop, [2] * len(targets_new) * 2), targets_new
+        )
         return state
 
     @staticmethod

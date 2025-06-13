@@ -38,17 +38,14 @@ class QuantumGateDispatcher:
         self.n_qubits = n_qubits
         self.use_large = n_qubits > _QUBIT_THRESHOLD
 
-        self.apply_single_qubit_gate = (
-            _apply_single_qubit_gate_large if self.use_large else _apply_single_qubit_gate_small
-        )
-
-        self.apply_swap = _apply_swap_large if self.use_large else _apply_swap_small
-
-        self.apply_controlled_phase_shift = (
-            _apply_controlled_phase_shift_large
-            if self.use_large
-            else _apply_controlled_phase_shift_small
-        )
+        if self.use_large:
+            self.apply_single_qubit_gate = _apply_single_qubit_gate_large
+            self.apply_swap = _apply_swap_large
+            self.apply_controlled_phase_shift = _apply_controlled_phase_shift_large
+        else:
+            self.apply_single_qubit_gate = _apply_single_qubit_gate_small
+            self.apply_swap = _apply_swap_small
+            self.apply_controlled_phase_shift = _apply_controlled_phase_shift_small
 
 
 def multiply_matrix(
@@ -99,7 +96,7 @@ def multiply_matrix(
     controlled_slice = out[ctrl_tuple]
     _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
 
-    return out
+    return _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
 
 
 def _apply_single_qubit_gate_small(
@@ -120,7 +117,7 @@ def _apply_single_qubit_gate_small(
     out[slices_0_tuple] = a * state[slices_0_tuple] + b * state[slices_1_tuple]
     out[slices_1_tuple] = c * state[slices_0_tuple] + d * state[slices_1_tuple]
 
-    return out
+    return out, True
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
@@ -131,22 +128,28 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
     a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
     n_qubits = state.ndim
     total_size = state.size
-    target_mask = 1 << (n_qubits - 1 - target)
+    target_stride = 1
 
-    for i in nb.prange(total_size):
-        idx0 = i & ~target_mask
-        idx1 = i | target_mask
+    for i in nb.prange(target + 1, n_qubits):
+        target_stride *= 2
 
-        if (i & target_mask) == 0:
-            out.flat[i] = a * state.flat[idx0] + b * state.flat[idx1]
-        else:
-            out.flat[i] = c * state.flat[idx0] + d * state.flat[idx1]
-    return out
+    for i in nb.prange(total_size // 2):
+        high_bits = i // target_stride
+        low_bits = i % target_stride
+        idx0 = high_bits * (target_stride * 2) + low_bits
+        idx1 = idx0 + target_stride
+
+        state0 = state.flat[idx0]
+        state1 = state.flat[idx1]
+
+        out.flat[idx0] = a * state0 + b * state1
+        out.flat[idx1] = c * state0 + d * state1
+
+    return out, True
 
 
 def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -> np.ndarray:
     """CNOT optimization path."""
-    np.copyto(out, state)
     n_qubits = state.ndim
 
     slice_list = [slice(None)] * n_qubits
@@ -158,17 +161,17 @@ def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -
     slice_list[target] = 1
     slices_c1t1 = tuple(slice_list)
 
-    temp = np.copy(out[slices_c1t0])
-    out[slices_c1t0] = out[slices_c1t1]
-    out[slices_c1t1] = temp
+    temp = np.copy(state[slices_c1t0])
+    state[slices_c1t0] = state[slices_c1t1]
+    state[slices_c1t1] = temp
 
-    return out
+    return state, False
 
 
 def _apply_swap_small(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray) -> np.ndarray:
     """Swap gate implementation using numpy's swapaxes."""
     np.copyto(out, np.swapaxes(state, qubit_0, qubit_1))
-    return out
+    return out, True
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True)
@@ -192,7 +195,7 @@ def _apply_swap_large(
         source_idx = use_partner * j + (1 - use_partner) * i
         out.flat[i] = state.flat[source_idx]
 
-    return out
+    return out, True
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
@@ -211,18 +214,16 @@ def _apply_controlled_phase_shift_large(  # pragma: no cover
         np.ndarray: The state array with the controlled phase shift gate applied.
     """
     phase_factor = np.exp(1j * angle)
-    phase_factor_minus_one = phase_factor - 1.0
-    n_qubits = state.ndim
 
-    mask = 1 << (n_qubits - 1 - target)
+    mask = 1 << (state.ndim - 1 - target)
     for c in controls:
-        mask |= 1 << (n_qubits - 1 - c)
+        mask |= 1 << (state.ndim - 1 - c)
 
     for i in nb.prange(state.size):
-        should_apply = (i & mask) == mask
-        out.flat[i] = (1.0 + should_apply * phase_factor_minus_one) * state.flat[i]
+        if (i & mask) == mask:
+            state.flat[i] *= phase_factor
 
-    return out
+    return state, False
 
 
 def _apply_controlled_phase_shift_small(
@@ -237,9 +238,9 @@ def _apply_controlled_phase_shift_small(
         slices[c] = 1
     slices[target] = 1
 
-    out[tuple(slices)] *= phase_factor
+    state[tuple(slices)] *= phase_factor
 
-    return out
+    return state, False
 
 
 def _apply_single_qubit_gate(
@@ -293,7 +294,12 @@ def _apply_two_qubit_gate(
     diag = np.diag(matrix)
     angle = np.angle(matrix[3, 3])
 
-    if matrix[2, 3] == 1 and matrix[3, 2] == 1 and np.all(np.diag(matrix)[[0, 1]] == 1):
+    if (
+        abs(matrix[2, 3] - 1) < 1e-10
+        and abs(matrix[3, 2] - 1) < 1e-10
+        and abs(matrix[0, 0] - 1) < 1e-10
+        and abs(matrix[1, 1] - 1) < 1e-10
+    ):
         return _apply_cnot(state, target0, target1, out)
     elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
         return dispatcher.apply_swap(state, target0, target1, out)
@@ -323,7 +329,7 @@ def _apply_two_qubit_gate(
         in_bits = BASIS_MAPPING[j]
         out[slices[out_bits]] += coef * state[slices[in_bits]]
 
-    return out
+    return out, True
 
 
 def _multiply_matrix(
@@ -359,7 +365,7 @@ def _multiply_matrix(
     unused_idxs = [idx for idx in range(state.ndim) if idx not in targets]
 
     np.copyto(out, np.transpose(product, np.argsort([*targets, *unused_idxs])))
-    return out
+    return out, True
 
 
 def marginal_probability(

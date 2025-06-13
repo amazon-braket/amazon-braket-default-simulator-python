@@ -42,6 +42,9 @@ def apply_operations(
         control_state = op._ctrl_modifiers
         controls = all_targets[:num_ctrl]
         targets = all_targets[num_ctrl:]
-        multiply_matrix(result, matrix, targets, controls, control_state, temp, dispatcher)
-        result, temp = temp, result
+        _, needs_swap = multiply_matrix(
+            result, matrix, targets, controls, control_state, temp, dispatcher
+        )
+        if needs_swap:
+            result, temp = temp, result
     return result
