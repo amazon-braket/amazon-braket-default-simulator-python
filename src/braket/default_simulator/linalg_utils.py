@@ -100,7 +100,7 @@ def multiply_matrix(
 
     controlled_slice = out[ctrl_tuple]
 
-    out, swap = _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
+    _, swap = _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
 
     if return_swap_info:
         return out, swap
