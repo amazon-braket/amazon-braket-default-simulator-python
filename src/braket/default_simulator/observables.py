@@ -94,7 +94,7 @@ class _InvolutoryMatrixObservable(Observable, ABC):
         return self._targets
 
     def apply(self, state: np.ndarray) -> np.ndarray:
-        return multiply_matrix(state, self._matrix, self.measured_qubits)[0]
+        return multiply_matrix(state, self._matrix, self.measured_qubits)
 
 
 class Hadamard(_InvolutoryMatrixObservable):
@@ -278,7 +278,7 @@ class Hermitian(Observable):
         return self._eigenvalues
 
     def apply(self, state: np.ndarray) -> np.ndarray:
-        return multiply_matrix(state, self._matrix, self.measured_qubits)[0]
+        return multiply_matrix(state, self._matrix, self.measured_qubits)
 
     def fix_qubit(self, qubit: int) -> Observable:
         targets = self._targets

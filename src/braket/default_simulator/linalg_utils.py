@@ -56,6 +56,7 @@ def multiply_matrix(
     control_state: Optional[tuple[int, ...]] = (),
     out: Optional[np.ndarray] = None,
     dispatcher: Optional[QuantumGateDispatcher] = None,
+    return_swap_info: bool = False,
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
     controlling the operation as specified.
@@ -82,7 +83,11 @@ def multiply_matrix(
         out = np.zeros_like(state, dtype=complex)
 
     if not controls:
-        return _multiply_matrix(state, matrix, targets, out, dispatcher)
+        out, swap = _multiply_matrix(state, matrix, targets, out, dispatcher)
+        if return_swap_info:
+            return out, swap
+        else:
+            return out
 
     control_state = control_state or (1,) * len(controls)
 
@@ -94,9 +99,13 @@ def multiply_matrix(
     np.copyto(out, state)
 
     controlled_slice = out[ctrl_tuple]
-    _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
 
-    return _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
+    out, swap = _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
+
+    if return_swap_info:
+        return out, swap
+    else:
+        return out
 
 
 def _apply_single_qubit_gate_small(
