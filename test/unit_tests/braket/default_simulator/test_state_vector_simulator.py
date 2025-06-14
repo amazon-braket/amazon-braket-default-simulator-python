@@ -1491,43 +1491,35 @@ def test_run_multiple_swap_large(n_qubits, qubit_0, qubit_1):
 
 def test_multiply_matrix_controlled_no_swap_info():
     state = np.zeros((2, 2), dtype=complex)
-    state[0, 1] = 1.0  # |01⟩ state
-    
-    # X gate matrix (Pauli-X)
+    state[0, 1] = 1.0
+
     x_matrix = np.array([[0, 1], [1, 0]], dtype=complex)
-    
-    # Call multiply_matrix directly with controls
+
     result = multiply_matrix(
         state=state,
         matrix=x_matrix,
-        targets=(1,),  # Apply X to target qubit 1
-        controls=(0,),  # Control on qubit 0
-        control_state=(0,),  # Control when qubit 0 is |0⟩
-        return_swap_info=False  # This should hit the last else
+        targets=(1,),
+        controls=(0,),
+        control_state=(0,),
+        return_swap_info=False,
     )
-    
-    # Since control qubit is |0⟩ and we're controlling on |0⟩,
-    # the X gate should be applied to the target qubit
-    # |01⟩ → |00⟩ (target flipped from 1 to 0)
+
     expected = np.zeros((2, 2), dtype=complex)
-    expected[0, 0] = 1.0  # |00⟩ state
-    
-    # Verify we get only the result array (not a tuple)
+    expected[0, 0] = 1.0
+
     assert isinstance(result, np.ndarray)
     assert not isinstance(result, tuple)
     assert np.allclose(result, expected)
-    
-    # Test with return_swap_info=True to ensure we get tuple
+
     result_with_swap = multiply_matrix(
         state=state,
         matrix=x_matrix,
         targets=(1,),
-        controls=(0,), 
+        controls=(0,),
         control_state=(0,),
-        return_swap_info=True  # This should return tuple
+        return_swap_info=True,
     )
-    
-    # Should return tuple (result, swap_flag)
+
     assert isinstance(result_with_swap, tuple)
     assert len(result_with_swap) == 2
     assert isinstance(result_with_swap[0], np.ndarray)

@@ -42,10 +42,12 @@ class QuantumGateDispatcher:
             self.apply_single_qubit_gate = _apply_single_qubit_gate_large
             self.apply_swap = _apply_swap_large
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_large
+            self.apply_cnot = _apply_cnot_large
         else:
             self.apply_single_qubit_gate = _apply_single_qubit_gate_small
             self.apply_swap = _apply_swap_small
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_small
+            self.apply_cnot = _apply_cnot_small
 
 
 def multiply_matrix(
@@ -72,6 +74,7 @@ def multiply_matrix(
         out (Optional[np.ndarray]): Preallocated result array to reduce overhead of creating a new array each time.
         dispatcher(QuantumGateDispatcher): Dispatch to optimized functions based on qubit
             count.
+        return_swap_info (bool): For backwards comp. Used to indicate whether the ping-pong buffer swaps should happen.
 
     Returns:
         np.ndarray: The state after the matrix has been applied.
@@ -157,7 +160,36 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
     return out, True
 
 
-def _apply_cnot(state: np.ndarray, control: int, target: int, out: np.ndarray) -> np.ndarray:
+@nb.njit(parallel=True, fastmath=True, cache=True)
+def _apply_cnot_large(
+    state: np.ndarray, control: int, target: int, out: np.ndarray
+) -> np.ndarray:  # pragma: no cover
+    """CNOT optimization path with numba."""
+    n_qubits = state.ndim
+    total_size = state.size
+
+    target_stride = 1
+    for i in range(target + 1, n_qubits):
+        target_stride *= 2
+
+    control_bit_pos = n_qubits - control - 1
+    control_mask = 1 << control_bit_pos
+
+    for i in nb.prange(total_size // 2):
+        high_bits = i // target_stride
+        low_bits = i % target_stride
+        idx0 = high_bits * (target_stride * 2) + low_bits
+        idx1 = idx0 + target_stride
+
+        if (idx0 & control_mask) != 0:
+            temp = state.flat[idx0]
+            state.flat[idx0] = state.flat[idx1]
+            state.flat[idx1] = temp
+
+    return state, False
+
+
+def _apply_cnot_small(state: np.ndarray, control: int, target: int, out: np.ndarray) -> np.ndarray:
     """CNOT optimization path."""
     n_qubits = state.ndim
 
@@ -240,7 +272,6 @@ def _apply_controlled_phase_shift_small(
 ) -> np.ndarray:
     """C Phase shift gate optimization path for smaller vectors using numpy slicing."""
     phase_factor = np.exp(1j * angle)
-    np.copyto(out, state)
 
     slices = _SLICE_NONE_ARRAYS[len(state.shape)].copy()
     for c in controls:
@@ -299,24 +330,24 @@ def _apply_two_qubit_gate(
     if matrix.ndim != 2 or matrix.shape != (4, 4):
         matrix = matrix.reshape(4, 4)
 
-    # Moving away from np.allclose here to avoid slightly more expensive checks
+    threshold = 1e-10
     diag = np.diag(matrix)
     angle = np.angle(matrix[3, 3])
 
     if (
-        abs(matrix[2, 3] - 1) < 1e-10
-        and abs(matrix[3, 2] - 1) < 1e-10
-        and abs(matrix[0, 0] - 1) < 1e-10
-        and abs(matrix[1, 1] - 1) < 1e-10
+        abs(matrix[2, 3] - 1) < threshold
+        and abs(matrix[3, 2] - 1) < threshold
+        and abs(matrix[0, 0] - 1) < threshold
+        and abs(matrix[1, 1] - 1) < threshold
     ):
-        return _apply_cnot(state, target0, target1, out)
-    elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(np.diag(matrix)[[0, 3]] == 1):
+        return dispatcher.apply_cnot(state, target0, target1, out)
+    elif matrix[1, 2] == 1 and matrix[2, 1] == 1 and np.all(diag[[0, 3]] == 1):
         return dispatcher.apply_swap(state, target0, target1, out)
     elif (
-        abs(diag[0] - 1) < 1e-10
-        and abs(diag[1] - 1) < 1e-10
-        and abs(diag[2] - 1) < 1e-10
-        and abs(diag[3] - np.exp(1j * angle)) < 1e-10
+        abs(diag[0] - 1) < threshold
+        and abs(diag[1] - 1) < threshold
+        and abs(diag[2] - 1) < threshold
+        and abs(diag[3] - np.exp(1j * angle)) < threshold
     ):
         return dispatcher.apply_controlled_phase_shift(state, angle, (target0,), target1, out)
 
