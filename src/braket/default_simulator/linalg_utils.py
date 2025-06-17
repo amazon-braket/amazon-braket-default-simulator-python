@@ -43,11 +43,13 @@ class QuantumGateDispatcher:
             self.apply_swap = _apply_swap_large
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_large
             self.apply_cnot = _apply_cnot_large
+            self.apply_two_qubit_gate = _apply_two_qubit_gate_large
         else:
             self.apply_single_qubit_gate = _apply_single_qubit_gate_small
             self.apply_swap = _apply_swap_small
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_small
             self.apply_cnot = _apply_cnot_small
+            self.apply_two_qubit_gate = _apply_two_qubit_gate_small
 
 
 def multiply_matrix(
@@ -160,7 +162,7 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
     return out, True
 
 
-@nb.njit(parallel=True, fastmath=True, cache=True)
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_cnot_large(
     state: np.ndarray, control: int, target: int, out: np.ndarray
 ) -> np.ndarray:  # pragma: no cover
@@ -215,7 +217,7 @@ def _apply_swap_small(state: np.ndarray, qubit_0: int, qubit_1: int, out: np.nda
     return out, True
 
 
-@nb.njit(parallel=True, fastmath=True, cache=True)
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_swap_large(
     state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
 ) -> np.ndarray:  # pragma: no cover
@@ -301,6 +303,64 @@ def _apply_single_qubit_gate(
         return _apply_single_qubit_gate_large(state, matrix, target, out)
     else:
         return _apply_single_qubit_gate_small(state, matrix, target, out)
+    
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_two_qubit_gate_large(
+    state: np.ndarray,
+    matrix: np.ndarray,
+    target0: int,
+    target1: int,
+    out: np.ndarray,
+) -> tuple[np.ndarray, bool]:  # pragma: no cover
+    """Two-qubit gate implementation using bit manipulation."""
+    n_qubits = state.ndim
+    total_size = 1 << n_qubits
+    
+    mask_0 = 1 << (n_qubits - 1 - target0)
+    mask_1 = 1 << (n_qubits - 1 - target1)
+    
+    for i in nb.prange(total_size):
+        out_basis = ((i & mask_0) != 0) * 2 + ((i & mask_1) != 0)
+
+        base = i & ~(mask_0 | mask_1)
+        
+        result = (matrix[out_basis, 0] * state.flat[base] +
+                 matrix[out_basis, 1] * state.flat[base | mask_1] +
+                 matrix[out_basis, 2] * state.flat[base | mask_0] +
+                 matrix[out_basis, 3] * state.flat[base | mask_0 | mask_1])
+        
+        out.flat[i] = result
+    
+    return out, True
+
+def _apply_two_qubit_gate_small(
+    state: np.ndarray,
+    matrix: np.ndarray,
+    target0: int,
+    target1: int,
+    out: np.ndarray,
+) -> tuple[np.ndarray, bool]: 
+    n_qubits = state.ndim
+    out.fill(0)
+
+    slices = {}
+    for bits in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+        slice_list = [slice(None)] * n_qubits
+        slice_list[target0] = bits[0]
+        slice_list[target1] = bits[1]
+        slices[bits] = tuple(slice_list)
+
+    rows, cols = np.nonzero(matrix)
+
+    for k in range(len(rows)):
+        i, j = rows[k], cols[k]
+        coef = matrix[i, j]
+        out_bits = BASIS_MAPPING[i]
+        in_bits = BASIS_MAPPING[j]
+        out[slices[out_bits]] += coef * state[slices[in_bits]]
+
+    return out, True
 
 
 def _apply_two_qubit_gate(
@@ -325,7 +385,6 @@ def _apply_two_qubit_gate(
 
     """
     target0, target1 = targets
-    n_qubits = state.ndim
 
     if matrix.ndim != 2 or matrix.shape != (4, 4):
         matrix = matrix.reshape(4, 4)
@@ -351,25 +410,7 @@ def _apply_two_qubit_gate(
     ):
         return dispatcher.apply_controlled_phase_shift(state, angle, (target0,), target1, out)
 
-    out.fill(0)
-
-    slices = {}
-    for bits in [(0, 0), (0, 1), (1, 0), (1, 1)]:
-        slice_list = [slice(None)] * n_qubits
-        slice_list[target0] = bits[0]
-        slice_list[target1] = bits[1]
-        slices[bits] = tuple(slice_list)
-
-    rows, cols = np.nonzero(matrix)
-
-    for k in range(len(rows)):
-        i, j = rows[k], cols[k]
-        coef = matrix[i, j]
-        out_bits = BASIS_MAPPING[i]
-        in_bits = BASIS_MAPPING[j]
-        out[slices[out_bits]] += coef * state[slices[in_bits]]
-
-    return out, True
+    return dispatcher.apply_two_qubit_gate(state, matrix, target0, target1, out)
 
 
 def _multiply_matrix(
