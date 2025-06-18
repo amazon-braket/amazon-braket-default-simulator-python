@@ -367,7 +367,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
     @staticmethod
     def _observable_hash(observable: Observable) -> Union[str, dict[int, str]]:
         if isinstance(observable, Hermitian):
-            return str(hash(str(observable.matrix.tostring())))
+            return str(hash(str(observable.matrix.tobytes())))
         elif isinstance(observable, TensorProduct):
             # Dict of target index to observable hash
             return BaseLocalSimulator._tensor_product_index_dict(

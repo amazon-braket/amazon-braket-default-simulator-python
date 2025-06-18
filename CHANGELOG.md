@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.26.6 (2025-06-18)
+
+### Bug Fixes and Other Changes
+
+ * change numpy tostring to tobytes
+
 ## v1.26.5 (2025-05-21)
 
 ### Bug Fixes and Other Changes
