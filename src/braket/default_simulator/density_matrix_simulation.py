@@ -70,66 +70,6 @@ class DensityMatrixSimulation(Simulation):
             self._density_matrix, self._qubit_count, operations
         )
 
-    @staticmethod
-    def _apply_operations(
-        state: np.ndarray, qubit_count: int, operations: list[Union[GateOperation, KrausOperation]]
-    ) -> np.ndarray:
-        """Applies the gate and noise operations to the density matrix.
-
-        Args:
-            state (np.ndarray): initial density matrix
-            qubit_count (int): number of qubits in the circuit
-            operations (list[Union[GateOperation, KrausOperation]]): list of GateOperation and
-                KrausOperation to be applied to the density matrix
-
-        Returns:
-            np.ndarray: output density matrix
-        """
-        if not operations:
-            return state
-
-        dm_tensor = np.reshape(state, [2] * 2 * qubit_count)
-
-        i = 0
-        n = len(operations)
-        while i < n:
-            current_op = operations[i]
-            targets = current_op.targets
-
-            if isinstance(current_op, (GateOperation, Observable)):
-                matrix = current_op.matrix
-                j = i + 1
-
-                while j < n:
-                    next_op = operations[j]
-                    if (
-                        isinstance(next_op, (GateOperation, Observable))
-                        and next_op.targets == targets
-                    ):
-                        matrix = next_op.matrix @ matrix  # order matters
-                        j += 1
-                    else:
-                        break
-
-                if len(targets) > 3:
-                    dm_tensor = DensityMatrixSimulation._apply_gate(
-                        dm_tensor, qubit_count, matrix, targets
-                    )
-                else:
-                    dm_tensor = DensityMatrixSimulation._apply_gate_superop(
-                        dm_tensor, qubit_count, np.kron(matrix, matrix.conjugate()), targets
-                    )
-
-                i = j
-
-            if isinstance(current_op, KrausOperation):
-                dm_tensor = DensityMatrixSimulation._apply_kraus(
-                    dm_tensor, qubit_count, current_op.matrices, targets
-                )
-                i += 1
-
-        return np.reshape(dm_tensor, (2**qubit_count, 2**qubit_count))
-
     def retrieve_samples(self) -> list[int]:
         rng_generator = np.random.default_rng()
         return rng_generator.choice(
@@ -187,77 +127,175 @@ class DensityMatrixSimulation(Simulation):
         return np.where((np.abs(diag) >= tol) & (diag >= 0), diag, 0.0)
 
     @staticmethod
-    def _apply_gate(
-        state: np.ndarray, qubit_count: int, matrix: np.ndarray, targets: tuple[int, ...]
+    def _apply_operations(
+        state: np.ndarray,
+        qubit_count: int,
+        operations: list[Union[GateOperation, KrausOperation, Observable]],
     ) -> np.ndarray:
-        r"""Apply a matrix M to a density matrix D according to:
-
-            .. math::
-                D \rightarrow M D M^{\dagger}
+        """Applies the gate and noise operations to the density matrix.
 
         Args:
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubits in the circuit
-            matrix (np.ndarray): matrix to be applied to the density matrix
-            targets (tuple[int,...]): qubits of the density matrix the matrix applied to.
+            operations (list[Union[GateOperation, KrausOperation, Observable]]): list of GateOperation and
+                KrausOperation to be applied to the density matrix
 
         Returns:
             np.ndarray: output density matrix
         """
-        shifted_targets = tuple(i + qubit_count for i in targets)
-        matrix_conj = matrix.conjugate()
+        if not operations:
+            return state
 
-        # left product
-        state = multiply_matrix(state, matrix, targets)
-        # right product
-        state = multiply_matrix(state, matrix_conj, shifted_targets)
-        return state
+        result = np.reshape(state, [2] * 2 * qubit_count)
+        temp = np.zeros_like(result, dtype=complex)
+        has_kraus = any(isinstance(op, KrausOperation) for op in operations)
+        work_buffer1 = np.zeros_like(result, dtype=complex) if has_kraus else None
+        work_buffer2 = np.zeros_like(result, dtype=complex) if has_kraus else None
+
+        for operation in operations:
+            if isinstance(operation, (GateOperation, Observable)):
+                result, temp = DensityMatrixSimulation._apply_gate(
+                    result, temp, qubit_count, operation.matrix, operation.targets
+                )
+            if isinstance(operation, KrausOperation):
+                result, temp = DensityMatrixSimulation._apply_kraus(
+                    result,
+                    temp,
+                    work_buffer1,
+                    work_buffer2,
+                    qubit_count,
+                    operation.matrices,
+                    operation.targets,
+                )
+        return np.reshape(result, (2**qubit_count, 2**qubit_count))
 
     @staticmethod
-    def _apply_gate_superop(
-        state: np.ndarray, qubit_count: int, superop: np.ndarray, targets: tuple[int, ...]
-    ) -> np.ndarray:
-        """Apply a superoperator to a density matrix
+    def _apply_gate(
+        result: np.ndarray,
+        temp: np.ndarray,
+        qubit_count: int,
+        matrix: np.ndarray,
+        targets: tuple[int],
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Apply a unitary gate matrix E to a density matrix D according to:
+
+            .. math::
+                D \rightarrow E D E^{\dagger}
+
+        This represents the quantum evolution of a density matrix under a unitary
+        operation, where the gate is applied on the left and its Hermitian conjugate
+        on the right to preserve the trace and Hermitian properties of the density matrix.
 
         Args:
-            state (np.ndarray): initial density matrix
-            qubit_count (int): number of qubits in the circuit
-            superop (np.ndarray): superoperator to be applied to the density matrix
-            targets (tuple[int,...]): qubits of the density matrix the superoperator applied to.
+            result (np.ndarray): Initial density matrix in reshaped form [2]^(2*qubit_count).
+                This buffer may be modified during computation and used for intermediate results.
+            temp (np.ndarray): Pre-allocated buffer used for multiply_matrix output operations.
+                Must have the same shape and dtype as result.
+            qubit_count (int): Number of qubits in the circuit.
+            matrix (np.ndarray): Unitary gate matrix E to be applied to the density matrix.
+                Will be converted to complex dtype if necessary.
+            targets (tuple[int]): Target qubits that the unitary gate acts upon.
 
         Returns:
-            np.ndarray: output density matrix
+            tuple[np.ndarray, np.ndarray]: A tuple containing:
+                - The output density matrix (E * D * E†)
+                - A spare buffer that can be reused for subsequent operations
+
+        Note:
+            The function uses efficient buffer swapping to minimize memory allocations.
+            The shifted targets (targets + qubit_count) are used for the right-side
+            multiplication with E† to account for the doubled dimension structure
+            of the reshaped density matrix.
         """
-        targets_new = targets + tuple(target + qubit_count for target in targets)
-        state = multiply_matrix(state, np.reshape(superop, [2] * len(targets_new) * 2), targets_new)
-        return state
+        shifted_targets = tuple(t + qubit_count for t in targets)
+        _, needs_swap1 = multiply_matrix(
+            state=result, matrix=matrix, targets=targets, out=temp, return_swap_info=True
+        )
+        if needs_swap1:
+            result, temp = temp, result
+
+        _, needs_swap2 = multiply_matrix(
+            state=result,
+            matrix=matrix.conj(),
+            targets=shifted_targets,
+            out=temp,
+            return_swap_info=True,
+        )
+        if needs_swap2:
+            result, temp = temp, result
+
+        return result, temp
 
     @staticmethod
     def _apply_kraus(
-        state: np.ndarray, qubit_count: int, matrices: list[np.ndarray], targets: tuple[int, ...]
-    ) -> np.ndarray:
-        r"""Apply a list of matrices {E_i} to a density matrix D according to:
+        result: np.ndarray,
+        temp: np.ndarray,
+        work_buffer1: np.ndarray,
+        work_buffer2: np.ndarray,
+        qubit_count: int,
+        matrices: list[np.ndarray],
+        targets: tuple[int],
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Apply a list of matrices {E_i} to a density matrix D according to:
 
             .. math::
                 D \rightarrow \\sum_i E_i D E_i^{\dagger}
 
+        This version uses pre-allocated buffers for memory-efficient computation,
+        avoiding repeated memory allocations during the Kraus operation loop.
+
         Args:
-            state (np.ndarray): initial density matrix
-            qubit_count (int): number of qubits in the circuit
-            matrices (list[np.ndarray]): matrices to be applied to the density matrix
-            targets (tuple[int,...]): qubits of the density matrix the matrices applied to.
+            result (np.ndarray): Initial density matrix in reshaped form [2]^(2*qubit_count).
+                This buffer is preserved and never modified during computation.
+            temp (np.ndarray): Pre-allocated buffer used as accumulator for the final result.
+                Must have the same shape and dtype as result.
+            work_buffer1 (np.ndarray): Pre-allocated working buffer for intermediate calculations.
+                Must have the same shape and dtype as result.
+            work_buffer2 (np.ndarray): Pre-allocated working buffer for multiply_matrix output.
+                Must have the same shape and dtype as result.
+            qubit_count (int): Number of qubits in the circuit.
+            matrices (list[np.ndarray]): Kraus operators {E_i} to be applied to the density matrix.
+            targets (tuple[int]): Target qubits that the Kraus operators act upon.
 
         Returns:
-            np.ndarray: output density matrix
+            tuple[np.ndarray, np.ndarray]: A tuple containing:
+                - The output density matrix (sum_i E_i * D * E_i†)
+                - A spare buffer that can be reused for subsequent operations
+
+        Note:
+            The input density matrix in `result` is never modified. Each Kraus operator
+            E_i is applied to the original density matrix, and the results are accumulated
+            in the `temp` buffer to compute the final sum.
         """
-        if len(targets) > 4:
-            new_state = sum(
-                DensityMatrixSimulation._apply_gate(state, qubit_count, matrix, targets)
-                for matrix in matrices
+        shifted_targets = tuple(t + qubit_count for t in targets)
+
+        temp.fill(0)
+
+        for matrix in matrices:
+            matrix = matrix.astype(complex, copy=False)
+
+            np.copyto(work_buffer1, result)
+
+            _, needs_swap1 = multiply_matrix(
+                state=work_buffer1,
+                matrix=matrix,
+                targets=targets,
+                out=work_buffer2,
+                return_swap_info=True,
             )
-        else:
-            superop = sum(np.kron(matrix, matrix.conjugate()) for matrix in matrices)
-            new_state = DensityMatrixSimulation._apply_gate_superop(
-                state, qubit_count, superop, targets
+            if needs_swap1:
+                work_buffer1, work_buffer2 = work_buffer2, work_buffer1
+
+            _, needs_swap2 = multiply_matrix(
+                state=work_buffer1,
+                matrix=matrix.conj(),
+                targets=shifted_targets,
+                out=work_buffer2,
+                return_swap_info=True,
             )
-        return new_state
+            if needs_swap2:
+                work_buffer1, work_buffer2 = work_buffer2, work_buffer1
+
+            temp += work_buffer1
+
+        return temp, result

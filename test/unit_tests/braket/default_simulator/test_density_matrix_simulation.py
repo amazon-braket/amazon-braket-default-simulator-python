@@ -19,12 +19,12 @@ import pytest
 from braket.default_simulator import gate_operations, noise_operations, observables
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
 
-sx = np.array([[0, 1], [1, 0]])
-si = np.array([[1, 0], [0, 1]])
+sx = np.array([[0, 1], [1, 0]], dtype=complex)
+si = np.array([[1, 0], [0, 1]], dtype=complex)
 matrix_2q = np.kron(sx, si).reshape(4, 4)
 matrix_4q = np.kron(np.kron(sx, si), np.kron(si, si))
 matrix_5q = np.kron(sx, np.kron(np.kron(sx, si), np.kron(si, si)))
-density_matrix_4q = np.zeros((16, 16))
+density_matrix_4q = np.zeros((16, 16), dtype=complex)
 density_matrix_4q[8][8] = 1
 density_matrix_5q = np.zeros((32, 32))
 density_matrix_5q[24][24] = 1
@@ -35,6 +35,26 @@ evolve_testdata = [
         1,
         [[0.1, 0.0], [0.0, 0.9]],
         [0.1, 0.9],
+    ),
+    (
+        [
+            gate_operations.CX([0, 1]),
+            noise_operations.Kraus(
+                [0, 1],
+                [
+                    [
+                        [1.0, 0, 0, 0],
+                        [0, 1.0, 0, 0],
+                        [0, 0, 1.0, 0],
+                        [0, 0, 0, np.exp(1j * np.pi / 3)],
+                    ],
+                    [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                ],
+            ),
+        ],
+        2,
+        [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+        [1, 0, 0, 0],
     ),
     (
         [gate_operations.Hadamard([0]), noise_operations.PhaseFlip([0], 0.1)],

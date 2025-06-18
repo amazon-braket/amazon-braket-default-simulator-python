@@ -303,7 +303,7 @@ def _apply_single_qubit_gate(
         return _apply_single_qubit_gate_large(state, matrix, target, out)
     else:
         return _apply_single_qubit_gate_small(state, matrix, target, out)
-    
+
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_two_qubit_gate_large(
@@ -316,23 +316,26 @@ def _apply_two_qubit_gate_large(
     """Two-qubit gate implementation using bit manipulation."""
     n_qubits = state.ndim
     total_size = 1 << n_qubits
-    
+
     mask_0 = 1 << (n_qubits - 1 - target0)
     mask_1 = 1 << (n_qubits - 1 - target1)
-    
+
     for i in nb.prange(total_size):
         out_basis = ((i & mask_0) != 0) * 2 + ((i & mask_1) != 0)
 
         base = i & ~(mask_0 | mask_1)
-        
-        result = (matrix[out_basis, 0] * state.flat[base] +
-                 matrix[out_basis, 1] * state.flat[base | mask_1] +
-                 matrix[out_basis, 2] * state.flat[base | mask_0] +
-                 matrix[out_basis, 3] * state.flat[base | mask_0 | mask_1])
-        
+
+        result = (
+            matrix[out_basis, 0] * state.flat[base]
+            + matrix[out_basis, 1] * state.flat[base | mask_1]
+            + matrix[out_basis, 2] * state.flat[base | mask_0]
+            + matrix[out_basis, 3] * state.flat[base | mask_0 | mask_1]
+        )
+
         out.flat[i] = result
-    
+
     return out, True
+
 
 def _apply_two_qubit_gate_small(
     state: np.ndarray,
@@ -340,7 +343,8 @@ def _apply_two_qubit_gate_small(
     target0: int,
     target1: int,
     out: np.ndarray,
-) -> tuple[np.ndarray, bool]: 
+) -> tuple[np.ndarray, bool]:
+    """Two qubit gate application with numppy."""
     n_qubits = state.ndim
     out.fill(0)
 
@@ -385,9 +389,6 @@ def _apply_two_qubit_gate(
 
     """
     target0, target1 = targets
-
-    if matrix.ndim != 2 or matrix.shape != (4, 4):
-        matrix = matrix.reshape(4, 4)
 
     threshold = 1e-10
     diag = np.diag(matrix)
