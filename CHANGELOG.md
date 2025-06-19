@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.26.7 (2025-06-19)
+
+### Bug Fixes and Other Changes
+
+ * Input type in _apply_hamiltonian
+
 ## v1.26.6 (2025-06-18)
 
 ### Bug Fixes and Other Changes
