@@ -151,7 +151,7 @@ class DensityMatrixSimulation(Simulation):
         has_kraus = any(isinstance(op, KrausOperation) for op in operations)
         work_buffer1 = np.zeros_like(result, dtype=complex) if has_kraus else None
         work_buffer2 = np.zeros_like(result, dtype=complex) if has_kraus else None
-
+    
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
                 result, temp = DensityMatrixSimulation._apply_gate(
@@ -272,30 +272,28 @@ class DensityMatrixSimulation(Simulation):
         temp.fill(0)
 
         for matrix in matrices:
-            matrix = matrix.astype(complex, copy=False)
-
-            np.copyto(work_buffer1, result)
-
-            _, needs_swap1 = multiply_matrix(
-                state=work_buffer1,
-                matrix=matrix,
+            current_buffer = result
+            output_buffer = work_buffer1
+            
+            _, needs_swap = multiply_matrix(
+                state=current_buffer,
+                matrix=matrix, 
                 targets=targets,
-                out=work_buffer2,
-                return_swap_info=True,
+                out=output_buffer,
+                return_swap_info=True
             )
-            if needs_swap1:
-                work_buffer1, work_buffer2 = work_buffer2, work_buffer1
-
-            _, needs_swap2 = multiply_matrix(
-                state=work_buffer1,
+            if needs_swap:
+                current_buffer, output_buffer = output_buffer, work_buffer2
+             
+            _, needs_swap = multiply_matrix(
+                state=current_buffer,
                 matrix=matrix.conj(),
                 targets=shifted_targets,
-                out=work_buffer2,
-                return_swap_info=True,
+                out=output_buffer,
+                return_swap_info=True
             )
-            if needs_swap2:
-                work_buffer1, work_buffer2 = work_buffer2, work_buffer1
-
-            temp += work_buffer1
-
+            if not needs_swap:
+                current_buffer, output_buffer = output_buffer, current_buffer
+            temp += output_buffer
+        
         return temp, result
