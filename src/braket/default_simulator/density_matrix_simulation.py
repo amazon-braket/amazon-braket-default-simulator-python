@@ -151,7 +151,7 @@ class DensityMatrixSimulation(Simulation):
         has_kraus = any(isinstance(op, KrausOperation) for op in operations)
         work_buffer1 = np.zeros_like(result, dtype=complex) if has_kraus else None
         work_buffer2 = np.zeros_like(result, dtype=complex) if has_kraus else None
-    
+
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
                 result, temp = DensityMatrixSimulation._apply_gate(
@@ -274,26 +274,26 @@ class DensityMatrixSimulation(Simulation):
         for matrix in matrices:
             current_buffer = result
             output_buffer = work_buffer1
-            
+
             _, needs_swap = multiply_matrix(
                 state=current_buffer,
-                matrix=matrix, 
+                matrix=matrix,
                 targets=targets,
                 out=output_buffer,
-                return_swap_info=True
+                return_swap_info=True,
             )
             if needs_swap:
                 current_buffer, output_buffer = output_buffer, work_buffer2
-             
+
             _, needs_swap = multiply_matrix(
                 state=current_buffer,
                 matrix=matrix.conj(),
                 targets=shifted_targets,
                 out=output_buffer,
-                return_swap_info=True
+                return_swap_info=True,
             )
             if not needs_swap:
                 current_buffer, output_buffer = output_buffer, current_buffer
             temp += output_buffer
-        
+
         return temp, result
