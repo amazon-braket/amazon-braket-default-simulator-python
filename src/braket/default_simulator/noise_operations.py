@@ -36,8 +36,8 @@ class BitFlip(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        k0 = np.sqrt(1 - self._probability) * np.array([[1, 0], [0, 1]])
-        k1 = np.sqrt(self._probability) * np.array([[0, 1], [1, 0]])
+        k0 = np.sqrt(1 - self._probability) * np.array([[1, 0], [0, 1]], dtype=complex)
+        k1 = np.sqrt(self._probability) * np.array([[0, 1], [1, 0]], dtype=complex)
         return [k0, k1]
 
     @property
@@ -63,8 +63,8 @@ class PhaseFlip(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        k0 = np.sqrt(1 - self._probability) * np.array([[1.0, 0.0], [0.0, 1.0]])
-        k1 = np.sqrt(self._probability) * np.array([[1.0, 0.0], [0.0, -1.0]])
+        k0 = np.sqrt(1 - self._probability) * np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
+        k1 = np.sqrt(self._probability) * np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
         return [k0, k1]
 
     @property
@@ -93,11 +93,11 @@ class PauliChannel(KrausOperation):
     @property
     def matrices(self) -> list[np.ndarray]:
         K0 = np.sqrt(1 - self._probX - self._probY - self._probZ) * np.array(
-            [[1.0, 0.0], [0.0, 1.0]]
+            [[1.0, 0.0], [0.0, 1.0]], dtype=complex
         )
-        K1 = np.sqrt(self._probX) * np.array([[0.0, 1.0], [1.0, 0.0]])
-        K2 = np.sqrt(self._probY) * np.array([[0.0, -1.0j], [1.0j, 0.0]])
-        K3 = np.sqrt(self._probZ) * np.array([[1.0, 0.0], [0.0, -1.0]])
+        K1 = np.sqrt(self._probX) * np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
+        K2 = np.sqrt(self._probY) * np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
+        K3 = np.sqrt(self._probZ) * np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
         return [K0, K1, K2, K3]
 
     @property
@@ -260,9 +260,11 @@ class GeneralizedAmplitudeDamping(KrausOperation):
             [[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex
         )
         K2 = np.sqrt(1 - self._probability) * np.array(
-            [[np.sqrt(1 - self._gamma), 0.0], [0.0, 1.0]]
+            [[np.sqrt(1 - self._gamma), 0.0], [0.0, 1.0]], dtype=complex
         )
-        K3 = np.sqrt(1 - self._probability) * np.array([[0.0, 0.0], [np.sqrt(self._gamma), 0.0]])
+        K3 = np.sqrt(1 - self._probability) * np.array(
+            [[0.0, 0.0], [np.sqrt(self._gamma), 0.0]], dtype=complex
+        )
         return [K0, K1, K2, K3]
 
     @property
