@@ -148,9 +148,8 @@ class DensityMatrixSimulation(Simulation):
 
         result = np.reshape(state, [2] * 2 * qubit_count)
         temp = np.zeros_like(result, dtype=complex)
-        has_kraus = any(isinstance(op, KrausOperation) for op in operations)
-        work_buffer1 = np.zeros_like(result, dtype=complex) if has_kraus else None
-        work_buffer2 = np.zeros_like(result, dtype=complex) if has_kraus else None
+        work_buffer1 = np.zeros_like(result, dtype=complex)
+        work_buffer2 = np.zeros_like(result, dtype=complex)
 
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
@@ -269,9 +268,7 @@ class DensityMatrixSimulation(Simulation):
         """
         shifted_targets = tuple(t + qubit_count for t in targets)
 
-        temp.fill(0)
-
-        for matrix in matrices:
+        for i, matrix in enumerate(matrices):
             current_buffer = result
             output_buffer = work_buffer1
 
@@ -294,6 +291,9 @@ class DensityMatrixSimulation(Simulation):
             )
             if not needs_swap:
                 current_buffer, output_buffer = output_buffer, current_buffer
-            temp += output_buffer
+            if i == 0:
+                temp[:] = output_buffer
+            else:
+                temp += output_buffer
 
         return temp, result
