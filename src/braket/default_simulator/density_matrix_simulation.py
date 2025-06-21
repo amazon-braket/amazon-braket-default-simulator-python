@@ -15,7 +15,11 @@ from typing import Union
 
 import numpy as np
 
-from braket.default_simulator.linalg_utils import multiply_matrix, partial_trace
+from braket.default_simulator.linalg_utils import (
+    QuantumGateDispatcher,
+    multiply_matrix,
+    partial_trace,
+)
 from braket.default_simulator.operation import GateOperation, KrausOperation, Observable
 from braket.default_simulator.simulation import Simulation
 
@@ -145,7 +149,7 @@ class DensityMatrixSimulation(Simulation):
         """
         if not operations:
             return state
-
+        dispatcher = QuantumGateDispatcher(state.size)
         result = np.reshape(state, [2] * 2 * qubit_count)
         temp = np.zeros_like(result, dtype=complex)
         work_buffer1 = np.zeros_like(result, dtype=complex)
@@ -154,7 +158,7 @@ class DensityMatrixSimulation(Simulation):
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
                 result, temp = DensityMatrixSimulation._apply_gate(
-                    result, temp, qubit_count, operation.matrix, operation.targets
+                    result, temp, qubit_count, operation.matrix, operation.targets, dispatcher
                 )
             if isinstance(operation, KrausOperation):
                 result, temp = DensityMatrixSimulation._apply_kraus(
@@ -165,6 +169,7 @@ class DensityMatrixSimulation(Simulation):
                     qubit_count,
                     operation.matrices,
                     operation.targets,
+                    dispatcher,
                 )
         return np.reshape(result, (2**qubit_count, 2**qubit_count))
 
@@ -175,6 +180,7 @@ class DensityMatrixSimulation(Simulation):
         qubit_count: int,
         matrix: np.ndarray,
         targets: tuple[int],
+        dispatcher: QuantumGateDispatcher,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Apply a unitary gate matrix E to a density matrix D according to:
 
@@ -194,6 +200,7 @@ class DensityMatrixSimulation(Simulation):
             matrix (np.ndarray): Unitary gate matrix E to be applied to the density matrix.
                 Will be converted to complex dtype if necessary.
             targets (tuple[int]): Target qubits that the unitary gate acts upon.
+            dispatcher (QuantumGateDispatcher): Dispatches multiplying based on quibit count.
 
         Returns:
             tuple[np.ndarray, np.ndarray]: A tuple containing:
@@ -208,7 +215,12 @@ class DensityMatrixSimulation(Simulation):
         """
         shifted_targets = tuple(t + qubit_count for t in targets)
         _, needs_swap1 = multiply_matrix(
-            state=result, matrix=matrix, targets=targets, out=temp, return_swap_info=True
+            state=result,
+            matrix=matrix,
+            targets=targets,
+            out=temp,
+            return_swap_info=True,
+            dispatcher=dispatcher,
         )
         if needs_swap1:
             result, temp = temp, result
@@ -219,6 +231,7 @@ class DensityMatrixSimulation(Simulation):
             targets=shifted_targets,
             out=temp,
             return_swap_info=True,
+            dispatcher=dispatcher,
         )
         if needs_swap2:
             result, temp = temp, result
@@ -234,6 +247,7 @@ class DensityMatrixSimulation(Simulation):
         qubit_count: int,
         matrices: list[np.ndarray],
         targets: tuple[int],
+        dispatcher: QuantumGateDispatcher,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Apply a list of matrices {E_i} to a density matrix D according to:
 
@@ -255,6 +269,7 @@ class DensityMatrixSimulation(Simulation):
             qubit_count (int): Number of qubits in the circuit.
             matrices (list[np.ndarray]): Kraus operators {E_i} to be applied to the density matrix.
             targets (tuple[int]): Target qubits that the Kraus operators act upon.
+            dispatcher (QuantumGateDispatcher): Dispatches multiplying based on quibit count.
 
         Returns:
             tuple[np.ndarray, np.ndarray]: A tuple containing:
@@ -278,6 +293,7 @@ class DensityMatrixSimulation(Simulation):
                 targets=targets,
                 out=output_buffer,
                 return_swap_info=True,
+                dispatcher=dispatcher,
             )
             if needs_swap:
                 current_buffer, output_buffer = output_buffer, work_buffer2
@@ -288,6 +304,7 @@ class DensityMatrixSimulation(Simulation):
                 targets=shifted_targets,
                 out=output_buffer,
                 return_swap_info=True,
+                dispatcher=dispatcher,
             )
             if not needs_swap:
                 current_buffer, output_buffer = output_buffer, current_buffer

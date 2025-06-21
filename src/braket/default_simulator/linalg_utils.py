@@ -386,6 +386,26 @@ def _apply_two_qubit_gate(
     return dispatcher.apply_two_qubit_gate(state, matrix, target0, target1, out)
 
 
+def _apply_single_qubit_gate(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> np.ndarray:
+    """Applies single gates based on qubit count.
+    Args:
+        state (np.ndarray): The state to multiply the matrix by.
+        matrix (np.ndarray): The matrix to apply to the state.
+        target (int): The qubit to apply the state on.
+        out (np.ndarray): Output array to store result in.
+    Returns:
+        np.ndarray: Modified state vector
+    """
+    n_qubits = state.size
+
+    if n_qubits > _QUBIT_THRESHOLD:
+        return _apply_single_qubit_gate_large(state, matrix, target, out)
+    else:
+        return _apply_single_qubit_gate_small(state, matrix, target, out)
+
+
 def _multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
@@ -407,7 +427,7 @@ def _multiply_matrix(
         np.ndarray: The state after the matrix has been applied.
     """
     if len(targets) == 1:
-        return dispatcher.apply_single_qubit_gate(state, matrix, targets[0], out)
+        return _apply_single_qubit_gate(state, matrix, targets[0], out)
     elif len(targets) == 2:
         return _apply_two_qubit_gate(state, matrix, targets, out, dispatcher)
 
