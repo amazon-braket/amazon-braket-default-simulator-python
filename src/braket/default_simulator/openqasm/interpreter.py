@@ -13,7 +13,7 @@
 
 from collections.abc import Iterable
 from copy import deepcopy
-from dataclasses import fields
+from dataclasses import dataclass, fields
 from functools import singledispatchmethod
 from logging import Logger, getLogger
 from typing import Optional, Union
@@ -101,8 +101,6 @@ from .parser.openqasm_ast import (
     SubroutineDefinition,
     SymbolLiteral,
     UnaryExpression,
-    VerbatimBoxEnd,
-    VerbatimBoxStart,
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
@@ -477,22 +475,18 @@ class Interpreter:
     def _(self, node: QuantumMeasurement) -> None:
         qubits = self.context.get_qubits(self.visit(node.qubit))
         return qubits
-    
-    @visit.register
-    def _(self, node: VerbatimBoxStart) -> None:
-        self.context.add_verbatim_marker(node)
-
-
-    @visit.register
-    def _(self, node: VerbatimBoxEnd) -> None:
-        self.context.add_verbatim_marker(node)
 
     @visit.register
     def _(self, node: Box) -> None:
-        self.visit(VerbatimBoxStart())
-        for instr_node in node.body:
-            self.visit(instr_node)
-        self.visit(VerbatimBoxEnd())
+        if self.context.is_verbatim_box:
+            self.context.add_verbatim_marker(VerbatimBoxStart())
+            for instr_node in node.body:
+                self.visit(instr_node)
+            self.context.add_verbatim_marker(VerbatimBoxEnd())
+            self.context.is_verbatim_box = False
+        else:
+            for instr_node in node.body:
+                self.visit(instr_node)            
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
@@ -607,7 +601,7 @@ class Interpreter:
             noise_instruction, target, probabilities = parsed
             self.context.add_noise_instruction(noise_instruction, target, probabilities)
         elif node.command.startswith("braket verbatim"):
-            pass
+            self.context.is_verbatim_box = True
         else:
             raise NotImplementedError(f"Pragma '{node.command}' is not supported")
 
@@ -698,3 +692,20 @@ class Interpreter:
     def handle_phase(self, phase: FloatLiteral, qubits: Optional[Iterable[int]] = None) -> None:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
+
+
+@dataclass
+class VerbatimBoxStart(QuantumStatement):
+    def __repr__(self):
+        return "StartVerbatim"
+    @property
+    def qubit_count(self) -> int:
+        return 0
+
+@dataclass
+class VerbatimBoxEnd(QuantumStatement):
+    def __repr__(self):
+        return "EndVerbatim"
+    @property
+    def qubit_count(self) -> int:
+        return 0

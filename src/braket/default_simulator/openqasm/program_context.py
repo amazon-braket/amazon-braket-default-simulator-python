@@ -424,6 +424,7 @@ class AbstractProgramContext(ABC):
         self.scope_manager = ScopeManager(self)
         self.inputs = {}
         self.num_qubits = 0
+        self.is_verbatim_box = False
 
     @property
     @abstractmethod

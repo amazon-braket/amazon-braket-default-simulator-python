@@ -22,6 +22,7 @@ import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
+from braket.default_simulator.openqasm.interpreter import VerbatimBoxEnd, VerbatimBoxStart
 from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX
 from braket.default_simulator.gate_operations import PauliY as Y
 from braket.default_simulator.gate_operations import RotX, U, Unitary
@@ -2260,3 +2261,15 @@ def test_measure_qubit_out_of_range(qasm, expected):
 def test_invalid_measurement_with_classical_indices(qasm, error_message):
     with pytest.raises(ValueError, match=error_message):
         Interpreter().build_circuit(qasm)
+
+def test_verbatim_box_start():
+    vbs = VerbatimBoxStart()
+    assert isinstance(vbs, VerbatimBoxStart)
+    assert repr(vbs) == "StartVerbatim"
+    assert vbs.qubit_count == 0
+
+def test_verbatim_box_end():
+    vbs = VerbatimBoxEnd()
+    assert isinstance(vbs, VerbatimBoxEnd)
+    assert repr(vbs) == "EndVerbatim"
+    assert vbs.qubit_count == 0

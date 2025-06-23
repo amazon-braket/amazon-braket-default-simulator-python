@@ -1073,13 +1073,3 @@ class SymbolLiteral(Expression):
     """
 
     value: Expr
-
-@dataclass
-class VerbatimBoxStart(QuantumStatement):
-    def __repr__(self):
-        return "StartVerbatim"
-
-@dataclass
-class VerbatimBoxEnd(QuantumStatement):
-    def __repr__(self):
-        return "EndVerbatim"
