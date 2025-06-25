@@ -150,7 +150,9 @@ class DensityMatrixSimulation(Simulation):
         if not operations:
             return state
         dispatcher = QuantumGateDispatcher(state.size)
-        result = np.reshape(state, [2] * 2 * qubit_count)
+        original_shape = state.shape
+        result = state.view()
+        result.shape = [2] * 2 * qubit_count
         temp = np.zeros_like(result, dtype=complex)
         work_buffer1 = np.zeros_like(result, dtype=complex)
         work_buffer2 = np.zeros_like(result, dtype=complex)
@@ -171,7 +173,8 @@ class DensityMatrixSimulation(Simulation):
                     operation.targets,
                     dispatcher,
                 )
-        return np.reshape(result, (2**qubit_count, 2**qubit_count))
+        result.shape = original_shape
+        return result
 
     @staticmethod
     def _apply_gate(
@@ -281,36 +284,11 @@ class DensityMatrixSimulation(Simulation):
             E_i is applied to the original density matrix, and the results are accumulated
             in the `temp` buffer to compute the final sum.
         """
-        shifted_targets = tuple(t + qubit_count for t in targets)
-
-        for i, matrix in enumerate(matrices):
-            current_buffer = result
-            output_buffer = work_buffer1
-
-            _, needs_swap = multiply_matrix(
-                state=current_buffer,
-                matrix=matrix,
-                targets=targets,
-                out=output_buffer,
-                return_swap_info=True,
-                dispatcher=dispatcher,
-            )
-            if needs_swap:
-                current_buffer, output_buffer = output_buffer, work_buffer2
-
-            _, needs_swap = multiply_matrix(
-                state=current_buffer,
-                matrix=matrix.conj(),
-                targets=shifted_targets,
-                out=output_buffer,
-                return_swap_info=True,
-                dispatcher=dispatcher,
-            )
-            if not needs_swap:
-                current_buffer, output_buffer = output_buffer, current_buffer
-            if i == 0:
-                temp[:] = output_buffer
-            else:
-                temp += output_buffer
-
+        superop = sum(np.kron(matrix, matrix.conjugate()) for matrix in matrices)
+        targets_new = targets + tuple([target + qubit_count for target in targets])
+        _, needs_swap = multiply_matrix(
+            result, superop, targets_new, out=temp, return_swap_info=True, dispatcher=dispatcher
+        )
+        if not needs_swap:
+            temp, result = result, temp
         return temp, result

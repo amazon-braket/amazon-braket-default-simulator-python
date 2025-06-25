@@ -140,9 +140,10 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
     total_size = state.size
     target_bit = n_qubits - target - 1
     target_mask = 1 << target_bit
+    shifted_target_mask = target_mask - 1
 
     for i in nb.prange(total_size // 2):
-        idx0 = (i & ~(target_mask - 1)) << 1 | (i & (target_mask - 1))
+        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
         idx1 = idx0 | target_mask
 
         state0 = state.flat[idx0]
