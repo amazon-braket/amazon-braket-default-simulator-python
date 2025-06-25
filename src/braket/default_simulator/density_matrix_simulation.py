@@ -284,11 +284,37 @@ class DensityMatrixSimulation(Simulation):
             E_i is applied to the original density matrix, and the results are accumulated
             in the `temp` buffer to compute the final sum.
         """
-        superop = sum(np.kron(matrix, matrix.conjugate()) for matrix in matrices)
-        targets_new = targets + tuple([target + qubit_count for target in targets])
-        _, needs_swap = multiply_matrix(
-            result, superop, targets_new, out=temp, return_swap_info=True, dispatcher=dispatcher
-        )
-        if not needs_swap:
-            temp, result = result, temp
+        if len(targets) <= 2:
+            superop = sum(np.kron(matrix, matrix.conj()) for matrix in matrices)
+            targets_new = targets + tuple([target + qubit_count for target in targets])
+            _, needs_swap = multiply_matrix(
+                result, superop, targets_new, out=temp, return_swap_info=True, dispatcher=dispatcher
+            )
+            if not needs_swap:
+                result, temp = temp, result
+            return temp, result
+
+        temp.fill(0)
+        shifted_targets = tuple(t + qubit_count for t in targets)
+        # Targets are always greater than 2 so we never need to check for swaps
+        for matrix in matrices:
+            current_buffer = result
+            output_buffer = work_buffer1
+            multiply_matrix(
+                state=current_buffer,
+                matrix=matrix,
+                targets=targets,
+                out=output_buffer,
+                dispatcher=dispatcher,
+            )
+            current_buffer, output_buffer = output_buffer, work_buffer2
+            multiply_matrix(
+                state=current_buffer,
+                matrix=matrix.conj(),
+                targets=shifted_targets,
+                out=output_buffer,
+                dispatcher=dispatcher,
+            )
+            temp += output_buffer
+
         return temp, result

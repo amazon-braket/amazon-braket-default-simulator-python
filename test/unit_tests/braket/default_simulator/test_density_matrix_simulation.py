@@ -144,6 +144,71 @@ evolve_testdata = [
     ),
 ]
 
+kraus_branch_specific_testdata = [
+    (
+        [
+            noise_operations.Kraus(
+                [0],
+                [
+                    np.eye(2),
+                ],
+            ),
+        ],
+        1,
+    ),
+    (
+        [
+            gate_operations.Hadamard([0]),
+            noise_operations.Kraus(
+                [0, 1],
+                [
+                    np.sqrt(0.7) * np.eye(4),
+                    np.sqrt(0.3)
+                    * np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
+                ],
+            ),
+        ],
+        2,
+    ),
+    (
+        [
+            gate_operations.Hadamard([0]),
+            noise_operations.Kraus(
+                [0, 1, 2, 3, 4],
+                [
+                    np.sqrt(0.8) * np.eye(32),
+                    np.sqrt(0.2) * np.roll(np.eye(32), 1, axis=0),
+                ],
+            ),
+        ],
+        5,
+    ),
+    (
+        [
+            noise_operations.Kraus(
+                [0, 1, 2, 3, 4],
+                [
+                    np.eye(32),
+                ],
+            ),
+        ],
+        5,
+    ),
+    (
+        [
+            noise_operations.Kraus(
+                [0, 1, 2, 3, 4],
+                [
+                    np.sqrt(0.9) * np.eye(32),
+                    np.sqrt(0.1) * np.diag([1, -1] + [1] * 30),
+                ],
+            ),
+        ],
+        5,
+    ),
+]
+
+
 apply_observables_testdata = [
     ([observables.PauliX([0])], [gate_operations.Hadamard([0])], 1),
     ([observables.PauliZ([0])], [], 1),
@@ -204,6 +269,26 @@ def test_simulation_simple_circuits(
     simulation.evolve(instructions)
     assert np.allclose(density_matrix, simulation.density_matrix)
     assert np.allclose(probability_amplitudes, simulation.probabilities)
+
+
+@pytest.mark.parametrize("instructions, qubit_count", kraus_branch_specific_testdata)
+def test_kraus_specific_branches(instructions, qubit_count):
+    simulation = DensityMatrixSimulation(qubit_count, 0)
+    simulation.evolve(instructions)
+
+    assert np.allclose(np.trace(simulation.density_matrix), 1.0, atol=1e-10)
+    assert np.all(np.linalg.eigvals(simulation.density_matrix) >= -1e-10)
+
+
+def test_superoperator_no_swap():
+    simulation = DensityMatrixSimulation(1, 0)
+
+    instructions = [noise_operations.Kraus([0], [np.eye(2)])]
+
+    simulation.evolve(instructions)
+
+    expected = np.array([[1, 0], [0, 0]])
+    assert np.allclose(simulation.density_matrix, expected, atol=1e-10)
 
 
 @pytest.mark.parametrize("obs, equivalent_gates, qubit_count", apply_observables_testdata)
