@@ -578,7 +578,7 @@ def _apply_hamiltonian(
         list[scipy.sparse.csr_matrix],
         list[scipy.sparse.csr_matrix],
         list[scipy.sparse.csr_matrix],
-        list[scipy.sparse.csr_matrix],
+        np.ndarray,
         np.ndarray,
         np.ndarray,
         scipy.sparse.csr_matrix,
@@ -593,7 +593,7 @@ def _apply_hamiltonian(
             list[csr_matrix],
             list[csr_matrix],
             list[csr_matrix],
-            list[csr_matrix],
+            ndarray,
             ndarray,
             ndarray,
             csr_matrix
