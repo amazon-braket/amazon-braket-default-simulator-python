@@ -695,7 +695,7 @@ class Interpreter:
 
 
 @dataclass
-class VerbatimBoxStart(QuantumStatement):
+class VerbatimBoxStart:
     def __repr__(self):
         return "StartVerbatim"
     @property
@@ -703,7 +703,7 @@ class VerbatimBoxStart(QuantumStatement):
         return 0
 
 @dataclass
-class VerbatimBoxEnd(QuantumStatement):
+class VerbatimBoxEnd:
     def __repr__(self):
         return "EndVerbatim"
     @property
