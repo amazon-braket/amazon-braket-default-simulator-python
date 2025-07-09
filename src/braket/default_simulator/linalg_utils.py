@@ -136,13 +136,13 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
 ):
     """Applies single gates using bit masking."""
     a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-    n_qubits = state.ndim
-    total_size = state.size
-    target_bit = n_qubits - target - 1
-    target_mask = 1 << target_bit
-    shifted_target_mask = target_mask - 1
+    target_bit = state.ndim - target - 1
+    target_mask = np.int64(1 << target_bit)
+    shifted_target_mask = np.int64(target_mask - 1)
 
-    for i in nb.prange(total_size // 2):
+    half_size = state.size >> 1
+
+    for i in nb.prange(half_size):
         idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
         idx1 = idx0 | target_mask
 
@@ -169,10 +169,11 @@ def _apply_cnot_large(
 
     control_bit_pos = n_qubits - control - 1
     control_mask = 1 << control_bit_pos
+    shift = n_qubits - target - 1
 
-    for i in nb.prange(total_size // 2):
-        high_bits = i // target_stride
-        low_bits = i % target_stride
+    for i in nb.prange(total_size >> 1):
+        high_bits = i >> shift
+        low_bits = i & (target_stride - 1)
         idx0 = high_bits * (target_stride * 2) + low_bits
         idx1 = idx0 + target_stride
 
@@ -222,16 +223,16 @@ def _apply_swap_large(
     mask_1 = 1 << (n_qubits - 1 - qubit_1)
 
     for i in nb.prange(total_size):
-        j = i ^ mask_0 ^ mask_1
-
         bit_0 = (i & mask_0) != 0
         bit_1 = (i & mask_1) != 0
-        use_partner = bit_0 ^ bit_1
 
-        source_idx = use_partner * j + (1 - use_partner) * i
-        out.flat[i] = state.flat[source_idx]
+        if bit_0 != bit_1:
+            j = i ^ mask_0 ^ mask_1
 
-    return out, True
+            if i < j:
+                state.flat[i], state.flat[j] = state.flat[j], state.flat[i]
+
+    return state, False
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
@@ -250,12 +251,12 @@ def _apply_controlled_phase_shift_large(  # pragma: no cover
         np.ndarray: The state array with the controlled phase shift gate applied.
     """
     phase_factor = np.exp(1j * angle)
-
-    mask = 1 << (state.ndim - 1 - target)
+    n_qubits = state.ndim
+    mask = 1 << (n_qubits - 1 - target)
     for c in controls:
-        mask |= 1 << (state.ndim - 1 - c)
+        mask |= 1 << (n_qubits - 1 - c)
 
-    for i in nb.prange(state.size):
+    for i in nb.prange(mask, state.size):
         if (i & mask) == mask:
             state.flat[i] *= phase_factor
 
