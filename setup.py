@@ -36,8 +36,7 @@ setup(
         "pydantic>2",
         "scipy",
         "sympy",
-        # pinned for compatibility with strawberry fields
-        "antlr4-python3-runtime==4.9.2",
+        "antlr4-python3-runtime==4.13.2",
         "amazon-braket-schemas>=1.21.2",
     ],
     entry_points={
