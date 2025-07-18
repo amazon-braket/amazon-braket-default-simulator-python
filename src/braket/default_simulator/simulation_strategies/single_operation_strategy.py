@@ -33,11 +33,19 @@ def apply_operations(
         (qubit_count, 0) tensor
     """
     for operation in operations:
-        matrix = operation.matrix
-        all_targets = operation.targets
-        num_ctrl = len(operation._ctrl_modifiers)
-        control_state = operation._ctrl_modifiers
-        controls = all_targets[:num_ctrl]
-        targets = all_targets[num_ctrl:]
-        state = multiply_matrix(state, matrix, targets, controls, control_state)
+        # Special handling for Measure operations which need custom normalization
+        if operation.__class__.__name__ == 'Measure':
+            # Reshape to 1D for Measure.apply, then back to tensor form
+            state_1d = np.reshape(state, 2**len(state.shape))
+            state_1d = operation.apply(state_1d)  # type: ignore
+            state = np.reshape(state_1d, state.shape)
+        else:
+            # Standard matrix-based operation
+            matrix = operation.matrix
+            all_targets = operation.targets
+            num_ctrl = len(operation._ctrl_modifiers)
+            control_state = operation._ctrl_modifiers
+            controls = all_targets[:num_ctrl]
+            targets = all_targets[num_ctrl:]
+            state = multiply_matrix(state, matrix, targets, controls, control_state)
     return state
