@@ -425,6 +425,7 @@ class AbstractProgramContext(ABC):
         self.inputs = {}
         self.num_qubits = 0
         self.is_verbatim_box = False
+        self.expect_box_after_verbatim = False
 
     @property
     @abstractmethod

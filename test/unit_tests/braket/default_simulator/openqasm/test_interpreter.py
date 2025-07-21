@@ -2291,3 +2291,12 @@ def test_verbatim_box():
     assert isinstance(context.circuit.instructions[1], CX)
     assert isinstance(is_verbatim, bool)
     assert is_verbatim == False
+
+def test_verbatim_wo_box():
+    qasm_without_box = """
+        OPENQASM 3.0;
+        #pragma braket verbatim
+        h $0;
+    """
+    with pytest.raises(ValueError, match="braket verbatim pragma must be followed by a box statement"):
+        Interpreter().run(qasm_without_box)
