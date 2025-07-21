@@ -172,9 +172,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Program) -> None:
-        i = 0
-        while i < len(node.statements):
-            stmt = node.statements[i]
+       for i, stmt in enumerate(node.statements):
             if isinstance(stmt, Pragma) and stmt.command and stmt.command.startswith("braket verbatim"):
                 if i + 1 >= len(node.statements) or not isinstance(node.statements[i + 1], Box):
                     raise ValueError("braket verbatim pragma must be followed by a box statement")
