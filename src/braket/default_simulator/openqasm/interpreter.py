@@ -175,8 +175,6 @@ class Interpreter:
         i = 0
         while i < len(node.statements):
             stmt = node.statements[i]
-            print("Current:", stmt)
-            print("Next:", node.statements[i+1] if i+1 < len(node.statements) else None)
             if isinstance(stmt, Pragma) and stmt.command and stmt.command.startswith("braket verbatim"):
                 if i + 1 >= len(node.statements) or not isinstance(node.statements[i + 1], Box):
                     raise ValueError("braket verbatim pragma must be followed by a box statement")
