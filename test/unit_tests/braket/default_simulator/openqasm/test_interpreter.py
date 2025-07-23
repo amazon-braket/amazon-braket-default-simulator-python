@@ -22,7 +22,7 @@ import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.openqasm.interpreter import VerbatimBoxEnd, VerbatimBoxStart
+from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
 from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX
 from braket.default_simulator.gate_operations import PauliY as Y
 from braket.default_simulator.gate_operations import RotX, U, Unitary
@@ -2263,15 +2263,17 @@ def test_invalid_measurement_with_classical_indices(qasm, error_message):
         Interpreter().build_circuit(qasm)
 
 def test_verbatim_box_start():
-    vbs = VerbatimBoxStart()
-    assert isinstance(vbs, VerbatimBoxStart)
-    assert repr(vbs) == "StartVerbatim"
+    vbs = VerbatimBoxDelimiter.START_VERBATIM
+    assert isinstance(vbs, VerbatimBoxDelimiter)
+    assert vbs.value == "StartVerbatim"
+    assert vbs.name == "START_VERBATIM"
     assert vbs.qubit_count == 0
 
 def test_verbatim_box_end():
-    vbs = VerbatimBoxEnd()
-    assert isinstance(vbs, VerbatimBoxEnd)
-    assert repr(vbs) == "EndVerbatim"
+    vbs = VerbatimBoxDelimiter.END_VERBATIM
+    assert isinstance(vbs, VerbatimBoxDelimiter)
+    assert vbs.value == "EndVerbatim"
+    assert vbs.name =="END_VERBATIM"
     assert vbs.qubit_count == 0
 
 def test_verbatim_box():
@@ -2285,8 +2287,7 @@ def test_verbatim_box():
     """
     context= Interpreter().run(qasm_with_verbatim)
    
-    is_verbatim  = context.is_verbatim_box
-
+    is_verbatim  = context.in_verbatim_box
     assert isinstance(context.circuit.instructions[0], Hadamard)
     assert isinstance(context.circuit.instructions[1], CX)
     assert isinstance(is_verbatim, bool)

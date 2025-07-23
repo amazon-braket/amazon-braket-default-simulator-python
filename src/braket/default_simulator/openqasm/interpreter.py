@@ -13,7 +13,8 @@
 
 from collections.abc import Iterable
 from copy import deepcopy
-from dataclasses import dataclass, fields
+from dataclasses import fields
+from enum import Enum
 from functools import singledispatchmethod
 from logging import Logger, getLogger
 from typing import Optional, Union
@@ -172,18 +173,16 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Program) -> None:
-       for i, stmt in enumerate(node.statements):
-            if isinstance(stmt, Pragma) and stmt.command and stmt.command.startswith("braket verbatim"):
-                if i + 1 >= len(node.statements) or not isinstance(node.statements[i + 1], Box):
-                    raise ValueError("braket verbatim pragma must be followed by a box statement")
-                self.context.is_verbatim_box = True
-                self.visit(stmt)
-                i += 1
-                self.visit(node.statements[i])
-                self.context.is_verbatim_box = False
-            else:
-                self.visit(stmt)
-            i += 1
+        for i, stmt in enumerate(node.statements):
+            if (
+                self.context.in_verbatim_box
+                and (
+                    i + 1 >= len(node.statements) or not isinstance(node.statements[i + 1], Box)
+                )
+            ):
+                raise ValueError("braket verbatim pragma must be followed by a box statement")
+            self.visit(stmt)
+
 
 
     @visit.register
@@ -490,12 +489,12 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Box) -> None:
-        if self.context.is_verbatim_box:
-            self.context.add_verbatim_marker(VerbatimBoxStart())
+        if self.context.in_verbatim_box:
+            self.context.add_verbatim_marker(VerbatimBoxDelimiter.START_VERBATIM)
             for instr_node in node.body:
                 self.visit(instr_node)
-            self.context.add_verbatim_marker(VerbatimBoxEnd())
-            self.context.is_verbatim_box = False
+            self.context.add_verbatim_marker(VerbatimBoxDelimiter.END_VERBATIM)
+            self.context.in_verbatim_box = False
         else:
             for instr_node in node.body:
                 self.visit(instr_node)            
@@ -613,7 +612,8 @@ class Interpreter:
             noise_instruction, target, probabilities = parsed
             self.context.add_noise_instruction(noise_instruction, target, probabilities)
         elif node.command.startswith("braket verbatim"):
-            pass
+            self.context.in_verbatim_box = True
+
         else:
             raise NotImplementedError(f"Pragma '{node.command}' is not supported")
 
@@ -705,19 +705,10 @@ class Interpreter:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
 
-
-@dataclass
-class VerbatimBoxStart:
-    def __repr__(self):
-        return "StartVerbatim"
-    @property
-    def qubit_count(self) -> int:
-        return 0
-
-@dataclass
-class VerbatimBoxEnd:
-    def __repr__(self):
-        return "EndVerbatim"
+class VerbatimBoxDelimiter(str, Enum):
+    START_VERBATIM = "EndVerbatim"
+    END_VERBATIM = "StartVerbatim"
+    
     @property
     def qubit_count(self) -> int:
         return 0

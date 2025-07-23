@@ -424,8 +424,7 @@ class AbstractProgramContext(ABC):
         self.scope_manager = ScopeManager(self)
         self.inputs = {}
         self.num_qubits = 0
-        self.is_verbatim_box = False
-        self.expect_box_after_verbatim = False
+        self.in_verbatim_box = False
 
     @property
     @abstractmethod
@@ -844,7 +843,7 @@ class AbstractProgramContext(ABC):
     def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
         """Add qubit targets to be measured"""
 
-    def add_verbatim_marker(self, marker: QuantumStatement) -> None:
+    def add_verbatim_](self, marker) -> None:
         """Add verbatim markers"""
 
 
