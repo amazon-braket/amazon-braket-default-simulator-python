@@ -91,7 +91,7 @@ class BranchedSimulator(BaseLocalSimulator):
         
         # Initialize simulation - we'll determine qubit count during AST traversal
         simulation = self.initialize_simulation(
-            qubit_count=1,  # Will be updated during traversal
+            qubit_count=0,  # Will be updated during traversal
             shots=shots, 
             batch_size=batch_size
         )

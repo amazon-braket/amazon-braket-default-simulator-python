@@ -13,6 +13,7 @@
 from typing import Dict, List, Any, Optional, Union
 from copy import deepcopy
 import numpy as np
+import re
 from braket.default_simulator.openqasm._helpers.builtins import BuiltinConstants
 from braket.default_simulator.branched_simulation import BranchedSimulation, FramedVariable, GateDefinition, FunctionDefinition
 from braket.default_simulator.operation_helpers import from_braket_instruction
@@ -56,7 +57,8 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     IntType,
     FloatType,
     BoolType,
-    ArrayType
+    ArrayType,
+    ExpressionStatement
 )
 from ._helpers.quantum import (
     convert_phase_to_gate,
@@ -178,6 +180,9 @@ def evaluate_binary_op(op: str, lhs: Any, rhs: Any) -> Any:
     return BINARY_OPS.get(op, lambda lhs, rhs: rhs)(lhs, rhs)
 
 
+def is_dollar_number(s):
+    return bool(re.fullmatch(r'\$\d+', s))
+
 class BranchedInterpreter:
     """
     Custom interpreter for handling OpenQASM programs with mid-circuit measurements.
@@ -187,16 +192,11 @@ class BranchedInterpreter:
     """
 
     def __init__(self):
-        self.qubit_count = 0
-        self.qubit_name_to_index = {}
         self.inputs = {}
         
         # Advanced features support
         self.gate_defs = {}  # Custom gate definitions
         self.function_defs = {}  # Custom function definitions
-        self.curr_frame = 0  # Current scope frame for variable tracking
-        self.return_values = {}  # Function return values per path
-        self.continue_paths = []  # Paths that hit continue statements
         
         # Built-in functions (can be extended)
         self.function_builtin = {
@@ -208,7 +208,11 @@ class BranchedInterpreter:
             'sqrt': lambda x: np.sqrt(x),
             'abs': lambda x: abs(x),
             'floor': lambda x: np.floor(x),
-            'ceil': lambda x: np.ceil(x),
+            'ceiling': lambda x: np.ceil(x),
+            'arccos': lambda x: np.acos(x),
+            'arcsin': lambda x: np.asin(x),
+            'arctan': lambda x: np.atan(x),
+            'mod': lambda x, y: x % y,
         }
 
     def execute_with_branching(
@@ -228,20 +232,13 @@ class BranchedInterpreter:
         # TODO: Not sure how expensive this first pass is, but it is valid since we can't declare qubits in a local scope
         
         # First pass: collect qubit declarations to determine total qubit count
-        self._collect_qubits(ast)
-        
-        # Update simulation with correct qubit count
-        if self.qubit_count > 0:
-            simulation._qubit_count = self.qubit_count
-            # Update qubit mapping in simulation
-            for name, idx in self.qubit_name_to_index.items():
-                simulation.add_qubit_mapping(name, idx)
+        self._collect_qubits(simulation, ast)
         
         # Main AST traversal - this is where the dynamic execution happens
         self._evolve_branched_ast_operators(simulation, ast)
         
         # Collect results
-        measured_qubits = list(range(self.qubit_count)) if self.qubit_count > 0 else []
+        measured_qubits = list(range(simulation._qubit_count)) if simulation._qubit_count > 0 else []
         
         return {
             "result_types": [],
@@ -250,7 +247,7 @@ class BranchedInterpreter:
             "simulation": self.simulation
         }
 
-    def _collect_qubits(self, ast: Program) -> None:
+    def _collect_qubits(self, sim: BranchedSimulation, ast: Program) -> None:
         """First pass to collect all qubit declarations."""
         current_index = 0
         
@@ -261,14 +258,15 @@ class BranchedInterpreter:
                     # Qubit register
                     size = self._evaluate_expression(statement.size)
                     indices = list(range(current_index, current_index + size))
-                    self.qubit_name_to_index[qubit_name] = indices
+                    sim.add_qubit_mapping(qubit_name, indices)
                     current_index += size
                 else:
                     # Single qubit
-                    self.qubit_name_to_index[qubit_name] = current_index
+                    sim.add_qubit_mapping(qubit_name, current_index)
                     current_index += 1
         
-        self.qubit_count = current_index
+        # Store qubit count in simulation
+        sim._qubit_count = current_index
 
     def _evolve_branched_ast_operators(self, sim: BranchedSimulation, node: Any) -> Optional[Dict[int, Any]]:
         """
@@ -383,9 +381,12 @@ class BranchedInterpreter:
         elif isinstance(node, Cast):
             return self._handle_cast(sim, node)
             
-        elif IndexExpression and isinstance(node, IndexExpression):
+        elif isinstance(node, IndexExpression):
             return self._handle_index_expression(sim, node)
             
+        elif isinstance(node, ExpressionStatement):
+            return self._evolve_branched_ast_operators(sim, node.expression)
+        
         else:
             # For unsupported node types, return None
             print(f"Warning: Unsupported node type {type(node)}")
@@ -598,7 +599,7 @@ class BranchedInterpreter:
                         if isinstance(arg_result, list):
                             arguments[idx].extend(arg_result[idx])
                         else:
-                            arguments[idx].append([arg_result[idx]])
+                            arguments[idx].append(arg_result[idx])
         
         # Get the modifiers for each active path
         ctrl_modifiers, power = self._handle_modifiers(sim, node.modifiers)
@@ -658,8 +659,9 @@ class BranchedInterpreter:
                 for qubit_idx, qubit_name in zip(target_qubits[idx][len(ctrl_qubits[idx]):], gate_def.qubit_targets):
                     sim.set_variable(idx, qubit_name, FramedVariable(qubit_name, QubitDeclaration, qubit_idx, False, sim._curr_frame))
 
-                for param_val, param_name in zip(arguments[idx], gate_def.arguments):
-                    sim.set_variable(idx, param_name, FramedVariable(param_name, FloatType, param_val, False, sim._curr_frame))
+                if not (len(arguments) == 0):
+                    for param_val, param_name in zip(arguments[idx], gate_def.arguments):
+                        sim.set_variable(idx, param_name, FramedVariable(param_name, FloatType, param_val, False, sim._curr_frame))
 
             # Add the gates to each instruction sequence
             original_path = sim._active_paths.copy()
@@ -668,10 +670,7 @@ class BranchedInterpreter:
                 sim._active_paths = [idx]
                 
                 for statement in modified_gate_body[idx]:
-                    if isinstance(statement, QuantumGate):
-                        self._evolve_branched_ast_operators(sim, statement)
-                    else:  # QuantumPhase
-                        self.handle_phase(sim, idx, arguments[idx][0], target_qubits[idx])
+                    self._evolve_branched_ast_operators(sim, statement)
             
             sim._active_paths = original_path
                 
@@ -766,7 +765,7 @@ class BranchedInterpreter:
             # For each qubit to measure (usually just one)
             for qubit_idx in qubit_indices:
                 # Find qubit name with proper indexing
-                qubit_name = self._get_qubit_name_with_index(qubit_idx)
+                qubit_name = self._get_qubit_name_with_index(sim, qubit_idx)
                 
                 # Use the path-specific measurement method which handles branching and optimization
                 for idx in paths_to_measure.copy():
@@ -918,8 +917,11 @@ class BranchedInterpreter:
             if var_value is not None:
                 results[path_idx] = var_value.val
             # Check if it's a qubit
-            elif id_name in self.qubit_name_to_index:
-                results[path_idx] = self.qubit_name_to_index[id_name]
+            elif sim.get_qubit_indices(id_name) is not None:
+                results[path_idx] = sim.get_qubit_indices(id_name)
+            # Check if it is a parameter
+            elif id_name in self.inputs:
+                results[path_idx] = self.inputs[id_name]
             elif id_name.upper() in BuiltinConstants.__members__:
                 results[path_idx] = BuiltinConstants[id_name.upper()].value.value
             else:
@@ -1030,8 +1032,8 @@ class BranchedInterpreter:
                     results[path_idx] = var_value[index]
                 else:
                     results[path_idx] = 0            # Check if it's a qubit register
-            elif identifier_name in self.qubit_name_to_index:
-                base_indices = self.qubit_name_to_index[identifier_name]
+            elif identifier_name in sim._qubit_mapping:
+                base_indices = sim._qubit_mapping[identifier_name]
                 if isinstance(base_indices, list) and 0 <= index < len(base_indices):
                     results[path_idx] = base_indices[index]
                 else:
@@ -1099,8 +1101,11 @@ class BranchedInterpreter:
             for path_idx in sim._active_paths:
                 if qubit_name in sim._variables[path_idx]:
                     results[path_idx] = sim._variables[path_idx][qubit_name].val
-                elif qubit_name in self.qubit_name_to_index:
-                    results[path_idx] = self.qubit_name_to_index[qubit_name]
+                elif sim.get_qubit_indices(qubit_name) is not None:
+                    results[path_idx] = sim.get_qubit_indices(qubit_name)
+                elif is_dollar_number(qubit_name):
+                    sim.add_qubit_mapping(qubit_name, sim._qubit_count)
+                    results[path_idx] = sim._qubit_count-1
                 else:
                     raise NameError("The qubit with name " + qubit_name + " can't be found")
                     
@@ -1137,10 +1142,10 @@ class BranchedInterpreter:
         else:
             return str(identifier)
 
-    def _get_qubit_name_with_index(self, qubit_idx: int) -> str:
+    def _get_qubit_name_with_index(self, sim: BranchedSimulation, qubit_idx: int) -> str:
         """Get qubit name with proper indexing for measurement."""
         # Find the register name and index for this qubit
-        for name, idx in self.qubit_name_to_index.items():
+        for name, idx in sim._qubit_mapping.items():
             if isinstance(idx, list):
                 # This is a register
                 if qubit_idx in idx:
@@ -1337,9 +1342,9 @@ class BranchedInterpreter:
                         break
                 
                 # Handle continue paths
-                if self.continue_paths:
-                    sim._active_paths.extend(self.continue_paths)
-                    self.continue_paths = []
+                if sim._continue_paths:
+                    sim._active_paths.extend(sim._continue_paths)
+                    sim._continue_paths = []
                 
                 if not sim._active_paths:
                     break
@@ -1388,9 +1393,9 @@ class BranchedInterpreter:
                     break
             
             # Handle continue paths
-            if self.continue_paths:
-                sim._active_paths.extend(self.continue_paths)
-                self.continue_paths = []
+            if sim._continue_paths:
+                sim._active_paths.extend(sim._continue_paths)
+                sim._continue_paths = []
             
             # Update continue_paths for next iteration
             continue_paths = sim._active_paths.copy()
@@ -1479,24 +1484,26 @@ class BranchedInterpreter:
                         framed_var = FramedVariable(param_name, type_info, value, False, sim._curr_frame)
                         sim.set_variable(path_idx, param_name, framed_var)
                 
-                # Execute function body
-                for statement in func_def.body:
-                    self._evolve_branched_ast_operators(sim, statement)
-                
-                # Get return value
-                if path_idx in self.return_values:
-                    results[path_idx] = self.return_values[path_idx]
-                else:
-                    raise ValueError("Return value expected for path of {path_idx}")
+            # Execute function body
+            for statement in func_def.body:
+                self._evolve_branched_ast_operators(sim, statement)
             
+            # Get return value
+            if not (len(sim._return_values) == 0):
+                for path_idx in sim._active_paths:
+                    if path_idx in sim._return_values:
+                        results[path_idx] = sim._return_values[path_idx]
+                    else:
+                        raise ValueError("Return value expected for path of {path_idx}")
+        
             # Clear return values and restore paths
-            self.return_values.clear()
-            sim._active_paths = original_paths
+            sim._return_values.clear()
+
             return results
         
         else:
             # Unknown function
-            raise ValueError("Function {function_name} doesn't exist.")
+            raise NameError("Function " + function_name + " doesn't exist.")
 
     def _handle_return_statement(self, sim: BranchedSimulation, node: ReturnStatement) -> Dict[int, Any]:
         """Handle return statements."""
@@ -1505,14 +1512,14 @@ class BranchedInterpreter:
             
             # Store return values and clear active paths
             for path_idx, return_value in return_values.items():
-                self.return_values[path_idx] = return_value
+                sim._return_values[path_idx] = return_value
             
             sim._active_paths = []  # Return terminates execution
             return return_values
         else:
             # Empty return
             for path_idx in sim._active_paths:
-                self.return_values[path_idx] = None
+                sim._return_values[path_idx] = None
             sim._active_paths = []
             return {}
 
@@ -1523,7 +1530,7 @@ class BranchedInterpreter:
             sim._active_paths = []
         elif isinstance(node, ContinueStatement):
             # Continue moves paths to continue list
-            self.continue_paths.extend(sim._active_paths)
+            sim._continue_paths.extend(sim._active_paths)
             sim._active_paths = []
 
     def _handle_const_declaration(self, sim: BranchedSimulation, node: ConstantDeclaration) -> None:
@@ -1545,10 +1552,10 @@ class BranchedInterpreter:
         if isinstance(node.value, Identifier):
             # Simple identifier alias
             source_name = node.value.name
-            if source_name in self.qubit_name_to_index:
+            if source_name in sim._qubit_mapping:
                 # Aliasing a qubit/register
                 for path_idx in sim._active_paths:
-                    sim.set_variable(path_idx, alias_name, self.qubit_name_to_index[source_name])
+                    sim.set_variable(path_idx, alias_name, FramedVariable(source_name, int, sim._qubit_mapping[source_name], False, sim._curr_frame))
         # Handle other alias types as needed
 
     def _handle_reset(self, sim: BranchedSimulation, node: QuantumReset) -> None:
@@ -1604,4 +1611,3 @@ class BranchedInterpreter:
                 results[path_idx] = value
         
         return results
-    

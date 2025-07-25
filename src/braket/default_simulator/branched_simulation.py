@@ -272,10 +272,11 @@ class BranchedSimulation(Simulation):
     def add_qubit_mapping(self, name: str, indices: Union[int, List[int]]) -> None:
         """Add a mapping from qubit name to indices."""
         self._qubit_mapping[name] = indices
+        self._qubit_count += 1
 
     def get_qubit_indices(self, name: str) -> Union[int, List[int]]:
         """Get qubit indices for a given name."""
-        return self._qubit_mapping.get(name, [])
+        return self._qubit_mapping.get(name)
 
     @property
     def num_paths(self) -> int:

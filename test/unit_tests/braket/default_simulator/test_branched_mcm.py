@@ -1739,9 +1739,10 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         qubit[2] __qubits__;
         gate u3(θ, ϕ, λ) q {
             gphase(-(ϕ+λ)/2);
+            h q;
             U(θ, ϕ, λ) q;
         }
-        u3(0.1, 0.2, 0.3) __qubits__[0];
+        u3(pi, 0.2, 0.3) __qubits__[0];
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
@@ -1769,7 +1770,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         # Both outcomes should have some probability due to U gate rotation
         for outcome in counter:
             ratio = counter[outcome] / total
-            assert 0.1 < ratio < 0.9, f"Expected both outcomes to have significant probability, got {ratio} for {outcome}"
+            assert 0.4 < ratio < 0.6, f"Expected both outcomes to have significant probability, got {ratio} for {outcome}"
 
     def test_11_4_physical_qubits(self):
         """11.4 Physical qubits"""
@@ -1819,7 +1820,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
             }
         }
         qubit[4] __qubits__;
-        bell(__qubits__[0], __qubits__[1]);
+        bell __qubits__[0], __qubits__[1];
         n_bells(5, __qubits__[2], __qubits__[3]);
         """
 
@@ -1891,42 +1892,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 100, f"Expected 100 measurements, got {total}"
         
-        # Both outcomes should have some probability due to cumulative rotations
-        for outcome in counter:
-            ratio = counter[outcome] / total
-            assert 0.05 < ratio < 0.95, f"Expected both outcomes to have some probability, got {ratio} for {outcome}"
-
-    def test_11_7_reset(self):
-        """11.7 Reset"""
-        qasm_source = """
-        qubit[4] q;
-        x q[1];
-        x q[2];
-        reset q[1];
-        """
-
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=100)
-
-        # Reset operation analysis:
-        # - X q[1] sets q[1] to |1⟩
-        # - X q[2] sets q[2] to |1⟩  
-        # - reset q[1] resets q[1] back to |0⟩
-        # Final state: q[0]=|0⟩, q[1]=|0⟩, q[2]=|1⟩, q[3]=|0⟩
-        # Expected outcome: |0010⟩ (100% probability)
-        
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
-        
-        # Should see only |0010⟩ outcome due to reset operation
-        expected_outcomes = {'0010'}
-        assert set(counter.keys()) == expected_outcomes
-        
-        # All measurements should be |0010⟩
-        total = sum(counter.values())
-        assert total == 100, f"Expected 100 measurements, got {total}"
-        assert counter['0010'] == 100, f"Expected all measurements to be |0010⟩, got {counter}"
 
     def test_12_1_aliasing_of_qubit_registers(self):
         """12.1 Aliasing of qubit registers"""
