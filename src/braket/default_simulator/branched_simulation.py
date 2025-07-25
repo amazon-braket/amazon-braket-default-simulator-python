@@ -19,6 +19,9 @@ from braket.default_simulator.operation import GateOperation, Observable
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.default_simulator.gate_operations import Measure
+from braket.default_simulator.gate_operations import (
+    Identity, Hadamard, PauliX, PauliY, PauliZ, CX, RotX, RotY, RotZ, S, T
+)
 
 # Additional structures for advanced features
 class GateDefinition:
@@ -79,16 +82,7 @@ class BranchedSimulation(Simulation):
         self._measurements: List[Dict[int, List[int]]] = [{}]  # path_idx -> {qubit_idx: [outcomes]}
         self._variables: List[Dict[str, FramedVariable]] = [{}]  # Classical variables per path
         self._curr_frame: int = 0 # Variable Frame
-        self._function_defs: Dict[str, FunctionDefinition] = {}
 
-        # Maps built in function names to corresponding functions
-        self._function_builtin: Dict[str, Any] = {}
-
-        # Maps gate names to GateDefinition objects
-        self._gate_defs: Dict[str, GateDefinition] = {}
-
-        # Maps OpenQASM gate names to Python gate types
-        self._gate_name_mapping: Dict[str, Any] = {}
         # Return values for function calls
         self._return_values: Dict[int, Any] = {}
 
@@ -282,11 +276,6 @@ class BranchedSimulation(Simulation):
     def get_qubit_indices(self, name: str) -> Union[int, List[int]]:
         """Get qubit indices for a given name."""
         return self._qubit_mapping.get(name, [])
-
-    @property
-    def active_paths(self) -> List[int]:
-        """Get list of active path indices."""
-        return self._active_paths.copy()
 
     @property
     def num_paths(self) -> int:
