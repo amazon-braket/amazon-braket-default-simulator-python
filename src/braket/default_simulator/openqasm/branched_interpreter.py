@@ -702,7 +702,7 @@ class BranchedInterpreter:
                 for idx in sim._active_paths:
                     ctrl_modifiers[idx] += [ctrl_mod_ix] * (1 if args == 1 else args[idx])
             if mod.modifier == GateModifierName.pow:
-                args = self._evolve_branched_ast_operators(sim, mod.argument.value)
+                args = self._evolve_branched_ast_operators(sim, mod.argument)
                 for idx in sim._active_paths:
                     power[idx] *= args[idx]
                 
@@ -958,8 +958,7 @@ class BranchedInterpreter:
             results = {}
             for path_idx in sim._active_paths:
                 index = index_results.get(path_idx, 0) if index_results else 0
-                
-                
+                  
                 # Check if it's a variable array
                 var_value = sim.get_variable(path_idx, collection_name)
                 
@@ -968,9 +967,17 @@ class BranchedInterpreter:
                     if 0 <= index < len(var_value):
                         results[path_idx] = var_value[index]
                     else:
-                        results[path_idx] = 0
+                        raise IndexError("Index out of bounds " + node)
+                # Check if it is an input
+                elif collection_name in self.inputs:
+                    var_value = self.inputs[collection_name]
+                    if isinstance(var_value, int):
+                        results[path_idx] = bin(var_value)[index]
+                    else:
+                        results[path_idx] = var_value[index]
+                # Otherwise it is a qubit register
                 else:
-                    results[path_idx] = 0
+                    results[path_idx] = self._evaluate_qubits(sim, node.collection)[path_idx][index]
             
             return results
         

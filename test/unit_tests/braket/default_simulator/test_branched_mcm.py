@@ -1337,11 +1337,11 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         
         # Each outcome should have roughly equal probability (~50% each)
         total = sum(counter.values())
-        ratio_110 = counter['110'] / total
+        ratio_110 = counter['100'] / total
         ratio_111 = counter['111'] / total
         
         # Allow for statistical variation with 1000 shots
-        assert 0.4 < ratio_110 < 0.6, f"Expected ~0.5 for |110⟩, got {ratio_110}"
+        assert 0.4 < ratio_110 < 0.6, f"Expected ~0.5 for |100⟩, got {ratio_110}"
         assert 0.4 < ratio_111 < 0.6, f"Expected ~0.5 for |111⟩, got {ratio_111}"
 
     def test_9_3_negative_control_modifiers(self):
@@ -1820,7 +1820,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
             }
         }
         qubit[4] __qubits__;
-        bell __qubits__[0], __qubits__[1];
+        bell(__qubits__[0], __qubits__[1]);
         n_bells(5, __qubits__[2], __qubits__[3]);
         """
 
@@ -2092,17 +2092,17 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         counter = Counter([''.join(measurement) for measurement in measurements])
         
         # Should see outcomes where q[1] is always 1 (due to X gate when count==3)
-        expected_outcomes = {'01', '11'}
+        expected_outcomes = {'010', '110'}
         assert set(counter.keys()) == expected_outcomes
         
         # q[0] should be 50/50 due to final H gate, q[1] should always be 1
         total = sum(counter.values())
-        ratio_01 = counter['01'] / total
-        ratio_11 = counter['11'] / total
+        ratio_01 = counter['010'] / total
+        ratio_11 = counter['110'] / total
         
         # Allow for statistical variation with 1000 shots
-        assert 0.4 < ratio_01 < 0.6, f"Expected ~0.5 for |01⟩, got {ratio_01}"
-        assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |11⟩, got {ratio_11}"
+        assert 0.4 < ratio_01 < 0.6, f"Expected ~0.5 for |010⟩, got {ratio_01}"
+        assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |110⟩, got {ratio_11}"
 
     def test_14_2_continue_statement_in_loop(self):
         """14.2 Continue statement in loop"""
@@ -2155,14 +2155,14 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         
         # Should see outcomes where q[0] is always 1 (due to odd number of X gates)
         # and q[1] varies due to H gate when x_count==3
-        expected_outcomes = {'10', '11'}
+        expected_outcomes = {'100', '110'}
         assert set(counter.keys()) == expected_outcomes
         
         # q[0] should always be 1, q[1] should be 50/50 due to H gate
         total = sum(counter.values())
-        ratio_10 = counter['10'] / total
-        ratio_11 = counter['11'] / total
+        ratio_10 = counter['100'] / total
+        ratio_11 = counter['110'] / total
         
         # Allow for statistical variation with 1000 shots
-        assert 0.4 < ratio_10 < 0.6, f"Expected ~0.5 for |10⟩, got {ratio_10}"
-        assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |11⟩, got {ratio_11}"
+        assert 0.4 < ratio_10 < 0.6, f"Expected ~0.5 for |100⟩, got {ratio_10}"
+        assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |110⟩, got {ratio_11}"
