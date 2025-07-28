@@ -2342,7 +2342,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         int[32] x_count = 0;
 
         // Loop with continue statement
-        for uint i in [0:4] {
+        for uint i in [1:5] {
             count = count + 1;
             
             if (count % 2 == 0) {

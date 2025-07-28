@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import numpy as np
-from typing import Dict, List, Any, Optional, Union
+from typing import Any, Optional, Union
 from copy import deepcopy
 
 from braket.default_simulator.operation import GateOperation, Observable
@@ -26,7 +26,7 @@ from braket.default_simulator.gate_operations import (
 # Additional structures for advanced features
 class GateDefinition:
     """Store custom gate definitions."""
-    def __init__(self, name: str, arguments: List[str], qubit_targets: List[str], body: Any):
+    def __init__(self, name: str, arguments: list[str], qubit_targets: list[str], body: Any):
         self.name = name
         self.arguments = arguments
         self.qubit_targets = qubit_targets
@@ -34,7 +34,7 @@ class GateDefinition:
 
 class FunctionDefinition:
     """Store custom function definitions."""
-    def __init__(self, name: str, arguments: Any, body: List[Any], return_type: Any):
+    def __init__(self, name: str, arguments: Any, body: list[Any], return_type: Any):
         self.name = name
         self.arguments = arguments
         self.body = body
@@ -76,26 +76,26 @@ class BranchedSimulation(Simulation):
         
         # Core branching state
         self._batch_size = batch_size
-        self._instruction_sequences: List[List[GateOperation]] = [[]]
-        self._active_paths: List[int] = [0]
-        self._shots_per_path: List[int] = [shots]
-        self._measurements: List[Dict[int, List[int]]] = [{}]  # path_idx -> {qubit_idx: [outcomes]}
-        self._variables: List[Dict[str, FramedVariable]] = [{}]  # Classical variables per path
+        self._instruction_sequences: list[list[GateOperation]] = [[]]
+        self._active_paths: list[int] = [0]
+        self._shots_per_path: list[int] = [shots]
+        self._measurements: list[dict[int, list[int]]] = [{}]  # path_idx -> {qubit_idx: [outcomes]}
+        self._variables: list[dict[str, FramedVariable]] = [{}]  # Classical variables per path
         self._curr_frame: int = 0 # Variable Frame
 
         # Return values for function calls
-        self._return_values: Dict[int, Any] = {}
+        self._return_values: dict[int, Any] = {}
 
         # Simulation indices for continue in for loop
-        self._continue_paths: List[int] = []
+        self._continue_paths: list[int] = []
         
         # Qubit management
-        self._qubit_mapping: Dict[str, Union[int, List[int]]] = {}
-        self._measured_qubits: List[int] = []
+        self._qubit_mapping: dict[str, Union[int, list[int]]] = {}
+        self._measured_qubits: list[int] = []
         
         # No state caching - always calculate fresh to avoid exponential memory growth
 
-    def evolve(self, operations: List[GateOperation]) -> None:
+    def evolve(self, operations: list[GateOperation]) -> None:
         """
         Add operations to all active paths.
         This doesn't execute them immediately - they're stored for lazy evaluation.
@@ -203,7 +203,7 @@ class BranchedSimulation(Simulation):
         
         return np.array([prob_0, prob_1])
 
-    def retrieve_samples(self) -> List[int]:
+    def retrieve_samples(self) -> list[int]:
         """
         Retrieve samples by aggregating across all paths.
         Calculate final state for each path and sample from it directly.
@@ -231,7 +231,7 @@ class BranchedSimulation(Simulation):
         
         return all_samples
 
-    def get_measurement_counts(self) -> Dict[str, int]:
+    def get_measurement_counts(self) -> dict[str, int]:
         """
         Get measurement counts aggregated across all paths.
         Returns a dictionary mapping bit strings to counts.
@@ -269,7 +269,7 @@ class BranchedSimulation(Simulation):
             return self._variables[path_idx].get(var_name, default)
         return default
 
-    def add_qubit_mapping(self, name: str, indices: Union[int, List[int]]) -> None:
+    def add_qubit_mapping(self, name: str, indices: Union[int, list[int]]) -> None:
         """Add a mapping from qubit name to indices."""
         self._qubit_mapping[name] = indices
         # Update qubit count based on the maximum index used
@@ -278,7 +278,7 @@ class BranchedSimulation(Simulation):
         else:
             self._qubit_count += 1
 
-    def get_qubit_indices(self, name: str) -> Union[int, List[int]]:
+    def get_qubit_indices(self, name: str) -> Union[int, list[int]]:
         """Get qubit indices for a given name."""
         return self._qubit_mapping.get(name)
 
@@ -292,7 +292,7 @@ class BranchedSimulation(Simulation):
         return len(self._instruction_sequences)
 
     @property
-    def measured_qubits(self) -> List[int]:
+    def measured_qubits(self) -> list[int]:
         """Get list of measured qubit indices."""
         return self._measured_qubits.copy()
 
