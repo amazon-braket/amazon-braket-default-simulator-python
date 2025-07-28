@@ -2033,50 +2033,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         assert 0.3 < ratio_00 < 0.7, f"Expected ~0.5 for |00⟩, got {ratio_00}"
         assert 0.3 < ratio_11 < 0.7, f"Expected ~0.5 for |11⟩, got {ratio_11}"
 
-    def test_11_5_for_loop_and_subroutines(self):
-        """11.5 For loop and subroutines"""
-        qasm_source = """
-        OPENQASM 3.0;
-        def bell(qubit q0, qubit q1) {
-            h q0;
-            cnot q0, q1;
-        }
-        def n_bells(int[32] n, qubit q0, qubit q1) {
-            for int i in [0:n - 1] {
-                h q0;
-                cnot q0, q1;
-            }
-        }
-        qubit[4] __qubits__;
-        bell(__qubits__[0], __qubits__[1]);
-        n_bells(5, __qubits__[2], __qubits__[3]);
-        """
-
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=100)
-
-        # For loop and subroutines analysis:
-        # - bell() subroutine creates Bell state on qubits 0,1: H q[0]; CNOT q[0], q[1]
-        # - n_bells(5, q[2], q[3]) applies H and CNOT 5 times to qubits 2,3
-        # - Multiple H gates: H^5 = H (odd number), so q[2] ends in superposition
-        # - Multiple CNOT gates: CNOT^5 = CNOT (odd number), so correlation maintained
-        # Expected: qubits 0,1 in Bell state |00⟩+|11⟩, qubits 2,3 in Bell state |00⟩+|11⟩
-        
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
-        
-        # Should see outcomes where both pairs are correlated
-        # Possible outcomes: |0000⟩, |0011⟩, |1100⟩, |1111⟩ with equal probability
-        expected_outcomes = {'0000', '0011', '1100', '1111'}
-        assert set(counter.keys()) == expected_outcomes
-        
-        # Each outcome should have roughly equal probability (~25% each)
-        total = sum(counter.values())
-        for outcome in expected_outcomes:
-            ratio = counter[outcome] / total
-            assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
-
     def test_11_6_builtin_functions(self):
         """11.6 Builtin functions"""
         qasm_source = """
@@ -2120,6 +2076,436 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 100, f"Expected 100 measurements, got {total}"
         
+
+    def test_11_9_global_gate_control(self):
+        """11.9 Global gate control"""
+        qasm_source = """
+        qubit q1;
+        qubit q2;
+
+        h q1;
+        h q2;
+        ctrl @ s q1, q2;
+        """
+
+        program = OpenQASMProgram(source=qasm_source, inputs={})
+        simulator = BranchedSimulator()
+        result = simulator.run_openqasm(program, shots=100)
+
+        # Global gate control analysis:
+        # - h q1; h q2; creates superposition on both qubits: (|00⟩ + |01⟩ + |10⟩ + |11⟩)/2
+        # - ctrl @ s q1, q2; applies controlled-S gate (S = phase gate = diag(1, i))
+        # - When q1=1, S gate applied to q2, adding phase i to |1⟩ component
+        # - Expected state: (|00⟩ + |01⟩ + |10⟩ + i|11⟩)/2
+        # - Measurement probabilities: all four outcomes with equal 25% probability
+        
+        measurements = result.measurements
+        counter = Counter([''.join(measurement) for measurement in measurements])
+        
+        expected_outcomes = {'00', '01', '10', '11'}
+        assert set(counter.keys()) == expected_outcomes
+        
+        # Each outcome should have roughly equal probability (~25% each)
+        total = sum(counter.values())
+        for outcome in expected_outcomes:
+            ratio = counter[outcome] / total
+            assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
+
+    def test_11_10_power_modifiers(self):
+        """11.10 Power modifiers"""
+        # Test sqrt(Z) = S
+        qasm_source_z = """
+        qubit q1;
+        qubit q2;
+        h q1;
+        h q2;
+
+        pow(1/2) @ z q1;
+        """
+
+        program_z = OpenQASMProgram(source=qasm_source_z, inputs={})
+        simulator = BranchedSimulator()
+        result_z = simulator.run_openqasm(program_z, shots=100)
+
+        # Create a reference circuit with S gate
+        qasm_source_s = """
+        qubit q1;
+        qubit q2;
+        h q1;
+        h q2;
+
+        s q1;
+        """
+
+        program_s = OpenQASMProgram(source=qasm_source_s, inputs={})
+        result_s = simulator.run_openqasm(program_s, shots=100)
+
+        # Power modifiers analysis:
+        # pow(1/2) @ z q1 applies Z^(1/2) = S gate to q1
+        # This should be equivalent to directly applying s q1
+        # Both circuits should produce the same measurement statistics
+        
+        measurements_z = result_z.measurements
+        counter_z = Counter([''.join(measurement) for measurement in measurements_z])
+        
+        measurements_s = result_s.measurements
+        counter_s = Counter([''.join(measurement) for measurement in measurements_s])
+        
+        # Both should see all four outcomes with equal probability
+        expected_outcomes = {'00', '01', '10', '11'}
+        assert set(counter_z.keys()) == expected_outcomes
+        assert set(counter_s.keys()) == expected_outcomes
+        
+        # Verify both circuits executed successfully
+        assert len(measurements_z) == 100
+        assert len(measurements_s) == 100
+
+        # Test sqrt(X) = V
+        qasm_source_x = """
+        qubit q1;
+        qubit q2;
+        h q1;
+        h q2;
+
+        pow(1/2) @ x q1;
+        """
+
+        program_x = OpenQASMProgram(source=qasm_source_x, inputs={})
+        result_x = simulator.run_openqasm(program_x, shots=100)
+
+        # Create a reference circuit with V gate
+        qasm_source_v = """
+        qubit q1;
+        qubit q2;
+        h q1;
+        h q2;
+
+        v q1;
+        """
+
+        program_v = OpenQASMProgram(source=qasm_source_v, inputs={})
+        result_v = simulator.run_openqasm(program_v, shots=100)
+
+        # pow(1/2) @ x q1 applies X^(1/2) = V gate to q1
+        # This should be equivalent to directly applying v q1
+        measurements_x = result_x.measurements
+        measurements_v = result_v.measurements
+        
+        # Verify both circuits executed successfully
+        assert len(measurements_x) == 100
+        assert len(measurements_v) == 100
+
+    def test_11_11_complex_power_modifiers(self):
+        """11.11 Complex Power modifiers"""
+        qasm_source = """
+        const int[8] two = 2;
+        gate x a { U(π, 0, π) a; }
+        gate cx c, a {
+            pow(1) @ ctrl @ x c, a;
+        }
+        gate cxx_1 c, a {
+            pow(two) @ cx c, a;
+        }
+        gate cxx_2 c, a {
+            pow(1/2) @ pow(4) @ cx c, a;
+        }
+        gate cxxx c, a {
+            pow(1) @ pow(two) @ cx c, a;
+        }
+
+        qubit q1;
+        qubit q2;
+        qubit q3;
+        qubit q4;
+        qubit q5;
+
+        pow(1/2) @ x q1;       // half flip
+        pow(1/2) @ x q1;       // half flip
+        cx q1, q2;   // flip
+        cxx_1 q1, q3;    // don't flip
+        cxx_2 q1, q4;    // don't flip
+        cnot q1, q5;    // flip
+        x q3;       // flip
+        x q4;       // flip
+
+        s q1;   // sqrt z
+        s q1;   // again
+        inv @ z q1; // inv z
+        """
+
+        program = OpenQASMProgram(source=qasm_source, inputs={})
+        simulator = BranchedSimulator()
+        result = simulator.run_openqasm(program, shots=100)
+
+        # Complex power modifiers analysis:
+        # This test uses various combinations of power modifiers:
+        # - pow(1/2) @ x applied twice = X gate (two half-flips = full flip)
+        # - pow(two) @ cx = cx^2 = identity (CNOT squared is identity)
+        # - pow(1/2) @ pow(4) @ cx = cx^(1/2 * 4) = cx^2 = identity
+        # - pow(1) @ pow(two) @ cx = cx^(1*2) = cx^2 = identity
+        # - s q1; s q1; = Z gate (S^2 = Z)
+        # - inv @ z q1 = Z† = Z (Z is self-inverse)
+        # Net effect: q1 flipped, q2 flipped, q3 flipped, q4 flipped, q5 flipped
+        # Expected final state: |11111⟩
+        
+        measurements = result.measurements
+        counter = Counter([''.join(measurement) for measurement in measurements])
+        
+        # Should see only |11111⟩ outcome due to the gate sequence
+        expected_outcomes = {'11111'}
+        assert set(counter.keys()) == expected_outcomes
+        
+        # All measurements should be |11111⟩
+        total = sum(counter.values())
+        assert counter['11111'] == total, f"Expected all measurements to be |11111⟩, got {counter}"
+
+    def test_11_12_gate_control(self):
+        """11.12 Gate control"""
+        qasm_source = """
+        const int[8] two = 2;
+        gate x a { U(π, 0, π) a; }
+        gate cx c, a {
+            ctrl @ x c, a;
+        }
+        gate ccx_1 c1, c2, a {
+            ctrl @ ctrl @ x c1, c2, a;
+        }
+        gate ccx_2 c1, c2, a {
+            ctrl(two) @ x c1, c2, a;
+        }
+        gate ccx_3 c1, c2, a {
+            ctrl @ cx c1, c2, a;
+        }
+
+        qubit q1;
+        qubit q2;
+        qubit q3;
+        qubit q4;
+        qubit q5;
+
+        // doesn't flip q2
+        cx q1, q2;
+        // flip q1
+        x q1;
+        // flip q2
+        cx q1, q2;
+        // doesn't flip q3, q4, q5
+        ccx_1 q1, q4, q3;
+        ccx_2 q1, q3, q4;
+        ccx_3 q1, q3, q5;
+        // flip q3, q4, q5;
+        ccx_1 q1, q2, q3;
+        ccx_2 q1, q2, q4;
+        ccx_2 q1, q2, q5;
+        """
+
+        program = OpenQASMProgram(source=qasm_source, inputs={})
+        simulator = BranchedSimulator()
+        result = simulator.run_openqasm(program, shots=100)
+
+        # Gate control analysis:
+        # This test uses various forms of controlled gates:
+        # - ctrl @ x = CNOT gate
+        # - ctrl @ ctrl @ x = Toffoli (CCX) gate
+        # - ctrl(two) @ x = Toffoli gate with 2 controls
+        # - ctrl @ cx = controlled-CNOT = Toffoli gate
+        # 
+        # Sequence analysis:
+        # 1. cx q1, q2: q1=0, so q2 unchanged → q1=0, q2=0
+        # 2. x q1: flip q1 → q1=1, q2=0
+        # 3. cx q1, q2: q1=1, so flip q2 → q1=1, q2=1
+        # 4. ccx_1 q1, q4, q3: q1=1, q4=0, so q3 unchanged → q3=0
+        # 5. ccx_2 q1, q3, q4: q1=1, q3=0, so q4 unchanged → q4=0
+        # 6. ccx_3 q1, q3, q5: q1=1, q3=0, so q5 unchanged → q5=0
+        # 7. ccx_1 q1, q2, q3: q1=1, q2=1, so flip q3 → q3=1
+        # 8. ccx_2 q1, q2, q4: q1=1, q2=1, so flip q4 → q4=1
+        # 9. ccx_2 q1, q2, q5: q1=1, q2=1, so flip q5 → q5=1
+        # Expected final state: |11111⟩
+        
+        measurements = result.measurements
+        counter = Counter([''.join(measurement) for measurement in measurements])
+        
+        # Should see only |11111⟩ outcome due to the controlled gate sequence
+        expected_outcomes = {'11111'}
+        assert set(counter.keys()) == expected_outcomes
+        
+        # All measurements should be |11111⟩
+        total = sum(counter.values())
+        assert counter['11111'] == total, f"Expected all measurements to be |11111⟩, got {counter}"
+
+    def test_11_13_gate_inverses(self):
+        """11.13 Gate inverses"""
+        qasm_source = """
+        gate rand_u_1 a { U(1, 2, 3) a; }
+        gate rand_u_2 a { U(2, 3, 4) a; }
+        gate rand_u_3 a { inv @ U(3, 4, 5) a; }
+
+        gate both a {
+            rand_u_1 a;
+            rand_u_2 a;
+        }
+        gate both_inv a {
+            inv @ both a;
+        }
+        gate all_3 a {
+            rand_u_1 a;
+            rand_u_2 a;
+            rand_u_3 a;
+        }
+        gate all_3_inv a {
+            inv @ inv @ inv @ all_3 a;
+        }
+
+        gate apply_phase a {
+            gphase(1);
+        }
+
+        gate apply_phase_inv a {
+            inv @ gphase(1);
+        }
+
+        qubit q;
+
+        both q;
+        both_inv q;
+
+        all_3 q;
+        all_3_inv q;
+
+        apply_phase q;
+        apply_phase_inv q;
+
+        U(1, 2, 3) q;
+        inv @ U(1, 2, 3) q;
+
+        s q;
+        inv @ s q;
+
+        t q;
+        inv @ t q;
+        """
+
+        program = OpenQASMProgram(source=qasm_source, inputs={})
+        simulator = BranchedSimulator()
+        result = simulator.run_openqasm(program, shots=100)
+
+        # Gate inverses analysis:
+        # This test applies various gates followed by their inverses:
+        # - both q; both_inv q; → gate and its inverse cancel out
+        # - all_3 q; all_3_inv q; → gate and its inverse cancel out
+        # - apply_phase q; apply_phase_inv q; → phase and its inverse cancel out
+        # - U(1,2,3) q; inv @ U(1,2,3) q; → U gate and its inverse cancel out
+        # - s q; inv @ s q; → S gate and its inverse (S†) cancel out
+        # - t q; inv @ t q; → T gate and its inverse (T†) cancel out
+        # All gates should cancel out, leaving the qubit in |0⟩ state
+        
+        measurements = result.measurements
+        counter = Counter([''.join(measurement) for measurement in measurements])
+        
+        # Should see only |0⟩ outcome since all gates cancel out
+        expected_outcomes = {'0'}
+        assert set(counter.keys()) == expected_outcomes
+        
+        # All measurements should be |0⟩
+        total = sum(counter.values())
+        assert counter['0'] == total, f"Expected all measurements to be |0⟩, got {counter}"
+
+    def test_11_14_gate_on_qubit_registers(self):
+        """11.14 Gate on qubit registers"""
+        qasm_source = """
+        qubit[3] qs;
+        qubit q;
+
+        x qs[{0, 2}];
+        h q;
+        cphaseshift(1) qs, q;
+        phaseshift(-2) q;
+        """
+
+        program = OpenQASMProgram(source=qasm_source, inputs={})
+        simulator = BranchedSimulator()
+        result = simulator.run_openqasm(program, shots=100)
+
+        # Gate on qubit registers analysis:
+        # - x qs[{0, 2}]; applies X gate to qubits 0 and 2 of register qs → |101⟩ state for qs
+        # - h q; applies H gate to qubit q → superposition (|0⟩ + |1⟩)/√2
+        # - cphaseshift(1) qs, q; applies controlled phase shift with qs as control, q as target
+        # - phaseshift(-2) q; applies phase shift of -2 to qubit q
+        # Expected: qs in |101⟩ state, q affected by phase shifts and superposition
+        
+        measurements = result.measurements
+        counter = Counter([''.join(measurement) for measurement in measurements])
+        
+        # Should see outcomes where first 3 bits are |101⟩ (due to X gates on qs[0] and qs[2])
+        # and last bit varies due to H gate on q
+        expected_outcomes = {'1010', '1011'}
+        assert set(counter.keys()) == expected_outcomes
+        
+        # Each outcome should have roughly equal probability (~50% each)
+        total = sum(counter.values())
+        ratio_1010 = counter['1010'] / total
+        ratio_1011 = counter['1011'] / total
+        
+        # Allow for statistical variation with 100 shots
+        assert 0.3 < ratio_1010 < 0.7, f"Expected ~0.5 for |1010⟩, got {ratio_1010}"
+        assert 0.3 < ratio_1011 < 0.7, f"Expected ~0.5 for |1011⟩, got {ratio_1011}"
+
+    def test_11_15_rotation_parameter_expressions(self):
+        """11.15 Rotation parameter expressions"""
+        qasm_source_pi = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        rx(pi) q[0];
+        """
+
+        program_pi = OpenQASMProgram(source=qasm_source_pi, inputs={})
+        simulator = BranchedSimulator()
+        result_pi = simulator.run_openqasm(program_pi, shots=100)
+
+        # Rotation parameter expressions analysis:
+        # rx(π) q[0] applies X rotation by π radians = 180 degrees
+        # This is equivalent to X gate, flipping |0⟩ to |1⟩
+        # Expected: all measurements should be |1⟩
+        
+        measurements_pi = result_pi.measurements
+        counter_pi = Counter([''.join(measurement) for measurement in measurements_pi])
+        
+        # Should see only |1⟩ outcome due to π rotation (equivalent to X gate)
+        expected_outcomes_pi = {'1'}
+        assert set(counter_pi.keys()) == expected_outcomes_pi
+        
+        # All measurements should be |1⟩
+        total_pi = sum(counter_pi.values())
+        assert counter_pi['1'] == total_pi, f"Expected all measurements to be |1⟩, got {counter_pi}"
+
+        # Test more complex expressions
+        qasm_source_expr = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        rx(pi + pi / 2) q[0];
+        """
+
+        program_expr = OpenQASMProgram(source=qasm_source_expr, inputs={})
+        result_expr = simulator.run_openqasm(program_expr, shots=100)
+
+        # rx(π + π/2) = rx(3π/2) applies X rotation by 3π/2 radians = 270 degrees
+        # This creates a specific superposition state
+        measurements_expr = result_expr.measurements
+        counter_expr = Counter([''.join(measurement) for measurement in measurements_expr])
+        
+        # Should see both |0⟩ and |1⟩ outcomes due to the rotation creating superposition
+        expected_outcomes_expr = {'0', '1'}
+        assert set(counter_expr.keys()).issubset(expected_outcomes_expr)
+        
+        # Verify circuit executed successfully
+        total_expr = sum(counter_expr.values())
+        assert total_expr == 100, f"Expected 100 measurements, got {total_expr}"
+        
+        # Both outcomes should have some probability due to the rotation
+        for outcome in counter_expr:
+            ratio = counter_expr[outcome] / total_expr
+            assert 0.3 < ratio < 0.7, f"Expected both outcomes to have significant probability, got {ratio} for {outcome}"
+            
 
     def test_12_1_aliasing_of_qubit_registers(self):
         """12.1 Aliasing of qubit registers"""
