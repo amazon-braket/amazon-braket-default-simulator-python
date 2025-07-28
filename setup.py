@@ -50,6 +50,7 @@ setup(
                 "braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator:"
                 "RydbergAtomSimulator",
             ),
+            "braket_sv_branched = braket.default_simulator.branched_simulator:BranchedSimulator",
         ]
     },
     extras_require={
