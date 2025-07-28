@@ -272,11 +272,19 @@ class BranchedSimulation(Simulation):
     def add_qubit_mapping(self, name: str, indices: Union[int, List[int]]) -> None:
         """Add a mapping from qubit name to indices."""
         self._qubit_mapping[name] = indices
-        self._qubit_count += 1
+        # Update qubit count based on the maximum index used
+        if isinstance(indices, list):
+            self._qubit_count += len(indices)
+        else:
+            self._qubit_count += 1
 
     def get_qubit_indices(self, name: str) -> Union[int, List[int]]:
         """Get qubit indices for a given name."""
         return self._qubit_mapping.get(name)
+
+    def get_current_state_vector(self, path_idx: int) -> np.ndarray:
+        """Get the current state vector for a specific path."""
+        return self._get_path_state(path_idx)
 
     @property
     def num_paths(self) -> int:

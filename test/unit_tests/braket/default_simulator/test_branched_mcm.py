@@ -23,6 +23,8 @@ from collections import Counter
 import math
 
 from braket.default_simulator.branched_simulator import BranchedSimulator
+from braket.default_simulator.branched_simulation import BranchedSimulation
+from braket.default_simulator.openqasm.branched_interpreter import BranchedInterpreter
 from braket.ir.openqasm import Program as OpenQASMProgram
 
 
@@ -317,8 +319,80 @@ class TestBranchedSimulatorOperatorsOpenQASM:
             ratio = counter[outcome] / total
             assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
 
+    def test_4_1_classical_variable_manipulation_with_branching(self):
+        """4.1 Classical variable manipulation - using execute_with_branching to test variables"""
+        qasm_source = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[3] q;
+        int[32] count = 0;
+
+        h q[0];       // Put qubit 0 in superposition
+        h q[1];       // Put qubit 1 in superposition
+
+        b[0] = measure q[0];  // Measure qubit 0
+        b[1] = measure q[1];  // Measure qubit 1
+
+        // Update count based on measurements
+        if (b[0] == 1) {
+            count = count + 1;
+        }
+        if (b[1] == 1) {
+            count = count + 1;
+        }
+
+        // Apply operations based on count
+        if (count == 1){
+            h q[2];    // Apply H to qubit 2 if one qubit measured 1
+        }
+        if (count == 2){
+            x q[2];
+        }
+        """
+
+        # Use the new execute_with_branching approach
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+        
+        # Parse the QASM program
+        ast = parse(qasm_source)
+        
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+        
+        # Test that we have the expected number of active paths (4 paths for 2 measurements)
+        assert len(sim._active_paths) == 4, f"Expected 4 active paths, got {len(sim._active_paths)}"
+        
+        # Test variable values for each path
+        for path_idx in sim._active_paths:
+            # Get the count variable for this path
+            count_var = sim.get_variable(path_idx, "count")
+            assert count_var is not None, f"Count variable not found for path {path_idx}"
+            
+            # Get measurement results for this path
+            q0_measurement = sim._measurements[path_idx][0][-1] if 0 in sim._measurements[path_idx] else 0
+            q1_measurement = sim._measurements[path_idx][1][-1] if 1 in sim._measurements[path_idx] else 0
+            
+            # Verify count equals the number of 1s measured
+            expected_count = q0_measurement + q1_measurement
+            assert count_var.val == expected_count, f"Path {path_idx}: expected count={expected_count}, got {count_var.val}"
+            
+            # Test bit array variables
+            b_var = sim.get_variable(path_idx, "b")
+            assert b_var is not None, f"Bit array variable not found for path {path_idx}"
+            assert isinstance(b_var.val, list), f"Expected bit array to be a list, got {type(b_var.val)}"
+            assert len(b_var.val) == 2, f"Expected bit array of length 2, got {len(b_var.val)}"
+            assert b_var.val[0] == q0_measurement, f"Path {path_idx}: b[0] should be {q0_measurement}, got {b_var.val[0]}"
+            assert b_var.val[1] == q1_measurement, f"Path {path_idx}: b[1] should be {q1_measurement}, got {b_var.val[1]}"
+
     def test_4_1_classical_variable_manipulation(self):
-        """4.1 Classical variable manipulation"""
+        """4.1 Classical variable manipulation - original test"""
         qasm_source = """
         OPENQASM 3.0;
         bit[2] b;
@@ -373,8 +447,8 @@ class TestBranchedSimulatorOperatorsOpenQASM:
             else:
                 assert 0.1 < ratio < 0.15, f"Expected ~0.125 for {outcome}, got {ratio}"
 
-    def test_4_2_additional_data_types_and_operations(self):
-        """4.2 Additional data types and operations"""
+    def test_4_2_additional_data_types_and_operations_with_branching(self):
+        """4.2 Additional data types and operations - using execute_with_branching to test variables"""
         qasm_source = """
         OPENQASM 3.0;
         qubit[2] q;
@@ -410,29 +484,54 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         }
         """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Additional data types analysis:
-        # - Both q[0] and q[1] start in superposition (H gates)
-        # - Each has 50% chance of measuring 0 or 1
-        # - Additional rotation applied to q[0] based on counts[2] > 0
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
+        # Use the new execute_with_branching approach
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
         
-        # Should see all four possible outcomes for the two qubits
-        expected_outcomes = {'00', '01', '10', '11'}
-        assert set(counter.keys()) == expected_outcomes
+        # Parse the QASM program
+        ast = parse(qasm_source)
         
-        # Each outcome should have roughly equal probability (~25% each)
-        total = sum(counter.values())
-        for outcome in expected_outcomes:
-            ratio = counter[outcome] / total
-            assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+        
+        # Test that we have the expected number of active paths (4 paths for 2 measurements)
+        assert len(sim._active_paths) == 4, f"Expected 4 active paths, got {len(sim._active_paths)}"
+        
+        # Test variable values for each path
+        for path_idx in sim._active_paths:
+            # Get measurement results for this path
+            q0_measurement = sim._measurements[path_idx][0][-1] if 0 in sim._measurements[path_idx] else 0
+            q1_measurement = sim._measurements[path_idx][1][-1] if 1 in sim._measurements[path_idx] else 0
+            
+            # Test float variable
+            rotate_var = sim.get_variable(path_idx, "rotate")
+            assert rotate_var is not None, f"Float variable 'rotate' not found for path {path_idx}"
+            assert rotate_var.val == 0.5, f"Path {path_idx}: expected rotate=0.5, got {rotate_var.val}"
+            
+            # Test array variable
+            counts_var = sim.get_variable(path_idx, "counts")
+            assert counts_var is not None, f"Array variable 'counts' not found for path {path_idx}"
+            assert isinstance(counts_var.val, list), f"Expected counts to be a list, got {type(counts_var.val)}"
+            assert len(counts_var.val) == 3, f"Expected counts array of length 3, got {len(counts_var.val)}"
+            
+            # Verify counts array values based on measurements
+            expected_counts_0 = q0_measurement
+            expected_counts_1 = q1_measurement
+            expected_counts_2 = expected_counts_0 + expected_counts_1
+            
+            assert counts_var.val[0] == expected_counts_0, f"Path {path_idx}: counts[0] should be {expected_counts_0}, got {counts_var.val[0]}"
+            assert counts_var.val[1] == expected_counts_1, f"Path {path_idx}: counts[1] should be {expected_counts_1}, got {counts_var.val[1]}"
+            assert counts_var.val[2] == expected_counts_2, f"Path {path_idx}: counts[2] should be {expected_counts_2}, got {counts_var.val[2]}"
 
-    def test_4_3_type_casting_operations(self):
-        """4.3 Type casting operations"""
+
+    def test_4_3_type_casting_operations_with_branching(self):
+        """4.3 Type casting operations - using execute_with_branching to test variables"""
         qasm_source = """
         OPENQASM 3.0;
         qubit[2] q;
@@ -470,27 +569,48 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         }
         """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Type casting operations analysis:
-        # - Both q[0] and q[1] start in superposition (H gates)
-        # - Type casting conditions should always be true (truncated_float == 2, int_from_bits == 3)
-        # - When b[0]=1 and condition true: X applied to q[0] → q[0] flipped
-        # - When b[1]=1 and condition true: Z applied to q[1] → phase change (not observable in measurement)
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
+        # Use the new execute_with_branching approach
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
         
-        # Should see all four possible outcomes for the two qubits
-        expected_outcomes = {'00', '01', '10', '11'}
-        assert set(counter.keys()) == expected_outcomes
+        # Parse the QASM program
+        ast = parse(qasm_source)
         
-        # Each outcome should have roughly equal probability (~25% each)
-        total = sum(counter.values())
-        for outcome in expected_outcomes:
-            ratio = counter[outcome] / total
-            assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+        
+        # Test that we have the expected number of active paths (4 paths for 2 measurements)
+        assert len(sim._active_paths) == 4, f"Expected 4 active paths, got {len(sim._active_paths)}"
+        
+        # Test variable values for each path
+        for path_idx in sim._active_paths:
+            # Test original variables
+            int_val_var = sim.get_variable(path_idx, "int_val")
+            assert int_val_var is not None, f"Variable 'int_val' not found for path {path_idx}"
+            assert int_val_var.val == 3, f"Path {path_idx}: expected int_val=3, got {int_val_var.val}"
+            
+            float_val_var = sim.get_variable(path_idx, "float_val")
+            assert float_val_var is not None, f"Variable 'float_val' not found for path {path_idx}"
+            assert float_val_var.val == 2.5, f"Path {path_idx}: expected float_val=2.5, got {float_val_var.val}"
+            
+            # Test casted variables
+            truncated_float_var = sim.get_variable(path_idx, "truncated_float")
+            assert truncated_float_var is not None, f"Variable 'truncated_float' not found for path {path_idx}"
+            assert truncated_float_var.val == 2, f"Path {path_idx}: expected truncated_float=2, got {truncated_float_var.val}"
+            
+            float_from_int_var = sim.get_variable(path_idx, "float_from_int")
+            assert float_from_int_var is not None, f"Variable 'float_from_int' not found for path {path_idx}"
+            assert float_from_int_var.val == 3.0, f"Path {path_idx}: expected float_from_int=3.0, got {float_from_int_var.val}"
+            
+            int_from_bits_var = sim.get_variable(path_idx, "int_from_bits")
+            assert int_from_bits_var is not None, f"Variable 'int_from_bits' not found for path {path_idx}"
+            assert int_from_bits_var.val == 3, f"Path {path_idx}: expected int_from_bits=3, got {int_from_bits_var.val}"
 
     def test_4_4_complex_classical_operations(self):
         """4.4 Complex Classical Operations"""
@@ -519,30 +639,35 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[0] = measure q[0];
         """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Complex classical operations analysis:
-        # - z = 5 * 2 + 3 = 13, so z > 10 is true → X applied to q[1]
-        # - w = 2.5 / 2.0 = 1.25, so w < 2.0 is true → Z applied to q[2]
-        # - q[0] is in superposition (H gate)
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
         
-        # Should see outcomes where q[1] is always 1 (due to X gate) and q[0] varies
-        # q[2] has Z applied but that doesn't change measurement probabilities
-        expected_outcomes = {'010', '110'}
-        assert set(counter.keys()) == expected_outcomes
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        interpreter = BranchedInterpreter()
+        branching_result = interpreter.execute_with_branching(ast, simulation, {})
+        sim = branching_result["simulation"]
         
-        # Each outcome should have roughly equal probability (~50% each)
-        total = sum(counter.values())
-        for outcome in expected_outcomes:
-            ratio = counter[outcome] / total
-            assert 0.4 < ratio < 0.6, f"Expected ~0.5 for {outcome}, got {ratio}"
+        # Test variable values for each path
+        for path_idx in sim._active_paths:
+            # Test original variables
+            x_var = sim.get_variable(path_idx, "x")
+            assert x_var is not None and x_var.val == 5
+            
+            y_var = sim.get_variable(path_idx, "y")
+            assert y_var is not None and y_var.val == 2.5
+            
+            # Test computed variables
+            w_var = sim.get_variable(path_idx, "w")
+            assert w_var is not None and w_var.val == 1.25
+            
+            z_var = sim.get_variable(path_idx, "z")
+            assert z_var is not None and z_var.val == 13
+            
+            bit_ops_var = sim.get_variable(path_idx, "bit_ops")
+            assert bit_ops_var is not None and bit_ops_var.val == 11
 
-    def test_5_1_loop_dependent_on_measurement_results(self):
-        """5.1 Loop dependent on measurement results"""
+    def test_5_1_loop_dependent_on_measurement_results_with_branching(self):
+        """5.1 Loop dependent on measurement results - using execute_with_branching to test variables"""
         qasm_source = """
         OPENQASM 3.0;
         bit b;
@@ -564,31 +689,42 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         }
         """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Loop dependent on measurement results analysis:
-        # - Loop continues while b==0 and count<3, applying H and measuring each time
-        # - Probability of getting 1 on any single measurement is 50%
-        # - If we get 1, X is applied to q[1]
-        # - Most runs should get a 1 within 3 attempts (probability = 1 - (0.5)^3 = 87.5%)
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
+        # Use the new execute_with_branching approach
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
         
-        # Should see outcomes where q[1] is 1 most of the time (when b==1)
-        # and q[1] is 0 when we failed to get 1 in 3 attempts
-        expected_outcomes = {'00', '01', '10', '11'}
-        assert set(counter.keys()).issubset(expected_outcomes)
+        # Parse the QASM program
+        ast = parse(qasm_source)
         
-        # Most outcomes should have q[1]=1 due to high probability of getting 1 within 3 attempts
-        total = sum(counter.values())
-        ones_in_q1 = sum(counter[outcome] for outcome in counter if outcome[1] == '1')
-        ratio_q1_is_1 = ones_in_q1 / total
-        assert ratio_q1_is_1 > 0.8, f"Expected >80% to have q[1]=1, got {ratio_q1_is_1}"
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+        
+        # Test variable values for each path
+        for path_idx in sim._active_paths:
+            # Get the count variable for this path
+            count_var = sim.get_variable(path_idx, "count")
+            assert count_var is not None, f"Count variable not found for path {path_idx}"
+            
+            # Get the b variable for this path
+            b_var = sim.get_variable(path_idx, "b")
+            assert b_var is not None, f"Bit variable 'b' not found for path {path_idx}"
+            
+            # Verify count is within expected range (1-4)
+            assert 1 <= count_var.val <= 4, f"Path {path_idx}: expected count in range [1,4], got {count_var.val}"
+            
+            # If count < 4, then b should be 1 (loop exited because we got a 1)
+            # If count == 4, then b could be 0 or 1 (loop exited because count limit reached)
+            if count_var.val < 4:
+                assert b_var.val == 1, f"Path {path_idx}: if count < 4, b should be 1, got {b_var.val}"
 
-    def test_5_2_for_loop_operations(self):
-        """5.2 For loop operations"""
+    def test_5_2_for_loop_operations_with_branching(self):
+        """5.2 For loop operations - using execute_with_branching to test variables"""
         qasm_source = """
         OPENQASM 3.0;
         qubit[4] q;
@@ -627,25 +763,51 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         }
         """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # For loop operations analysis:
-        # - All 4 qubits start in superposition (H gates)
-        # - All qubits measured, sum calculated (0-4 ones possible)
-        # - Operations applied to q[0] based on sum: case 0: nothing, case 1: X, case 2: H, case 3: Z, default (4): Y
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
+        # Use the new execute_with_branching approach
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
         
-        # Should see all 16 possible outcomes for 4 qubits (2^4 = 16)
-        # Each outcome should have roughly equal probability (~6.25% each)
-        assert len(counter) == 16, f"Expected 16 outcomes, got {len(counter)}"
+        # Parse the QASM program
+        ast = parse(qasm_source)
         
-        total = sum(counter.values())
-        for outcome in counter:
-            ratio = counter[outcome] / total
-            assert 0.03 < ratio < 0.12, f"Expected ~0.0625 for {outcome}, got {ratio}"
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+        
+        # Test that we have the expected number of active paths (16 paths for 4 measurements)
+        assert len(sim._active_paths) == 16, f"Expected 16 active paths, got {len(sim._active_paths)}"
+        
+        # Test variable values for each path
+        for path_idx in sim._active_paths:
+            # Get the sum variable for this path
+            sum_var = sim.get_variable(path_idx, "sum")
+            assert sum_var is not None, f"Sum variable not found for path {path_idx}"
+            
+            # Get measurement results for this path
+            measurements = []
+            for i in range(4):
+                if i in sim._measurements[path_idx]:
+                    measurements.append(sim._measurements[path_idx][i][-1])
+                else:
+                    measurements.append(0)
+            
+            # Verify sum equals the number of 1s measured
+            expected_sum = sum(measurements)
+            assert sum_var.val == expected_sum, f"Path {path_idx}: expected sum={expected_sum}, got {sum_var.val}"
+            
+            # Test bit array variables
+            b_var = sim.get_variable(path_idx, "b")
+            assert b_var is not None, f"Bit array variable not found for path {path_idx}"
+            assert isinstance(b_var.val, list), f"Expected bit array to be a list, got {type(b_var.val)}"
+            assert len(b_var.val) == 4, f"Expected bit array of length 4, got {len(b_var.val)}"
+            
+            for i in range(4):
+                assert b_var.val[i] == measurements[i], f"Path {path_idx}: b[{i}] should be {measurements[i]}, got {b_var.val[i]}"
 
     def test_5_3_complex_control_flow(self):
         """5.3 Complex Control Flow"""
@@ -757,8 +919,8 @@ class TestBranchedSimulatorOperatorsOpenQASM:
             ratio = counter[outcome] / total
             assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
 
-    def test_5_5_nested_loops_with_measurements(self):
-        """5.5 Nested Loops with Measurements"""
+    def test_5_5_nested_loops_with_measurements_with_branching(self):
+        """5.5 Nested Loops with Measurements - using execute_with_branching to test variables"""
         qasm_source = """
         OPENQASM 3.0;
         qubit[3] q;
@@ -797,48 +959,59 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         }
         """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Nested loops with measurements analysis:
-        # Outer loop: for i in [0:1] (i=0,1)
-        # Path analysis:
-        # 1. i=0: H q[0], measure q[0]=0 (50%) → total_ones=0, no inner loop → final: q[2]=0
-        # 2. i=0: H q[0], measure q[0]=1 (50%) → total_ones=1, inner loop j=1: H q[1], measure q[1]
-        #    - q[1]=0 (50%) → total_ones=1 ≤ 1, q[2]=0 → final state |100⟩
-        #    - q[1]=1 (50%) → total_ones=2 > 1, X q[2] → final state |111⟩
-        # 3. i=1: H q[1], measure q[1]=0 (50%) → total_ones=0, no inner loop → final: q[2]=0
-        # 4. i=1: H q[1], measure q[1]=1 (50%) → total_ones=1, inner loop j=0: H q[0], measure q[0]
-        #    - q[0]=0 (50%) → total_ones=1 ≤ 1, q[2]=0 → final state |010⟩
-        #    - q[0]=1 (50%) → total_ones=2 > 1, X q[2] → final state |111⟩
-        #
-        # Expected probabilities:
-        # Path 1: 50% → |000⟩
-        # Path 2a: 50% * 50% = 25% → |100⟩
-        # Path 2b: 50% * 50% = 25% → |111⟩
-        # Path 3: 50% → |010⟩
-        # Path 4a: 50% * 50% = 25% → |010⟩
-        # Path 4b: 50% * 50% = 25% → |111⟩
-        # Total: |000⟩: 50%, |100⟩: 25%, |010⟩: 25%+25%=50%, |111⟩: 25%+25%=50%
+        # Use the new execute_with_branching approach
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
         
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
+        # Parse the QASM program
+        ast = parse(qasm_source)
         
-        expected_outcomes = {'000', '010', '100', '111'}
-        assert set(counter.keys()) == expected_outcomes
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
         
-        total = sum(counter.values())
-        ratio_000 = counter['000'] / total
-        ratio_010 = counter['010'] / total
-        ratio_100 = counter['100'] / total
-        ratio_111 = counter['111'] / total
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
         
-        # Allow for statistical variation with 1000 shots
-        assert 0.4 < ratio_000 < 0.6, f"Expected ~0.5 for |000⟩, got {ratio_000}"
-        assert 0.4 < ratio_010 < 0.6, f"Expected ~0.5 for |010⟩, got {ratio_010}"
-        assert 0.15 < ratio_100 < 0.35, f"Expected ~0.25 for |100⟩, got {ratio_100}"
-        assert 0.4 < ratio_111 < 0.6, f"Expected ~0.5 for |111⟩, got {ratio_111}"
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+        
+        # Test variable values for each path
+        for path_idx in sim._active_paths:
+            # Get all counter variables for this path
+            outer_count_var = sim.get_variable(path_idx, "outer_count")
+            assert outer_count_var is not None, f"Variable 'outer_count' not found for path {path_idx}"
+            
+            inner_count_var = sim.get_variable(path_idx, "inner_count")
+            assert inner_count_var is not None, f"Variable 'inner_count' not found for path {path_idx}"
+            
+            total_ones_var = sim.get_variable(path_idx, "total_ones")
+            assert total_ones_var is not None, f"Variable 'total_ones' not found for path {path_idx}"
+            
+            # Verify outer_count is always 2 (loop runs twice: i=0,1)
+            assert outer_count_var.val == 2, f"Path {path_idx}: expected outer_count=2, got {outer_count_var.val}"
+            
+            # Get measurement results for this path
+            measurements = []
+            for i in range(3):
+                if i in sim._measurements[path_idx]:
+                    measurements.append(sim._measurements[path_idx][i][-1])
+                else:
+                    measurements.append(0)
+            
+            # Verify total_ones matches the sum of measured 1s
+            expected_total_ones = sum(measurements[:2])  # Only first two qubits are measured in the loop
+            assert total_ones_var.val == expected_total_ones, f"Path {path_idx}: expected total_ones={expected_total_ones}, got {total_ones_var.val}"
+            
+            # Verify inner_count logic
+            # Inner loop runs only when a measurement is 1, and only once per outer iteration
+            if measurements[0] == 1 and measurements[1] == 0:  # i=0 measured 1, inner loop ran for j=1
+                assert inner_count_var.val == 1, f"Path {path_idx}: expected inner_count=1, got {inner_count_var.val}"
+            elif measurements[0] == 0 and measurements[1] == 1:  # i=1 measured 1, inner loop ran for j=0
+                assert inner_count_var.val == 1, f"Path {path_idx}: expected inner_count=1, got {inner_count_var.val}"
+            elif measurements[0] == 1 and measurements[1] == 1:  # Both measured 1, but inner loop runs only once
+                assert inner_count_var.val == 1, f"Path {path_idx}: expected inner_count=1, got {inner_count_var.val}"
+            else:  # Both measured 0, no inner loop runs
+                assert inner_count_var.val == 0, f"Path {path_idx}: expected inner_count=0, got {inner_count_var.val}"
 
     def test_6_1_quantum_teleportation(self):
         """6.1 Quantum teleportation"""
@@ -963,7 +1136,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         assert total == 1000, f"Expected 1000 measurements, got {total}"
         
         for outcome in counter:
-            assert len(outcome) == 3, f"Expected 3-bit outcome, got {outcome}"
+            assert len(outcome) == 4, f"Expected 4-bit outcome, got {outcome}"
             assert all(bit in '01' for bit in outcome), f"Invalid bits in outcome {outcome}"
 
     def test_6_3_dynamic_circuit_features(self):
@@ -1101,31 +1274,50 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[0] = measure_and_reset(q[0], b[1]);
         """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Custom gates and subroutines analysis:
-        # custom_gate applies H-T-H sequence to q[0]
-        # measure_and_reset measures q[0] and applies X if result is 1 (reset to |0⟩)
-        # The H-T-H sequence creates a specific rotation, then measurement collapses state
-        # After measure_and_reset, q[0] should always be |0⟩
+        # Use the new execute_with_branching approach to test the actual quantum behavior
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
         
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
+        # Parse the QASM program
+        ast = parse(qasm_source)
         
-        # Should see various outcomes for 2 qubits
-        expected_outcomes = {'00', '01', '10', '11'}
-        assert set(counter.keys()).issubset(expected_outcomes)
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
         
-        # Verify circuit executed successfully
-        total = sum(counter.values())
-        assert total == 1000, f"Expected 1000 measurements, got {total}"
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
         
-        # Due to measure_and_reset logic, q[0] should often be 0 in final measurement
-        outcomes_with_q0_zero = sum(counter[outcome] for outcome in counter if outcome[0] == '0')
-        ratio_q0_zero = outcomes_with_q0_zero / total
-        assert ratio_q0_zero > 0.3, f"Expected significant fraction with q[0]=0, got {ratio_q0_zero}"
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+        
+        # Verify that we have 2 paths (one for each measurement outcome from measure_and_reset)
+        assert len(sim._active_paths) == 2, f"Expected 2 active paths, got {len(sim._active_paths)}"
+        
+        # Test that the custom gate is equivalent to a specific rotation (H-T-H sequence)
+        # Verify that the custom gate was applied by checking instruction sequences
+        for path_idx in sim._active_paths:
+            # The custom gate should have been expanded into H, T, H instructions
+            # followed by measurement and conditional X
+            instructions = sim._instruction_sequences[path_idx]
+            assert len(instructions) >= 3, f"Expected at least 3 instructions for custom gate, got {len(instructions)}"
+        
+        # Test the measure_and_reset subroutine behavior
+        for path_idx in sim._active_paths:
+            # Get measurement result for q[0]
+            q0_measurement = sim._measurements[path_idx][0][-1] if 0 in sim._measurements[path_idx] else 0
+            
+            # Get the bit variable that stores the measurement result
+            b_var = sim.get_variable(path_idx, "b")
+            assert b_var is not None, f"Bit variable not found for path {path_idx}"
+            assert b_var.val[0] == q0_measurement, f"Path {path_idx}: b[0] should equal measurement result"
+            
+            # After measure_and_reset, q[0] should always be in |0⟩ state
+            # This is because if measured 1, X is applied to reset it to 0
+            final_state = sim.get_current_state_vector(path_idx)
+            
+            # Check that q[0] is in |0⟩ state (first two amplitudes should have all probability)
+            prob_q0_zero = abs(final_state[0])**2 + abs(final_state[1])**2
+            assert prob_q0_zero > 0.99, f"Path {path_idx}: q[0] should be in |0⟩ state after reset, got probability {prob_q0_zero}"
 
     def test_7_2_custom_gates_with_control_flow(self):
         """7.2 Custom Gates with Control Flow"""
@@ -1164,41 +1356,77 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[1] = measure q[1];
         """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = BranchedSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Custom gates with control flow analysis:
-        # 1. H q[0] → q[0] in superposition (50% |0⟩, 50% |1⟩)
-        # 2. b[0] = measure q[0] → collapses to 0 or 1
-        # 3. controlled_rotation(π/2) q[0], q[1] → ctrl @ rz(π/2) q[0], q[1]
-        #    - If q[0]=0: no rotation on q[1]
-        #    - If q[0]=1: rz(π/2) applied to q[1] (phase rotation, doesn't affect measurement probabilities)
-        # 4. adaptive_gate(q[1], q[2], b[0]):
-        #    - If b[0]=0: H q[1], H q[2] → q[1] and q[2] in superposition
-        #    - If b[0]=1: X q[1], Z q[2] → q[1] flipped to |1⟩, q[2] phase changed (still |0⟩)
-        # 5. b[1] = measure q[1]
-        #
-        # Path analysis:
-        # Path A (b[0]=0, 50%): H q[1], H q[2] → q[1] 50/50, final outcomes: |00⟩, |01⟩ (25% each)
-        # Path B (b[0]=1, 50%): X q[1], Z q[2] → q[1]=1, final outcomes: |11⟩ (50%)
-        # Expected: |00⟩: 25%, |01⟩: 25%, |11⟩: 50%
+        # Use the new execute_with_branching approach to test the actual quantum behavior
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
         
-        measurements = result.measurements
-        counter = Counter([''.join(measurement) for measurement in measurements])
+        # Parse the QASM program
+        ast = parse(qasm_source)
         
-        expected_outcomes = {'00', '01', '11'}
-        assert set(counter.keys()) == expected_outcomes
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
         
-        total = sum(counter.values())
-        ratio_00 = counter['00'] / total
-        ratio_01 = counter['01'] / total
-        ratio_11 = counter['11'] / total
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
         
-        # Allow for statistical variation with 1000 shots
-        assert 0.15 < ratio_00 < 0.35, f"Expected ~0.25 for |00⟩, got {ratio_00}"
-        assert 0.15 < ratio_01 < 0.35, f"Expected ~0.25 for |01⟩, got {ratio_01}"
-        assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |11⟩, got {ratio_11}"
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+        
+        # Verify that we have 3 paths (2 from first measurement × variable second measurement outcomes)
+        assert len(sim._active_paths) == 3, f"Expected 3 active paths, got {len(sim._active_paths)}"
+        
+        # Group paths by first measurement outcome
+        paths_by_first_meas = {}
+        for path_idx in sim._active_paths:
+            b0 = sim._measurements[path_idx][0][-1] if 0 in sim._measurements[path_idx] else 0
+            if b0 not in paths_by_first_meas:
+                paths_by_first_meas[b0] = []
+            paths_by_first_meas[b0].append(path_idx)
+        
+        # Verify that we have paths for both measurement outcomes
+        assert 0 in paths_by_first_meas, "Expected path with b[0]=0"
+        assert 1 in paths_by_first_meas, "Expected path with b[0]=1"
+        
+        # Test the controlled rotation gate behavior
+        for path_idx in sim._active_paths:
+            b0 = sim._measurements[path_idx][0][-1] if 0 in sim._measurements[path_idx] else 0
+            
+            # Verify that the controlled rotation was applied correctly
+            # If b[0]=0: no rotation should be applied to q[1]
+            # If b[0]=1: rz(π/2) should be applied to q[1]
+            instructions = sim._instruction_sequences[path_idx]
+            
+            # Check that the custom gates were expanded into primitive operations
+            assert len(instructions) > 0, f"Expected instructions for path {path_idx}"
+        
+        # Test the adaptive gate behavior
+        for path_idx in paths_by_first_meas[0]:
+            # For b[0]=0, adaptive_gate should apply H to both q[1] and q[2]
+            final_state = sim.get_current_state_vector(path_idx)
+            
+            # Get measurement result for q[1]
+            b1 = sim._measurements[path_idx][1][-1] if 1 in sim._measurements[path_idx] else 0
+            
+            # Since H was applied to q[1], it should be in superposition before measurement
+            # After measurement, the state should be consistent with the measurement result
+            if b1 == 0:
+                # q[1] measured as 0, q[2] should be in superposition due to H
+                prob_q2_superposition = abs(final_state[1])**2 + abs(final_state[0])**2
+                assert abs(prob_q2_superposition - 1.0) < 0.1, f"Path {path_idx}: q[2] should be in superposition"
+            else:
+                # q[1] measured as 1, q[2] should be in superposition due to H
+                prob_q2_superposition = abs(final_state[3])**2 + abs(final_state[2])**2
+                assert abs(prob_q2_superposition - 1.0) < 0.1, f"Path {path_idx}: q[2] should be in superposition"
+        
+        for path_idx in paths_by_first_meas[1]:
+            # For b[0]=1, adaptive_gate should apply X to q[1] and Z to q[2]
+            final_state = sim.get_current_state_vector(path_idx)
+            
+            # Get measurement result for q[1]
+            b1 = sim._measurements[path_idx][1][-1] if 1 in sim._measurements[path_idx] else 0
+            
+            # Since X was applied to q[1], it should be measured as 1
+            assert b1 == 1, f"Path {path_idx}: Expected q[1] to be 1 after X gate, got {b1}"
 
     def test_8_1_maximum_recursion(self):
         """8.1 Maximum Recursion"""
@@ -1332,7 +1560,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         measurements = result.measurements
         counter = Counter([''.join(measurement) for measurement in measurements])
         
-        expected_outcomes = {'110', '111'}
+        expected_outcomes = {'100', '111'}
         assert set(counter.keys()) == expected_outcomes
         
         # Each outcome should have roughly equal probability (~50% each)

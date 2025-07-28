@@ -447,10 +447,7 @@ class BranchedInterpreter:
     def _handle_classical_assignment(self, sim: BranchedSimulation, node: ClassicalAssignment) -> None:
         """Handle classical variable assignment based on Julia implementation."""
         # Extract assignment operation and operands
-        if hasattr(node, 'op'):
-            op = node.op.name if hasattr(node.op, 'name') else str(node.op)
-        else:
-            op = '='  # Default to simple assignment
+        op = node.op.name if hasattr(node.op, 'name') else str(node.op)
         
         lhs = node.lvalue
         rhs = node.rvalue
@@ -577,6 +574,9 @@ class BranchedInterpreter:
             else:
                 index_results = self._evolve_branched_ast_operators(sim, first_index_group)
         
+        if index_results is None:
+            raise ValueError("Index results expected for index expression: " + str(indexed_id))
+        
         return index_results
 
     def _handle_quantum_gate(self, sim: BranchedSimulation, node: QuantumGate) -> None:
@@ -589,6 +589,10 @@ class BranchedInterpreter:
         if node.arguments:
             for arg in node.arguments:
                 arg_result = self._evolve_branched_ast_operators(sim, arg)
+                
+                if arg_result is None:
+                    raise ValueError("Value expected for gate call argument " + str(node))
+                
                 for idx in sim._active_paths:
                     if idx not in arguments:
                         if isinstance(arg_result, list):
@@ -652,8 +656,8 @@ class BranchedInterpreter:
                 get_pow_modifiers(node.modifiers),
             )
 
-            # Increment the current frame in order to enter the gate frame
-            sim._curr_frame += 1
+            # Create a constant-only scope before calling the gate
+            original_variables = self.create_const_only_scope(sim)
 
             for idx in sim._active_paths:
                 for qubit_idx, qubit_name in zip(target_qubits[idx][len(ctrl_qubits[idx]):], gate_def.qubit_targets):
@@ -673,6 +677,9 @@ class BranchedInterpreter:
                     self._evolve_branched_ast_operators(sim, statement)
             
             sim._active_paths = original_path
+            
+            # Restore the original scope after calling the gate
+            self.restore_original_scope(sim, original_variables)
                 
                 
     def _handle_modifiers(self, sim: BranchedSimulation, modifiers: list[QuantumGateModifier]) -> tuple[Dict[int, list[int]], Dict[int, float]]:
@@ -697,14 +704,18 @@ class BranchedInterpreter:
         
         for mod in modifiers:
             ctrl_mod_ix = ctrl_mod_map.get(mod.modifier)
+            
+            args = 1 if mod.argument is None else self._evolve_branched_ast_operators(sim, mod.argument) # Set 1 to be default modifier 
+            
+            if args is None:
+                raise ValueError("Gate modifier argument value expected " + str(mod))
+
             if ctrl_mod_ix is not None:
-                args = 1 if mod.argument is None else self._evolve_branched_ast_operators(sim, mod.argument.value)
                 for idx in sim._active_paths:
                     ctrl_modifiers[idx] += [ctrl_mod_ix] * (1 if args == 1 else args[idx])
             if mod.modifier == GateModifierName.pow:
-                args = self._evolve_branched_ast_operators(sim, mod.argument)
                 for idx in sim._active_paths:
-                    power[idx] *= args[idx]
+                    power[idx] *= (1 if args == 1 else args[idx])
                 
         return ctrl_modifiers, power
 
@@ -977,7 +988,15 @@ class BranchedInterpreter:
                         results[path_idx] = var_value[index]
                 # Otherwise it is a qubit register
                 else:
-                    results[path_idx] = self._evaluate_qubits(sim, node.collection)[path_idx][index]
+                    qubits = self._evaluate_qubits(sim, node.collection)
+                    
+                    if qubits is None:
+                        raise ValueError("Qubit result is expected for the following expression " + str(node.collection))
+                    
+                    if isinstance(qubits[path_idx], list):
+                        results[path_idx] = qubits[path_idx][index]
+                    else:
+                        raise IndexError(f"Index {index} out of bounds for single qubit")
             
             return results
         
@@ -992,7 +1011,7 @@ class BranchedInterpreter:
                 if rvalue and path_idx in rvalue:
                     sim.set_variable(path_idx, var_name, rvalue[path_idx])
         
-        return None
+        raise ValueError("Proper index expression expected " + str(node))
 
     def _handle_indexed_identifier(self, sim: BranchedSimulation, node: IndexedIdentifier) -> Dict[int, Any]:
         """Handle indexed identifier reference."""
@@ -1117,7 +1136,6 @@ class BranchedInterpreter:
                     raise NameError("The qubit with name " + qubit_name + " can't be found")
                     
         elif isinstance(qubit_expr, IndexedIdentifier):
-            base_name = qubit_expr.name.name
             # Evaluate index
             index_results = self._handle_indexed_identifier(sim, qubit_expr)
             
@@ -1319,6 +1337,10 @@ class BranchedInterpreter:
             range_values = {}
             for value_expr in node.set_declaration.values:
                 val_result = self._evolve_branched_ast_operators(sim, value_expr)
+                
+                if val_result is None:
+                    raise ValueError("For loop iterable values expected: " + str(node))
+                
                 for path_idx in sim._active_paths:
                     val_res = val_result[path_idx]
                     if path_idx not in range_values:
@@ -1328,6 +1350,9 @@ class BranchedInterpreter:
         else:
             # Handle identifier (should resolve to an array)
             range_values = self._evolve_branched_ast_operators(sim, node.set_declaration)
+        
+        if range_values is None:
+            raise ValueError("For loop iterable range values expected: " + str(node)) 
         
         # For each path, iterate through the range
         for path_idx, values in range_values.items():
@@ -1459,6 +1484,8 @@ class BranchedInterpreter:
                     raise ValueError("Argument should be evaluated but instead got {arg_result} for {arg}")
             evaluated_args[path_idx] = args
         
+        
+        
         # Check if it's a built-in function
         if function_name in self.function_builtin:
             results = {}
@@ -1475,11 +1502,10 @@ class BranchedInterpreter:
             
             # Create new scope and execute function body
             original_paths = sim._active_paths.copy()
+            original_variables = self.create_const_only_scope(sim)
             results = {}
             
-            for path_idx in original_paths:
-                sim._active_paths = [path_idx]
-                
+            for path_idx in original_paths:                
                 # Bind arguments to parameters
                 args = evaluated_args[path_idx]
                 for i, param in enumerate(func_def.arguments):
@@ -1494,16 +1520,15 @@ class BranchedInterpreter:
             # Execute function body
             for statement in func_def.body:
                 self._evolve_branched_ast_operators(sim, statement)
-            
+                            
             # Get return value
             if not (len(sim._return_values) == 0):
+                sim._active_paths = list(sim._return_values.keys())
                 for path_idx in sim._active_paths:
-                    if path_idx in sim._return_values:
-                        results[path_idx] = sim._return_values[path_idx]
-                    else:
-                        raise ValueError("Return value expected for path of {path_idx}")
+                    results[path_idx] = sim._return_values[path_idx]
         
             # Clear return values and restore paths
+            self.restore_original_scope(sim, original_variables)
             sim._return_values.clear()
 
             return results
@@ -1516,6 +1541,9 @@ class BranchedInterpreter:
         """Handle return statements."""
         if node.expression:
             return_values = self._evolve_branched_ast_operators(sim, node.expression)
+            
+            if return_values is None:
+                raise ValueError("Return value should be expected for " + str(node))
             
             # Store return values and clear active paths
             for path_idx, return_value in return_values.items():
@@ -1544,6 +1572,9 @@ class BranchedInterpreter:
         """Handle constant declarations."""
         var_name = node.identifier.name
         init_value = self._evolve_branched_ast_operators(sim, node.init_expression)
+        
+        if init_value is None:
+            raise ValueError("Initialization values expected for constant declaration: " + str(node))
         
         # Set constant for each active path
         for path_idx, value in init_value.items():
@@ -1589,6 +1620,9 @@ class BranchedInterpreter:
         end_result = self._evolve_branched_ast_operators(sim, node.end)
         step_result = self._evolve_branched_ast_operators(sim, node.step)
         
+        if end_result is None:
+            raise ValueError("Range ending values expected: " + str(node))
+        
         for path_idx in sim._active_paths:
             # Generate range
             results[path_idx] = list(range(start_result[path_idx] if start_result else 0, end_result[path_idx]+1, step_result[path_idx] if step_result else 1))
@@ -1599,6 +1633,9 @@ class BranchedInterpreter:
         """Handle type casting."""
         # Evaluate the argument
         arg_results = self._evolve_branched_ast_operators(sim, node.argument)
+        
+        if arg_results is None:
+            raise ValueError("Right hand side is expected to not be None for casting: " + str(node))
         
         results = {}
         for path_idx, value in arg_results.items():
