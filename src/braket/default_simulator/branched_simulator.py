@@ -26,7 +26,7 @@ from braket.device_schema import DeviceActionType
 
 
 class BranchedSimulator(BaseLocalSimulator):
-    DEVICE_ID = "braket_sv_branched"
+    DEVICE_ID = "braket_sv_branched_python"
 
     def initialize_simulation(self, **kwargs) -> BranchedSimulation:
         """
