@@ -41,10 +41,10 @@ class BranchedSimulator(BaseLocalSimulator):
         qubit_count = kwargs.get("qubit_count", 1)
         shots = kwargs.get("shots", 1)
         batch_size = kwargs.get("batch_size", 1)
-        
+
         if shots is None or shots <= 0:
             raise ValueError("Branched simulator requires shots > 0 for mid-circuit measurements")
-            
+
         return BranchedSimulation(qubit_count, shots, batch_size)
 
     def create_program_context(self):
@@ -56,14 +56,14 @@ class BranchedSimulator(BaseLocalSimulator):
         """Override to skip standard parsing - we'll handle AST traversal in run_openqasm"""
         # Just parse the AST structure without executing instructions
         from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-        
+
         is_file = program.source.endswith(".qasm")
         if is_file:
             with open(program.source, encoding="utf-8") as f:
                 source = f.read()
         else:
             source = program.source
-            
+
         # Parse AST but don't execute - return the parsed AST
         return parse(source)
 
@@ -76,7 +76,7 @@ class BranchedSimulator(BaseLocalSimulator):
     ) -> GateModelTaskResult:
         """
         Executes the circuit with branching simulation for mid-circuit measurements.
-        
+
         This method overrides the base implementation to use custom AST traversal
         that handles branching at measurement points.
         """
@@ -85,31 +85,27 @@ class BranchedSimulator(BaseLocalSimulator):
 
         # Parse the AST structure
         ast = self.parse_program(openqasm_ir)
-        
+
         # Create branched interpreter
         interpreter = BranchedInterpreter()
-        
+
         # Initialize simulation - we'll determine qubit count during AST traversal
         simulation = self.initialize_simulation(
             qubit_count=0,  # Will be updated during traversal
-            shots=shots, 
-            batch_size=batch_size
+            shots=shots,
+            batch_size=batch_size,
         )
-        
+
         # Execute with branching logic
-        results = interpreter.execute_with_branching(
-            ast, 
-            simulation, 
-            openqasm_ir.inputs or {}
-        )
-        
+        results = interpreter.execute_with_branching(ast, simulation, openqasm_ir.inputs or {})
+
         # Create result object
         return self._create_results_obj(
             results.get("result_types", []),
             openqasm_ir,
             results.get("simulation", []),
             results.get("measured_qubits", []),
-            results.get("mapped_measured_qubits", [])
+            results.get("mapped_measured_qubits", []),
         )
 
     @property
