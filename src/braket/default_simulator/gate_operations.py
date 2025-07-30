@@ -1036,7 +1036,7 @@ class GPhase(GateOperation):
 class Measure(GateOperation):
     """
     Measurement operation that projects the state to a specific outcome.
-    
+
     This is used in branched simulation to apply measurement projections
     when recalculating states from instruction sequences.
     """
@@ -1069,29 +1069,29 @@ class Measure(GateOperation):
         """
         if self.result == -1:
             return state
-        
+
         # Apply projection matrix
         projected_state = state.copy()
-        
+
         # For single qubit measurement, we need to project the appropriate amplitudes
         if len(self._targets) == 1:
             qubit_idx = self._targets[0]
             n_qubits = int(np.log2(len(state)))
-            
+
             # Create mask for the target qubit
             mask = 1 << (n_qubits - qubit_idx - 1)  # Big-endian indexing
-            
+
             # Zero out amplitudes that don't match the measurement result
             for i in range(len(projected_state)):
                 qubit_value = (i & mask) >> (n_qubits - qubit_idx - 1)
                 if qubit_value != self.result:
                     projected_state[i] = 0
-            
+
             # Normalize the state
             norm = np.linalg.norm(projected_state)
             if norm > 0:
                 projected_state /= norm
-        
+
         return projected_state
 
 

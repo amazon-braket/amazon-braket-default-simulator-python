@@ -1772,9 +1772,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         qasm_source = """
         OPENQASM 3;
 
-        input uint[4] a_in;
-        input uint[4] b_in;
-
         gate majority a, b, c {
             cnot c, b;
             cnot c, a;
@@ -1839,22 +1836,22 @@ class TestBranchedSimulatorOperatorsOpenQASM:
 
         const int[8] two = 2;
 
-        gate x a { U(π, 0, π) a; }
+        gate x a { U(pi, 0, pi) a; }
         gate cx c, a { ctrl @ x c, a; }
         gate phase c, a {
-            gphase(π/2);
-            ctrl(two) @ gphase(π) c, a;
+            gphase(pi/2);
+            ctrl(two) @ gphase(pi) c, a;
         }
-        gate h a { U(π/2, 0, π) a; }
+        gate h a { U(pi/2, 0, pi) a; }
 
         h qs[0];
 
         cx qs[0], qs[1];
         phase qs[0], qs[1];
 
-        gphase(π);
-        inv @ gphase(π / 2);
-        negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
+        gphase(pi);
+        inv @ gphase(pi / 2);
+        negctrl @ ctrl @ gphase(2 * pi) qs[0], qs[1];
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
@@ -1964,8 +1961,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
     def test_11_6_builtin_functions(self):
         """11.6 Builtin functions"""
         qasm_source = """
-        input float x;
-        input float y;
         rx(x) $0;
         rx(arccos(x)) $0;
         rx(arcsin(x)) $0;
@@ -2651,7 +2646,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         qasm_source = """
         OPENQASM 3.0;
         qubit[3] q;
-        bit[3] b;
+        bit[3] b = "000";
         int[32] count = 0;
         int[32] x_count = 0;
 
@@ -2708,3 +2703,688 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         # Allow for statistical variation with 1000 shots
         assert 0.4 < ratio_10 < 0.6, f"Expected ~0.5 for |100⟩, got {ratio_10}"
         assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |110⟩, got {ratio_11}"
+
+    def test_15_1_binary_assignment_operators_basic(self):
+        """15.1 Basic binary assignment operators (+=, -=, *=, /=) - using execute_with_branching to test variables"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b = "00";
+
+        // Initialize variables
+        int[32] a = 10;
+        int[32] b_var = 5;
+        int[32] c = 8;
+        int[32] d = 20;
+        float[64] e = 15.0;
+        float[64] f = 3.0;
+
+        // Test += operator
+        a += 5;  // a should become 15
+
+        // Test -= operator  
+        b_var -= 2;  // b_var should become 3
+
+        // Test *= operator
+        c *= 3;  // c should become 24
+
+        // Test /= operator
+        d /= 4;  // d should become 5
+
+        // Test with float values
+        e += 5.5;  // e should become 20.5
+        f *= 2.0;  // f should become 6.0
+
+        // Use results to control quantum operations
+        if (a == 15) {
+            x q[0];
+        }
+        if (b_var == 3) {
+            x q[1];
+        }
+
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        """
+
+        # Use the new execute_with_branching approach
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        # Parse the QASM program
+        ast = parse(qasm_source)
+
+        # Create branched simulation
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+
+        # Create interpreter and execute
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+
+        # Get the simulation object which contains the variables and measurements
+        sim = result["simulation"]
+
+        # Test that we have the expected number of active paths (1 path since no measurements create branching)
+        assert len(sim._active_paths) == 1, f"Expected 1 active path, got {len(sim._active_paths)}"
+
+        # Test variable values for the single path
+        path_idx = sim._active_paths[0]
+
+        # Test += operator result
+        a_var = sim.get_variable(path_idx, "a")
+        assert a_var is not None, f"Variable 'a' not found for path {path_idx}"
+        assert a_var.val == 15, f"Path {path_idx}: expected a=15 after a+=5, got {a_var.val}"
+
+        # Test -= operator result
+        b_var_var = sim.get_variable(path_idx, "b_var")
+        assert b_var_var is not None, f"Variable 'b_var' not found for path {path_idx}"
+        assert b_var_var.val == 3, (
+            f"Path {path_idx}: expected b_var=3 after b_var-=2, got {b_var_var.val}"
+        )
+
+        # Test *= operator result
+        c_var = sim.get_variable(path_idx, "c")
+        assert c_var is not None, f"Variable 'c' not found for path {path_idx}"
+        assert c_var.val == 24, f"Path {path_idx}: expected c=24 after c*=3, got {c_var.val}"
+
+        # Test /= operator result
+        d_var = sim.get_variable(path_idx, "d")
+        assert d_var is not None, f"Variable 'd' not found for path {path_idx}"
+        assert d_var.val == 5, f"Path {path_idx}: expected d=5 after d/=4, got {d_var.val}"
+
+        # Test float += operator result
+        e_var = sim.get_variable(path_idx, "e")
+        assert e_var is not None, f"Variable 'e' not found for path {path_idx}"
+        assert abs(e_var.val - 20.5) < 0.001, (
+            f"Path {path_idx}: expected e=20.5 after e+=5.5, got {e_var.val}"
+        )
+
+        # Test float *= operator result
+        f_var = sim.get_variable(path_idx, "f")
+        assert f_var is not None, f"Variable 'f' not found for path {path_idx}"
+        assert abs(f_var.val - 6.0) < 0.001, (
+            f"Path {path_idx}: expected f=6.0 after f*=2.0, got {f_var.val}"
+        )
+
+    def test_16_1_default_values_for_boolean_and_array_types(self):
+        """16.1 Test initializing default values for boolean and array types"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        // Test boolean type default initialization
+        bool flag;
+
+        // Test array type default initialization
+        array[int[32], 3] numbers;
+
+        // Test bit register default initialization
+        bit[4] bits;
+
+        // Use default values in conditionals to verify they are properly initialized
+        if (!flag) {  // Should be true since default bool is false
+            x q[0];
+        }
+
+        // Check that array elements are initialized to 0
+        if (numbers[0] == 0) {
+            x q[1];
+        }
+
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        sim = result["simulation"]
+
+        # Test that we have one active path
+        assert len(sim._active_paths) == 1, f"Expected 1 active path, got {len(sim._active_paths)}"
+        path_idx = sim._active_paths[0]
+
+        # Test boolean default value
+        flag_var = sim.get_variable(path_idx, "flag")
+        assert flag_var is not None, f"Boolean variable 'flag' not found for path {path_idx}"
+        assert flag_var.val == False, f"Expected default boolean value False, got {flag_var.val}"
+
+        # Test array default value
+        numbers_var = sim.get_variable(path_idx, "numbers")
+        assert numbers_var is not None, f"Array variable 'numbers' not found for path {path_idx}"
+        assert isinstance(numbers_var.val, list), (
+            f"Expected array to be a list, got {type(numbers_var.val)}"
+        )
+        assert len(numbers_var.val) == 3, (
+            f"Expected array with 3 elements by default, got {numbers_var.val}"
+        )
+
+        # Test bit register default value
+        bits_var = sim.get_variable(path_idx, "bits")
+        assert bits_var is not None, f"Bit register 'bits' not found for path {path_idx}"
+        assert isinstance(bits_var.val, list), (
+            f"Expected bit register to be a list, got {type(bits_var.val)}"
+        )
+        assert len(bits_var.val) == 4, f"Expected bit register of length 4, got {len(bits_var.val)}"
+        assert all(bit == 0 for bit in bits_var.val), (
+            f"Expected all bits to be 0, got {bits_var.val}"
+        )
+
+        # Verify quantum operations were applied correctly based on default values
+        measurements = sim._measurements
+
+        # Both qubits should be measured as 1 due to X gates applied based on default values
+        q0_measurement = measurements[path_idx][0][-1] if 0 in measurements[path_idx] else 0
+        q1_measurement = measurements[path_idx][1][-1] if 1 in measurements[path_idx] else 0
+
+        assert q0_measurement == 1, (
+            f"Expected q[0] to be 1 (X applied due to !flag), got {q0_measurement}"
+        )
+        assert q1_measurement == 1, (
+            f"Expected q[1] to be 1 (X applied due to numbers[0]==0), got {q1_measurement}"
+        )
+
+    def test_16_2_bitwise_or_assignment_on_single_bit_register(self):
+        """16.2 Test |= on a single bit register"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        // Initialize a single bit
+        bit flag = 0;
+
+        // Test |= operator on single bit
+        x q[0];
+        flag |= measure q[0];  // Should become 1
+        x q[0];
+
+        // Use the result to control quantum operations
+        if (flag == 1) {
+            x q[0];
+        }
+
+        // Test |= with 0 (should remain unchanged)
+        flag |= 0;  // Should still be 1
+
+        if (flag == 1) {
+            x q[1];
+        }
+
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        sim = result["simulation"]
+
+        # Test that we have one active path
+        assert len(sim._active_paths) == 1, f"Expected 1 active path, got {len(sim._active_paths)}"
+        path_idx = sim._active_paths[0]
+
+        # Test |= operator result
+        flag_var = sim.get_variable(path_idx, "flag")
+        assert flag_var is not None, f"Variable 'flag' not found for path {path_idx}"
+        assert flag_var.val == 1, f"Expected flag to be [1] after |= operations, got {flag_var.val}"
+
+        # Verify quantum operations were applied correctly
+        measurements = sim._measurements
+
+        # Both qubits should be measured as 1 due to X gates applied
+        q0_measurement = measurements[path_idx][0][-1] if 0 in measurements[path_idx] else 0
+        q1_measurement = measurements[path_idx][1][-1] if 1 in measurements[path_idx] else 0
+
+        assert q0_measurement == 1, (
+            f"Expected q[0] to be 1 (X applied due to flag==1), got {q0_measurement}"
+        )
+        assert q1_measurement == 1, (
+            f"Expected q[1] to be 1 (X applied due to flag==1), got {q1_measurement}"
+        )
+
+    def test_16_3_accessing_nonexistent_variable_error(self):
+        """16.3 Test accessing a variable with a name that doesn't exist in the circuit (should throw an error)"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        int[32] existing_var = 5;
+
+        // Try to access a variable that doesn't exist
+        if (nonexistent_var == 0) {
+            x q[0];
+        }
+
+        b[0] = measure q[0];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter = BranchedInterpreter()
+
+        # This should raise a NameError
+        with pytest.raises(
+            NameError, match="nonexistent_var doesn't exist as a variable in the circuit"
+        ):
+            interpreter.execute_with_branching(ast, simulation, {})
+
+    def test_16_4_array_and_qubit_register_out_of_bounds_error(self):
+        """16.4 Test accessing an array/bitstring and a qubit register out of bounds (should throw an error)"""
+
+        # Test array out of bounds
+        qasm_source_array = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        array[int[32], 3] numbers = {1, 2, 3};
+
+        // Try to access array element out of bounds
+        if (numbers[5] == 0) {
+            x q[0];
+        }
+
+        b[0] = measure q[0];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast_array = parse(qasm_source_array)
+        simulation_array = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter_array = BranchedInterpreter()
+
+        # This should raise an IndexError for array out of bounds
+        with pytest.raises(IndexError, match="Index out of bounds"):
+            interpreter_array.execute_with_branching(ast_array, simulation_array, {})
+
+        # Test qubit register out of bounds
+        qasm_source_qubit = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        // Try to access qubit register element out of bounds
+        x q[5];
+
+        b[0] = measure q[0];
+        """
+
+        ast_qubit = parse(qasm_source_qubit)
+        simulation_qubit = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter_qubit = BranchedInterpreter()
+
+        # This should raise an error for qubit out of bounds
+        with pytest.raises((IndexError, ValueError)):
+            interpreter_qubit.execute_with_branching(ast_qubit, simulation_qubit, {})
+
+    def test_16_5_access_array_input_at_index(self):
+        """16.5 Test access an array input at an index"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[3] b;
+
+        // Access array input elements by index
+        if (input_array[0] == 1) {
+            x q[0];
+        }
+
+        if (input_array[1] == 2) {
+            x q[1];
+        }
+
+        if (input_array[2] == 3) {
+            x q[2];
+        }
+
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter = BranchedInterpreter()
+
+        # Provide array input
+        inputs = {"input_array": [1, 2, 3]}
+        result = interpreter.execute_with_branching(ast, simulation, inputs)
+        sim = result["simulation"]
+
+        # Test that we have one active path
+        assert len(sim._active_paths) == 1, f"Expected 1 active path, got {len(sim._active_paths)}"
+        path_idx = sim._active_paths[0]
+
+        # Verify quantum operations were applied correctly based on array input access
+        measurements = sim._measurements
+
+        # All qubits should be measured as 1 due to X gates applied based on array input conditions
+        q0_measurement = measurements[path_idx][0][-1] if 0 in measurements[path_idx] else 0
+        q1_measurement = measurements[path_idx][1][-1] if 1 in measurements[path_idx] else 0
+        q2_measurement = measurements[path_idx][2][-1] if 2 in measurements[path_idx] else 0
+
+        assert q0_measurement == 1, (
+            f"Expected q[0] to be 1 (X applied due to input_array[0]==1), got {q0_measurement}"
+        )
+        assert q1_measurement == 1, (
+            f"Expected q[1] to be 1 (X applied due to input_array[1]==2), got {q1_measurement}"
+        )
+        assert q2_measurement == 1, (
+            f"Expected q[2] to be 1 (X applied due to input_array[2]==3), got {q2_measurement}"
+        )
+
+    def test_17_1_nonexistent_qubit_variable_error(self):
+        """17.1 Test accessing a qubit with a name that doesn't exist (should throw an error)"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        // Try to access a qubit that doesn't exist
+        x nonexistent_qubit;
+
+        b[0] = measure q[0];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter = BranchedInterpreter()
+
+        # This should raise a NameError for nonexistent qubit
+        with pytest.raises(NameError, match="The qubit with name nonexistent_qubit can't be found"):
+            interpreter.execute_with_branching(ast, simulation, {})
+
+    def test_17_2_nonexistent_function_error(self):
+        """17.2 Test calling a function that doesn't exist (should throw an error)"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        int[32] result;
+
+        // Try to call a function that doesn't exist
+        result = nonexistent_function(5);
+
+        b[0] = measure q[0];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter = BranchedInterpreter()
+
+        # This should raise a NameError for nonexistent function
+        with pytest.raises(NameError, match="Function nonexistent_function doesn't exist"):
+            interpreter.execute_with_branching(ast, simulation, {})
+
+    def test_17_3_all_paths_end_in_else_block(self):
+        """17.3 Test that has all paths end in the else block"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        // Create a condition that is always false
+        int[32] always_false = 0;
+
+        if (always_false == 1) {
+            // This should never execute
+            x q[0];
+        } else {
+            // All paths should end up here
+            if (always_false == 1){
+                h q[1];
+            }
+            x q[1];
+        }
+        
+        b[1] = measure q[1];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        sim = result["simulation"]
+
+        # Test that we have two active paths due to H gate creating superposition and measurements
+        assert len(sim._active_paths) == 1, f"Expected 1 active path, got {len(sim._active_paths)}"
+
+    def test_17_4_continue_statements_in_while_loops(self):
+        """17.4 Test continue statements in while loops"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+        int[32] count = 0;
+        int[32] x_count = 0;
+
+        // While loop with continue statement
+        while (count < 5) {
+            count = count + 1;
+            
+            if (count % 2 == 0) {
+                continue;  // Skip even iterations
+            }
+            
+            // This should only execute on odd iterations
+            x q[0];
+            x_count = x_count + 1;
+        }
+
+        // Apply H based on x_count (should be 3: iterations 1, 3, 5)
+        if (x_count == 3) {
+            h q[1];
+        }
+
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        sim = result["simulation"]
+
+        # Test that we have two active paths due to H gate creating superposition and measurements
+        assert len(sim._active_paths) == 2, f"Expected 2 active paths, got {len(sim._active_paths)}"
+
+        # Test variable values for each path
+        for path_idx in sim._active_paths:
+            # Get the count and x_count variables
+            count_var = sim.get_variable(path_idx, "count")
+            x_count_var = sim.get_variable(path_idx, "x_count")
+
+            assert count_var is not None, f"Count variable not found for path {path_idx}"
+            assert x_count_var is not None, f"X_count variable not found for path {path_idx}"
+
+            # Final count should be 5, x_count should be 3 (odd iterations: 1, 3, 5)
+            assert count_var.val == 5, f"Expected count=5, got {count_var.val}"
+            assert x_count_var.val == 3, f"Expected x_count=3, got {x_count_var.val}"
+
+            # Verify measurements
+            measurements = sim._measurements[path_idx]
+
+            # q[0] should be 1 (X applied 3 times, odd number)
+            q0_measurement = measurements[0][-1] if 0 in measurements else 0
+            assert q0_measurement == 1, (
+                f"Expected q[0] to be 1 (odd number of X gates), got {q0_measurement}"
+            )
+
+            # q[1] should vary due to H gate (x_count == 3)
+            q1_measurement = measurements[1][-1] if 1 in measurements else 0
+            assert q1_measurement in [0, 1], f"Expected q[1] to be 0 or 1, got {q1_measurement}"
+
+    def test_17_5_empty_return_statements(self):
+        """17.5 Test empty return statements"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        // Define a function with empty return
+        def apply_gates_conditionally(bit condition) {
+            if (condition) {
+                h q[0];
+                x q[1];
+                return;  // Empty return
+            }
+            
+            // This should execute if condition is false
+            x q[0];
+            h q[1];
+        }
+
+        // Call the function with true condition
+        apply_gates_conditionally(true);
+
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        sim = result["simulation"]
+
+        # Test that we have four active paths due to H gates creating superposition and measurements
+        assert len(sim._active_paths) == 2, f"Expected 2 active paths, got {len(sim._active_paths)}"
+
+        # Verify that the function executed correctly with early return
+        for path_idx in sim._active_paths:
+            measurements = sim._measurements[path_idx]
+
+            # q[0] should vary due to H gate (condition was true, so H applied to q[0])
+            q0_measurement = measurements[0][-1] if 0 in measurements else 0
+            assert q0_measurement in [0, 1], f"Expected q[0] to be 0 or 1, got {q0_measurement}"
+
+            # q[1] should always be 1 (X applied due to condition being true)
+            q1_measurement = measurements[1][-1] if 1 in measurements else 0
+            assert q1_measurement == 1, f"Expected q[1] to be 1 (X applied), got {q1_measurement}"
+
+    def test_17_6_not_unary_operator(self):
+        """17.6 Test the not (!) unary operator"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[3] b;
+
+        bool flag = false;
+        bool another_flag = true;
+
+        // Test ! operator with boolean variables
+        if (!flag) {  // Should be true since flag is false
+            x q[0];
+        }
+
+        if (!another_flag) {  // Should be false since another_flag is true
+            x q[1];
+        }
+
+        // Test ! operator with integer (0 is falsy, non-zero is truthy)
+        int[32] zero_val = 0;
+        int[32] nonzero_val = 5;
+
+        if (!zero_val) {  // Should be true since 0 is falsy
+            x q[2];
+        }
+
+        if (!nonzero_val) {  // Should be false since 5 is truthy
+            h q[2];  // This shouldn't execute
+        }
+
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter = BranchedInterpreter()
+        result = interpreter.execute_with_branching(ast, simulation, {})
+        sim = result["simulation"]
+
+        # Test that we have one active path (no superposition created)
+        assert len(sim._active_paths) == 1, f"Expected 1 active path, got {len(sim._active_paths)}"
+        path_idx = sim._active_paths[0]
+
+        # Test variable values
+        flag_var = sim.get_variable(path_idx, "flag")
+        another_flag_var = sim.get_variable(path_idx, "another_flag")
+        zero_val_var = sim.get_variable(path_idx, "zero_val")
+        nonzero_val_var = sim.get_variable(path_idx, "nonzero_val")
+
+        assert flag_var.val == False, f"Expected flag=False, got {flag_var.val}"
+        assert another_flag_var.val == True, (
+            f"Expected another_flag=True, got {another_flag_var.val}"
+        )
+        assert zero_val_var.val == 0, f"Expected zero_val=0, got {zero_val_var.val}"
+        assert nonzero_val_var.val == 5, f"Expected nonzero_val=5, got {nonzero_val_var.val}"
+
+        # Verify measurements based on ! operator logic
+        measurements = sim._measurements[path_idx]
+
+        # q[0] should be 1 (!flag is true, so X applied)
+        q0_measurement = measurements[0][-1] if 0 in measurements else 0
+        assert q0_measurement == 1, f"Expected q[0] to be 1 (!flag is true), got {q0_measurement}"
+
+        # q[1] should be 0 (!another_flag is false, so no X applied)
+        q1_measurement = measurements[1][-1] if 1 in measurements else 0
+        assert q1_measurement == 0, (
+            f"Expected q[1] to be 0 (!another_flag is false), got {q1_measurement}"
+        )
+
+        # q[2] should be 1 (!zero_val is true, so X applied; !nonzero_val is false, so no H applied)
+        q2_measurement = measurements[2][-1] if 2 in measurements else 0
+        assert q2_measurement == 1, (
+            f"Expected q[2] to be 1 (!zero_val is true), got {q2_measurement}"
+        )
+
+    def test_17_7_qubit_variable_index_out_of_bounds_error(self):
+        """17.7 Test accessing a qubit index that is out of bounds (should throw an error)"""
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        // Try to access a qubit that doesn't exist
+        x nonexistent_qubit[0];
+
+        b[0] = measure q[0];
+        """
+
+        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
+
+        ast = parse(qasm_source)
+        simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
+        interpreter = BranchedInterpreter()
+
+        # This should raise a NameError for nonexistent qubit
+        with pytest.raises(NameError, match="The qubit with name nonexistent_qubit can't be found"):
+            interpreter.execute_with_branching(ast, simulation, {})

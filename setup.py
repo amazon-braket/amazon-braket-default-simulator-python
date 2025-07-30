@@ -45,12 +45,12 @@ setup(
             "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
+            "braket_sv_branched_python = braket.default_simulator.branched_simulator:BranchedSimulator",
             (
                 "braket_ahs = "
                 "braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator:"
                 "RydbergAtomSimulator",
             ),
-            "braket_sv_branched_python = braket.default_simulator.branched_simulator:BranchedSimulator",
         ]
     },
     extras_require={

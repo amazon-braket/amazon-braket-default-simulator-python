@@ -55,14 +55,17 @@ def apply_operations(
     processed_operations = []
     i = 0
     while i < len(operations):
-        if operations[i].__class__.__name__ == 'Measure':
+        if operations[i].__class__.__name__ == "Measure":
             # Apply any accumulated operations first
             if processed_operations:
-                partitions = [processed_operations[j : j + batch_size] for j in range(0, len(processed_operations), batch_size)]
+                partitions = [
+                    processed_operations[j : j + batch_size]
+                    for j in range(0, len(processed_operations), batch_size)
+                ]
                 for partition in partitions:
                     state = _contract_operations(state, qubit_count, partition)
                 processed_operations = []
-            
+
             # Apply the Measure operation individually
             measure_op = operations[i]
             state_1d = np.reshape(state, 2**qubit_count)
@@ -72,10 +75,13 @@ def apply_operations(
         else:
             processed_operations.append(operations[i])
             i += 1
-    
+
     # Apply any remaining operations
     if processed_operations:
-        partitions = [processed_operations[i : i + batch_size] for i in range(0, len(processed_operations), batch_size)]
+        partitions = [
+            processed_operations[i : i + batch_size]
+            for i in range(0, len(processed_operations), batch_size)
+        ]
         for partition in partitions:
             state = _contract_operations(state, qubit_count, partition)
 
