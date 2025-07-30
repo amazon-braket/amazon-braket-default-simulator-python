@@ -118,18 +118,19 @@ def _apply_single_qubit_gate_small(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """Applies single gates using array slicing."""
-    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-    n_qubits = state.ndim
+    shape = state.shape
+    before_size = int(np.prod(shape[:target])) if target > 0 else 1
+    after_size = int(np.prod(shape[target + 1 :])) if target < len(shape) - 1 else 1
 
-    slices = [slice(None)] * n_qubits
-    slices[target] = 0
-    slices_0_tuple = tuple(slices)
+    state_reshaped = state.reshape(before_size, 2, after_size)
+    out_reshaped = out.reshape(before_size, 2, after_size)
 
-    slices[target] = 1
-    slices_1_tuple = tuple(slices)
+    state_0 = state_reshaped[:, 0, :]
+    state_1 = state_reshaped[:, 1, :]
 
-    out[slices_0_tuple] = a * state[slices_0_tuple] + b * state[slices_1_tuple]
-    out[slices_1_tuple] = c * state[slices_0_tuple] + d * state[slices_1_tuple]
+    a, b, c, d = matrix.flat
+    out_reshaped[:, 0, :] = a * state_0 + b * state_1
+    out_reshaped[:, 1, :] = c * state_0 + d * state_1
 
     return out, True
 
@@ -139,7 +140,7 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """Applies single gates using bit masking."""
-    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+    a, b, c, d = matrix.flat
     target_bit = state.ndim - target - 1
     target_mask = np.int64(1 << target_bit)
     shifted_target_mask = np.int64(target_mask - 1)
@@ -260,20 +261,49 @@ def _apply_controlled_phase_shift_large(  # pragma: no cover
         np.ndarray: The state array with the controlled phase shift gate applied.
     """
     n_qubits = state.ndim
-    mask = 1 << (n_qubits - 1 - target)
+    shift_base = n_qubits - 1
+    mask = 1 << (shift_base - target)
+
     for c in controls:
-        mask |= 1 << (n_qubits - 1 - c)
+        mask |= 1 << (shift_base - c)
 
     # here, we search for the lowest bit that is 0 and set that as our step size
     # this iterates through slightly too many values so we need a check in the for loop.
     step = ~mask & (mask + 1)
 
-    max_valid_idx = state.size - 2
-    iterations = ((max_valid_idx - mask) // step) + 1
+    num_free_bits = n_qubits - len(controls) - 1
+    total_valid_indices = 1 << num_free_bits
 
-    for i in nb.prange(iterations):
-        idx = mask + step * i
-        if (idx & mask) == mask:
+    mask_bits_above_step = mask & ~((step << 1) - 1)
+    next_carry_point = mask_bits_above_step & (-mask_bits_above_step)
+    chunk_size = next_carry_point // step
+    chunk_mask = chunk_size - 1
+    two_minor_jump = next_carry_point << 1
+
+    # if there are jumps, we look to tile remaining 2 * 2 ^ (qubits - len(controls) - 1) items and check those.
+    # this is an approximation that avoids specifically creating the indices needed.
+    if (
+        mask_bits_above_step > 0
+        and two_minor_jump + mask < state.size
+        and chunk_size != total_valid_indices
+    ):
+        chunk_shift = 0
+        temp = chunk_size
+        while temp > 1:
+            temp >>= 1
+            chunk_shift += 1
+
+        max_chunk_num = (state.size - mask - step * chunk_mask) // two_minor_jump
+        max_safe_iterations = (max_chunk_num + 1) * chunk_size
+        iterations = min(total_valid_indices << 1, max_safe_iterations)
+
+        for i in nb.prange(iterations):
+            idx = mask + step * (i & chunk_mask) + (i >> chunk_shift) * two_minor_jump
+            if (idx & mask) == mask:
+                state.flat[idx] *= phase_factor
+    else:
+        for i in nb.prange(total_valid_indices):
+            idx = mask + step * i
             state.flat[idx] *= phase_factor
 
     return state, False
@@ -414,7 +444,7 @@ def _apply_single_qubit_gate(
     Returns:
         np.ndarray: Modified state vector
     """
-    n_qubits = state.size
+    n_qubits = state.ndim
 
     if n_qubits > _QUBIT_THRESHOLD:
         return _apply_single_qubit_gate_large(state, matrix, target, out)
