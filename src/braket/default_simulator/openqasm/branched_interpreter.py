@@ -132,7 +132,7 @@ def initialize_default_variable_value(
         return np.zeros(type_info["size"]).tolist()
     else:
         raise NotImplementedError(
-            "Other classical types have not been implemented " + str(type_node)
+            "Other classical types have not been implemented " + str(type_info)
         )
 
 
@@ -1047,7 +1047,7 @@ class BranchedInterpreter:
             for path_idx in sim._active_paths:
                 if qubit_name in sim._variables[path_idx]:
                     results[path_idx] = sim._variables[path_idx][qubit_name].val
-                elif sim.get_qubit_indices(qubit_name) is not None:
+                elif qubit_name in sim._qubit_mapping:
                     results[path_idx] = sim.get_qubit_indices(qubit_name)
                 elif is_dollar_number(qubit_name):
                     sim.add_qubit_mapping(qubit_name, sim._qubit_count)

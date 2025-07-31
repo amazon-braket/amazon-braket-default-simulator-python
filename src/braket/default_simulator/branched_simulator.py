@@ -42,15 +42,7 @@ class BranchedSimulator(BaseLocalSimulator):
         shots = kwargs.get("shots", 1)
         batch_size = kwargs.get("batch_size", 1)
 
-        if shots is None or shots <= 0:
-            raise ValueError("Branched simulator requires shots > 0 for mid-circuit measurements")
-
         return BranchedSimulation(qubit_count, shots, batch_size)
-
-    def create_program_context(self):
-        """Override to prevent standard AST traversal"""
-        # Return None to indicate we'll handle AST traversal ourselves
-        return None
 
     def parse_program(self, program: OpenQASMProgram):
         """Override to skip standard parsing - we'll handle AST traversal in run_openqasm"""

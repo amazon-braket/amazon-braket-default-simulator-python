@@ -65,9 +65,6 @@ class FramedVariable:
         self.is_const = is_const
         self.frame_number = frame_number
 
-    def __repr__(self):
-        return f"FramedVariable(name='{self.name}', type={self.type}, val={self.val}, is_const={self.is_const}, frame={self.frame_number})"
-
 
 class BranchedSimulation(Simulation):
     """
@@ -86,8 +83,6 @@ class BranchedSimulation(Simulation):
             shots (int): The number of samples to take from the simulation. Must be > 0.
             batch_size (int): The size of the partitions to contract.
         """
-        if shots <= 0:
-            raise ValueError("BranchedSimulation requires shots > 0")
 
         super().__init__(qubit_count=qubit_count, shots=shots)
 
@@ -109,16 +104,6 @@ class BranchedSimulation(Simulation):
         # Qubit management
         self._qubit_mapping: dict[str, Union[int, list[int]]] = {}
         self._measured_qubits: list[int] = []
-
-        # No state caching - always calculate fresh to avoid exponential memory growth
-
-    def evolve(self, operations: list[GateOperation]) -> None:
-        """
-        Add operations to all active paths.
-        This doesn't execute them immediately - they're stored for lazy evaluation.
-        """
-        for path_idx in self._active_paths:
-            self._instruction_sequences[path_idx].extend(operations)
 
     def measure_qubit_on_path(
         self, path_idx: int, qubit_idx: int, qubit_name: Optional[str] = None
@@ -252,43 +237,13 @@ class BranchedSimulation(Simulation):
 
         return all_samples
 
-    def get_measurement_counts(self) -> dict[str, int]:
-        """
-        Get measurement counts aggregated across all paths.
-        Returns a dictionary mapping bit strings to counts.
-        """
-        counts = {}
-
-        for path_idx in self._active_paths:
-            path_shots = self._shots_per_path[path_idx]
-            if path_shots > 0:
-                # Build bit string from measurements
-                bit_string = ""
-                for qubit_idx in sorted(self._measured_qubits):
-                    if qubit_idx in self._measurements[path_idx]:
-                        # Use the last measurement outcome for this qubit
-                        outcome = self._measurements[path_idx][qubit_idx][-1]
-                        bit_string += str(outcome)
-                    else:
-                        bit_string += "0"  # Default to 0 if not measured
-
-                if bit_string in counts:
-                    counts[bit_string] += path_shots
-                else:
-                    counts[bit_string] = path_shots
-
-        return counts
-
     def set_variable(self, path_idx: int, var_name: str, value: FramedVariable) -> None:
         """Set a classical variable for a specific path."""
-        if path_idx < len(self._variables):
-            self._variables[path_idx][var_name] = value
+        self._variables[path_idx][var_name] = value
 
     def get_variable(self, path_idx: int, var_name: str, default: Any = None) -> Any:
         """Get a classical variable for a specific path."""
-        if path_idx < len(self._variables):
-            return self._variables[path_idx].get(var_name, default)
-        return default
+        return self._variables[path_idx].get(var_name, default)
 
     def add_qubit_mapping(self, name: str, indices: Union[int, list[int]]) -> None:
         """Add a mapping from qubit name to indices."""
@@ -301,74 +256,8 @@ class BranchedSimulation(Simulation):
 
     def get_qubit_indices(self, name: str) -> Union[int, list[int]]:
         """Get qubit indices for a given name."""
-        return self._qubit_mapping.get(name)
+        return self._qubit_mapping[name]
 
     def get_current_state_vector(self, path_idx: int) -> np.ndarray:
         """Get the current state vector for a specific path."""
         return self._get_path_state(path_idx)
-
-    @property
-    def num_paths(self) -> int:
-        """Get total number of paths."""
-        return len(self._instruction_sequences)
-
-    @property
-    def measured_qubits(self) -> list[int]:
-        """Get list of measured qubit indices."""
-        return self._measured_qubits.copy()
-
-    @property
-    def probabilities(self) -> np.ndarray:
-        """
-        Get probabilities aggregated across all paths.
-        This is a weighted average based on shots per path.
-        """
-        if not self._active_paths:
-            return np.array([])
-
-        total_shots = sum(self._shots_per_path[i] for i in self._active_paths)
-        if total_shots == 0:
-            return np.array([])
-
-        # Aggregate probabilities weighted by shots
-        aggregated_probs = np.zeros(2**self._qubit_count)
-
-        for path_idx in self._active_paths:
-            path_shots = self._shots_per_path[path_idx]
-            if path_shots > 0:
-                state = self._get_path_state(path_idx)
-                path_probs = np.abs(state) ** 2
-                weight = path_shots / total_shots
-                aggregated_probs += weight * path_probs
-
-        return aggregated_probs
-
-    @property
-    def state_vector(self) -> np.ndarray:
-        """
-        Get aggregated state vector across all paths.
-        This is a weighted superposition based on shots per path.
-        """
-        if not self._active_paths:
-            return np.zeros(2**self._qubit_count, dtype=complex)
-
-        total_shots = sum(self._shots_per_path[i] for i in self._active_paths)
-        if total_shots == 0:
-            return np.zeros(2**self._qubit_count, dtype=complex)
-
-        # Aggregate state vectors weighted by sqrt(shots)
-        aggregated_state = np.zeros(2**self._qubit_count, dtype=complex)
-
-        for path_idx in self._active_paths:
-            path_shots = self._shots_per_path[path_idx]
-            if path_shots > 0:
-                state = self._get_path_state(path_idx)
-                weight = np.sqrt(path_shots / total_shots)
-                aggregated_state += weight * state
-
-        # Normalize
-        norm = np.linalg.norm(aggregated_state)
-        if norm > 0:
-            aggregated_state /= norm
-
-        return aggregated_state
