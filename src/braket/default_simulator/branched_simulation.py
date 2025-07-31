@@ -11,27 +11,15 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import numpy as np
-from typing import Any, Optional, Union
 from copy import deepcopy
+from typing import Any, Optional, Union
 
-from braket.default_simulator.operation import GateOperation, Observable
+import numpy as np
+
+from braket.default_simulator.gate_operations import Measure
+from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
-from braket.default_simulator.gate_operations import Measure
-from braket.default_simulator.gate_operations import (
-    Identity,
-    Hadamard,
-    PauliX,
-    PauliY,
-    PauliZ,
-    CX,
-    RotX,
-    RotY,
-    RotZ,
-    S,
-    T,
-)
 
 
 # Additional structures for advanced features

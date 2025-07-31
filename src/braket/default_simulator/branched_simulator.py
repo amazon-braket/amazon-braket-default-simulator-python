@@ -13,16 +13,15 @@
 
 import sys
 
-from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.default_simulator.branched_simulation import BranchedSimulation
 from braket.default_simulator.openqasm.branched_interpreter import BranchedInterpreter
+from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
 from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.task_result import GateModelTaskResult
-from braket.device_schema import DeviceActionType
 
 
 class BranchedSimulator(BaseLocalSimulator):

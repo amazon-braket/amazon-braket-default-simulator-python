@@ -3105,7 +3105,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         interpreter = BranchedInterpreter()
 
         # This should raise a NameError for nonexistent qubit
-        with pytest.raises(NameError, match="Qubit doesn't exist"):
+        with pytest.raises(NameError, match="The qubit with name nonexistent_qubit can't be found"):
             interpreter.execute_with_branching(ast, simulation, {})
 
     def test_17_2_nonexistent_function_error(self):
@@ -3386,7 +3386,7 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         interpreter = BranchedInterpreter()
 
         # This should raise a NameError for nonexistent qubit
-        with pytest.raises(NameError, match="The qubit with name nonexistent_qubit can't be found"):
+        with pytest.raises(NameError, match="Qubit doesn't exist"):
             interpreter.execute_with_branching(ast, simulation, {})
 
     def test_18_1_simulation_zero_shots(self):

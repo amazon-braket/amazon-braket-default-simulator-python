@@ -10,73 +10,71 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
-from typing import Any, Optional, Union
-from copy import deepcopy
-import numpy as np
 import re
-from braket.default_simulator.openqasm._helpers.builtins import BuiltinConstants
+from copy import deepcopy
+from typing import Any, Optional, Union
+
+import numpy as np
+
 from braket.default_simulator.branched_simulation import (
     BranchedSimulation,
     FramedVariable,
-    GateDefinition,
     FunctionDefinition,
+    GateDefinition,
 )
-from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase
+from braket.default_simulator.openqasm._helpers.builtins import BuiltinConstants
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
-    Program,
-    QubitDeclaration,
-    QuantumGate,
-    QuantumPhase,
-    QuantumGateModifier,
-    QuantumStatement,
-    GateModifierName,
-    QuantumMeasurementStatement,
-    QuantumMeasurement,
-    ClassicalDeclaration,
-    ClassicalAssignment,
-    BranchingStatement,
-    Identifier,
-    IndexedIdentifier,
-    IntegerLiteral,
-    FloatLiteral,
-    BooleanLiteral,
-    BinaryExpression,
-    UnaryExpression,
+    AliasStatement,
     ArrayLiteral,
+    ArrayType,
+    BinaryExpression,
+    BitstringLiteral,
+    BitType,
+    BooleanLiteral,
+    BoolType,
+    BranchingStatement,
+    BreakStatement,
+    Cast,
+    ClassicalAssignment,
+    ClassicalDeclaration,
+    Concatenation,
+    ConstantDeclaration,
+    ContinueStatement,
+    DiscreteSet,
+    ExpressionStatement,
+    FloatLiteral,
+    FloatType,
     # Additional node types for advanced features
     ForInLoop,
-    WhileLoop,
-    QuantumGateDefinition,
-    SubroutineDefinition,
     FunctionCall,
-    ReturnStatement,
-    BreakStatement,
-    ContinueStatement,
-    ConstantDeclaration,
-    AliasStatement,
-    QuantumReset,
-    RangeDefinition,
-    DiscreteSet,
-    Cast,
-    BitType,
+    GateModifierName,
+    Identifier,
+    IndexedIdentifier,
+    IndexExpression,
+    IntegerLiteral,
     IntType,
-    FloatType,
-    BoolType,
-    ArrayType,
-    ExpressionStatement,
-    Concatenation,
-    BitstringLiteral,
+    Program,
+    QuantumGate,
+    QuantumGateDefinition,
+    QuantumGateModifier,
+    QuantumMeasurementStatement,
+    QuantumPhase,
+    QuantumReset,
+    QuantumStatement,
+    QubitDeclaration,
+    RangeDefinition,
+    ReturnStatement,
+    SubroutineDefinition,
+    UnaryExpression,
+    WhileLoop,
 )
+
 from ._helpers.quantum import (
-    convert_phase_to_gate,
     get_ctrl_modifiers,
     get_pow_modifiers,
     is_inverted,
-    is_controlled,
 )
-
-from braket.default_simulator.openqasm.parser.openqasm_ast import IndexExpression
 
 
 # Inside src/my_code.py
@@ -758,8 +756,9 @@ class BranchedInterpreter:
                             all_combinations.append([qubit_index])
                         else:
                             current_combos = target_qubits[idx]
-                            for combo in current_combos:
-                                all_combinations.append(combo + [qubit_index])
+                            all_combinations.extend(
+                                combo + [qubit_index] for combo in current_combos
+                            )
 
                     target_qubits[idx] = all_combinations
 
@@ -1090,13 +1089,12 @@ class BranchedInterpreter:
         for path_idx in sim._active_paths:
             original_variables[path_idx] = sim._variables[path_idx].copy()
 
-            # Create a new variable scope
-            new_scope = {}
-
-            # Copy only const variables to the new scope
-            for var_name, var in sim._variables[path_idx].items():
-                if isinstance(var, FramedVariable) and var.is_const:
-                    new_scope[var_name] = var
+            # Create a new variable scope and copy only const variables to the new scope
+            new_scope = {
+                var_name: var
+                for var_name, var in sim._variables[path_idx].items()
+                if isinstance(var, FramedVariable) and var.is_const
+            }
 
             # Update the path's variables to the new scope
             sim._variables[path_idx] = new_scope
@@ -1124,11 +1122,10 @@ class BranchedInterpreter:
         for path_idx in sim._active_paths:
             if path_idx in original_variables:
                 # Create a new scope that combines original variables with updated values
-                new_scope = {}
-
-                # First, copy all original variables to ensure we don't lose any
-                for var_name, orig_var in original_variables[path_idx].items():
-                    new_scope[var_name] = orig_var
+                new_scope = {
+                    var_name: orig_var
+                    for var_name, orig_var in original_variables[path_idx].items()
+                }
 
                 # Then update any variables that were modified in outer scopes
                 for var_name, current_var in sim._variables[path_idx].items():
