@@ -169,6 +169,9 @@ def _apply_cnot_large(
     total_size = state.size
     iterations = total_size >> 2
 
+    if control > target:
+        target, control = control, target
+
     target_bit_pos = n_qubits - target - 1
     control_bit_pos = n_qubits - control - 1
 
