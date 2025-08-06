@@ -843,7 +843,7 @@ class AbstractProgramContext(ABC):
     def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
         """Add qubit targets to be measured"""
 
-    def add_verbatim_](self, marker) -> None:
+    def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
 
 
