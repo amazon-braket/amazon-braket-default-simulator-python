@@ -173,8 +173,8 @@ def _apply_cnot_large(
     control_bit_pos = n_qubits - control - 1
 
     control_stride = 1 << control_bit_pos
-    target_stride = 1 << target_bit_pos        
-    
+    target_stride = 1 << target_bit_pos
+
     target_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
     control_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
 
@@ -185,7 +185,7 @@ def _apply_cnot_large(
 
     # when the control qubits are off by 1, there seems to be a "super" jump at each of the target_stride lengths
     if control_bit_pos - target_bit_pos == 1:
-        combined_jump = (target_jump + control_jump)
+        combined_jump = target_jump + control_jump
         for i in nb.prange(iterations):
             idx0 = control_stride + i + (i // should_target_jump) * combined_jump
             idx1 = idx0 + target_stride
@@ -195,9 +195,14 @@ def _apply_cnot_large(
             state.flat[idx1] = temp
     else:
         for i in nb.prange(iterations):
-            idx0 = control_stride + i + (i // should_target_jump) * target_jump + (i // should_control_jump) * control_jump
+            idx0 = (
+                control_stride
+                + i
+                + (i // should_target_jump) * target_jump
+                + (i // should_control_jump) * control_jump
+            )
             idx1 = idx0 + target_stride
-            
+
             temp = state.flat[idx0]
             state.flat[idx0] = state.flat[idx1]
             state.flat[idx1] = temp

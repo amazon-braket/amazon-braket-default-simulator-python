@@ -38,13 +38,13 @@ def apply_operations(
         num_ctrl = len(op._ctrl_modifiers)
         _, needs_swap = multiply_matrix(
             result,
-            op.matrix, 
+            op.matrix,
             op.targets[num_ctrl:],
             op.targets[:num_ctrl],
             op._ctrl_modifiers,
             temp,
             dispatcher,
-            True
+            True,
         )
         if needs_swap:
             result, temp = temp, result
