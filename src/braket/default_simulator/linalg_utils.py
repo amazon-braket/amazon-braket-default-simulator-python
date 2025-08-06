@@ -168,10 +168,8 @@ def _apply_cnot_large(
     n_qubits = state.ndim
     total_size = state.size
     iterations = total_size >> 2
-
     if control > target:
         target, control = control, target
-
     target_bit_pos = n_qubits - target - 1
     control_bit_pos = n_qubits - control - 1
 
@@ -253,11 +251,15 @@ def _apply_swap_large(
     mask_0 = 1 << (n_qubits - 1 - qubit_0)
     mask_1 = 1 << (n_qubits - 1 - qubit_1)
 
-    for i in nb.prange(total_size // 2):
-        if (i & mask_0) != (i & mask_1):
+    for i in nb.prange(total_size):
+        bit_0 = (i & mask_0) != 0
+        bit_1 = (i & mask_1) != 0
+
+        if bit_0 != bit_1:
             j = i ^ mask_0 ^ mask_1
 
-            state.flat[i], state.flat[j] = state.flat[j], state.flat[i]
+            if i < j:
+                state.flat[i], state.flat[j] = state.flat[j], state.flat[i]
 
     return state, False
 
