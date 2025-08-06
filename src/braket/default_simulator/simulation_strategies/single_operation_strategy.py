@@ -34,16 +34,17 @@ def apply_operations(
     temp = np.zeros_like(state, dtype=complex)
 
     dispatcher = QuantumGateDispatcher(state.ndim)
-
     for op in operations:
-        matrix = op.matrix
-        all_targets = op.targets
         num_ctrl = len(op._ctrl_modifiers)
-        control_state = op._ctrl_modifiers
-        controls = all_targets[:num_ctrl]
-        targets = all_targets[num_ctrl:]
         _, needs_swap = multiply_matrix(
-            result, matrix, targets, controls, control_state, temp, dispatcher, True
+            result,
+            op.matrix, 
+            op.targets[num_ctrl:],
+            op.targets[:num_ctrl],
+            op._ctrl_modifiers,
+            temp,
+            dispatcher,
+            True
         )
         if needs_swap:
             result, temp = temp, result
