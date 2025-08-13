@@ -36,6 +36,7 @@ from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd.program_v1 import Results
 from braket.ir.jaqcd.shared_models import MultiTarget, OptionalMultiTarget
 from braket.ir.openqasm import Program as OpenQASMProgram
+from braket.ir.openqasm.program_set_v1 import ProgramSet
 from braket.simulator import BraketSimulator
 from braket.task_result import (
     AdditionalMetadata,
@@ -43,6 +44,13 @@ from braket.task_result import (
     ResultTypeValue,
     TaskMetadata,
 )
+from braket.task_result.program_result_v1 import ProgramResult
+from braket.task_result.program_set_executable_result_v1 import (
+    ProgramSetExecutableResult,
+    ProgramSetExecutableResultMetadata,
+)
+from braket.task_result.program_set_task_metadata_v1 import ProgramMetadata, ProgramSetTaskMetadata
+from braket.task_result.program_set_task_result_v1 import ProgramSetTaskResult
 
 _NOISE_INSTRUCTIONS = frozenset(
     instr.lower().replace("_", "")
@@ -122,16 +130,17 @@ class OpenQASMSimulator(BraketSimulator, ABC):
 
 class BaseLocalSimulator(OpenQASMSimulator):
     def run(
-        self, circuit_ir: Union[OpenQASMProgram, JaqcdProgram], *args, **kwargs
+        self, circuit_ir: Union[OpenQASMProgram, ProgramSet, JaqcdProgram], *args, **kwargs
     ) -> GateModelTaskResult:
         """
-        Simulate a circuit using either OpenQASM or Jaqcd.
+        Simulate a program using either OpenQASM or Jaqcd.
 
         Args:
-            circuit_ir (Union[OpenQASMProgram, JaqcdProgram]): Circuit specification.
+            circuit_ir (Union[OpenQASMProgram, ProgramSet, JaqcdProgram]): Program
+                specification.
             shots (int, optional): The number of shots to simulate. Default is 0, which
                 performs a full analytical simulation.
-            batch_size (int, optional): The size of the circuit partitions to contract,
+            batch_size (int, optional): The size of the program partitions to contract,
                 if applying multiple gates at a time is desired; see `StateVectorSimulation`.
                 Must be a positive integer.
                 Defaults to 1, which means gates are applied one at a time without any
@@ -147,6 +156,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """
         if isinstance(circuit_ir, OpenQASMProgram):
             return self.run_openqasm(circuit_ir, *args, **kwargs)
+        elif isinstance(circuit_ir, ProgramSet):
+            return self.run_program_set(circuit_ir, *args, **kwargs)
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
     def create_program_context(self) -> AbstractProgramContext:
@@ -552,6 +563,114 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 selected_measurements, ((0, 0), (0, len(measured_qubits_not_in_circuit)))
             ).tolist()
         return measurements
+
+    def _run_single_program_in_program_set(
+        self,
+        program: OpenQASMProgram,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
+    ) -> ProgramResult:
+        """Executes the program specified by the supplied `program` on the simulator.
+
+        Args:
+            program_set_ir (OpenQASMProgram): ir representation of the program.
+            shots (int): The number of times to run each executable in the program.
+            batch_size (int): The size of the circuit partitions to contract for each executable
+                in the program, if applying multiple gates at a time is desired; see
+                `StateVectorSimulation`. Must be a positive integer. Defaults to 1, which means
+                gates are applied one at a time without any contraction.
+
+        Returns:
+            ProgramResult: Result of the program simulation.
+        """
+        if program.inputs:
+            # Unpack inputs. For example, it unpacks {"alpha": [1, 2], "beta": [0.1, 0.2]} from a
+            # program to [{"alpha": 1, "beta": 0.1}, {"alpha": 2, "beta": 0.2}] for executables.
+            unpacked_inputs = [
+                dict(zip(program.inputs.keys(), values)) for values in zip(*program.inputs.values())
+            ]
+            executables = [
+                OpenQASMProgram(source=program.source, inputs=input_param)
+                for input_param in unpacked_inputs
+            ]
+        else:
+            executables = [OpenQASMProgram(source=program.source)]
+
+        executable_results = []
+        for input_index, executable in enumerate(executables):
+            executable_raw_result = self.run_openqasm(
+                executable,
+                shots=shots,
+                batch_size=batch_size,
+            )
+            executable_results.append(
+                ProgramSetExecutableResult(
+                    inputsIndex=input_index,
+                    measurements=executable_raw_result.measurements,
+                    measurementProbabilities=executable_raw_result.measurementProbabilities,
+                    measuredQubits=executable_raw_result.measuredQubits,
+                )
+            )
+
+        program_result = ProgramResult(
+            executableResults=executable_results,
+            source=program,
+            additionalMetadata=AdditionalMetadata(),
+        )
+        program_metadata = ProgramMetadata(
+            executables=[ProgramSetExecutableResultMetadata()] * len(executables)
+        )
+        return program_result, program_metadata
+
+    def run_program_set(
+        self,
+        program_set: ProgramSet,
+        shots: int = 0,
+        *,
+        batch_size: int = 1,
+    ) -> ProgramSetTaskResult:
+        """Executes the program set specified by the supplied `program_set_ir` on the simulator.
+
+        Args:
+            program_set (ProgramSet): IR representation of the program set.
+            shots (int): The number of times to run each executable in the program set.
+            batch_size (int): The size of the circuit partitions to contract for each executable
+                in the program set, if applying multiple gates at a time is desired; see
+                `StateVectorSimulation`. Must be a positive integer. Defaults to 1, which means
+                gates are applied one at a time without any contraction.
+
+        Returns:
+            ProgramSetTaskResult: Result of the program set simulation.
+        """
+
+        if shots == 0:
+            raise ValueError(
+                "Shots must not be zero. Result types are not supported with program set."
+            )
+        shots_per_executable, remainder = divmod(shots, program_set.num_executables)
+        if remainder:
+            raise ValueError("Total shots must be divisible by number of executables.")
+
+        program_results_metadata = [
+            self._run_single_program_in_program_set(
+                program, shots=shots_per_executable, batch_size=batch_size
+            )
+            for program in program_set.programs
+        ]
+
+        program_results, program_metadata = zip(*program_results_metadata)
+        return ProgramSetTaskResult(
+            programResults=program_results,
+            taskMetadata=ProgramSetTaskMetadata(
+                id=str(uuid.uuid4()),
+                deviceId=self.DEVICE_ID,
+                requestedShots=shots,
+                successfulShots=shots,
+                programMetadata=program_metadata,
+                totalFailedExecutables=0,
+            ),
+        )
 
     def run_openqasm(
         self,

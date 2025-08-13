@@ -26,6 +26,7 @@ pip-wheel-metadata/
 /build
 /venv
 /dist
+gen/
 src/.DS_Store
 src/braket/.DS_Store
 src/braket/default_simulator/.DS_Store

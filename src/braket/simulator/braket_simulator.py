@@ -21,6 +21,7 @@ from braket.device_schema import DeviceCapabilities
 from braket.ir.ahs import Program as AHSProgram
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.openqasm import Program as OQ3Program
+from braket.ir.openqasm.program_set_v1 import ProgramSet
 from braket.task_result import AnalogHamiltonianSimulationTaskResult, GateModelTaskResult
 
 
@@ -46,7 +47,7 @@ class BraketSimulator(ABC):
 
     @abstractmethod
     def run(
-        self, ir: Union[OQ3Program, AHSProgram, JaqcdProgram], *args, **kwargs
+        self, ir: Union[OQ3Program, AHSProgram, JaqcdProgram, ProgramSet], *args, **kwargs
     ) -> Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]:
         """
         Run the task specified by the given IR.
