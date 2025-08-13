@@ -34,7 +34,7 @@ def apply_operations(
     """
     for operation in operations:
         # Special handling for Measure operations which need custom normalization
-        if operation.__class__.__name__ == "Measure":
+        if operation.__class__.__name__ in {"Measure", "Reset"}:
             # Reshape to 1D for Measure.apply, then back to tensor form
             state_1d = np.reshape(state, 2 ** len(state.shape))
             state_1d = operation.apply(state_1d)  # type: ignore

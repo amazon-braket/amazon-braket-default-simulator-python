@@ -1095,6 +1095,59 @@ class Measure(GateOperation):
         return projected_state
 
 
+class Reset(GateOperation):
+    """
+    Reset operation that sets desired target to 0
+    """
+
+    def __init__(self, targets: Sequence[int]):
+        super().__init__(targets=targets)
+
+    @property
+    def _base_matrix(self) -> np.ndarray:
+        """
+        Return the projection matrix for the measurement outcome.
+        If result is -1 (unset), return identity (no projection).
+        """
+        return np.eye(2)  # Default matrix because it isn't used
+
+    def apply(self, state: np.ndarray) -> np.ndarray:
+        """
+        Apply measurement projection to the state vector.
+        This collapses the state and normalizes it.
+        """
+
+        # For single qubit measurement, we need to project the appropriate amplitudes
+        if len(self._targets) == 1:
+            qubit_idx = self._targets[0]
+            n_qubits = int(np.log2(len(state)))
+
+            # Create mask for the target qubit
+            mask = 1 << (n_qubits - qubit_idx - 1)  # Big-endian indexing
+
+            prob_one = 0.0
+            for i in range(len(state)):
+                # Check if the qubit is in state 1
+                qubit_value = (i & mask) >> (n_qubits - qubit_idx - 1)
+                if qubit_value == 1:
+                    prob_one += abs(state[i])
+
+                    zero_index = i & ~mask
+
+                    # Transfer the amplitude (with proper scaling)
+                    state[zero_index] += state[i]
+
+                    # Set the original amplitude to zero
+                    state[i] = 0
+
+            # Normalize the state
+            norm = np.linalg.norm(state)
+            if norm > 0:
+                state /= norm
+
+        return state
+
+
 BRAKET_GATES = {
     "i": Identity,
     "h": Hadamard,

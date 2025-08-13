@@ -473,10 +473,18 @@ class BranchedInterpreter:
                 existing_var = sim.get_variable(path_idx, var_name)
 
                 if op == "=":
-                    existing_var.val = new_value[0] if existing_var.type["size"] == 1 and isinstance(new_value, list) else new_value
+                    existing_var.val = (
+                        new_value[0]
+                        if existing_var.type["size"] == 1 and isinstance(new_value, list)
+                        else new_value
+                    )
                 else:
                     existing_var.val = evaluate_binary_op(
-                        op, existing_var.val, new_value[0] if existing_var.type["size"] == 1 and isinstance(new_value, list) else new_value
+                        op,
+                        existing_var.val,
+                        new_value[0]
+                        if existing_var.type["size"] == 1 and isinstance(new_value, list)
+                        else new_value,
                     )
 
     def _assign_to_indexed_variable(
@@ -597,7 +605,9 @@ class BranchedInterpreter:
                 # Check if it is an input
                 elif collection_name in self.inputs:
                     var_value = self.inputs[collection_name]
-                    results[path_idx] = bin(var_value)[index] if isinstance(var_value, int) else var_value[index]
+                    results[path_idx] = (
+                        bin(var_value)[index] if isinstance(var_value, int) else var_value[index]
+                    )
                 # Otherwise it is a qubit register
                 else:
                     qubits = self._evaluate_qubits(sim, node.collection)
@@ -671,7 +681,7 @@ class BranchedInterpreter:
 
             for path_idx in sim._active_paths:
                 range_values[path_idx].append(val_result[path_idx])
-                
+
         return range_values
 
     def convert_string_to_bool_array(
@@ -769,8 +779,16 @@ class BranchedInterpreter:
                 ctrl_modifiers,
                 arguments,
             )
-                
-    def _handle_custom_gates(self, sim: BranchedSimulation, node: QuantumGate, gate_name: str, target_qubits: dict, ctrl_modifiers: dict, arguments: dict):
+
+    def _handle_custom_gates(
+        self,
+        sim: BranchedSimulation,
+        node: QuantumGate,
+        gate_name: str,
+        target_qubits: dict,
+        ctrl_modifiers: dict,
+        arguments: dict,
+    ):
         gate_def = self.gate_defs[gate_name]
         for combo_idx in range(len(target_qubits[sim._active_paths[0]])):
             # This inner for loop runs for each combination that exists for broadcasting
