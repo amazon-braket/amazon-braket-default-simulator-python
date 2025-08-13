@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 import re
+from collections import defaultdict
 from copy import deepcopy
 from typing import Any, Optional, Union
 
@@ -22,7 +23,7 @@ from braket.default_simulator.branched_simulation import (
     FunctionDefinition,
     GateDefinition,
 )
-from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase
+from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Reset
 from braket.default_simulator.openqasm._helpers.builtins import BuiltinConstants
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AliasStatement,
@@ -357,9 +358,8 @@ class BranchedInterpreter:
             return None
 
         elif isinstance(node, QuantumReset):
-            raise NotImplementedError(
-                "Reset functionality not implemented in python branched simulator"
-            )
+            self._handle_reset(sim, node)
+            return None
 
         elif isinstance(node, RangeDefinition):
             return self._handle_range(sim, node)
@@ -473,15 +473,11 @@ class BranchedInterpreter:
                 existing_var = sim.get_variable(path_idx, var_name)
 
                 if op == "=":
-                    if existing_var.type["size"] == 1 and isinstance(new_value, list):
-                        existing_var.val = new_value[0]
-                    else:
-                        existing_var.val = new_value
+                    existing_var.val = new_value[0] if existing_var.type["size"] == 1 and isinstance(new_value, list) else new_value
                 else:
-                    if existing_var.type["size"] == 1 and isinstance(new_value, list):
-                        existing_var.val = evaluate_binary_op(op, existing_var.val, new_value[0])
-                    else:
-                        existing_var.val = evaluate_binary_op(op, existing_var.val, new_value)
+                    existing_var.val = evaluate_binary_op(
+                        op, existing_var.val, new_value[0] if existing_var.type["size"] == 1 and isinstance(new_value, list) else new_value
+                    )
 
     def _assign_to_indexed_variable(
         self,
@@ -601,10 +597,7 @@ class BranchedInterpreter:
                 # Check if it is an input
                 elif collection_name in self.inputs:
                     var_value = self.inputs[collection_name]
-                    if isinstance(var_value, int):
-                        results[path_idx] = bin(var_value)[index]
-                    else:
-                        results[path_idx] = var_value[index]
+                    results[path_idx] = bin(var_value)[index] if isinstance(var_value, int) else var_value[index]
                 # Otherwise it is a qubit register
                 else:
                     qubits = self._evaluate_qubits(sim, node.collection)
@@ -672,16 +665,13 @@ class BranchedInterpreter:
         return results
 
     def _handle_discrete_set(self, sim: BranchedSimulation, node: DiscreteSet) -> dict[int, Any]:
-        range_values = {}
+        range_values = defaultdict(list)
         for value_expr in node.values:
             val_result = self._evolve_branched_ast_operators(sim, value_expr)
 
             for path_idx in sim._active_paths:
-                val_res = val_result[path_idx]
-                if path_idx not in range_values:
-                    range_values[path_idx] = [val_res]
-                else:
-                    range_values[path_idx].append(val_res)
+                range_values[path_idx].append(val_result[path_idx])
+                
         return range_values
 
     def convert_string_to_bool_array(
@@ -719,16 +709,13 @@ class BranchedInterpreter:
         gate_name = node.name.name
 
         # Evaluate arguments for each active path
-        arguments = {}
+        arguments = defaultdict(list)
         if node.arguments:
             for arg in node.arguments:
                 arg_result = self._evolve_branched_ast_operators(sim, arg)
 
                 for idx in sim._active_paths:
-                    if idx not in arguments:
-                        arguments[idx] = [arg_result[idx]]
-                    else:
-                        arguments[idx].append(arg_result[idx])
+                    arguments[idx].append(arg_result[idx])
 
         # Get the modifiers for each active path
         ctrl_modifiers, power = self._handle_modifiers(sim, node.modifiers)
@@ -766,73 +753,78 @@ class BranchedInterpreter:
         if gate_name in BRAKET_GATES:
             for idx in sim._active_paths:
                 for combination in target_qubits[idx]:
-                    if len(arguments) == 0:
-                        instruction = BRAKET_GATES[gate_name](
-                            combination, ctrl_modifiers=ctrl_modifiers[idx], power=power[idx]
-                        )
-                    else:
-                        instruction = BRAKET_GATES[gate_name](
-                            combination,
-                            *arguments[idx],
-                            ctrl_modifiers=ctrl_modifiers[idx],
-                            power=power[idx],
-                        )
+                    instruction = BRAKET_GATES[gate_name](
+                        combination,
+                        *([] if len(arguments) == 0 else arguments[idx]),
+                        ctrl_modifiers=ctrl_modifiers[idx],
+                        power=power[idx],
+                    )
                     sim._instruction_sequences[idx].append(instruction)
         else:  # For custom gates, we enter the gate definition we saw earlier and add each of those gates with the appropriate modifiers to the instruction list
-            gate_def = self.gate_defs[gate_name]
-            for combo_idx in range(len(target_qubits[sim._active_paths[0]])):
-                # This inner for loop runs for each combination that exists for broadcasting
-                ctrl_qubits = {}
-                for idx in sim._active_paths:
-                    ctrl_qubits[idx] = target_qubits[idx][combo_idx][: len(ctrl_modifiers[idx])]
+            self._handle_custom_gates(
+                sim,
+                node,
+                gate_name,
+                target_qubits,
+                ctrl_modifiers,
+                arguments,
+            )
+                
+    def _handle_custom_gates(self, sim: BranchedSimulation, node: QuantumGate, gate_name: str, target_qubits: dict, ctrl_modifiers: dict, arguments: dict):
+        gate_def = self.gate_defs[gate_name]
+        for combo_idx in range(len(target_qubits[sim._active_paths[0]])):
+            # This inner for loop runs for each combination that exists for broadcasting
+            ctrl_qubits = {}
+            for idx in sim._active_paths:
+                ctrl_qubits[idx] = target_qubits[idx][combo_idx][: len(ctrl_modifiers[idx])]
 
-                modified_gate_body = self._modify_custom_gate_body(
-                    sim,
-                    deepcopy(gate_def.body),
-                    is_inverted(node),
-                    get_ctrl_modifiers(node.modifiers),
-                    ctrl_qubits,
-                    get_pow_modifiers(node.modifiers),
-                )
+            modified_gate_body = self._modify_custom_gate_body(
+                sim,
+                deepcopy(gate_def.body),
+                is_inverted(node),
+                get_ctrl_modifiers(node.modifiers),
+                ctrl_qubits,
+                get_pow_modifiers(node.modifiers),
+            )
 
-                # Create a constant-only scope before calling the gate
-                original_variables = self.create_const_only_scope(sim)
+            # Create a constant-only scope before calling the gate
+            original_variables = self.create_const_only_scope(sim)
 
-                for idx in sim._active_paths:
-                    for qubit_idx, qubit_name in zip(
-                        target_qubits[idx][combo_idx][len(ctrl_qubits[idx]) :],
-                        gate_def.qubit_targets,
-                    ):
+            for idx in sim._active_paths:
+                for qubit_idx, qubit_name in zip(
+                    target_qubits[idx][combo_idx][len(ctrl_qubits[idx]) :],
+                    gate_def.qubit_targets,
+                ):
+                    sim.set_variable(
+                        idx,
+                        qubit_name,
+                        FramedVariable(
+                            qubit_name, QubitDeclaration, qubit_idx, False, sim._curr_frame
+                        ),
+                    )
+
+                if not (len(arguments) == 0):
+                    for param_val, param_name in zip(arguments[idx], gate_def.arguments):
                         sim.set_variable(
                             idx,
-                            qubit_name,
+                            param_name,
                             FramedVariable(
-                                qubit_name, QubitDeclaration, qubit_idx, False, sim._curr_frame
+                                param_name, FloatType, param_val, False, sim._curr_frame
                             ),
                         )
 
-                    if not (len(arguments) == 0):
-                        for param_val, param_name in zip(arguments[idx], gate_def.arguments):
-                            sim.set_variable(
-                                idx,
-                                param_name,
-                                FramedVariable(
-                                    param_name, FloatType, param_val, False, sim._curr_frame
-                                ),
-                            )
+            # Add the gates to each instruction sequence
+            original_path = sim._active_paths.copy()
+            for idx in original_path:
+                sim._active_paths = [idx]
 
-                # Add the gates to each instruction sequence
-                original_path = sim._active_paths.copy()
-                for idx in original_path:
-                    sim._active_paths = [idx]
+                for statement in modified_gate_body[idx]:
+                    self._evolve_branched_ast_operators(sim, statement)
 
-                    for statement in modified_gate_body[idx]:
-                        self._evolve_branched_ast_operators(sim, statement)
+            sim._active_paths = original_path
 
-                sim._active_paths = original_path
-
-                # Restore the original scope after calling the gate
-                self.restore_original_scope(sim, original_variables)
+            # Restore the original scope after calling the gate
+            self.restore_original_scope(sim, original_variables)
 
     def _handle_modifiers(
         self, sim: BranchedSimulation, modifiers: list[QuantumGateModifier]
@@ -898,6 +890,14 @@ class BranchedInterpreter:
                     s.modifiers = ctrl_modifiers + pow_modifiers + s.modifiers
                     s.qubits = ctrl_qubits[idx] + s.qubits
         return bodies
+
+    def _handle_reset(self, sim: BranchedSimulation, node: QuantumReset) -> None:
+        qubits = self._evaluate_qubits(sim, node.qubits)
+        for idx, qs in qubits.items():
+            if isinstance(qs, int):
+                qs = [qs]
+            for q in qs:
+                sim._instruction_sequences[idx].append(Reset([q]))
 
     def _handle_measurement(
         self, sim: BranchedSimulation, node: QuantumMeasurementStatement
@@ -995,7 +995,7 @@ class BranchedInterpreter:
         _, power = self._handle_modifiers(sim, node.modifiers)
 
         # Evaluate target qubits for each active path
-        target_qubits = {}
+        target_qubits = defaultdict(list)
         if node.qubits:  # Check if qubits are specified
             for qubit_expr in node.qubits:
                 qubit_indices = self._evaluate_qubits(sim, qubit_expr)
@@ -1006,11 +1006,7 @@ class BranchedInterpreter:
                         )
                         if not isinstance(qubit_data, list):
                             qubit_data = [qubit_data]
-
-                        if idx not in target_qubits:
-                            target_qubits[idx] = qubit_data
-                        else:
-                            target_qubits[idx].extend(qubit_data)
+                        target_qubits[idx].extend(qubit_data)
         else:
             # If no qubits specified, GPhase applies to all qubits (global phase)
             for idx in sim._active_paths:
