@@ -31,6 +31,7 @@ setup(
     package_data={"": ["*.g4", "*.inc"]},
     include_package_data=True,
     install_requires=[
+        "numba",
         "numpy",
         "opt_einsum",
         "pydantic>2",
