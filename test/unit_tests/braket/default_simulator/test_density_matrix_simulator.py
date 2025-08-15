@@ -15,6 +15,7 @@ import cmath
 import json
 import sys
 from collections import Counter, namedtuple
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -25,7 +26,14 @@ from braket.device_schema.simulators import (
 from braket.ir.jaqcd import Expectation
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.openqasm import Program as OpenQASMProgram
+from braket.ir.openqasm.program_set_v1 import ProgramSet
+from braket.ir.openqasm.program_v1 import Program
 from braket.task_result import AdditionalMetadata, TaskMetadata
+from braket.task_result.program_set_executable_result_v1 import (
+    ProgramSetExecutableResult,
+    ProgramSetExecutableResultMetadata,
+)
+from braket.task_result.program_set_task_metadata_v1 import ProgramMetadata, ProgramSetTaskMetadata
 
 from braket.default_simulator import DensityMatrixSimulator
 
@@ -868,3 +876,56 @@ def test_run_multiple(simulator):
     assert np.allclose(results[0].resultTypes[0].value, np.array([[0.5, 0.5], [0.5, 0.5]]))
     assert np.allclose(results[1].resultTypes[0].value, np.array([[1, 0], [0, 0]]))
     assert np.allclose(results[2].resultTypes[0].value, np.array([[0, 0], [0, 1]]))
+
+
+@patch("uuid.uuid4")
+def test_run_program_set_dm(mock_uuid):
+    qasm_all_one = """
+    OPENQASM 3.0;
+    bit[2] b;
+    qubit[2] q;
+    x q;
+    #pragma braket noise bit_flip(0.0) q[0]
+    b = measure q;
+    """
+    qasm_all_zero = """
+    OPENQASM 3.0;
+    bit[2] b;
+    qubit[2] q;
+    z q;
+    #pragma braket noise bit_flip(0.0) q[0]
+    b = measure q;
+    """
+    shots = 10
+    patched_id = "foo-bar"
+
+    mock_uuid.return_value = patched_id
+    prog1 = Program(source=qasm_all_one)
+    prog2 = Program(source=qasm_all_zero)
+    program_set = ProgramSet(programs=[prog1, prog2])
+    result = DensityMatrixSimulator().run(program_set, shots=shots)
+
+    expected_metadata = ProgramSetTaskMetadata(
+        id=patched_id,
+        requestedShots=shots,
+        successfulShots=shots,
+        totalFailedExecutables=0,
+        deviceId="braket_dm",
+        programMetadata=[
+            ProgramMetadata(executables=[ProgramSetExecutableResultMetadata()]),
+            ProgramMetadata(executables=[ProgramSetExecutableResultMetadata()]),
+        ],
+    )
+    expected_program_0_executable_results = ProgramSetExecutableResult(
+        inputsIndex=0,
+        measurements=[[1, 1], [1, 1], [1, 1], [1, 1], [1, 1]],
+        measuredQubits=[0, 1],
+    )
+    expected_program_1_executable_results = ProgramSetExecutableResult(
+        inputsIndex=0,
+        measurements=[[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]],
+        measuredQubits=[0, 1],
+    )
+    assert result.programResults[0].executableResults[0] == expected_program_0_executable_results
+    assert result.programResults[1].executableResults[0] == expected_program_1_executable_results
+    assert result.taskMetadata == expected_metadata
