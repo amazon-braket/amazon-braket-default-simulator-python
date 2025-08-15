@@ -7,6 +7,4 @@ lint.isort = { known-first-party = [
 lint.extend-select = ["I", "UP", "PERF"]
 lint.preview = true
 lint.ignore = ["UP045", "UP007"]
-lint.per-file-ignores."src/braket/default_simulator/openqasm/parser/generated/qasm3Parser.py" = ["F405", "F403"] # Imports for classes need to be limited later
-lint.per-file-ignores."src/braket/default_simulator/openqasm/parser/generated/BraketPragmasParser.py" = ["E741", "F405", "F403"]
-lint.per-file-ignores."src/braket/default_simulator/openqasm/parser/generated/BraketPragmasLexer.py" = ["E741", "F405", "F403"]
+lint.exclude = ["src/braket/default_simulator/openqasm/parser/generated*.py"] # Don't lint generated files
