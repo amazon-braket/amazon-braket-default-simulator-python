@@ -707,7 +707,3 @@ class Interpreter:
 class VerbatimBoxDelimiter(str, Enum):
     START_VERBATIM = "StartVerbatim"
     END_VERBATIM = "EndVerbatim"
-    
-    @property
-    def qubit_count(self) -> int:
-        return 0
