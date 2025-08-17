@@ -705,8 +705,8 @@ class Interpreter:
         self.context.add_phase(phase, qubits)
 
 class VerbatimBoxDelimiter(str, Enum):
-    START_VERBATIM = "EndVerbatim"
-    END_VERBATIM = "StartVerbatim"
+    START_VERBATIM = "StartVerbatim"
+    END_VERBATIM = "EndVerbatim"
     
     @property
     def qubit_count(self) -> int:
