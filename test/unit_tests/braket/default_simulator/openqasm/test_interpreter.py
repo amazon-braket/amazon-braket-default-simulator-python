@@ -2262,7 +2262,6 @@ def test_invalid_measurement_with_classical_indices(qasm, error_message):
     with pytest.raises(ValueError, match=error_message):
         Interpreter().build_circuit(qasm)
 
-
 def test_verbatim_box_start():
     vbs = VerbatimBoxDelimiter.START_VERBATIM
     assert isinstance(vbs, VerbatimBoxDelimiter)
@@ -2270,14 +2269,12 @@ def test_verbatim_box_start():
     assert vbs.name == "START_VERBATIM"
     assert vbs.qubit_count == 0
 
-
 def test_verbatim_box_end():
     vbs = VerbatimBoxDelimiter.END_VERBATIM
     assert isinstance(vbs, VerbatimBoxDelimiter)
     assert vbs.value == "EndVerbatim"
-    assert vbs.name == "END_VERBATIM"
+    assert vbs.name =="END_VERBATIM"
     assert vbs.qubit_count == 0
-
 
 def test_verbatim_box():
     qasm_with_verbatim = """
@@ -2288,14 +2285,13 @@ def test_verbatim_box():
         cnot $0, $1;
         }
     """
-    context = Interpreter().run(qasm_with_verbatim)
-
-    is_verbatim = context.in_verbatim_box
+    context= Interpreter().run(qasm_with_verbatim)
+   
+    is_verbatim  = context.in_verbatim_box
     assert isinstance(context.circuit.instructions[0], Hadamard)
     assert isinstance(context.circuit.instructions[1], CX)
     assert isinstance(is_verbatim, bool)
     assert is_verbatim == False
-
 
 def test_verbatim_wo_box():
     qasm_without_box = """
@@ -2303,7 +2299,5 @@ def test_verbatim_wo_box():
         #pragma braket verbatim
         h $0;
     """
-    with pytest.raises(
-        ValueError, match="braket verbatim pragma must be followed by a box statement"
-    ):
+    with pytest.raises(ValueError, match="braket verbatim pragma must be followed by a box statement"):
         Interpreter().run(qasm_without_box)
