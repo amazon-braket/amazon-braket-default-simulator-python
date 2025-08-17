@@ -174,15 +174,10 @@ class Interpreter:
     @visit.register
     def _(self, node: Program) -> None:
         for i, stmt in enumerate(node.statements):
-            if (
-                isinstance(stmt, Pragma)
-                and stmt.command.startswith("braket verbatim")
-            ):
+            if isinstance(stmt, Pragma) and stmt.command.startswith("braket verbatim"):
                 if i + 1 < len(node.statements) and not isinstance(node.statements[i + 1], Box):
                     raise ValueError("braket verbatim pragma must be followed by a box statement")
-        self.visit(node.statements)  
-
-
+        self.visit(node.statements)
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
@@ -496,7 +491,7 @@ class Interpreter:
             self.context.in_verbatim_box = False
         else:
             for instr_node in node.body:
-                self.visit(instr_node)            
+                self.visit(instr_node)
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
@@ -704,10 +699,11 @@ class Interpreter:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
 
+
 class VerbatimBoxDelimiter(str, Enum):
     START_VERBATIM = "StartVerbatim"
     END_VERBATIM = "EndVerbatim"
-    
+
     @property
     def qubit_count(self) -> int:
         return 0
