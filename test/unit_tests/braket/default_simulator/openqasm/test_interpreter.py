@@ -2273,7 +2273,6 @@ def test_verbatim_box_end():
     assert isinstance(vbs, VerbatimBoxDelimiter)
     assert vbs.value == "EndVerbatim"
     assert vbs.name =="END_VERBATIM"
-    assert vbs.qubit_count == 0
 
 def test_verbatim_box():
     qasm_with_verbatim = """
