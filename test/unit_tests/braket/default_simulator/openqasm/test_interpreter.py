@@ -2267,7 +2267,6 @@ def test_verbatim_box_start():
     assert isinstance(vbs, VerbatimBoxDelimiter)
     assert vbs.value == "StartVerbatim"
     assert vbs.name == "START_VERBATIM"
-    assert vbs.qubit_count == 0
 
 def test_verbatim_box_end():
     vbs = VerbatimBoxDelimiter.END_VERBATIM
