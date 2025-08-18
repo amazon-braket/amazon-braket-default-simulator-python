@@ -14,6 +14,7 @@
 from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import fields
+from enum import Enum
 from functools import singledispatchmethod
 from logging import Logger, getLogger
 from typing import Optional, Union
@@ -64,6 +65,7 @@ from .parser.openqasm_ast import (
     BitstringLiteral,
     BitType,
     BooleanLiteral,
+    Box,
     BranchingStatement,
     Cast,
     ClassicalArgument,
@@ -171,7 +173,16 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Program) -> None:
-        self.visit(node.statements)
+        for i, stmt in enumerate(node.statements):
+            if (
+                isinstance(stmt, Pragma)
+                and stmt.command.startswith("braket verbatim")
+            ):
+                if i + 1 < len(node.statements) and not isinstance(node.statements[i + 1], Box):
+                    raise ValueError("braket verbatim pragma must be followed by a box statement")
+        self.visit(node.statements)  
+
+
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
@@ -476,6 +487,18 @@ class Interpreter:
         return qubits
 
     @visit.register
+    def _(self, node: Box) -> None:
+        if self.context.in_verbatim_box:
+            self.context.add_verbatim_marker(VerbatimBoxDelimiter.START_VERBATIM)
+            for instr_node in node.body:
+                self.visit(instr_node)
+            self.context.add_verbatim_marker(VerbatimBoxDelimiter.END_VERBATIM)
+            self.context.in_verbatim_box = False
+        else:
+            for instr_node in node.body:
+                self.visit(instr_node)            
+
+    @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
         """The measure is performed but the assignment is ignored"""
         qubits = self.visit(node.measure)
@@ -588,7 +611,8 @@ class Interpreter:
             noise_instruction, target, probabilities = parsed
             self.context.add_noise_instruction(noise_instruction, target, probabilities)
         elif node.command.startswith("braket verbatim"):
-            pass
+            self.context.in_verbatim_box = True
+
         else:
             raise NotImplementedError(f"Pragma '{node.command}' is not supported")
 
@@ -679,3 +703,7 @@ class Interpreter:
     def handle_phase(self, phase: FloatLiteral, qubits: Optional[Iterable[int]] = None) -> None:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
+
+class VerbatimBoxDelimiter(str, Enum):
+    START_VERBATIM = "StartVerbatim"
+    END_VERBATIM = "EndVerbatim"
