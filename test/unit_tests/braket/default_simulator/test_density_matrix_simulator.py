@@ -14,6 +14,7 @@
 import cmath
 import json
 import sys
+from uuid import UUID
 from collections import Counter, namedtuple
 from unittest.mock import patch
 
@@ -897,7 +898,7 @@ def test_run_program_set_dm(mock_uuid):
     b = measure q;
     """
     shots = 10
-    patched_id = "foo-bar"
+    patched_id = UUID('12345678-1234-4567-abcd-1234567890ab')
 
     mock_uuid.return_value = patched_id
     prog1 = Program(source=qasm_all_one)
@@ -906,7 +907,7 @@ def test_run_program_set_dm(mock_uuid):
     result = DensityMatrixSimulator().run(program_set, shots=shots)
 
     expected_metadata = ProgramSetTaskMetadata(
-        id=patched_id,
+        id=str(patched_id),
         requestedShots=shots,
         successfulShots=shots,
         totalFailedExecutables=0,

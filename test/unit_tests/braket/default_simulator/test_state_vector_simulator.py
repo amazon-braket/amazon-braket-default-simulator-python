@@ -1535,7 +1535,8 @@ def test_multiply_matrix_controlled_no_swap_info():
     assert isinstance(result_with_swap[1], bool)
     assert np.allclose(result_with_swap[0], expected)
 
-    
+
+@pytest.mark.parametrize(
     "qasm_all_one, qasm_all_zero",
     [
         (
