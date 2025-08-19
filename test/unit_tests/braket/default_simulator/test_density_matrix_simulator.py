@@ -898,7 +898,7 @@ def test_run_program_set_dm(mock_uuid):
     b = measure q;
     """
     shots = 10
-    patched_id = UUID('12345678-1234-4567-abcd-1234567890ab')
+    patched_id = UUID("12345678-1234-4567-abcd-1234567890ab")
 
     mock_uuid.return_value = patched_id
     prog1 = Program(source=qasm_all_one)

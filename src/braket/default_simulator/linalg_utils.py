@@ -190,29 +190,39 @@ def _apply_cnot_large(
     n_qubits = state.ndim
     total_size = state.size
     iterations = total_size >> 2
-    if control > target:
-        target, control = control, target
+
     target_bit_pos = n_qubits - target - 1
     control_bit_pos = n_qubits - control - 1
 
     control_stride = 1 << control_bit_pos
     target_stride = 1 << target_bit_pos
 
-    target_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
-    control_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
+    if control_bit_pos > target_bit_pos:
+        first_stride = control_stride
+        second_stride = target_stride
+        first_bit_pos = control_bit_pos
+        second_bit_pos = target_bit_pos
+        first_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
+        second_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
+    else:
+        first_stride = target_stride
+        second_stride = control_stride
+        first_bit_pos = target_bit_pos
+        second_bit_pos = control_bit_pos
+        first_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
+        second_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
 
-    should_target_jump = target_jump or 1
-    should_control_jump = control_jump or 1
+    should_second_jump = second_jump or 1
+    should_first_jump = first_jump or 1
 
-    if control_bit_pos - target_bit_pos >= (n_qubits - target_bit_pos) // 2:
-        should_control_jump = max(should_control_jump // 2, 1)
+    if first_bit_pos - second_bit_pos >= (n_qubits - second_bit_pos) // 2:
+        should_first_jump = max(should_first_jump // 2, 1)
 
-    # when the control qubits are off by 1, there seems to be a "super" jump at each of the target_stride lengths
-    if control_bit_pos - target_bit_pos == 1:
-        combined_jump = target_jump + control_jump
+    if first_bit_pos - second_bit_pos == 1:
+        combined_jump = second_jump + first_jump
         for i in nb.prange(iterations):
-            idx0 = control_stride + i + (i // should_target_jump) * combined_jump
-            idx1 = idx0 + target_stride
+            idx0 = first_stride + i + (i // should_second_jump) * combined_jump
+            idx1 = idx0 + second_stride
 
             temp = state.flat[idx0]
             state.flat[idx0] = state.flat[idx1]
@@ -220,16 +230,17 @@ def _apply_cnot_large(
     else:
         for i in nb.prange(iterations):
             idx0 = (
-                control_stride
+                first_stride
                 + i
-                + (i // should_target_jump) * target_jump
-                + (i // should_control_jump) * control_jump
+                + (i // should_second_jump) * second_jump
+                + (i // should_first_jump) * first_jump
             )
-            idx1 = idx0 + target_stride
+            idx1 = idx0 + second_stride
 
             temp = state.flat[idx0]
             state.flat[idx0] = state.flat[idx1]
             state.flat[idx1] = temp
+
     return state, False
 
 
