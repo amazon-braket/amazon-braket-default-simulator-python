@@ -198,48 +198,46 @@ def _apply_cnot_large(
     target_stride = 1 << target_bit_pos
 
     if control_bit_pos > target_bit_pos:
-        first_stride = control_stride
-        second_stride = target_stride
-        first_bit_pos = control_bit_pos
-        second_bit_pos = target_bit_pos
-        first_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
-        second_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
+        larger_bit_pos = control_bit_pos
+        smaller_bit_pos = target_bit_pos
+
+        larger_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
+        smaller_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
+
+        swap_offset = target_stride
     else:
-        first_stride = target_stride
-        second_stride = control_stride
-        first_bit_pos = target_bit_pos
-        second_bit_pos = control_bit_pos
-        first_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
-        second_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
+        larger_bit_pos = target_bit_pos
+        smaller_bit_pos = control_bit_pos
 
-    should_second_jump = second_jump or 1
-    should_first_jump = first_jump or 1
+        larger_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
+        smaller_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
 
-    if first_bit_pos - second_bit_pos >= (n_qubits - second_bit_pos) // 2:
-        should_first_jump = max(should_first_jump // 2, 1)
+        swap_offset = target_stride
 
-    if first_bit_pos - second_bit_pos == 1:
-        combined_jump = second_jump + first_jump
+    should_smaller_jump = smaller_jump or 1
+    should_larger_jump = larger_jump or 1
+
+    if larger_bit_pos - smaller_bit_pos >= (n_qubits - smaller_bit_pos) // 2:
+        should_larger_jump = max(should_larger_jump // 2, 1)
+
+    if larger_bit_pos - smaller_bit_pos == 1:
+        combined_jump = smaller_jump + larger_jump
         for i in nb.prange(iterations):
-            idx0 = first_stride + i + (i // should_second_jump) * combined_jump
-            idx1 = idx0 + second_stride
+            idx0 = control_stride + i + (i // should_smaller_jump) * combined_jump
+            idx1 = idx0 + swap_offset
 
-            temp = state.flat[idx0]
-            state.flat[idx0] = state.flat[idx1]
-            state.flat[idx1] = temp
+            state.flat[idx0], state.flat[idx1] = state.flat[idx1], state.flat[idx0]
     else:
         for i in nb.prange(iterations):
             idx0 = (
-                first_stride
+                control_stride
                 + i
-                + (i // should_second_jump) * second_jump
-                + (i // should_first_jump) * first_jump
+                + (i // should_smaller_jump) * smaller_jump
+                + (i // should_larger_jump) * larger_jump
             )
-            idx1 = idx0 + second_stride
+            idx1 = idx0 + swap_offset
 
-            temp = state.flat[idx0]
-            state.flat[idx0] = state.flat[idx1]
-            state.flat[idx1] = temp
+            state.flat[idx0], state.flat[idx1] = state.flat[idx1], state.flat[idx0]
 
     return state, False
 
