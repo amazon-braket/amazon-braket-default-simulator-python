@@ -395,21 +395,30 @@ def _apply_two_qubit_gate_large(
 
     mask_0 = 1 << (n_qubits - 1 - target0)
     mask_1 = 1 << (n_qubits - 1 - target1)
-    mask_0_or_mask_1 = mask_0 | mask_1
+    mask_both = mask_0 | mask_1
 
     for i in nb.prange(total_size):
-        out_basis = ((i & mask_0) != 0) * 2 + ((i & mask_1) != 0)
+        if (i & mask_both) == 0:
+            s0 = state.flat[i]
+            s1 = state.flat[i | mask_1]
+            s2 = state.flat[i | mask_0]
+            s3 = state.flat[i | mask_both]
 
-        base = i & ~(mask_0_or_mask_1)
+            out.flat[i] = (
+                matrix[0, 0] * s0 + matrix[0, 1] * s1 + matrix[0, 2] * s2 + matrix[0, 3] * s3
+            )
 
-        result = (
-            matrix[out_basis, 0] * state.flat[base]
-            + matrix[out_basis, 1] * state.flat[base | mask_1]
-            + matrix[out_basis, 2] * state.flat[base | mask_0]
-            + matrix[out_basis, 3] * state.flat[base | mask_0_or_mask_1]
-        )
+            out.flat[i | mask_1] = (
+                matrix[1, 0] * s0 + matrix[1, 1] * s1 + matrix[1, 2] * s2 + matrix[1, 3] * s3
+            )
 
-        out.flat[i] = result
+            out.flat[i | mask_0] = (
+                matrix[2, 0] * s0 + matrix[2, 1] * s1 + matrix[2, 2] * s2 + matrix[2, 3] * s3
+            )
+
+            out.flat[i | mask_both] = (
+                matrix[3, 0] * s0 + matrix[3, 1] * s1 + matrix[3, 2] * s2 + matrix[3, 3] * s3
+            )
 
     return out, True
 
