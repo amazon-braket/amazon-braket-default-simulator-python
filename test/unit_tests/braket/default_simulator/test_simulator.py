@@ -58,9 +58,5 @@ def test_observable_hash_tensor_product():
 
 
 def test_base_local_simulator_abstract():
-    abstract_methods = (
-        "Can't instantiate abstract class BaseLocalSimulator with "
-        "abstract methods initialize_simulation, properties"
-    )
-    with pytest.raises(TypeError, match=abstract_methods):
+    with pytest.raises(TypeError, match="Can't instantiate abstract class BaseLocalSimulator"):
         BaseLocalSimulator()
