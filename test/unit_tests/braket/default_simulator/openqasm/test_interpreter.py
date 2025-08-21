@@ -55,12 +55,14 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     BoolType,
     FloatLiteral,
     FloatType,
+    GateModifierName,
     Identifier,
     IndexedIdentifier,
     IntegerLiteral,
     IntType,
     QuantumGate,
     QuantumGateDefinition,
+    QuantumGateModifier,
     SymbolLiteral,
     UintType,
 )
@@ -339,10 +341,12 @@ def test_array_declaration():
         base_type=IntType(), dimensions=[IntegerLiteral(2)]
     )
     assert context.get_type("multi_dim") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)),
+        dimensions=[IntegerLiteral(2), IntegerLiteral(2)],
     )
     assert context.get_type("by_ref") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)),
+        dimensions=[IntegerLiteral(2), IntegerLiteral(2)],
     )
     assert context.get_type("with_expressions") == ArrayType(
         base_type=UintType(IntegerLiteral(8)),
@@ -435,7 +439,8 @@ def test_indexed_expression():
     context = Interpreter().run(qasm)
 
     assert context.get_type("multi_dim") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(2), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)),
+        dimensions=[IntegerLiteral(2), IntegerLiteral(2)],
     )
     assert context.get_type("int_from_array") == IntType(IntegerLiteral(8))
     assert context.get_type("array_from_array") == ArrayType(
@@ -445,7 +450,8 @@ def test_indexed_expression():
         base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(3)]
     )
     assert context.get_type("using_set_multi_dim") == ArrayType(
-        base_type=UintType(IntegerLiteral(8)), dimensions=[IntegerLiteral(3), IntegerLiteral(2)]
+        base_type=UintType(IntegerLiteral(8)),
+        dimensions=[IntegerLiteral(3), IntegerLiteral(2)],
     )
 
     assert context.get_value("multi_dim") == ArrayLiteral(
@@ -682,7 +688,12 @@ def test_indexed_identifier():
         ]
     )
     assert context.get_value("two") == ArrayLiteral(
-        [BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(True), BooleanLiteral(False)]
+        [
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+            BooleanLiteral(True),
+            BooleanLiteral(False),
+        ]
     )
 
 
@@ -1120,15 +1131,52 @@ def test_gphase():
     assert np.allclose(simulation.state_vector, [-1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
 
 
-def test_no_neg_ctrl_phase():
+def test_neg_ctrl_phase():
     qasm = """
-    gate bad_phase a {
-        negctrl @ gphase(π/2);
-    }
+    gate some_ctrl_gphase(λ) a, b { ctrl @ negctrl @ gphase(λ) a, b; }
+    qubit[2] q;
+    x q[0];
+    h q[1];
+    some_ctrl_gphase(π) q[0], q[1];
+    h q[1];
     """
-    no_negctrl = "negctrl modifier undefined for gphase operation"
-    with pytest.raises(ValueError, match=no_negctrl):
-        Interpreter().run(qasm)
+    context = Interpreter().run(qasm)
+    circuit = context.circuit
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [0, 0, 0, -1])
+
+    assert context.get_gate_definition("some_ctrl_gphase") == QuantumGateDefinition(
+        name=Identifier("some_ctrl_gphase"),
+        arguments=[Identifier("λ")],
+        qubits=[Identifier("a"), Identifier("b")],
+        body=[
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("x"),
+                arguments=[],
+                qubits=[Identifier("b")],
+            ),
+            QuantumGate(
+                modifiers=[
+                    QuantumGateModifier(modifier=GateModifierName.ctrl, argument=IntegerLiteral(1))
+                ],
+                name=Identifier("U"),
+                arguments=[
+                    IntegerLiteral(0),
+                    IntegerLiteral(0),
+                    Identifier("λ"),
+                ],
+                qubits=[Identifier("a"), Identifier("b")],
+            ),
+            QuantumGate(
+                modifiers=[],
+                name=Identifier("x"),
+                arguments=[],
+                qubits=[Identifier("b")],
+            ),
+        ],
+    )
 
 
 def test_if():
@@ -1826,10 +1874,20 @@ def test_subroutine_classical_passed_by_value():
     """
     context = Interpreter().run(qasm)
     assert context.get_value("before") == ArrayLiteral(
-        [BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False)]
+        [
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+        ]
     )
     assert context.get_value("after") == ArrayLiteral(
-        [BooleanLiteral(True), BooleanLiteral(False), BooleanLiteral(False), BooleanLiteral(False)]
+        [
+            BooleanLiteral(True),
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+            BooleanLiteral(False),
+        ]
     )
 
 

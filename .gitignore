@@ -35,3 +35,4 @@ test/unit_tests/.DS_Store
 test/unit_tests/braket/.DS_Store
 test/.benchmarks
 .DS_Store
+.vscode/*
