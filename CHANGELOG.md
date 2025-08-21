@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.29.0 (2025-08-21)
+
+### Deprecations and Removals
+
+ * Drop Python 3.9, support 3.12, 3.13
+
+### Bug Fixes and Other Changes
+
+ * Pass username to testenv
+ * Formatting
+
+### Documentation Changes
+
+ * Add Python 3.12, 3.13 to supported versions
+
 ## v1.28.0 (2025-08-18)
 
 ### Features
