@@ -109,8 +109,11 @@ class BranchedSimulation(Simulation):
         probs = self._get_measurement_probabilities(current_state, qubit_idx)
 
         path_shots = self._shots_per_path[path_idx]
-        shots_for_outcome_0 = round(path_shots * probs[0])
-        shots_for_outcome_1 = path_shots - shots_for_outcome_0
+        rng_generator = np.random.default_rng()
+        path_samples = rng_generator.choice(len(probs), size=path_shots, p=probs)
+
+        shots_for_outcome_1 = sum(path_samples)
+        shots_for_outcome_0 = path_shots - shots_for_outcome_1
 
         if shots_for_outcome_1 == 0 or shots_for_outcome_0 == 0:
             # Deterministic outcome 0 - no need to branch

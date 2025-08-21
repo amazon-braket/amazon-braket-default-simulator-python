@@ -180,8 +180,8 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         assert len(counter) == 2
         assert "11" in counter
         assert "10" in counter
-        assert counter["11"] == 500, "Half outcomes should be |11⟩ due to the logic"
-        assert counter["10"] == 500, "Half outcomes should be |10⟩ due to the logic"
+        assert 400 < counter["11"] < 600, "About half outcomes should be |11⟩ due to the logic"
+        assert 400 < counter["10"] < 600, "About half outcomes should be |10⟩ due to the logic"
 
     def test_3_1_simple_conditional_operations_feedforward(self):
         """3.1 Simple conditional operations (feedforward)"""
