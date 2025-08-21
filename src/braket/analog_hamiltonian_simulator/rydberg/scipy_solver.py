@@ -70,19 +70,21 @@ def scipy_integrate_ode_run(
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html
 
     """
-
     operators_coefficients = _get_ops_coefs(
         program, configurations, rydberg_interaction_coef, simulation_times
     )
 
     # Define the initial state for the simulation
     size_hilbert_space = len(configurations)
-    state = np.zeros(size_hilbert_space)
+    state = np.zeros(size_hilbert_space, dtype=complex)
     state[0] = 1
 
-    states = [state]  # The history of all intermediate states
+    num_times = len(simulation_times)
+    # The history of all intermediate states. Prealloacte space
+    states = [None] * num_times
+    states[0] = state
 
-    if len(simulation_times) == 1:
+    if num_times == 1:
         return states
 
     dt = simulation_times[1] - simulation_times[0]  # The time step for the simulation
@@ -105,14 +107,13 @@ def scipy_integrate_ode_run(
         max_step=max_step,
         min_step=min_step,
     )
+    integrator.set_initial_value(state, 0)
 
-    if progress_bar:  # print a lightweight progress bar
+    if progress_bar:
         start_time = time.time()
+        update_interval = max(1, num_times // 100)
 
-    for index_time in range(len(simulation_times) - 1):
-        if progress_bar:  # print a lightweight progress bar
-            _print_progress_bar(len(simulation_times), index_time, start_time)
-
+    for index_time in range(num_times - 1):
         if not integrator.successful():
             raise Exception(
                 "ODE integration error: Try to increase "
@@ -120,12 +121,13 @@ def scipy_integrate_ode_run(
                 "the parameter `nsteps`."
             )
 
-        integrator.set_initial_value(state, index_time)
         integrator.integrate(index_time + 1)
 
-        # get the current state, and normalize it
         state = integrator.y
         state /= np.linalg.norm(state)  # normalize the state
-        states.append(state)
+        states[index_time + 1] = state
+
+        if progress_bar and (index_time % update_interval == 0 or index_time == num_times - 2):
+            _print_progress_bar(num_times, index_time, start_time)
 
     return states
