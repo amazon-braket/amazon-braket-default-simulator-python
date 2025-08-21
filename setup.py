@@ -55,7 +55,7 @@ setup(
         "test": [
             "pre-commit",
             "pylint",
-            "pytest",
+            "pytest==7.4.4",
             "pytest-benchmark",
             "pytest-cov",
             "pytest-rerunfailures",
