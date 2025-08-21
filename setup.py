@@ -55,7 +55,7 @@ setup(
         "test": [
             "pre-commit",
             "pylint",
-            "pytest==7.2.0",
+            "pytest",
             "pytest-benchmark",
             "pytest-cov",
             "pytest-rerunfailures",
@@ -70,7 +70,7 @@ setup(
     url="https://github.com/amazon-braket/amazon-braket-default-simulator-python",
     author="Amazon Web Services",
     description=(
-        "An open source quantum circuit simulator to be run locally with the Amazon Braket SDK"
+        "An open source quantum program simulator to be run locally with the Amazon Braket SDK"
     ),
     long_description=long_description,
     long_description_content_type="text/markdown",
