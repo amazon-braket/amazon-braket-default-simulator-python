@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.28.0 (2025-08-18)
+
+### Features
+
+ * Support verbatim boxes in interpreter
+
+### Bug Fixes and Other Changes
+
+ * bump antlr to 4.13.2
+
+## v1.27.0 (2025-08-13)
+
+### Features
+
+ * Program sets
+
 ## v1.26.7 (2025-06-19)
 
 ### Bug Fixes and Other Changes

@@ -1,7 +1,7 @@
-# Generated from qasm3Parser.g4 by ANTLR 4.9.2
-from antlr4 import ParseTreeVisitor
+# Generated from qasm3Parser.g4 by ANTLR 4.13.2
+from antlr4 import *
 
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .qasm3Parser import qasm3Parser
 else:
     from qasm3Parser import qasm3Parser

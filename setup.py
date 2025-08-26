@@ -36,15 +36,15 @@ setup(
         "pydantic>2",
         "scipy",
         "sympy",
-        # pinned for compatibility with strawberry fields
-        "antlr4-python3-runtime==4.9.2",
-        "amazon-braket-schemas>=1.21.2",
+        "antlr4-python3-runtime==4.13.2",
+        "amazon-braket-schemas>=1.25.0",
     ],
     entry_points={
         "braket.simulators": [
             "default = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_sv = braket.default_simulator.state_vector_simulator:StateVectorSimulator",
             "braket_dm = braket.default_simulator.density_matrix_simulator:DensityMatrixSimulator",
+            "braket_sv_branched_python = braket.default_simulator.branched_simulator:BranchedSimulator",
             (
                 "braket_ahs = "
                 "braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator:"
