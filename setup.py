@@ -58,7 +58,7 @@ setup(
             "pytest==7.4.4",
             "pytest-benchmark",
             "pytest-cov",
-            "pytest-rerunfailures",
+            "pytest-rerunfailures<16.0",
             "pytest-xdist",
             "ruff",
             "sphinx",
