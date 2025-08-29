@@ -17,7 +17,6 @@ from dataclasses import fields
 from enum import Enum
 from functools import singledispatchmethod
 from logging import Logger, getLogger
-from typing import Optional, Union
 
 import numpy as np
 from sympy import Symbol
@@ -119,22 +118,20 @@ class Interpreter:
     the ProgramContext object, which can be used for debugging or other customizability.
     """
 
-    def __init__(
-        self, context: Optional[AbstractProgramContext] = None, logger: Optional[Logger] = None
-    ):
+    def __init__(self, context: AbstractProgramContext | None = None, logger: Logger | None = None):
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
 
     def build_circuit(
-        self, source: str, inputs: Optional[dict[str, io_type]] = None, is_file: bool = False
+        self, source: str, inputs: dict[str, io_type] | None = None, is_file: bool = False
     ) -> Circuit:
         """Interpret an OpenQASM program and build a Circuit IR."""
         return self.run(source, inputs, is_file).circuit
 
     def run(
-        self, source: str, inputs: Optional[dict[str, io_type]] = None, is_file: bool = False
+        self, source: str, inputs: dict[str, io_type] | None = None, is_file: bool = False
     ) -> ProgramContext:
         """Interpret an OpenQASM program and return the program state"""
         if inputs:
@@ -155,7 +152,7 @@ class Interpreter:
         return self.context
 
     @singledispatchmethod
-    def visit(self, node: Union[QASMNode, list[QASMNode]]) -> Optional[QASMNode]:
+    def visit(self, node: QASMNode | list[QASMNode]) -> QASMNode | None:
         """Generic visit function for an AST node"""
         if node is None:
             return
@@ -217,7 +214,7 @@ class Interpreter:
         self.context.declare_variable(node.identifier.name, node_type, init_value, const=True)
 
     @visit.register
-    def _(self, node: BinaryExpression) -> Union[BinaryExpression, LiteralType]:
+    def _(self, node: BinaryExpression) -> BinaryExpression | LiteralType:
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
@@ -226,7 +223,7 @@ class Interpreter:
             return BinaryExpression(node.op, lhs, rhs)
 
     @visit.register
-    def _(self, node: UnaryExpression) -> Union[UnaryExpression, LiteralType]:
+    def _(self, node: UnaryExpression) -> UnaryExpression | LiteralType:
         expression = self.visit(node.expression)
         if is_literal(expression):
             return evaluate_unary_expression(expression, node.op)
@@ -263,7 +260,7 @@ class Interpreter:
         raise NotImplementedError("Reset not supported")
 
     @visit.register
-    def _(self, node: IndexedIdentifier) -> Union[IndexedIdentifier, LiteralType]:
+    def _(self, node: IndexedIdentifier) -> IndexedIdentifier | LiteralType:
         """Returns an identifier for qubits, value for classical identifier"""
         name = node.name
         indices = []
@@ -291,7 +288,7 @@ class Interpreter:
         return RangeDefinition(start, end, step)
 
     @visit.register
-    def _(self, node: IndexExpression) -> Union[IndexedIdentifier, ArrayLiteral]:
+    def _(self, node: IndexExpression) -> IndexedIdentifier | ArrayLiteral:
         """Returns an identifier for qubits, values for classical identifier"""
         type_width = None
         index = self.visit(node.index)
@@ -625,7 +622,7 @@ class Interpreter:
         self.context.add_subroutine(node.name.name, node)
 
     @visit.register
-    def _(self, node: FunctionCall) -> Optional[QASMNode]:
+    def _(self, node: FunctionCall) -> QASMNode | None:
         self._uses_advanced_language_features = True
         function_name = node.name.name
         arguments = self.visit(node.arguments)
@@ -669,7 +666,7 @@ class Interpreter:
             return return_value
 
     @visit.register
-    def _(self, node: ReturnStatement) -> Optional[QASMNode]:
+    def _(self, node: ReturnStatement) -> QASMNode | None:
         self._uses_advanced_language_features = True
         return self.visit(node.expression)
 
@@ -684,7 +681,7 @@ class Interpreter:
         self,
         gate_name: str,
         arguments: list[FloatLiteral],
-        qubits: list[Union[Identifier, IndexedIdentifier]],
+        qubits: list[Identifier | IndexedIdentifier],
         modifiers: list[QuantumGateModifier],
     ) -> None:
         """Add unitary operation to the circuit"""
@@ -695,7 +692,7 @@ class Interpreter:
             modifiers,
         )
 
-    def handle_phase(self, phase: FloatLiteral, qubits: Optional[Iterable[int]] = None) -> None:
+    def handle_phase(self, phase: FloatLiteral, qubits: Iterable[int] | None = None) -> None:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
 
