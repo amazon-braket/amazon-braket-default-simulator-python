@@ -18,7 +18,6 @@ import pytest
 
 from braket.default_simulator import gate_operations, observables
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
-from braket.default_simulator.simulation_strategies.batch_operation_strategy import apply_operations
 
 evolve_testdata = [
     ([gate_operations.Hadamard([0])], 1, [0.70710678, 0.70710678], [0.5, 0.5]),

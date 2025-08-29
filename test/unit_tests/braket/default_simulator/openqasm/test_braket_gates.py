@@ -53,7 +53,7 @@ from braket.default_simulator.gate_operations import (
     Vi,
 )
 from braket.default_simulator.openqasm.interpreter import Interpreter
-from braket.default_simulator.simulation_strategies.batch_operation_strategy import (
+from braket.default_simulator.simulation_strategies.single_operation_strategy import (
     apply_operations,
 )
 
