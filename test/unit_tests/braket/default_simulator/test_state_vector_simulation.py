@@ -296,18 +296,18 @@ def test_state_with_observables_fails_before_applying(batch_size):
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 def test_simulation_qft_circuit(qft_circuit_operations, batch_size):
     qubit_count = 16
-    simulator = StateVectorSimulation(qubit_count, 0, batch_size)
+    simulation = StateVectorSimulation(qubit_count, 0, batch_size)
     operations = qft_circuit_operations(qubit_count)
-    simulator.evolve(operations)
-    assert np.allclose(simulator.probabilities, [1 / (2**qubit_count)] * (2**qubit_count))
+    simulation.evolve(operations)
+    assert np.allclose(simulation.probabilities, [1 / (2**qubit_count)] * (2**qubit_count))
 
 
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 def test_simulation_retrieve_samples(batch_size):
-    simulator = StateVectorSimulation(2, 10000, batch_size)
-    simulator.evolve([gate_operations.Hadamard([0]), gate_operations.CX([0, 1])])
-    counter = Counter(simulator.retrieve_samples())
-    assert simulator.qubit_count == 2
+    simulation = StateVectorSimulation(2, 10000, batch_size)
+    simulation.evolve([gate_operations.Hadamard([0]), gate_operations.CX([0, 1])])
+    counter = Counter(simulation.retrieve_samples())
+    assert simulation.qubit_count == 2
     assert counter.keys() == {0, 3}
     assert 0.4 < counter[0] / (counter[0] + counter[3]) < 0.6
     assert 0.4 < counter[3] / (counter[0] + counter[3]) < 0.6
