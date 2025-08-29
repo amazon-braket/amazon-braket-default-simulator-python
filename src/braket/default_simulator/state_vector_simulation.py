@@ -107,12 +107,10 @@ class StateVectorSimulation(Simulation):
         )
         return np.reshape(final, 2**qubit_count)
 
-    def retrieve_samples(self) -> np.ndarray[int]:
-        cumprobs = np.cumsum(self.probabilities)
-
-        randoms = self._rng_generator.random(size=self._shots)
-
-        return np.searchsorted(cumprobs, randoms)
+    def retrieve_samples(self) -> np.ndarray:
+        return np.searchsorted(
+            np.cumsum(self.probabilities), self._rng_generator.random(size=self._shots)
+        )
 
     @property
     def state_vector(self) -> np.ndarray:
