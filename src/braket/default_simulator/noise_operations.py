@@ -26,6 +26,11 @@ from braket.default_simulator.operation_helpers import (
     ir_matrix_to_ndarray,
 )
 
+_PAULI_I = np.eye(2)
+_PAULI_X = np.array([[0, 1], [1, 0]], dtype=complex)
+_PAULI_Y = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
+_PAULI_Z = np.diag([1.0, -1.0])
+
 
 class BitFlip(KrausOperation):
     """Bit Flip noise channel"""
@@ -36,9 +41,7 @@ class BitFlip(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        k0 = np.sqrt(1 - self._probability) * np.array([[1, 0], [0, 1]], dtype=complex)
-        k1 = np.sqrt(self._probability) * np.array([[0, 1], [1, 0]], dtype=complex)
-        return [k0, k1]
+        return [np.sqrt(1 - self._probability) * _PAULI_I, np.sqrt(self._probability) * _PAULI_X]
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -63,9 +66,7 @@ class PhaseFlip(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        k0 = np.sqrt(1 - self._probability) * np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
-        k1 = np.sqrt(self._probability) * np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
-        return [k0, k1]
+        return [np.sqrt(1 - self._probability) * _PAULI_I, np.sqrt(self._probability) * _PAULI_Z]
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -92,13 +93,12 @@ class PauliChannel(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        K0 = np.sqrt(1 - self._probX - self._probY - self._probZ) * np.array(
-            [[1.0, 0.0], [0.0, 1.0]], dtype=complex
-        )
-        K1 = np.sqrt(self._probX) * np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
-        K2 = np.sqrt(self._probY) * np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
-        K3 = np.sqrt(self._probZ) * np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
-        return [K0, K1, K2, K3]
+        return [
+            np.sqrt(1 - self._probX - self._probY - self._probZ) * _PAULI_I,
+            np.sqrt(self._probX) * _PAULI_X,
+            np.sqrt(self._probY) * _PAULI_Y,
+            np.sqrt(self._probZ) * _PAULI_Z,
+        ]
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -119,19 +119,20 @@ def _pauli_channel(instruction) -> PauliChannel:
 class Depolarizing(KrausOperation):
     """Depolarizing noise channel"""
 
+    _k2_base = np.array([[0.0, -1.0], [1.0, 0.0]], dtype=complex)
+
     def __init__(self, targets, probability):
         self._targets = tuple(targets)
         self._probability = probability
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        K0 = np.sqrt(1 - self._probability) * np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
-        K1 = np.sqrt(self._probability / 3) * np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
-        K2 = (
-            np.sqrt(self._probability / 3) * 1j * np.array([[0.0, -1.0], [1.0, 0.0]], dtype=complex)
-        )
-        K3 = np.sqrt(self._probability / 3) * np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
-        return [K0, K1, K2, K3]
+        return [
+            np.sqrt(1 - self._probability) * _PAULI_I,
+            np.sqrt(self._probability / 3) * _PAULI_X,
+            np.sqrt(self._probability / 3) * 1j * Depolarizing._k2_base,
+            np.sqrt(self._probability / 3) * _PAULI_Z,
+        ]
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -156,19 +157,11 @@ class TwoQubitDepolarizing(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
-        SX = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
-        SY = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
-        SZ = np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
-
-        K_list_single = [SI, SX, SY, SZ]
-        K_list = [np.kron(i, j) for i in K_list_single for j in K_list_single]
-
-        K_list[0] *= np.sqrt(1 - self._probability)
-
-        K_list[1:] = [np.sqrt(self._probability / 15) * i for i in K_list[1:]]
-
-        return K_list
+        k_list_single = [_PAULI_X, _PAULI_X, _PAULI_Y, _PAULI_Z]
+        k_list = [np.kron(i, j) for i in k_list_single for j in k_list_single]
+        k_list[0] *= np.sqrt(1 - self._probability)
+        k_list[1:] = [np.sqrt(self._probability / 15) * i for i in k_list[1:]]
+        return k_list
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -187,20 +180,23 @@ def _two_qubit_depolarizing(instruction) -> TwoQubitDepolarizing:
 class TwoQubitDephasing(KrausOperation):
     """Two-qubit Dephasing noise channel"""
 
+    _k0_base = np.eye(4)
+    _k1_base = np.kron(_PAULI_I, _PAULI_Z)
+    _k2_base = np.kron(_PAULI_Z, _PAULI_I)
+    _k3_base = np.kron(_PAULI_Z, _PAULI_Z)
+
     def __init__(self, targets, probability):
         self._targets = tuple(targets)
         self._probability = probability
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        SI = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex)
-        SZ = np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex)
-        K0 = np.sqrt(1 - self._probability) * np.kron(SI, SI)
-        K1 = np.sqrt(self._probability / 3) * np.kron(SI, SZ)
-        K2 = np.sqrt(self._probability / 3) * np.kron(SZ, SI)
-        K3 = np.sqrt(self._probability / 3) * np.kron(SZ, SZ)
-
-        return [K0, K1, K2, K3]
+        return [
+            np.sqrt(1 - self._probability) * TwoQubitDephasing._k0_base,
+            np.sqrt(self._probability / 3) * TwoQubitDephasing._k1_base,
+            np.sqrt(self._probability / 3) * TwoQubitDephasing._k2_base,
+            np.sqrt(self._probability / 3) * TwoQubitDephasing._k3_base,
+        ]
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -225,9 +221,10 @@ class AmplitudeDamping(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex)
-        K1 = np.array([[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex)
-        return [K0, K1]
+        return [
+            np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex),
+            np.array([[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex),
+        ]
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -253,19 +250,16 @@ class GeneralizedAmplitudeDamping(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        K0 = np.sqrt(self._probability) * np.array(
-            [[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex
-        )
-        K1 = np.sqrt(self._probability) * np.array(
-            [[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex
-        )
-        K2 = np.sqrt(1 - self._probability) * np.array(
-            [[np.sqrt(1 - self._gamma), 0.0], [0.0, 1.0]], dtype=complex
-        )
-        K3 = np.sqrt(1 - self._probability) * np.array(
-            [[0.0, 0.0], [np.sqrt(self._gamma), 0.0]], dtype=complex
-        )
-        return [K0, K1, K2, K3]
+        return [
+            np.sqrt(self._probability)
+            * np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex),
+            np.sqrt(self._probability)
+            * np.array([[0.0, np.sqrt(self._gamma)], [0.0, 0.0]], dtype=complex),
+            np.sqrt(1 - self._probability)
+            * np.array([[np.sqrt(1 - self._gamma), 0.0], [0.0, 1.0]], dtype=complex),
+            np.sqrt(1 - self._probability)
+            * np.array([[0.0, 0.0], [np.sqrt(self._gamma), 0.0]], dtype=complex),
+        ]
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -296,9 +290,10 @@ class PhaseDamping(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        K0 = np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex)
-        K1 = np.array([[0.0, 0.0], [0.0, np.sqrt(self._gamma)]], dtype=complex)
-        return [K0, K1]
+        return [
+            np.array([[1.0, 0.0], [0.0, np.sqrt(1 - self._gamma)]], dtype=complex),
+            np.array([[0.0, 0.0], [0.0, np.sqrt(self._gamma)]], dtype=complex),
+        ]
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -347,10 +342,10 @@ class TwoQubitPauliChannel(KrausOperation):
     """Two qubit Pauli noise channel"""
 
     _paulis = {
-        "I": np.array([[1.0, 0.0], [0.0, 1.0]], dtype=complex),
-        "X": np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex),
-        "Y": np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex),
-        "Z": np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex),
+        "I": _PAULI_I,
+        "X": _PAULI_X,
+        "Y": _PAULI_Y,
+        "Z": _PAULI_Z,
     }
     _tensor_products_strings = itertools.product(_paulis.keys(), repeat=2)
     _names_list = ["".join(x) for x in _tensor_products_strings]
@@ -361,16 +356,16 @@ class TwoQubitPauliChannel(KrausOperation):
 
         total_prob = sum(self.probabilities.values())
 
-        K_list = [np.sqrt(1 - total_prob) * np.identity(4)]  # identity
+        k_list = [np.sqrt(1 - total_prob) * np.identity(4)]  # identity
         for pstring in self._names_list[1:]:  # ignore "II"
             if pstring in self.probabilities:
                 mat = np.sqrt(self.probabilities[pstring]) * np.kron(
                     self._paulis[pstring[0]], self._paulis[pstring[1]]
                 )
-                K_list.append(mat)
+                k_list.append(mat)
             else:
-                K_list.append(np.zeros((4, 4)))
-        self._matrices = K_list
+                k_list.append(np.zeros((4, 4)))
+        self._matrices = k_list
 
     @property
     def matrices(self) -> list[np.ndarray]:
