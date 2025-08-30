@@ -141,9 +141,8 @@ class Interpreter:
             with open(source, encoding="utf-8") as f:
                 source = f.read()
 
-        program = parse(source)
         self._uses_advanced_language_features = False
-        self.visit(program)
+        self.visit(parse(source))
         if self._uses_advanced_language_features:
             self.logger.warning(
                 "This program uses OpenQASM language features that may "
@@ -159,8 +158,7 @@ class Interpreter:
         if not isinstance(node, QASMNode):
             return node
         for field in fields(node):
-            value = getattr(node, field.name)
-            setattr(node, field.name, self.visit(value))
+            setattr(node, field.name, self.visit(getattr(node, field.name)))
         return node
 
     @visit.register
@@ -219,16 +217,14 @@ class Interpreter:
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
             return evaluate_binary_expression(lhs, rhs, node.op)
-        else:
-            return BinaryExpression(node.op, lhs, rhs)
+        return BinaryExpression(node.op, lhs, rhs)
 
     @visit.register
     def _(self, node: UnaryExpression) -> UnaryExpression | LiteralType:
         expression = self.visit(node.expression)
         if is_literal(expression):
             return evaluate_unary_expression(expression, node.op)
-        else:
-            return UnaryExpression(node.op, expression)
+        return UnaryExpression(node.op, expression)
 
     @visit.register
     def _(self, node: Cast) -> LiteralType:
@@ -246,9 +242,9 @@ class Interpreter:
             return node
         if node.name in builtin_constants:
             return builtin_constants[node.name]
-        if not self.context.is_initialized(node.name):
-            raise NameError(f"Identifier '{node.name}' is not initialized.")
-        return self.context.get_value_by_identifier(node)
+        if self.context.is_initialized(node.name):
+            return self.context.get_value_by_identifier(node)
+        raise NameError(f"Identifier '{node.name}' is not initialized.")
 
     @visit.register
     def _(self, node: QubitDeclaration) -> None:
@@ -272,8 +268,7 @@ class Interpreter:
                 for element in index:
                     if isinstance(element, RangeDefinition):
                         self._uses_advanced_language_features = True
-                    element = self.visit(element)
-                    indices.append([element])
+                    indices.append([self.visit(element)])
         updated = IndexedIdentifier(name, indices)
         if name.name not in self.context.qubit_mapping:
             return self.context.get_value_by_identifier(updated)
@@ -457,8 +452,7 @@ class Interpreter:
         if is_inverted(node):
             node = invert_phase(node)
         if is_controlled(node):
-            node = convert_phase_to_gate(node)
-            self.visit(node)
+            self.visit(convert_phase_to_gate(node))
         else:
             self.handle_phase(node.argument)
 
@@ -466,18 +460,16 @@ class Interpreter:
     def _(self, node: QuantumGateModifier) -> QuantumGateModifier:
         match node.modifier:
             case GateModifierName.ctrl | GateModifierName.negctrl:
-                if node.argument is None:
-                    node.argument = IntegerLiteral(1)
-                else:
-                    node.argument = self.visit(node.argument)
+                node.argument = (
+                    IntegerLiteral(1) if node.argument is None else self.visit(node.argument)
+                )
             case GateModifierName.pow:
                 node.argument = self.visit(node.argument)
         return node
 
     @visit.register
     def _(self, node: QuantumMeasurement) -> None:
-        qubits = self.context.get_qubits(self.visit(node.qubit))
-        return qubits
+        return self.context.get_qubits(self.visit(node.qubit))
 
     @visit.register
     def _(self, node: Box) -> None:
@@ -506,15 +498,12 @@ class Interpreter:
                 match elem := indices[0]:
                     case DiscreteSet():
                         self._uses_advanced_language_features = True
-                        target_indices = [self.visit(val).value for val in elem.values]
-                        targets.extend(target_indices)
+                        targets.extend([self.visit(val).value for val in elem.values])
                     case RangeDefinition():
                         self._uses_advanced_language_features = True
-                        target_indices = convert_range_def_to_range(self.visit(elem))
-                        targets.extend(target_indices)
+                        targets.extend(convert_range_def_to_range(self.visit(elem)))
                     case _:
-                        target_idx = elem.value
-                        targets.append(target_idx)
+                        targets.append(elem.value)
 
         if not len(targets):
             targets = None
@@ -534,8 +523,7 @@ class Interpreter:
             rvalue = self.visit(node.rvalue)
         else:
             op = get_operator_of_assignment_operator(node.op)
-            binary_expression = BinaryExpression(op, node.lvalue, node.rvalue)
-            rvalue = self.visit(binary_expression)
+            rvalue = self.visit(BinaryExpression(op, node.lvalue, node.rvalue))
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
@@ -553,8 +541,7 @@ class Interpreter:
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
         condition = cast_to(BooleanLiteral, self.visit(node.condition))
-        block = node.if_block if condition.value else node.else_block
-        for statement in block:
+        for statement in node.if_block if condition.value else node.else_block:
             self.visit(statement)
 
     @visit.register
@@ -566,12 +553,10 @@ class Interpreter:
         # DiscreteSet
         else:
             index_values = index.values
-        block = node.block
         for i in index_values:
-            block_copy = deepcopy(block)
             with self.context.enter_scope():
                 self.context.declare_variable(node.identifier.name, node.type, i)
-                self.visit(block_copy)
+                self.visit(deepcopy(node.block))
 
     @visit.register
     def _(self, node: WhileLoop) -> None:
@@ -583,9 +568,7 @@ class Interpreter:
     def _(self, node: Include) -> None:
         self._uses_advanced_language_features = True
         with open(node.filename, encoding="utf-8") as f:
-            included = f.read()
-            parsed = parse(included)
-            self.visit(parsed)
+            self.visit(parse(f.read()))
 
     @visit.register
     def _(self, node: Pragma) -> None:
