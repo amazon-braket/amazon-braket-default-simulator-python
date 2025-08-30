@@ -44,7 +44,7 @@ def apply_operations(
             :math:`(qubit\_count, 0)` tensor
         qubit_count (int): The number of qubits in the state
         operations (list[GateOperation]): The operations to apply to the state vector
-        batch_size: The number of operations to contract in each batch
+        batch_size (int): The number of operations to contract in each batch.
 
     Returns:
         np.ndarray: The state vector after applying the given operations, as a type

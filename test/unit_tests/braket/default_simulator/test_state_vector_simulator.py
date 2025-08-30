@@ -31,6 +31,7 @@ from braket.ir.openqasm import Program as OpenQASMProgram
 from braket.ir.openqasm.program_set_v1 import ProgramSet
 from braket.ir.openqasm.program_v1 import Program
 from braket.task_result import AdditionalMetadata, TaskMetadata
+from braket.default_simulator.linalg_utils import multiply_matrix
 from braket.task_result.program_set_executable_result_v1 import (
     ProgramSetExecutableResult,
     ProgramSetExecutableResultMetadata,
@@ -1453,6 +1454,86 @@ def test_run_multiple():
     assert np.allclose(results[0].resultTypes[0].value, np.array([1, 1]) / np.sqrt(2))
     assert np.allclose(results[1].resultTypes[0].value, np.array([1, 0]))
     assert np.allclose(results[2].resultTypes[0].value, np.array([0, 1]))
+
+
+@pytest.mark.parametrize(
+    "n_qubits,qubit_0,qubit_1",
+    [
+        (2, 0, 1),  # 2 qubits, swap 0 and 1
+        (3, 0, 2),  # 3 qubits, swap 0 and 2
+        (4, 1, 2),  # 4 qubits, swap 1 and 2
+    ],
+)
+def test_run_multiple_swap_large(n_qubits, qubit_0, qubit_1):
+    payload = OpenQASMProgram(
+        source=f"""
+        OPENQASM 3.0;
+        qubit[{n_qubits}] q;
+        h q[0:{n_qubits}];
+        swap q[{qubit_0}], q[{qubit_1}];
+        #pragma braket result state_vector
+        """
+    )
+
+    simulator = StateVectorSimulator()
+    result = simulator.run(payload, shots=0)
+
+    size = 1 << n_qubits
+    assert np.allclose(np.sum(np.abs(result.resultTypes[0].value) ** 2), 1.0)
+    assert len(result.resultTypes[0].value) == size
+
+    double_swap = OpenQASMProgram(
+        source=f"""
+        OPENQASM 3.0;
+        qubit[{n_qubits}] q;
+        h q[0:{n_qubits}];
+        swap q[{qubit_0}], q[{qubit_1}];
+        swap q[{qubit_0}], q[{qubit_1}];
+        #pragma braket result state_vector
+        """
+    )
+
+    double_result = simulator.run(double_swap, shots=0)
+    expected_state = np.ones(size) / np.sqrt(size)
+    assert np.allclose(double_result.resultTypes[0].value, expected_state)
+
+
+def test_multiply_matrix_controlled_no_swap_info():
+    state = np.zeros((2, 2), dtype=complex)
+    state[0, 1] = 1.0
+
+    x_matrix = np.array([[0, 1], [1, 0]], dtype=complex)
+
+    result = multiply_matrix(
+        state=state,
+        matrix=x_matrix,
+        targets=(1,),
+        controls=(0,),
+        control_state=(0,),
+        return_swap_info=False,
+    )
+
+    expected = np.zeros((2, 2), dtype=complex)
+    expected[0, 0] = 1.0
+
+    assert isinstance(result, np.ndarray)
+    assert not isinstance(result, tuple)
+    assert np.allclose(result, expected)
+
+    result_with_swap = multiply_matrix(
+        state=state,
+        matrix=x_matrix,
+        targets=(1,),
+        controls=(0,),
+        control_state=(0,),
+        return_swap_info=True,
+    )
+
+    assert isinstance(result_with_swap, tuple)
+    assert len(result_with_swap) == 2
+    assert isinstance(result_with_swap[0], np.ndarray)
+    assert isinstance(result_with_swap[1], bool)
+    assert np.allclose(result_with_swap[0], expected)
 
 
 @pytest.mark.parametrize(
