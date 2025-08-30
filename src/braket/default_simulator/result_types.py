@@ -345,26 +345,26 @@ def _from_single_observable(
     # IR tensor product observables are decoupled from targets
     is_factor: bool = False,
 ) -> Observable:
-    if observable == "i":
-        return Identity(_actual_targets(targets, 1, is_factor))
-    elif observable == "h":
-        return Hadamard(_actual_targets(targets, 1, is_factor))
-    elif observable == "x":
-        return PauliX(_actual_targets(targets, 1, is_factor))
-    elif observable == "y":
-        return PauliY(_actual_targets(targets, 1, is_factor))
-    elif observable == "z":
-        return PauliZ(_actual_targets(targets, 1, is_factor))
-    else:
-        try:
-            matrix = ir_matrix_to_ndarray(observable)
-            if is_factor:
-                num_qubits = int(np.log2(len(matrix)))
-                return Hermitian(matrix, _actual_targets(targets, num_qubits, True))
-            else:
+    match observable:
+        case "i":
+            return Identity(_actual_targets(targets, 1, is_factor))
+        case "h":
+            return Hadamard(_actual_targets(targets, 1, is_factor))
+        case "x":
+            return PauliX(_actual_targets(targets, 1, is_factor))
+        case "y":
+            return PauliY(_actual_targets(targets, 1, is_factor))
+        case "z":
+            return PauliZ(_actual_targets(targets, 1, is_factor))
+        case _:
+            try:
+                matrix = ir_matrix_to_ndarray(observable)
+                if is_factor:
+                    num_qubits = int(np.log2(len(matrix)))
+                    return Hermitian(matrix, _actual_targets(targets, num_qubits, True))
                 return Hermitian(matrix, targets)
-        except Exception:
-            raise ValueError(f"Invalid observable specified: {observable}, targets: {targets}")
+            except Exception:
+                raise ValueError(f"Invalid observable specified: {observable}, targets: {targets}")
 
 
 def _actual_targets(targets: list[int], num_qubits: int, is_factor: bool):

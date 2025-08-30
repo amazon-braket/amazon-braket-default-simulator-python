@@ -464,13 +464,14 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGateModifier) -> QuantumGateModifier:
-        if node.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
-            if node.argument is None:
-                node.argument = IntegerLiteral(1)
-            else:
+        match node.modifier:
+            case GateModifierName.ctrl | GateModifierName.negctrl:
+                if node.argument is None:
+                    node.argument = IntegerLiteral(1)
+                else:
+                    node.argument = self.visit(node.argument)
+            case GateModifierName.pow:
                 node.argument = self.visit(node.argument)
-        elif node.modifier == GateModifierName.pow:
-            node.argument = self.visit(node.argument)
         return node
 
     @visit.register
@@ -503,17 +504,18 @@ class Interpreter:
                         "Multi-Dimensional indexing not supported for classical registers."
                     )
                 elem = indices[0]
-                if isinstance(elem, DiscreteSet):
-                    self._uses_advanced_language_features = True
-                    target_indices = [self.visit(val).value for val in elem.values]
-                    targets.extend(target_indices)
-                elif isinstance(elem, RangeDefinition):
-                    self._uses_advanced_language_features = True
-                    target_indices = convert_range_def_to_range(self.visit(elem))
-                    targets.extend(target_indices)
-                else:
-                    target_idx = elem.value
-                    targets.append(target_idx)
+                match elem:
+                    case DiscreteSet():
+                        self._uses_advanced_language_features = True
+                        target_indices = [self.visit(val).value for val in elem.values]
+                        targets.extend(target_indices)
+                    case RangeDefinition():
+                        self._uses_advanced_language_features = True
+                        target_indices = convert_range_def_to_range(self.visit(elem))
+                        targets.extend(target_indices)
+                    case _:
+                        target_idx = elem.value
+                        targets.append(target_idx)
 
         if not len(targets):
             targets = None
