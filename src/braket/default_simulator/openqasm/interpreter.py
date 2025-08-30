@@ -590,25 +590,24 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Pragma) -> None:
-        parsed = self.context.parse_pragma(node.command)
-        if node.command.startswith("braket result"):
-            if not parsed:
-                raise TypeError(f"Result type {node.command.split()[2]} is not supported.")
-            self.context.add_result(parsed)
-        elif node.command.startswith("braket unitary"):
-            unitary, target = parsed
-            self.context.add_custom_unitary(unitary, target)
-        elif node.command.startswith("braket noise kraus"):
-            matrices, target = parsed
-            self.context.add_kraus_instruction(matrices, target)
-        elif node.command.startswith("braket noise"):
-            noise_instruction, target, probabilities = parsed
-            self.context.add_noise_instruction(noise_instruction, target, probabilities)
-        elif node.command.startswith("braket verbatim"):
-            self.context.in_verbatim_box = True
-
-        else:
-            raise NotImplementedError(f"Pragma '{node.command}' is not supported")
+        match parsed := self.context.parse_pragma(node.command):
+            case unitary, target if node.command.startswith("braket unitary"):
+                self.context.add_custom_unitary(unitary, target)
+            case matrices, target if node.command.startswith("braket noise kraus"):
+                self.context.add_kraus_instruction(matrices, target)
+            case noise_instruction, target, probabilities if node.command.startswith(
+                "braket noise"
+            ):
+                self.context.add_noise_instruction(noise_instruction, target, probabilities)
+            case _:
+                if node.command.startswith("braket result"):
+                    if not parsed:
+                        raise TypeError(f"Result type {node.command.split()[2]} is not supported.")
+                    self.context.add_result(parsed)
+                elif node.command.startswith("braket verbatim"):
+                    self.context.in_verbatim_box = True
+                else:
+                    raise NotImplementedError(f"Pragma '{node.command}' is not supported")
 
     @visit.register
     def _(self, node: SubroutineDefinition) -> None:
