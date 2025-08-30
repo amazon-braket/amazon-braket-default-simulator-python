@@ -503,8 +503,7 @@ class Interpreter:
                     raise ValueError(
                         "Multi-Dimensional indexing not supported for classical registers."
                     )
-                elem = indices[0]
-                match elem:
+                match elem := indices[0]:
                     case DiscreteSet():
                         self._uses_advanced_language_features = True
                         target_indices = [self.visit(val).value for val in elem.values]
@@ -590,24 +589,22 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Pragma) -> None:
-        match parsed := self.context.parse_pragma(node.command):
-            case unitary, target if node.command.startswith("braket unitary"):
+        match self.context.parse_pragma(command := node.command):
+            case parsed if command.startswith("braket result"):
+                if not parsed:
+                    raise TypeError(f"Result type {command.split()[2]} is not supported.")
+                self.context.add_result(parsed)
+            case unitary, target if command.startswith("braket unitary"):
                 self.context.add_custom_unitary(unitary, target)
-            case matrices, target if node.command.startswith("braket noise kraus"):
+            case matrices, target if command.startswith("braket noise kraus"):
                 self.context.add_kraus_instruction(matrices, target)
-            case noise_instruction, target, probabilities if node.command.startswith(
-                "braket noise"
-            ):
-                self.context.add_noise_instruction(noise_instruction, target, probabilities)
+            case noise, target, probabilities if command.startswith("braket noise"):
+                self.context.add_noise_instruction(noise, target, probabilities)
             case _:
-                if node.command.startswith("braket result"):
-                    if not parsed:
-                        raise TypeError(f"Result type {node.command.split()[2]} is not supported.")
-                    self.context.add_result(parsed)
-                elif node.command.startswith("braket verbatim"):
+                if command.startswith("braket verbatim"):
                     self.context.in_verbatim_box = True
                 else:
-                    raise NotImplementedError(f"Pragma '{node.command}' is not supported")
+                    raise NotImplementedError(f"Pragma '{command}' is not supported")
 
     @visit.register
     def _(self, node: SubroutineDefinition) -> None:
