@@ -496,9 +496,9 @@ class Interpreter:
                         "Multi-Dimensional indexing not supported for classical registers."
                     )
                 match elem := indices[0]:
-                    case DiscreteSet():
+                    case DiscreteSet(values):
                         self._uses_advanced_language_features = True
-                        targets.extend([self.visit(val).value for val in elem.values])
+                        targets.extend([self.visit(val).value for val in values])
                     case RangeDefinition():
                         self._uses_advanced_language_features = True
                         targets.extend(convert_range_def_to_range(self.visit(elem)))
