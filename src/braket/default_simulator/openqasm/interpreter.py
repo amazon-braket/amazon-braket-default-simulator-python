@@ -573,16 +573,17 @@ class Interpreter:
     @visit.register
     def _(self, node: Pragma) -> None:
         match self.context.parse_pragma(command := node.command):
+            case op, target:
+                if command.startswith("braket unitary"):
+                    self.context.add_custom_unitary(op, target)
+                elif command.startswith("braket noise kraus"):
+                    self.context.add_kraus_instruction(op, target)
+            case noise, target, probabilities if command.startswith("braket noise"):
+                self.context.add_noise_instruction(noise, target, probabilities)
             case parsed if command.startswith("braket result"):
                 if not parsed:
                     raise TypeError(f"Result type {command.split()[2]} is not supported.")
                 self.context.add_result(parsed)
-            case unitary, target if command.startswith("braket unitary"):
-                self.context.add_custom_unitary(unitary, target)
-            case matrices, target if command.startswith("braket noise kraus"):
-                self.context.add_kraus_instruction(matrices, target)
-            case noise, target, probabilities if command.startswith("braket noise"):
-                self.context.add_noise_instruction(noise, target, probabilities)
             case _:
                 if command.startswith("braket verbatim"):
                     self.context.in_verbatim_box = True
