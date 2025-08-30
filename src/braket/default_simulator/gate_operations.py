@@ -907,8 +907,8 @@ class GPi(GateOperation):
         )
         self._matrix = np.array(
             [
-                [0, np.exp(-1j * self._angle)],
-                [np.exp(1j * self._angle), 0],
+                [0, np.exp(-1j * angle)],
+                [np.exp(1j * angle), 0],
             ],
             dtype=complex,
         )
@@ -933,8 +933,8 @@ class GPi2(GateOperation):
         )
         self._matrix = np.array(
             [
-                [1, -1j * np.exp(-1j * self._angle)],
-                [-1j * np.exp(1j * self._angle), 1],
+                [1, -1j * np.exp(-1j * angle)],
+                [-1j * np.exp(1j * angle), 1],
             ],
             dtype=complex,
         ) / np.sqrt(2)
