@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import singledispatch
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -86,7 +86,7 @@ class TargetedResultType(ResultType, ABC):
     Holds an observable that may target qubits.
     """
 
-    def __init__(self, targets: Optional[list[int]] = None):
+    def __init__(self, targets: list[int] | None = None):
         """
         Args:
             targets (list[int], optional): The target qubits of the result type.
@@ -95,7 +95,7 @@ class TargetedResultType(ResultType, ABC):
         self._targets = targets
 
     @property
-    def targets(self) -> Optional[tuple[int, ...]]:
+    def targets(self) -> tuple[int, ...] | None:
         """tuple[int], optional: The target qubits of the result type, if any."""
         return self._targets
 
@@ -119,10 +119,10 @@ class ObservableResultType(TargetedResultType, ABC):
         return self._observable
 
     @property
-    def targets(self) -> Optional[tuple[int, ...]]:
+    def targets(self) -> tuple[int, ...] | None:
         return self._observable.measured_qubits
 
-    def calculate(self, simulation: Simulation) -> Union[float, list[float]]:
+    def calculate(self, simulation: Simulation) -> float | list[float]:
         """Calculates the result type using the underlying observable.
 
         Returns a real number if the observable has defined targets,
@@ -133,7 +133,7 @@ class ObservableResultType(TargetedResultType, ABC):
             simulation (Simulation): The simulation to use in the calculation.
 
         Returns:
-            Union[float, list[float]]: The value of the result type;
+            float | list[float]: The value of the result type;
             will be a real due to self-adjointness of observable.
         """
         if self._observable.measured_qubits:
@@ -184,10 +184,10 @@ class DensityMatrix(TargetedResultType):
     Simply returns the given density matrix.
     """
 
-    def __init__(self, targets: Optional[list[int]] = None):
+    def __init__(self, targets: list[int] | None = None):
         """
         Args:
-            targets (Optional[list[int]]): The qubit indices on which the reduced density matrix
+            targets (list[int] | None): The qubit indices on which the reduced density matrix
                 are desired. If no targets are specified, the full density matrix is calculated.
                 Default: `None`
         """
@@ -259,10 +259,10 @@ class Probability(TargetedResultType):
     Computes the marginal probabilities of computational basis states on the desired qubits.
     """
 
-    def __init__(self, targets: Optional[list[int]] = None):
+    def __init__(self, targets: list[int] | None = None):
         """
         Args:
-            targets (Optional[list[int]]): The qubit indices on which probabilities are desired.
+            targets (list[int] | None): The qubit indices on which probabilities are desired.
                 If no targets are specified, the probabilities are calculated on the entire state.
                 Default: `None`
         """
@@ -323,7 +323,7 @@ def _(variance: jaqcd.Variance):
 
 
 def _from_braket_observable(
-    ir_observable: list[Union[str, list[list[list[float]]]]], ir_targets: Optional[list[int]] = None
+    ir_observable: list[str | list[list[list[float]]]], ir_targets: list[int] | None = None
 ) -> Observable:
     targets = list(ir_targets) if ir_targets else None
     if len(ir_observable) == 1:
@@ -340,31 +340,31 @@ def _from_braket_observable(
 
 
 def _from_single_observable(
-    observable: Union[str, list[list[list[float]]]],
-    targets: Optional[list[int]] = None,
+    observable: str | list[list[list[float]]],
+    targets: list[int] | None = None,
     # IR tensor product observables are decoupled from targets
     is_factor: bool = False,
 ) -> Observable:
-    if observable == "i":
-        return Identity(_actual_targets(targets, 1, is_factor))
-    elif observable == "h":
-        return Hadamard(_actual_targets(targets, 1, is_factor))
-    elif observable == "x":
-        return PauliX(_actual_targets(targets, 1, is_factor))
-    elif observable == "y":
-        return PauliY(_actual_targets(targets, 1, is_factor))
-    elif observable == "z":
-        return PauliZ(_actual_targets(targets, 1, is_factor))
-    else:
-        try:
-            matrix = ir_matrix_to_ndarray(observable)
-            if is_factor:
-                num_qubits = int(np.log2(len(matrix)))
-                return Hermitian(matrix, _actual_targets(targets, num_qubits, True))
-            else:
+    match observable:
+        case "i":
+            return Identity(_actual_targets(targets, 1, is_factor))
+        case "h":
+            return Hadamard(_actual_targets(targets, 1, is_factor))
+        case "x":
+            return PauliX(_actual_targets(targets, 1, is_factor))
+        case "y":
+            return PauliY(_actual_targets(targets, 1, is_factor))
+        case "z":
+            return PauliZ(_actual_targets(targets, 1, is_factor))
+        case _:
+            try:
+                matrix = ir_matrix_to_ndarray(observable)
+                if is_factor:
+                    num_qubits = int(np.log2(len(matrix)))
+                    return Hermitian(matrix, _actual_targets(targets, num_qubits, True))
                 return Hermitian(matrix, targets)
-        except Exception:
-            raise ValueError(f"Invalid observable specified: {observable}, targets: {targets}")
+            except Exception:
+                raise ValueError(f"Invalid observable specified: {observable}, targets: {targets}")
 
 
 def _actual_targets(targets: list[int], num_qubits: int, is_factor: bool):

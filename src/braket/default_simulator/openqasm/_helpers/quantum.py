@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import Union
-
 from ..parser.openqasm_ast import (
     FloatLiteral,
     GateModifierName,
@@ -32,7 +30,7 @@ def invert_phase(phase: QuantumPhase) -> QuantumPhase:
     return QuantumPhase(new_modifiers, new_param, phase.qubits)
 
 
-def is_inverted(quantum_op: Union[QuantumGate, QuantumPhase]) -> bool:
+def is_inverted(quantum_op: QuantumGate | QuantumPhase) -> bool:
     """
     Tell whether a gate with modifiers is inverted, or if the inverse modifiers
     cancel out. Since inv @ ctrl U == ctrl @ inv U, we can accomplish this by

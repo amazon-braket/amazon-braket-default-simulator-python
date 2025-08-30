@@ -29,7 +29,6 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converte
 
 device = RydbergAtomSimulator()
 
-
 pi = np.pi
 
 a = 4

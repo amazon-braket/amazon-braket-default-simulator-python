@@ -14,7 +14,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from functools import singledispatchmethod
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 from sympy import Expr
@@ -98,7 +98,7 @@ class QubitTable(Table):
         super().__init__("Qubits")
 
     @singledispatchmethod
-    def get_by_identifier(self, identifier: Union[Identifier, IndexedIdentifier]) -> tuple[int]:
+    def get_by_identifier(self, identifier: Identifier | IndexedIdentifier) -> tuple[int]:
         """
         Convenience method to get an element with a possibly indexed identifier.
         """
@@ -146,7 +146,7 @@ class QubitTable(Table):
         else:
             raise IndexError("Cannot index multiple dimensions for qubits.")
 
-    def get_qubit_size(self, identifier: Union[Identifier, IndexedIdentifier]) -> int:
+    def get_qubit_size(self, identifier: Identifier | IndexedIdentifier) -> int:
         return len(self.get_by_identifier(identifier))
 
 
@@ -234,7 +234,7 @@ class SymbolTable(ScopedTable):
     class Symbol:
         def __init__(
             self,
-            symbol_type: Union[ClassicalType, LiteralType],
+            symbol_type: ClassicalType | LiteralType,
             const: bool = False,
         ):
             self.type = symbol_type
@@ -249,7 +249,7 @@ class SymbolTable(ScopedTable):
     def add_symbol(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, LiteralType, type[Identifier]],
+        symbol_type: ClassicalType | LiteralType | type[Identifier],
         const: bool = False,
     ) -> None:
         """
@@ -257,9 +257,9 @@ class SymbolTable(ScopedTable):
 
         Args:
             name (str): Name of the symbol.
-            symbol_type (Union[ClassicalType, LiteralType]): Type of the symbol. Symbols can
-                have a literal type when they are a numeric argument to a gate or an integer
-                literal loop variable.
+            symbol_type (ClassicalType | LiteralType | type[Identifier]): Type of the symbol.
+                Symbols can have a literal type when they are a numeric argument to a gate
+                or an integer literal loop variable.
             const (bool): Whether the variable is immutable.
         """
         self.current_scope[name] = SymbolTable.Symbol(symbol_type, const)
@@ -276,7 +276,7 @@ class SymbolTable(ScopedTable):
         """
         return self[name]
 
-    def get_type(self, name: str) -> Union[ClassicalType, type[LiteralType]]:
+    def get_type(self, name: str) -> ClassicalType | type[LiteralType]:
         """
         Get the type of a symbol by name.
 
@@ -284,7 +284,7 @@ class SymbolTable(ScopedTable):
             name (str): Name of the symbol.
 
         Returns:
-            Union[ClassicalType, LiteralType]: The type of the symbol.
+            ClassicalType | type[LiteralType]: The type of the symbol.
         """
         return self.get_symbol(name).type
 
@@ -318,7 +318,7 @@ class VariableTable(ScopedTable):
 
     @singledispatchmethod
     def get_value_by_identifier(
-        self, identifier: Identifier, type_width: Optional[IntegerLiteral] = None
+        self, identifier: Identifier, type_width: IntegerLiteral | None = None
     ) -> LiteralType:
         """
         Convenience method to get value with a possibly indexed identifier.
@@ -327,7 +327,7 @@ class VariableTable(ScopedTable):
 
     @get_value_by_identifier.register
     def _(
-        self, identifier: IndexedIdentifier, type_width: Optional[IntegerLiteral] = None
+        self, identifier: IndexedIdentifier, type_width: IntegerLiteral | None = None
     ) -> LiteralType:
         """
         When identifier is an IndexedIdentifier, function returns an ArrayLiteral
@@ -343,7 +343,7 @@ class VariableTable(ScopedTable):
         name: str,
         value: Any,
         var_type: ClassicalType,
-        indices: Optional[list[IndexElement]] = None,
+        indices: list[IndexElement] | None = None,
     ) -> None:
         """Update value of a variable, optionally providing an index"""
         current_value = self[name]
@@ -458,8 +458,8 @@ class AbstractProgramContext(ABC):
     def declare_variable(
         self,
         name: str,
-        symbol_type: Union[ClassicalType, type[LiteralType], type[Identifier]],
-        value: Optional[Any] = None,
+        symbol_type: ClassicalType | type[LiteralType] | type[Identifier],
+        value: Any = None,
         const: bool = False,
     ) -> None:
         """
@@ -467,8 +467,8 @@ class AbstractProgramContext(ABC):
 
         Args:
             name (str): The name of the variable
-            symbol_type(Union[ClassicalType, type[LiteralType], type[Identifier]]): The type of the variable.
-            value (Optional[Any]): The initial value of the variable . Defaults to None.
+            symbol_type(ClassicalType | type[LiteralType] | type[Identifier]): The type of the variable.
+            value (Any): The initial value of the variable . Defaults to None.
             const (bool): Flag indicating if the variable is constant. Defaults to False.
         """
         self.symbol_table.add_symbol(name, symbol_type, const)
@@ -519,7 +519,7 @@ class AbstractProgramContext(ABC):
     def in_global_scope(self):
         return self.symbol_table.in_global_scope
 
-    def get_type(self, name: str) -> Union[ClassicalType, type[LiteralType]]:
+    def get_type(self, name: str) -> ClassicalType | type[LiteralType]:
         """
         Get symbol type by name
 
@@ -527,7 +527,7 @@ class AbstractProgramContext(ABC):
             name (str): The name of the symbol.
 
         Returns:
-            Union[ClassicalType, type[LiteralType]]: The type of the symbol.
+            ClassicalType | type[LiteralType]: The type of the symbol.
         """
         return self.symbol_table.get_type(name)
 
@@ -558,14 +558,12 @@ class AbstractProgramContext(ABC):
         """
         return self.variable_table.get_value(name)
 
-    def get_value_by_identifier(
-        self, identifier: Union[Identifier, IndexedIdentifier]
-    ) -> LiteralType:
+    def get_value_by_identifier(self, identifier: Identifier | IndexedIdentifier) -> LiteralType:
         """
         Get value of a variable by identifier
 
         Args:
-            identifier (Union[Identifier, IndexedIdentifier]): The identifier of the variable.
+            identifier (Identifier | IndexedIdentifier): The identifier of the variable.
 
         Returns:
             LiteralType: The value of the variable.
@@ -590,12 +588,12 @@ class AbstractProgramContext(ABC):
         """
         return self.variable_table.is_initalized(name)
 
-    def update_value(self, variable: Union[Identifier, IndexedIdentifier], value: Any) -> None:
+    def update_value(self, variable: Identifier | IndexedIdentifier, value: Any) -> None:
         """
         Update value by identifier, possible only a sub-index of a variable
 
         Args:
-            variable (Union[Identifier, IndexedIdentifier]): The identifier of the variable.
+            variable (Identifier | IndexedIdentifier): The identifier of the variable.
             value (Any): The new value of the variable.
         """
         name = get_identifier_name(variable)
@@ -603,25 +601,25 @@ class AbstractProgramContext(ABC):
         indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
         self.variable_table.update_value(name, value, var_type, indices)
 
-    def add_qubits(self, name: str, num_qubits: Optional[int] = 1) -> None:
+    def add_qubits(self, name: str, num_qubits: int | None = 1) -> None:
         """
         Allocate additional qubits for the circuit
 
         Args:
             name(str): The name of the qubit register
-            num_qubits (Optional[int]): The number of qubits to allocate. Default is 1.
+            num_qubits (int | None): The number of qubits to allocate. Default is 1.
         """
         self.qubit_mapping[name] = tuple(range(self.num_qubits, self.num_qubits + num_qubits))
         self.num_qubits += num_qubits
         self.declare_qubit_alias(name, Identifier(name))
 
-    def get_qubits(self, qubits: Union[Identifier, IndexedIdentifier]) -> tuple[int]:
+    def get_qubits(self, qubits: Identifier | IndexedIdentifier) -> tuple[int]:
         """
         Get qubit indices from a qubit identifier, possibly referring to a sub-index of
         a qubit register
 
         Args:
-            qubits (Union[Identifier, IndexedIdentifier]): The identifier of the qubits.
+            qubits (Identifier | IndexedIdentifier): The identifier of the qubits.
 
         Returns:
             tuple[int]: The indices of the qubits.
@@ -725,7 +723,7 @@ class AbstractProgramContext(ABC):
     def add_phase(
         self,
         phase: FloatLiteral,
-        qubits: Optional[list[Union[Identifier, IndexedIdentifier]]] = None,
+        qubits: list[Identifier | IndexedIdentifier] | None = None,
     ) -> None:
         """Add quantum phase instruction to the circuit"""
         # if targets overlap, duplicates will be ignored
@@ -746,8 +744,8 @@ class AbstractProgramContext(ABC):
         self,
         gate_name: str,
         parameters: list[FloatLiteral],
-        qubits: list[Union[Identifier, IndexedIdentifier]],
-        modifiers: Optional[list[QuantumGateModifier]] = None,
+        qubits: list[Identifier | IndexedIdentifier],
+        modifiers: list[QuantumGateModifier] | None = None,
     ) -> None:
         """
         Add a builtin gate instruction to the circuit
@@ -755,8 +753,8 @@ class AbstractProgramContext(ABC):
         Args:
             gate_name (str): The name of the built-in gate.
             parameters (list[FloatLiteral]): The list of the gate parameters.
-            qubits (list[Union[Identifier, IndexedIdentifier]]): The list of qubits the gate acts on.
-            modifiers (Optional[list[QuantumGateModifier]]): The list of gate modifiers (optional).
+            qubits (list[Identifier | IndexedIdentifier]): The list of qubits the gate acts on.
+            modifiers (list[QuantumGateModifier] | None): The list of gate modifiers (optional).
         """
         target = sum(((*self.get_qubits(qubit),) for qubit in qubits), ())
         params = np.array([self.handle_parameter_value(param.value) for param in parameters])
@@ -780,10 +778,10 @@ class AbstractProgramContext(ABC):
             gate_name, target, params, ctrl_modifiers=ctrl_modifiers, power=power
         )
 
-    def handle_parameter_value(self, value: Union[float, Expr]) -> Any:
+    def handle_parameter_value(self, value: float | Expr) -> Any:
         """Convert parameter value to required format. Default conversion is noop.
         Args:
-            value (Union[float, Expr]): Value of the parameter
+            value (float | Expr): Value of the parameter
         """
         if isinstance(value, Expr):
             return value.evalf()
@@ -847,10 +845,10 @@ class AbstractProgramContext(ABC):
 
 
 class ProgramContext(AbstractProgramContext):
-    def __init__(self, circuit: Optional[Circuit] = None):
+    def __init__(self, circuit: Circuit | None = None):
         """
         Args:
-            circuit (Optional[Circuit]): A partially-built circuit to continue building with this
+            circuit (Circuit | None): A partially-built circuit to continue building with this
                 context. Default: None.
         """
         super().__init__()

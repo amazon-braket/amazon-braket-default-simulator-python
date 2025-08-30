@@ -12,7 +12,6 @@
 # language governing permissions and limitations under the License.
 
 from functools import singledispatch
-from typing import Optional, Union
 
 import numpy as np
 
@@ -73,7 +72,7 @@ def get_type_width(var_type: ClassicalType):
 
 @singledispatch
 def get_elements(
-    value: ArrayLiteral, index: IndexElement, type_width: Optional[IntegerLiteral] = None
+    value: ArrayLiteral, index: IndexElement, type_width: IntegerLiteral | None = None
 ) -> ArrayLiteral:
     """Get elements of an Array, given an index."""
     if isinstance(index, DiscreteSet):
@@ -110,7 +109,7 @@ def create_empty_array(dims: list[IntegerLiteral]) -> ArrayLiteral:
     return ArrayLiteral([create_empty_array(dims[1:])] * dims[0].value)
 
 
-def convert_index(index: Union[RangeDefinition, IntegerLiteral]) -> Union[int, slice]:
+def convert_index(index: RangeDefinition | IntegerLiteral) -> int | slice:
     """Convert unspecified index type to Python object"""
     if isinstance(index, RangeDefinition):
         return convert_range_def_to_slice(index)
@@ -152,10 +151,10 @@ def unwrap_var_type(var_type: ClassicalType) -> ClassicalType:
 
 @singledispatch
 def update_value(
-    current_value: Union[ArrayLiteral, BitstringLiteral],
+    current_value: ArrayLiteral | BitstringLiteral,
     value: LiteralType,
     update_indices: list[IndexElement],
-    var_type: Union[ClassicalType, type[LiteralType]],
+    var_type: ClassicalType | type[LiteralType],
 ) -> LiteralType:
     """Update an Array, for example: a[4, 1:] = {1, 2, 3}"""
     # current value will be an ArrayLiteral or BitstringLiteral
@@ -194,7 +193,7 @@ def _(
     current_value: IntegerLiteral,
     value: LiteralType,
     update_indices: list[IndexElement],
-    var_type: Union[IntType, UintType],
+    var_type: IntType | UintType,
 ):
     # called recursively, replacing the whole integer
     if not update_indices:

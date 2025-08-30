@@ -12,21 +12,20 @@
 # language governing permissions and limitations under the License.
 
 from functools import lru_cache, singledispatch
-from typing import Union
 
 import numpy as np
 
 from braket.default_simulator.operation import GateOperation, KrausOperation
 
 
-def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]:
+def from_braket_instruction(instruction) -> GateOperation | KrausOperation:
     """Instantiates the concrete `GateOperation` or `KrausOperation` object from the
     specified Braket instruction.
 
     Args:
         instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
     Returns:
-        Union[GateOperation, KrausOperation]: instance of the concrete GateOperation or
+        GateOperation | KrausOperation: instance of the concrete GateOperation or
         KrausOperation class corresponding to the specified instruction.
 
     Raises:

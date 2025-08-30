@@ -15,7 +15,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 
@@ -130,13 +130,13 @@ class OpenQASMSimulator(BraketSimulator, ABC):
 
 class BaseLocalSimulator(OpenQASMSimulator):
     def run(
-        self, circuit_ir: Union[OpenQASMProgram, ProgramSet, JaqcdProgram], *args, **kwargs
+        self, circuit_ir: OpenQASMProgram | ProgramSet | JaqcdProgram, *args, **kwargs
     ) -> GateModelTaskResult:
         """
         Simulate a program using either OpenQASM or Jaqcd.
 
         Args:
-            circuit_ir (Union[OpenQASMProgram, ProgramSet, JaqcdProgram]): Program
+            circuit_ir (OpenQASMProgram | ProgramSet | JaqcdProgram): Program
                 specification.
             shots (int, optional): The number of shots to simulate. Default is 0, which
                 performs a full analytical simulation.
@@ -300,14 +300,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
     def _validate_ir_instructions_compatibility(
         self,
-        circuit_ir: Union[JaqcdProgram, Circuit],
+        circuit_ir: JaqcdProgram | Circuit,
         device_action_type: DeviceActionType,
     ) -> None:
         """
         Validate that requested IR instructions are valid for the simulator.
 
         Args:
-            circuit_ir (Union[JaqcdProgram, Circuit]): IR for the simulator.
+            circuit_ir (JaqcdProgram | Circuit): IR for the simulator.
 
         Raises:
             TypeError: If any the specified result types are not supported
@@ -376,7 +376,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         return obj_dict
 
     @staticmethod
-    def _observable_hash(observable: Observable) -> Union[str, dict[int, str]]:
+    def _observable_hash(observable: Observable) -> str | dict[int, str]:
         if isinstance(observable, Hermitian):
             return str(hash(str(observable.matrix.tobytes())))
         elif isinstance(observable, TensorProduct):
@@ -388,12 +388,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return str(observable.__class__.__name__)
 
     @staticmethod
-    def _map_circuit_to_contiguous_qubits(circuit: Union[Circuit, JaqcdProgram]) -> dict[int, int]:
+    def _map_circuit_to_contiguous_qubits(circuit: Circuit | JaqcdProgram) -> dict[int, int]:
         """
         Maps the qubits in operations and result types to contiguous qubits.
 
         Args:
-            circuit (Union[Circuit, JaqcdProgram]): The circuit containing the operations and
+            circuit (Circuit | JaqcdProgram): The circuit containing the operations and
             result types.
 
         Returns:
@@ -405,12 +405,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
         return qubit_map
 
     @staticmethod
-    def _get_circuit_qubit_set(circuit: Union[Circuit, JaqcdProgram]) -> set[int]:
+    def _get_circuit_qubit_set(circuit: Circuit | JaqcdProgram) -> set[int]:
         """
         Returns the set of qubits used in the given circuit.
 
         Args:
-            circuit (Union[Circuit, JaqcdProgram]): The circuit from which to extract the qubit set.
+            circuit (Circuit | JaqcdProgram): The circuit from which to extract the qubit set.
 
         Returns:
             set[int]: The set of qubits used in the circuit.
@@ -429,12 +429,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return BaseLocalSimulator._get_qubits_referenced(operations)
 
     @staticmethod
-    def _map_circuit_qubits(circuit: Union[Circuit, JaqcdProgram], qubit_map: dict[int, int]):
+    def _map_circuit_qubits(circuit: Circuit | JaqcdProgram, qubit_map: dict[int, int]):
         """
         Maps the qubits in operations and result types to contiguous qubits.
 
         Args:
-            circuit (Circuit): The circuit containing the operations and result types.
+            circuit (Circuit | JaqcdProgram): The circuit containing the operations and result types.
             qubit_map (dict[int, int]): The mapping from qubits to their contiguous indices.
 
         Returns:
@@ -533,7 +533,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
     @staticmethod
     def _formatted_measurements(
-        simulation: Simulation, measured_qubits: Union[list[int], None] = None
+        simulation: Simulation, measured_qubits: list[int] | None = None
     ) -> list[list[str]]:
         """Retrieves formatted measurements obtained from the specified simulation.
 

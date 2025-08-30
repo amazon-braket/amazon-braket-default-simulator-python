@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Optional
 
 import numpy as np
 
@@ -36,8 +35,8 @@ class Circuit:
 
     def __init__(
         self,
-        instructions: Optional[list[GateOperation]] = None,
-        results: Optional[list[Results]] = None,
+        instructions: list[GateOperation] | None = None,
+        results: list[Results] | None = None,
     ):
         self.instructions = []
         self.results = []
