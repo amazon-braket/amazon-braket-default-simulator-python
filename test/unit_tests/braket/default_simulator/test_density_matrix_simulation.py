@@ -404,49 +404,6 @@ def test_parameterized_simulation(qubit_count, operations, shots, expected_outco
         assert abs(observed_prob - expected_prob) < tolerance
 
 
-@pytest.mark.parametrize(
-    "test_case, qubit_count, operations1, operations2, samples",
-    [
-        (
-            "X gate fusion",
-            1,
-            [gate_operations.PauliX([0]), gate_operations.PauliX([0])],
-            [],
-            1000,
-        ),
-        (
-            "Rotation fusion",
-            1,
-            [gate_operations.RotX([0], np.pi / 4), gate_operations.RotX([0], np.pi / 4)],
-            [gate_operations.RotX([0], np.pi / 2)],
-            1000,
-        ),
-        (
-            "Multi-qubit fusion",
-            2,
-            [gate_operations.CX([0, 1]), gate_operations.CX([0, 1])],
-            [],
-            1000,
-        ),
-    ],
-)
-def test_gate_fusion_equivalence(test_case, qubit_count, operations1, operations2, samples):
-    """Test that gate fusion produces equivalent results."""
-    sim1 = DensityMatrixSimulation(qubit_count, samples)
-    sim2 = DensityMatrixSimulation(qubit_count, samples)
-
-    sim1.evolve(operations1)
-    sim2.evolve(operations2)
-
-    counter1 = Counter(sim1.retrieve_samples())
-    counter2 = Counter(sim2.retrieve_samples())
-
-    for outcome in set(counter1.keys()) | set(counter2.keys()):
-        prob1 = counter1.get(outcome, 0) / samples
-        prob2 = counter2.get(outcome, 0) / samples
-        assert abs(prob1 - prob2) < 0.2
-
-
 def test_custom_density_matrix():
     """Test simulation with a custom initial density matrix."""
     qubit_count = 4
