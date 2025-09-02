@@ -69,6 +69,17 @@ def test_warning_get_hamiltonian(index_time, operators_coefficients, warning_mes
     "index_time, operators_coefficients, input_register, warning_message",
     [
         (
+            -1.0,
+            operators_coefficients,
+            input_register,
+            (
+                "The solver uses intermediate time value that is "
+                "smaller than the minimum time value specified. "
+                "The first time value of the specified range "
+                "is used as an approximation."
+            ),
+        ),
+        (
             10.0,
             operators_coefficients,
             input_register,
