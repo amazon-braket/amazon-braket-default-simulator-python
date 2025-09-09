@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.30.0 (2025-09-08)
+
+### Features
+
+ * add tests to make sure that the simulators can handle barrier instructions
+
 ## v1.29.0 (2025-08-21)
 
 ### Deprecations and Removals
