@@ -15,7 +15,6 @@ import functools
 import itertools
 import math
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import numpy as np
 
@@ -39,7 +38,7 @@ class Identity(Observable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets: Optional[list[int]] = None):
+    def __init__(self, targets: list[int] | None = None):
         self._measured_qubits = _validate_and_clone_single_qubit_target(targets)
 
     def _pow(self, power: int) -> Observable:
@@ -63,7 +62,7 @@ class Identity(Observable):
     def fix_qubit(self, qubit: int) -> Observable:
         return Identity([qubit])
 
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         return ()
 
 
@@ -80,7 +79,7 @@ class _InvolutoryMatrixObservable(Observable, ABC):
     """
 
     @abstractmethod
-    def __init__(self, matrix: np.ndarray, targets: Optional[list[int]] = None):
+    def __init__(self, matrix: np.ndarray, targets: list[int] | None = None):
         self._matrix = matrix
         self._targets = _validate_and_clone_single_qubit_target(targets)
 
@@ -107,7 +106,7 @@ class Hadamard(_InvolutoryMatrixObservable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets: Optional[list[int]] = None):
+    def __init__(self, targets: list[int] | None = None):
         super().__init__(np.array([[1, 1], [1, -1]], dtype=complex) / math.sqrt(2), targets)
 
     @property
@@ -121,7 +120,7 @@ class Hadamard(_InvolutoryMatrixObservable):
     def fix_qubit(self, qubit: int) -> Observable:
         return Hadamard([qubit])
 
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         if self._targets is None:
             return tuple(Hadamard._diagonalizing_gate([target]) for target in range(num_qubits))
         return (Hadamard._diagonalizing_gate(self._targets),)
@@ -141,7 +140,7 @@ class PauliX(_InvolutoryMatrixObservable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets: Optional[list[int]] = None):
+    def __init__(self, targets: list[int] | None = None):
         super().__init__(np.array([[0, 1], [1, 0]], dtype=complex), targets)
 
     @property
@@ -155,7 +154,7 @@ class PauliX(_InvolutoryMatrixObservable):
     def fix_qubit(self, qubit: int) -> Observable:
         return PauliX([qubit])
 
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         if self._targets is None:
             return tuple(PauliX._diagonalizing_gate([target]) for target in range(num_qubits))
         return (PauliX._diagonalizing_gate(self._targets),)
@@ -178,7 +177,7 @@ class PauliY(_InvolutoryMatrixObservable):
     # HS^{\dagger}
     _diagonalizing_matrix = np.array([[1, -1j], [1, 1j]], dtype=complex) / math.sqrt(2)
 
-    def __init__(self, targets: Optional[list[int]] = None):
+    def __init__(self, targets: list[int] | None = None):
         super().__init__(np.array([[0, -1j], [1j, 0]], dtype=complex), targets)
 
     @property
@@ -192,7 +191,7 @@ class PauliY(_InvolutoryMatrixObservable):
     def fix_qubit(self, qubit: int) -> Observable:
         return PauliY([qubit])
 
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         if self._targets is None:
             return tuple(PauliY._diagonalizing_gate([target]) for target in range(num_qubits))
         return (PauliY._diagonalizing_gate(self._targets),)
@@ -212,7 +211,7 @@ class PauliZ(_InvolutoryMatrixObservable):
         operator to evolve the state of the system.
     """
 
-    def __init__(self, targets: Optional[list[int]] = None):
+    def __init__(self, targets: list[int] | None = None):
         super().__init__(np.array([[1, 0], [0, -1]], dtype=complex), targets)
         self._measured_qubits = self._targets
 
@@ -235,7 +234,7 @@ class PauliZ(_InvolutoryMatrixObservable):
     def fix_qubit(self, qubit: int) -> Observable:
         return PauliZ([qubit])
 
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         # Already diagonalized
         return ()
 
@@ -246,7 +245,7 @@ class Hermitian(Observable):
     # Cache of eigenpairs for each used Hermitian matrix
     _eigenpairs = {}
 
-    def __init__(self, matrix: np.ndarray, targets: Optional[list[int]] = None):
+    def __init__(self, matrix: np.ndarray, targets: list[int] | None = None):
         clone = np.array(matrix, dtype=complex)
         self._targets = tuple(targets) if targets else None
         if targets:
@@ -287,7 +286,7 @@ class Hermitian(Observable):
             raise ValueError(f"Matrix must act on 1 qubit, but {matrix} acts on {len(targets)}")
         return Hermitian(self._matrix, [qubit])
 
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         if self._targets is None:
             return tuple(self._diagonalizing_gate([target]) for target in range(num_qubits))
         return (self._diagonalizing_gate(self._targets),)
@@ -370,7 +369,7 @@ class TensorProduct(Observable):
     def fix_qubit(self, qubit: int) -> Observable:
         raise TypeError("Tensor product cannot be measured on single qubit")
 
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         return sum((factor.diagonalizing_gates() for factor in self._factors), ())
 
     @staticmethod
@@ -401,9 +400,7 @@ class TensorProduct(Observable):
         return eigenvalues
 
 
-def _validate_and_clone_single_qubit_target(
-    targets: Optional[list[int]],
-) -> Optional[tuple[int, ...]]:
+def _validate_and_clone_single_qubit_target(targets: list[int] | None) -> tuple[int, ...] | None:
     clone = tuple(targets) if targets else None
     if clone and len(clone) > 1:
         raise ValueError(f"Observable only acts on one qubit, but found {len(clone)}")

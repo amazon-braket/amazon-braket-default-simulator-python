@@ -13,7 +13,6 @@
 
 import itertools
 from collections.abc import Sequence
-from typing import Optional
 
 import numba as nb
 import numpy as np
@@ -65,10 +64,10 @@ def multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
     targets: tuple[int, ...],
-    controls: Optional[tuple[int, ...]] = (),
-    control_state: Optional[tuple[int, ...]] = (),
-    out: Optional[np.ndarray] = None,
-    dispatcher: Optional[QuantumGateDispatcher] = None,
+    controls: tuple[int, ...] | None = (),
+    control_state: tuple[int, ...] | None = (),
+    out: np.ndarray | None = None,
+    dispatcher: QuantumGateDispatcher | None = None,
     return_swap_info: bool = False,
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
@@ -78,11 +77,11 @@ def multiply_matrix(
         state (np.ndarray): The state to multiply the matrix by.
         matrix (np.ndarray): The matrix to apply to the state.
         targets (tuple[int]): The qubits to apply the state on.
-        controls (Optional[tuple[int]]): The qubits to control the operation on. Default ().
-        control_state (Optional[tuple[int]]): A tuple of same length as `controls` with either
+        controls (tuple[int, ...] | None): The qubits to control the operation on. Default ().
+        control_state (tuple[int, ...] | None): A tuple of same length as `controls` with either
             a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
             Default (1,) * len(controls).
-        out (Optional[np.ndarray]): Preallocated result array to reduce overhead of creating a new array each time.
+        out (np.ndarray | None): Preallocated result array to reduce overhead of creating a new array each time.
         dispatcher(QuantumGateDispatcher): Dispatch to optimized functions based on qubit
             count.
         return_swap_info (bool): For backwards comp. Used to indicate whether the ping-pong buffer swaps should happen.
@@ -1064,7 +1063,7 @@ def marginal_probability(
 
 def partial_trace(
     density_matrix: np.ndarray,
-    targets: Optional[list[int]] = None,
+    targets: list[int] | None = None,
 ) -> np.ndarray:
     """Returns the reduced density matrix for the target qubits.
 
@@ -1073,7 +1072,7 @@ def partial_trace(
     Args:
         density_matrix (np.ndarray): The density matrix to reduce,
             as a tensor product of qubit states.
-        targets (list[int]): The qubits of the output reduced density matrix;
+        targets (list[int] | None): The qubits of the output reduced density matrix;
             if no target qubits are supplied, this method returns the trace of the density matrix.
 
     Returns:

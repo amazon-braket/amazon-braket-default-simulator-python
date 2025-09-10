@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import numpy as np
 from scipy.linalg import fractional_matrix_power
@@ -162,7 +161,7 @@ class Observable(Operation, ABC):
         """
 
     @abstractmethod
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         """The gates that diagonalize the observable in the computational basis.
 
         Args:

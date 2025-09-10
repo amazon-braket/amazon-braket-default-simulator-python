@@ -11,8 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from typing import Union
-
 import numpy as np
 
 from braket.default_simulator.linalg_utils import (
@@ -45,7 +43,7 @@ class DensityMatrixSimulation(Simulation):
         self._density_matrix = initial_state
         self._post_observables = None
 
-    def evolve(self, operations: list[Union[GateOperation, KrausOperation]]) -> None:
+    def evolve(self, operations: list[GateOperation | KrausOperation]) -> None:
         self._density_matrix = DensityMatrixSimulation._apply_operations(
             self._density_matrix, self._qubit_count, operations
         )
