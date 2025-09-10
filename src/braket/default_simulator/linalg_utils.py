@@ -13,7 +13,6 @@
 
 import itertools
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 
@@ -28,8 +27,8 @@ def multiply_matrix(
     state: np.ndarray,
     matrix: np.ndarray,
     targets: tuple[int, ...],
-    controls: Optional[tuple[int, ...]] = (),
-    control_state: Optional[tuple[int, ...]] = (),
+    controls: tuple[int, ...] | None = (),
+    control_state: tuple[int, ...] | None = (),
 ) -> np.ndarray:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
     controlling the operation as specified.
@@ -38,8 +37,8 @@ def multiply_matrix(
         state (np.ndarray): The state to multiply the matrix by.
         matrix (np.ndarray): The matrix to apply to the state.
         targets (tuple[int]): The qubits to apply the state on.
-        controls (Optional[tuple[int]]): The qubits to control the operation on. Default ().
-        control_state (Optional[tuple[int]]): A tuple of same length as `controls` with either
+        controls (tuple[int, ...] | None): The qubits to control the operation on. Default ().
+        control_state (tuple[int, ...] | None): A tuple of same length as `controls` with either
             a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
             Default (1,) * len(controls).
 
@@ -83,9 +82,8 @@ def _multiply_matrix(
 
     # Axes given in `operation.targets` are in the first positions.
     unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
-    permutation = list(targets) + unused_idxs
     # Invert the permutation to put the indices in the correct place
-    inverse_permutation = np.argsort(permutation)
+    inverse_permutation = np.argsort([*targets, *unused_idxs])
     return np.transpose(product, inverse_permutation)
 
 
@@ -127,7 +125,7 @@ def marginal_probability(
 
 def partial_trace(
     density_matrix: np.ndarray,
-    targets: Optional[list[int]] = None,
+    targets: list[int] | None = None,
 ) -> np.ndarray:
     """Returns the reduced density matrix for the target qubits.
 
@@ -136,7 +134,7 @@ def partial_trace(
     Args:
         density_matrix (np.ndarray): The density matrix to reduce,
             as a tensor product of qubit states.
-        targets (list[int]): The qubits of the output reduced density matrix;
+        targets (list[int] | None): The qubits of the output reduced density matrix;
             if no target qubits are supplied, this method returns the trace of the density matrix.
 
     Returns:

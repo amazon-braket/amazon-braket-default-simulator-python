@@ -13,13 +13,12 @@
 
 import sys
 
+from braket.default_simulator import DensityMatrixSimulation
+from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-
-from braket.default_simulator import DensityMatrixSimulation
-from braket.default_simulator.simulator import BaseLocalSimulator
 
 
 class DensityMatrixSimulator(BaseLocalSimulator):
@@ -179,7 +178,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                         ],
                         "supportPhysicalQubits": False,
                         "supportsPartialVerbatimBox": False,
-                        "requiresContiguousQubitIndices": True,
+                        "requiresContiguousQubitIndices": False,
                         "requiresAllQubitsMeasurement": False,
                         "supportsUnassignedMeasurements": True,
                         "disabledQubitRewiringSupported": False,

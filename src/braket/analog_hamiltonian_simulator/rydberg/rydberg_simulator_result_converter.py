@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import numpy as np
+
 from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
     AnalogHamiltonianSimulationShotMeasurement,
     AnalogHamiltonianSimulationShotMetadata,

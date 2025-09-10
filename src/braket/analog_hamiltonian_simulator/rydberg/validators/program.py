@@ -13,7 +13,6 @@
 
 from copy import deepcopy
 
-from braket.ir.ahs.program_v1 import Program
 from pydantic.v1 import root_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import _get_coefs
@@ -23,6 +22,7 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constan
 from braket.analog_hamiltonian_simulator.rydberg.validators.field_validator_util import (
     validate_net_detuning_with_warning,
 )
+from braket.ir.ahs.program_v1 import Program
 
 
 class ProgramValidator(Program):

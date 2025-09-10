@@ -14,17 +14,19 @@
 from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import fields
+from enum import Enum
 from functools import singledispatchmethod
 from logging import Logger, getLogger
-from typing import Optional, Union
 
 import numpy as np
-from braket.ir.openqasm.program_v1 import io_type
 from sympy import Symbol
+
+from braket.ir.openqasm.program_v1 import io_type
 
 from ._helpers.arrays import (
     convert_range_def_to_range,
     create_empty_array,
+    flatten_indices,
     get_elements,
     get_type_width,
 )
@@ -62,6 +64,7 @@ from .parser.openqasm_ast import (
     BitstringLiteral,
     BitType,
     BooleanLiteral,
+    Box,
     BranchingStatement,
     Cast,
     ClassicalArgument,
@@ -115,34 +118,31 @@ class Interpreter:
     the ProgramContext object, which can be used for debugging or other customizability.
     """
 
-    def __init__(
-        self, context: Optional[AbstractProgramContext] = None, logger: Optional[Logger] = None
-    ):
+    def __init__(self, context: AbstractProgramContext | None = None, logger: Logger | None = None):
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
 
     def build_circuit(
-        self, source: str, inputs: Optional[dict[str, io_type]] = None, is_file: bool = False
+        self, source: str, inputs: dict[str, io_type] | None = None, is_file: bool = False
     ) -> Circuit:
         """Interpret an OpenQASM program and build a Circuit IR."""
         return self.run(source, inputs, is_file).circuit
 
     def run(
-        self, source: str, inputs: Optional[dict[str, io_type]] = None, is_file: bool = False
+        self, source: str, inputs: dict[str, io_type] | None = None, is_file: bool = False
     ) -> ProgramContext:
         """Interpret an OpenQASM program and return the program state"""
         if inputs:
             self.context.load_inputs(inputs)
 
         if is_file:
-            with open(source, encoding="utf-8", mode="r") as f:
+            with open(source, encoding="utf-8") as f:
                 source = f.read()
 
-        program = parse(source)
         self._uses_advanced_language_features = False
-        self.visit(program)
+        self.visit(parse(source))
         if self._uses_advanced_language_features:
             self.logger.warning(
                 "This program uses OpenQASM language features that may "
@@ -151,15 +151,14 @@ class Interpreter:
         return self.context
 
     @singledispatchmethod
-    def visit(self, node: Union[QASMNode, list[QASMNode]]) -> Optional[QASMNode]:
+    def visit(self, node: QASMNode | list[QASMNode]) -> QASMNode | None:
         """Generic visit function for an AST node"""
         if node is None:
             return
         if not isinstance(node, QASMNode):
             return node
         for field in fields(node):
-            value = getattr(node, field.name)
-            setattr(node, field.name, self.visit(value))
+            setattr(node, field.name, self.visit(getattr(node, field.name)))
         return node
 
     @visit.register
@@ -169,6 +168,10 @@ class Interpreter:
 
     @visit.register
     def _(self, node: Program) -> None:
+        for i, stmt in enumerate(node.statements):
+            if isinstance(stmt, Pragma) and stmt.command.startswith("braket verbatim"):
+                if i + 1 < len(node.statements) and not isinstance(node.statements[i + 1], Box):
+                    raise ValueError("braket verbatim pragma must be followed by a box statement")
         self.visit(node.statements)
 
     @visit.register
@@ -209,21 +212,19 @@ class Interpreter:
         self.context.declare_variable(node.identifier.name, node_type, init_value, const=True)
 
     @visit.register
-    def _(self, node: BinaryExpression) -> Union[BinaryExpression, LiteralType]:
+    def _(self, node: BinaryExpression) -> BinaryExpression | LiteralType:
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
         if is_literal(lhs) and is_literal(rhs):
             return evaluate_binary_expression(lhs, rhs, node.op)
-        else:
-            return BinaryExpression(node.op, lhs, rhs)
+        return BinaryExpression(node.op, lhs, rhs)
 
     @visit.register
-    def _(self, node: UnaryExpression) -> Union[UnaryExpression, LiteralType]:
+    def _(self, node: UnaryExpression) -> UnaryExpression | LiteralType:
         expression = self.visit(node.expression)
         if is_literal(expression):
             return evaluate_unary_expression(expression, node.op)
-        else:
-            return UnaryExpression(node.op, expression)
+        return UnaryExpression(node.op, expression)
 
     @visit.register
     def _(self, node: Cast) -> LiteralType:
@@ -241,9 +242,9 @@ class Interpreter:
             return node
         if node.name in builtin_constants:
             return builtin_constants[node.name]
-        if not self.context.is_initialized(node.name):
-            raise NameError(f"Identifier '{node.name}' is not initialized.")
-        return self.context.get_value_by_identifier(node)
+        if self.context.is_initialized(node.name):
+            return self.context.get_value_by_identifier(node)
+        raise NameError(f"Identifier '{node.name}' is not initialized.")
 
     @visit.register
     def _(self, node: QubitDeclaration) -> None:
@@ -260,7 +261,7 @@ class Interpreter:
         raise NotImplementedError("Reset not supported")
 
     @visit.register
-    def _(self, node: IndexedIdentifier) -> Union[IndexedIdentifier, LiteralType]:
+    def _(self, node: IndexedIdentifier) -> IndexedIdentifier | LiteralType:
         """Returns an identifier for qubits, value for classical identifier"""
         name = node.name
         indices = []
@@ -272,8 +273,7 @@ class Interpreter:
                 for element in index:
                     if isinstance(element, RangeDefinition):
                         self._uses_advanced_language_features = True
-                    element = self.visit(element)
-                    indices.append([element])
+                    indices.append([self.visit(element)])
         updated = IndexedIdentifier(name, indices)
         if name.name not in self.context.qubit_mapping:
             return self.context.get_value_by_identifier(updated)
@@ -288,7 +288,7 @@ class Interpreter:
         return RangeDefinition(start, end, step)
 
     @visit.register
-    def _(self, node: IndexExpression) -> Union[IndexedIdentifier, ArrayLiteral]:
+    def _(self, node: IndexExpression) -> IndexedIdentifier | ArrayLiteral:
         """Returns an identifier for qubits, values for classical identifier"""
         type_width = None
         index = self.visit(node.index)
@@ -457,31 +457,67 @@ class Interpreter:
         if is_inverted(node):
             node = invert_phase(node)
         if is_controlled(node):
-            node = convert_phase_to_gate(node)
-            self.visit(node)
+            self.visit(convert_phase_to_gate(node))
         else:
             self.handle_phase(node.argument)
 
     @visit.register
     def _(self, node: QuantumGateModifier) -> QuantumGateModifier:
-        if node.modifier in (GateModifierName.ctrl, GateModifierName.negctrl):
-            if node.argument is None:
-                node.argument = IntegerLiteral(1)
-            else:
+        match node.modifier:
+            case GateModifierName.ctrl | GateModifierName.negctrl:
+                node.argument = (
+                    IntegerLiteral(1) if node.argument is None else self.visit(node.argument)
+                )
+            case GateModifierName.pow:
                 node.argument = self.visit(node.argument)
-        elif node.modifier == GateModifierName.pow:
-            node.argument = self.visit(node.argument)
         return node
 
     @visit.register
     def _(self, node: QuantumMeasurement) -> None:
-        qubits = self.context.get_qubits(self.visit(node.qubit))
-        self.context.add_measure(qubits)
+        return self.context.get_qubits(self.visit(node.qubit))
+
+    @visit.register
+    def _(self, node: Box) -> None:
+        if self.context.in_verbatim_box:
+            self.context.add_verbatim_marker(VerbatimBoxDelimiter.START_VERBATIM)
+            for instr_node in node.body:
+                self.visit(instr_node)
+            self.context.add_verbatim_marker(VerbatimBoxDelimiter.END_VERBATIM)
+            self.context.in_verbatim_box = False
+        else:
+            for instr_node in node.body:
+                self.visit(instr_node)
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
         """The measure is performed but the assignment is ignored"""
-        self.visit(node.measure)
+        qubits = self.visit(node.measure)
+        targets = []
+        if node.target:
+            if isinstance(node.target, IndexedIdentifier):
+                indices = flatten_indices(node.target.indices)
+                if len(node.target.indices) != 1:
+                    raise ValueError(
+                        "Multi-Dimensional indexing not supported for classical registers."
+                    )
+                match elem := indices[0]:
+                    case DiscreteSet(values):
+                        self._uses_advanced_language_features = True
+                        targets.extend([self.visit(val).value for val in values])
+                    case RangeDefinition():
+                        self._uses_advanced_language_features = True
+                        targets.extend(convert_range_def_to_range(self.visit(elem)))
+                    case _:
+                        targets.append(elem.value)
+
+        if not len(targets):
+            targets = None
+
+        if targets and len(targets) != len(qubits):
+            raise ValueError(
+                f"Number of qubits ({len(qubits)}) does not match number of provided classical targets ({len(targets)})"
+            )
+        self.context.add_measure(qubits, targets)
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
@@ -492,8 +528,7 @@ class Interpreter:
             rvalue = self.visit(node.rvalue)
         else:
             op = get_operator_of_assignment_operator(node.op)
-            binary_expression = BinaryExpression(op, node.lvalue, node.rvalue)
-            rvalue = self.visit(binary_expression)
+            rvalue = self.visit(BinaryExpression(op, node.lvalue, node.rvalue))
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
@@ -511,8 +546,7 @@ class Interpreter:
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
         condition = cast_to(BooleanLiteral, self.visit(node.condition))
-        block = node.if_block if condition.value else node.else_block
-        for statement in block:
+        for statement in node.if_block if condition.value else node.else_block:
             self.visit(statement)
 
     @visit.register
@@ -524,12 +558,10 @@ class Interpreter:
         # DiscreteSet
         else:
             index_values = index.values
-        block = node.block
         for i in index_values:
-            block_copy = deepcopy(block)
             with self.context.enter_scope():
                 self.context.declare_variable(node.identifier.name, node.type, i)
-                self.visit(block_copy)
+                self.visit(deepcopy(node.block))
 
     @visit.register
     def _(self, node: WhileLoop) -> None:
@@ -540,31 +572,27 @@ class Interpreter:
     @visit.register
     def _(self, node: Include) -> None:
         self._uses_advanced_language_features = True
-        with open(node.filename, encoding="utf-8", mode="r") as f:
-            included = f.read()
-            parsed = parse(included)
-            self.visit(parsed)
+        with open(node.filename, encoding="utf-8") as f:
+            self.visit(parse(f.read()))
 
     @visit.register
     def _(self, node: Pragma) -> None:
-        parsed = self.context.parse_pragma(node.command)
-        if node.command.startswith("braket result"):
-            if not parsed:
-                raise TypeError(f"Result type {node.command.split()[2]} is not supported.")
-            self.context.add_result(parsed)
-        elif node.command.startswith("braket unitary"):
-            unitary, target = parsed
-            self.context.add_custom_unitary(unitary, target)
-        elif node.command.startswith("braket noise kraus"):
-            matrices, target = parsed
-            self.context.add_kraus_instruction(matrices, target)
-        elif node.command.startswith("braket noise"):
-            noise_instruction, target, probabilities = parsed
-            self.context.add_noise_instruction(noise_instruction, target, probabilities)
-        elif node.command.startswith("braket verbatim"):
-            pass
-        else:
-            raise NotImplementedError(f"Pragma '{node.command}' is not supported")
+        match self.context.parse_pragma(command := node.command):
+            case parsed if command.startswith("braket result"):
+                if not parsed:
+                    raise TypeError(f"Result type {command.split()[2]} is not supported.")
+                self.context.add_result(parsed)
+            case unitary, target if command.startswith("braket unitary"):
+                self.context.add_custom_unitary(unitary, target)
+            case matrices, target if command.startswith("braket noise kraus"):
+                self.context.add_kraus_instruction(matrices, target)
+            case noise, target, probabilities if command.startswith("braket noise"):
+                self.context.add_noise_instruction(noise, target, probabilities)
+            case _:
+                if command.startswith("braket verbatim"):
+                    self.context.in_verbatim_box = True
+                else:
+                    raise NotImplementedError(f"Pragma '{command}' is not supported")
 
     @visit.register
     def _(self, node: SubroutineDefinition) -> None:
@@ -580,7 +608,7 @@ class Interpreter:
         self.context.add_subroutine(node.name.name, node)
 
     @visit.register
-    def _(self, node: FunctionCall) -> Optional[QASMNode]:
+    def _(self, node: FunctionCall) -> QASMNode | None:
         self._uses_advanced_language_features = True
         function_name = node.name.name
         arguments = self.visit(node.arguments)
@@ -624,7 +652,7 @@ class Interpreter:
             return return_value
 
     @visit.register
-    def _(self, node: ReturnStatement) -> Optional[QASMNode]:
+    def _(self, node: ReturnStatement) -> QASMNode | None:
         self._uses_advanced_language_features = True
         return self.visit(node.expression)
 
@@ -639,7 +667,7 @@ class Interpreter:
         self,
         gate_name: str,
         arguments: list[FloatLiteral],
-        qubits: list[Union[Identifier, IndexedIdentifier]],
+        qubits: list[Identifier | IndexedIdentifier],
         modifiers: list[QuantumGateModifier],
     ) -> None:
         """Add unitary operation to the circuit"""
@@ -650,6 +678,11 @@ class Interpreter:
             modifiers,
         )
 
-    def handle_phase(self, phase: FloatLiteral, qubits: Optional[Iterable[int]] = None) -> None:
+    def handle_phase(self, phase: FloatLiteral, qubits: Iterable[int] | None = None) -> None:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
+
+
+class VerbatimBoxDelimiter(str, Enum):
+    START_VERBATIM = "StartVerbatim"
+    END_VERBATIM = "EndVerbatim"

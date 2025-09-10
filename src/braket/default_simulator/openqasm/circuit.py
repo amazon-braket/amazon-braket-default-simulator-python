@@ -13,15 +13,15 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from collections.abc import Iterable
 
 import numpy as np
-from braket.ir.jaqcd.program_v1 import Results
-from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 from braket.default_simulator.observables import Hermitian, Identity, TensorProduct
 from braket.default_simulator.operation import GateOperation, KrausOperation
 from braket.default_simulator.result_types import _from_braket_observable
+from braket.ir.jaqcd.program_v1 import Results
+from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 
 class Circuit:
@@ -35,13 +35,14 @@ class Circuit:
 
     def __init__(
         self,
-        instructions: Optional[list[GateOperation]] = None,
-        results: Optional[list[Results]] = None,
+        instructions: list[GateOperation] | None = None,
+        results: list[Results] | None = None,
     ):
         self.instructions = []
         self.results = []
         self.qubit_set = set()
         self.measured_qubits = []
+        self.target_classical_indices = []
 
         if instructions:
             for instruction in instructions:
@@ -61,11 +62,17 @@ class Circuit:
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
 
-    def add_measure(self, target: tuple[int]):
-        for qubit in target:
+    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
+        for index, qubit in enumerate(target):
             if qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
             self.measured_qubits.append(qubit)
+            self.qubit_set.add(qubit)
+            self.target_classical_indices.append(
+                classical_targets[index]
+                if classical_targets
+                else max(index, len(self.target_classical_indices))
+            )
 
     def add_result(self, result: Results) -> None:
         """
@@ -99,7 +106,7 @@ class Circuit:
                         if target != measured_qubits:
                             raise ValueError("Qubit part of incompatible results targets")
                         # must ensure observable is the same
-                        if type(previously_measured) != type(observable):
+                        if type(previously_measured) is not type(observable):
                             raise ValueError("Conflicting result types applied to a single qubit")
                         # including matrix value for Hermitians
                         if isinstance(observable, Hermitian):
@@ -127,7 +134,7 @@ class Circuit:
                         braket_obs = _from_braket_observable(observables, [q])
                         process_observable(braket_obs)
 
-        for target, obs in observable_map.items():
+        for obs in observable_map.values():
             diagonalizing_gates = obs.diagonalizing_gates(self.num_qubits)
             basis_rotation_instructions.extend(diagonalizing_gates)
 

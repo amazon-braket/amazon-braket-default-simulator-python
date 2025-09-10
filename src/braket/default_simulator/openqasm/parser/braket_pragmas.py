@@ -13,6 +13,7 @@
 
 import numpy as np
 from antlr4 import CommonTokenStream, InputStream
+
 from braket.ir.jaqcd import (
     Amplitude,
     DensityMatrix,
@@ -37,7 +38,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     for use by the Interpreter
     """
 
-    def __init__(self, qubit_table: "QubitTable"):
+    def __init__(self, qubit_table: "QubitTable"):  # noqa: F821
         self.qubit_table = qubit_table
 
     def visitNoArgResultType(self, ctx: BraketPragmasParser.NoArgResultTypeContext) -> Results:
@@ -201,7 +202,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         return [float(prob.symbol.text) for prob in ctx.children[::2]]
 
 
-def parse_braket_pragma(pragma_body: str, qubit_table: "QubitTable"):
+def parse_braket_pragma(pragma_body: str, qubit_table: "QubitTable"):  # noqa: F821
     """Parse braket pragma and return relevant information.
 
     Pragma types include:

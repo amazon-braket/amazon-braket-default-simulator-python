@@ -27,7 +27,6 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converte
 a = 3
 rydberg_interaction_coef = RYDBERG_INTERACTION_COEF
 
-
 eps = 1e-3
 
 amplitude_1 = {"pattern": "uniform", "time_series": {"times": [0, 4e-6], "values": [10e6, 25e6]}}
@@ -94,7 +93,7 @@ def test_get_func(para):
             + (values[ind + 1] - values[ind]) / (times[ind + 1] - times[ind]) * (t - times[ind])
         )
 
-    assert all([item_1 == item_2 for item_1, item_2 in zip(vals, trueval)])
+    assert np.allclose(vals, trueval)
 
 
 @pytest.mark.parametrize(

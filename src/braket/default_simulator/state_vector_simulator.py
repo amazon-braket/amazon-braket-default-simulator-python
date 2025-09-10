@@ -13,13 +13,12 @@
 
 import sys
 
+from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-
-from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
 class StateVectorSimulator(BaseLocalSimulator):
@@ -239,7 +238,7 @@ class StateVectorSimulator(BaseLocalSimulator):
                         ],
                         "supportPhysicalQubits": False,
                         "supportsPartialVerbatimBox": False,
-                        "requiresContiguousQubitIndices": True,
+                        "requiresContiguousQubitIndices": False,
                         "requiresAllQubitsMeasurement": False,
                         "supportsUnassignedMeasurements": True,
                         "disabledQubitRewiringSupported": False,

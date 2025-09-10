@@ -15,7 +15,7 @@ import warnings
 from collections.abc import Iterable
 from copy import deepcopy
 from functools import singledispatch
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import sympy
@@ -42,13 +42,13 @@ from ..parser.openqasm_ast import (
     UintType,
 )
 
-LiteralType = Union[BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral, BitstringLiteral]
+LiteralType = BooleanLiteral | IntegerLiteral | FloatLiteral | ArrayLiteral | BitstringLiteral
 
 
 @singledispatch
-def cast_to(into: Union[ClassicalType, type[LiteralType]], variable: LiteralType) -> LiteralType:
+def cast_to(into: ClassicalType | type[LiteralType], variable: LiteralType) -> LiteralType:
     """Cast a variable into a given type. Order of parameters is to enable singledispatch"""
-    if type(variable) == into:
+    if type(variable) is into:
         return variable
     if into == BooleanLiteral or isinstance(into, BoolType):
         return BooleanLiteral(bool(variable.value))
@@ -60,9 +60,7 @@ def cast_to(into: Union[ClassicalType, type[LiteralType]], variable: LiteralType
 
 
 @cast_to.register
-def _(
-    into: BitType, variable: Union[BooleanLiteral, ArrayLiteral, BitstringLiteral]
-) -> ArrayLiteral:
+def _(into: BitType, variable: BooleanLiteral | ArrayLiteral | BitstringLiteral) -> ArrayLiteral:
     """
     Bit types can be sized or not, represented as Boolean literals or Array literals.
     Sized bit types can be instantiated with a Bitstring literal or Array literal.
@@ -86,12 +84,14 @@ def _(into: IntType, variable: LiteralType) -> IntegerLiteral:
     if isinstance(variable, ArrayLiteral):
         value = int("".join("01"[x.value] for x in variable.values[1:]), base=2)
         if variable.values[0].value:
-            value *= -1
+            value -= 2 ** (len(variable.values) - 1)
     else:
         value = variable.value
         if into.size is not None:
-            limit = 2 ** (into.size.value - 1)
-            value = int(np.sign(value) * (np.abs(int(value)) % limit))
+            limit = 2**into.size.value
+            value = int(value) % limit
+            if (value) >= limit / 2:
+                value -= limit
             if value != variable.value:
                 warnings.warn(
                     f"Integer overflow for value {variable.value} and size {into.size.value}."
@@ -137,7 +137,7 @@ def _(into: AngleType, variable: LiteralType) -> SymbolLiteral:
 
 
 @cast_to.register
-def _(into: ArrayType, variable: Union[ArrayLiteral, DiscreteSet]) -> ArrayLiteral:
+def _(into: ArrayType, variable: ArrayLiteral | DiscreteSet) -> ArrayLiteral:
     """Cast to Array and enforce dimensions"""
     if len(variable.values) != into.dimensions[0].value:
         raise ValueError(
@@ -186,7 +186,7 @@ def is_none_like(value: Any) -> bool:
 
 
 @singledispatch
-def get_identifier_name(identifier: Union[Identifier, IndexedIdentifier]) -> str:
+def get_identifier_name(identifier: Identifier | IndexedIdentifier) -> str:
     """Get name of an identifier"""
     return identifier.name
 

@@ -22,6 +22,9 @@ import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
+from braket.default_simulator.openqasm.parser import openqasm_parser
+from braket.default_simulator.openqasm.parser.openqasm_ast import QuantumBarrier
+from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
 from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX
 from braket.default_simulator.gate_operations import PauliY as Y
 from braket.default_simulator.gate_operations import RotX, U, Unitary
@@ -113,6 +116,8 @@ def test_int_declaration():
     int[8] uninitialized;
     int[8] pos = 10;
     int[5] neg = -4;
+    int[8] int_min = -128;
+    int[8] int_max = 127;
     int[3] pos_overflow = 5;
     int[3] neg_overflow = -6;
     int no_size = 1e9;
@@ -133,8 +138,10 @@ def test_int_declaration():
     assert context.get_value("uninitialized") is None
     assert context.get_value("pos") == IntegerLiteral(10)
     assert context.get_value("neg") == IntegerLiteral(-4)
-    assert context.get_value("pos_overflow") == IntegerLiteral(1)
-    assert context.get_value("neg_overflow") == IntegerLiteral(-2)
+    assert context.get_value("int_min") == IntegerLiteral(-128)
+    assert context.get_value("int_max") == IntegerLiteral(127)
+    assert context.get_value("pos_overflow") == IntegerLiteral(-3)
+    assert context.get_value("neg_overflow") == IntegerLiteral(2)
     assert context.get_value("no_size") == IntegerLiteral(1_000_000_000)
 
     warnings = {(warn.category, warn.message.args[0]) for warn in warn_info}
@@ -171,6 +178,34 @@ def test_uint_declaration():
     assert context.get_value("pos_overflow") == IntegerLiteral(0)
     assert context.get_value("neg_overflow") == IntegerLiteral(7)
     assert context.get_value("no_size") == IntegerLiteral(1_000_000_000)
+
+
+def test_signed_int_cast():
+    qasm = """
+    uint[8] x0 = 255;
+    int[8] x1 = x0;
+    uint[8] x2 = x1;
+
+    uint[8] y0 = 128;
+    int[8] y1 = y0;
+    uint[8] y2 = y1;
+
+    int[3] z0 = "100";
+    int[3] z1 = "111";
+    """
+
+    context = Interpreter().run(qasm)
+
+    assert context.get_value("x0") == IntegerLiteral(255)
+    assert context.get_value("x1") == IntegerLiteral(-1)
+    assert context.get_value("x2") == IntegerLiteral(255)
+
+    assert context.get_value("y0") == IntegerLiteral(128)
+    assert context.get_value("y1") == IntegerLiteral(-128)
+    assert context.get_value("y2") == IntegerLiteral(128)
+
+    assert context.get_value("z0") == IntegerLiteral(-4)
+    assert context.get_value("z1") == IntegerLiteral(-1)
 
 
 def test_float_declaration():
@@ -674,7 +709,7 @@ def test_update_bits_int():
     """
     context = Interpreter().run(qasm)
     assert context.get_value("x") == IntegerLiteral(3)
-    assert context.get_value("y") == IntegerLiteral(-2)
+    assert context.get_value("y") == IntegerLiteral(-6)
     assert context.get_value("z") == IntegerLiteral(10)
 
 
@@ -2026,7 +2061,7 @@ def test_basis_rotation_hermitian():
                     "b[0] = measure q[0];",
                 ]
             ),
-            [0],
+            ([0], [0]),
         ),
         (
             "\n".join(
@@ -2036,19 +2071,19 @@ def test_basis_rotation_hermitian():
                     "b = measure q;",
                 ]
             ),
-            [0, 1, 2],
+            ([0, 1, 2], [0, 1, 2]),
         ),
         (
             "\n".join(
                 [
-                    "bit[1] b;",
+                    "bit[2] b;",
                     "qubit[2] q;",
                     "h q[0];",
                     "h q[1];",
-                    "b[0] = measure q[0:1];",
+                    "b[0:1] = measure q[0:1];",
                 ]
             ),
-            [0, 1],
+            ([0, 1], [0, 1]),
         ),
         (
             "\n".join(
@@ -2059,11 +2094,11 @@ def test_basis_rotation_hermitian():
                     "cnot q[0], q[1];",
                     "cnot q[1], q[2];",
                     "b[0] = measure q[0];",
-                    "b[1] = measure q[1];",
-                    "b[2] = measure q[2];",
+                    "b[2] = measure q[1];",
+                    "b[1] = measure q[2];",
                 ]
             ),
-            [0, 1, 2],
+            ([0, 1, 2], [0, 2, 1]),
         ),
         (
             "\n".join(
@@ -2073,10 +2108,10 @@ def test_basis_rotation_hermitian():
                     "h q[0];",
                     "h q[1];",
                     "cnot q[1], q[2];",
-                    "b[0] = measure q[{0, 2}];",
+                    "b[{2, 1}] = measure q[{0, 2}];",
                 ]
             ),
-            [0, 2],
+            ([0, 2], [2, 1]),
         ),
         (
             "\n".join(
@@ -2087,7 +2122,7 @@ def test_basis_rotation_hermitian():
                     "b[0] = measure $0;",
                 ]
             ),
-            [0],
+            ([0], [0]),
         ),
         (
             "\n".join(
@@ -2098,7 +2133,7 @@ def test_basis_rotation_hermitian():
                     "}",
                 ]
             ),
-            [0, 1, 2],
+            ([0, 1, 2], [0, 1, 2]),
         ),
         (
             "\n".join(
@@ -2112,7 +2147,7 @@ def test_basis_rotation_hermitian():
                     "measure q[0];",
                 ]
             ),
-            [1, 0],
+            ([1, 0], [0, 1]),
         ),
         (
             "\n".join(
@@ -2122,13 +2157,14 @@ def test_basis_rotation_hermitian():
                     "b[0] = measure q[1:5];",
                 ]
             ),
-            [1],
+            ([1], [0]),
         ),
     ],
 )
 def test_measurement(qasm, expected):
     circuit = Interpreter().build_circuit(qasm)
-    assert circuit.measured_qubits == expected
+    assert circuit.measured_qubits == expected[0]
+    assert circuit.target_classical_indices == expected[1]
 
 
 @pytest.mark.parametrize(
@@ -2281,3 +2317,153 @@ def test_measure_qubit_out_of_range(qasm, expected):
 def test_circuit_from_string_literal(qasm, expected):
     circ = Interpreter().build_circuit(source=qasm)
     assert expected == circ.measured_qubits
+
+    
+@pytest.mark.parametrize(
+    "qasm,error_message",
+    [
+        (
+            "\n".join(["OPENQASM 3.0;bit[2] b;", "qubit[1] q;", "b[{0, 1}] = measure q[0];"]),
+            re.escape(
+                "Number of qubits (1) does not match number of provided classical targets (2)"
+            ),
+        ),
+        (
+            "\n".join(["OPENQASM 3.0;bit[2] b;", "qubit[2] q;", "b[0][2] = measure q[1];"]),
+            re.escape("Multi-Dimensional indexing not supported for classical registers."),
+        ),
+    ],
+)
+def test_invalid_measurement_with_classical_indices(qasm, error_message):
+    with pytest.raises(ValueError, match=error_message):
+        Interpreter().build_circuit(qasm)
+
+
+def test_verbatim_box_start():
+    vbs = VerbatimBoxDelimiter.START_VERBATIM
+    assert isinstance(vbs, VerbatimBoxDelimiter)
+    assert vbs.value == "StartVerbatim"
+    assert vbs.name == "START_VERBATIM"
+
+
+def test_verbatim_box_end():
+    vbs = VerbatimBoxDelimiter.END_VERBATIM
+    assert isinstance(vbs, VerbatimBoxDelimiter)
+    assert vbs.value == "EndVerbatim"
+    assert vbs.name == "END_VERBATIM"
+
+
+def test_verbatim_box():
+    qasm_with_verbatim = """
+        OPENQASM 3.0;
+        #pragma braket verbatim
+        box {
+        h $0;
+        cnot $0, $1;
+        }
+    """
+    context = Interpreter().run(qasm_with_verbatim)
+
+    is_verbatim = context.in_verbatim_box
+    assert isinstance(context.circuit.instructions[0], Hadamard)
+    assert isinstance(context.circuit.instructions[1], CX)
+    assert isinstance(is_verbatim, bool)
+    assert is_verbatim == False
+
+
+def test_verbatim_wo_box():
+    qasm_without_box = """
+        OPENQASM 3.0;
+        #pragma braket verbatim
+        h $0;
+    """
+    with pytest.raises(
+        ValueError, match="braket verbatim pragma must be followed by a box statement"
+    ):
+        Interpreter().run(qasm_without_box)
+
+
+def test_barrier_no_op():
+    """Test barriers are no-ops and don't affect circuit execution."""
+    with_barriers = """
+    qubit[2] q;
+    h q[0];
+    barrier q[0], q[1];
+    cnot q[0], q[1];
+    barrier;
+    x q[1];
+    """
+
+    without_barriers = """
+    qubit[2] q;
+    h q[0];
+    cnot q[0], q[1];
+    x q[1];
+    """
+
+    circuit_with = Interpreter().build_circuit(with_barriers)
+    circuit_without = Interpreter().build_circuit(without_barriers)
+    assert circuit_with == circuit_without
+
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit_with.instructions)
+    expected_state = simulation.state_vector.copy()
+
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit_without.instructions)
+    assert np.allclose(simulation.state_vector, expected_state)
+
+
+def test_barrier_syntax():
+    """Test various barrier syntaxes are accepted."""
+    qasm = """
+    qubit[3] q;
+    barrier q[0];
+    barrier q[0], q[1];
+    barrier q;
+    barrier;
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    assert len(circuit.instructions) == 0
+
+
+def test_barrier_with_gates():
+    """Test barriers don't interfere with gate execution."""
+    qasm = """
+    qubit[2] q;
+    h q[0];
+    barrier q;
+    cnot q[0], q[1];
+    barrier q[1];
+    x q[0];
+    """
+
+    circuit = Interpreter().build_circuit(qasm)
+    assert len(circuit.instructions) == 3
+    assert isinstance(circuit.instructions[0], Hadamard)
+    assert isinstance(circuit.instructions[1], CX)
+    assert isinstance(circuit.instructions[2], PauliX)
+
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0])
+
+
+def test_barrier_parsing_specific_qubits():
+    """Test barrier parsing creates correct AST nodes."""
+    qasm = "qubit[2] q; barrier q[0], q[1];"
+    program = openqasm_parser.parse(qasm)
+    barrier_stmt = program.statements[1]
+
+    assert isinstance(barrier_stmt, QuantumBarrier)
+    assert len(barrier_stmt.qubits) == 2
+
+
+def test_barrier_global():
+    """Test global barrier without specific qubits."""
+    qasm = "qubit[2] q; barrier;"
+    program = openqasm_parser.parse(qasm)
+    barrier_stmt = program.statements[1]
+
+    assert isinstance(barrier_stmt, QuantumBarrier)
+    assert len(barrier_stmt.qubits) == 0  # Empty means all qubits

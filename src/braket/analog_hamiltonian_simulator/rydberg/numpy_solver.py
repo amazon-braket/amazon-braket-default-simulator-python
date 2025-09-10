@@ -14,13 +14,13 @@
 import time
 
 import numpy as np
-from braket.ir.ahs.program_v1 import Program
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import (
     _get_hamiltonian,
     _get_ops_coefs,
     _print_progress_bar,
 )
+from braket.ir.ahs.program_v1 import Program
 
 # define the Butcher tableau
 _ORDER = 6
