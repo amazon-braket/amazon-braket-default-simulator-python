@@ -906,28 +906,24 @@ def _apply_two_qubit_gate(
 
     """
     target0, target1 = targets
-
     threshold = 1e-10
-    diag = np.diag(matrix)
 
-    if (
-        abs(matrix[2, 3] - 1) < threshold
-        and abs(matrix[3, 2] - 1) < threshold
-        and abs(diag[0] - 1) < threshold
-        and abs(diag[1] - 1) < threshold
-    ):
+    cnot = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+
+    swap = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
+    if np.allclose(matrix, cnot, atol=threshold):
         return dispatcher.apply_cnot(state, target0, target1, out)
-    elif matrix[1, 2] == 1 and matrix[2, 1] == 1:
-        if diag[0] == 1 and diag[3] == 1:  # pragma: no cover
-            return dispatcher.apply_swap(state, target0, target1, out)
-    elif abs(diag[0] - 1) < threshold and abs(diag[1] - 1) < threshold:
-        if abs(diag[2] - 1) < threshold:
-            angle = np.angle(diag[3])
-            phase_factor = np.exp(1j * angle)
-            if abs(diag[3] - phase_factor) < threshold:  # pragma: no cover
-                return dispatcher.apply_controlled_phase_shift(
-                    state, phase_factor, (target0,), target1
-                )
+
+    if np.allclose(matrix, swap, atol=threshold):
+        return dispatcher.apply_swap(state, target0, target1, out)
+
+    if np.allclose(np.diag(matrix)[:3], [1, 1, 1], atol=threshold) and np.allclose(
+        matrix - np.diag(np.diag(matrix)), 0, atol=threshold
+    ):
+        phase_factor = matrix[3, 3]
+        return dispatcher.apply_controlled_phase_shift(state, phase_factor, (target0,), target1)
+
     return dispatcher.apply_two_qubit_gate(state, matrix, target0, target1, out)
 
 

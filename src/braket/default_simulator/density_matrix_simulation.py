@@ -132,7 +132,7 @@ class DensityMatrixSimulation(Simulation):
     def _apply_operations(
         state: np.ndarray,
         qubit_count: int,
-        operations: list[Union[GateOperation, KrausOperation, Observable]],
+        operations: list[GateOperation | KrausOperation | Observable],
     ) -> np.ndarray:
         """Applies the gate and noise operations to the density matrix.
 
