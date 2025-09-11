@@ -41,7 +41,9 @@ _QUBIT_THRESHOLD = nb.int32(10)
 class QuantumGateDispatcher:
     def __init__(self, n_qubits: int):
         """
-        Makes a way to dispatch to different optimized functions based on qubit count.
+        Dispatcher for performance-optimized implementations of quantum gates.  It automatically
+        selects between small-circuit (NumPy-based) and large-circuit (Numba JIT-compiled) 
+        implementations based on the number of qubits in a circuit. 
         """
         self.n_qubits = n_qubits
         self.use_large = n_qubits > _QUBIT_THRESHOLD
