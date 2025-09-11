@@ -22,6 +22,9 @@ import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
+from braket.default_simulator.openqasm.parser import openqasm_parser
+from braket.default_simulator.openqasm.parser.openqasm_ast import QuantumBarrier
+from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
 from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX
 from braket.default_simulator.gate_operations import PauliY as Y
 from braket.default_simulator.gate_operations import RotX, U, Unitary
@@ -2304,13 +2307,13 @@ def test_measure_qubit_out_of_range(qasm, expected):
     "qasm,error_message",
     [
         (
-            "\n".join(["OPENQASM 3.0;" "bit[2] b;", "qubit[1] q;", "b[{0, 1}] = measure q[0];"]),
+            "\n".join(["OPENQASM 3.0;bit[2] b;", "qubit[1] q;", "b[{0, 1}] = measure q[0];"]),
             re.escape(
                 "Number of qubits (1) does not match number of provided classical targets (2)"
             ),
         ),
         (
-            "\n".join(["OPENQASM 3.0;" "bit[2] b;", "qubit[2] q;", "b[0][2] = measure q[1];"]),
+            "\n".join(["OPENQASM 3.0;bit[2] b;", "qubit[2] q;", "b[0][2] = measure q[1];"]),
             re.escape("Multi-Dimensional indexing not supported for classical registers."),
         ),
     ],
@@ -2318,3 +2321,133 @@ def test_measure_qubit_out_of_range(qasm, expected):
 def test_invalid_measurement_with_classical_indices(qasm, error_message):
     with pytest.raises(ValueError, match=error_message):
         Interpreter().build_circuit(qasm)
+
+
+def test_verbatim_box_start():
+    vbs = VerbatimBoxDelimiter.START_VERBATIM
+    assert isinstance(vbs, VerbatimBoxDelimiter)
+    assert vbs.value == "StartVerbatim"
+    assert vbs.name == "START_VERBATIM"
+
+
+def test_verbatim_box_end():
+    vbs = VerbatimBoxDelimiter.END_VERBATIM
+    assert isinstance(vbs, VerbatimBoxDelimiter)
+    assert vbs.value == "EndVerbatim"
+    assert vbs.name == "END_VERBATIM"
+
+
+def test_verbatim_box():
+    qasm_with_verbatim = """
+        OPENQASM 3.0;
+        #pragma braket verbatim
+        box {
+        h $0;
+        cnot $0, $1;
+        }
+    """
+    context = Interpreter().run(qasm_with_verbatim)
+
+    is_verbatim = context.in_verbatim_box
+    assert isinstance(context.circuit.instructions[0], Hadamard)
+    assert isinstance(context.circuit.instructions[1], CX)
+    assert isinstance(is_verbatim, bool)
+    assert is_verbatim == False
+
+
+def test_verbatim_wo_box():
+    qasm_without_box = """
+        OPENQASM 3.0;
+        #pragma braket verbatim
+        h $0;
+    """
+    with pytest.raises(
+        ValueError, match="braket verbatim pragma must be followed by a box statement"
+    ):
+        Interpreter().run(qasm_without_box)
+
+
+def test_barrier_no_op():
+    """Test barriers are no-ops and don't affect circuit execution."""
+    with_barriers = """
+    qubit[2] q;
+    h q[0];
+    barrier q[0], q[1];
+    cnot q[0], q[1];
+    barrier;
+    x q[1];
+    """
+
+    without_barriers = """
+    qubit[2] q;
+    h q[0];
+    cnot q[0], q[1];
+    x q[1];
+    """
+
+    circuit_with = Interpreter().build_circuit(with_barriers)
+    circuit_without = Interpreter().build_circuit(without_barriers)
+    assert circuit_with == circuit_without
+
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit_with.instructions)
+    expected_state = simulation.state_vector.copy()
+
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit_without.instructions)
+    assert np.allclose(simulation.state_vector, expected_state)
+
+
+def test_barrier_syntax():
+    """Test various barrier syntaxes are accepted."""
+    qasm = """
+    qubit[3] q;
+    barrier q[0];
+    barrier q[0], q[1];
+    barrier q;
+    barrier;
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    assert len(circuit.instructions) == 0
+
+
+def test_barrier_with_gates():
+    """Test barriers don't interfere with gate execution."""
+    qasm = """
+    qubit[2] q;
+    h q[0];
+    barrier q;
+    cnot q[0], q[1];
+    barrier q[1];
+    x q[0];
+    """
+
+    circuit = Interpreter().build_circuit(qasm)
+    assert len(circuit.instructions) == 3
+    assert isinstance(circuit.instructions[0], Hadamard)
+    assert isinstance(circuit.instructions[1], CX)
+    assert isinstance(circuit.instructions[2], PauliX)
+
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0])
+
+
+def test_barrier_parsing_specific_qubits():
+    """Test barrier parsing creates correct AST nodes."""
+    qasm = "qubit[2] q; barrier q[0], q[1];"
+    program = openqasm_parser.parse(qasm)
+    barrier_stmt = program.statements[1]
+
+    assert isinstance(barrier_stmt, QuantumBarrier)
+    assert len(barrier_stmt.qubits) == 2
+
+
+def test_barrier_global():
+    """Test global barrier without specific qubits."""
+    qasm = "qubit[2] q; barrier;"
+    program = openqasm_parser.parse(qasm)
+    barrier_stmt = program.statements[1]
+
+    assert isinstance(barrier_stmt, QuantumBarrier)
+    assert len(barrier_stmt.qubits) == 0  # Empty means all qubits

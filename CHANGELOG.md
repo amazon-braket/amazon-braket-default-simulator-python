@@ -1,5 +1,91 @@
 # Changelog
 
+## v1.30.1 (2025-09-10)
+
+### Bug Fixes and Other Changes
+
+ * Python 3.10 syntax
+
+## v1.30.0 (2025-09-08)
+
+### Features
+
+ * add tests to make sure that the simulators can handle barrier instructions
+
+## v1.29.0 (2025-08-21)
+
+### Deprecations and Removals
+
+ * Drop Python 3.9, support 3.12, 3.13
+
+### Bug Fixes and Other Changes
+
+ * Pass username to testenv
+ * Formatting
+
+### Documentation Changes
+
+ * Add Python 3.12, 3.13 to supported versions
+
+## v1.28.0 (2025-08-18)
+
+### Features
+
+ * Support verbatim boxes in interpreter
+
+### Bug Fixes and Other Changes
+
+ * bump antlr to 4.13.2
+
+## v1.27.0 (2025-08-13)
+
+### Features
+
+ * Program sets
+
+## v1.26.7 (2025-06-19)
+
+### Bug Fixes and Other Changes
+
+ * Input type in _apply_hamiltonian
+
+## v1.26.6 (2025-06-18)
+
+### Bug Fixes and Other Changes
+
+ * change numpy tostring to tobytes
+
+## v1.26.5 (2025-05-21)
+
+### Bug Fixes and Other Changes
+
+ * typo detuing to detuning
+
+## v1.26.4 (2025-02-08)
+
+### Bug Fixes and Other Changes
+
+ * update pytest version to fix security vuln
+ * Failing linting CI test
+
+## v1.26.3 (2025-01-28)
+
+### Bug Fixes and Other Changes
+
+ * Feature/rydberg longer evolution time
+
+## v1.26.2 (2024-12-06)
+
+### Bug Fixes and Other Changes
+
+ * remove redundant reshape
+
+## v1.26.1 (2024-11-25)
+
+### Bug Fixes and Other Changes
+
+ * update numpy random function to use a generator
+
 ## v1.26.0 (2024-06-27)
 
 ### Features

@@ -17,6 +17,7 @@ import warnings
 
 import numpy as np
 import scipy.sparse
+
 from braket.ir.ahs.atom_arrangement import AtomArrangement
 from braket.ir.ahs.program_v1 import Program
 
@@ -235,8 +236,8 @@ def _get_sparse_ops(
 
     Returns:
         tuple[list[csr_matrix],list[csr_matrix],csr_matrix,list[csr_matrix]]: A tuple containing
-        the list of Rabi operators, the list of detuing operators,
-        the interaction operator and the list of local detuing operators
+        the list of Rabi operators, the list of detuning operators,
+        the interaction operator and the list of local detuning operators
 
     """
     # Get the driving fields as sparse matrices, whose targets are all the atoms in the system
@@ -316,7 +317,7 @@ def _get_coefs(
 
     Returns:
         tuple[ndarray, ndarray, ndarray]: A tuple containing
-        the list of Rabi frequencies, the list of global detuings and
+        the list of Rabi frequencies, the list of global detunings and
         the list of local detunings
     """
     rabi_coefs, detuning_coefs = [], []
@@ -357,11 +358,11 @@ def _get_coefs(
         detuning_coefs.append(detuning_coef)
 
     # add local detuning
-    local_detuing_coefs = []
+    local_detuning_coefs = []
     for local_detuning in program.hamiltonian.localDetuning:
         magnitude = local_detuning.magnitude.time_series
 
-        local_detuing_coef = np.array(
+        local_detuning_coef = np.array(
             [
                 _interpolate_time_series(
                     t, magnitude.times, magnitude.values, method="piecewise_linear"
@@ -370,9 +371,9 @@ def _get_coefs(
             ],
             dtype=complex,
         )
-        local_detuing_coefs.append(local_detuing_coef)
+        local_detuning_coefs.append(local_detuning_coef)
 
-    return np.array(rabi_coefs), np.array(detuning_coefs), np.array(local_detuing_coefs)
+    return np.array(rabi_coefs), np.array(detuning_coefs), np.array(local_detuning_coefs)
 
 
 def _get_ops_coefs(
@@ -390,7 +391,7 @@ def _get_ops_coefs(
     scipy.sparse.csr_matrix,
 ]:
     """Returns the sparse matrices and coefficients for the Rabi terms, detuning terms and
-    the local detuining terms, together with the interaction operator in the given analog
+    the local detuning terms, together with the interaction operator in the given analog
     simulation program for Rydberg systems.
 
     Args:
@@ -409,15 +410,15 @@ def _get_ops_coefs(
             ndarray,
             ndarray,
             csr_matrix
-        ]: A tuple containing the list of Rabi operators, the list of detuing operators,
-        the list of local detuing operators, the list of Rabi frequencies, the list of global
-        detuings, the list of local detunings and the interaction operator.
+        ]: A tuple containing the list of Rabi operators, the list of detuning operators,
+        the list of local detuning operators, the list of Rabi frequencies, the list of global
+        detunings, the list of local detunings and the interaction operator.
     """
 
     rabi_ops, detuning_ops, interaction_op, local_detuning_ops = _get_sparse_ops(
         program, configurations, rydberg_interaction_coef
     )
-    rabi_coefs, detuning_coefs, local_detuing_coefs = _get_coefs(program, simulation_times)
+    rabi_coefs, detuning_coefs, local_detuning_coefs = _get_coefs(program, simulation_times)
 
     return (
         rabi_ops,
@@ -425,7 +426,7 @@ def _get_ops_coefs(
         local_detuning_ops,
         rabi_coefs,
         detuning_coefs,
-        local_detuing_coefs,
+        local_detuning_coefs,
         interaction_op,
     )
 
@@ -496,9 +497,9 @@ def _get_hamiltonian(
             ndarray,
             ndarray,
             csr_matrix
-        ]): A tuple containing the list of Rabi operators, the list of detuing operators,
-        the list of local detuing operators, the list of Rabi frequencies, the list of global
-        detuings, the list of local detunings and the interaction operator.
+        ]): A tuple containing the list of Rabi operators, the list of detuning operators,
+        the list of local detuning operators, the list of Rabi frequencies, the list of global
+        detunings, the list of local detunings and the interaction operator.
 
     Returns:
         (scipy.sparse.csr_matrix): The Hamiltonian at the given time point as a sparse matrix
@@ -509,7 +510,7 @@ def _get_hamiltonian(
         local_detuning_ops,
         rabi_coefs,
         detuning_coefs,
-        local_detuing_coefs,
+        local_detuning_coefs,
         interaction_op,
     ) = operators_coefficients
 
@@ -528,7 +529,7 @@ def _get_hamiltonian(
         # same number of coefficients
         # Note that, if there is no driving field nor local detuning, the initial state will
         # be returned, and the simulation would not reach here.
-        max_index_time = len(local_detuing_coefs[0]) - 1
+        max_index_time = len(local_detuning_coefs[0]) - 1
 
     # If the integrator uses intermediate time value that is larger than the maximum
     # time value specified, the final time value is used as an approximation.
@@ -565,7 +566,7 @@ def _get_hamiltonian(
         )
 
     # Add local detuning
-    for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
+    for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuning_coefs):
         hamiltonian -= local_detuning_op * local_detuning_coef[index_time]
 
     return hamiltonian
@@ -577,7 +578,7 @@ def _apply_hamiltonian(
         list[scipy.sparse.csr_matrix],
         list[scipy.sparse.csr_matrix],
         list[scipy.sparse.csr_matrix],
-        list[scipy.sparse.csr_matrix],
+        np.ndarray,
         np.ndarray,
         np.ndarray,
         scipy.sparse.csr_matrix,
@@ -592,13 +593,13 @@ def _apply_hamiltonian(
             list[csr_matrix],
             list[csr_matrix],
             list[csr_matrix],
-            list[csr_matrix],
+            ndarray,
             ndarray,
             ndarray,
             csr_matrix
-        ]): A tuple containing the list of Rabi operators, the list of detuing operators,
-        the list of local detuing operators, the list of Rabi frequencies, the list of global
-        detuings, the list of local detunings and the interaction operator.
+        ]): A tuple containing the list of Rabi operators, the list of detuning operators,
+        the list of local detuning operators, the list of Rabi frequencies, the list of global
+        detunings, the list of local detunings and the interaction operator.
         input_register (ndarray): The input state which we apply the Hamiltonian to.
     Returns:
         (ndarray): The result
@@ -609,7 +610,7 @@ def _apply_hamiltonian(
         local_detuning_ops,
         rabi_coefs,
         detuning_coefs,
-        local_detuing_coefs,
+        local_detuning_coefs,
         interaction_op,
     ) = operators_coefficients
 
@@ -627,7 +628,7 @@ def _apply_hamiltonian(
         # same number of coefficients
         # Note that, if there is no driving field nor local detuning, the initial state will
         # be returned, and the simulation would not reach here.
-        max_index_time = len(local_detuing_coefs[0]) - 1
+        max_index_time = len(local_detuning_coefs[0]) - 1
 
     # If the integrator uses intermediate time value that is larger than the maximum
     # time value specified, the final time value is used as an approximation.
@@ -662,7 +663,7 @@ def _apply_hamiltonian(
         output_register -= detuning_coef[index_time] * detuning_op.dot(input_register)
 
     # Add local detuning
-    for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuing_coefs):
+    for local_detuning_op, local_detuning_coef in zip(local_detuning_ops, local_detuning_coefs):
         output_register -= local_detuning_coef[index_time] * local_detuning_op.dot(input_register)
 
     return output_register

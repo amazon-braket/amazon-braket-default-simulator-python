@@ -1,6 +1,18 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
 import math
 from enum import Enum
-from typing import Optional, Union
 
 import numpy as np
 import sympy
@@ -24,7 +36,7 @@ class BuiltinConstants(Enum):
 
 class BuiltinFunctions:
     @staticmethod
-    def sizeof(array: ArrayLiteral, dim: Optional[IntegerLiteral] = None) -> IntegerLiteral:
+    def sizeof(array: ArrayLiteral, dim: IntegerLiteral | None = None) -> IntegerLiteral:
         return (
             IntegerLiteral(len(array.values))
             if dim is None or dim.value == 0
@@ -32,7 +44,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def arccos(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def arccos(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.acos(x.value))
             if isinstance(x, SymbolLiteral)
@@ -40,7 +52,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def arcsin(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def arcsin(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.asin(x.value))
             if isinstance(x, SymbolLiteral)
@@ -48,7 +60,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def arctan(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def arctan(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.atan(x.value))
             if isinstance(x, SymbolLiteral)
@@ -56,7 +68,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def ceiling(x: Union[FloatLiteral, SymbolLiteral]) -> Union[IntegerLiteral, SymbolLiteral]:
+    def ceiling(x: FloatLiteral | SymbolLiteral) -> IntegerLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.ceiling(x.value))
             if isinstance(x, SymbolLiteral)
@@ -64,7 +76,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def cos(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def cos(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.cos(x.value))
             if isinstance(x, SymbolLiteral)
@@ -72,7 +84,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def exp(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def exp(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.exp(x.value))
             if isinstance(x, SymbolLiteral)
@@ -80,7 +92,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def floor(x: Union[FloatLiteral, SymbolLiteral]) -> Union[IntegerLiteral, SymbolLiteral]:
+    def floor(x: FloatLiteral | SymbolLiteral) -> IntegerLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.floor(x.value))
             if isinstance(x, SymbolLiteral)
@@ -88,7 +100,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def log(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def log(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.log(x.value))
             if isinstance(x, SymbolLiteral)
@@ -97,9 +109,9 @@ class BuiltinFunctions:
 
     @staticmethod
     def mod(
-        x: Union[IntegerLiteral, FloatLiteral, SymbolLiteral],
-        y: Union[IntegerLiteral, FloatLiteral, SymbolLiteral],
-    ) -> Union[IntegerLiteral, FloatLiteral, SymbolLiteral]:
+        x: IntegerLiteral | FloatLiteral | SymbolLiteral,
+        y: IntegerLiteral | FloatLiteral | SymbolLiteral,
+    ) -> IntegerLiteral | FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(x.value % y.value)
             if isinstance(x, SymbolLiteral) or isinstance(y, SymbolLiteral)
@@ -111,15 +123,15 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def popcount(x: Union[IntegerLiteral, BitstringLiteral, ArrayLiteral]) -> IntegerLiteral:
+    def popcount(x: IntegerLiteral | BitstringLiteral | ArrayLiteral) -> IntegerLiteral:
         # does not support symbols or expressions
         return IntegerLiteral(np.binary_repr(cast_to(UintType(), x).value).count("1"))
 
     @staticmethod
     def pow(
-        x: Union[IntegerLiteral, FloatLiteral, SymbolLiteral],
-        y: Union[IntegerLiteral, FloatLiteral, SymbolLiteral],
-    ) -> Union[IntegerLiteral, FloatLiteral, SymbolLiteral]:
+        x: IntegerLiteral | FloatLiteral | SymbolLiteral,
+        y: IntegerLiteral | FloatLiteral | SymbolLiteral,
+    ) -> IntegerLiteral | FloatLiteral | SymbolLiteral:
         # parser gets confused by pow, mistaking for quantum modifier
         return (
             SymbolLiteral(x.value**y.value)
@@ -140,7 +152,7 @@ class BuiltinFunctions:
         raise NotImplementedError
 
     @staticmethod
-    def sin(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def sin(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.sin(x.value))
             if isinstance(x, SymbolLiteral)
@@ -148,7 +160,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def sqrt(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def sqrt(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.sqrt(x.value))
             if isinstance(x, SymbolLiteral)
@@ -156,7 +168,7 @@ class BuiltinFunctions:
         )
 
     @staticmethod
-    def tan(x: Union[FloatLiteral, SymbolLiteral]) -> Union[FloatLiteral, SymbolLiteral]:
+    def tan(x: FloatLiteral | SymbolLiteral) -> FloatLiteral | SymbolLiteral:
         return (
             SymbolLiteral(sympy.tan(x.value))
             if isinstance(x, SymbolLiteral)

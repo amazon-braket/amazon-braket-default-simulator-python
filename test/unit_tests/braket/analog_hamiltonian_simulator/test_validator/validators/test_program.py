@@ -148,7 +148,6 @@ def test_program_local_detuning_pattern_has_the_same_length_as_atom_array_sites(
 def test_mock_program_with_large_net_detuning_data(
     mock_program_with_large_net_detuning_data: Program, device_capabilities_constants
 ):
-
     warning_message = (
         f"Atom {1} has net detuning {-250000000.0} rad/s "
         f"at time {0} seconds, which is outside the typical range "
