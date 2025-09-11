@@ -108,4 +108,3 @@ In order to get stable results, stop other applications when running these tests
 ## License
 
 This project is licensed under the Apache-2.0 License.
-

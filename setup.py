@@ -25,7 +25,7 @@ setup(
     name="amazon-braket-default-simulator",
     version=version,
     license="Apache License 2.0",
-    python_requires=">= 3.9",
+    python_requires=">= 3.10",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     package_data={"": ["*.g4", "*.inc"]},
@@ -56,10 +56,11 @@ setup(
         "test": [
             "pre-commit",
             "pylint",
-            "pytest==7.2.0",
+            "pytest==7.4.4",
             "pytest-benchmark",
             "pytest-cov",
-            "pytest-rerunfailures",
+            # https://github.com/pytest-dev/pytest-rerunfailures/issues/302
+            "pytest-rerunfailures<16.0",
             "pytest-xdist",
             "ruff",
             "sphinx",
@@ -71,7 +72,7 @@ setup(
     url="https://github.com/amazon-braket/amazon-braket-default-simulator-python",
     author="Amazon Web Services",
     description=(
-        "An open source quantum circuit simulator to be run locally with the Amazon Braket SDK"
+        "An open source quantum program simulator to be run locally with the Amazon Braket SDK"
     ),
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -82,8 +83,9 @@ setup(
         "Natural Language :: English",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
 )
