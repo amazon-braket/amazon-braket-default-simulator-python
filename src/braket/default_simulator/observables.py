@@ -54,7 +54,7 @@ class Identity(Observable):
 
     @property
     def eigenvalues(self) -> np.ndarray:
-        return np.array([1, 1])
+        return np.array([1, 1], dtype=complex)
 
     def apply(self, state: np.ndarray) -> np.ndarray:
         return state
@@ -107,7 +107,7 @@ class Hadamard(_InvolutoryMatrixObservable):
     """
 
     def __init__(self, targets: list[int] | None = None):
-        super().__init__(np.array([[1, 1], [1, -1]]) / math.sqrt(2), targets)
+        super().__init__(np.array([[1, 1], [1, -1]], dtype=complex) / math.sqrt(2), targets)
 
     @property
     def is_standard(self) -> bool:
@@ -141,7 +141,7 @@ class PauliX(_InvolutoryMatrixObservable):
     """
 
     def __init__(self, targets: list[int] | None = None):
-        super().__init__(np.array([[0, 1], [1, 0]]), targets)
+        super().__init__(np.array([[0, 1], [1, 0]], dtype=complex), targets)
 
     @property
     def is_standard(self) -> bool:
@@ -175,10 +175,10 @@ class PauliY(_InvolutoryMatrixObservable):
     """
 
     # HS^{\dagger}
-    _diagonalizing_matrix = np.array([[1, -1j], [1, 1j]]) / math.sqrt(2)
+    _diagonalizing_matrix = np.array([[1, -1j], [1, 1j]], dtype=complex) / math.sqrt(2)
 
     def __init__(self, targets: list[int] | None = None):
-        super().__init__(np.array([[0, -1j], [1j, 0]]), targets)
+        super().__init__(np.array([[0, -1j], [1j, 0]], dtype=complex), targets)
 
     @property
     def is_standard(self) -> bool:
@@ -212,7 +212,7 @@ class PauliZ(_InvolutoryMatrixObservable):
     """
 
     def __init__(self, targets: list[int] | None = None):
-        super().__init__(np.array([[1, 0], [0, -1]]), targets)
+        super().__init__(np.array([[1, 0], [0, -1]], dtype=complex), targets)
         self._measured_qubits = self._targets
 
     @property
@@ -266,7 +266,7 @@ class Hermitian(Observable):
     @property
     def matrix(self) -> np.ndarray:
         """np.ndarray: The Hermitian matrix defining the observable."""
-        return np.array(self._matrix)
+        return np.array(self._matrix, dtype=complex)
 
     @property
     def targets(self) -> tuple[int, ...]:
@@ -361,7 +361,7 @@ class TensorProduct(Observable):
         return self._eigenvalues
 
     def apply(self, state: np.ndarray) -> np.ndarray:
-        final = np.array(state)
+        final = np.array(state, dtype=complex)
         for factor in self._factors:
             final = factor.apply(final)
         return final
