@@ -35,17 +35,23 @@ def apply_operations(
 
     dispatcher = QuantumGateDispatcher(state.ndim)
     for op in operations:
-        num_ctrl = len(op._ctrl_modifiers)
-        _, needs_swap = multiply_matrix(
-            result,
-            op.matrix,
-            op.targets[num_ctrl:],
-            op.targets[:num_ctrl],
-            op._ctrl_modifiers,
-            temp,
-            dispatcher,
-            True,
-        )
-        if needs_swap:
-            result, temp = temp, result
+        if operation.__class__.__name__ in {"Measure", "Reset"}:
+            # Reshape to 1D for Measure.apply, then back to tensor form
+            state_1d = np.reshape(state, 2 ** len(state.shape))
+            state_1d = operation.apply(state_1d)  # type: ignore
+            state = np.reshape(state_1d, state.shape)
+        else:
+            num_ctrl = len(op._ctrl_modifiers)
+            _, needs_swap = multiply_matrix(
+                result,
+                op.matrix,
+                op.targets[num_ctrl:],
+                op.targets[:num_ctrl],
+                op._ctrl_modifiers,
+                temp,
+                dispatcher,
+                True,
+            )
+            if needs_swap:
+                result, temp = temp, result
     return result
