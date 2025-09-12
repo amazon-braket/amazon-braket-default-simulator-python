@@ -288,9 +288,9 @@ class DensityMatrixSimulation(Simulation):
             _, needs_swap = multiply_matrix(
                 result, superop, targets_new, out=temp, return_swap_info=True, dispatcher=dispatcher
             )
-            if not needs_swap:
+            if needs_swap:
                 result, temp = temp, result
-            return temp, result
+            return result, temp
 
         temp.fill(0)
         shifted_targets = tuple(t + qubit_count for t in targets)
