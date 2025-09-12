@@ -50,7 +50,7 @@ def pauli_eigenvalues(num_qubits: int) -> np.ndarray:
         np.ndarray: the eigenvalues of a Pauli product operator of the given size
     """
     if num_qubits == 1:
-        return np.array([1, -1])
+        return np.array([1, -1], dtype=complex)
     return np.concatenate([pauli_eigenvalues(num_qubits - 1), -pauli_eigenvalues(num_qubits - 1)])
 
 
