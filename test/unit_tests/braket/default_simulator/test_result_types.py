@@ -301,7 +301,6 @@ def test_variance_no_targets(state_vector, obs):
         _variance_from_diagonalization(diagonalized_probs, [qubit], eigs)
         for qubit in range(qubit_count)
     ]
-
     assert np.allclose(calculated, from_diagonalization)
 
 
