@@ -37,7 +37,6 @@ tmax = 0.25 * 1e-6  # note that we are in SI unites
 rabi_frequency = 2 * pi * 4 * 1e6
 detuning_value = 2 * pi * 3 * 1e6
 
-
 amplitude = {
     "pattern": "uniform",
     "time_series": {"times": [0, tmax], "values": [rabi_frequency, rabi_frequency]},

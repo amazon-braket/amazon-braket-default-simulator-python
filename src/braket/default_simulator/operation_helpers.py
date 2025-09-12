@@ -12,21 +12,20 @@
 # language governing permissions and limitations under the License.
 
 from functools import lru_cache, singledispatch
-from typing import Union
 
 import numpy as np
 
 from braket.default_simulator.operation import GateOperation, KrausOperation
 
 
-def from_braket_instruction(instruction) -> Union[GateOperation, KrausOperation]:
+def from_braket_instruction(instruction) -> GateOperation | KrausOperation:
     """Instantiates the concrete `GateOperation` or `KrausOperation` object from the
     specified Braket instruction.
 
     Args:
         instruction: instruction for a circuit specified using the `braket.ir.jacqd` format.
     Returns:
-        Union[GateOperation, KrausOperation]: instance of the concrete GateOperation or
+        GateOperation | KrausOperation: instance of the concrete GateOperation or
         KrausOperation class corresponding to the specified instruction.
 
     Raises:
@@ -51,7 +50,7 @@ def pauli_eigenvalues(num_qubits: int) -> np.ndarray:
         np.ndarray: the eigenvalues of a Pauli product operator of the given size
     """
     if num_qubits == 1:
-        return np.array([1, -1])
+        return np.array([1, -1], dtype=complex)
     return np.concatenate([pauli_eigenvalues(num_qubits - 1), -pauli_eigenvalues(num_qubits - 1)])
 
 

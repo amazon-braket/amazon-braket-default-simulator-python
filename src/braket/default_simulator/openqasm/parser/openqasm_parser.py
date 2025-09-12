@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 from contextlib import contextmanager
-from typing import TypeVar, Union
+from typing import TypeVar
 
 try:
     from antlr4 import CommonTokenStream, InputStream, ParserRuleContext, RecognitionException
@@ -94,7 +94,7 @@ def parse(input_: str, *, permissive=False) -> ast.Program:
     return QASMNodeVisitor().visitProgram(tree)
 
 
-def get_span(node: Union[ParserRuleContext, TerminalNode]) -> ast.Span:
+def get_span(node: ParserRuleContext | TerminalNode) -> ast.Span:
     """Get the span of a node"""
     if isinstance(node, ParserRuleContext):
         return ast.Span(node.start.line, node.start.column, node.stop.line, node.stop.column)
