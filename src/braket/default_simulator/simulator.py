@@ -547,7 +547,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """
         # Get the full measurements
         measurements = [
-            list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
+            list(
+                "{number:0{width}b}".format(number=sample, width=simulation.qubit_count)[
+                    -simulation.qubit_count :
+                ]
+            )
             for sample in simulation.retrieve_samples()
         ]
         #  Gets the subset of measurements from the full measurements
