@@ -42,6 +42,7 @@ class DensityMatrixSimulation(Simulation):
         initial_state[0, 0] = 1
         self._density_matrix = initial_state
         self._post_observables = None
+        self._rng_generator = np.random.default_rng()
 
     def evolve(self, operations: list[GateOperation | KrausOperation]) -> None:
         self._density_matrix = DensityMatrixSimulation._apply_operations(
@@ -72,10 +73,9 @@ class DensityMatrixSimulation(Simulation):
             self._density_matrix, self._qubit_count, operations
         )
 
-    def retrieve_samples(self) -> list[int]:
-        rng_generator = np.random.default_rng()
-        return rng_generator.choice(
-            self._density_matrix.shape[0], p=self.probabilities, size=self._shots
+    def retrieve_samples(self) -> np.ndarray:
+        return np.searchsorted(
+            np.cumsum(self.probabilities), self._rng_generator.random(size=self._shots)
         )
 
     @property
