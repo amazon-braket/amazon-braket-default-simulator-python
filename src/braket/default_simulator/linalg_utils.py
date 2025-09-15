@@ -43,8 +43,8 @@ class QuantumGateDispatcher:
     def __init__(self, n_qubits: int):
         """
         Dispatcher for performance-optimized implementations of quantum gates.  It automatically
-        selects between small-circuit (NumPy-based) and large-circuit (Numba JIT-compiled) 
-        implementations based on the number of qubits in a circuit. 
+        selects between small-circuit (NumPy-based) and large-circuit (Numba JIT-compiled)
+        implementations based on the number of qubits in a circuit.
         """
         self.n_qubits = n_qubits
         self.use_large = n_qubits > _QUBIT_THRESHOLD
@@ -1174,7 +1174,7 @@ def _multiply_matrix(
     axes = (np.arange(num_targets, 2 * num_targets), targets)
 
     product = np.tensordot(gate_matrix, state, axes=axes)
-    unused_idxs = [idx for idx in range(state.ndim) if idx not in targets]
+    unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
 
     np.copyto(out, np.transpose(product, np.argsort([*targets, *unused_idxs])))
     return out, True
