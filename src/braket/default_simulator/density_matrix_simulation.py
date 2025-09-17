@@ -314,5 +314,6 @@ class DensityMatrixSimulation(Simulation):
                 dispatcher=dispatcher,
             )
             temp += output_buffer
+        result, temp = temp, result
 
-        return temp, result
+        return result, temp
