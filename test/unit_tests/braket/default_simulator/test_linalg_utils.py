@@ -15,21 +15,12 @@ import numpy as np
 import pytest
 
 from braket.default_simulator.linalg_utils import (
-    _apply_rx_gate_small,
     _apply_rx_gate_large,
-    _apply_ry_gate_small,
     _apply_ry_gate_large,
-    _apply_rz_gate_small,
-    _apply_rz_gate_large,
-    _apply_phase_shift_gate_small,
-    _apply_phase_shift_gate_large,
     _apply_x_gate_large,
     _apply_y_gate_large,
-    _apply_z_gate_large,
-    _apply_s_gate_large,
-    _apply_si_gate_large,
-    _apply_t_gate_large,
-    _apply_ti_gate_large,
+    _apply_diagonal_gate_small,
+    _apply_diagonal_gate_large,
     _apply_hadamard_gate_large,
     _apply_v_gate_large,
     _apply_vi_gate_large,
@@ -119,66 +110,23 @@ def iswap_matrix():
 
 rotation_gate_testdata = [
     (
-        _apply_rx_gate_small,
         _apply_rx_gate_large,
         rx_matrix,
         np.pi / 2,
         0,
         [0.70710678, -0.70710678j],
     ),
-    (_apply_rx_gate_small, _apply_rx_gate_large, rx_matrix, np.pi, 0, [0, -1j]),
+    (_apply_rx_gate_large, rx_matrix, np.pi, 0, [0, -1j]),
     (
-        _apply_rx_gate_small,
         _apply_rx_gate_large,
         rx_matrix,
         np.pi / 4,
         0,
         [0.92387953, -0.38268343j],
     ),
-    (_apply_ry_gate_small, _apply_ry_gate_large, ry_matrix, np.pi / 2, 0, [0.70710678, 0.70710678]),
-    (_apply_ry_gate_small, _apply_ry_gate_large, ry_matrix, np.pi, 0, [0, 1]),
-    (_apply_ry_gate_small, _apply_ry_gate_large, ry_matrix, np.pi / 4, 0, [0.92387953, 0.38268343]),
-    (
-        _apply_rz_gate_small,
-        _apply_rz_gate_large,
-        rz_matrix,
-        np.pi / 2,
-        0,
-        [0.70710678 - 0.70710678j, 0],
-    ),
-    (_apply_rz_gate_small, _apply_rz_gate_large, rz_matrix, np.pi, 0, [-1j, 0]),
-    (
-        _apply_rz_gate_small,
-        _apply_rz_gate_large,
-        rz_matrix,
-        np.pi / 4,
-        0,
-        [0.92387953 - 0.38268343j, 0],
-    ),
-    (
-        _apply_phase_shift_gate_small,
-        _apply_phase_shift_gate_large,
-        phase_shift_matrix,
-        np.pi / 2,
-        0,
-        [1, 0],
-    ),
-    (
-        _apply_phase_shift_gate_small,
-        _apply_phase_shift_gate_large,
-        phase_shift_matrix,
-        np.pi,
-        0,
-        [1, 0],
-    ),
-    (
-        _apply_phase_shift_gate_small,
-        _apply_phase_shift_gate_large,
-        phase_shift_matrix,
-        np.pi / 4,
-        0,
-        [1, 0],
-    ),
+    (_apply_ry_gate_large, ry_matrix, np.pi / 2, 0, [0.70710678, 0.70710678]),
+    (_apply_ry_gate_large, ry_matrix, np.pi, 0, [0, 1]),
+    (_apply_ry_gate_large, ry_matrix, np.pi / 4, 0, [0.92387953, 0.38268343]),
 ]
 
 multi_qubit_rotation_testdata = [
@@ -201,16 +149,9 @@ gate_dispatch_testdata = [
 ]
 
 
-@pytest.mark.parametrize(
-    "func_small, func_large, matrix_func, angle, target, expected", rotation_gate_testdata
-)
-def test_rotation_gates_single_qubit(func_small, func_large, matrix_func, angle, target, expected):
+@pytest.mark.parametrize("func_large, matrix_func, angle, target, expected", rotation_gate_testdata)
+def test_rotation_gates_single_qubit(func_large, matrix_func, angle, target, expected):
     matrix = matrix_func(angle)
-
-    state = np.array([1, 0], dtype=complex).reshape(2)
-    out = np.zeros_like(state, dtype=complex)
-    result, _ = func_small(state, matrix, target, out)
-    assert np.allclose(result.flatten(), expected, atol=1e-7)
 
     state = np.array([1, 0], dtype=complex).reshape(2)
     out = np.zeros_like(state, dtype=complex)
@@ -307,42 +248,6 @@ def test_gate_dispatch_recognition(matrix_func, angle, description):
     assert np.allclose(result_small.flatten()[:2], expected_large, atol=1e-7)
 
 
-def test_rx_gate_identity():
-    matrix = rx_matrix(0)
-    state = np.array([0.6, 0.8], dtype=complex)
-    out = np.zeros_like(state, dtype=complex)
-
-    result, _ = _apply_rx_gate_small(state.reshape(2), matrix, 0, out.reshape(2))
-    assert np.allclose(result.flatten(), state, atol=1e-7)
-
-
-def test_ry_gate_identity():
-    matrix = ry_matrix(0)
-    state = np.array([0.6, 0.8], dtype=complex)
-    out = np.zeros_like(state, dtype=complex)
-
-    result, _ = _apply_ry_gate_small(state.reshape(2), matrix, 0, out.reshape(2))
-    assert np.allclose(result.flatten(), state, atol=1e-7)
-
-
-def test_rz_gate_identity():
-    matrix = rz_matrix(0)
-    state = np.array([0.6, 0.8], dtype=complex)
-    out = np.zeros_like(state, dtype=complex)
-
-    result, _ = _apply_rz_gate_small(state.reshape(2), matrix, 0, out.reshape(2))
-    assert np.allclose(result.flatten(), state, atol=1e-7)
-
-
-def test_phase_shift_gate_identity():
-    matrix = phase_shift_matrix(0)
-    state = np.array([0.6, 0.8], dtype=complex)
-    out = np.zeros_like(state, dtype=complex)
-
-    result, _ = _apply_phase_shift_gate_small(state.reshape(2), matrix, 0, out.reshape(2))
-    assert np.allclose(result.flatten(), state, atol=1e-7)
-
-
 def test_rotation_gates_with_multiply_matrix():
     angles = [np.pi / 4, np.pi / 2, np.pi, 3 * np.pi / 2]
 
@@ -367,22 +272,6 @@ def test_rotation_gates_with_multiply_matrix():
 
         expected = rz_mat @ state.flatten()
         assert np.allclose(result.flatten(), expected, atol=1e-7)
-
-
-def test_phase_shift_only_affects_one_state():
-    angle = np.pi / 3
-    matrix = phase_shift_matrix(angle)
-
-    state_0 = np.array([1, 0], dtype=complex).reshape(2)
-    out_0 = np.zeros_like(state_0, dtype=complex)
-    result_0, _ = _apply_phase_shift_gate_small(state_0, matrix, 0, out_0)
-    assert np.allclose(result_0.flatten(), [1, 0], atol=1e-7)
-
-    state_1 = np.array([0, 1], dtype=complex).reshape(2)
-    out_1 = np.zeros_like(state_1, dtype=complex)
-    result_1, _ = _apply_phase_shift_gate_small(state_1, matrix, 0, out_1)
-    expected = [0, np.exp(1j * angle)]
-    assert np.allclose(result_1.flatten(), expected, atol=1e-7)
 
 
 def test_rotation_gates_hermiticity():
