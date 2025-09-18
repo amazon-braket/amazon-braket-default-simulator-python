@@ -13,6 +13,7 @@
 
 import itertools
 from collections.abc import Sequence
+from types import MappingProxyType
 from typing import Union
 
 import numba as nb
@@ -35,17 +36,40 @@ BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 
 _QUBIT_THRESHOLD = nb.int32(10)
 
-DIAGONAL_GATES = {
-    "pauli_z",
-    "rz",
-    "s",
-    "si",
-    "phaseshift",
-    "cphaseshift",
-    "cphaseshift01",
-    "cphaseshift00",
-    "cphaseshift10",
-}
+DIAGONAL_GATES = frozenset(
+    {
+        "pauli_z",
+        "s",
+        "si",
+        "t",
+        "ti",
+        "rz",
+        "phaseshift",
+        "cz",
+        "cphaseshift",
+        "cphaseshift01",
+        "cphaseshift00",
+        "cphaseshift10",
+        "zz",
+    }
+)
+
+TWO_QUBIT_GATE_DISPATCH = MappingProxyType(
+    {
+        "cx": lambda dispatcher, state, target0, target1, out: dispatcher.apply_cnot(
+            state, target0, target1, out
+        ),
+        "swap": lambda dispatcher, state, target0, target1, out: dispatcher.apply_swap(
+            state, target0, target1, out
+        ),
+        "cphaseshift": lambda dispatcher,
+        state,
+        matrix,
+        target0,
+        target1,
+        out: dispatcher.apply_controlled_phase_shift(state, matrix[3, 3], (target0,), target1),
+    }
+)
 
 
 class QuantumGateDispatcher:
@@ -732,13 +756,13 @@ def _apply_two_qubit_gate(
     """
     target0, target1 = targets
 
-    if gate_type == "cx":
-        return dispatcher.apply_cnot(state, target0, target1, out)
-    elif gate_type == "swap":
-        return dispatcher.apply_swap(state, target0, target1, out)
-    elif gate_type in {"cphaseshift"}:
-        phase_factor = matrix[3, 3]
-        return dispatcher.apply_controlled_phase_shift(state, phase_factor, (target0,), target1)
+    if gate_type and gate_type in TWO_QUBIT_GATE_DISPATCH:
+        gate_func = TWO_QUBIT_GATE_DISPATCH[gate_type]
+        # TODO: fix this to generalize...
+        if gate_type == "cphaseshift":
+            return gate_func(dispatcher, state, matrix, target0, target1, out)
+        else:
+            return gate_func(dispatcher, state, target0, target1, out)
     else:
         return dispatcher.apply_two_qubit_gate(state, matrix, target0, target1, out)
 
