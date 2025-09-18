@@ -126,11 +126,7 @@ class DensityMatrixSimulation(Simulation):
         """
         diag = np.real(np.diag(state))
         tol = 1e-20
-        probs = np.where((np.abs(diag) >= tol) & (diag >= 0), diag, 0.0)
-        total = np.sum(probs)
-        if total > 0:
-            probs = probs / total
-        return probs
+        return np.where((np.abs(diag) >= tol) & (diag >= 0), diag, 0.0)
 
     @staticmethod
     def _apply_operations(
@@ -161,8 +157,14 @@ class DensityMatrixSimulation(Simulation):
 
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
+                matrix = operation.matrix
                 result, temp = DensityMatrixSimulation._apply_gate(
-                    result, temp, qubit_count, operation.matrix, operation.targets, dispatcher
+                    result,
+                    temp,
+                    qubit_count,
+                    np.kron(matrix, matrix.conjugate()),
+                    operation.targets,
+                    dispatcher,
                 )
             if isinstance(operation, KrausOperation):
                 result, temp = DensityMatrixSimulation._apply_kraus(
@@ -218,28 +220,19 @@ class DensityMatrixSimulation(Simulation):
             multiplication with E† to account for the doubled dimension structure
             of the reshaped density matrix.
         """
-        shifted_targets = tuple(t + qubit_count for t in targets)
-        _, needs_swap1 = multiply_matrix(
+        targets_new = targets + tuple([target + qubit_count for target in targets])
+
+        _, needs_swap = multiply_matrix(
             state=result,
             matrix=matrix,
-            targets=targets,
+            targets=targets_new,
             out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
         )
-        if needs_swap1:
-            result, temp = temp, result
 
-        _, needs_swap2 = multiply_matrix(
-            state=result,
-            matrix=matrix.conj(),
-            targets=shifted_targets,
-            out=temp,
-            return_swap_info=True,
-            dispatcher=dispatcher,
-        )
-        if needs_swap2:
-            result, temp = temp, result
+        # Always true with new gate dispatch
+        result, temp = temp, result
 
         return result, temp
 
@@ -292,8 +285,8 @@ class DensityMatrixSimulation(Simulation):
             _, needs_swap = multiply_matrix(
                 result, superop, targets_new, out=temp, return_swap_info=True, dispatcher=dispatcher
             )
-            if needs_swap:
-                result, temp = temp, result
+            # With gate_type dispatch, swaps won't occur. An optimization would be to do is add matrix matching to avoid genearl 1q, 2q cases.
+            result, temp = temp, result
             return result, temp
 
         temp.fill(0)

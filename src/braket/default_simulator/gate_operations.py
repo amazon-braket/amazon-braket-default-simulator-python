@@ -43,6 +43,10 @@ class Identity(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return Identity._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "identity"
+
 
 @_from_braket_instruction.register(braket_instruction.I)
 def _i(instruction) -> Identity:
@@ -64,6 +68,10 @@ class Hadamard(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return Hadamard._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "hadamard"
 
 
 @_from_braket_instruction.register(braket_instruction.H)
@@ -87,6 +95,10 @@ class PauliX(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return PauliX._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "pauli_x"
+
 
 @_from_braket_instruction.register(braket_instruction.X)
 def _pauli_x(instruction) -> PauliX:
@@ -109,6 +121,10 @@ class PauliY(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return PauliY._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "pauli_y"
+
 
 @_from_braket_instruction.register(braket_instruction.Y)
 def _pauli_y(instruction) -> PauliY:
@@ -130,6 +146,10 @@ class PauliZ(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return PauliZ._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "pauli_z"
 
 
 @_from_braket_instruction.register(braket_instruction.Z)
@@ -161,6 +181,10 @@ class CV(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return CV._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "cv"
+
 
 @_from_braket_instruction.register(braket_instruction.CV)
 def _cv(instruction) -> CV:
@@ -182,6 +206,10 @@ class CX(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return CX._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "cx"
 
 
 @_from_braket_instruction.register(braket_instruction.CNot)
@@ -205,6 +233,10 @@ class CY(GateOperation):
     def _base_matrix(self):
         return CY._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "cy"
+
 
 @_from_braket_instruction.register(braket_instruction.CY)
 def _cy(instruction) -> CY:
@@ -226,6 +258,10 @@ class CZ(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return CZ._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "cz"
 
 
 @_from_braket_instruction.register(braket_instruction.CZ)
@@ -256,6 +292,10 @@ class ECR(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return ECR._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "ecr"
+
 
 @_from_braket_instruction.register(braket_instruction.ECR)
 def _ecr(instruction) -> ECR:
@@ -277,6 +317,10 @@ class S(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return S._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "s"
 
 
 @_from_braket_instruction.register(braket_instruction.S)
@@ -300,6 +344,10 @@ class Si(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return Si._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "si"
+
 
 @_from_braket_instruction.register(braket_instruction.Si)
 def _si(instruction) -> Si:
@@ -321,6 +369,10 @@ class T(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return T._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "t"
 
 
 @_from_braket_instruction.register(braket_instruction.T)
@@ -344,6 +396,10 @@ class Ti(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return Ti._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "ti"
+
 
 @_from_braket_instruction.register(braket_instruction.Ti)
 def _ti(instruction) -> Ti:
@@ -365,6 +421,10 @@ class V(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return V._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "v"
 
 
 @_from_braket_instruction.register(braket_instruction.V)
@@ -388,6 +448,10 @@ class Vi(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return Vi._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "vi"
+
 
 @_from_braket_instruction.register(braket_instruction.Vi)
 def _vi(instruction) -> Vi:
@@ -409,6 +473,10 @@ class PhaseShift(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         angle_float = float(self._angle)
         return np.array([[1, 0], [0, np.exp(1j * angle_float)]], dtype=complex)
+
+    @property
+    def gate_types(self) -> str:
+        return "phaseshift"
 
 
 @_from_braket_instruction.register(braket_instruction.PhaseShift)
@@ -432,6 +500,10 @@ class CPhaseShift(GateOperation):
         angle_float = float(self._angle)
         return np.diag([1.0, 1.0, 1.0, np.exp(1j * angle_float)]).astype(complex)
 
+    @property
+    def gate_types(self) -> str:
+        return "cphaseshift"
+
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift)
 def _c_phase_shift(instruction) -> CPhaseShift:
@@ -453,6 +525,10 @@ class CPhaseShift00(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         angle_float = float(self._angle)
         return np.diag([np.exp(1j * angle_float), 1.0, 1.0, 1.0]).astype(complex)
+
+    @property
+    def gate_types(self) -> str:
+        return "cphaseshift00"
 
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift00)
@@ -476,6 +552,10 @@ class CPhaseShift01(GateOperation):
         angle_float = float(self._angle)
         return np.diag([1.0, np.exp(1j * angle_float), 1.0, 1.0]).astype(complex)
 
+    @property
+    def gate_types(self) -> str:
+        return "cphaseshift01"
+
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift01)
 def _c_phase_shift_01(instruction) -> CPhaseShift01:
@@ -497,6 +577,10 @@ class CPhaseShift10(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         angle_float = float(self._angle)
         return np.diag([1.0, 1.0, np.exp(1j * angle_float), 1.0]).astype(complex)
+
+    @property
+    def gate_types(self) -> str:
+        return "cphaseshift10"
 
 
 @_from_braket_instruction.register(braket_instruction.CPhaseShift10)
@@ -525,6 +609,10 @@ class RotX(GateOperation):
             dtype=complex,
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "rx"
+
 
 @_from_braket_instruction.register(braket_instruction.Rx)
 def _rot_x(instruction) -> RotX:
@@ -551,6 +639,10 @@ class RotY(GateOperation):
             [[cos_half_angle, -sin_half_angle], [sin_half_angle, cos_half_angle]], dtype=complex
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "ry"
+
 
 @_from_braket_instruction.register(braket_instruction.Ry)
 def _rot_y(instruction) -> RotY:
@@ -575,6 +667,10 @@ class RotZ(GateOperation):
             [[np.exp(-1j * angle_float / 2), 0], [0, np.exp(1j * angle_float / 2)]], dtype=complex
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "rz"
+
 
 @_from_braket_instruction.register(braket_instruction.Rz)
 def _rot_z(instruction) -> RotZ:
@@ -596,6 +692,10 @@ class Swap(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return Swap._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "swap"
 
 
 @_from_braket_instruction.register(braket_instruction.Swap)
@@ -627,6 +727,10 @@ class ISwap(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return ISwap._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "iswap"
+
 
 @_from_braket_instruction.register(braket_instruction.ISwap)
 def _iswap(instruction) -> ISwap:
@@ -657,6 +761,10 @@ class PSwap(GateOperation):
             ],
             dtype=complex,
         )
+
+    @property
+    def gate_types(self) -> str:
+        return "pswap"
 
 
 @_from_braket_instruction.register(braket_instruction.PSwap)
@@ -693,6 +801,10 @@ class XY(GateOperation):
             dtype=complex,
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "xy"
+
 
 @_from_braket_instruction.register(braket_instruction.XY)
 def _xy(instruction) -> XY:
@@ -727,6 +839,10 @@ class XX(GateOperation):
             ],
             dtype=complex,
         )
+
+    @property
+    def gate_types(self) -> str:
+        return "xx"
 
 
 @_from_braket_instruction.register(braket_instruction.XX)
@@ -763,6 +879,10 @@ class YY(GateOperation):
             dtype=complex,
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "yy"
+
 
 @_from_braket_instruction.register(braket_instruction.YY)
 def _yy(instruction) -> YY:
@@ -798,6 +918,10 @@ class ZZ(GateOperation):
             dtype=complex,
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "zz"
+
 
 @_from_braket_instruction.register(braket_instruction.ZZ)
 def _zz(instruction) -> ZZ:
@@ -832,6 +956,10 @@ class CCNot(GateOperation):
     def _base_matrix(self) -> np.ndarray:
         return CCNot._matrix
 
+    @property
+    def gate_types(self) -> str:
+        return "ccnot"
+
 
 @_from_braket_instruction.register(braket_instruction.CCNot)
 def _ccnot(instruction) -> CCNot:
@@ -865,6 +993,10 @@ class CSwap(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return CSwap._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "cswap"
 
 
 @_from_braket_instruction.register(braket_instruction.CSwap)
@@ -908,6 +1040,10 @@ class PRx(GateOperation):
             dtype=complex,
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "prx"
+
 
 class GPi(GateOperation):
     """
@@ -937,6 +1073,10 @@ class GPi(GateOperation):
             dtype=complex,
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "gpi"
+
 
 class GPi2(GateOperation):
     """
@@ -965,6 +1105,10 @@ class GPi2(GateOperation):
             ],
             dtype=complex,
         ) / np.sqrt(2)
+
+    @property
+    def gate_types(self) -> str:
+        return "gpi2"
 
 
 class MS(GateOperation):
@@ -1025,6 +1169,10 @@ class MS(GateOperation):
             dtype=complex,
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "ms"
+
 
 class Unitary(GateOperation):
     """Arbitrary unitary gate"""
@@ -1043,6 +1191,10 @@ class Unitary(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return self._matrix
+
+    @property
+    def gate_types(self) -> str:
+        return "unitary"
 
 
 @_from_braket_instruction.register(braket_instruction.Unitary)
@@ -1103,6 +1255,10 @@ class U(GateOperation):
             dtype=complex,
         )
 
+    @property
+    def gate_types(self) -> str:
+        return "u"
+
 
 class GPhase(GateOperation):
     """
@@ -1119,6 +1275,10 @@ class GPhase(GateOperation):
     @property
     def _base_matrix(self) -> np.ndarray:
         return self._exp
+
+    @property
+    def gate_types(self) -> str:
+        return "gphase"
 
 
 BRAKET_GATES = {
