@@ -285,7 +285,7 @@ class DensityMatrixSimulation(Simulation):
             _, needs_swap = multiply_matrix(
                 result, superop, targets_new, out=temp, return_swap_info=True, dispatcher=dispatcher
             )
-            # With gate_type dispatch, swaps won't occur. An optimization would be to do is add matrix matching to avoid genearl 1q, 2q cases.
+            # With gate_type dispatch, swaps won't occur. An optimization would be to do is add matrix matching to avoid general 1q, 2q cases.
             result, temp = temp, result
             return result, temp
 
