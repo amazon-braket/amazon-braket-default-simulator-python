@@ -451,9 +451,7 @@ def _apply_cnot_large(
             idx0 = control_stride + i + (i // should_smaller_jump) * combined_jump
             idx1 = idx0 + swap_offset
 
-            temp = state_flat[idx0]
-            state_flat[idx0] = state_flat[idx1]
-            state_flat[idx1] = temp
+            state_flat[idx0], state_flat[idx1] = state_flat[idx1], state_flat[idx0]
     else:
         for i in nb.prange(iterations):
             idx0 = (
@@ -464,9 +462,7 @@ def _apply_cnot_large(
             )
             idx1 = idx0 + swap_offset
 
-            temp = state_flat[idx0]
-            state_flat[idx0] = state_flat[idx1]
-            state_flat[idx1] = temp
+            state_flat[idx0], state_flat[idx1] = state_flat[idx1], state_flat[idx0]
 
     return state, False
 
@@ -527,9 +523,8 @@ def _apply_swap_large(
 
         idx0 = base | mask_1
         idx1 = base | mask_0
-        temp = state_flat[idx0]
-        state_flat[idx0] = state_flat[idx1]
-        state_flat[idx1] = temp
+
+        state_flat[idx0], state_flat[idx1] = state_flat[idx1], state_flat[idx0]
 
     return state, False
 
