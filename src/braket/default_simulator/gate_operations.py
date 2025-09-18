@@ -44,7 +44,7 @@ class Identity(GateOperation):
         return Identity._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "identity"
 
 
@@ -70,7 +70,7 @@ class Hadamard(GateOperation):
         return Hadamard._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "hadamard"
 
 
@@ -96,7 +96,7 @@ class PauliX(GateOperation):
         return PauliX._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "pauli_x"
 
 
@@ -122,7 +122,7 @@ class PauliY(GateOperation):
         return PauliY._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "pauli_y"
 
 
@@ -148,7 +148,7 @@ class PauliZ(GateOperation):
         return PauliZ._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "pauli_z"
 
 
@@ -182,7 +182,7 @@ class CV(GateOperation):
         return CV._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cv"
 
 
@@ -208,7 +208,7 @@ class CX(GateOperation):
         return CX._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cx"
 
 
@@ -234,7 +234,7 @@ class CY(GateOperation):
         return CY._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cy"
 
 
@@ -260,7 +260,7 @@ class CZ(GateOperation):
         return CZ._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cz"
 
 
@@ -293,7 +293,7 @@ class ECR(GateOperation):
         return ECR._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "ecr"
 
 
@@ -319,7 +319,7 @@ class S(GateOperation):
         return S._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "s"
 
 
@@ -345,7 +345,7 @@ class Si(GateOperation):
         return Si._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "si"
 
 
@@ -371,7 +371,7 @@ class T(GateOperation):
         return T._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "t"
 
 
@@ -397,7 +397,7 @@ class Ti(GateOperation):
         return Ti._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "ti"
 
 
@@ -423,7 +423,7 @@ class V(GateOperation):
         return V._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "v"
 
 
@@ -449,7 +449,7 @@ class Vi(GateOperation):
         return Vi._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "vi"
 
 
@@ -475,7 +475,7 @@ class PhaseShift(GateOperation):
         return np.array([[1, 0], [0, np.exp(1j * angle_float)]], dtype=complex)
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "phaseshift"
 
 
@@ -501,7 +501,7 @@ class CPhaseShift(GateOperation):
         return np.diag([1.0, 1.0, 1.0, np.exp(1j * angle_float)]).astype(complex)
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cphaseshift"
 
 
@@ -527,7 +527,7 @@ class CPhaseShift00(GateOperation):
         return np.diag([np.exp(1j * angle_float), 1.0, 1.0, 1.0]).astype(complex)
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cphaseshift00"
 
 
@@ -553,7 +553,7 @@ class CPhaseShift01(GateOperation):
         return np.diag([1.0, np.exp(1j * angle_float), 1.0, 1.0]).astype(complex)
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cphaseshift01"
 
 
@@ -579,7 +579,7 @@ class CPhaseShift10(GateOperation):
         return np.diag([1.0, 1.0, np.exp(1j * angle_float), 1.0]).astype(complex)
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cphaseshift10"
 
 
@@ -610,7 +610,7 @@ class RotX(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "rx"
 
 
@@ -640,7 +640,7 @@ class RotY(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "ry"
 
 
@@ -668,7 +668,7 @@ class RotZ(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "rz"
 
 
@@ -694,7 +694,7 @@ class Swap(GateOperation):
         return Swap._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "swap"
 
 
@@ -728,7 +728,7 @@ class ISwap(GateOperation):
         return ISwap._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "iswap"
 
 
@@ -763,7 +763,7 @@ class PSwap(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "pswap"
 
 
@@ -802,7 +802,7 @@ class XY(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "xy"
 
 
@@ -841,7 +841,7 @@ class XX(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "xx"
 
 
@@ -880,7 +880,7 @@ class YY(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "yy"
 
 
@@ -919,7 +919,7 @@ class ZZ(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "zz"
 
 
@@ -957,7 +957,7 @@ class CCNot(GateOperation):
         return CCNot._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "ccnot"
 
 
@@ -995,7 +995,7 @@ class CSwap(GateOperation):
         return CSwap._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "cswap"
 
 
@@ -1041,7 +1041,7 @@ class PRx(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "prx"
 
 
@@ -1074,7 +1074,7 @@ class GPi(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "gpi"
 
 
@@ -1107,7 +1107,7 @@ class GPi2(GateOperation):
         ) / np.sqrt(2)
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "gpi2"
 
 
@@ -1170,7 +1170,7 @@ class MS(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "ms"
 
 
@@ -1193,7 +1193,7 @@ class Unitary(GateOperation):
         return self._matrix
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "unitary"
 
 
@@ -1256,7 +1256,7 @@ class U(GateOperation):
         )
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "u"
 
 
@@ -1277,7 +1277,7 @@ class GPhase(GateOperation):
         return self._exp
 
     @property
-    def gate_types(self) -> str:
+    def gate_type(self) -> str:
         return "gphase"
 
 
