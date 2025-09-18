@@ -126,7 +126,11 @@ class DensityMatrixSimulation(Simulation):
         """
         diag = np.real(np.diag(state))
         tol = 1e-20
-        return np.where((np.abs(diag) >= tol) & (diag >= 0), diag, 0.0)
+        probs = np.where((np.abs(diag) >= tol) & (diag >= 0), diag, 0.0)
+        total = np.sum(probs)
+        if total > 0:
+            probs = probs / total
+        return probs
 
     @staticmethod
     def _apply_operations(
