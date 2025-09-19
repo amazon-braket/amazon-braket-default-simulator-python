@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.31.0 (2025-09-19)
+
+### Features
+
+ * generalize diagonal gate dispatch
+ * Optimize performance with ping-pong buffers and optimized gate application
+
+### Bug Fixes and Other Changes
+
+ * add gate_types for dispatch and use np.kron for dm gate_ops
+ * correctly pull formatted results
+ * formatting results
+ * change retrieve_samples for the dm simulator
+
 ## v1.30.1 (2025-09-10)
 
 ### Bug Fixes and Other Changes
