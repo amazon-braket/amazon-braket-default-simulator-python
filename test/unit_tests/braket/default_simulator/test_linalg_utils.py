@@ -15,8 +15,7 @@ import numpy as np
 import pytest
 
 from braket.default_simulator.linalg_utils import (
-    _apply_rx_gate_large,
-    _apply_ry_gate_large,
+    _apply_single_qubit_gate_large,
     _apply_x_gate_large,
     _apply_y_gate_large,
     _apply_diagonal_gate_small,
@@ -110,23 +109,23 @@ def iswap_matrix():
 
 rotation_gate_testdata = [
     (
-        _apply_rx_gate_large,
+        _apply_single_qubit_gate_large,
         rx_matrix,
         np.pi / 2,
         0,
         [0.70710678, -0.70710678j],
     ),
-    (_apply_rx_gate_large, rx_matrix, np.pi, 0, [0, -1j]),
+    (_apply_single_qubit_gate_large, rx_matrix, np.pi, 0, [0, -1j]),
     (
-        _apply_rx_gate_large,
+        _apply_single_qubit_gate_large,
         rx_matrix,
         np.pi / 4,
         0,
         [0.92387953, -0.38268343j],
     ),
-    (_apply_ry_gate_large, ry_matrix, np.pi / 2, 0, [0.70710678, 0.70710678]),
-    (_apply_ry_gate_large, ry_matrix, np.pi, 0, [0, 1]),
-    (_apply_ry_gate_large, ry_matrix, np.pi / 4, 0, [0.92387953, 0.38268343]),
+    (_apply_single_qubit_gate_large, ry_matrix, np.pi / 2, 0, [0.70710678, 0.70710678]),
+    (_apply_single_qubit_gate_large, ry_matrix, np.pi, 0, [0, 1]),
+    (_apply_single_qubit_gate_large, ry_matrix, np.pi / 4, 0, [0.92387953, 0.38268343]),
 ]
 
 multi_qubit_rotation_testdata = [
@@ -326,7 +325,7 @@ def test_large_implementation_edge_cases():
 
         rx_mat = rx_matrix(np.pi / 4)
         out = np.zeros_like(state, dtype=complex)
-        result, _ = _apply_rx_gate_large(state, rx_mat, target_qubit, out)
+        result, _ = _apply_single_qubit_gate_large(state, rx_mat, target_qubit, out)
 
         original_norm = np.linalg.norm(state.flatten())
         result_norm = np.linalg.norm(result.flatten())
@@ -507,3 +506,393 @@ def test_two_qubit_gates_different_targets(target0, target1):
     original_norm = np.linalg.norm(state.flatten())
     result_norm = np.linalg.norm(result_small.flatten())
     assert np.isclose(original_norm, result_norm, atol=1e-7)
+
+
+# Test data for diagonal gates (small case)
+diagonal_gate_small_testdata = [
+    (z_matrix(), [1, 0], [1, 0]),
+    (z_matrix(), [0, 1], [0, -1]),
+    (s_matrix(), [1, 0], [1, 0]),
+    (s_matrix(), [0, 1], [0, 1j]),
+    (si_matrix(), [1, 0], [1, 0]),
+    (si_matrix(), [0, 1], [0, -1j]),
+    (t_matrix(), [1, 0], [1, 0]),
+    (t_matrix(), [0, 1], [0, np.exp(1j * np.pi / 4)]),
+    (ti_matrix(), [1, 0], [1, 0]),
+    (ti_matrix(), [0, 1], [0, np.exp(-1j * np.pi / 4)]),
+    (rz_matrix(np.pi / 2), [1, 0], [0.70710678 - 0.70710678j, 0]),
+    (rz_matrix(np.pi / 2), [0, 1], [0, 0.70710678 + 0.70710678j]),
+    (rz_matrix(np.pi), [1, 0], [-1j, 0]),
+    (rz_matrix(np.pi), [0, 1], [0, 1j]),
+    (phase_shift_matrix(np.pi / 2), [1, 0], [1, 0]),
+    (phase_shift_matrix(np.pi / 2), [0, 1], [0, 1j]),
+    (phase_shift_matrix(np.pi), [1, 0], [1, 0]),
+    (phase_shift_matrix(np.pi), [0, 1], [0, -1]),
+]
+
+
+@pytest.mark.parametrize("matrix, initial_state, expected", diagonal_gate_small_testdata)
+def test_diagonal_gate_small(matrix, initial_state, expected):
+    """Test diagonal gate small implementation with various diagonal gates."""
+    state = np.array(initial_state, dtype=complex).reshape(2)
+    out = np.zeros_like(state, dtype=complex)
+
+    result, _ = _apply_diagonal_gate_small(state, matrix, 0, out)
+    assert np.allclose(result.flatten(), expected, atol=1e-7)
+
+
+def test_diagonal_gate_small_superposition():
+    """Test diagonal gate small implementation with superposition states."""
+    superposition_state = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
+    state = superposition_state.reshape(2)
+    out = np.zeros_like(state, dtype=complex)
+
+    z_mat = z_matrix()
+    result, _ = _apply_diagonal_gate_small(state, z_mat, 0, out)
+    expected = np.array([1 / np.sqrt(2), -1 / np.sqrt(2)], dtype=complex)
+    assert np.allclose(result.flatten(), expected, atol=1e-7)
+
+    s_mat = s_matrix()
+    result, _ = _apply_diagonal_gate_small(state, s_mat, 0, out)
+    expected = np.array([1 / np.sqrt(2), 1j / np.sqrt(2)], dtype=complex)
+    assert np.allclose(result.flatten(), expected, atol=1e-7)
+
+    original_norm = np.linalg.norm(superposition_state)
+    result_norm = np.linalg.norm(result.flatten())
+    assert np.isclose(original_norm, result_norm, atol=1e-7)
+
+
+def test_diagonal_gate_small_vs_general():
+    """Test that diagonal gate small implementation matches general implementation."""
+    diagonal_matrices = [
+        z_matrix(),
+        s_matrix(),
+        si_matrix(),
+        t_matrix(),
+        ti_matrix(),
+        rz_matrix(np.pi / 4),
+        rz_matrix(np.pi / 2),
+        rz_matrix(np.pi),
+        phase_shift_matrix(np.pi / 4),
+        phase_shift_matrix(np.pi / 2),
+        phase_shift_matrix(np.pi),
+    ]
+
+    test_states = [
+        np.array([1, 0], dtype=complex),
+        np.array([0, 1], dtype=complex),
+        np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex),
+        np.array([1 / np.sqrt(2), -1 / np.sqrt(2)], dtype=complex),
+        np.array([0.6, 0.8], dtype=complex),
+    ]
+
+    for matrix in diagonal_matrices:
+        for test_state in test_states:
+            # Test diagonal implementation
+            state_diag = test_state.reshape(2)
+            out_diag = np.zeros_like(state_diag, dtype=complex)
+            result_diag, _ = _apply_diagonal_gate_small(state_diag, matrix, 0, out_diag)
+
+            # Test general implementation
+            state_general = test_state.reshape(2)
+            out_general = np.zeros_like(state_general, dtype=complex)
+            result_general, _ = _apply_single_qubit_gate_large(
+                state_general, matrix, 0, out_general
+            )
+
+            # Results should match
+            assert np.allclose(result_diag.flatten(), result_general.flatten(), atol=1e-7)
+
+
+def test_diagonal_gate_small_multi_qubit():
+    """Test diagonal gate small implementation in multi-qubit systems."""
+    qubit_count = 3
+    state_size = 2**qubit_count
+
+    state_flat = np.zeros(state_size, dtype=complex)
+    state_flat[0] = 1.0
+    state = state_flat.reshape([2] * qubit_count)
+
+    z_mat = z_matrix()
+    out = np.zeros_like(state, dtype=complex)
+    result, _ = _apply_diagonal_gate_small(state, z_mat, 1, out)
+
+    expected = np.zeros(state_size, dtype=complex)
+    expected[0] = 1.0
+    assert np.allclose(result.flatten(), expected, atol=1e-7)
+
+    state_flat = np.zeros(state_size, dtype=complex)
+    state_flat[2] = 1.0
+    state = state_flat.reshape([2] * qubit_count)
+
+    out = np.zeros_like(state, dtype=complex)
+    result, _ = _apply_diagonal_gate_small(state, z_mat, 1, out)
+
+    expected = np.zeros(state_size, dtype=complex)
+    expected[2] = -1.0
+    assert np.allclose(result.flatten(), expected, atol=1e-7)
+
+    original_norm = np.linalg.norm(state.flatten())
+    result_norm = np.linalg.norm(result.flatten())
+    assert np.isclose(original_norm, result_norm, atol=1e-7)
+
+
+diagonal_gate_large_testdata = [
+    (z_matrix(), [1, 0], [1, 0]),
+    (z_matrix(), [0, 1], [0, -1]),
+    (s_matrix(), [1, 0], [1, 0]),
+    (s_matrix(), [0, 1], [0, 1j]),
+    (si_matrix(), [1, 0], [1, 0]),
+    (si_matrix(), [0, 1], [0, -1j]),
+    (t_matrix(), [1, 0], [1, 0]),
+    (t_matrix(), [0, 1], [0, np.exp(1j * np.pi / 4)]),
+    (ti_matrix(), [1, 0], [1, 0]),
+    (ti_matrix(), [0, 1], [0, np.exp(-1j * np.pi / 4)]),
+    (rz_matrix(np.pi / 2), [1, 0], [0.70710678 - 0.70710678j, 0]),
+    (rz_matrix(np.pi / 2), [0, 1], [0, 0.70710678 + 0.70710678j]),
+    (rz_matrix(np.pi), [1, 0], [-1j, 0]),
+    (rz_matrix(np.pi), [0, 1], [0, 1j]),
+    (phase_shift_matrix(np.pi / 2), [1, 0], [1, 0]),
+    (phase_shift_matrix(np.pi / 2), [0, 1], [0, 1j]),
+    (phase_shift_matrix(np.pi), [1, 0], [1, 0]),
+    (phase_shift_matrix(np.pi), [0, 1], [0, -1]),
+]
+
+
+@pytest.mark.parametrize("matrix, initial_state, expected", diagonal_gate_large_testdata)
+def test_diagonal_gate_large(matrix, initial_state, expected):
+    """Test diagonal gate large implementation with various diagonal gates."""
+    qubit_count = 12
+    state_size = 2**qubit_count
+
+    computational_basis_state = np.zeros(state_size, dtype=complex)
+    if initial_state[0] == 1:
+        computational_basis_state[0] = 1.0
+    else:
+        computational_basis_state[2048] = 1.0
+
+    state = computational_basis_state.reshape([2] * qubit_count)
+    out = np.zeros_like(state, dtype=complex)
+
+    # Test the diagonal gate large implementation directly
+    result, _ = _apply_diagonal_gate_large(state, matrix, 0, out)
+    result_flat = result.flatten()
+
+    if initial_state[0] == 1:
+        assert np.isclose(result_flat[0], expected[0], atol=1e-7)
+        assert np.isclose(result_flat[2048], expected[1], atol=1e-7)
+    else:
+        assert np.isclose(result_flat[0], expected[0], atol=1e-7)
+        assert np.isclose(result_flat[2048], expected[1], atol=1e-7)
+
+
+def test_diagonal_gate_large_superposition():
+    """Test diagonal gate large implementation with superposition states."""
+    qubit_count = 12
+    state_size = 2**qubit_count
+
+    superposition_state = np.zeros(state_size, dtype=complex)
+    superposition_state[0] = 1 / np.sqrt(2)
+    superposition_state[2048] = 1 / np.sqrt(2)
+    state = superposition_state.reshape([2] * qubit_count)
+    out = np.zeros_like(state, dtype=complex)
+
+    z_mat = z_matrix()
+    result, _ = _apply_diagonal_gate_large(state, z_mat, 0, out)
+    result_flat = result.flatten()
+
+    expected = np.zeros(state_size, dtype=complex)
+    expected[0] = 1 / np.sqrt(2)
+    expected[2048] = -1 / np.sqrt(2)
+
+    assert np.allclose(result_flat[[0, 2048]], expected[[0, 2048]], atol=1e-7)
+
+    original_norm = np.linalg.norm(superposition_state)
+    result_norm = np.linalg.norm(result_flat)
+    assert np.isclose(original_norm, result_norm, atol=1e-7)
+
+
+def test_diagonal_gate_large_vs_general():
+    """Test that diagonal gate large implementation matches general implementation."""
+    qubit_count = 12
+    state_size = 2**qubit_count
+
+    diagonal_matrices = [
+        z_matrix(),
+        s_matrix(),
+        si_matrix(),
+        t_matrix(),
+        ti_matrix(),
+        rz_matrix(np.pi / 4),
+        rz_matrix(np.pi / 2),
+        rz_matrix(np.pi),
+        phase_shift_matrix(np.pi / 4),
+        phase_shift_matrix(np.pi / 2),
+        phase_shift_matrix(np.pi),
+    ]
+
+    test_states = [
+        np.array([1, 0] + [0] * (state_size - 2), dtype=complex),
+        np.array([0, 0] + [0] * (2046) + [1] + [0] * (state_size - 2049), dtype=complex),
+        np.array(
+            [1 / np.sqrt(2), 0] + [0] * (2046) + [1 / np.sqrt(2)] + [0] * (state_size - 2049),
+            dtype=complex,
+        ),
+    ]
+
+    for matrix in diagonal_matrices:
+        for test_state in test_states:
+            state_diag = test_state.reshape([2] * qubit_count)
+            out_diag = np.zeros_like(state_diag, dtype=complex)
+            result_diag, _ = _apply_diagonal_gate_large(state_diag, matrix, 0, out_diag)
+
+            state_general = test_state.reshape([2] * qubit_count)
+            out_general = np.zeros_like(state_general, dtype=complex)
+            result_general, _ = _apply_single_qubit_gate_large(
+                state_general, matrix, 0, out_general
+            )
+
+            assert np.allclose(result_diag.flatten(), result_general.flatten(), atol=1e-7)
+
+
+def test_diagonal_gate_large_multi_qubit():
+    """Test diagonal gate large implementation in multi-qubit systems."""
+    qubit_count = 12
+    state_size = 2**qubit_count
+
+    state_flat = np.zeros(state_size, dtype=complex)
+    state_flat[0] = 1.0
+    state = state_flat.reshape([2] * qubit_count)
+
+    z_mat = z_matrix()
+    out = np.zeros_like(state, dtype=complex)
+    result, _ = _apply_diagonal_gate_large(state, z_mat, 5, out)
+
+    expected = np.zeros(state_size, dtype=complex)
+    expected[0] = 1.0
+    assert np.allclose(result.flatten(), expected, atol=1e-7)
+
+    state_flat = np.zeros(state_size, dtype=complex)
+    state_flat[64] = 1.0
+    state = state_flat.reshape([2] * qubit_count)
+
+    out = np.zeros_like(state, dtype=complex)
+    result, _ = _apply_diagonal_gate_large(state, z_mat, 5, out)
+
+    expected = np.zeros(state_size, dtype=complex)
+    expected[64] = -1.0
+    assert np.allclose(result.flatten(), expected, atol=1e-7)
+
+    original_norm = np.linalg.norm(state.flatten())
+    result_norm = np.linalg.norm(result.flatten())
+    assert np.isclose(original_norm, result_norm, atol=1e-7)
+
+
+def test_diagonal_gate_dispatch_with_gate_types():
+    """Test that diagonal gates are properly dispatched through gate types."""
+    qubit_count = 12
+    state_size = 2**qubit_count
+
+    state_flat = np.zeros(state_size, dtype=complex)
+    state_flat[0] = 1.0
+    state_flat[2048] = 1.0
+    state = state_flat.reshape([2] * qubit_count)
+    out = np.zeros_like(state, dtype=complex)
+
+    z_mat = z_matrix()
+    result, _ = _apply_single_qubit_gate(state, z_mat, 0, out, gate_type="pauli_z")
+    result_flat = result.flatten()
+
+    expected = np.zeros(state_size, dtype=complex)
+    expected[0] = 1.0
+    expected[2048] = -1.0
+    assert np.allclose(result_flat[[0, 2048]], expected[[0, 2048]], atol=1e-7)
+
+    state_flat = np.zeros(state_size, dtype=complex)
+    state_flat[0] = 1.0
+    state_flat[2048] = 1.0
+    state = state_flat.reshape([2] * qubit_count)
+    out = np.zeros_like(state, dtype=complex)
+
+    rz_mat = rz_matrix(np.pi / 2)
+    result, _ = _apply_single_qubit_gate(state, rz_mat, 0, out, gate_type="rz")
+    result_flat = result.flatten()
+
+    expected = np.zeros(state_size, dtype=complex)
+    expected[0] = 0.70710678 - 0.70710678j
+    expected[2048] = 0.70710678 + 0.70710678j
+    assert np.allclose(result_flat[[0, 2048]], expected[[0, 2048]], atol=1e-7)
+
+    state_flat = np.zeros(state_size, dtype=complex)
+    state_flat[0] = 1.0
+    state_flat[2048] = 1.0
+    state = state_flat.reshape([2] * qubit_count)
+    out = np.zeros_like(state, dtype=complex)
+
+    s_mat = s_matrix()
+    result, _ = _apply_single_qubit_gate(state, s_mat, 0, out, gate_type="s")
+    result_flat = result.flatten()
+
+    expected = np.zeros(state_size, dtype=complex)
+    expected[0] = 1.0
+    expected[2048] = 1j
+    assert np.allclose(result_flat[[0, 2048]], expected[[0, 2048]], atol=1e-7)
+
+
+def test_apply_diagonal_gate_large_via_single_qubit_gate():
+    """Test _apply_diagonal_gate_large is called through _apply_single_qubit_gate dispatch."""
+    qubit_count = 15
+    state_size = 2**qubit_count
+
+    superposition_state = np.zeros(state_size, dtype=complex)
+    superposition_state[0] = 0.6
+    superposition_state[2**14] = 0.8
+    state = superposition_state.reshape([2] * qubit_count)
+    out = np.zeros_like(state, dtype=complex)
+
+    diagonal_gates_testdata = [
+        ("pauli_z", z_matrix(), [0.6, -0.8]),
+        ("rz", rz_matrix(np.pi / 3), [0.6 * np.exp(-1j * np.pi / 6), 0.8 * np.exp(1j * np.pi / 6)]),
+        ("s", s_matrix(), [0.6, 0.8j]),
+        ("si", si_matrix(), [0.6, -0.8j]),
+        ("phaseshift", phase_shift_matrix(np.pi / 4), [0.6, 0.8 * np.exp(1j * np.pi / 4)]),
+    ]
+
+    for gate_type, matrix, expected in diagonal_gates_testdata:
+        state_copy = state.copy()
+        out_copy = np.zeros_like(out, dtype=complex)
+
+        result, _ = _apply_single_qubit_gate(state_copy, matrix, 0, out_copy, gate_type=gate_type)
+        result_flat = result.flatten()
+
+        assert np.isclose(result_flat[0], expected[0], atol=1e-7), (
+            f"Failed for {gate_type} at index 0"
+        )
+        assert np.isclose(result_flat[2**14], expected[1], atol=1e-7), (
+            f"Failed for {gate_type} at index 2**14"
+        )
+
+        original_norm = np.linalg.norm(superposition_state)
+        result_norm = np.linalg.norm(result_flat)
+        assert np.isclose(original_norm, result_norm, atol=1e-7), (
+            f"Norm not preserved for {gate_type}"
+        )
+
+    multi_target_state = np.zeros(state_size, dtype=complex)
+    multi_target_state[0] = 0.5
+    multi_target_state[1024] = 0.5
+    multi_target_state[2**14] = 0.5
+    multi_target_state[2**14 + 1024] = 0.5
+    state_multi = multi_target_state.reshape([2] * qubit_count)
+
+    for target_qubit in [0, 5, 10, 14]:
+        out_multi = np.zeros_like(state_multi, dtype=complex)
+        result_multi, _ = _apply_single_qubit_gate(
+            state_multi, z_matrix(), target_qubit, out_multi, gate_type="pauli_z"
+        )
+
+        original_norm = np.linalg.norm(multi_target_state)
+        result_norm = np.linalg.norm(result_multi.flatten())
+        assert np.isclose(original_norm, result_norm, atol=1e-7), (
+            f"Norm not preserved for target {target_qubit}"
+        )

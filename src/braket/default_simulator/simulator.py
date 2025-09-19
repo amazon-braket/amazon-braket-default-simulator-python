@@ -707,7 +707,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
-
         self._validate_ir_results_compatibility(
             circuit.results,
             device_action_type=DeviceActionType.OPENQASM,
