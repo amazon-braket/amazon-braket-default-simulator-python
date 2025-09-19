@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/amazon-braket-sdk
+      url: https://pypi.org/p/amazon-braket-defatul-simulator
     permissions:
       id-token: write
     steps:
