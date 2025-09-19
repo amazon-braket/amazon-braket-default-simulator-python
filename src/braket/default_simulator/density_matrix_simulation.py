@@ -257,7 +257,6 @@ class DensityMatrixSimulation(Simulation):
             out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
-            gate_type=gate_type,
         )
         if needs_swap2:
             result, temp = temp, result
