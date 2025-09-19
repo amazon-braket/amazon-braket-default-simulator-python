@@ -162,7 +162,7 @@ class DensityMatrixSimulation(Simulation):
                     result,
                     temp,
                     qubit_count,
-                    np.kron(matrix, matrix.conjugate()),
+                    matrix,
                     operation.targets,
                     dispatcher,
                 )
@@ -224,7 +224,7 @@ class DensityMatrixSimulation(Simulation):
 
         _, needs_swap = multiply_matrix(
             state=result,
-            matrix=matrix,
+            matrix=np.kron(matrix, matrix.conjugate()),
             targets=targets_new,
             out=temp,
             return_swap_info=True,
