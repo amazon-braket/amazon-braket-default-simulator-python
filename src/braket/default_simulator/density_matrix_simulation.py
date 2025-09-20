@@ -247,8 +247,8 @@ class DensityMatrixSimulation(Simulation):
             dispatcher=dispatcher,
             gate_type=gate_type if len(targets) == 1 else None,
         )
-        # Gate type isn't passed so we always swap
-        result, temp = temp, result
+        if needs_swap2:
+            result, temp = temp, result
         return result, temp
 
     @staticmethod
