@@ -83,13 +83,11 @@ class QuantumGateDispatcher:
         self.use_large = n_qubits > _QUBIT_THRESHOLD
 
         if self.use_large:
-            self.apply_single_qubit_gate = _apply_single_qubit_gate_large
             self.apply_swap = _apply_swap_large
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_large
             self.apply_cnot = _apply_cnot_large
             self.apply_two_qubit_gate = _apply_two_qubit_gate_large
         else:
-            self.apply_single_qubit_gate = _apply_single_qubit_gate_small
             self.apply_swap = _apply_swap_small
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_small
             self.apply_cnot = _apply_cnot_small
@@ -492,7 +490,7 @@ def _apply_cnot_large(
 
 
 def _apply_cnot_small(
-    state: np.ndarray, control: int, target: int, out: np.ndarray
+    state: np.ndarray, control: int, target: int, _out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """CNOT optimization path."""
     n_qubits = state.ndim
@@ -523,7 +521,7 @@ def _apply_swap_small(
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_swap_large(
-    state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
+    state: np.ndarray, qubit_0: int, qubit_1: int, _out: np.ndarray
 ) -> tuple[np.ndarray, bool]:  # pragma: no cover
     """Swap gate implementation using bit manipulation."""
     n_qubits = state.ndim
@@ -756,8 +754,7 @@ def _apply_two_qubit_gate(
     """
     target0, target1 = targets
 
-    if gate_type and gate_type in TWO_QUBIT_GATE_DISPATCH:
-        gate_func = TWO_QUBIT_GATE_DISPATCH[gate_type]
+    if gate_type and (gate_func := TWO_QUBIT_GATE_DISPATCH.get(gate_type)):
         # TODO: fix this to generalize...
         if gate_type == "cphaseshift":
             return gate_func(dispatcher, state, matrix, target0, target1, out)
