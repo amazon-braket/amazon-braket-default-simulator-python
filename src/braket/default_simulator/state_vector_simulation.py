@@ -13,6 +13,7 @@
 
 import numpy as np
 
+from braket.default_simulator.gate_fusion import apply_gate_fusion
 from braket.default_simulator.operation import GateOperation, Observable
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulation_strategies import (
@@ -97,12 +98,14 @@ class StateVectorSimulation(Simulation):
     def _apply_operations(
         state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
     ) -> np.ndarray:
+        fused_operations = apply_gate_fusion(operations)
+
         state_tensor = np.reshape(state, [2] * qubit_count)
         final = (
-            single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
+            single_operation_strategy.apply_operations(state_tensor, qubit_count, fused_operations)
             if batch_size == 1
             else batch_operation_strategy.apply_operations(
-                state_tensor, qubit_count, operations, batch_size
+                state_tensor, qubit_count, fused_operations, batch_size
             )
         )
         return np.reshape(final, 2**qubit_count)

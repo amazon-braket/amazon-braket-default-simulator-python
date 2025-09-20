@@ -148,9 +148,14 @@ def multiply_matrix(
 
     np.copyto(out, state)
 
+    controlled_state = state[ctrl_tuple]
+    controlled_out = np.zeros_like(controlled_state, dtype=complex)
+    
     _, swap = _multiply_matrix(
-        state[ctrl_tuple], matrix, targets, out[ctrl_tuple], dispatcher, gate_type
+        controlled_state, matrix, targets, controlled_out, dispatcher, gate_type
     )
+    
+    out[ctrl_tuple] = controlled_out
 
     if return_swap_info:
         return out, swap
@@ -822,15 +827,18 @@ def _multiply_matrix(
         return _apply_single_qubit_gate(state, matrix, targets[0], out, gate_type)
     elif len(targets) == 2:
         return _apply_two_qubit_gate(state, matrix, targets, out, dispatcher, gate_type)
-    num_targets = len(targets)
-    gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
-    axes = (np.arange(num_targets, 2 * num_targets), targets)
+    elif len(targets) == 3 and dispatcher.use_large:
+        return _apply_three_qubit_gate_large(state, matrix, targets, out)
+    else:
+        num_targets = len(targets)
+        gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
+        axes = (np.arange(num_targets, 2 * num_targets), targets)
 
-    product = np.tensordot(gate_matrix, state, axes=axes)
-    unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
+        product = np.tensordot(gate_matrix, state, axes=axes)
+        unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
 
-    np.copyto(out, np.transpose(product, np.argsort([*targets, *unused_idxs])))
-    return out, True
+        np.copyto(out, np.transpose(product, np.argsort([*targets, *unused_idxs])))
+        return out, True
 
 
 def marginal_probability(
@@ -899,6 +907,82 @@ def partial_trace(
         tr_rho = tr_rho[:, perm]
         tr_rho = tr_rho[perm]
     return tr_rho
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_three_qubit_gate_large(  # pragma: no cover
+    state: np.ndarray,
+    matrix: np.ndarray,
+    targets: np.ndarray,
+    out: np.ndarray,
+) -> tuple[np.ndarray, bool]:
+    """Optimized three-qubit gate application using bit manipulation."""
+    n_qubits = state.ndim
+    total_size = 1 << n_qubits
+    target0, target1, target2 = targets
+
+    mask_0 = np.int64(1) << (n_qubits - 1 - target0)
+    mask_1 = np.int64(1) << (n_qubits - 1 - target1)
+    mask_2 = np.int64(1) << (n_qubits - 1 - target2)
+    mask_all = mask_0 | mask_1 | mask_2
+
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+
+    for i in nb.prange(total_size):
+        if (i & mask_all) == 0:
+            s0 = state_flat[i]                                    # |000⟩
+            s1 = state_flat[i | mask_2]                          # |001⟩ (target2 = 1)
+            s2 = state_flat[i | mask_1]                          # |010⟩ (target1 = 1)
+            s3 = state_flat[i | mask_1 | mask_2]                 # |011⟩ (target1=1, target2=1)
+            s4 = state_flat[i | mask_0]                          # |100⟩ (target0 = 1)
+            s5 = state_flat[i | mask_0 | mask_2]                 # |101⟩ (target0=1, target2=1)
+            s6 = state_flat[i | mask_0 | mask_1]                 # |110⟩ (target0=1, target1=1)
+            s7 = state_flat[i | mask_0 | mask_1 | mask_2]        # |111⟩ (all = 1)
+
+            out_flat[i] = (
+                matrix[0, 0] * s0 + matrix[0, 1] * s1 + matrix[0, 2] * s2 + matrix[0, 3] * s3 +
+                matrix[0, 4] * s4 + matrix[0, 5] * s5 + matrix[0, 6] * s6 + matrix[0, 7] * s7
+            )
+
+            out_flat[i | mask_2] = (
+                matrix[1, 0] * s0 + matrix[1, 1] * s1 + matrix[1, 2] * s2 + matrix[1, 3] * s3 +
+                matrix[1, 4] * s4 + matrix[1, 5] * s5 + matrix[1, 6] * s6 + matrix[1, 7] * s7
+            )
+
+            out_flat[i | mask_1] = (
+                matrix[2, 0] * s0 + matrix[2, 1] * s1 + matrix[2, 2] * s2 + matrix[2, 3] * s3 +
+                matrix[2, 4] * s4 + matrix[2, 5] * s5 + matrix[2, 6] * s6 + matrix[2, 7] * s7
+            )
+
+            out_flat[i | mask_1 | mask_2] = (
+                matrix[3, 0] * s0 + matrix[3, 1] * s1 + matrix[3, 2] * s2 + matrix[3, 3] * s3 +
+                matrix[3, 4] * s4 + matrix[3, 5] * s5 + matrix[3, 6] * s6 + matrix[3, 7] * s7
+            )
+
+            out_flat[i | mask_0] = (
+                matrix[4, 0] * s0 + matrix[4, 1] * s1 + matrix[4, 2] * s2 + matrix[4, 3] * s3 +
+                matrix[4, 4] * s4 + matrix[4, 5] * s5 + matrix[4, 6] * s6 + matrix[4, 7] * s7
+            )
+
+            out_flat[i | mask_0 | mask_2] = (
+                matrix[5, 0] * s0 + matrix[5, 1] * s1 + matrix[5, 2] * s2 + matrix[5, 3] * s3 +
+                matrix[5, 4] * s4 + matrix[5, 5] * s5 + matrix[5, 6] * s6 + matrix[5, 7] * s7
+            )
+
+            out_flat[i | mask_0 | mask_1] = (
+                matrix[6, 0] * s0 + matrix[6, 1] * s1 + matrix[6, 2] * s2 + matrix[6, 3] * s3 +
+                matrix[6, 4] * s4 + matrix[6, 5] * s5 + matrix[6, 6] * s6 + matrix[6, 7] * s7
+            )
+
+            out_flat[i | mask_0 | mask_1 | mask_2] = (
+                matrix[7, 0] * s0 + matrix[7, 1] * s1 + matrix[7, 2] * s2 + matrix[7, 3] * s3 +
+                matrix[7, 4] * s4 + matrix[7, 5] * s5 + matrix[7, 6] * s6 + matrix[7, 7] * s7
+            )
+
+    return out, True
+
+
 
 
 def _get_target_permutation(targets: Sequence[int]) -> Sequence[int]:

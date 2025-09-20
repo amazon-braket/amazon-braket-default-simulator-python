@@ -13,6 +13,7 @@
 
 import numpy as np
 
+from braket.default_simulator.gate_fusion import GateFusionEngine
 from braket.default_simulator.linalg_utils import (
     QuantumGateDispatcher,
     multiply_matrix,
@@ -134,7 +135,7 @@ class DensityMatrixSimulation(Simulation):
         qubit_count: int,
         operations: list[GateOperation | KrausOperation | Observable],
     ) -> np.ndarray:
-        """Applies the gate and noise operations to the density matrix.
+        """Applies the gate and noise operations to the density matrix with gate fusion optimization.
 
         Args:
             state (np.ndarray): initial density matrix
@@ -147,6 +148,11 @@ class DensityMatrixSimulation(Simulation):
         """
         if not operations:
             return state
+
+        # Apply gate fusion optimization
+        optimizer = GateFusionEngine()
+        optimized_operations = optimizer.optimize_operations(operations)
+
         dispatcher = QuantumGateDispatcher(state.size)
         original_shape = state.shape
         result = state.view()
@@ -155,7 +161,7 @@ class DensityMatrixSimulation(Simulation):
         work_buffer1 = np.zeros_like(result, dtype=complex)
         work_buffer2 = np.zeros_like(result, dtype=complex)
 
-        for operation in operations:
+        for operation in optimized_operations:
             if isinstance(operation, (GateOperation, Observable)):
                 matrix = operation.matrix
                 # Extract gate_type if available
