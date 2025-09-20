@@ -547,7 +547,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """
         # Get the full measurements
         measurements = [
-            list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))
+            list("{number:0{width}b}".format(number=sample, width=simulation.qubit_count))[
+                -simulation.qubit_count :
+            ]
             for sample in simulation.retrieve_samples()
         ]
         #  Gets the subset of measurements from the full measurements
@@ -705,7 +707,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
-
         self._validate_ir_results_compatibility(
             circuit.results,
             device_action_type=DeviceActionType.OPENQASM,

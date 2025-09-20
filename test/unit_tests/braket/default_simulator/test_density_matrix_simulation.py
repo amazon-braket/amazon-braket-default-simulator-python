@@ -416,3 +416,46 @@ def test_custom_density_matrix():
 
     counter = Counter(simulation.retrieve_samples())
     assert counter.get(0, 0) / shots > 0.9
+
+
+def test_toffoli_gate():
+    """Test Toffoli (CCNot) gate behavior in density matrix simulation."""
+    qubit_count = 3
+    shots = 5000
+
+    simulation = DensityMatrixSimulation(qubit_count, shots)
+    simulation.evolve([gate_operations.CCNot([0, 1, 2])])
+
+    expected_density_matrix = np.zeros((8, 8), dtype=complex)
+    expected_density_matrix[0, 0] = 1.0
+
+    assert np.allclose(simulation.density_matrix, expected_density_matrix)
+    assert np.allclose(simulation.probabilities, [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+    simulation = DensityMatrixSimulation(qubit_count, shots)
+    simulation.evolve([gate_operations.PauliX([0]), gate_operations.PauliX([1])])
+    simulation.evolve([gate_operations.CCNot([0, 1, 2])])
+
+    expected_density_matrix = np.zeros((8, 8), dtype=complex)
+    expected_density_matrix[7, 7] = 1.0
+
+    assert np.allclose(simulation.density_matrix, expected_density_matrix)
+    assert np.allclose(simulation.probabilities, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+
+    simulation = DensityMatrixSimulation(qubit_count, shots)
+    simulation.evolve([gate_operations.Hadamard([0]), gate_operations.PauliX([1])])
+    simulation.evolve([gate_operations.CCNot([0, 1, 2])])
+
+    expected_probabilities = [0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5]
+    assert np.allclose(simulation.probabilities, expected_probabilities, atol=1e-10)
+
+    counter = Counter(simulation.retrieve_samples())
+    total_shots = sum(counter.values())
+    assert total_shots == shots
+
+    assert set(counter.keys()).issubset({2, 7})
+    if 2 in counter and 7 in counter:
+        prob_2 = counter[2] / total_shots
+        prob_7 = counter[7] / total_shots
+        assert abs(prob_2 - 0.5) < 0.1
+        assert abs(prob_7 - 0.5) < 0.1

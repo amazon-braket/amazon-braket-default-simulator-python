@@ -13,19 +13,17 @@
 
 import itertools
 from collections.abc import Sequence
+from types import MappingProxyType
 from typing import Union
 
 import numba as nb
 import numpy as np
 
 nb.config.NUMBA_OPT = 3
-# CPU settings
 nb.config.NUMBA_CPU_NAME = "native"
 nb.config.NUMBA_SLP_VECTORIZE = 1
-# threading settings
 nb.config.THREADING_LAYER = "workqueue"
 nb.config.NUMBA_NUM_THREADS = -1
-# Logging settings (TODO is add a way to turn these on for dev work)
 nb.config.NUMBA_DEBUG = 0
 nb.config.WARNINGS = False
 nb.config.CAPTURED_ERRORS = "new_style"
@@ -38,25 +36,58 @@ BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 
 _QUBIT_THRESHOLD = nb.int32(10)
 
+DIAGONAL_GATES = frozenset(
+    {
+        "pauli_z",
+        "s",
+        "si",
+        "t",
+        "ti",
+        "rz",
+        "phaseshift",
+        "cz",
+        "cphaseshift",
+        "cphaseshift01",
+        "cphaseshift00",
+        "cphaseshift10",
+        "zz",
+    }
+)
+
+TWO_QUBIT_GATE_DISPATCH = MappingProxyType(
+    {
+        "cx": lambda dispatcher, state, target0, target1, out: dispatcher.apply_cnot(
+            state, target0, target1, out
+        ),
+        "swap": lambda dispatcher, state, target0, target1, out: dispatcher.apply_swap(
+            state, target0, target1, out
+        ),
+        "cphaseshift": lambda dispatcher,
+        state,
+        matrix,
+        target0,
+        target1,
+        out: dispatcher.apply_controlled_phase_shift(state, matrix[3, 3], (target0,), target1),
+    }
+)
+
 
 class QuantumGateDispatcher:
     def __init__(self, n_qubits: int):
         """
         Dispatcher for performance-optimized implementations of quantum gates.  It automatically
-        selects between small-circuit (NumPy-based) and large-circuit (Numba JIT-compiled) 
-        implementations based on the number of qubits in a circuit. 
+        selects between small-circuit (NumPy-based) and large-circuit (Numba JIT-compiled)
+        implementations based on the number of qubits in a circuit.
         """
         self.n_qubits = n_qubits
         self.use_large = n_qubits > _QUBIT_THRESHOLD
 
         if self.use_large:
-            self.apply_single_qubit_gate = _apply_single_qubit_gate_large
             self.apply_swap = _apply_swap_large
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_large
             self.apply_cnot = _apply_cnot_large
             self.apply_two_qubit_gate = _apply_two_qubit_gate_large
         else:
-            self.apply_single_qubit_gate = _apply_single_qubit_gate_small
             self.apply_swap = _apply_swap_small
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_small
             self.apply_cnot = _apply_cnot_small
@@ -72,6 +103,7 @@ def multiply_matrix(
     out: np.ndarray | None = None,
     dispatcher: QuantumGateDispatcher | None = None,
     return_swap_info: bool = False,
+    gate_type: str | None = None,
 ) -> Union[np.ndarray, tuple[np.ndarray, bool]]:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
     controlling the operation as specified.
@@ -101,7 +133,7 @@ def multiply_matrix(
         out = np.zeros_like(state, dtype=complex)
 
     if not controls:
-        out, swap = _multiply_matrix(state, matrix, targets, out, dispatcher)
+        out, swap = _multiply_matrix(state, matrix, targets, out, dispatcher, gate_type)
         if return_swap_info:
             return out, swap
         else:
@@ -116,9 +148,9 @@ def multiply_matrix(
 
     np.copyto(out, state)
 
-    controlled_slice = out[ctrl_tuple]
-
-    _, swap = _multiply_matrix(state[ctrl_tuple], matrix, targets, controlled_slice, dispatcher)
+    _, swap = _multiply_matrix(
+        state[ctrl_tuple], matrix, targets, out[ctrl_tuple], dispatcher, gate_type
+    )
 
     if return_swap_info:
         return out, swap
@@ -199,27 +231,74 @@ def _apply_x_gate_large(  # pragma: no cover
     return out, True
 
 
-@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_z_gate_large(  # pragma: no cover
+def _apply_diagonal_gate_small(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
-    """Applies Z gate using bit masking.
-
-    Matrix: [[1,  0],
-             [0, -1]]
     """
+    Applies a diagonal single-qubit gate using array slicing.
+
+    Args:
+        state: Input quantum state
+        matrix: 2x2 diagonal gate matrix
+        target: Target qubit index
+        out: Output array
+
+    Returns:
+        Tuple of (output_state, swap_occurred)
+    """
+    a, d = matrix[0, 0], matrix[1, 1]
+
+    shape = state.shape
+    before_size = int(np.prod(shape[:target]))
+    after_size = int(np.prod(shape[target + 1 :]))
+
+    state_reshaped = state.reshape(before_size, 2, after_size)
+    out_reshaped = out.reshape(before_size, 2, after_size)
+
+    state_0 = state_reshaped[:, 0, :]
+    state_1 = state_reshaped[:, 1, :]
+
+    out_reshaped[:, 0, :] = a * state_0
+    out_reshaped[:, 1, :] = d * state_1
+
+    return out, True
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_diagonal_gate_large(  # pragma: no cover
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """
+    Applies a diagonal single-qubit gate using bit masking.
+
+    Args:
+        state: Input quantum state
+        matrix: 2x2 diagonal gate matrix
+        target: Target qubit index
+        out: Output array
+
+    Returns:
+        Tuple of (output_state, swap_occurred)
+    """
+    a, d = matrix[0, 0], matrix[1, 1]
 
     target_bit = state.ndim - target - 1
     target_mask = np.int64(1 << target_bit)
+    shifted_target_mask = np.int64(target_mask - 1)
 
+    half_size = state.size >> 1
     state_flat = state.reshape(-1)
     out_flat = out.reshape(-1)
 
-    for i in nb.prange(state.size):
-        if i & target_mask:
-            out_flat[i] = -state_flat[i]
-        else:
-            out_flat[i] = state_flat[i]
+    for i in nb.prange(half_size):
+        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
+        idx1 = idx0 | target_mask
+
+        state0 = state_flat[idx0]
+        state1 = state_flat[idx1]
+
+        out_flat[idx0] = a * state0
+        out_flat[idx1] = d * state1
 
     return out, True
 
@@ -251,106 +330,6 @@ def _apply_y_gate_large(  # pragma: no cover
 
         out_flat[idx0] = b * state1
         out_flat[idx1] = c * state0
-
-    return out, True
-
-
-@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_s_gate_large(  # pragma: no cover
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies S gate using bit masking.
-
-    Matrix: [[1, 0],
-             [0, 1j]]
-    """
-    d = matrix[1, 1]
-    target_bit = state.ndim - target - 1
-    target_mask = np.int64(1 << target_bit)
-
-    state_flat = state.reshape(-1)
-    out_flat = out.reshape(-1)
-
-    for i in nb.prange(state.size):
-        if i & target_mask:
-            out_flat[i] = d * state_flat[i]
-        else:
-            out_flat[i] = state_flat[i]
-
-    return out, True
-
-
-@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_si_gate_large(  # pragma: no cover
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies S† gate using bit masking.
-
-    Matrix: [[1,  0],
-             [0, -1j]]
-    """
-    d = matrix[1, 1]
-    target_bit = state.ndim - target - 1
-    target_mask = np.int64(1 << target_bit)
-
-    state_flat = state.reshape(-1)
-    out_flat = out.reshape(-1)
-
-    for i in nb.prange(state.size):
-        if i & target_mask:
-            out_flat[i] = d * state_flat[i]
-        else:
-            out_flat[i] = state_flat[i]
-
-    return out, True
-
-
-@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_t_gate_large(  # pragma: no cover
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies T gate using bit masking.
-
-    Matrix: [[1, 0],
-             [0, exp(1j*π/4)]]
-    """
-    d = matrix[1, 1]
-    target_bit = state.ndim - target - 1
-    target_mask = np.int64(1 << target_bit)
-
-    state_flat = state.reshape(-1)
-    out_flat = out.reshape(-1)
-
-    for i in nb.prange(state.size):
-        if i & target_mask:
-            out_flat[i] = d * state_flat[i]
-        else:
-            out_flat[i] = state_flat[i]
-
-    return out, True
-
-
-@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_ti_gate_large(  # pragma: no cover
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies T† gate using bit masking.
-
-    Matrix: [[1, 0],
-             [0, exp(-1j*π/4)]]
-    """
-    d = matrix[1, 1]
-    target_bit = state.ndim - target - 1
-    target_mask = np.int64(1 << target_bit)
-
-    state_flat = state.reshape(-1)
-    out_flat = out.reshape(-1)
-
-    for i in nb.prange(state.size):
-        if i & target_mask:
-            out_flat[i] = d * state_flat[i]
-        else:
-            out_flat[i] = state_flat[i]
 
     return out, True
 
@@ -448,198 +427,6 @@ def _apply_vi_gate_large(  # pragma: no cover
     return out, True
 
 
-def _apply_rx_gate_small(
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies RX rotation gate using array slicing."""
-    shape = state.shape
-    before_size = int(np.prod(shape[:target]))
-    after_size = int(np.prod(shape[target + 1 :]))
-
-    state_reshaped = state.reshape(before_size, 2, after_size)
-    out_reshaped = out.reshape(before_size, 2, after_size)
-
-    state_0 = state_reshaped[:, 0, :]
-    state_1 = state_reshaped[:, 1, :]
-
-    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-    out_reshaped[:, 0, :] = a * state_0 + b * state_1
-    out_reshaped[:, 1, :] = c * state_0 + d * state_1
-
-    return out, True
-
-
-@nb.njit(parallel=True, cache=True, fastmath=True, nogil=True)
-def _apply_rx_gate_large(  # pragma: no cover
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies RX rotation gate using bit masking.
-
-    Matrix: [[cos(θ/2),    -i*sin(θ/2)],
-             [-i*sin(θ/2), cos(θ/2)]]
-    """
-    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-    target_bit = state.ndim - target - 1
-    target_mask = np.int64(1 << target_bit)
-    shifted_target_mask = np.int64(target_mask - 1)
-
-    half_size = state.size >> 1
-    state_flat = state.reshape(-1)
-    out_flat = out.reshape(-1)
-
-    for i in nb.prange(half_size):
-        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
-        idx1 = idx0 | target_mask
-
-        state0 = state_flat[idx0]
-        state1 = state_flat[idx1]
-
-        out_flat[idx0] = a * state0 + b * state1
-        out_flat[idx1] = c * state0 + d * state1
-
-    return out, True
-
-
-def _apply_ry_gate_small(
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies RY rotation gate using array slicing."""
-    shape = state.shape
-    before_size = int(np.prod(shape[:target]))
-    after_size = int(np.prod(shape[target + 1 :]))
-
-    state_reshaped = state.reshape(before_size, 2, after_size)
-    out_reshaped = out.reshape(before_size, 2, after_size)
-
-    state_0 = state_reshaped[:, 0, :]
-    state_1 = state_reshaped[:, 1, :]
-
-    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-    out_reshaped[:, 0, :] = a * state_0 + b * state_1
-    out_reshaped[:, 1, :] = c * state_0 + d * state_1
-
-    return out, True
-
-
-@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_ry_gate_large(  # pragma: no cover
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies RY rotation gate using bit masking.
-
-    Matrix: [[cos(θ/2),  -sin(θ/2)],
-             [sin(θ/2),   cos(θ/2)]]
-    """
-    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-    target_bit = state.ndim - target - 1
-    target_mask = np.int64(1 << target_bit)
-    shifted_target_mask = np.int64(target_mask - 1)
-
-    half_size = state.size >> 1
-    state_flat = state.reshape(-1)
-    out_flat = out.reshape(-1)
-
-    for i in nb.prange(half_size):
-        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
-        idx1 = idx0 | target_mask
-
-        state0 = state_flat[idx0]
-        state1 = state_flat[idx1]
-
-        out_flat[idx0] = a * state0 + b * state1
-        out_flat[idx1] = c * state0 + d * state1
-
-    return out, True
-
-
-def _apply_rz_gate_small(
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies RZ rotation gate using array slicing."""
-    shape = state.shape
-    before_size = int(np.prod(shape[:target]))
-    after_size = int(np.prod(shape[target + 1 :]))
-
-    state_reshaped = state.reshape(before_size, 2, after_size)
-    out_reshaped = out.reshape(before_size, 2, after_size)
-
-    state_0 = state_reshaped[:, 0, :]
-    state_1 = state_reshaped[:, 1, :]
-
-    a, d = matrix[0, 0], matrix[1, 1]
-    out_reshaped[:, 0, :] = a * state_0
-    out_reshaped[:, 1, :] = d * state_1
-
-    return out, True
-
-
-@nb.njit(parallel=True, cache=True, fastmath=True, nogil=True)
-def _apply_rz_gate_large(  # pragma: no cover
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies RZ rotation gate using bit masking.
-
-    Matrix: [[exp(-i*θ/2), 0],
-             [0,           exp(i*θ/2)]]
-    """
-    a, d = matrix[0, 0], matrix[1, 1]
-    target_bit = state.ndim - target - 1
-    target_mask = np.int64(1 << target_bit)
-
-    state_flat = state.reshape(-1)
-    out_flat = out.reshape(-1)
-
-    for i in nb.prange(state.size):
-        if i & target_mask:
-            out_flat[i] = d * state_flat[i]
-        else:
-            out_flat[i] = a * state_flat[i]
-
-    return out, True
-
-
-def _apply_phase_shift_gate_small(
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies phase shift gate using array slicing."""
-    shape = state.shape
-    before_size = int(np.prod(shape[:target]))
-    after_size = int(np.prod(shape[target + 1 :]))
-
-    state_reshaped = state.reshape(before_size, 2, after_size)
-    out_reshaped = out.reshape(before_size, 2, after_size)
-
-    state_0 = state_reshaped[:, 0, :]
-    state_1 = state_reshaped[:, 1, :]
-
-    a, d = matrix[0, 0], matrix[1, 1]
-    out_reshaped[:, 0, :] = a * state_0
-    out_reshaped[:, 1, :] = d * state_1
-
-    return out, True
-
-
-@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_phase_shift_gate_large(  # pragma: no cover
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Applies phase shift gate using bit masking."""
-    a, d = matrix[0, 0], matrix[1, 1]
-    target_bit = state.ndim - target - 1
-    target_mask = np.int64(1 << target_bit)
-
-    state_flat = state.reshape(-1)
-    out_flat = out.reshape(-1)
-
-    for i in nb.prange(state.size):
-        if i & target_mask:
-            out_flat[i] = d * state_flat[i]
-        else:
-            out_flat[i] = a * state_flat[i]
-
-    return out, True
-
-
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_cnot_large(
     state: np.ndarray, control: int, target: int, out: np.ndarray
@@ -703,7 +490,7 @@ def _apply_cnot_large(
 
 
 def _apply_cnot_small(
-    state: np.ndarray, control: int, target: int, out: np.ndarray
+    state: np.ndarray, control: int, target: int, _out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """CNOT optimization path."""
     n_qubits = state.ndim
@@ -734,7 +521,7 @@ def _apply_swap_small(
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_swap_large(
-    state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
+    state: np.ndarray, qubit_0: int, qubit_1: int, _out: np.ndarray
 ) -> tuple[np.ndarray, bool]:  # pragma: no cover
     """Swap gate implementation using bit manipulation."""
     n_qubits = state.ndim
@@ -947,6 +734,7 @@ def _apply_two_qubit_gate(
     targets: tuple[int, int],
     out: np.ndarray,
     dispatcher: QuantumGateDispatcher,
+    gate_type: str = None,
 ) -> tuple[np.ndarray, bool]:
     """Two-qubit gates optimization path.
 
@@ -957,6 +745,7 @@ def _apply_two_qubit_gate(
         out (np.ndarray): Output array for result.
         dispatcher(QuantumGateDispatcher): Dispatch to optimized functions based on qubit
             count.
+        gate_type (str, optional): Explicit gate type identifier for proper dispatch.
 
     Returns:
         tuple[np.ndarray, bool]: A tuple containing the state after the matrix has been applied
@@ -964,73 +753,19 @@ def _apply_two_qubit_gate(
 
     """
     target0, target1 = targets
-    threshold = 1e-10
 
-    if (
-        abs(matrix[0, 0] - 1) < threshold
-        and abs(matrix[0, 1]) < threshold
-        and abs(matrix[0, 2]) < threshold
-        and abs(matrix[0, 3]) < threshold
-        and abs(matrix[1, 0]) < threshold
-        and abs(matrix[1, 1] - 1) < threshold
-        and abs(matrix[1, 2]) < threshold
-        and abs(matrix[1, 3]) < threshold
-        and abs(matrix[2, 0]) < threshold
-        and abs(matrix[2, 1]) < threshold
-        and abs(matrix[2, 2]) < threshold
-        and abs(matrix[2, 3] - 1) < threshold
-        and abs(matrix[3, 0]) < threshold
-        and abs(matrix[3, 1]) < threshold
-        and abs(matrix[3, 2] - 1) < threshold
-        and abs(matrix[3, 3]) < threshold
-    ):
-        return dispatcher.apply_cnot(state, target0, target1, out)
-
-    if (
-        abs(matrix[0, 0] - 1) < threshold
-        and abs(matrix[0, 1]) < threshold
-        and abs(matrix[0, 2]) < threshold
-        and abs(matrix[0, 3]) < threshold
-        and abs(matrix[1, 0]) < threshold
-        and abs(matrix[1, 1]) < threshold
-        and abs(matrix[1, 2] - 1) < threshold
-        and abs(matrix[1, 3]) < threshold
-        and abs(matrix[2, 0]) < threshold
-        and abs(matrix[2, 1] - 1) < threshold
-        and abs(matrix[2, 2]) < threshold
-        and abs(matrix[2, 3]) < threshold
-        and abs(matrix[3, 0]) < threshold
-        and abs(matrix[3, 1]) < threshold
-        and abs(matrix[3, 2]) < threshold
-        and abs(matrix[3, 3] - 1) < threshold
-    ):
-        return dispatcher.apply_swap(state, target0, target1, out)
-
-    if (
-        abs(matrix[0, 0] - 1) < threshold
-        and abs(matrix[1, 1] - 1) < threshold
-        and abs(matrix[2, 2] - 1) < threshold
-        and abs(matrix[0, 1]) < threshold
-        and abs(matrix[0, 2]) < threshold
-        and abs(matrix[0, 3]) < threshold
-        and abs(matrix[1, 0]) < threshold
-        and abs(matrix[1, 2]) < threshold
-        and abs(matrix[1, 3]) < threshold
-        and abs(matrix[2, 0]) < threshold
-        and abs(matrix[2, 1]) < threshold
-        and abs(matrix[2, 3]) < threshold
-        and abs(matrix[3, 0]) < threshold
-        and abs(matrix[3, 1]) < threshold
-        and abs(matrix[3, 2]) < threshold
-    ):
-        phase_factor = matrix[3, 3]
-        return dispatcher.apply_controlled_phase_shift(state, phase_factor, (target0,), target1)
-
-    return dispatcher.apply_two_qubit_gate(state, matrix, target0, target1, out)
+    if gate_type and (gate_func := TWO_QUBIT_GATE_DISPATCH.get(gate_type)):
+        # TODO: fix this to generalize...
+        if gate_type == "cphaseshift":
+            return gate_func(dispatcher, state, matrix, target0, target1, out)
+        else:
+            return gate_func(dispatcher, state, target0, target1, out)
+    else:
+        return dispatcher.apply_two_qubit_gate(state, matrix, target0, target1, out)
 
 
 def _apply_single_qubit_gate(
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray, gate_type: str = None
 ) -> tuple[np.ndarray, bool]:
     """Applies single gates based on qubit count and gate type.
 
@@ -1041,104 +776,21 @@ def _apply_single_qubit_gate(
         matrix (np.ndarray): The matrix to apply to the state.
         target (int): The qubit to apply the state on.
         out (np.ndarray): Output array to store result in.
+        gate_type (str, optional): Explicit gate type identifier for proper dispatch.
     Returns:
         tuple[np.ndarray, bool]: A tuple containing the modified state vector and a boolean
             indicating whether a buffer swap occurred.
     """
     n_qubits = state.ndim
 
-    # TODO: This needs to be cleaned up. Planning on adding gate identifiers for faster dispatching.
-    if n_qubits > _QUBIT_THRESHOLD:
-        if (
-            abs(matrix[0, 0]) < 1e-12
-            and abs(matrix[0, 1] - 1) < 1e-12
-            and abs(matrix[1, 0] - 1) < 1e-12
-            and abs(matrix[1, 1]) < 1e-12
-        ):
-            return _apply_x_gate_large(state, matrix, target, out)
-        elif (
-            abs(matrix[0, 0] - 1) < 1e-12
-            and abs(matrix[0, 1]) < 1e-12
-            and abs(matrix[1, 0]) < 1e-12
-            and abs(matrix[1, 1] + 1) < 1e-12
-        ):
-            return _apply_z_gate_large(state, matrix, target, out)
-        elif (
-            abs(matrix[0, 0]) < 1e-12
-            and abs(matrix[0, 1] + 1j) < 1e-12
-            and abs(matrix[1, 0] - 1j) < 1e-12
-            and abs(matrix[1, 1]) < 1e-12
-        ):
-            return _apply_y_gate_large(state, matrix, target, out)
-        elif (
-            abs(matrix[0, 0] - 0.7071067811865476) < 1e-12
-            and abs(matrix[0, 1] - 0.7071067811865476) < 1e-12
-            and abs(matrix[1, 0] - 0.7071067811865476) < 1e-12
-            and abs(matrix[1, 1] + 0.7071067811865476) < 1e-12
-        ):
-            return _apply_hadamard_gate_large(state, matrix, target, out)
-        elif abs(matrix[0, 1]) < 1e-12 and abs(matrix[1, 0]) < 1e-12:
-            if (
-                abs(matrix[0, 0] - 1) < 1e-12
-                and abs(matrix[0, 1]) < 1e-12
-                and abs(matrix[1, 0]) < 1e-12
-                and abs(matrix[1, 1] - 1j) < 1e-12
-            ):
-                return _apply_s_gate_large(state, matrix, target, out)
-            elif (
-                abs(matrix[0, 0] - 1) < 1e-12
-                and abs(matrix[0, 1]) < 1e-12
-                and abs(matrix[1, 0]) < 1e-12
-                and abs(matrix[1, 1] + 1j) < 1e-12
-            ):
-                return _apply_si_gate_large(state, matrix, target, out)
-            elif (
-                abs(matrix[0, 0] - 1) < 1e-12
-                and abs(matrix[0, 1]) < 1e-12
-                and abs(matrix[1, 0]) < 1e-12
-                and abs(matrix[1, 1] - (0.7071067811865476 + 0.7071067811865475j)) < 1e-12
-            ):
-                return _apply_t_gate_large(state, matrix, target, out)
-            elif (
-                abs(matrix[0, 0] - 1) < 1e-12
-                and abs(matrix[0, 1]) < 1e-12
-                and abs(matrix[1, 0]) < 1e-12
-                and abs(matrix[1, 1] - (0.7071067811865476 - 0.7071067811865475j)) < 1e-12
-            ):
-                return _apply_ti_gate_large(state, matrix, target, out)
-            elif matrix[0, 0] == 1 and matrix[1, 1] != 1:
-                return _apply_phase_shift_gate_large(state, matrix, target, out)
-            else:
-                return _apply_rz_gate_large(state, matrix, target, out)
-        elif (
-            abs(matrix[0, 0] - (0.5 + 0.5j)) < 1e-12
-            and abs(matrix[0, 1] - (0.5 - 0.5j)) < 1e-12
-            and abs(matrix[1, 0] - (0.5 - 0.5j)) < 1e-12
-            and abs(matrix[1, 1] - (0.5 + 0.5j)) < 1e-12
-        ):
-            return _apply_v_gate_large(state, matrix, target, out)
-        elif (
-            abs(matrix[0, 0] - (0.5 - 0.5j)) < 1e-12
-            and abs(matrix[0, 1] - (0.5 + 0.5j)) < 1e-12
-            and abs(matrix[1, 0] - (0.5 + 0.5j)) < 1e-12
-            and abs(matrix[1, 1] - (0.5 - 0.5j)) < 1e-12
-        ):
-            return _apply_vi_gate_large(state, matrix, target, out)
+    if gate_type and gate_type in DIAGONAL_GATES:
+        if n_qubits > _QUBIT_THRESHOLD:
+            return _apply_diagonal_gate_large(state, matrix, target, out)
         else:
-            return _apply_single_qubit_gate_large(state, matrix, target, out)
+            return _apply_diagonal_gate_small(state, matrix, target, out)
     else:
-        if (
-            abs(matrix[0, 0]) < 1e-12
-            and abs(matrix[0, 1] - 1) < 1e-12
-            and abs(matrix[1, 0] - 1) < 1e-12
-            and abs(matrix[1, 1]) < 1e-12
-        ):
-            return _apply_single_qubit_gate_small(state, matrix, target, out)
-        elif abs(matrix[0, 1]) < 1e-12 and abs(matrix[1, 0]) < 1e-12:
-            if matrix[0, 0] == 1 and matrix[1, 1] != 1:
-                return _apply_phase_shift_gate_small(state, matrix, target, out)
-            else:
-                return _apply_rz_gate_small(state, matrix, target, out)
+        if n_qubits > _QUBIT_THRESHOLD:
+            return _apply_single_qubit_gate_large(state, matrix, target, out)
         else:
             return _apply_single_qubit_gate_small(state, matrix, target, out)
 
@@ -1149,6 +801,7 @@ def _multiply_matrix(
     targets: tuple[int, ...],
     out: np.ndarray,
     dispatcher: QuantumGateDispatcher,
+    gate_type: str = None,
 ) -> tuple[np.ndarray, bool]:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
@@ -1159,22 +812,22 @@ def _multiply_matrix(
         out (np.ndarray): Output array for result.
         dispatcher(QuantumGateDispatcher): Dispatch to optimized functions based on qubit
             count.
+        gate_type (str, optional): Explicit gate type identifier for proper dispatch.
 
     Returns:
         tuple[np.ndarray, bool]: A tuple containing the state after the matrix has been applied
             and a boolean indicating whether a buffer swap occurred.
     """
     if len(targets) == 1:
-        return _apply_single_qubit_gate(state, matrix, targets[0], out)
+        return _apply_single_qubit_gate(state, matrix, targets[0], out, gate_type)
     elif len(targets) == 2:
-        return _apply_two_qubit_gate(state, matrix, targets, out, dispatcher)
-
+        return _apply_two_qubit_gate(state, matrix, targets, out, dispatcher, gate_type)
     num_targets = len(targets)
     gate_matrix = np.reshape(matrix, [2] * num_targets * 2)
     axes = (np.arange(num_targets, 2 * num_targets), targets)
 
     product = np.tensordot(gate_matrix, state, axes=axes)
-    unused_idxs = [idx for idx in range(state.ndim) if idx not in targets]
+    unused_idxs = [idx for idx in range(len(state.shape)) if idx not in targets]
 
     np.copyto(out, np.transpose(product, np.argsort([*targets, *unused_idxs])))
     return out, True

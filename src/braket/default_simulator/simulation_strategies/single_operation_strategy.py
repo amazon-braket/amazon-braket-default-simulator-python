@@ -41,6 +41,8 @@ def apply_operations(
             state_1d = operation.apply(state_1d)  # type: ignore
             state = np.reshape(state_1d, state.shape)
         else:
+            gate_type = op.gate_type if hasattr(op, "gate_type") else None
+
             num_ctrl = len(op._ctrl_modifiers)
             _, needs_swap = multiply_matrix(
                 result,
@@ -51,6 +53,7 @@ def apply_operations(
                 temp,
                 dispatcher,
                 True,
+                gate_type=gate_type,
             )
             if needs_swap:
                 result, temp = temp, result

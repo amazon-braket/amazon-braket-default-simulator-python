@@ -42,6 +42,7 @@ class DensityMatrixSimulation(Simulation):
         initial_state[0, 0] = 1
         self._density_matrix = initial_state
         self._post_observables = None
+        self._rng_generator = np.random.default_rng()
 
     def evolve(self, operations: list[GateOperation | KrausOperation]) -> None:
         self._density_matrix = DensityMatrixSimulation._apply_operations(
@@ -72,10 +73,9 @@ class DensityMatrixSimulation(Simulation):
             self._density_matrix, self._qubit_count, operations
         )
 
-    def retrieve_samples(self) -> list[int]:
-        rng_generator = np.random.default_rng()
-        return rng_generator.choice(
-            self._density_matrix.shape[0], p=self.probabilities, size=self._shots
+    def retrieve_samples(self) -> np.ndarray:
+        return np.searchsorted(
+            np.cumsum(self.probabilities), self._rng_generator.random(size=self._shots)
         )
 
     @property
@@ -157,8 +157,17 @@ class DensityMatrixSimulation(Simulation):
 
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
+                matrix = operation.matrix
+                # Extract gate_type if available
+                gate_type = getattr(operation, "gate_type", None)
                 result, temp = DensityMatrixSimulation._apply_gate(
-                    result, temp, qubit_count, operation.matrix, operation.targets, dispatcher
+                    result,
+                    temp,
+                    qubit_count,
+                    matrix,
+                    operation.targets,
+                    dispatcher,
+                    gate_type,
                 )
             if isinstance(operation, KrausOperation):
                 result, temp = DensityMatrixSimulation._apply_kraus(
@@ -182,39 +191,40 @@ class DensityMatrixSimulation(Simulation):
         matrix: np.ndarray,
         targets: tuple[int],
         dispatcher: QuantumGateDispatcher,
+        gate_type: str | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Apply a unitary gate matrix E to a density matrix D according to:
+        """Apply a unitary gate matrix U to a density matrix \rho according to:
 
             .. math::
-                D \rightarrow E D E^{\dagger}
+                \rho \rightarrow U \rho U^{\dagger}
 
         This represents the quantum evolution of a density matrix under a unitary
         operation, where the gate is applied on the left and its Hermitian conjugate
         on the right to preserve the trace and Hermitian properties of the density matrix.
 
         Args:
-            result (np.ndarray): Initial density matrix in reshaped form [2]^(2*qubit_count).
+            result (np.ndarray): Initial density matrix in reshaped form [2]*(2*qubit_count).
                 This buffer may be modified during computation and used for intermediate results.
             temp (np.ndarray): Pre-allocated buffer used for multiply_matrix output operations.
                 Must have the same shape and dtype as result.
             qubit_count (int): Number of qubits in the circuit.
-            matrix (np.ndarray): Unitary gate matrix E to be applied to the density matrix.
+            matrix (np.ndarray): Unitary gate matrix U to be applied to the density matrix.
                 Will be converted to complex dtype if necessary.
             targets (tuple[int]): Target qubits that the unitary gate acts upon.
-            dispatcher (QuantumGateDispatcher): Dispatches multiplying based on quibit count.
+            dispatcher (QuantumGateDispatcher): Dispatches multiplying based on qubit count.
+            gate_type (str | None): Optional gate type identifier for optimized dispatch.
 
         Returns:
             tuple[np.ndarray, np.ndarray]: A tuple containing:
-                - The output density matrix (E * D * E†)
+                - The output density matrix (U * \rho * U†)
                 - A spare buffer that can be reused for subsequent operations
 
         Note:
             The function uses efficient buffer swapping to minimize memory allocations.
             The shifted targets (targets + qubit_count) are used for the right-side
-            multiplication with E† to account for the doubled dimension structure
+            multiplication with U† to account for the doubled dimension structure
             of the reshaped density matrix.
         """
-        shifted_targets = tuple(t + qubit_count for t in targets)
         _, needs_swap1 = multiply_matrix(
             state=result,
             matrix=matrix,
@@ -222,21 +232,24 @@ class DensityMatrixSimulation(Simulation):
             out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
+            gate_type=gate_type,
         )
+
         if needs_swap1:
             result, temp = temp, result
 
         _, needs_swap2 = multiply_matrix(
             state=result,
             matrix=matrix.conj(),
-            targets=shifted_targets,
+            targets=tuple(t + qubit_count for t in targets),
             out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
+            # TODO: remove condition once CNot dispatch is fixed
+            gate_type=gate_type if len(targets) == 1 else None,
         )
-        if needs_swap2:
-            result, temp = temp, result
-
+        # Always true with new gate dispatch
+        result, temp = temp, result
         return result, temp
 
     @staticmethod
@@ -288,8 +301,8 @@ class DensityMatrixSimulation(Simulation):
             _, needs_swap = multiply_matrix(
                 result, superop, targets_new, out=temp, return_swap_info=True, dispatcher=dispatcher
             )
-            if needs_swap:
-                result, temp = temp, result
+            # With gate_type dispatch, swaps won't occur. An optimization would be to do is add matrix matching to avoid general 1q, 2q cases.
+            result, temp = temp, result
             return result, temp
 
         temp.fill(0)
@@ -314,5 +327,6 @@ class DensityMatrixSimulation(Simulation):
                 dispatcher=dispatcher,
             )
             temp += output_buffer
+        result, temp = temp, result
 
-        return temp, result
+        return result, temp
