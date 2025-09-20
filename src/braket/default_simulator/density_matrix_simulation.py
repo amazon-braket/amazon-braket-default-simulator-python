@@ -248,8 +248,8 @@ class DensityMatrixSimulation(Simulation):
             # TODO: remove condition once CNot dispatch is fixed
             gate_type=gate_type if len(targets) == 1 else None,
         )
-        if needs_swap2:
-            result, temp = temp, result
+        # Always true with new gate dispatch
+        result, temp = temp, result
         return result, temp
 
     @staticmethod
