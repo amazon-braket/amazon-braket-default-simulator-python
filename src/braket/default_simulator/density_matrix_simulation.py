@@ -160,25 +160,14 @@ class DensityMatrixSimulation(Simulation):
                 matrix = operation.matrix
                 # Extract gate_type if available
                 gate_type = getattr(operation, "gate_type", None)
-                result, temp = (
-                    DensityMatrixSimulation._apply_gate(
-                        result,
-                        temp,
-                        qubit_count,
-                        matrix,
-                        operation.targets,
-                        dispatcher,
-                        gate_type,
-                    )
-                    if len(operation.targets) < 3
-                    else DensityMatrixSimulation._apply_superop(
-                        result,
-                        temp,
-                        qubit_count,
-                        matrix,
-                        operation.targets,
-                        dispatcher,
-                    )
+                result, temp = DensityMatrixSimulation._apply_gate(
+                    result,
+                    temp,
+                    qubit_count,
+                    matrix,
+                    operation.targets,
+                    dispatcher,
+                    gate_type,
                 )
             if isinstance(operation, KrausOperation):
                 result, temp = DensityMatrixSimulation._apply_kraus(
@@ -260,62 +249,6 @@ class DensityMatrixSimulation(Simulation):
         )
         # Gate type isn't passed so we always swap
         result, temp = temp, result
-        return result, temp
-
-    @staticmethod
-    def _apply_superop(
-        result: np.ndarray,
-        temp: np.ndarray,
-        qubit_count: int,
-        matrix: np.ndarray,
-        targets: tuple[int],
-        dispatcher: QuantumGateDispatcher,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """Apply a unitary gate matrix U to a density matrix \rho using superoperator formalism:
-
-            .. math::
-                \rho \rightarrow (U \otimes U^*) [\rho]
-
-        This represents the quantum evolution of a density matrix under a unitary
-        operation using the superoperator representation, where the Kronecker product
-        of the gate matrix and its complex conjugate is applied to the vectorized
-        density matrix.
-
-        Args:
-            result (np.ndarray): Initial density matrix in reshaped form [2]*(2*qubit_count).
-                This buffer may be modified during computation and used for intermediate results.
-            temp (np.ndarray): Pre-allocated buffer used for multiply_matrix output operations.
-                Must have the same shape and dtype as result.
-            qubit_count (int): Number of qubits in the circuit.
-            matrix (np.ndarray): Unitary gate matrix U to be applied to the density matrix.
-                Will be converted to complex dtype if necessary.
-            targets (tuple[int]): Target qubits that the unitary gate acts upon.
-            dispatcher (QuantumGateDispatcher): Dispatches multiplying based on qubit count.
-
-        Returns:
-            tuple[np.ndarray, np.ndarray]: A tuple containing:
-                - The output density matrix after superoperator application
-                - A spare buffer that can be reused for subsequent operations
-
-        Note:
-            This method constructs the superoperator as np.kron(matrix, matrix.conjugate())
-            and applies it to the combined target space that includes both the original
-            targets and their shifted counterparts (targets + qubit_count).
-        """
-        targets_new = targets + tuple([target + qubit_count for target in targets])
-
-        _, needs_swap = multiply_matrix(
-            state=result,
-            matrix=np.kron(matrix, matrix.conjugate()),
-            targets=targets_new,
-            out=temp,
-            return_swap_info=True,
-            dispatcher=dispatcher,
-        )
-
-        # Always true with new gate dispatch
-        result, temp = temp, result
-
         return result, temp
 
     @staticmethod
