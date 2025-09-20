@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.31.1 (2025-09-20)
+
+### Bug Fixes and Other Changes
+
+ * Remove superoperator gate application
+ * add gate_applications back to the dm sim
+
 ## v1.31.0 (2025-09-19)
 
 ### Features
