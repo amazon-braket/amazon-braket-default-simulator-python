@@ -245,6 +245,7 @@ class DensityMatrixSimulation(Simulation):
             out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
+            # TODO: remove condition once CNot dispatch is fixed
             gate_type=gate_type if len(targets) == 1 else None,
         )
         if needs_swap2:
