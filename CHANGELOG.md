@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.2 (2025-09-23)
+
+### Bug Fixes and Other Changes
+
+ * Support control modifiers in `braket_dm`
+
 ## v1.31.1 (2025-09-20)
 
 ### Bug Fixes and Other Changes
