@@ -467,6 +467,38 @@ def bell_ir_with_result(ir_type):
     return _bell_ir_with_result
 
 
+def test_gphase():
+    qasm = """
+    qubit[2] qs;
+
+    int[8] two = 2;
+
+    gate x a { U(π, 0, π) a; }
+    gate cx c, a { ctrl @ x c, a; }
+    gate phase c, a {
+        gphase(π/2);
+        pow(1) @ ctrl(two) @ gphase(π) c, a;
+    }
+    gate h a { U(π/2, 0, π) a; }
+
+    inv @ U(π/2, 0, π) qs[0];
+    cx qs[0], qs[1];
+    phase qs[0], qs[1];
+
+    gphase(π);
+    inv @ gphase(π / 2);
+    negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
+
+    #pragma braket result density_matrix
+    """
+    simulator = DensityMatrixSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm))
+    dm = result.resultTypes[0].value
+    assert np.allclose(
+        dm, np.array([[0.5, 0, 0, -0.5], [0, 0, 0, 0], [0, 0, 0, 0], [-0.5, 0, 0, 0.5]])
+    )
+
+
 @pytest.mark.parametrize("result_type", invalid_ir_result_types)
 @pytest.mark.xfail(raises=TypeError)
 def test_simulator_run_invalid_ir_result_types(result_type, simulator):
