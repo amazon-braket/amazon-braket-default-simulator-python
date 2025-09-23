@@ -35,19 +35,18 @@ def apply_operations(
 
     dispatcher = QuantumGateDispatcher(state.ndim)
     for op in operations:
-        gate_type = op.gate_type if hasattr(op, "gate_type") else None
-
+        targets = op.targets
         num_ctrl = len(op._ctrl_modifiers)
         _, needs_swap = multiply_matrix(
             result,
             op.matrix,
-            op.targets[num_ctrl:],
-            op.targets[:num_ctrl],
+            targets[num_ctrl:],
+            targets[:num_ctrl],
             op._ctrl_modifiers,
             temp,
             dispatcher,
             True,
-            gate_type=gate_type,
+            gate_type=getattr(op, "gate_type"),
         )
         if needs_swap:
             result, temp = temp, result
