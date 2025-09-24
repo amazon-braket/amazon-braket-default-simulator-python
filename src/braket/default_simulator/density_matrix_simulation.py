@@ -151,6 +151,7 @@ class DensityMatrixSimulation(Simulation):
         original_shape = state.shape
         result = state.view()
         result.shape = [2] * 2 * qubit_count
+        axes = [i + qubit_count for i in range(qubit_count)] + list(range(qubit_count))
         temp = np.zeros_like(result, dtype=complex)
         work_buffer1 = np.zeros_like(result, dtype=complex)
         work_buffer2 = np.zeros_like(result, dtype=complex)
@@ -163,7 +164,7 @@ class DensityMatrixSimulation(Simulation):
                 result, temp = DensityMatrixSimulation._apply_gate(
                     result,
                     temp,
-                    qubit_count,
+                    axes,
                     operation.matrix,
                     targets[num_ctrl:],
                     targets[:num_ctrl],
@@ -189,7 +190,7 @@ class DensityMatrixSimulation(Simulation):
     def _apply_gate(
         result: np.ndarray,
         temp: np.ndarray,
-        qubit_count: int,
+        axes: list[int],
         matrix: np.ndarray,
         targets: tuple[int, ...],
         controls: tuple[int, ...] | None,
@@ -244,24 +245,24 @@ class DensityMatrixSimulation(Simulation):
             dispatcher=dispatcher,
             gate_type=gate_type,
         )
-
         if needs_swap1:
             result, temp = temp, result
 
-        multiply_matrix(
-            state=result,
+        np.copyto(temp, result.transpose(axes))
+        _, needs_swap2 = multiply_matrix(
+            state=temp,
             matrix=matrix.conj(),
-            targets=tuple(t + qubit_count for t in targets),
-            controls=tuple(c + qubit_count for c in controls),
+            targets=targets,
+            controls=controls,
             control_state=control_state,
-            out=temp,
+            out=result,
             return_swap_info=True,
             dispatcher=dispatcher,
-            # TODO: remove condition once CNot dispatch is fixed
-            gate_type=gate_type if len(targets) == 1 else None,
+            gate_type=gate_type,
         )
-        # Always swap with new gate dispatch
-        result, temp = temp, result
+        if needs_swap2:
+            result, temp = temp, result
+        np.copyto(result, temp.transpose(axes))
         return result, temp
 
     @staticmethod

@@ -467,6 +467,21 @@ def bell_ir_with_result(ir_type):
     return _bell_ir_with_result
 
 
+def test_ghz_0():
+    qasm = """
+    qubit[4] q;
+    h q[0];
+    cnot q[0], q[1];
+    cnot q[0], q[2];
+    ctrl @ x q[0], q[3];
+    #pragma braket result probability
+    """
+    simulator = DensityMatrixSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm))
+    probs = result.resultTypes[0].value
+    assert np.allclose(probs, np.array([0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5]))
+
+
 def test_gphase():
     qasm = """
     qubit[2] qs;
