@@ -23,8 +23,9 @@ This module provides fusion optimization for quantum noise channels through:
 
 from __future__ import annotations
 
+from typing import Optional
+
 import numpy as np
-from typing import List, Optional, Tuple
 
 from braket.default_simulator.operation import KrausOperation
 
@@ -32,7 +33,7 @@ from braket.default_simulator.operation import KrausOperation
 class FusedNoiseOperation(KrausOperation):
     """
     Fused noise operation with optimized Kraus operators.
-    
+
     This class represents multiple noise channels fused together with optimizations
     including pattern recognition and algebraic simplification.
     """
@@ -58,7 +59,7 @@ class FusedNoiseOperation(KrausOperation):
         self._original_operations = original_operations
         self._operation_count = len(original_operations)
         self._optimization_type = optimization_type
-        
+
         self._validate_cptp()
 
     @property
@@ -90,13 +91,13 @@ class FusedNoiseOperation(KrausOperation):
         """Validate that the fused operation preserves CPTP property."""
         if not self._fused_kraus_ops:
             return
-            
+
         dim = self._fused_kraus_ops[0].shape[0]
         sum_ktk = np.zeros((dim, dim), dtype=complex)
-        
+
         for kraus_op in self._fused_kraus_ops:
             sum_ktk += kraus_op.conj().T @ kraus_op
-            
+
         identity = np.eye(dim, dtype=complex)
         if not np.allclose(sum_ktk, identity, atol=1e-10):
             raise ValueError("Fused noise operation violates CPTP property")
@@ -108,115 +109,119 @@ class FusedNoiseOperation(KrausOperation):
 
 class DepolarizingChannelOptimizer:
     """Optimizer for depolarizing noise channels."""
-    
+
     def __init__(self):
         self._pauli_matrices = self._build_pauli_matrices()
-    
+
     def _build_pauli_matrices(self) -> dict:
         return {
-            'I': np.eye(2, dtype=complex),
-            'X': np.array([[0, 1], [1, 0]], dtype=complex),
-            'Y': np.array([[0, -1j], [1j, 0]], dtype=complex),
-            'Z': np.array([[1, 0], [0, -1]], dtype=complex)
+            "I": np.eye(2, dtype=complex),
+            "X": np.array([[0, 1], [1, 0]], dtype=complex),
+            "Y": np.array([[0, -1j], [1j, 0]], dtype=complex),
+            "Z": np.array([[1, 0], [0, -1]], dtype=complex),
         }
-    
-    def optimize_depolarizing_sequence(self, operations: list[KrausOperation]) -> Optional[list[np.ndarray]]:
+
+    def optimize_depolarizing_sequence(
+        self, operations: list[KrausOperation]
+    ) -> Optional[list[np.ndarray]]:
         """Optimize a sequence of depolarizing channels."""
         if not all(self._is_depolarizing_channel(op) for op in operations):
             return None
-            
+
         combined_p = 0.0
         for op in operations:
             p = self._extract_depolarizing_probability(op)
             if p is None:
                 return None
-            combined_p = combined_p + p - (4.0/3.0) * combined_p * p
-        
+            combined_p = combined_p + p - (4.0 / 3.0) * combined_p * p
+
         return self._create_depolarizing_kraus(combined_p)
-    
+
     def _is_depolarizing_channel(self, op: KrausOperation) -> bool:
         """Check if operation is a depolarizing channel."""
-        return hasattr(op, 'probability') and len(op.matrices) == 4
-    
+        return hasattr(op, "probability") and len(op.matrices) == 4
+
     def _extract_depolarizing_probability(self, op: KrausOperation) -> Optional[float]:
         """Extract depolarizing probability from operation."""
-        if hasattr(op, 'probability'):
+        if hasattr(op, "probability"):
             return op.probability
         return None
-    
+
     def _create_depolarizing_kraus(self, p: float) -> list[np.ndarray]:
         """Create Kraus operators for depolarizing channel with probability p."""
-        coeff_i = np.sqrt(1 - 3*p/4)
-        coeff_pauli = np.sqrt(p/4)
-        
+        coeff_i = np.sqrt(1 - 3 * p / 4)
+        coeff_pauli = np.sqrt(p / 4)
+
         return [
-            coeff_i * self._pauli_matrices['I'],
-            coeff_pauli * self._pauli_matrices['X'],
-            coeff_pauli * self._pauli_matrices['Y'],
-            coeff_pauli * self._pauli_matrices['Z']
+            coeff_i * self._pauli_matrices["I"],
+            coeff_pauli * self._pauli_matrices["X"],
+            coeff_pauli * self._pauli_matrices["Y"],
+            coeff_pauli * self._pauli_matrices["Z"],
         ]
 
 
 class PauliChannelOptimizer:
     """Optimizer for Pauli noise channels."""
-    
+
     def __init__(self):
         self._pauli_matrices = {
-            'I': np.eye(2, dtype=complex),
-            'X': np.array([[0, 1], [1, 0]], dtype=complex),
-            'Y': np.array([[0, -1j], [1j, 0]], dtype=complex),
-            'Z': np.array([[1, 0], [0, -1]], dtype=complex)
+            "I": np.eye(2, dtype=complex),
+            "X": np.array([[0, 1], [1, 0]], dtype=complex),
+            "Y": np.array([[0, -1j], [1j, 0]], dtype=complex),
+            "Z": np.array([[1, 0], [0, -1]], dtype=complex),
         }
-    
-    def optimize_pauli_sequence(self, operations: list[KrausOperation]) -> Optional[list[np.ndarray]]:
+
+    def optimize_pauli_sequence(
+        self, operations: list[KrausOperation]
+    ) -> Optional[list[np.ndarray]]:
         """Optimize a sequence of Pauli channels."""
         if not all(self._is_pauli_channel(op) for op in operations):
             return None
-            
-        total_probs = {'X': 0.0, 'Y': 0.0, 'Z': 0.0}
-        
+
+        total_probs = {"X": 0.0, "Y": 0.0, "Z": 0.0}
+
         for op in operations:
             probs = self._extract_pauli_probabilities(op)
             if probs is None:
                 return None
-            
-            for pauli in ['X', 'Y', 'Z']:
+
+            for pauli in ["X", "Y", "Z"]:
                 total_probs[pauli] = (total_probs[pauli] + probs.get(pauli, 0.0)) % 1.0
-        
+
         p_i = 1.0 - sum(total_probs.values())
         if p_i < 0:
             return None
-            
+
         return self._create_pauli_kraus(p_i, total_probs)
-    
+
     def _is_pauli_channel(self, op: KrausOperation) -> bool:
         """Check if operation is a Pauli channel."""
         return len(op.matrices) <= 4
-    
+
     def _extract_pauli_probabilities(self, op: KrausOperation) -> Optional[dict]:
         """Extract Pauli probabilities from operation."""
-        if hasattr(op, 'pauli_probabilities'):
+        if hasattr(op, "pauli_probabilities"):
             return op.pauli_probabilities
         return None
-    
+
     def _create_pauli_kraus(self, p_i: float, pauli_probs: dict) -> list[np.ndarray]:
         """Create Kraus operators for Pauli channel."""
         kraus_ops = []
-        
+
         if p_i > 1e-12:
-            kraus_ops.append(np.sqrt(p_i) * self._pauli_matrices['I'])
-        
+            kraus_ops.append(np.sqrt(p_i) * self._pauli_matrices["I"])
+
         for pauli, prob in pauli_probs.items():
             if prob > 1e-12:
                 kraus_ops.append(np.sqrt(prob) * self._pauli_matrices[pauli])
-        
+
         return kraus_ops
 
 
 class KrausAlgebra:
     """
     Handles Kraus operator composition and simplification.
-    
+
     This class provides the mathematical foundation for fusing quantum channels
     while preserving their physical properties.
     """
@@ -225,94 +230,97 @@ class KrausAlgebra:
     def compose_channels(kraus1: list[np.ndarray], kraus2: list[np.ndarray]) -> list[np.ndarray]:
         """
         Compose two quantum channels represented by their Kraus operators.
-        
+
         For channels E1 and E2, the composition E2 ∘ E1 has Kraus operators:
         {B_j * A_i} where {A_i} are Kraus operators of E1 and {B_j} are Kraus operators of E2.
-        
+
         Args:
             kraus1: Kraus operators of the first channel E1
             kraus2: Kraus operators of the second channel E2
-            
+
         Returns:
             Kraus operators of the composed channel E2 ∘ E1
         """
         composed_kraus = []
         for b_j in kraus2:
-            for a_i in kraus1:
-                composed_kraus.append(b_j @ a_i)
+            composed_kraus.extend(b_j @ a_i for a_i in kraus1)
         return composed_kraus
 
     @staticmethod
-    def simplify_bit_flip_composition(operations: list[KrausOperation]) -> Optional[list[np.ndarray]]:
+    def simplify_bit_flip_composition(
+        operations: list[KrausOperation],
+    ) -> Optional[list[np.ndarray]]:
         """
         Simplify composition of BitFlip channels using algebraic properties.
-        
+
         BitFlip channels compose as: p_eff = p1 + p2 - 2*p1*p2
-        
+
         Args:
             operations: List of BitFlip operations
-            
+
         Returns:
             Simplified Kraus operators or None if not applicable
         """
-        if not all(type(op).__name__ == 'MockBitFlip' or hasattr(op, 'probability') for op in operations):
+        if not all(
+            type(op).__name__ == "MockBitFlip" or hasattr(op, "probability") for op in operations
+        ):
             return None
-            
+
         p_eff = 0.0
         for op in operations:
-            if hasattr(op, 'probability'):
+            if hasattr(op, "probability"):
                 p = op.probability
                 p_eff = p_eff + p - 2 * p_eff * p
             else:
                 return None
-            
+
         pauli_i = np.eye(2, dtype=complex)
         pauli_x = np.array([[0, 1], [1, 0]], dtype=complex)
-        
-        return [
-            np.sqrt(1 - p_eff) * pauli_i,
-            np.sqrt(p_eff) * pauli_x
-        ]
+
+        return [np.sqrt(1 - p_eff) * pauli_i, np.sqrt(p_eff) * pauli_x]
 
     @staticmethod
-    def simplify_phase_flip_composition(operations: list[KrausOperation]) -> Optional[list[np.ndarray]]:
+    def simplify_phase_flip_composition(
+        operations: list[KrausOperation],
+    ) -> Optional[list[np.ndarray]]:
         """
         Simplify composition of PhaseFlip channels.
-        
+
         Args:
             operations: List of PhaseFlip operations
-            
+
         Returns:
             Simplified Kraus operators or None if not applicable
         """
-        if not all(type(op).__name__ == 'MockPhaseFlip' or hasattr(op, 'probability') for op in operations):
+        if not all(
+            type(op).__name__ == "MockPhaseFlip" or hasattr(op, "probability") for op in operations
+        ):
             return None
-            
+
         p_eff = 0.0
         for op in operations:
-            if hasattr(op, 'probability'):
+            if hasattr(op, "probability"):
                 p = op.probability
                 p_eff = p_eff + p - 2 * p_eff * p
             else:
                 return None
-            
+
         pauli_i = np.eye(2, dtype=complex)
         pauli_z = np.diag([1.0, -1.0]).astype(complex)
-        
-        return [
-            np.sqrt(1 - p_eff) * pauli_i,
-            np.sqrt(p_eff) * pauli_z
-        ]
+
+        return [np.sqrt(1 - p_eff) * pauli_i, np.sqrt(p_eff) * pauli_z]
 
     @staticmethod
-    def truncate_small_operators(kraus_ops: list[np.ndarray], threshold: float = 1e-12) -> list[np.ndarray]:
+    def truncate_small_operators(
+        kraus_ops: list[np.ndarray], threshold: float = 1e-12
+    ) -> list[np.ndarray]:
         """
         Remove Kraus operators with coefficients below threshold.
-        
+
         Args:
             kraus_ops: List of Kraus operators
             threshold: Minimum coefficient magnitude to keep
-            
+
         Returns:
             Filtered list of Kraus operators
         """
@@ -322,14 +330,14 @@ class KrausAlgebra:
             max_coeff = np.max(np.abs(op))
             if max_coeff > threshold:
                 filtered_ops.append(op)
-                
+
         return filtered_ops if filtered_ops else kraus_ops
 
 
 class NoiseOperationFusionOptimizer:
     """
     Enhanced noise operation fusion optimizer for maximum gate count reduction.
-    
+
     This optimizer provides aggressive performance improvements for noise channels
     with expanded complexity bounds and advanced optimization techniques.
     """
@@ -381,7 +389,9 @@ class NoiseOperationFusionOptimizer:
 
         return optimized
 
-    def _find_fusion_group(self, operations: list[KrausOperation], start_idx: int) -> list[KrausOperation]:
+    def _find_fusion_group(
+        self, operations: list[KrausOperation], start_idx: int
+    ) -> list[KrausOperation]:
         """Find a group of consecutive operations that can be fused."""
         if start_idx >= len(operations):
             return []
@@ -401,10 +411,7 @@ class NoiseOperationFusionOptimizer:
         return fusion_group
 
     def _can_fuse_with_group(
-        self, 
-        candidate: KrausOperation, 
-        fusion_group: list[KrausOperation], 
-        first_targets: set[int]
+        self, candidate: KrausOperation, fusion_group: list[KrausOperation], first_targets: set[int]
     ) -> bool:
         """Check if candidate can be fused with current group."""
         if set(candidate.targets) != first_targets:
@@ -419,14 +426,16 @@ class NoiseOperationFusionOptimizer:
 
         return True
 
-    def _create_fused_operation(self, operations: list[KrausOperation]) -> Optional[FusedNoiseOperation]:
+    def _create_fused_operation(
+        self, operations: list[KrausOperation]
+    ) -> Optional[FusedNoiseOperation]:
         """Create a fused noise operation from a group of operations."""
         if len(operations) == 1:
             return None
 
         try:
             simplified_kraus = self._try_same_type_optimization(operations)
-            
+
             if simplified_kraus is None:
                 simplified_kraus = self._compose_operations(operations)
 
@@ -450,40 +459,42 @@ class NoiseOperationFusionOptimizer:
         except Exception:
             return None
 
-    def _try_same_type_optimization(self, operations: list[KrausOperation]) -> Optional[list[np.ndarray]]:
+    def _try_same_type_optimization(
+        self, operations: list[KrausOperation]
+    ) -> Optional[list[np.ndarray]]:
         """Try to apply same-type channel optimizations."""
         if not operations:
             return None
 
         first_type = type(operations[0]).__name__
-        
+
         if not all(type(op).__name__ == first_type for op in operations):
             return None
 
-        if first_type in ['BitFlip', 'MockBitFlip']:
+        if first_type in ["BitFlip", "MockBitFlip"]:
             return self.algebra.simplify_bit_flip_composition(operations)
-        elif first_type in ['PhaseFlip', 'MockPhaseFlip']:
+        elif first_type in ["PhaseFlip", "MockPhaseFlip"]:
             return self.algebra.simplify_phase_flip_composition(operations)
-        
+
         return None
 
     def _compose_operations(self, operations: list[KrausOperation]) -> list[np.ndarray]:
         """Compose operations using standard Kraus operator multiplication."""
         result_kraus = operations[0].matrices.copy()
-        
+
         for i in range(1, len(operations)):
             next_kraus = operations[i].matrices
             result_kraus = self.algebra.compose_channels(result_kraus, next_kraus)
-            
+
         return result_kraus
 
     def _determine_optimization_type(self, operations: list[KrausOperation]) -> str:
         """Determine the type of optimization applied."""
         if not operations:
             return "standard"
-            
+
         first_type = type(operations[0]).__name__
-        
+
         if all(type(op).__name__ == first_type for op in operations):
             return "same_type"
         else:
@@ -510,7 +521,6 @@ def apply_noise_fusion(
         List of optimized operations with fusion applied where beneficial
     """
     optimizer = NoiseOperationFusionOptimizer(
-        max_kraus_operators=max_kraus_operators,
-        max_fusion_size=max_fusion_size
+        max_kraus_operators=max_kraus_operators, max_fusion_size=max_fusion_size
     )
     return optimizer.optimize_noise_operations(operations)

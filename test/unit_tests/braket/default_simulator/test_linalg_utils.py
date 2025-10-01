@@ -16,6 +16,7 @@ import pytest
 
 from braket.default_simulator.linalg_utils import (
     _apply_single_qubit_gate_large,
+    _apply_single_qubit_gate_small,
     _apply_x_gate_large,
     _apply_y_gate_large,
     _apply_diagonal_gate_small,
@@ -588,15 +589,15 @@ def test_diagonal_gate_small_vs_general():
 
     for matrix in diagonal_matrices:
         for test_state in test_states:
-            # Test diagonal implementation
+            # Test diagonal implementation (small)
             state_diag = test_state.reshape(2)
             out_diag = np.zeros_like(state_diag, dtype=complex)
             result_diag, _ = _apply_diagonal_gate_small(state_diag, matrix, 0, out_diag)
 
-            # Test general implementation
+            # Test general implementation (small) - use the small version for 1-qubit states
             state_general = test_state.reshape(2)
             out_general = np.zeros_like(state_general, dtype=complex)
-            result_general, _ = _apply_single_qubit_gate_large(
+            result_general, _ = _apply_single_qubit_gate_small(
                 state_general, matrix, 0, out_general
             )
 

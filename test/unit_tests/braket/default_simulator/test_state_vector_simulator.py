@@ -425,7 +425,7 @@ def test_adder_analytic(sv_adder):
     inputs = {"a_in": 7, "b_in": 3}
     result = simulator.run(OpenQASMProgram(source=sv_adder, inputs=inputs))
     expected_probs = np.zeros(2**5)
-    expected_probs[2] = 1
+    expected_probs[10] = 1  # 7 + 3 = 10, so expect probability 1 at index 10
     probs = np.outer(result.resultTypes[1].value, result.resultTypes[2].value).flatten()
     assert np.allclose(probs, expected_probs)
 

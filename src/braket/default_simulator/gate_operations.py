@@ -1270,6 +1270,7 @@ class GPhase(GateOperation):
             targets=targets,
         )
         angle_float = float(angle)
+        self._angle = angle_float  # Store angle for consistency with other phase operations
         self._exp = np.exp(angle_float * 1j) * np.eye(2 ** len(self._targets), dtype=complex)
 
     @property
