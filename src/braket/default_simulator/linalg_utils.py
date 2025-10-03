@@ -20,12 +20,10 @@ import numba as nb
 import numpy as np
 
 _GPU_AVAILABLE = False
-_USE_GPU = False
 try:
     import cupy as cp
     _GPU_AVAILABLE = cp.cuda.is_available()
-    _USE_GPU = _GPU_AVAILABLE and os.environ.get("BRAKET_USE_GPU", "false").lower() in ("true", "1", "yes")
-    if _USE_GPU:
+    if _GPU_AVAILABLE:
         print(f"GPU support enabled with CuPy. Available GPUs: {cp.cuda.runtime.getDeviceCount()}")
 except ImportError:
     cp = None
@@ -91,7 +89,7 @@ def is_gpu_available() -> bool:
 
 def is_gpu_enabled() -> bool:
     """Check if GPU usage is enabled."""
-    return _USE_GPU
+    return _GPU_AVAILABLE
 
 
 def enable_gpu(enable: bool = True) -> bool:
@@ -103,23 +101,19 @@ def enable_gpu(enable: bool = True) -> bool:
     Returns:
         bool: True if GPU usage was successfully set, False if GPU not available
     """
-    global _USE_GPU
-    if enable and not _GPU_AVAILABLE:
-        return False
-    _USE_GPU = enable and _GPU_AVAILABLE
-    return _USE_GPU
+    return _GPU_AVAILABLE
 
 
 def _to_gpu(array: np.ndarray) -> "cp.ndarray":
     """Convert numpy array to GPU array."""
-    if not _USE_GPU:
+    if not _GPU_AVAILABLE:
         return array
     return cp.asarray(array)
 
 
 def _to_cpu(array: Union[np.ndarray, "cp.ndarray"]) -> np.ndarray:
     """Convert GPU array to numpy array."""
-    if _USE_GPU and hasattr(array, 'get'):
+    if _GPU_AVAILABLE and hasattr(array, 'get'):
         return array.get()
     return array
 
@@ -137,7 +131,7 @@ class QuantumGateDispatcher:
         """
         self.n_qubits = n_qubits
         self.use_large = n_qubits > _QUBIT_THRESHOLD
-        self.use_gpu = (_USE_GPU and n_qubits > _GPU_QUBIT_THRESHOLD and not force_cpu)
+        self.use_gpu = (_GPU_AVAILABLE and n_qubits > _GPU_QUBIT_THRESHOLD and not force_cpu)
 
         if self.use_gpu:
             self.apply_swap = _apply_swap_gpu
@@ -270,7 +264,7 @@ def _apply_single_qubit_gate_gpu(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """Applies single gates using GPU acceleration."""
-    if not _USE_GPU:
+    if not _GPU_AVAILABLE:
         return _apply_single_qubit_gate_large(state, matrix, target, out)
     
     state_gpu = _to_gpu(state)
@@ -380,7 +374,7 @@ def _apply_diagonal_gate_gpu(
     """
     Applies a diagonal single-qubit gate using GPU acceleration.
     """
-    if not _USE_GPU:
+    if not _GPU_AVAILABLE:
         return _apply_diagonal_gate_large(state, matrix, target, out)
     
     state_gpu = _to_gpu(state)
@@ -502,7 +496,7 @@ def _apply_cnot_gpu(
     state: np.ndarray, control: int, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """CNOT optimization path with GPU acceleration."""
-    if not _USE_GPU:
+    if not _GPU_AVAILABLE:
         return _apply_cnot_large(state, control, target, out)
     
     state_gpu = _to_gpu(state)
@@ -572,7 +566,7 @@ def _apply_swap_gpu(
     state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """Swap gate implementation using GPU acceleration."""
-    if not _USE_GPU:
+    if not _GPU_AVAILABLE:
         return _apply_swap_large(state, qubit_0, qubit_1, out)
     
     state_gpu = _to_gpu(state)
@@ -693,7 +687,7 @@ def _apply_controlled_phase_shift_gpu(
     state: np.ndarray, phase_factor: complex, controls, target: int
 ) -> tuple[np.ndarray, bool]:
     """C Phase shift gate optimization path using GPU acceleration."""
-    if not _USE_GPU:
+    if not _GPU_AVAILABLE:
         return _apply_controlled_phase_shift_large(state, phase_factor, controls, target)
     
     state_gpu = _to_gpu(state)
@@ -795,7 +789,7 @@ def _apply_two_qubit_gate_gpu(
     out: np.ndarray,
 ) -> tuple[np.ndarray, bool]:
     """Two-qubit gate implementation using GPU acceleration."""
-    if not _USE_GPU:
+    if not _GPU_AVAILABLE:
         return _apply_two_qubit_gate_large(state, matrix, target0, target1, out)
     
     state_gpu = _to_gpu(state)
@@ -900,14 +894,14 @@ def _apply_single_qubit_gate(
     n_qubits = state.ndim
 
     if gate_type and gate_type in DIAGONAL_GATES:
-        if _USE_GPU and n_qubits > _GPU_QUBIT_THRESHOLD:
+        if _GPU_AVAILABLE and n_qubits > _GPU_QUBIT_THRESHOLD:
             return _apply_diagonal_gate_gpu(state, matrix, target, out)
         elif n_qubits > _QUBIT_THRESHOLD:
             return _apply_diagonal_gate_large(state, matrix, target, out)
         else:
             return _apply_diagonal_gate_small(state, matrix, target, out)
     else:
-        if _USE_GPU and n_qubits > _GPU_QUBIT_THRESHOLD:
+        if _GPU_AVAILABLE and n_qubits > _GPU_QUBIT_THRESHOLD:
             return _apply_single_qubit_gate_gpu(state, matrix, target, out)
         elif n_qubits > _QUBIT_THRESHOLD:
             return _apply_single_qubit_gate_large(state, matrix, target, out)
