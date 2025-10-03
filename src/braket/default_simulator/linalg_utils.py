@@ -204,6 +204,7 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
     return out, True
 
 
+
 def _apply_diagonal_gate_small(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
