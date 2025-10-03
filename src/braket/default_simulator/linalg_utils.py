@@ -7,17 +7,28 @@
 #     http://aws.amazon.com/apache2.0/
 #
 # or in the "license" file accompanying this file. This file is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
-# ANY KIND, either express or implied. See the License for the specific
+# distributed on an "License for the specific
 # language governing permissions and limitations under the License.
 
 import itertools
+import os
 from collections.abc import Sequence
 from types import MappingProxyType
 from typing import Union
 
 import numba as nb
 import numpy as np
+
+_GPU_AVAILABLE = False
+_USE_GPU = False
+try:
+    import cupy as cp
+    _GPU_AVAILABLE = cp.cuda.is_available()
+    _USE_GPU = _GPU_AVAILABLE and os.environ.get("BRAKET_USE_GPU", "false").lower() in ("true", "1", "yes")
+    if _USE_GPU:
+        print(f"GPU support enabled with CuPy. Available GPUs: {cp.cuda.runtime.getDeviceCount()}")
+except ImportError:
+    cp = None
 
 nb.config.NUMBA_OPT = 3
 nb.config.NUMBA_CPU_NAME = "native"
@@ -35,6 +46,7 @@ _NO_CONTROL_SLICE = slice(None, None)
 BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 
 _QUBIT_THRESHOLD = nb.int32(10)
+_GPU_QUBIT_THRESHOLD = 15
 
 DIAGONAL_GATES = frozenset(
     {
@@ -72,17 +84,67 @@ TWO_QUBIT_GATE_DISPATCH = MappingProxyType(
 )
 
 
+def is_gpu_available() -> bool:
+    """Check if GPU support is available."""
+    return _GPU_AVAILABLE
+
+
+def is_gpu_enabled() -> bool:
+    """Check if GPU usage is enabled."""
+    return _USE_GPU
+
+
+def enable_gpu(enable: bool = True) -> bool:
+    """Enable or disable GPU usage.
+    
+    Args:
+        enable: Whether to enable GPU usage
+        
+    Returns:
+        bool: True if GPU usage was successfully set, False if GPU not available
+    """
+    global _USE_GPU
+    if enable and not _GPU_AVAILABLE:
+        return False
+    _USE_GPU = enable and _GPU_AVAILABLE
+    return _USE_GPU
+
+
+def _to_gpu(array: np.ndarray) -> "cp.ndarray":
+    """Convert numpy array to GPU array."""
+    if not _USE_GPU:
+        return array
+    return cp.asarray(array)
+
+
+def _to_cpu(array: Union[np.ndarray, "cp.ndarray"]) -> np.ndarray:
+    """Convert GPU array to numpy array."""
+    if _USE_GPU and hasattr(array, 'get'):
+        return array.get()
+    return array
+
+
 class QuantumGateDispatcher:
-    def __init__(self, n_qubits: int):
+    def __init__(self, n_qubits: int, force_cpu: bool = False):
         """
         Dispatcher for performance-optimized implementations of quantum gates.  It automatically
-        selects between small-circuit (NumPy-based) and large-circuit (Numba JIT-compiled)
-        implementations based on the number of qubits in a circuit.
+        selects between small-circuit (NumPy-based), large-circuit (Numba JIT-compiled),
+        and GPU implementations based on the number of qubits in a circuit.
+        
+        Args:
+            n_qubits: Number of qubits in the circuit
+            force_cpu: Force CPU usage even if GPU is available
         """
         self.n_qubits = n_qubits
         self.use_large = n_qubits > _QUBIT_THRESHOLD
+        self.use_gpu = (_USE_GPU and n_qubits > _GPU_QUBIT_THRESHOLD and not force_cpu)
 
-        if self.use_large:
+        if self.use_gpu:
+            self.apply_swap = _apply_swap_gpu
+            self.apply_controlled_phase_shift = _apply_controlled_phase_shift_gpu
+            self.apply_cnot = _apply_cnot_gpu
+            self.apply_two_qubit_gate = _apply_two_qubit_gate_gpu
+        elif self.use_large:
             self.apply_swap = _apply_swap_large
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_large
             self.apply_cnot = _apply_cnot_large
@@ -180,7 +242,7 @@ def _apply_single_qubit_gate_small(
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_single_qubit_gate_large(  # pragma: no cover
+def _apply_single_qubit_gate_large(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """Applies single gates using bit masking."""
@@ -203,6 +265,41 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
 
     return out, True
 
+
+def _apply_single_qubit_gate_gpu(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Applies single gates using GPU acceleration."""
+    if not _USE_GPU:
+        return _apply_single_qubit_gate_large(state, matrix, target, out)
+    
+    state_gpu = _to_gpu(state)
+    matrix_gpu = _to_gpu(matrix)
+    out_gpu = _to_gpu(out)
+    
+    a, b, c, d = matrix_gpu[0, 0], matrix_gpu[0, 1], matrix_gpu[1, 0], matrix_gpu[1, 1]
+    n = state_gpu.ndim - target - 1
+    mask = (1 << n) - 1
+    
+    half_size = state_gpu.size >> 1
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
+    
+    indices = cp.arange(half_size, dtype=cp.int64)
+    idx0 = (indices & ~mask) << 1 | (indices & mask)
+    idx1 = idx0 | (1 << n)
+    
+    s0 = state_flat[idx0]
+    s1 = state_flat[idx1]
+    
+    out_flat[idx0] = a * s0 + b * s1
+    out_flat[idx1] = c * s0 + d * s1
+    
+    if isinstance(out, np.ndarray):
+        out[:] = _to_cpu(out_gpu)
+        return out, True
+    else:
+        return _to_cpu(out_gpu), True
 
 
 def _apply_diagonal_gate_small(
@@ -239,7 +336,7 @@ def _apply_diagonal_gate_small(
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_diagonal_gate_large(  # pragma: no cover
+def _apply_diagonal_gate_large(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """
@@ -277,10 +374,50 @@ def _apply_diagonal_gate_large(  # pragma: no cover
     return out, True
 
 
+def _apply_diagonal_gate_gpu(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """
+    Applies a diagonal single-qubit gate using GPU acceleration.
+    """
+    if not _USE_GPU:
+        return _apply_diagonal_gate_large(state, matrix, target, out)
+    
+    state_gpu = _to_gpu(state)
+    matrix_gpu = _to_gpu(matrix)
+    out_gpu = _to_gpu(out)
+    
+    a, d = matrix_gpu[0, 0], matrix_gpu[1, 1]
+    
+    target_bit = state_gpu.ndim - target - 1
+    target_mask = 1 << target_bit
+    shifted_target_mask = target_mask - 1
+    
+    half_size = state_gpu.size >> 1
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
+    
+    indices = cp.arange(half_size, dtype=cp.int64)
+    idx0 = (indices & ~shifted_target_mask) << 1 | (indices & shifted_target_mask)
+    idx1 = idx0 | target_mask
+    
+    state0 = state_flat[idx0]
+    state1 = state_flat[idx1]
+    
+    out_flat[idx0] = a * state0
+    out_flat[idx1] = d * state1
+    
+    if isinstance(out, np.ndarray):
+        out[:] = _to_cpu(out_gpu)
+        return out, True
+    else:
+        return _to_cpu(out_gpu), True
+
+
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_cnot_large(
     state: np.ndarray, control: int, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:  # pragma: no cover
+) -> tuple[np.ndarray, bool]:
     """CNOT optimization path with numba."""
     n_qubits = state.ndim
     total_size = state.size
@@ -361,6 +498,36 @@ def _apply_cnot_small(
     return state, False
 
 
+def _apply_cnot_gpu(
+    state: np.ndarray, control: int, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """CNOT optimization path with GPU acceleration."""
+    if not _USE_GPU:
+        return _apply_cnot_large(state, control, target, out)
+    
+    state_gpu = _to_gpu(state)
+    
+    n_qubits = state_gpu.ndim
+    slice_list = [slice(None)] * n_qubits
+
+    slice_list[control] = 1
+    slice_list[target] = 0
+    slices_c1t0 = tuple(slice_list)
+
+    slice_list[target] = 1
+    slices_c1t1 = tuple(slice_list)
+
+    temp = state_gpu[slices_c1t0].copy()
+    state_gpu[slices_c1t0] = state_gpu[slices_c1t1]
+    state_gpu[slices_c1t1] = temp
+
+    if isinstance(state, np.ndarray):
+        state[:] = _to_cpu(state_gpu)
+        return state, False
+    else:
+        return _to_cpu(state_gpu), False
+
+
 def _apply_swap_small(
     state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
@@ -372,7 +539,7 @@ def _apply_swap_small(
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_swap_large(
     state: np.ndarray, qubit_0: int, qubit_1: int, _out: np.ndarray
-) -> tuple[np.ndarray, bool]:  # pragma: no cover
+) -> tuple[np.ndarray, bool]:
     """Swap gate implementation using bit manipulation."""
     n_qubits = state.ndim
     total_size = 1 << n_qubits
@@ -401,8 +568,27 @@ def _apply_swap_large(
     return state, False
 
 
+def _apply_swap_gpu(
+    state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Swap gate implementation using GPU acceleration."""
+    if not _USE_GPU:
+        return _apply_swap_large(state, qubit_0, qubit_1, out)
+    
+    state_gpu = _to_gpu(state)
+    out_gpu = _to_gpu(out)
+    
+    cp.copyto(out_gpu, cp.swapaxes(state_gpu, qubit_0, qubit_1))
+    
+    if isinstance(out, np.ndarray):
+        out[:] = _to_cpu(out_gpu)
+        return out, True
+    else:
+        return _to_cpu(out_gpu), True
+
+
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_controlled_phase_shift_large(  # pragma: no cover
+def _apply_controlled_phase_shift_large(
     state: np.ndarray, phase_factor: complex, controls: np.ndarray, target: int
 ) -> tuple[np.ndarray, bool]:
     """C Phase shift gate optimization path for larger vectors using bit masks.
@@ -503,6 +689,29 @@ def _apply_controlled_phase_shift_small(
     return state, False
 
 
+def _apply_controlled_phase_shift_gpu(
+    state: np.ndarray, phase_factor: complex, controls, target: int
+) -> tuple[np.ndarray, bool]:
+    """C Phase shift gate optimization path using GPU acceleration."""
+    if not _USE_GPU:
+        return _apply_controlled_phase_shift_large(state, phase_factor, controls, target)
+    
+    state_gpu = _to_gpu(state)
+    
+    slices = [slice(None)] * len(state_gpu.shape)
+    for c in controls:
+        slices[c] = 1
+    slices[target] = 1
+
+    state_gpu[tuple(slices)] *= phase_factor
+
+    if isinstance(state, np.ndarray):
+        state[:] = _to_cpu(state_gpu)
+        return state, False
+    else:
+        return _to_cpu(state_gpu), False
+
+
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_two_qubit_gate_large(
     state: np.ndarray,
@@ -510,7 +719,7 @@ def _apply_two_qubit_gate_large(
     target0: int,
     target1: int,
     out: np.ndarray,
-) -> tuple[np.ndarray, bool]:  # pragma: no cover
+) -> tuple[np.ndarray, bool]:
     """Two-qubit gate implementation using bit manipulation."""
     n_qubits = state.ndim
     total_size = 1 << n_qubits
@@ -578,6 +787,64 @@ def _apply_two_qubit_gate_small(
     return out, True
 
 
+def _apply_two_qubit_gate_gpu(
+    state: np.ndarray,
+    matrix: np.ndarray,
+    target0: int,
+    target1: int,
+    out: np.ndarray,
+) -> tuple[np.ndarray, bool]:
+    """Two-qubit gate implementation using GPU acceleration."""
+    if not _USE_GPU:
+        return _apply_two_qubit_gate_large(state, matrix, target0, target1, out)
+    
+    state_gpu = _to_gpu(state)
+    matrix_gpu = _to_gpu(matrix)
+    out_gpu = _to_gpu(out)
+    
+    n_qubits = state_gpu.ndim
+    total_size = 1 << n_qubits
+
+    mask_0 = 1 << (n_qubits - 1 - target0)
+    mask_1 = 1 << (n_qubits - 1 - target1)
+    mask_both = mask_0 | mask_1
+
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
+
+    indices = cp.arange(total_size, dtype=cp.int64)
+    mask_condition = (indices & mask_both) == 0
+    valid_indices = indices[mask_condition]
+    
+    if len(valid_indices) > 0:
+        s0 = state_flat[valid_indices]
+        s1 = state_flat[valid_indices | mask_1]
+        s2 = state_flat[valid_indices | mask_0]
+        s3 = state_flat[valid_indices | mask_both]
+
+        out_flat[valid_indices] = (
+            matrix_gpu[0, 0] * s0 + matrix_gpu[0, 1] * s1 + matrix_gpu[0, 2] * s2 + matrix_gpu[0, 3] * s3
+        )
+
+        out_flat[valid_indices | mask_1] = (
+            matrix_gpu[1, 0] * s0 + matrix_gpu[1, 1] * s1 + matrix_gpu[1, 2] * s2 + matrix_gpu[1, 3] * s3
+        )
+
+        out_flat[valid_indices | mask_0] = (
+            matrix_gpu[2, 0] * s0 + matrix_gpu[2, 1] * s1 + matrix_gpu[2, 2] * s2 + matrix_gpu[2, 3] * s3
+        )
+
+        out_flat[valid_indices | mask_both] = (
+            matrix_gpu[3, 0] * s0 + matrix_gpu[3, 1] * s1 + matrix_gpu[3, 2] * s2 + matrix_gpu[3, 3] * s3
+        )
+
+    if isinstance(out, np.ndarray):
+        out[:] = _to_cpu(out_gpu)
+        return out, True
+    else:
+        return _to_cpu(out_gpu), True
+
+
 def _apply_two_qubit_gate(
     state: np.ndarray,
     matrix: np.ndarray,
@@ -605,7 +872,6 @@ def _apply_two_qubit_gate(
     target0, target1 = targets
 
     if gate_type and (gate_func := TWO_QUBIT_GATE_DISPATCH.get(gate_type)):
-        # TODO: fix this to generalize...
         if gate_type == "cphaseshift":
             return gate_func(dispatcher, state, matrix, target0, target1, out)
         else:
@@ -634,12 +900,16 @@ def _apply_single_qubit_gate(
     n_qubits = state.ndim
 
     if gate_type and gate_type in DIAGONAL_GATES:
-        if n_qubits > _QUBIT_THRESHOLD:
+        if _USE_GPU and n_qubits > _GPU_QUBIT_THRESHOLD:
+            return _apply_diagonal_gate_gpu(state, matrix, target, out)
+        elif n_qubits > _QUBIT_THRESHOLD:
             return _apply_diagonal_gate_large(state, matrix, target, out)
         else:
             return _apply_diagonal_gate_small(state, matrix, target, out)
     else:
-        if n_qubits > _QUBIT_THRESHOLD:
+        if _USE_GPU and n_qubits > _GPU_QUBIT_THRESHOLD:
+            return _apply_single_qubit_gate_gpu(state, matrix, target, out)
+        elif n_qubits > _QUBIT_THRESHOLD:
             return _apply_single_qubit_gate_large(state, matrix, target, out)
         else:
             return _apply_single_qubit_gate_small(state, matrix, target, out)
@@ -704,17 +974,14 @@ def marginal_probability(
     qubit_count = int(np.log2(len(probabilities)))
 
     if targets is None or np.array_equal(targets, range(qubit_count)):
-        # All qubits targeted, no need to marginalize
         return probabilities
 
     targets = np.hstack(targets)
 
-    # Find unused qubits and sum over them
     unused_qubits = list(set(range(qubit_count)) - set(targets))
     as_tensor = probabilities.reshape([2] * qubit_count)
     marginal = np.apply_over_axes(np.sum, as_tensor, unused_qubits).flatten()
 
-    # Reorder qubits to match targets
     perm = _get_target_permutation(targets)
     return marginal[perm]
 
@@ -743,7 +1010,6 @@ def partial_trace(
     idx2 = [qubit_count + i if i in target_set else i for i in range(qubit_count)]
     tr_rho = np.einsum(density_matrix, idx1 + idx2).reshape(nkeep, nkeep)
 
-    # reorder qubits to match target
     if targets:
         perm = _get_target_permutation(targets)
         tr_rho = tr_rho[:, perm]
