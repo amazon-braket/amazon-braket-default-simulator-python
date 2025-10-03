@@ -16,8 +16,13 @@ import pytest
 
 from braket.default_simulator.linalg_utils import (
     _apply_single_qubit_gate_large,
+    _apply_x_gate_large,
+    _apply_y_gate_large,
     _apply_diagonal_gate_small,
     _apply_diagonal_gate_large,
+    _apply_hadamard_gate_large,
+    _apply_v_gate_large,
+    _apply_vi_gate_large,
     _apply_single_qubit_gate,
     _apply_two_qubit_gate_small,
     _apply_two_qubit_gate_large,

@@ -7,11 +7,11 @@
 #     http://aws.amazon.com/apache2.0/
 #
 # or in the "license" file accompanying this file. This file is
-# distributed on an "License for the specific
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
 import itertools
-import os
 from collections.abc import Sequence
 from types import MappingProxyType
 from typing import Union
@@ -19,14 +19,6 @@ from typing import Union
 import numba as nb
 import numpy as np
 from numba import cuda
-
-_GPU_AVAILABLE = False
-try:
-    _GPU_AVAILABLE = cuda.is_available()
-    if _GPU_AVAILABLE:
-        print(f"GPU support enabled with Numba CUDA. Available GPUs: {len(cuda.gpus)}")
-except Exception:
-    pass
 
 nb.config.NUMBA_OPT = 3
 nb.config.NUMBA_CPU_NAME = "native"
@@ -44,10 +36,18 @@ _NO_CONTROL_SLICE = slice(None, None)
 BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 
 _QUBIT_THRESHOLD = nb.int32(10)
-_GPU_QUBIT_THRESHOLD = 15
-_MIN_GPU_WORK_SIZE = 32768
-_OPTIMAL_THREADS_PER_BLOCK = 512
-_MAX_BLOCKS_PER_GRID = 65535
+_GPU_QUBIT_THRESHOLD = 18
+_MIN_GPU_WORK_SIZE = 262144
+_OPTIMAL_THREADS_PER_BLOCK = 256
+_MAX_BLOCKS_PER_GRID = 32768
+
+_GPU_AVAILABLE = False
+try:
+    _GPU_AVAILABLE = cuda.is_available()
+    if _GPU_AVAILABLE:
+        print(f"GPU support enabled with Numba CUDA. Available GPUs: {len(cuda.gpus)}")
+except Exception:
+    pass
 
 DIAGONAL_GATES = frozenset(
     {
@@ -83,49 +83,6 @@ TWO_QUBIT_GATE_DISPATCH = MappingProxyType(
         out: dispatcher.apply_controlled_phase_shift(state, matrix[3, 3], (target0,), target1),
     }
 )
-
-
-def is_gpu_available() -> bool:
-    """Check if GPU support is available."""
-    return _GPU_AVAILABLE
-
-
-def is_gpu_enabled() -> bool:
-    """Check if GPU usage is enabled."""
-    return _GPU_AVAILABLE
-
-
-def enable_gpu(enable: bool = True) -> bool:
-    """Enable or disable GPU usage.
-    
-    Args:
-        enable: Whether to enable GPU usage
-        
-    Returns:
-        bool: True if GPU usage was successfully set, False if GPU not available
-    """
-    return _GPU_AVAILABLE
-
-
-def _to_gpu(array: np.ndarray) -> np.ndarray:
-    """Convert numpy array to GPU array."""
-    if not _GPU_AVAILABLE:
-        return array
-    return cuda.to_device(array)
-
-
-def _to_cpu(array: np.ndarray) -> np.ndarray:
-    """Convert GPU array to numpy array."""
-    if _GPU_AVAILABLE and hasattr(array, 'copy_to_host'):
-        return array.copy_to_host()
-    return array
-
-
-def _should_use_gpu(work_size: int, n_qubits: int) -> bool:
-    """Check if GPU should be used based on work size and qubit count."""
-    return (_GPU_AVAILABLE and 
-            n_qubits > _GPU_QUBIT_THRESHOLD and 
-            work_size >= _MIN_GPU_WORK_SIZE)
 
 
 class QuantumGateDispatcher:
@@ -245,6 +202,273 @@ def _apply_single_qubit_gate_small(
     return out, True
 
 
+def _should_use_gpu(work_size: int, n_qubits: int) -> bool:
+    """Check if GPU should be used based on work size and qubit count."""
+    return (_GPU_AVAILABLE and 
+            n_qubits >= _GPU_QUBIT_THRESHOLD and 
+            work_size >= _MIN_GPU_WORK_SIZE)
+
+
+@cuda.jit(inline=True, fastmath=True)
+def _single_qubit_gate_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_size):
+    """Optimized CUDA kernel for single qubit gate application."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    while i < half_size:
+        idx0 = (i & ~mask) << 1 | (i & mask)
+        idx1 = idx0 | (1 << n)
+        
+        s0 = state_flat[idx0]
+        s1 = state_flat[idx1]
+        
+        out_flat[idx0] = a * s0 + b * s1
+        out_flat[idx1] = c * s0 + d * s1
+        
+        i += stride
+
+
+
+
+@cuda.jit(inline=True, fastmath=True)
+def _diagonal_gate_kernel(state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size):
+    """Optimized CUDA kernel for diagonal gate application."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    while i < half_size:
+        idx0 = (i & ~shifted_target_mask) << 1 | (i & shifted_target_mask)
+        idx1 = idx0 | target_mask
+        
+        out_flat[idx0] = a * state_flat[idx0]
+        out_flat[idx1] = d * state_flat[idx1]
+        
+        i += stride
+
+
+def _apply_diagonal_gate_gpu(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """GPU-accelerated diagonal gate implementation."""
+    work_size = state.size
+    if not _should_use_gpu(work_size, state.ndim):
+        return _apply_diagonal_gate_large(state, matrix, target, out)
+    
+    state_gpu = cuda.to_device(state)
+    out_gpu = cuda.device_array_like(state)
+    
+    a, d = matrix[0, 0], matrix[1, 1]
+    
+    target_bit = state.ndim - target - 1
+    target_mask = 1 << target_bit
+    shifted_target_mask = target_mask - 1
+    
+    half_size = state.size >> 1
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
+    
+    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
+    blocks_per_grid = min((half_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    
+    _diagonal_gate_kernel[blocks_per_grid, threads_per_block](
+        state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size
+    )
+    
+    out[:] = out_gpu.copy_to_host()
+    return out, True
+
+
+@cuda.jit(inline=True, fastmath=True)
+def _cnot_kernel(state_flat, control_stride, target_stride, swap_offset, iterations):
+    """Optimized CUDA kernel for CNOT gate application."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    while i < iterations:
+        idx0 = control_stride + i
+        idx1 = idx0 + swap_offset
+        
+        temp = state_flat[idx0]
+        state_flat[idx0] = state_flat[idx1]
+        state_flat[idx1] = temp
+        
+        i += stride
+
+
+def _apply_cnot_gpu(
+    state: np.ndarray, control: int, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """GPU-accelerated CNOT gate implementation."""
+    work_size = state.size
+    if not _should_use_gpu(work_size, state.ndim):
+        return _apply_cnot_large(state, control, target, out)
+    
+    state_gpu = cuda.to_device(state)
+    
+    n_qubits = state.ndim
+    iterations = state.size >> 2
+    
+    target_bit_pos = n_qubits - target - 1
+    control_bit_pos = n_qubits - control - 1
+    
+    control_stride = 1 << control_bit_pos
+    target_stride = 1 << target_bit_pos
+    swap_offset = target_stride
+    
+    state_flat = state_gpu.reshape(-1)
+    
+    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
+    blocks_per_grid = min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    
+    _cnot_kernel[blocks_per_grid, threads_per_block](
+        state_flat, control_stride, target_stride, swap_offset, iterations
+    )
+    
+    state[:] = state_gpu.copy_to_host()
+    return state, False
+
+
+@cuda.jit(inline=True, fastmath=True)
+def _swap_kernel(state_flat, pos_0, pos_1, mask_0, mask_1, iterations):
+    """Optimized CUDA kernel for SWAP gate application."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    while i < iterations:
+        base = i + ((i >> pos_0) << pos_0)
+        base += (base >> pos_1) << pos_1
+        
+        idx0 = base | mask_1
+        idx1 = base | mask_0
+        
+        temp = state_flat[idx0]
+        state_flat[idx0] = state_flat[idx1]
+        state_flat[idx1] = temp
+        
+        i += stride
+
+
+def _apply_swap_gpu(
+    state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """GPU-accelerated SWAP gate implementation."""
+    work_size = state.size
+    if not _should_use_gpu(work_size, state.ndim):
+        return _apply_swap_large(state, qubit_0, qubit_1, out)
+    
+    state_gpu = cuda.to_device(state)
+    
+    n_qubits = state.ndim
+    iterations = state.size >> 2
+    
+    pos_0 = n_qubits - 1 - qubit_0
+    pos_1 = n_qubits - 1 - qubit_1
+    
+    if pos_0 > pos_1:
+        pos_0, pos_1 = pos_1, pos_0
+    
+    mask_0 = 1 << pos_0
+    mask_1 = 1 << pos_1
+    
+    state_flat = state_gpu.reshape(-1)
+    
+    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
+    blocks_per_grid = min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    
+    _swap_kernel[blocks_per_grid, threads_per_block](
+        state_flat, pos_0, pos_1, mask_0, mask_1, iterations
+    )
+    
+    state[:] = state_gpu.copy_to_host()
+    return state, False
+
+
+def _apply_controlled_phase_shift_gpu(
+    state: np.ndarray, phase_factor: complex, controls, target: int
+) -> tuple[np.ndarray, bool]:
+    """GPU-accelerated controlled phase shift implementation."""
+    work_size = state.size
+    if not _should_use_gpu(work_size, state.ndim):
+        return _apply_controlled_phase_shift_large(state, phase_factor, controls, target)
+    
+    state_gpu = cuda.to_device(state)
+    
+    slices = [slice(None)] * len(state_gpu.shape)
+    for c in controls:
+        slices[c] = 1
+    slices[target] = 1
+    
+    state_gpu[tuple(slices)] *= phase_factor
+    
+    state[:] = state_gpu.copy_to_host()
+    return state, False
+
+
+@cuda.jit(inline=True, fastmath=True)
+def _two_qubit_gate_kernel(state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13, 
+                          m20, m21, m22, m23, m30, m31, m32, m33, 
+                          mask_0, mask_1, mask_both, total_size):
+    """Optimized CUDA kernel for two-qubit gate application."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    while i < total_size:
+        if (i & mask_both) == 0:
+            s0 = state_flat[i]
+            s1 = state_flat[i | mask_1]
+            s2 = state_flat[i | mask_0]
+            s3 = state_flat[i | mask_both]
+            
+            out_flat[i] = m00 * s0 + m01 * s1 + m02 * s2 + m03 * s3
+            out_flat[i | mask_1] = m10 * s0 + m11 * s1 + m12 * s2 + m13 * s3
+            out_flat[i | mask_0] = m20 * s0 + m21 * s1 + m22 * s2 + m23 * s3
+            out_flat[i | mask_both] = m30 * s0 + m31 * s1 + m32 * s2 + m33 * s3
+        
+        i += stride
+
+
+def _apply_two_qubit_gate_gpu(
+    state: np.ndarray,
+    matrix: np.ndarray,
+    target0: int,
+    target1: int,
+    out: np.ndarray,
+) -> tuple[np.ndarray, bool]:
+    """GPU-accelerated two-qubit gate implementation."""
+    work_size = state.size
+    if not _should_use_gpu(work_size, state.ndim):
+        return _apply_two_qubit_gate_large(state, matrix, target0, target1, out)
+    
+    state_gpu = cuda.to_device(state)
+    out_gpu = cuda.device_array_like(state)
+    
+    n_qubits = state.ndim
+    total_size = 1 << n_qubits
+    
+    mask_0 = 1 << (n_qubits - 1 - target0)
+    mask_1 = 1 << (n_qubits - 1 - target1)
+    mask_both = mask_0 | mask_1
+    
+    m00, m01, m02, m03 = matrix[0, 0], matrix[0, 1], matrix[0, 2], matrix[0, 3]
+    m10, m11, m12, m13 = matrix[1, 0], matrix[1, 1], matrix[1, 2], matrix[1, 3]
+    m20, m21, m22, m23 = matrix[2, 0], matrix[2, 1], matrix[2, 2], matrix[2, 3]
+    m30, m31, m32, m33 = matrix[3, 0], matrix[3, 1], matrix[3, 2], matrix[3, 3]
+    
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
+    
+    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
+    blocks_per_grid = min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    
+    _two_qubit_gate_kernel[blocks_per_grid, threads_per_block](
+        state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13,
+        m20, m21, m22, m23, m30, m31, m32, m33, mask_0, mask_1, mask_both, total_size
+    )
+    
+    out[:] = out_gpu.copy_to_host()
+    return out, True
+
+
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_single_qubit_gate_large(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
@@ -270,75 +494,31 @@ def _apply_single_qubit_gate_large(
     return out, True
 
 
-@cuda.jit(device=True, inline=True)
-def _warp_reduce_add(val):
-    """Warp-level reduction for better performance."""
-    for offset in [16, 8, 4, 2, 1]:
-        val += cuda.shfl_down_sync(0xffffffff, val, offset)
-    return val
-
-
-@cuda.jit(fastmath=True, max_registers=32)
-def _single_qubit_gate_kernel_optimized(state_flat, out_flat, a, b, c, d, n, mask, half_size):
-    """Optimized CUDA kernel for single qubit gate application with memory coalescing."""
-    tid = cuda.threadIdx.x
-    bid = cuda.blockIdx.x
-    block_size = cuda.blockDim.x
-    
-    i = bid * block_size + tid
-    stride = cuda.gridDim.x * block_size
-    
-    while i < half_size:
-        idx0 = (i & ~mask) << 1 | (i & mask)
-        idx1 = idx0 | (1 << n)
-        
-        s0 = state_flat[idx0]
-        s1 = state_flat[idx1]
-        
-        out_flat[idx0] = a * s0 + b * s1
-        out_flat[idx1] = c * s0 + d * s1
-        
-        i += stride
-
-
-def _apply_single_qubit_gate_gpu(
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_x_gate_large(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
-    """Blazingly fast single qubit gate GPU implementation."""
-    work_size = state.size
-    if not _should_use_gpu(work_size, state.ndim):
-        return _apply_single_qubit_gate_large(state, matrix, target, out)
-    
-    if hasattr(state, 'copy_to_host'):
-        state_gpu = state
-    else:
-        state_gpu = cuda.to_device(state)
-    
-    if hasattr(out, 'copy_to_host'):
-        out_gpu = out
-    else:
-        out_gpu = cuda.device_array_like(state)
-    
-    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-    n = state.ndim - target - 1
-    mask = (1 << n) - 1
+    """Applies X gate using bit masking.
+
+    Matrix: [[0, 1],
+             [1, 0]]
+    """
+    target_bit = state.ndim - target - 1
+    target_mask = np.int64(1 << target_bit)
+    shifted_target_mask = np.int64(target_mask - 1)
+
     half_size = state.size >> 1
-    
-    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-    blocks_per_grid = min((half_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
-    
-    state_flat = state_gpu.reshape(-1)
-    out_flat = out_gpu.reshape(-1)
-    
-    _single_qubit_gate_kernel_optimized[blocks_per_grid, threads_per_block](
-        state_flat, out_flat, a, b, c, d, n, mask, half_size
-    )
-    
-    if isinstance(out, np.ndarray) and not hasattr(out, 'copy_to_host'):
-        out[:] = out_gpu.copy_to_host()
-        return out, True
-    else:
-        return out_gpu, True
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+
+    for i in nb.prange(half_size):
+        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
+        idx1 = idx0 | target_mask
+
+        out_flat[idx0] = state_flat[idx1]
+        out_flat[idx1] = state_flat[idx0]
+
+    return out, True
 
 
 def _apply_diagonal_gate_small(
@@ -413,54 +593,128 @@ def _apply_diagonal_gate_large(
     return out, True
 
 
-@cuda.jit
-def _diagonal_gate_kernel(state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size):
-    """CUDA kernel for diagonal gate application."""
-    i = cuda.grid(1)
-    if i < half_size:
-        idx0 = (i & ~shifted_target_mask) << 1 | (i & shifted_target_mask)
-        idx1 = idx0 | target_mask
-        
-        state0 = state_flat[idx0]
-        state1 = state_flat[idx1]
-        
-        out_flat[idx0] = a * state0
-        out_flat[idx1] = d * state1
-
-
-def _apply_diagonal_gate_gpu(
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_y_gate_large(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
+    """Applies Y gate using bit masking.
+
+    Matrix: [[0, -1j],
+             [1j,  0]]
     """
-    Applies a diagonal single-qubit gate using GPU acceleration.
-    """
-    state_gpu = _to_gpu(state)
-    out_gpu = _to_gpu(out)
-    
-    a, d = matrix[0, 0], matrix[1, 1]
-    
+    b, c = matrix[0, 1], matrix[1, 0]
     target_bit = state.ndim - target - 1
-    target_mask = 1 << target_bit
-    shifted_target_mask = target_mask - 1
-    
+    target_mask = np.int64(1 << target_bit)
+    shifted_target_mask = np.int64(target_mask - 1)
+
     half_size = state.size >> 1
-    state_flat = state_gpu.reshape(-1)
-    out_flat = out_gpu.reshape(-1)
-    
-    threads_per_block = 256
-    blocks_per_grid = (half_size + threads_per_block - 1) // threads_per_block
-    
-    _diagonal_gate_kernel[blocks_per_grid, threads_per_block](
-        state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size
-    )
-    
-    cuda.synchronize()
-    
-    if isinstance(out, np.ndarray):
-        out[:] = _to_cpu(out_gpu)
-        return out, True
-    else:
-        return _to_cpu(out_gpu), True
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+
+    for i in nb.prange(half_size):
+        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
+        idx1 = idx0 | target_mask
+
+        state0 = state_flat[idx0]
+        state1 = state_flat[idx1]
+
+        out_flat[idx0] = b * state1
+        out_flat[idx1] = c * state0
+
+    return out, True
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_hadamard_gate_large(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Applies Hadamard gate using bit masking with hardcoded values.
+
+    Matrix: [[1,  1],
+             [1, -1]] / √2
+    """
+    val = matrix[0, 0]
+    target_bit = state.ndim - target - 1
+    target_mask = np.int64(1 << target_bit)
+    shifted_target_mask = np.int64(target_mask - 1)
+
+    half_size = state.size >> 1
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+
+    for i in nb.prange(half_size):
+        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
+        idx1 = idx0 | target_mask
+
+        state0 = state_flat[idx0]
+        state1 = state_flat[idx1]
+
+        out_flat[idx0] = val * (state0 + state1)
+        out_flat[idx1] = val * (state0 - state1)
+
+    return out, True
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_v_gate_large(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Applies V gate (sqrt(X)) using bit masking.
+
+    Matrix: [[0.5+0.5j, 0.5-0.5j],
+             [0.5-0.5j, 0.5+0.5j]]
+    """
+    a, b = matrix[0, 0], matrix[0, 1]
+    target_bit = state.ndim - target - 1
+    target_mask = np.int64(1 << target_bit)
+    shifted_target_mask = np.int64(target_mask - 1)
+
+    half_size = state.size >> 1
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+
+    for i in nb.prange(half_size):
+        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
+        idx1 = idx0 | target_mask
+
+        state0 = state_flat[idx0]
+        state1 = state_flat[idx1]
+
+        out_flat[idx0] = a * state0 + b * state1
+        out_flat[idx1] = b * state0 + a * state1
+
+    return out, True
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_vi_gate_large(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Applies V† gate (sqrt(X)†) using bit masking.
+
+    Matrix: [[0.5-0.5j, 0.5+0.5j],
+             [0.5+0.5j, 0.5-0.5j]]
+    """
+    a, b = matrix[0, 0], matrix[0, 1]
+    target_bit = state.ndim - target - 1
+    target_mask = np.int64(1 << target_bit)
+    shifted_target_mask = np.int64(target_mask - 1)
+
+    half_size = state.size >> 1
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+
+    for i in nb.prange(half_size):
+        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
+        idx1 = idx0 | target_mask
+
+        state0 = state_flat[idx0]
+        state1 = state_flat[idx1]
+
+        out_flat[idx0] = a * state0 + b * state1
+        out_flat[idx1] = b * state0 + a * state1
+
+    return out, True
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
@@ -547,36 +801,6 @@ def _apply_cnot_small(
     return state, False
 
 
-def _apply_cnot_gpu(
-    state: np.ndarray, control: int, target: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """CNOT optimization path with GPU acceleration."""
-    if not _GPU_AVAILABLE:
-        return _apply_cnot_large(state, control, target, out)
-    
-    state_gpu = _to_gpu(state)
-    
-    n_qubits = state_gpu.ndim
-    slice_list = [slice(None)] * n_qubits
-
-    slice_list[control] = 1
-    slice_list[target] = 0
-    slices_c1t0 = tuple(slice_list)
-
-    slice_list[target] = 1
-    slices_c1t1 = tuple(slice_list)
-
-    temp = state_gpu[slices_c1t0].copy()
-    state_gpu[slices_c1t0] = state_gpu[slices_c1t1]
-    state_gpu[slices_c1t1] = temp
-
-    if isinstance(state, np.ndarray):
-        state[:] = _to_cpu(state_gpu)
-        return state, False
-    else:
-        return _to_cpu(state_gpu), False
-
-
 def _apply_swap_small(
     state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
@@ -615,63 +839,6 @@ def _apply_swap_large(
         state_flat[idx0], state_flat[idx1] = state_flat[idx1], state_flat[idx0]
 
     return state, False
-
-
-@cuda.jit
-def _swap_kernel(state_flat, out_flat, n_qubits, pos_0, pos_1, mask_0, mask_1, total_size):
-    """CUDA kernel for swap gate application."""
-    i = cuda.grid(1)
-    if i < total_size // 4:
-        base = i + ((i >> pos_0) << pos_0)
-        base += (base >> pos_1) << pos_1
-
-        idx0 = base | mask_1
-        idx1 = base | mask_0
-
-        temp = state_flat[idx0]
-        out_flat[idx0] = state_flat[idx1]
-        out_flat[idx1] = temp
-
-
-def _apply_swap_gpu(
-    state: np.ndarray, qubit_0: int, qubit_1: int, out: np.ndarray
-) -> tuple[np.ndarray, bool]:
-    """Swap gate implementation using GPU acceleration."""
-    state_gpu = _to_gpu(state)
-    out_gpu = _to_gpu(out)
-    
-    cuda.to_device(state, to=out_gpu)
-    
-    n_qubits = state.ndim
-    total_size = 1 << n_qubits
-    iterations = total_size >> 2
-
-    pos_0 = n_qubits - 1 - qubit_0
-    pos_1 = n_qubits - 1 - qubit_1
-
-    if pos_0 > pos_1:
-        pos_0, pos_1 = pos_1, pos_0
-
-    mask_0 = 1 << pos_0
-    mask_1 = 1 << pos_1
-
-    state_flat = state_gpu.reshape(-1)
-    out_flat = out_gpu.reshape(-1)
-    
-    threads_per_block = 256
-    blocks_per_grid = (iterations + threads_per_block - 1) // threads_per_block
-    
-    _swap_kernel[blocks_per_grid, threads_per_block](
-        state_flat, out_flat, n_qubits, pos_0, pos_1, mask_0, mask_1, total_size
-    )
-    
-    cuda.synchronize()
-    
-    if isinstance(out, np.ndarray):
-        out[:] = _to_cpu(out_gpu)
-        return out, True
-    else:
-        return _to_cpu(out_gpu), True
 
 
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
@@ -776,29 +943,6 @@ def _apply_controlled_phase_shift_small(
     return state, False
 
 
-def _apply_controlled_phase_shift_gpu(
-    state: np.ndarray, phase_factor: complex, controls, target: int
-) -> tuple[np.ndarray, bool]:
-    """C Phase shift gate optimization path using GPU acceleration."""
-    if not _GPU_AVAILABLE:
-        return _apply_controlled_phase_shift_large(state, phase_factor, controls, target)
-    
-    state_gpu = _to_gpu(state)
-    
-    slices = [slice(None)] * len(state_gpu.shape)
-    for c in controls:
-        slices[c] = 1
-    slices[target] = 1
-
-    state_gpu[tuple(slices)] *= phase_factor
-
-    if isinstance(state, np.ndarray):
-        state[:] = _to_cpu(state_gpu)
-        return state, False
-    else:
-        return _to_cpu(state_gpu), False
-
-
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_two_qubit_gate_large(
     state: np.ndarray,
@@ -874,85 +1018,6 @@ def _apply_two_qubit_gate_small(
     return out, True
 
 
-@cuda.jit(fastmath=True, max_registers=48)
-def _two_qubit_gate_kernel_optimized(state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13, 
-                                    m20, m21, m22, m23, m30, m31, m32, m33, 
-                                    mask_0, mask_1, mask_both, total_size):
-    """Blazingly fast CUDA kernel for two-qubit gate application with register optimization."""
-    tid = cuda.threadIdx.x
-    bid = cuda.blockIdx.x
-    block_size = cuda.blockDim.x
-    
-    i = bid * block_size + tid
-    stride = cuda.gridDim.x * block_size
-    
-    while i < total_size:
-        if (i & mask_both) == 0:
-            s0 = state_flat[i]
-            s1 = state_flat[i | mask_1]
-            s2 = state_flat[i | mask_0]
-            s3 = state_flat[i | mask_both]
-            
-            out_flat[i] = m00 * s0 + m01 * s1 + m02 * s2 + m03 * s3
-            out_flat[i | mask_1] = m10 * s0 + m11 * s1 + m12 * s2 + m13 * s3
-            out_flat[i | mask_0] = m20 * s0 + m21 * s1 + m22 * s2 + m23 * s3
-            out_flat[i | mask_both] = m30 * s0 + m31 * s1 + m32 * s2 + m33 * s3
-        
-        i += stride
-
-
-def _apply_two_qubit_gate_gpu(
-    state: np.ndarray,
-    matrix: np.ndarray,
-    target0: int,
-    target1: int,
-    out: np.ndarray,
-) -> tuple[np.ndarray, bool]:
-    """Blazingly fast two-qubit gate GPU implementation with zero-copy optimization."""
-    work_size = state.size
-    if not _should_use_gpu(work_size, state.ndim):
-        return _apply_two_qubit_gate_large(state, matrix, target0, target1, out)
-    
-    if hasattr(state, 'copy_to_host'):
-        state_gpu = state
-    else:
-        state_gpu = cuda.to_device(state)
-    
-    if hasattr(out, 'copy_to_host'):
-        out_gpu = out
-    else:
-        out_gpu = cuda.device_array_like(state)
-    
-    n_qubits = state.ndim
-    total_size = 1 << n_qubits
-
-    mask_0 = 1 << (n_qubits - 1 - target0)
-    mask_1 = 1 << (n_qubits - 1 - target1)
-    mask_both = mask_0 | mask_1
-
-    m00, m01, m02, m03 = matrix[0, 0], matrix[0, 1], matrix[0, 2], matrix[0, 3]
-    m10, m11, m12, m13 = matrix[1, 0], matrix[1, 1], matrix[1, 2], matrix[1, 3]
-    m20, m21, m22, m23 = matrix[2, 0], matrix[2, 1], matrix[2, 2], matrix[2, 3]
-    m30, m31, m32, m33 = matrix[3, 0], matrix[3, 1], matrix[3, 2], matrix[3, 3]
-
-    state_flat = state_gpu.reshape(-1)
-    out_flat = out_gpu.reshape(-1)
-    
-    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-    blocks_per_grid = min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
-    
-    _two_qubit_gate_kernel_optimized[blocks_per_grid, threads_per_block](
-        state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13,
-        m20, m21, m22, m23, m30, m31, m32, m33, mask_0, mask_1, mask_both, total_size
-    )
-    
-    if isinstance(out, np.ndarray) and not hasattr(out, 'copy_to_host'):
-        out[:] = out_gpu.copy_to_host()
-        return out, True
-    else:
-        return out_gpu, True
-
-
 def _apply_two_qubit_gate(
     state: np.ndarray,
     matrix: np.ndarray,
@@ -980,6 +1045,7 @@ def _apply_two_qubit_gate(
     target0, target1 = targets
 
     if gate_type and (gate_func := TWO_QUBIT_GATE_DISPATCH.get(gate_type)):
+        # TODO: fix this to generalize...
         if gate_type == "cphaseshift":
             return gate_func(dispatcher, state, matrix, target0, target1, out)
         else:
@@ -1008,16 +1074,14 @@ def _apply_single_qubit_gate(
     n_qubits = state.ndim
 
     if gate_type and gate_type in DIAGONAL_GATES:
-        if _GPU_AVAILABLE and n_qubits > _GPU_QUBIT_THRESHOLD:
+        if _GPU_AVAILABLE and n_qubits >= _GPU_QUBIT_THRESHOLD:
             return _apply_diagonal_gate_gpu(state, matrix, target, out)
         elif n_qubits > _QUBIT_THRESHOLD:
             return _apply_diagonal_gate_large(state, matrix, target, out)
         else:
             return _apply_diagonal_gate_small(state, matrix, target, out)
     else:
-        if _GPU_AVAILABLE and n_qubits > _GPU_QUBIT_THRESHOLD:
-            return _apply_single_qubit_gate_gpu(state, matrix, target, out)
-        elif n_qubits > _QUBIT_THRESHOLD:
+        if n_qubits > _QUBIT_THRESHOLD:
             return _apply_single_qubit_gate_large(state, matrix, target, out)
         else:
             return _apply_single_qubit_gate_small(state, matrix, target, out)
@@ -1082,14 +1146,17 @@ def marginal_probability(
     qubit_count = int(np.log2(len(probabilities)))
 
     if targets is None or np.array_equal(targets, range(qubit_count)):
+        # All qubits targeted, no need to marginalize
         return probabilities
 
     targets = np.hstack(targets)
 
+    # Find unused qubits and sum over them
     unused_qubits = list(set(range(qubit_count)) - set(targets))
     as_tensor = probabilities.reshape([2] * qubit_count)
     marginal = np.apply_over_axes(np.sum, as_tensor, unused_qubits).flatten()
 
+    # Reorder qubits to match targets
     perm = _get_target_permutation(targets)
     return marginal[perm]
 
@@ -1118,6 +1185,7 @@ def partial_trace(
     idx2 = [qubit_count + i if i in target_set else i for i in range(qubit_count)]
     tr_rho = np.einsum(density_matrix, idx1 + idx2).reshape(nkeep, nkeep)
 
+    # reorder qubits to match target
     if targets:
         perm = _get_target_permutation(targets)
         tr_rho = tr_rho[:, perm]
