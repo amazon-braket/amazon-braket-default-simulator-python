@@ -67,6 +67,9 @@ setup(
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
             "tox",
+        ],
+        "gpu": [
+            "cupy-cuda12x>=12.0.0",
         ]
     },
     url="https://github.com/amazon-braket/amazon-braket-default-simulator-python",
