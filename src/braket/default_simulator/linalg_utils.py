@@ -45,6 +45,9 @@ BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 
 _QUBIT_THRESHOLD = nb.int32(10)
 _GPU_QUBIT_THRESHOLD = 15
+_MIN_GPU_WORK_SIZE = 32768
+_OPTIMAL_THREADS_PER_BLOCK = 512
+_MAX_BLOCKS_PER_GRID = 65535
 
 DIAGONAL_GATES = frozenset(
     {
@@ -116,6 +119,13 @@ def _to_cpu(array: np.ndarray) -> np.ndarray:
     if _GPU_AVAILABLE and hasattr(array, 'copy_to_host'):
         return array.copy_to_host()
     return array
+
+
+def _should_use_gpu(work_size: int, n_qubits: int) -> bool:
+    """Check if GPU should be used based on work size and qubit count."""
+    return (_GPU_AVAILABLE and 
+            n_qubits > _GPU_QUBIT_THRESHOLD and 
+            work_size >= _MIN_GPU_WORK_SIZE)
 
 
 class QuantumGateDispatcher:
@@ -260,11 +270,25 @@ def _apply_single_qubit_gate_large(
     return out, True
 
 
-@cuda.jit
-def _single_qubit_gate_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_size):
-    """CUDA kernel for single qubit gate application."""
-    i = cuda.grid(1)
-    if i < half_size:
+@cuda.jit(device=True, inline=True)
+def _warp_reduce_add(val):
+    """Warp-level reduction for better performance."""
+    for offset in [16, 8, 4, 2, 1]:
+        val += cuda.shfl_down_sync(0xffffffff, val, offset)
+    return val
+
+
+@cuda.jit(fastmath=True, max_registers=32)
+def _single_qubit_gate_kernel_optimized(state_flat, out_flat, a, b, c, d, n, mask, half_size):
+    """Optimized CUDA kernel for single qubit gate application with memory coalescing."""
+    tid = cuda.threadIdx.x
+    bid = cuda.blockIdx.x
+    block_size = cuda.blockDim.x
+    
+    i = bid * block_size + tid
+    stride = cuda.gridDim.x * block_size
+    
+    while i < half_size:
         idx0 = (i & ~mask) << 1 | (i & mask)
         idx1 = idx0 | (1 << n)
         
@@ -273,37 +297,48 @@ def _single_qubit_gate_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_si
         
         out_flat[idx0] = a * s0 + b * s1
         out_flat[idx1] = c * s0 + d * s1
+        
+        i += stride
 
 
 def _apply_single_qubit_gate_gpu(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
-    """Applies single gates using GPU acceleration."""
-    state_gpu = _to_gpu(state)
-    out_gpu = _to_gpu(out)
+    """Blazingly fast single qubit gate GPU implementation."""
+    work_size = state.size
+    if not _should_use_gpu(work_size, state.ndim):
+        return _apply_single_qubit_gate_large(state, matrix, target, out)
+    
+    if hasattr(state, 'copy_to_host'):
+        state_gpu = state
+    else:
+        state_gpu = cuda.to_device(state)
+    
+    if hasattr(out, 'copy_to_host'):
+        out_gpu = out
+    else:
+        out_gpu = cuda.device_array_like(state)
     
     a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
     n = state.ndim - target - 1
     mask = (1 << n) - 1
-    
     half_size = state.size >> 1
+    
+    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
+    blocks_per_grid = min((half_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    threads_per_block = 256
-    blocks_per_grid = (half_size + threads_per_block - 1) // threads_per_block
-    
-    _single_qubit_gate_kernel[blocks_per_grid, threads_per_block](
+    _single_qubit_gate_kernel_optimized[blocks_per_grid, threads_per_block](
         state_flat, out_flat, a, b, c, d, n, mask, half_size
     )
     
-    cuda.synchronize()
-    
-    if isinstance(out, np.ndarray):
-        out[:] = _to_cpu(out_gpu)
+    if isinstance(out, np.ndarray) and not hasattr(out, 'copy_to_host'):
+        out[:] = out_gpu.copy_to_host()
         return out, True
     else:
-        return _to_cpu(out_gpu), True
+        return out_gpu, True
 
 
 def _apply_diagonal_gate_small(
@@ -623,7 +658,6 @@ def _apply_swap_gpu(
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    # Configure CUDA grid and block dimensions
     threads_per_block = 256
     blocks_per_grid = (iterations + threads_per_block - 1) // threads_per_block
     
@@ -840,31 +874,31 @@ def _apply_two_qubit_gate_small(
     return out, True
 
 
-@cuda.jit
-def _two_qubit_gate_kernel(state_flat, out_flat, matrix_flat, n_qubits, mask_0, mask_1, mask_both, total_size):
-    """CUDA kernel for two-qubit gate application."""
-    i = cuda.grid(1)
-    if i < total_size and (i & mask_both) == 0:
-        s0 = state_flat[i]
-        s1 = state_flat[i | mask_1]
-        s2 = state_flat[i | mask_0]
-        s3 = state_flat[i | mask_both]
-
-        out_flat[i] = (
-            matrix_flat[0] * s0 + matrix_flat[1] * s1 + matrix_flat[2] * s2 + matrix_flat[3] * s3
-        )
-
-        out_flat[i | mask_1] = (
-            matrix_flat[4] * s0 + matrix_flat[5] * s1 + matrix_flat[6] * s2 + matrix_flat[7] * s3
-        )
-
-        out_flat[i | mask_0] = (
-            matrix_flat[8] * s0 + matrix_flat[9] * s1 + matrix_flat[10] * s2 + matrix_flat[11] * s3
-        )
-
-        out_flat[i | mask_both] = (
-            matrix_flat[12] * s0 + matrix_flat[13] * s1 + matrix_flat[14] * s2 + matrix_flat[15] * s3
-        )
+@cuda.jit(fastmath=True, max_registers=48)
+def _two_qubit_gate_kernel_optimized(state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13, 
+                                    m20, m21, m22, m23, m30, m31, m32, m33, 
+                                    mask_0, mask_1, mask_both, total_size):
+    """Blazingly fast CUDA kernel for two-qubit gate application with register optimization."""
+    tid = cuda.threadIdx.x
+    bid = cuda.blockIdx.x
+    block_size = cuda.blockDim.x
+    
+    i = bid * block_size + tid
+    stride = cuda.gridDim.x * block_size
+    
+    while i < total_size:
+        if (i & mask_both) == 0:
+            s0 = state_flat[i]
+            s1 = state_flat[i | mask_1]
+            s2 = state_flat[i | mask_0]
+            s3 = state_flat[i | mask_both]
+            
+            out_flat[i] = m00 * s0 + m01 * s1 + m02 * s2 + m03 * s3
+            out_flat[i | mask_1] = m10 * s0 + m11 * s1 + m12 * s2 + m13 * s3
+            out_flat[i | mask_0] = m20 * s0 + m21 * s1 + m22 * s2 + m23 * s3
+            out_flat[i | mask_both] = m30 * s0 + m31 * s1 + m32 * s2 + m33 * s3
+        
+        i += stride
 
 
 def _apply_two_qubit_gate_gpu(
@@ -874,12 +908,20 @@ def _apply_two_qubit_gate_gpu(
     target1: int,
     out: np.ndarray,
 ) -> tuple[np.ndarray, bool]:
-    """Two-qubit gate implementation using GPU acceleration."""
-    state_gpu = _to_gpu(state)
-    out_gpu = _to_gpu(out)
+    """Blazingly fast two-qubit gate GPU implementation with zero-copy optimization."""
+    work_size = state.size
+    if not _should_use_gpu(work_size, state.ndim):
+        return _apply_two_qubit_gate_large(state, matrix, target0, target1, out)
     
-    matrix_flat = matrix.flatten()
-    matrix_gpu = _to_gpu(matrix_flat)
+    if hasattr(state, 'copy_to_host'):
+        state_gpu = state
+    else:
+        state_gpu = cuda.to_device(state)
+    
+    if hasattr(out, 'copy_to_host'):
+        out_gpu = out
+    else:
+        out_gpu = cuda.device_array_like(state)
     
     n_qubits = state.ndim
     total_size = 1 << n_qubits
@@ -888,24 +930,27 @@ def _apply_two_qubit_gate_gpu(
     mask_1 = 1 << (n_qubits - 1 - target1)
     mask_both = mask_0 | mask_1
 
+    m00, m01, m02, m03 = matrix[0, 0], matrix[0, 1], matrix[0, 2], matrix[0, 3]
+    m10, m11, m12, m13 = matrix[1, 0], matrix[1, 1], matrix[1, 2], matrix[1, 3]
+    m20, m21, m22, m23 = matrix[2, 0], matrix[2, 1], matrix[2, 2], matrix[2, 3]
+    m30, m31, m32, m33 = matrix[3, 0], matrix[3, 1], matrix[3, 2], matrix[3, 3]
+
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    # Configure CUDA grid and block dimensions
-    threads_per_block = 256
-    blocks_per_grid = (total_size + threads_per_block - 1) // threads_per_block
+    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
+    blocks_per_grid = min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
     
-    _two_qubit_gate_kernel[blocks_per_grid, threads_per_block](
-        state_flat, out_flat, matrix_gpu, n_qubits, mask_0, mask_1, mask_both, total_size
+    _two_qubit_gate_kernel_optimized[blocks_per_grid, threads_per_block](
+        state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13,
+        m20, m21, m22, m23, m30, m31, m32, m33, mask_0, mask_1, mask_both, total_size
     )
     
-    cuda.synchronize()
-    
-    if isinstance(out, np.ndarray):
-        out[:] = _to_cpu(out_gpu)
+    if isinstance(out, np.ndarray) and not hasattr(out, 'copy_to_host'):
+        out[:] = out_gpu.copy_to_host()
         return out, True
     else:
-        return _to_cpu(out_gpu), True
+        return out_gpu, True
 
 
 def _apply_two_qubit_gate(
