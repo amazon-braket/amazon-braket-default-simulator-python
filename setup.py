@@ -69,7 +69,8 @@ setup(
             "tox",
         ],
         "gpu": [
-            "cupy-cuda12x>=12.0.0",
+            "numba[cuda]",
+            "cuda-toolkit",
         ]
     },
     url="https://github.com/amazon-braket/amazon-braket-default-simulator-python",
