@@ -101,7 +101,7 @@ class StateVectorSimulation(Simulation):
     ) -> np.ndarray:
         state_tensor = np.reshape(state, [2] * qubit_count)
         
-        if batch_size == 1 and _GPU_AVAILABLE and _should_use_gpu(state.size, qubit_count):
+        if batch_size == 1 and _should_use_gpu(state.size, qubit_count):
             final = gpu_single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
         elif batch_size == 1:
             final = single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
