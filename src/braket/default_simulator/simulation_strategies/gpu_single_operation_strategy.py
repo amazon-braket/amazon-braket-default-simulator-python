@@ -41,7 +41,6 @@ def apply_operations(
     current_idx = 0
     
     dispatcher = GPUQuantumGateDispatcher(state.ndim)
-    
     try:
         for op in operations:
             targets = op.targets

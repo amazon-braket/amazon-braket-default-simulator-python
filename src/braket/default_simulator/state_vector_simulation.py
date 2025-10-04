@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import numpy as np
+import time
 
 from braket.default_simulator.operation import GateOperation, Observable
 from braket.default_simulator.simulation import Simulation
@@ -100,7 +101,7 @@ class StateVectorSimulation(Simulation):
         state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
     ) -> np.ndarray:
         state_tensor = np.reshape(state, [2] * qubit_count)
-        
+        start_time = time.time()
         if batch_size == 1 and _should_use_gpu(state.size, qubit_count):
             final = gpu_single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
         elif batch_size == 1:
@@ -109,7 +110,9 @@ class StateVectorSimulation(Simulation):
             final = batch_operation_strategy.apply_operations(
                 state_tensor, qubit_count, operations, batch_size
             )
-        
+        end_time = time.time()
+
+        print(f"local simulator operation runtime: {end_time - start_time}")
         return np.reshape(final, 2**qubit_count)
 
     def retrieve_samples(self) -> np.ndarray:
