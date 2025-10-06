@@ -274,7 +274,6 @@ def _apply_diagonal_gate_gpu(
         state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size
     )
     
-    out[:] = out_gpu.copy_to_host()
     return out, True
 
 
@@ -320,6 +319,22 @@ def _cnot_kernel(state_flat, control_stride, target_stride, swap_offset, iterati
         i += stride
 
 
+@cuda.jit(inline=True, fastmath=True)
+def _cnot_ping_pong_kernel(state_flat, out_flat, control_stride, target_stride, swap_offset, iterations):
+    """CNOT kernel for ping-pong buffer operations."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    while i < iterations:
+        idx0 = control_stride + i
+        idx1 = idx0 + swap_offset
+        
+        out_flat[idx0] = state_flat[idx1]
+        out_flat[idx1] = state_flat[idx0]
+        
+        i += stride
+
+
 def _apply_cnot_gpu(
     state: np.ndarray, control: int, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
@@ -349,7 +364,6 @@ def _apply_cnot_gpu(
         state_flat, control_stride, target_stride, swap_offset, iterations
     )
     
-    state[:] = state_gpu.copy_to_host()
     return state, False
 
 
@@ -357,9 +371,6 @@ def _apply_cnot_gpu_inplace(
     state_gpu, control: int, target: int, out_gpu
 ) -> tuple[None, bool]:
     """GPU-accelerated CNOT gate implementation for device arrays."""
-    if state_gpu is not out_gpu:
-        out_gpu[:] = state_gpu[:]
-    
     n_qubits = len(state_gpu.shape)
     iterations = state_gpu.size >> 2
     
@@ -370,16 +381,17 @@ def _apply_cnot_gpu_inplace(
     target_stride = 1 << target_bit_pos
     swap_offset = target_stride
     
-    state_flat = out_gpu.reshape(-1)
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
     
     threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
     blocks_per_grid = min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
     
-    _cnot_kernel[blocks_per_grid, threads_per_block](
-        state_flat, control_stride, target_stride, swap_offset, iterations
+    _cnot_ping_pong_kernel[blocks_per_grid, threads_per_block](
+        state_flat, out_flat, control_stride, target_stride, swap_offset, iterations
     )
     
-    return None, False
+    return None, True
 
 
 @cuda.jit(inline=True, fastmath=True)
@@ -398,6 +410,25 @@ def _swap_kernel(state_flat, pos_0, pos_1, mask_0, mask_1, iterations):
         temp = state_flat[idx0]
         state_flat[idx0] = state_flat[idx1]
         state_flat[idx1] = temp
+        
+        i += stride
+
+
+@cuda.jit(inline=True, fastmath=True)
+def _swap_ping_pong_kernel(state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations):
+    """SWAP kernel for ping-pong buffer operations."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    while i < iterations:
+        base = i + ((i >> pos_0) << pos_0)
+        base += (base >> pos_1) << pos_1
+        
+        idx0 = base | mask_1
+        idx1 = base | mask_0
+        
+        out_flat[idx0] = state_flat[idx1]
+        out_flat[idx1] = state_flat[idx0]
         
         i += stride
 
@@ -433,7 +464,6 @@ def _apply_swap_gpu(
         state_flat, pos_0, pos_1, mask_0, mask_1, iterations
     )
     
-    state[:] = state_gpu.copy_to_host()
     return state, False
 
 
@@ -441,9 +471,6 @@ def _apply_swap_gpu_inplace(
     state_gpu, qubit_0: int, qubit_1: int, out_gpu
 ) -> tuple[None, bool]:
     """GPU-accelerated SWAP gate implementation for device arrays."""
-    if state_gpu is not out_gpu:
-        out_gpu[:] = state_gpu[:]
-    
     n_qubits = len(state_gpu.shape)
     iterations = state_gpu.size >> 2
     
@@ -456,16 +483,17 @@ def _apply_swap_gpu_inplace(
     mask_0 = 1 << pos_0
     mask_1 = 1 << pos_1
     
-    state_flat = out_gpu.reshape(-1)
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
     
     threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
     blocks_per_grid = min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
     
-    _swap_kernel[blocks_per_grid, threads_per_block](
-        state_flat, pos_0, pos_1, mask_0, mask_1, iterations
+    _swap_ping_pong_kernel[blocks_per_grid, threads_per_block](
+        state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations
     )
     
-    return None, False
+    return None, True
 
 
 def _apply_controlled_phase_shift_gpu(
@@ -485,7 +513,6 @@ def _apply_controlled_phase_shift_gpu(
     
     state_gpu[tuple(slices)] *= phase_factor
     
-    state[:] = state_gpu.copy_to_host()
     return state, False
 
 
@@ -529,7 +556,7 @@ def _apply_controlled_phase_shift_gpu_inplace(
         state_flat, phase_factor.real, phase_factor.imag, controlled_mask, total_size
     )
     
-    return None, False
+    return None, True
 
 
 @cuda.jit(inline=True, fastmath=True)
@@ -571,7 +598,7 @@ def _apply_two_qubit_gate_gpu(
     out_gpu = cuda.device_array_like(state)
     
     n_qubits = state.ndim
-    total_size = 1 << n_qubits
+    total_size = state.size
     
     mask_0 = 1 << (n_qubits - 1 - target0)
     mask_1 = 1 << (n_qubits - 1 - target1)
@@ -593,7 +620,6 @@ def _apply_two_qubit_gate_gpu(
         m20, m21, m22, m23, m30, m31, m32, m33, mask_0, mask_1, mask_both, total_size
     )
     
-    out[:] = out_gpu.copy_to_host()
     return out, True
 
 
@@ -606,7 +632,7 @@ def _apply_two_qubit_gate_gpu_inplace(
 ) -> tuple[None, bool]:
     """GPU-accelerated two-qubit gate implementation for device arrays."""
     n_qubits = len(state_gpu.shape)
-    total_size = 1 << n_qubits
+    total_size = state_gpu.size
     
     mask_0 = 1 << (n_qubits - 1 - target0)
     mask_1 = 1 << (n_qubits - 1 - target1)
