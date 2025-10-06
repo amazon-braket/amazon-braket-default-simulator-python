@@ -68,8 +68,7 @@ class MultiGPUQuantumManager:
     def should_use_multi_gpu(self, qubit_count: int) -> bool:
         """Determine if multi-GPU execution would be beneficial."""
         return (self.num_gpus > 1 and 
-                qubit_count >= 16 and  
-                (1 << qubit_count) >= 1048576)
+                qubit_count >= 14)
     
     def get_qubit_partition(self, qubit_count: int) -> list[tuple[int, int]]:
         """Partition qubits across available GPUs for optimal load balancing."""
@@ -186,26 +185,79 @@ def apply_operations(
 def _apply_operations_multi_gpu(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Multi-GPU quantum circuit execution for massive parallelization."""
-    if not _can_parallelize_operations(operations, qubit_count):
+    """Multi-GPU quantum circuit execution using GPU pipelining."""
+    if _multi_gpu_manager.num_gpus < 2:
         return _apply_operations_single_gpu(state, qubit_count, operations)
     
-    gpu_states = _multi_gpu_manager.partition_state_vector(state, qubit_count)
+    gpu_id = 0
+    current_gpu_states = {}
     
-    for gpu_id in range(_multi_gpu_manager.num_gpus):
+    for gpu_id in range(min(2, _multi_gpu_manager.num_gpus)):
         cuda.select_device(gpu_id)
-        buffer_manager = _multi_gpu_manager.gpu_buffer_managers[gpu_id]
+        current_gpu_states[gpu_id] = cuda.to_device(state)
+    
+    current_gpu = 0
+    
+    for i, op in enumerate(operations):
+        cuda.select_device(current_gpu)
+        buffer_manager = _multi_gpu_manager.gpu_buffer_managers[current_gpu]
         
-        _execute_operations_on_gpu(
-            gpu_states[gpu_id], 
-            qubit_count, 
-            _filter_operations_for_gpu(operations, gpu_id, qubit_count),
-            buffer_manager
+        gpu_state = current_gpu_states[current_gpu]
+        buffer_a, buffer_b = buffer_manager.get_ping_pong_buffers(state.shape, state.dtype)
+        
+        if i == 0:
+            buffer_a[:] = gpu_state[:]
+            current_buffer = buffer_a
+            output_buffer = buffer_b
+        else:
+            cuda.select_device((current_gpu + 1) % 2)
+            prev_gpu_state = current_gpu_states[(current_gpu + 1) % 2]
+            cuda.select_device(current_gpu)
+            buffer_a[:] = prev_gpu_state.copy_to_host()
+            current_buffer = buffer_a
+            output_buffer = buffer_b
+        
+        targets = op.targets
+        num_ctrl = len(op._ctrl_modifiers)
+        gate_type = getattr(op, "gate_type", None)
+        
+        _execute_single_operation_gpu(
+            current_buffer, output_buffer, op, targets, num_ctrl, gate_type, qubit_count
         )
+        
+        cuda.to_device(output_buffer.copy_to_host(), to=current_gpu_states[current_gpu])
+        
+        current_gpu = (current_gpu + 1) % min(2, _multi_gpu_manager.num_gpus)
     
-    _synchronize_multi_gpu_operations(operations, gpu_states, qubit_count)
-    
-    return _multi_gpu_manager.gather_state_vector(gpu_states, state.shape)
+    final_gpu = (len(operations) - 1) % min(2, _multi_gpu_manager.num_gpus)
+    cuda.select_device(final_gpu)
+    return current_gpu_states[final_gpu].copy_to_host()
+
+
+def _execute_single_operation_gpu(
+    current_buffer, output_buffer, op, targets, num_ctrl, gate_type, qubit_count
+):
+    """Execute a single operation on current GPU."""
+    if not num_ctrl:
+        if len(targets) == 1:
+            target = targets[0]
+            if gate_type and gate_type in DIAGONAL_GATES:
+                _apply_diagonal_gate_gpu_inplace(current_buffer, op.matrix, target, output_buffer)
+            else:
+                _apply_single_qubit_gate_gpu_inplace(current_buffer, output_buffer, op.matrix, target, gate_type)
+        elif len(targets) == 2:
+            target0, target1 = targets[0], targets[1]
+            if gate_type == "cx":
+                _apply_cnot_gpu_inplace(current_buffer, target0, target1, output_buffer)
+            elif gate_type == "swap":
+                _apply_swap_gpu_inplace(current_buffer, target0, target1, output_buffer)
+            else:
+                _apply_two_qubit_gate_gpu_inplace(current_buffer, output_buffer, op.matrix, target0, target1)
+    else:
+        if len(targets) == 1 and len(op._ctrl_modifiers) == 1 and gate_type == "cphaseshift":
+            _apply_controlled_phase_shift_gpu_inplace(current_buffer, op.matrix[1, 1], targets[:num_ctrl], targets[num_ctrl:][0])
+        else:
+            _apply_controlled_gate_gpu_direct(current_buffer, output_buffer, op, qubit_count)
 
 
 def _apply_operations_single_gpu(
@@ -286,6 +338,15 @@ def _execute_operations_on_gpu(
     if not operations:
         return
     
+    partitions = _multi_gpu_manager.get_qubit_partition(qubit_count)
+    gpu_id = buffer_manager.gpu_id
+    
+    if gpu_id >= len(partitions):
+        return
+    
+    start_qubit, end_qubit = partitions[gpu_id]
+    local_qubit_count = end_qubit - start_qubit
+    
     buffer_a, buffer_b = buffer_manager.get_ping_pong_buffers(gpu_state.shape, gpu_state.dtype)
     buffer_a[:] = gpu_state[:]
     
@@ -298,13 +359,16 @@ def _execute_operations_on_gpu(
         gate_type = getattr(op, "gate_type", None)
         
         if not num_ctrl and len(targets) == 1:
-            target = targets[0]
-            if gate_type and gate_type in DIAGONAL_GATES:
-                _apply_diagonal_gate_gpu_inplace(current_buffer, op.matrix, target, output_buffer)
-            else:
-                _apply_single_qubit_gate_gpu_inplace(current_buffer, output_buffer, op.matrix, target, gate_type)
-            
-            current_buffer, output_buffer = output_buffer, current_buffer
+            global_target = targets[0]
+            if start_qubit <= global_target < end_qubit:
+                local_target = global_target - start_qubit
+                
+                if gate_type and gate_type in DIAGONAL_GATES:
+                    _apply_diagonal_gate_gpu_inplace(current_buffer, op.matrix, local_target, output_buffer)
+                else:
+                    _apply_single_qubit_gate_gpu_inplace(current_buffer, output_buffer, op.matrix, local_target, gate_type)
+                
+                current_buffer, output_buffer = output_buffer, current_buffer
     
     gpu_state[:] = current_buffer[:]
 
