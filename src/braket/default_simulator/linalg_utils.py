@@ -267,8 +267,11 @@ def _apply_diagonal_gate_gpu(
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-    blocks_per_grid = min((half_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    threads_per_block = 256
+    blocks_per_grid = max(
+        min((half_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
+        128
+    )
     
     _diagonal_gate_kernel[blocks_per_grid, threads_per_block](
         state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size
@@ -384,8 +387,11 @@ def _apply_cnot_gpu_inplace(
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-    blocks_per_grid = min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    threads_per_block = 256
+    blocks_per_grid = max(
+        min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
+        128
+    )
     
     _cnot_ping_pong_kernel[blocks_per_grid, threads_per_block](
         state_flat, out_flat, control_stride, target_stride, swap_offset, iterations
@@ -486,8 +492,11 @@ def _apply_swap_gpu_inplace(
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-    blocks_per_grid = min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    threads_per_block = 256
+    blocks_per_grid = max(
+        min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
+        128
+    )
     
     _swap_ping_pong_kernel[blocks_per_grid, threads_per_block](
         state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations
@@ -549,8 +558,11 @@ def _apply_controlled_phase_shift_gpu_inplace(
     
     state_flat = state_gpu.reshape(-1)
     
-    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-    blocks_per_grid = min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    threads_per_block = 256
+    blocks_per_grid = max(
+        min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
+        128
+    )
     
     _controlled_phase_shift_kernel_linalg[blocks_per_grid, threads_per_block](
         state_flat, phase_factor.real, phase_factor.imag, controlled_mask, total_size
@@ -612,8 +624,11 @@ def _apply_two_qubit_gate_gpu(
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-    blocks_per_grid = min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    threads_per_block = 256
+    blocks_per_grid = max(
+        min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
+        128
+    )
     
     _two_qubit_gate_kernel[blocks_per_grid, threads_per_block](
         state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13,
@@ -1292,8 +1307,11 @@ def _apply_single_qubit_gate_gpu_inplace(
         state_flat = state_gpu.reshape(-1)
         out_flat = out_gpu.reshape(-1)
         
-        threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-        blocks_per_grid = min((half_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+        threads_per_block = 256
+        blocks_per_grid = max(
+            min((half_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
+            128
+        )
         
         _single_qubit_gate_kernel[blocks_per_grid, threads_per_block](
             state_flat, out_flat, a, b, c, d, n, mask, half_size
