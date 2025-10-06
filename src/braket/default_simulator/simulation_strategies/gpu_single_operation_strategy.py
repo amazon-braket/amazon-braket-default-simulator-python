@@ -110,7 +110,6 @@ def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qub
     targets = op.targets
     num_ctrl = len(op._ctrl_modifiers)
     matrix = op.matrix
-    gate_type = getattr(op, "gate_type", None)
     
     total_size = state_gpu.size
     
@@ -130,10 +129,9 @@ def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qub
     out_flat = out_gpu.reshape(-1)
     
     matrix_size = matrix.shape[0]
-    cache_key = f"ctrl_{gate_type}_{matrix_size}_{hash(matrix.tobytes())}"
-    matrix_gpu = _gpu_buffer_manager.get_cached_matrix(matrix.flatten(), cache_key)
+    matrix_gpu = cuda.to_device(matrix.flatten())
     
-    threads_per_block = min(_OPTIMAL_THREADS_PER_BLOCK, 256)
+    threads_per_block = 256
     blocks_per_grid = max(
         min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
         128
