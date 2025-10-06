@@ -133,8 +133,11 @@ def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qub
     cache_key = f"ctrl_{gate_type}_{matrix_size}_{hash(matrix.tobytes())}"
     matrix_gpu = _gpu_buffer_manager.get_cached_matrix(matrix.flatten(), cache_key)
     
-    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
-    blocks_per_grid = min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    threads_per_block = min(_OPTIMAL_THREADS_PER_BLOCK, 256)
+    blocks_per_grid = max(
+        min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
+        128
+    )
     
     _controlled_gate_kernel[blocks_per_grid, threads_per_block](
         state_flat, out_flat, matrix_gpu, control_mask, target_mask,
