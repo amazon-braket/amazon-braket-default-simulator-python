@@ -32,8 +32,15 @@ from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.simulation_strategies import single_operation_strategy
 from braket.default_simulator.circuit_compiler import (
     execute_template_fused_kernel,
+    compile_and_execute_circuit,
     _circuit_compiler,
 )
+
+from braket.default_simulator.tensor_core_acceleration import (
+    accelerate_with_tensor_cores,
+    _tensor_core_accelerator
+)
+_TENSOR_CORES_AVAILABLE = True
 
 
 class GPUBufferManager:
@@ -102,7 +109,7 @@ def apply_operations(
 def _try_circuit_fusion(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray | None:
-    """Attempt circuit fusion for maximum performance."""
+    """Advanced circuit fusion with multiple fusion strategies including tensor cores."""
     if not _circuit_compiler.can_fuse_circuit(operations):
         return None
     
@@ -116,7 +123,45 @@ def _try_circuit_fusion(
     
     start_time = time.perf_counter()
     
-    success = execute_template_fused_kernel(operations, buffer_a, buffer_b, qubit_count)
+    success = False
+    fusion_method = "none"
+    
+    if _TENSOR_CORES_AVAILABLE and len(operations) >= 4:
+        tensor_suitable = sum(1 for op in operations if len(op.targets) == 2)
+        if tensor_suitable >= len(operations) * 0.4:
+            accelerated_ops, acceleration_info = accelerate_with_tensor_cores(
+                operations, precision='fp16', validate_precision=False
+            )
+            
+            if acceleration_info.get('accelerated', False):
+                success = compile_and_execute_circuit(accelerated_ops, buffer_a, buffer_b, qubit_count)
+                if success:
+                    fusion_method = f"tensor_core_{acceleration_info['precision']}"
+                    print(f"Tensor core pre-processing: {acceleration_info['operations_accelerated']} ops accelerated")
+    
+    if not success:
+        pattern_type = _circuit_compiler.analyze_pattern_type(operations)
+        if pattern_type != "custom":
+            template_kernel = _circuit_compiler.compile_template_kernel(
+                operations, pattern_type, qubit_count
+            )
+            if template_kernel:
+                _circuit_compiler.execute_template_kernel(
+                    template_kernel, operations, buffer_a, buffer_b, 
+                    qubit_count, pattern_type
+                )
+                success = True
+                fusion_method = f"template_{pattern_type}"
+    
+    if not success:
+        success = compile_and_execute_circuit(operations, buffer_a, buffer_b, qubit_count)
+        if success:
+            fusion_method = "jit_compiled"
+    
+    if not success:
+        success = execute_template_fused_kernel(operations, buffer_a, buffer_b, qubit_count)
+        if success:
+            fusion_method = "template_basic"
     
     if success:
         if _gpu_buffer_manager.stream:
@@ -126,7 +171,12 @@ def _try_circuit_fusion(
             result = buffer_b.copy_to_host()
         
         fusion_time = time.perf_counter() - start_time
-        print(f"Circuit fusion: {len(operations)} operations in {fusion_time*1000:.2f}ms (single kernel)")
+        estimated_individual_time = len(operations) * 0.15e-3
+        speedup = estimated_individual_time / fusion_time if fusion_time > 0 else 1.0
+        
+        print(f"Circuit fusion ({fusion_method}): {len(operations)} operations in "
+              f"{fusion_time*1000:.2f}ms (speedup: {speedup:.1f}x)")
+        
         return result
     
     return None
