@@ -13,6 +13,7 @@
 
 import numpy as np
 from numba import cuda
+import math
 
 from braket.default_simulator.linalg_utils import (
     _GPU_AVAILABLE,
@@ -31,15 +32,121 @@ from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.simulation_strategies import single_operation_strategy
 
 
-class GPUBufferManager:
-    """Pure ping-pong buffer management with zero-copy swaps."""
+class MultiGPUQuantumManager:
+    """Multi-GPU quantum state management for massive performance scaling."""
     
     def __init__(self):
+        self.num_gpus = 0
+        self.gpu_contexts = []
+        self.gpu_streams = []
+        self.gpu_buffer_managers = []
+        
+        if _GPU_AVAILABLE:
+            try:
+                self.num_gpus = len(cuda.gpus)
+                print(f"Multi-GPU support: {self.num_gpus} GPUs detected")
+                
+                for gpu_id in range(self.num_gpus):
+                    cuda.select_device(gpu_id)
+                    context = cuda.current_context()
+                    stream = cuda.stream()
+                    buffer_manager = SingleGPUBufferManager(gpu_id)
+                    
+                    self.gpu_contexts.append(context)
+                    self.gpu_streams.append(stream)
+                    self.gpu_buffer_managers.append(buffer_manager)
+                
+                cuda.select_device(0)
+            except Exception as e:
+                print(f"Multi-GPU initialization failed: {e}, falling back to single GPU")
+                self.num_gpus = 1
+                self.gpu_buffer_managers = [SingleGPUBufferManager(0)]
+        
+        if self.num_gpus == 0:
+            self.gpu_buffer_managers = [None]
+    
+    def should_use_multi_gpu(self, qubit_count: int) -> bool:
+        """Determine if multi-GPU execution would be beneficial."""
+        return (self.num_gpus > 1 and 
+                qubit_count >= 16 and  
+                (1 << qubit_count) >= 1048576)
+    
+    def get_qubit_partition(self, qubit_count: int) -> list[tuple[int, int]]:
+        """Partition qubits across available GPUs for optimal load balancing."""
+        if self.num_gpus <= 1:
+            return [(0, qubit_count)]
+        
+        qubits_per_gpu = max(1, qubit_count // self.num_gpus)
+        partitions = []
+        
+        for gpu_id in range(self.num_gpus):
+            start_qubit = gpu_id * qubits_per_gpu
+            if gpu_id == self.num_gpus - 1:
+                end_qubit = qubit_count
+            else:
+                end_qubit = min(start_qubit + qubits_per_gpu, qubit_count)
+            
+            if start_qubit < qubit_count:
+                partitions.append((start_qubit, end_qubit))
+        
+        return partitions
+    
+    def partition_state_vector(self, state: np.ndarray, qubit_count: int) -> list[cuda.devicearray.DeviceNDArray]:
+        """Distribute quantum state across multiple GPUs."""
+        if self.num_gpus <= 1:
+            cuda.select_device(0)
+            return [cuda.to_device(state)]
+        
+        partitions = self.get_qubit_partition(qubit_count)
+        state_flat = state.reshape(-1)
+        gpu_states = []
+        
+        elements_per_partition = len(state_flat) // self.num_gpus
+        
+        for gpu_id, (start_qubit, end_qubit) in enumerate(partitions):
+            cuda.select_device(gpu_id)
+            
+            start_idx = gpu_id * elements_per_partition
+            if gpu_id == self.num_gpus - 1:
+                end_idx = len(state_flat)
+            else:
+                end_idx = min(start_idx + elements_per_partition, len(state_flat))
+            
+            partition_data = state_flat[start_idx:end_idx]
+            gpu_state = cuda.to_device(partition_data, stream=self.gpu_streams[gpu_id])
+            gpu_states.append(gpu_state)
+        
+        cuda.select_device(0)
+        return gpu_states
+    
+    def gather_state_vector(self, gpu_states: list[cuda.devicearray.DeviceNDArray], original_shape: tuple) -> np.ndarray:
+        """Gather distributed state from multiple GPUs back to host."""
+        if len(gpu_states) == 1:
+            cuda.select_device(0)
+            return gpu_states[0].copy_to_host().reshape(original_shape)
+        
+        result_parts = []
+        for gpu_id, gpu_state in enumerate(gpu_states):
+            cuda.select_device(gpu_id)
+            part = gpu_state.copy_to_host()
+            result_parts.append(part)
+        
+        cuda.select_device(0)
+        full_result = np.concatenate(result_parts)
+        return full_result.reshape(original_shape)
+
+
+class SingleGPUBufferManager:
+    """Single GPU buffer management for multi-GPU coordination."""
+    
+    def __init__(self, gpu_id: int):
+        self.gpu_id = gpu_id
         self.ping_pong_buffers: dict[tuple[int, ...], tuple[cuda.devicearray.DeviceNDArray, cuda.devicearray.DeviceNDArray]] = {}
         self.matrix_cache: dict[str, cuda.devicearray.DeviceNDArray] = {}
         
     def get_ping_pong_buffers(self, shape: tuple[int, ...], dtype=np.complex128) -> tuple[cuda.devicearray.DeviceNDArray, cuda.devicearray.DeviceNDArray]:
-        """Get or create persistent ping-pong buffers."""
+        """Get or create persistent ping-pong buffers on this GPU."""
+        cuda.select_device(self.gpu_id)
         if shape not in self.ping_pong_buffers:
             buffer_a = cuda.device_array(shape, dtype=dtype)
             buffer_b = cuda.device_array(shape, dtype=dtype)
@@ -47,28 +154,67 @@ class GPUBufferManager:
         return self.ping_pong_buffers[shape]
     
     def get_cached_matrix(self, matrix: np.ndarray, cache_key: str) -> cuda.devicearray.DeviceNDArray:
-        """Get or create cached GPU matrix."""
+        """Get or create cached GPU matrix on this GPU."""
+        cuda.select_device(self.gpu_id)
         if cache_key not in self.matrix_cache:
             self.matrix_cache[cache_key] = cuda.to_device(matrix)
         return self.matrix_cache[cache_key]
     
     def clear_cache(self):
-        """Clear all cached resources."""
+        """Clear all cached resources on this GPU."""
+        cuda.select_device(self.gpu_id)
         self.ping_pong_buffers.clear()
         self.matrix_cache.clear()
 
 
-_gpu_buffer_manager = GPUBufferManager() if _GPU_AVAILABLE else None
+_multi_gpu_manager = MultiGPUQuantumManager()
 
 
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Apply quantum operations using pure ping-pong GPU buffering."""
+    """Apply quantum operations using advanced multi-GPU or single-GPU buffering."""
     if not _GPU_AVAILABLE or not _should_use_gpu(state.size, qubit_count):
         return single_operation_strategy.apply_operations(state, qubit_count, operations)
     
-    buffer_a, buffer_b = _gpu_buffer_manager.get_ping_pong_buffers(state.shape, state.dtype)
+    if _multi_gpu_manager.should_use_multi_gpu(qubit_count):
+        return _apply_operations_multi_gpu(state, qubit_count, operations)
+    else:
+        return _apply_operations_single_gpu(state, qubit_count, operations)
+
+
+def _apply_operations_multi_gpu(
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
+) -> np.ndarray:
+    """Multi-GPU quantum circuit execution for massive parallelization."""
+    if not _can_parallelize_operations(operations, qubit_count):
+        return _apply_operations_single_gpu(state, qubit_count, operations)
+    
+    gpu_states = _multi_gpu_manager.partition_state_vector(state, qubit_count)
+    
+    for gpu_id in range(_multi_gpu_manager.num_gpus):
+        cuda.select_device(gpu_id)
+        buffer_manager = _multi_gpu_manager.gpu_buffer_managers[gpu_id]
+        
+        _execute_operations_on_gpu(
+            gpu_states[gpu_id], 
+            qubit_count, 
+            _filter_operations_for_gpu(operations, gpu_id, qubit_count),
+            buffer_manager
+        )
+    
+    _synchronize_multi_gpu_operations(operations, gpu_states, qubit_count)
+    
+    return _multi_gpu_manager.gather_state_vector(gpu_states, state.shape)
+
+
+def _apply_operations_single_gpu(
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
+) -> np.ndarray:
+    """Single GPU execution with optimized ping-pong buffering."""
+    cuda.select_device(0)
+    buffer_manager = _multi_gpu_manager.gpu_buffer_managers[0]
+    buffer_a, buffer_b = buffer_manager.get_ping_pong_buffers(state.shape, state.dtype)
     
     cuda.to_device(state, to=buffer_a)
     current_buffer = buffer_a
@@ -103,6 +249,138 @@ def apply_operations(
         current_buffer, output_buffer = output_buffer, current_buffer
     
     return current_buffer.copy_to_host()
+
+
+def _can_parallelize_operations(operations: list[GateOperation], qubit_count: int) -> bool:
+    """Check if operations can benefit from multi-GPU parallelization."""
+    if len(operations) < 4:
+        return False
+    
+    single_qubit_ops = sum(1 for op in operations if len(op.targets) == 1 and not op._ctrl_modifiers)
+    return single_qubit_ops >= len(operations) * 0.6
+
+
+def _filter_operations_for_gpu(operations: list[GateOperation], gpu_id: int, qubit_count: int) -> list[GateOperation]:
+    """Filter operations relevant to specific GPU partition."""
+    partitions = _multi_gpu_manager.get_qubit_partition(qubit_count)
+    if gpu_id >= len(partitions):
+        return []
+    
+    start_qubit, end_qubit = partitions[gpu_id]
+    relevant_ops = []
+    
+    for op in operations:
+        if any(start_qubit <= target < end_qubit for target in op.targets):
+            relevant_ops.append(op)
+    
+    return relevant_ops
+
+
+def _execute_operations_on_gpu(
+    gpu_state: cuda.devicearray.DeviceNDArray,
+    qubit_count: int,
+    operations: list[GateOperation],
+    buffer_manager: SingleGPUBufferManager
+):
+    """Execute operations on single GPU with ping-pong buffering."""
+    if not operations:
+        return
+    
+    buffer_a, buffer_b = buffer_manager.get_ping_pong_buffers(gpu_state.shape, gpu_state.dtype)
+    buffer_a[:] = gpu_state[:]
+    
+    current_buffer = buffer_a
+    output_buffer = buffer_b
+    
+    for op in operations:
+        targets = op.targets
+        num_ctrl = len(op._ctrl_modifiers)
+        gate_type = getattr(op, "gate_type", None)
+        
+        if not num_ctrl and len(targets) == 1:
+            target = targets[0]
+            if gate_type and gate_type in DIAGONAL_GATES:
+                _apply_diagonal_gate_gpu_inplace(current_buffer, op.matrix, target, output_buffer)
+            else:
+                _apply_single_qubit_gate_gpu_inplace(current_buffer, output_buffer, op.matrix, target, gate_type)
+            
+            current_buffer, output_buffer = output_buffer, current_buffer
+    
+    gpu_state[:] = current_buffer[:]
+
+
+def _synchronize_multi_gpu_operations(
+    operations: list[GateOperation], 
+    gpu_states: list[cuda.devicearray.DeviceNDArray], 
+    qubit_count: int
+):
+    """Synchronize multi-qubit operations across GPU boundaries."""
+    cross_gpu_ops = []
+    
+    for op in operations:
+        targets = op.targets
+        if len(targets) == 2:
+            partitions = _multi_gpu_manager.get_qubit_partition(qubit_count)
+            
+            gpu0 = _get_gpu_for_qubit(targets[0], partitions)
+            gpu1 = _get_gpu_for_qubit(targets[1], partitions)
+            
+            if gpu0 != gpu1:
+                cross_gpu_ops.append((op, gpu0, gpu1))
+    
+    for op, gpu0, gpu1 in cross_gpu_ops:
+        _execute_cross_gpu_operation(op, gpu0, gpu1, gpu_states, qubit_count)
+
+
+def _get_gpu_for_qubit(qubit: int, partitions: list[tuple[int, int]]) -> int:
+    """Determine which GPU handles a specific qubit."""
+    for gpu_id, (start_qubit, end_qubit) in enumerate(partitions):
+        if start_qubit <= qubit < end_qubit:
+            return gpu_id
+    return 0
+
+
+def _execute_cross_gpu_operation(
+    op: GateOperation,
+    gpu0: int,
+    gpu1: int, 
+    gpu_states: list[cuda.devicearray.DeviceNDArray],
+    qubit_count: int
+):
+    """Execute two-qubit operation spanning multiple GPUs."""
+    cuda.select_device(0)
+    
+    state0 = gpu_states[gpu0].copy_to_host()
+    state1 = gpu_states[gpu1].copy_to_host()
+    
+    combined_state = np.concatenate([state0, state1])
+    
+    from braket.default_simulator.linalg_utils import multiply_matrix, QuantumGateDispatcher
+    dispatcher = QuantumGateDispatcher(qubit_count, force_cpu=True)
+    
+    targets = op.targets
+    num_ctrl = len(op._ctrl_modifiers)
+    
+    result = multiply_matrix(
+        combined_state,
+        op.matrix,
+        targets[num_ctrl:],
+        targets[:num_ctrl],
+        op._ctrl_modifiers,
+        dispatcher=dispatcher,
+    )
+    
+    split_point = len(state0)
+    result0 = result[:split_point]
+    result1 = result[split_point:]
+    
+    cuda.select_device(gpu0)
+    cuda.to_device(result0, to=gpu_states[gpu0])
+    
+    cuda.select_device(gpu1)
+    cuda.to_device(result1, to=gpu_states[gpu1])
+    
+    cuda.select_device(0)
 
 
 def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qubit_count: int):

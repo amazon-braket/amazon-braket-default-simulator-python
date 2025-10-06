@@ -420,6 +420,38 @@ def _apply_controlled_phase_shift_gpu_inplace(
     return None, False
 
 
+def _apply_swap_gpu_inplace(
+    state_gpu, qubit_0: int, qubit_1: int, out_gpu
+) -> tuple[None, bool]:
+    """GPU-accelerated SWAP gate implementation for device arrays."""
+    n_qubits = len(state_gpu.shape)
+    iterations = state_gpu.size >> 2
+    
+    pos_0 = n_qubits - 1 - qubit_0
+    pos_1 = n_qubits - 1 - qubit_1
+    
+    if pos_0 > pos_1:
+        pos_0, pos_1 = pos_1, pos_0
+    
+    mask_0 = 1 << pos_0
+    mask_1 = 1 << pos_1
+    
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
+    
+    threads_per_block = 256
+    blocks_per_grid = max(
+        min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
+        128
+    )
+    
+    _swap_ping_pong_kernel[blocks_per_grid, threads_per_block](
+        state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations
+    )
+    
+    return None, True
+
+
 @cuda.jit(inline=True, fastmath=True)
 def _two_qubit_gate_kernel(state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13, 
                           m20, m21, m22, m23, m30, m31, m32, m33, 
