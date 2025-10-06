@@ -610,30 +610,6 @@ class TensorCoreAccelerator:
         
         return validation_results
     
-    def get_acceleration_statistics(self) -> Dict:
-        """Get comprehensive tensor core acceleration statistics."""
-        stats = dict(self.acceleration_stats)
-        
-        if self.acceleration_stats['operations_accelerated'] > 0:
-            stats['acceleration_rate'] = (
-                self.acceleration_stats['operations_accelerated'] /
-                (self.acceleration_stats['operations_accelerated'] + self.acceleration_stats['operations_fallback'])
-            )
-        else:
-            stats['acceleration_rate'] = 0.0
-        
-        stats['precision_conversions'] = {}
-        for precision, conversions in self.precision_manager.conversion_stats.items():
-            if conversions:
-                successful = sum(1 for c in conversions if c['conversion_successful'])
-                stats['precision_conversions'][precision] = {
-                    'total_attempts': len(conversions),
-                    'successful': successful,
-                    'success_rate': successful / len(conversions),
-                    'avg_precision_loss': np.mean([c['precision_loss'] for c in conversions if c['conversion_successful']])
-                }
-        
-        return stats
 
 
 _tensor_core_accelerator = TensorCoreAccelerator() if _GPU_AVAILABLE else None

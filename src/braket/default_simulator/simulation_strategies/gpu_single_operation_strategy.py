@@ -35,27 +35,24 @@ from braket.default_simulator.circuit_compiler import (
     compile_and_execute_circuit,
     _circuit_compiler,
 )
-
 from braket.default_simulator.tensor_core_acceleration import (
     accelerate_with_tensor_cores,
     _tensor_core_accelerator
 )
+
 _TENSOR_CORES_AVAILABLE = True
 
 
 class GPUBufferManager:
-    """Ultra-optimized GPU buffer management with zero-copy operations."""
+    """Ultra-optimized GPU buffer management with persistent ping-pong buffers."""
     
     def __init__(self):
         self.ping_pong_buffers: dict[tuple[int, ...], tuple[cuda.devicearray.DeviceNDArray, cuda.devicearray.DeviceNDArray]] = {}
         self.matrix_cache: dict[str, cuda.devicearray.DeviceNDArray] = {}
-        if _GPU_AVAILABLE:
-            self.stream = cuda.stream()
-        else:
-            self.stream = None
+        self.stream = cuda.stream() if _GPU_AVAILABLE else None
         
     def get_ping_pong_buffers(self, shape: tuple[int, ...], dtype=np.complex128) -> tuple[cuda.devicearray.DeviceNDArray, cuda.devicearray.DeviceNDArray]:
-        """Get or create persistent ping-pong buffers with pinned memory."""
+        """Get or create persistent ping-pong buffers optimized for quantum state operations."""
         if shape not in self.ping_pong_buffers:
             if self.stream:
                 buffer_a = cuda.device_array(shape, dtype=dtype, stream=self.stream)
@@ -69,18 +66,30 @@ class GPUBufferManager:
     def get_cached_matrix(self, matrix: np.ndarray, cache_key: str) -> cuda.devicearray.DeviceNDArray:
         """Get or create cached GPU matrix with optimized transfer."""
         if cache_key not in self.matrix_cache:
-            if matrix.flags['C_CONTIGUOUS']:
-                if self.stream:
-                    self.matrix_cache[cache_key] = cuda.to_device(matrix, stream=self.stream)
-                else:
-                    self.matrix_cache[cache_key] = cuda.to_device(matrix)
+            matrix_contiguous = np.ascontiguousarray(matrix) if not matrix.flags['C_CONTIGUOUS'] else matrix
+            
+            if self.stream:
+                self.matrix_cache[cache_key] = cuda.to_device(matrix_contiguous, stream=self.stream)
             else:
-                contiguous_matrix = np.ascontiguousarray(matrix)
-                if self.stream:
-                    self.matrix_cache[cache_key] = cuda.to_device(contiguous_matrix, stream=self.stream)
-                else:
-                    self.matrix_cache[cache_key] = cuda.to_device(contiguous_matrix)
+                self.matrix_cache[cache_key] = cuda.to_device(matrix_contiguous)
         return self.matrix_cache[cache_key]
+    
+    def transfer_to_device(self, host_array: np.ndarray, device_buffer: cuda.devicearray.DeviceNDArray):
+        """Optimized transfer from host to device buffer."""
+        if self.stream:
+            cuda.to_device(host_array, to=device_buffer, stream=self.stream)
+            self.stream.synchronize()
+        else:
+            cuda.to_device(host_array, to=device_buffer)
+    
+    def transfer_to_host(self, device_buffer: cuda.devicearray.DeviceNDArray) -> np.ndarray:
+        """Optimized transfer from device buffer to host."""
+        if self.stream:
+            result = device_buffer.copy_to_host(stream=self.stream)
+            self.stream.synchronize()
+            return result
+        else:
+            return device_buffer.copy_to_host()
     
     def clear_cache(self):
         """Clear all cached resources."""
@@ -94,61 +103,52 @@ _gpu_buffer_manager = GPUBufferManager() if _GPU_AVAILABLE else None
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Apply quantum operations using circuit fusion or optimized ping-pong buffering."""
+    """Apply quantum operations using optimized fusion strategies with ping-pong buffering."""
     if not _GPU_AVAILABLE or not _should_use_gpu(state.size, qubit_count):
         return single_operation_strategy.apply_operations(state, qubit_count, operations)
     
     if len(operations) >= 3 and len(operations) <= 20:
-        fused_result = _try_circuit_fusion(state, qubit_count, operations)
+        fused_result = _execute_fused_operations(state, qubit_count, operations)
         if fused_result is not None:
             return fused_result
     
     return _apply_operations_individual(state, qubit_count, operations)
 
 
-def _try_circuit_fusion(
+def _execute_fused_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray | None:
-    """Advanced circuit fusion with multiple fusion strategies including tensor cores."""
+    """Execute operations using optimal fusion strategy with efficient ping-pong buffering."""
     if not _circuit_compiler.can_fuse_circuit(operations):
         return None
     
     buffer_a, buffer_b = _gpu_buffer_manager.get_ping_pong_buffers(state.shape, state.dtype)
-    
-    if _gpu_buffer_manager.stream:
-        cuda.to_device(state, to=buffer_a, stream=_gpu_buffer_manager.stream)
-        _gpu_buffer_manager.stream.synchronize()
-    else:
-        cuda.to_device(state, to=buffer_a)
+    _gpu_buffer_manager.transfer_to_device(state, buffer_a)
     
     start_time = time.perf_counter()
-    
     success = False
     fusion_method = "none"
     
-    if _TENSOR_CORES_AVAILABLE and len(operations) >= 4:
-        tensor_suitable = sum(1 for op in operations if len(op.targets) == 2)
-        if tensor_suitable >= len(operations) * 0.4:
-            accelerated_ops, acceleration_info = accelerate_with_tensor_cores(
-                operations, precision='fp16', validate_precision=False
-            )
-            
-            if acceleration_info.get('accelerated', False):
-                success = compile_and_execute_circuit(accelerated_ops, buffer_a, buffer_b, qubit_count)
-                if success:
-                    fusion_method = f"tensor_core_{acceleration_info['precision']}"
-                    print(f"Tensor core pre-processing: {acceleration_info['operations_accelerated']} ops accelerated")
+    tensor_suitable_count = sum(1 for op in operations if len(op.targets) == 2)
+    tensor_ratio = tensor_suitable_count / len(operations) if operations else 0
+    
+    if _TENSOR_CORES_AVAILABLE and len(operations) >= 4 and tensor_ratio >= 0.4:
+        accelerated_ops, acceleration_info = accelerate_with_tensor_cores(
+            operations, precision='fp16', validate_precision=False
+        )
+        
+        if acceleration_info.get('accelerated', False):
+            success = compile_and_execute_circuit(accelerated_ops, buffer_a, buffer_b, qubit_count)
+            if success:
+                fusion_method = f"tensor_core_{acceleration_info['precision']}"
     
     if not success:
         pattern_type = _circuit_compiler.analyze_pattern_type(operations)
-        if pattern_type != "custom":
-            template_kernel = _circuit_compiler.compile_template_kernel(
-                operations, pattern_type, qubit_count
-            )
+        if pattern_type in ["single_chain", "mixed_gates", "diagonal_chain"]:
+            template_kernel = _circuit_compiler.compile_template_kernel(operations, pattern_type, qubit_count)
             if template_kernel:
                 _circuit_compiler.execute_template_kernel(
-                    template_kernel, operations, buffer_a, buffer_b, 
-                    qubit_count, pattern_type
+                    template_kernel, operations, buffer_a, buffer_b, qubit_count, pattern_type
                 )
                 success = True
                 fusion_method = f"template_{pattern_type}"
@@ -164,12 +164,7 @@ def _try_circuit_fusion(
             fusion_method = "template_basic"
     
     if success:
-        if _gpu_buffer_manager.stream:
-            result = buffer_b.copy_to_host(stream=_gpu_buffer_manager.stream)
-            _gpu_buffer_manager.stream.synchronize()
-        else:
-            result = buffer_b.copy_to_host()
-        
+        result = _gpu_buffer_manager.transfer_to_host(buffer_b)
         fusion_time = time.perf_counter() - start_time
         estimated_individual_time = len(operations) * 0.15e-3
         speedup = estimated_individual_time / fusion_time if fusion_time > 0 else 1.0
@@ -185,61 +180,72 @@ def _try_circuit_fusion(
 def _apply_operations_individual(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Apply operations individually with ping-pong buffering."""
+    """Apply operations individually with tensor core pre-processing and ping-pong buffering."""
     buffer_a, buffer_b = _gpu_buffer_manager.get_ping_pong_buffers(state.shape, state.dtype)
-    
-    if _gpu_buffer_manager.stream:
-        cuda.to_device(state, to=buffer_a, stream=_gpu_buffer_manager.stream)
-        _gpu_buffer_manager.stream.synchronize()
-    else:
-        cuda.to_device(state, to=buffer_a)
+    _gpu_buffer_manager.transfer_to_device(state, buffer_a)
     
     current_buffer = buffer_a
     output_buffer = buffer_b
     
     start_time = time.perf_counter()
+    processed_operations = operations
     
-    for op in operations:
-        targets = op.targets
-        num_ctrl = len(op._ctrl_modifiers)
-        gate_type = getattr(op, "gate_type", None)
+    if _TENSOR_CORES_AVAILABLE and _tensor_core_accelerator:
+        tensor_suitable_ops = [op for op in operations if _tensor_core_accelerator.can_accelerate_operation(op)]
         
-        if not num_ctrl:
-            if len(targets) == 1:
-                target = targets[0]
-                if gate_type and gate_type in DIAGONAL_GATES:
-                    _apply_diagonal_gate_gpu_inplace(current_buffer, op.matrix, target, output_buffer)
-                else:
-                    _apply_single_qubit_gate_gpu_inplace(current_buffer, output_buffer, op.matrix, target, gate_type)
-            elif len(targets) == 2:
-                target0, target1 = targets[0], targets[1]
-                if gate_type == "cx":
-                    _apply_cnot_gpu_inplace(current_buffer, target0, target1, output_buffer)
-                elif gate_type == "swap":
-                    _apply_swap_gpu_inplace(current_buffer, target0, target1, output_buffer)
-                else:
-                    _apply_two_qubit_gate_gpu_inplace(current_buffer, output_buffer, op.matrix, target0, target1)
-        else:
-            if len(targets) == 1 and len(op._ctrl_modifiers) == 1 and gate_type == "cphaseshift":
-                _apply_controlled_phase_shift_gpu_inplace(current_buffer, op.matrix[1, 1], targets[:num_ctrl], targets[num_ctrl:][0])
-            else:
-                _apply_controlled_gate_gpu_direct(current_buffer, output_buffer, op, qubit_count)
-        
+        if len(tensor_suitable_ops) >= 2:
+            accelerated_ops, acceleration_info = accelerate_with_tensor_cores(
+                operations, precision='fp16', validate_precision=False
+            )
+            
+            if acceleration_info.get('accelerated', False):
+                processed_operations = accelerated_ops
+                print(f"Individual tensor acceleration: {acceleration_info['operations_accelerated']} ops accelerated")
+    
+    for op in processed_operations:
+        _apply_single_operation_optimized(op, current_buffer, output_buffer, qubit_count)
         current_buffer, output_buffer = output_buffer, current_buffer
     
     individual_time = time.perf_counter() - start_time
-    print(f"Individual execution: {len(operations)} operations in {individual_time*1000:.2f}ms ({len(operations)} kernels)")
+    method = "individual_tensor" if processed_operations != operations else "individual"
+    print(f"{method} execution: {len(operations)} operations in {individual_time*1000:.2f}ms ({len(operations)} kernels)")
     
-    if _gpu_buffer_manager.stream:
-        result = current_buffer.copy_to_host(stream=_gpu_buffer_manager.stream)
-        _gpu_buffer_manager.stream.synchronize()
-        return result
+    return _gpu_buffer_manager.transfer_to_host(current_buffer)
+
+
+def _apply_single_operation_optimized(
+    op: GateOperation, 
+    input_buffer: cuda.devicearray.DeviceNDArray, 
+    output_buffer: cuda.devicearray.DeviceNDArray, 
+    qubit_count: int
+):
+    """Apply single operation with optimized dispatch."""
+    targets = op.targets
+    num_ctrl = len(op._ctrl_modifiers)
+    gate_type = getattr(op, "gate_type", None)
+    
+    if not num_ctrl:
+        if len(targets) == 1:
+            if gate_type and gate_type in DIAGONAL_GATES:
+                _apply_diagonal_gate_gpu_inplace(input_buffer, op.matrix, targets[0], output_buffer)
+            else:
+                _apply_single_qubit_gate_gpu_inplace(input_buffer, output_buffer, op.matrix, targets[0], gate_type)
+        elif len(targets) == 2:
+            if gate_type == "cx":
+                _apply_cnot_gpu_inplace(input_buffer, targets[0], targets[1], output_buffer)
+            elif gate_type == "swap":
+                _apply_swap_gpu_inplace(input_buffer, targets[0], targets[1], output_buffer)
+            else:
+                _apply_two_qubit_gate_gpu_inplace(input_buffer, output_buffer, op.matrix, targets[0], targets[1])
     else:
-        return current_buffer.copy_to_host()
+        if len(targets) == 1 and num_ctrl == 1 and gate_type == "cphaseshift":
+            _apply_controlled_phase_shift_gpu_inplace(input_buffer, op.matrix[1, 1], targets[:num_ctrl], targets[num_ctrl:][0])
+        else:
+            _apply_controlled_gate_gpu_direct(input_buffer, output_buffer, op, qubit_count)
 
 
 def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qubit_count: int):
-    """GPU-only controlled gate implementation."""
+    """Optimized controlled gate implementation with cached matrices."""
     targets = op.targets
     num_ctrl = len(op._ctrl_modifiers)
     matrix = op.matrix
@@ -262,13 +268,13 @@ def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qub
     out_flat = out_gpu.reshape(-1)
     
     matrix_size = matrix.shape[0]
-    cache_key = f"ctrl_matrix_{matrix_size}_{hash(matrix.tobytes())}"
+    cache_key = f"ctrl_{matrix_size}_{hash(matrix.tobytes())}"
     matrix_gpu = _gpu_buffer_manager.get_cached_matrix(matrix.flatten(), cache_key)
     
-    threads_per_block = 512
-    blocks_per_grid = max(
-        min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
-        256
+    threads_per_block = min(512, max(256, total_size // 1024))
+    blocks_per_grid = min(
+        (total_size + threads_per_block - 1) // threads_per_block, 
+        _MAX_BLOCKS_PER_GRID
     )
     
     _controlled_gate_kernel[blocks_per_grid, threads_per_block](
@@ -280,7 +286,7 @@ def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qub
 @cuda.jit(inline=True, fastmath=True)
 def _controlled_gate_kernel(state_flat, out_flat, matrix_flat, control_mask, target_mask, 
                            control_state_mask, n_qubits, total_size, matrix_size):
-    """Ultra-optimized CUDA kernel for controlled gate application."""
+    """Optimized CUDA kernel for controlled gate application."""
     i = cuda.grid(1)
     stride = cuda.gridsize(1)
     
