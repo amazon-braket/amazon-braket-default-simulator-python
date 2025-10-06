@@ -17,6 +17,8 @@ from numba import cuda
 from braket.default_simulator.linalg_utils import (
     _GPU_AVAILABLE,
     _should_use_gpu,
+    _OPTIMAL_THREADS_PER_BLOCK,
+    _MAX_BLOCKS_PER_GRID,
     DIAGONAL_GATES,
     _apply_single_qubit_gate_gpu_inplace,
     _apply_two_qubit_gate_gpu_inplace,
@@ -34,6 +36,7 @@ class GPUBufferManager:
     
     def __init__(self):
         self.ping_pong_buffers: dict[tuple[int, ...], tuple[cuda.devicearray.DeviceNDArray, cuda.devicearray.DeviceNDArray]] = {}
+        self.matrix_cache: dict[str, cuda.devicearray.DeviceNDArray] = {}
         
     def get_ping_pong_buffers(self, shape: tuple[int, ...], dtype=np.complex128) -> tuple[cuda.devicearray.DeviceNDArray, cuda.devicearray.DeviceNDArray]:
         """Get or create persistent ping-pong buffers."""
@@ -43,9 +46,16 @@ class GPUBufferManager:
             self.ping_pong_buffers[shape] = (buffer_a, buffer_b)
         return self.ping_pong_buffers[shape]
     
+    def get_cached_matrix(self, matrix: np.ndarray, cache_key: str) -> cuda.devicearray.DeviceNDArray:
+        """Get or create cached GPU matrix."""
+        if cache_key not in self.matrix_cache:
+            self.matrix_cache[cache_key] = cuda.to_device(matrix)
+        return self.matrix_cache[cache_key]
+    
     def clear_cache(self):
         """Clear all cached resources."""
         self.ping_pong_buffers.clear()
+        self.matrix_cache.clear()
 
 
 _gpu_buffer_manager = GPUBufferManager() if _GPU_AVAILABLE else None
@@ -88,31 +98,77 @@ def apply_operations(
             if len(targets) == 1 and len(op._ctrl_modifiers) == 1 and gate_type == "cphaseshift":
                 _apply_controlled_phase_shift_gpu_inplace(current_buffer, op.matrix[1, 1], targets[:num_ctrl], targets[num_ctrl:][0])
             else:
-                output_buffer[:] = current_buffer[:]
-                _apply_controlled_gate_fallback(current_buffer, output_buffer, op, qubit_count)
+                _apply_controlled_gate_gpu_direct(current_buffer, output_buffer, op, qubit_count)
         
         current_buffer, output_buffer = output_buffer, current_buffer
     
     return current_buffer.copy_to_host()
 
 
-def _apply_controlled_gate_fallback(state_gpu, out_gpu, op: GateOperation, qubit_count: int):
-    """Fallback for complex controlled gates."""
-    from braket.default_simulator.linalg_utils import multiply_matrix, QuantumGateDispatcher
-    
-    cpu_state = state_gpu.copy_to_host()
-    dispatcher = QuantumGateDispatcher(qubit_count, force_cpu=True)
-    
+def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qubit_count: int):
+    """GPU-only controlled gate implementation."""
     targets = op.targets
     num_ctrl = len(op._ctrl_modifiers)
+    matrix = op.matrix
+    gate_type = getattr(op, "gate_type", None)
     
-    result = multiply_matrix(
-        cpu_state,
-        op.matrix,
-        targets[num_ctrl:],
-        targets[:num_ctrl],
-        op._ctrl_modifiers,
-        dispatcher=dispatcher,
+    total_size = state_gpu.size
+    
+    control_mask = 0
+    control_state_mask = 0
+    for ctrl, state_val in zip(targets[:num_ctrl], op._ctrl_modifiers):
+        bit_pos = qubit_count - 1 - ctrl
+        control_mask |= 1 << bit_pos
+        if state_val == 1:
+            control_state_mask |= 1 << bit_pos
+    
+    target_mask = 0
+    for target in targets[num_ctrl:]:
+        target_mask |= 1 << (qubit_count - 1 - target)
+    
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
+    
+    matrix_size = matrix.shape[0]
+    cache_key = f"ctrl_{gate_type}_{matrix_size}_{hash(matrix.tobytes())}"
+    matrix_gpu = _gpu_buffer_manager.get_cached_matrix(matrix.flatten(), cache_key)
+    
+    threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
+    blocks_per_grid = min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID)
+    
+    _controlled_gate_kernel[blocks_per_grid, threads_per_block](
+        state_flat, out_flat, matrix_gpu, control_mask, target_mask,
+        control_state_mask, qubit_count, total_size, matrix_size
     )
+
+
+@cuda.jit(inline=True, fastmath=True)
+def _controlled_gate_kernel(state_flat, out_flat, matrix_flat, control_mask, target_mask, 
+                           control_state_mask, n_qubits, total_size, matrix_size):
+    """Ultra-optimized CUDA kernel for controlled gate application."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    cuda.to_device(result, to=out_gpu)
+    while i < total_size:
+        if (i & control_mask) == control_state_mask:
+            target_state = 0
+            for bit in range(matrix_size):
+                if i & (target_mask >> bit):
+                    target_state |= (1 << bit)
+            
+            new_amplitude = 0j
+            for j in range(matrix_size):
+                matrix_element = matrix_flat[target_state * matrix_size + j]
+                
+                target_idx = i & ~target_mask
+                for bit in range(matrix_size):
+                    if j & (1 << bit):
+                        target_idx |= (target_mask >> (matrix_size - 1 - bit))
+                
+                new_amplitude += matrix_element * state_flat[target_idx]
+            
+            out_flat[i] = new_amplitude
+        else:
+            out_flat[i] = state_flat[i]
+        
+        i += stride
