@@ -131,7 +131,6 @@ class GPUMemoryPool:
                     buffer = self._allocate_unified_memory_buffer(size, dtype)
                 else:
                     buffer = cuda.device_array(size, dtype=dtype)
-                    # Also allocate pinned host buffer for faster transfers
                     host_buffer = cuda.pinned_array(size, dtype=dtype)
                     self.pinned_host_buffers[id(buffer)] = host_buffer
                 
@@ -399,18 +398,23 @@ class PersistentGPUStateManager:
                         use_zero_copy: bool = True) -> np.ndarray:
         """Get result array from GPU buffer with zero-copy optimization when possible."""
         if use_zero_copy and self.memory_pool.unified_memory_enabled:
-            # For unified memory, return view directly
             return gpu_buffer.view()
         else:
-            # Use pinned buffer for faster transfer
             buffer_id = id(gpu_buffer)
             pinned_buffer = self.memory_pool.get_pinned_host_buffer(buffer_id)
             
             if pinned_buffer is not None:
-                gpu_buffer.copy_to_host(ary=pinned_buffer)
-                return pinned_buffer.copy()  # Return copy to avoid modification issues
+                try:
+                    if pinned_buffer.shape != gpu_buffer.shape:
+                        pinned_reshaped = pinned_buffer.reshape(gpu_buffer.shape)
+                        gpu_buffer.copy_to_host(ary=pinned_reshaped)
+                        return pinned_reshaped.copy()
+                    else:
+                        gpu_buffer.copy_to_host(ary=pinned_buffer)
+                        return pinned_buffer.copy()
+                except (ValueError, RuntimeError):
+                    return gpu_buffer.copy_to_host()
             else:
-                # Fallback to regular copy
                 return gpu_buffer.copy_to_host()
     
     def clear_cache(self):
