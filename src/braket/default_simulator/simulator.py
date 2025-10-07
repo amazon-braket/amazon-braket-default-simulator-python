@@ -741,7 +741,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 result_types,
                 simulation,
             )
-        else:
+        elif circuit.basis_rotation_instructions:
             simulation.evolve(circuit.basis_rotation_instructions)
 
         return self._create_results_obj(

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.3 (2025-10-06)
+
+### Bug Fixes and Other Changes
+
+ * remove some specialized gate multiplications
+
 ## v1.31.2 (2025-09-23)
 
 ### Bug Fixes and Other Changes
