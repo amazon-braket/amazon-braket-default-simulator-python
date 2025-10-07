@@ -221,19 +221,18 @@ def _should_use_gpu(work_size: int, n_qubits: int) -> bool:
 def _single_qubit_gate_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_size):
     """Optimized CUDA kernel for single qubit gate application."""
     i = cuda.grid(1)
-    stride = cuda.gridsize(1)
     
-    while i < half_size:
-        idx0 = (i & ~mask) << 1 | (i & mask)
-        idx1 = idx0 | (1 << n)
-        
-        s0 = state_flat[idx0]
-        s1 = state_flat[idx1]
-        
-        out_flat[idx0] = a * s0 + b * s1
-        out_flat[idx1] = c * s0 + d * s1
-        
-        i += stride
+    if i >= half_size:
+        return
+    
+    idx0 = ((i >> n) << (n + 1)) | (i & mask)
+    idx1 = idx0 | (1 << n)
+    
+    s0 = state_flat[idx0]
+    s1 = state_flat[idx1]
+    
+    out_flat[idx0] = a * s0 + b * s1
+    out_flat[idx1] = c * s0 + d * s1
 
 
 @cuda.jit(inline=True, fastmath=True)
@@ -317,19 +316,21 @@ def _cnot_kernel(state_flat, control_stride, target_stride, swap_offset, iterati
 
 
 @cuda.jit(inline=True, fastmath=True)
-def _cnot_ping_pong_kernel(state_flat, out_flat, control_stride, target_stride, swap_offset, iterations):
-    """CNOT kernel for ping-pong buffer operations."""
+def _cnot_ping_pong_kernel(state_flat, out_flat, control_bit, target_bit, total_size):
+    """Optimized CNOT kernel for ping-pong buffer operations."""
     i = cuda.grid(1)
-    stride = cuda.gridsize(1)
     
-    while i < iterations:
-        idx0 = control_stride + i
-        idx1 = idx0 + swap_offset
+    if i >= total_size:
+        return
         
-        out_flat[idx0] = state_flat[idx1]
-        out_flat[idx1] = state_flat[idx0]
-        
-        i += stride
+    control_mask = 1 << control_bit
+    target_mask = 1 << target_bit
+    
+    if (i & control_mask) != 0:
+        partner_idx = i ^ target_mask
+        out_flat[i] = state_flat[partner_idx]
+    else:
+        out_flat[i] = state_flat[i]
 
 
 def _apply_cnot_gpu_inplace(
@@ -337,26 +338,22 @@ def _apply_cnot_gpu_inplace(
 ) -> tuple[None, bool]:
     """GPU-accelerated CNOT gate implementation for device arrays."""
     n_qubits = len(state_gpu.shape)
-    iterations = state_gpu.size >> 2
+    total_size = state_gpu.size
     
-    target_bit_pos = n_qubits - target - 1
-    control_bit_pos = n_qubits - control - 1
-    
-    control_stride = 1 << control_bit_pos
-    target_stride = 1 << target_bit_pos
-    swap_offset = target_stride
+    control_bit = n_qubits - control - 1
+    target_bit = n_qubits - target - 1
     
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    threads_per_block = 256
-    blocks_per_grid = max(
-        min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
-        128
+    threads_per_block = 512
+    blocks_per_grid = min(
+        (total_size + threads_per_block - 1) // threads_per_block, 
+        _MAX_BLOCKS_PER_GRID
     )
     
     _cnot_ping_pong_kernel[blocks_per_grid, threads_per_block](
-        state_flat, out_flat, control_stride, target_stride, swap_offset, iterations
+        state_flat, out_flat, control_bit, target_bit, total_size
     )
     
     return None, True
@@ -466,21 +463,19 @@ def _two_qubit_gate_kernel(state_flat, out_flat, m00, m01, m02, m03, m10, m11, m
                           mask_0, mask_1, mask_both, total_size):
     """Optimized CUDA kernel for two-qubit gate application."""
     i = cuda.grid(1)
-    stride = cuda.gridsize(1)
     
-    while i < total_size:
-        if (i & mask_both) == 0:
-            s0 = state_flat[i]
-            s1 = state_flat[i | mask_1]
-            s2 = state_flat[i | mask_0]
-            s3 = state_flat[i | mask_both]
-            
-            out_flat[i] = m00 * s0 + m01 * s1 + m02 * s2 + m03 * s3
-            out_flat[i | mask_1] = m10 * s0 + m11 * s1 + m12 * s2 + m13 * s3
-            out_flat[i | mask_0] = m20 * s0 + m21 * s1 + m22 * s2 + m23 * s3
-            out_flat[i | mask_both] = m30 * s0 + m31 * s1 + m32 * s2 + m33 * s3
-        
-        i += stride
+    if i >= total_size or (i & mask_both) != 0:
+        return
+    
+    s0 = state_flat[i]
+    s1 = state_flat[i | mask_1]
+    s2 = state_flat[i | mask_0]
+    s3 = state_flat[i | mask_both]
+    
+    out_flat[i] = m00 * s0 + m01 * s1 + m02 * s2 + m03 * s3
+    out_flat[i | mask_1] = m10 * s0 + m11 * s1 + m12 * s2 + m13 * s3
+    out_flat[i | mask_0] = m20 * s0 + m21 * s1 + m22 * s2 + m23 * s3
+    out_flat[i | mask_both] = m30 * s0 + m31 * s1 + m32 * s2 + m33 * s3
 
 
 def _apply_two_qubit_gate_gpu_inplace(
@@ -506,10 +501,10 @@ def _apply_two_qubit_gate_gpu_inplace(
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    threads_per_block = 256
-    blocks_per_grid = max(
-        min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
-        128
+    threads_per_block = 512
+    blocks_per_grid = min(
+        (total_size + threads_per_block - 1) // threads_per_block, 
+        _MAX_BLOCKS_PER_GRID
     )
     
     _two_qubit_gate_kernel[blocks_per_grid, threads_per_block](
