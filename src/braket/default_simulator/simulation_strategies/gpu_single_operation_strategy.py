@@ -15,11 +15,8 @@
 GPU single operation strategy for quantum simulations.
 
 This module provides GPU acceleration for quantum circuit execution using
-efficient ping-pong buffering and optimized CUDA kernels.
+efficient ping-pong buffering and cuda.jit kernels.
 """
-
-from typing import Dict, List, Tuple
-import time
 
 import numpy as np
 from numba import cuda
@@ -47,7 +44,7 @@ from braket.default_simulator.persistent_gpu_state_manager import (
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """GPU quantum operations with single write/read pattern."""
+    """Apply operations to state vector using GPU acceleration."""
     use_gpu = _GPU_AVAILABLE and qubit_count >= 8 and state.size >= 256
     
     if not use_gpu:
@@ -69,16 +66,25 @@ def clear_gpu_caches():
 def _execute_gpu_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Execute operations on GPU: write once, compute all on GPU, read once."""
+    """Execute operations on GPU: write once, compute on GPU, read once."""
     gpu_manager = get_persistent_gpu_manager()
     
     if gpu_manager is not None and qubit_count >= 22:
         result_buffer, temp_buffer = gpu_manager.get_persistent_state(state, force_refresh=False)
+        use_persistent = True
     else:
         stream = cuda.stream()
-        result_buffer = cuda.to_device(state, stream=stream)
+        
+        if state.flags.c_contiguous:
+            pinned_state = cuda.pinned_array_like(state)
+            pinned_state[:] = state
+            result_buffer = cuda.to_device(pinned_state, stream=stream)
+        else:
+            result_buffer = cuda.to_device(np.ascontiguousarray(state), stream=stream)
+        
         temp_buffer = cuda.device_array_like(result_buffer)
         stream.synchronize()
+        use_persistent = False
     
     for op in operations:
         targets = op.targets
@@ -92,11 +98,12 @@ def _execute_gpu_operations(
         if needs_swap:
             result_buffer, temp_buffer = temp_buffer, result_buffer
     
-    if gpu_manager is not None and qubit_count >= 22:
+    if use_persistent:
         return gpu_manager.get_result_array(result_buffer, use_zero_copy=True)
     else:
-        final_result = result_buffer.copy_to_host()
-        return final_result
+        pinned_result = cuda.pinned_array_like(state)
+        result_buffer.copy_to_host(ary=pinned_result)
+        return pinned_result.copy()
 
 
 def _apply_operation_gpu(
@@ -139,7 +146,7 @@ def _apply_single_qubit_gpu(
     target: int,
     gate_type: str = None
 ) -> bool:
-    """Apply single qubit gate on GPU with efficient bit manipulation."""
+    """Apply single qubit gate on GPU using efficient kernels."""
     if gate_type and gate_type in DIAGONAL_GATES:
         _apply_diagonal_gate_gpu_inplace(state_gpu, matrix, target, out_gpu)
         return True
@@ -154,7 +161,7 @@ def _apply_cnot_gpu(
     control: int,
     target: int
 ) -> bool:
-    """Apply CNOT gate on GPU with efficient implementation."""
+    """Apply CNOT gate on GPU using efficient kernel."""
     _apply_cnot_gpu_inplace(state_gpu, control, target, out_gpu)
     return True
 
@@ -165,7 +172,7 @@ def _apply_swap_gpu(
     qubit_0: int,
     qubit_1: int
 ) -> bool:
-    """Apply SWAP gate on GPU."""
+    """Apply SWAP gate on GPU using efficient kernel."""
     _apply_swap_gpu_inplace(state_gpu, qubit_0, qubit_1, out_gpu)
     return True
 
@@ -177,7 +184,7 @@ def _apply_two_qubit_gpu(
     target0: int,
     target1: int
 ) -> bool:
-    """Apply two-qubit gate on GPU."""
+    """Apply two-qubit gate on GPU using efficient kernel."""
     _apply_two_qubit_gate_gpu_inplace(state_gpu, out_gpu, matrix, target0, target1)
     return True
 
@@ -188,7 +195,7 @@ def _apply_controlled_gpu(
     op: GateOperation,
     qubit_count: int
 ) -> bool:
-    """Apply controlled gate on GPU."""
+    """Apply controlled gate on GPU using efficient kernel."""
     targets = op.targets
     num_ctrl = len(getattr(op, "_ctrl_modifiers", []))
     matrix = op.matrix
