@@ -167,78 +167,20 @@ def clear_gpu_caches():
 def _execute_persistent_gpu_path(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Persistent GPU execution with single-buffer in-place operations - eliminates memory transfer bottleneck."""
+    """Persistent GPU execution - state stays on GPU, only transfers at start/end."""
     gpu_state = _persistent_gpu_manager.upload_state_once(state)
-    _apply_operations_in_place(gpu_state, qubit_count, operations)
-    return _persistent_gpu_manager.download_final_result(gpu_state)
-
-
-def _apply_operations_in_place(
-    gpu_state: cuda.devicearray.DeviceNDArray, qubit_count: int, operations: list[GateOperation]
-):
-    """Apply operations in-place on persistent GPU state without ping-pong buffers."""
-    if len(operations) >= 3:
-        mega_kernel_success = execute_mega_kernel_circuit(operations, gpu_state, qubit_count)
-        if mega_kernel_success:
-            return
+    output_buffer = _persistent_gpu_manager.get_temporary_buffer(gpu_state.shape, gpu_state.dtype)
     
-    temp_buffer = None
-    needs_temp_buffer = _operations_require_temporary_buffer(operations)
+    current_buffer = gpu_state
     
-    if needs_temp_buffer:
-        temp_buffer = _persistent_gpu_manager.get_temporary_buffer(gpu_state.shape, gpu_state.dtype)
-    
-    current_is_main = True
-    
-    for i, op in enumerate(operations):
-        if needs_temp_buffer and not _can_apply_in_place(op):
-            if current_is_main:
-                _apply_operation_direct_dispatch(op, gpu_state, temp_buffer, qubit_count, gpu_state.size)
-                current_is_main = False
-            else:
-                _apply_operation_direct_dispatch(op, temp_buffer, gpu_state, qubit_count, gpu_state.size)
-                current_is_main = True
-        else:
-            _apply_operation_truly_inplace(op, gpu_state, qubit_count)
-    
-    if needs_temp_buffer and not current_is_main:
-        cuda.to_device(temp_buffer.copy_to_host(), to=gpu_state)
-
-
-def _operations_require_temporary_buffer(operations: list[GateOperation]) -> bool:
-    """Determine if any operations require a temporary buffer (cannot be done truly in-place)."""
     for op in operations:
-        if not _can_apply_in_place(op):
-            return True
-    return False
-
-
-def _can_apply_in_place(op: GateOperation) -> bool:
-    """Check if operation can be applied truly in-place without temporary buffer."""
-    gate_type = getattr(op, "gate_type", None)
+        _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
+        current_buffer, output_buffer = output_buffer, current_buffer
     
-    if gate_type in DIAGONAL_GATES or gate_type == "pauli_z":
-        return True
+    if current_buffer is not gpu_state:
+        cuda.to_device(current_buffer.copy_to_host(), to=gpu_state)
     
-    if len(op.targets) == 1 and gate_type in ["rx", "ry", "rz", "h"]:
-        return True
-    
-    return False
-
-
-def _apply_operation_truly_inplace(
-    op: GateOperation, gpu_state: cuda.devicearray.DeviceNDArray, qubit_count: int
-):
-    """Apply operation that can be done truly in-place (modifying state directly)."""
-    targets = op.targets
-    gate_type = getattr(op, "gate_type", None)
-    
-    if len(targets) == 1 and (gate_type == "pauli_z" or gate_type in DIAGONAL_GATES):
-        _apply_diagonal_gate_gpu_inplace(gpu_state, op.matrix, targets[0], gpu_state)
-    else:
-        temp_buffer = _persistent_gpu_manager.get_temporary_buffer(gpu_state.shape, gpu_state.dtype)
-        _apply_operation_direct_dispatch(op, gpu_state, temp_buffer, qubit_count, gpu_state.size)
-        cuda.to_device(temp_buffer.copy_to_host(), to=gpu_state)
+    return _persistent_gpu_manager.download_final_result(gpu_state)
 
 
 def _apply_operation_direct_dispatch(
