@@ -326,6 +326,12 @@ def test_properties():
                         {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                     ],
                 },
+                "braket.ir.openqasm.program_set": {
+                    "actionType": "braket.ir.openqasm.program_set",
+                    "version": ["1"],
+                    "maximumExecutables": 100,
+                    "maximumTotalShots": 200_000,
+                },
             },
             "paradigm": {"qubitCount": qubit_count},
             "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
