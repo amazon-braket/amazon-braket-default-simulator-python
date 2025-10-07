@@ -67,91 +67,14 @@ from braket.default_simulator.warp_cooperative_kernels import (
 )
 
 
-class PersistentGPUStateManager:
-    """Persistent GPU state management with single-buffer in-place operations."""
-    
-    def __init__(self):
-        self.persistent_states: dict[tuple[int, ...], cuda.devicearray.DeviceNDArray] = {}
-        self.temporary_buffers: dict[tuple[int, ...], cuda.devicearray.DeviceNDArray] = {}
-        self.matrix_cache: dict[str, cuda.devicearray.DeviceNDArray] = {}
-        self.stream = cuda.stream() if _GPU_AVAILABLE else None
-        
-    def get_persistent_state(self, shape: tuple[int, ...], dtype=np.complex128) -> cuda.devicearray.DeviceNDArray:
-        """Get or create persistent GPU state buffer for in-place operations."""
-        if shape not in self.persistent_states:
-            buffer_size = int(np.prod(shape))
-            
-            if self.stream:
-                buffer = cuda.device_array(buffer_size, dtype=dtype, stream=self.stream)
-            else:
-                buffer = cuda.device_array(buffer_size, dtype=dtype)
-            
-            self.persistent_states[shape] = buffer.reshape(shape)
-        return self.persistent_states[shape]
-    
-    def get_temporary_buffer(self, shape: tuple[int, ...], dtype=np.complex128) -> cuda.devicearray.DeviceNDArray:
-        """Get temporary buffer only when in-place operation is not mathematically possible."""
-        if shape not in self.temporary_buffers:
-            buffer_size = int(np.prod(shape))
-            
-            if self.stream:
-                buffer = cuda.device_array(buffer_size, dtype=dtype, stream=self.stream)
-            else:
-                buffer = cuda.device_array(buffer_size, dtype=dtype)
-            
-            self.temporary_buffers[shape] = buffer.reshape(shape)
-        return self.temporary_buffers[shape]
-    
-    def upload_state_once(self, state: np.ndarray) -> cuda.devicearray.DeviceNDArray:
-        """Upload state to GPU once at simulation start - persistent until download."""
-        gpu_state = self.get_persistent_state(state.shape, state.dtype)
-        
-        if self.stream:
-            cuda.to_device(state, to=gpu_state, stream=self.stream)
-            self.stream.synchronize()
-        else:
-            cuda.to_device(state, to=gpu_state)
-        
-        return gpu_state
-    
-    def download_final_result(self, gpu_state: cuda.devicearray.DeviceNDArray) -> np.ndarray:
-        """Download final result from GPU only at simulation end."""
-        if self.stream:
-            result = gpu_state.copy_to_host(stream=self.stream)
-            self.stream.synchronize()
-            return result
-        else:
-            return gpu_state.copy_to_host()
-    
-    def get_cached_matrix(self, matrix: np.ndarray, cache_key: str) -> cuda.devicearray.DeviceNDArray:
-        """Get or create cached GPU matrix with memory alignment."""
-        if cache_key not in self.matrix_cache:
-            matrix_contiguous = np.ascontiguousarray(matrix) if not matrix.flags['C_CONTIGUOUS'] else matrix
-            
-            if self.stream:
-                self.matrix_cache[cache_key] = cuda.to_device(matrix_contiguous, stream=self.stream)
-            else:
-                self.matrix_cache[cache_key] = cuda.to_device(matrix_contiguous)
-        return self.matrix_cache[cache_key]
-    
-    def clear_cache(self):
-        """Clear all cached resources."""
-        self.persistent_states.clear()
-        self.temporary_buffers.clear()
-        self.matrix_cache.clear()
-
-
-_persistent_gpu_manager = PersistentGPUStateManager() if _GPU_AVAILABLE else None
-
-
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Persistent GPU operations with single-buffer in-place execution."""
+    """Optimized quantum operations with direct fast-path routing for maximum speed."""
     if not _GPU_AVAILABLE:
         return single_operation_strategy.apply_operations(state, qubit_count, operations)
     
-    return _execute_persistent_gpu_path(state, qubit_count, operations)
+    return _execute_optimized_fast_path(state, qubit_count, operations)
 
 
 def clear_gpu_caches():
@@ -159,28 +82,46 @@ def clear_gpu_caches():
     gpu_manager = get_persistent_gpu_manager()
     if gpu_manager is not None:
         gpu_manager.clear_cache()
-    
-    if _persistent_gpu_manager is not None:
-        _persistent_gpu_manager.clear_cache()
 
 
-def _execute_persistent_gpu_path(
+def _execute_optimized_fast_path(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Persistent GPU execution - state stays on GPU, only transfers at start/end."""
-    gpu_state = _persistent_gpu_manager.upload_state_once(state)
-    output_buffer = _persistent_gpu_manager.get_temporary_buffer(gpu_state.shape, gpu_state.dtype)
+    """Execution with maximum GPU parallelism and persistent buffer management.""" 
+    current_buffer = cuda.to_device(state)
+    output_buffer = cuda.device_array_like(current_buffer)
     
-    current_buffer = gpu_state
+    if len(operations) >= 3:
+        mega_kernel_success = execute_mega_kernel_circuit(operations, current_buffer, qubit_count)
+        
+        if not mega_kernel_success:
+            batch_size = min(20, len(operations))
+            
+            for i in range(0, len(operations), batch_size):
+                batch_ops = operations[i:i + batch_size]
+                
+                mega_batch_success = execute_mega_kernel_circuit(batch_ops, current_buffer, qubit_count)
+                
+                if not mega_batch_success:
+                    if len(batch_ops) >= 3:
+                        success = execute_template_fused_kernel(batch_ops, current_buffer, output_buffer, qubit_count)
+                        if success:
+                            current_buffer, output_buffer = output_buffer, current_buffer
+                            continue
+                        else:
+                            for op in batch_ops:
+                                _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
+                                current_buffer, output_buffer = output_buffer, current_buffer
+                    else:
+                        for op in batch_ops:
+                            _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
+                            current_buffer, output_buffer = output_buffer, current_buffer
+    else:
+        for op in operations:
+            _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
+            current_buffer, output_buffer = output_buffer, current_buffer
     
-    for op in operations:
-        _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
-        current_buffer, output_buffer = output_buffer, current_buffer
-    
-    if current_buffer is not gpu_state:
-        cuda.to_device(current_buffer.copy_to_host(), to=gpu_state)
-    
-    return _persistent_gpu_manager.download_final_result(gpu_state)
+    return current_buffer.copy_to_host()
 
 
 def _apply_operation_direct_dispatch(
@@ -240,7 +181,7 @@ def _apply_controlled_gate_gpu_direct(state_gpu, out_gpu, op: GateOperation, qub
     
     matrix_size = matrix.shape[0]
     cache_key = f"ctrl_{matrix_size}_{hash(matrix.tobytes())}"
-    matrix_gpu = _persistent_gpu_manager.get_cached_matrix(matrix.flatten(), cache_key)
+    matrix_gpu = cuda.to_device(matrix.flatten())
     
     threads_per_block = min(1024, max(512, total_size // 2048))
     blocks_per_grid = min(
