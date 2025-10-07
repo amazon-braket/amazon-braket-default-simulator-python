@@ -224,51 +224,54 @@ def _should_use_gpu(work_size: int, n_qubits: int) -> bool:
 def _single_qubit_gate_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_size):
     """Optimized CUDA kernel for single qubit gate application."""
     i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    if i >= half_size:
-        return
-    
-    idx0 = ((i >> n) << (n + 1)) | (i & mask)
-    idx1 = idx0 | (1 << n)
-    
-    s0 = state_flat[idx0]
-    s1 = state_flat[idx1]
-    
-    out_flat[idx0] = a * s0 + b * s1
-    out_flat[idx1] = c * s0 + d * s1
+    while i < half_size:
+        idx0 = ((i >> n) << (n + 1)) | (i & mask)
+        idx1 = idx0 | (1 << n)
+        
+        s0 = state_flat[idx0]
+        s1 = state_flat[idx1]
+        
+        out_flat[idx0] = a * s0 + b * s1
+        out_flat[idx1] = c * s0 + d * s1
+        
+        i += stride
 
 
 @cuda.jit(inline=True, fastmath=True)
 def _controlled_phase_shift_kernel_linalg(state_flat, phase_factor_real, phase_factor_imag, controlled_mask, total_size):
     """Optimized CUDA kernel for controlled phase shift."""
     i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    if i >= total_size:
-        return
-    
-    if (i & controlled_mask) == controlled_mask:
-        real_part = state_flat[i].real
-        imag_part = state_flat[i].imag
+    while i < total_size:
+        if (i & controlled_mask) == controlled_mask:
+            real_part = state_flat[i].real
+            imag_part = state_flat[i].imag
+            
+            new_real = real_part * phase_factor_real - imag_part * phase_factor_imag
+            new_imag = real_part * phase_factor_imag + imag_part * phase_factor_real
+            
+            state_flat[i] = complex(new_real, new_imag)
         
-        new_real = real_part * phase_factor_real - imag_part * phase_factor_imag
-        new_imag = real_part * phase_factor_imag + imag_part * phase_factor_real
-        
-        state_flat[i] = complex(new_real, new_imag)
+        i += stride
 
 
 @cuda.jit(inline=True, fastmath=True)
 def _diagonal_gate_kernel(state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size):
     """Optimized CUDA kernel for diagonal gate application."""
     i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    if i >= half_size:
-        return
-    
-    idx0 = (i & ~shifted_target_mask) << 1 | (i & shifted_target_mask)
-    idx1 = idx0 | target_mask
-    
-    out_flat[idx0] = a * state_flat[idx0]
-    out_flat[idx1] = d * state_flat[idx1]
+    while i < half_size:
+        idx0 = (i & ~shifted_target_mask) << 1 | (i & shifted_target_mask)
+        idx1 = idx0 | target_mask
+        
+        out_flat[idx0] = a * state_flat[idx0]
+        out_flat[idx1] = d * state_flat[idx1]
+        
+        i += stride
 
 
 def _apply_diagonal_gate_gpu_inplace(
@@ -319,18 +322,19 @@ def _cnot_kernel(state_flat, control_stride, target_stride, swap_offset, iterati
 def _cnot_ping_pong_kernel(state_flat, out_flat, control_bit, target_bit, total_size):
     """Optimized CNOT kernel for ping-pong buffer operations."""
     i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    if i >= total_size:
-        return
-        
     control_mask = 1 << control_bit
     target_mask = 1 << target_bit
     
-    if (i & control_mask) != 0:
-        partner_idx = i ^ target_mask
-        out_flat[i] = state_flat[partner_idx]
-    else:
-        out_flat[i] = state_flat[i]
+    while i < total_size:
+        if (i & control_mask) != 0:
+            partner_idx = i ^ target_mask
+            out_flat[i] = state_flat[partner_idx]
+        else:
+            out_flat[i] = state_flat[i]
+        
+        i += stride
 
 
 def _apply_cnot_gpu_inplace(
@@ -382,18 +386,19 @@ def _swap_kernel(state_flat, pos_0, pos_1, mask_0, mask_1, iterations):
 def _swap_ping_pong_kernel(state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations):
     """Optimized SWAP kernel for ping-pong buffer operations."""
     i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    if i >= iterations:
-        return
-    
-    base = i + ((i >> pos_0) << pos_0)
-    base += (base >> pos_1) << pos_1
-    
-    idx0 = base | mask_1
-    idx1 = base | mask_0
-    
-    out_flat[idx0] = state_flat[idx1]
-    out_flat[idx1] = state_flat[idx0]
+    while i < iterations:
+        base = i + ((i >> pos_0) << pos_0)
+        base += (base >> pos_1) << pos_1
+        
+        idx0 = base | mask_1
+        idx1 = base | mask_0
+        
+        out_flat[idx0] = state_flat[idx1]
+        out_flat[idx1] = state_flat[idx0]
+        
+        i += stride
 
 
 def _apply_controlled_phase_shift_gpu_inplace(
@@ -461,19 +466,21 @@ def _two_qubit_gate_kernel(state_flat, out_flat, m00, m01, m02, m03, m10, m11, m
                           mask_0, mask_1, mask_both, total_size):
     """Optimized CUDA kernel for two-qubit gate application."""
     i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    if i >= total_size or (i & mask_both) != 0:
-        return
-    
-    s0 = state_flat[i]
-    s1 = state_flat[i | mask_1]
-    s2 = state_flat[i | mask_0]
-    s3 = state_flat[i | mask_both]
-    
-    out_flat[i] = m00 * s0 + m01 * s1 + m02 * s2 + m03 * s3
-    out_flat[i | mask_1] = m10 * s0 + m11 * s1 + m12 * s2 + m13 * s3
-    out_flat[i | mask_0] = m20 * s0 + m21 * s1 + m22 * s2 + m23 * s3
-    out_flat[i | mask_both] = m30 * s0 + m31 * s1 + m32 * s2 + m33 * s3
+    while i < total_size:
+        if (i & mask_both) == 0:
+            s0 = state_flat[i]
+            s1 = state_flat[i | mask_1]
+            s2 = state_flat[i | mask_0]
+            s3 = state_flat[i | mask_both]
+            
+            out_flat[i] = m00 * s0 + m01 * s1 + m02 * s2 + m03 * s3
+            out_flat[i | mask_1] = m10 * s0 + m11 * s1 + m12 * s2 + m13 * s3
+            out_flat[i | mask_0] = m20 * s0 + m21 * s1 + m22 * s2 + m23 * s3
+            out_flat[i | mask_both] = m30 * s0 + m31 * s1 + m32 * s2 + m33 * s3
+        
+        i += stride
 
 
 def _apply_two_qubit_gate_gpu_inplace(
