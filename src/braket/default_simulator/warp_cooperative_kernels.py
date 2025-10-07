@@ -70,37 +70,34 @@ _warp_optimizer = WarpCooperativeOptimizer() if _GPU_AVAILABLE else None
 
 @cuda.jit(inline=True, fastmath=True)
 def _warp_cooperative_single_qubit_kernel(state_flat, out_flat, a, b, c, d, target_bit, target_mask, half_size):
-    """Warp-cooperative single qubit gate using 32-thread coordination."""
-    warp_shared = cuda.shared.array(1024, cuda.complex128)
+    """Warp-cooperative single qubit gate with optimized 32-thread coordination."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    warp_id = cuda.threadIdx.x // 32
     lane_id = cuda.threadIdx.x % 32
-    global_warp_id = (cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x) // 32
     
-    elements_per_warp = 32
-    warp_base = global_warp_id * elements_per_warp
-    
-    if warp_base + lane_id < half_size:
-        local_idx = warp_base + lane_id
-        idx0 = local_idx + (local_idx & ~(target_mask - 1))
+    while i < half_size:
+        idx0 = i + (i & ~(target_mask - 1))
         idx1 = idx0 | target_mask
         
         s0 = state_flat[idx0]
         s1 = state_flat[idx1]
         
-        warp_shared[warp_id * 64 + lane_id] = s0
-        warp_shared[warp_id * 64 + lane_id + 32] = s1
+        shuffled_s0_real = cuda.shfl_sync(0xFFFFFFFF, s0.real, lane_id)
+        shuffled_s0_imag = cuda.shfl_sync(0xFFFFFFFF, s0.imag, lane_id)
+        shuffled_s1_real = cuda.shfl_sync(0xFFFFFFFF, s1.real, lane_id)
+        shuffled_s1_imag = cuda.shfl_sync(0xFFFFFFFF, s1.imag, lane_id)
         
-        cuda.syncwarp(0xFFFFFFFF)
-        
-        shuffled_s0 = cuda.shfl_sync(0xFFFFFFFF, s0, lane_id)
-        shuffled_s1 = cuda.shfl_sync(0xFFFFFFFF, s1, lane_id)
+        shuffled_s0 = complex(shuffled_s0_real, shuffled_s0_imag)
+        shuffled_s1 = complex(shuffled_s1_real, shuffled_s1_imag)
         
         result0 = a * shuffled_s0 + b * shuffled_s1
         result1 = c * shuffled_s0 + d * shuffled_s1
         
         out_flat[idx0] = result0
         out_flat[idx1] = result1
+        
+        i += stride
 
 
 @cuda.jit(inline=True, fastmath=True)
@@ -127,59 +124,43 @@ def _warp_cooperative_diagonal_kernel(state_flat, out_flat, a, d, target_mask, t
 
 @cuda.jit(inline=True, fastmath=True)
 def _warp_cooperative_cnot_kernel(state_flat, out_flat, control_mask, target_mask, quarter_size):
-    """Warp-cooperative CNOT gate with shuffle-based data exchange."""
-    warp_shared = cuda.shared.array(2048, cuda.complex128)
+    """Optimized warp-cooperative CNOT gate with shuffle-based data exchange."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    warp_id = cuda.threadIdx.x // 32
     lane_id = cuda.threadIdx.x % 32
-    global_warp_id = (cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x) // 32
     
-    elements_per_warp = 32
-    warp_base = global_warp_id * elements_per_warp
-    
-    if warp_base + lane_id < quarter_size:
-        local_idx = warp_base + lane_id
-        control_idx = local_idx | control_mask
+    while i < quarter_size:
+        control_idx = i | control_mask
         target_idx = control_idx | target_mask
         
         control_state = state_flat[control_idx]
         target_state = state_flat[target_idx]
         
-        cooperative_control = cuda.shfl_sync(0xFFFFFFFF, control_state, lane_id)
-        cooperative_target = cuda.shfl_sync(0xFFFFFFFF, target_state, lane_id)
+        control_real = cuda.shfl_sync(0xFFFFFFFF, control_state.real, lane_id)
+        control_imag = cuda.shfl_sync(0xFFFFFFFF, control_state.imag, lane_id)
+        target_real = cuda.shfl_sync(0xFFFFFFFF, target_state.real, lane_id)
+        target_imag = cuda.shfl_sync(0xFFFFFFFF, target_state.imag, lane_id)
         
-        warp_shared[warp_id * 64 + lane_id] = cooperative_target
-        warp_shared[warp_id * 64 + lane_id + 32] = cooperative_control
+        cooperative_control = complex(control_real, control_imag)
+        cooperative_target = complex(target_real, target_imag)
         
-        cuda.syncwarp(0xFFFFFFFF)
+        out_flat[control_idx] = cooperative_target
+        out_flat[target_idx] = cooperative_control
         
-        out_flat[control_idx] = warp_shared[warp_id * 64 + lane_id]
-        out_flat[target_idx] = warp_shared[warp_id * 64 + lane_id + 32]
+        i += stride
 
 
 @cuda.jit(inline=True, fastmath=True)
 def _warp_cooperative_two_qubit_kernel(state_flat, out_flat, m00, m01, m02, m03, m10, m11, m12, m13,
                                       m20, m21, m22, m23, m30, m31, m32, m33, mask_0, mask_1, mask_both, total_size):
-    """Warp-cooperative two qubit gate with register blocking and shuffle operations."""
-    warp_matrix = cuda.shared.array(512, cuda.complex128)
-    warp_states = cuda.shared.array(128, cuda.complex128)
+    """Optimized warp-cooperative two qubit gate with component-wise shuffle operations."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    warp_id = cuda.threadIdx.x // 32
     lane_id = cuda.threadIdx.x % 32
-    global_warp_id = (cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x) // 32
     
-    if lane_id < 16:
-        base_idx = warp_id * 16
-        warp_matrix[base_idx + lane_id] = [m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33][lane_id]
-    
-    cuda.syncwarp(0xFFFFFFFF)
-    
-    elements_per_warp = 32
-    warp_base = global_warp_id * elements_per_warp
-    
-    if warp_base + lane_id < total_size:
-        i = warp_base + lane_id
-        
+    while i < total_size:
         if (i & mask_both) == 0:
             base_idx = i
             idx1 = base_idx | mask_1
@@ -191,106 +172,71 @@ def _warp_cooperative_two_qubit_kernel(state_flat, out_flat, m00, m01, m02, m03,
             s2 = state_flat[idx2]
             s3 = state_flat[idx3]
             
-            cooperative_s0 = cuda.shfl_sync(0xFFFFFFFF, s0, lane_id)
-            cooperative_s1 = cuda.shfl_sync(0xFFFFFFFF, s1, lane_id)
-            cooperative_s2 = cuda.shfl_sync(0xFFFFFFFF, s2, lane_id)
-            cooperative_s3 = cuda.shfl_sync(0xFFFFFFFF, s3, lane_id)
+            s0_real = cuda.shfl_sync(0xFFFFFFFF, s0.real, lane_id)
+            s0_imag = cuda.shfl_sync(0xFFFFFFFF, s0.imag, lane_id)
+            s1_real = cuda.shfl_sync(0xFFFFFFFF, s1.real, lane_id)
+            s1_imag = cuda.shfl_sync(0xFFFFFFFF, s1.imag, lane_id)
+            s2_real = cuda.shfl_sync(0xFFFFFFFF, s2.real, lane_id)
+            s2_imag = cuda.shfl_sync(0xFFFFFFFF, s2.imag, lane_id)
+            s3_real = cuda.shfl_sync(0xFFFFFFFF, s3.real, lane_id)
+            s3_imag = cuda.shfl_sync(0xFFFFFFFF, s3.imag, lane_id)
             
-            warp_states[lane_id] = cooperative_s0
-            warp_states[lane_id + 32] = cooperative_s1 if lane_id < 32 else 0j
-            warp_states[lane_id + 64] = cooperative_s2 if lane_id < 32 else 0j
-            warp_states[lane_id + 96] = cooperative_s3 if lane_id < 32 else 0j
+            cooperative_s0 = complex(s0_real, s0_imag)
+            cooperative_s1 = complex(s1_real, s1_imag)
+            cooperative_s2 = complex(s2_real, s2_imag)
+            cooperative_s3 = complex(s3_real, s3_imag)
             
-            cuda.syncwarp(0xFFFFFFFF)
-            
-            matrix_base = warp_id * 16
-            r0 = (warp_matrix[matrix_base + 0] * cooperative_s0 + warp_matrix[matrix_base + 1] * cooperative_s1 + 
-                  warp_matrix[matrix_base + 2] * cooperative_s2 + warp_matrix[matrix_base + 3] * cooperative_s3)
-            
-            r1 = (warp_matrix[matrix_base + 4] * cooperative_s0 + warp_matrix[matrix_base + 5] * cooperative_s1 + 
-                  warp_matrix[matrix_base + 6] * cooperative_s2 + warp_matrix[matrix_base + 7] * cooperative_s3)
-            
-            r2 = (warp_matrix[matrix_base + 8] * cooperative_s0 + warp_matrix[matrix_base + 9] * cooperative_s1 + 
-                  warp_matrix[matrix_base + 10] * cooperative_s2 + warp_matrix[matrix_base + 11] * cooperative_s3)
-            
-            r3 = (warp_matrix[matrix_base + 12] * cooperative_s0 + warp_matrix[matrix_base + 13] * cooperative_s1 + 
-                  warp_matrix[matrix_base + 14] * cooperative_s2 + warp_matrix[matrix_base + 15] * cooperative_s3)
+            r0 = m00 * cooperative_s0 + m01 * cooperative_s1 + m02 * cooperative_s2 + m03 * cooperative_s3
+            r1 = m10 * cooperative_s0 + m11 * cooperative_s1 + m12 * cooperative_s2 + m13 * cooperative_s3
+            r2 = m20 * cooperative_s0 + m21 * cooperative_s1 + m22 * cooperative_s2 + m23 * cooperative_s3
+            r3 = m30 * cooperative_s0 + m31 * cooperative_s1 + m32 * cooperative_s2 + m33 * cooperative_s3
             
             out_flat[base_idx] = r0
             out_flat[idx1] = r1
             out_flat[idx2] = r2
             out_flat[idx3] = r3
+        
+        i += stride
 
 
 @cuda.jit(inline=True, fastmath=True)
 def _warp_cooperative_controlled_kernel(state_flat, out_flat, matrix_flat, control_mask, target_mask, 
                                        control_state_mask, n_qubits, total_size, matrix_size):
-    """Advanced warp-cooperative controlled gate with efficient 32-thread mask operations."""
-    warp_matrix = cuda.shared.array(1088, cuda.complex128)
-    warp_amplitudes = cuda.shared.array(132, cuda.complex128)
+    """Optimized warp-cooperative controlled gate with efficient mask operations."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    warp_id = cuda.threadIdx.x // 32
     lane_id = cuda.threadIdx.x % 32
-    global_warp_id = (cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x) // 32
     
-    matrix_elements_per_thread = (matrix_size * matrix_size + 31) // 32
-    for offset in range(matrix_elements_per_thread):
-        matrix_idx = lane_id + offset * 32
-        if matrix_idx < matrix_size * matrix_size:
-            bank_safe_idx = warp_id * 34 + (matrix_idx % 33)
-            warp_matrix[bank_safe_idx] = matrix_flat[matrix_idx]
-    
-    cuda.syncwarp(0xFFFFFFFF)
-    
-    elements_per_warp = 32
-    warp_base = global_warp_id * elements_per_warp
-    
-    if warp_base + lane_id < total_size:
-        i = warp_base + lane_id
-        
-        control_match = (i & control_mask) == control_state_mask
-        active_threads_mask = cuda.ballot_sync(0xFFFFFFFF, control_match)
-        active_thread_count = cuda.popc(active_threads_mask)
-        
-        if control_match:
+    while i < total_size:
+        if (i & control_mask) == control_state_mask:
             target_state = 0
             for bit in range(matrix_size):
                 if i & (target_mask >> bit):
                     target_state |= (1 << bit)
             
-            current_amplitude = state_flat[i]
-            bank_safe_idx = warp_id * 33 + (lane_id % 33)
-            warp_amplitudes[bank_safe_idx] = current_amplitude
-            
-            cuda.syncwarp(active_threads_mask)
-            
             new_amplitude = 0j
-            matrix_base = warp_id * 34
-            
             for j in range(matrix_size):
-                matrix_row = target_state * matrix_size + j
-                matrix_element = warp_matrix[matrix_base + (matrix_row % 33)]
+                matrix_element = matrix_flat[target_state * matrix_size + j]
                 
                 target_idx = i & ~target_mask
                 for bit in range(matrix_size):
                     if j & (1 << bit):
                         target_idx |= (target_mask >> (matrix_size - 1 - bit))
                 
-                if target_idx >= warp_base and target_idx < warp_base + elements_per_warp:
-                    local_idx = target_idx - warp_base
-                    if local_idx < 32:
-                        cooperative_value = cuda.shfl_sync(active_threads_mask, current_amplitude, local_idx)
-                        state_value = cooperative_value
-                    else:
-                        state_value = state_flat[target_idx]
-                else:
-                    state_value = state_flat[target_idx]
+                state_value = state_flat[target_idx]
                 
-                new_amplitude += matrix_element * state_value
+                cooperative_real = cuda.shfl_sync(0xFFFFFFFF, state_value.real, lane_id)
+                cooperative_imag = cuda.shfl_sync(0xFFFFFFFF, state_value.imag, lane_id)
+                cooperative_value = complex(cooperative_real, cooperative_imag)
+                
+                new_amplitude += matrix_element * cooperative_value
             
             out_flat[i] = new_amplitude
         else:
             out_flat[i] = state_flat[i]
+        
+        i += stride
 
 
 @cuda.jit(inline=True, fastmath=True)
@@ -339,55 +285,33 @@ def _warp_cooperative_probability_reduction_kernel(state_flat, probabilities, ta
 
 @cuda.jit(inline=True, fastmath=True)
 def _warp_cooperative_fused_sequence_kernel(state_flat, out_flat, gate_data, num_gates, n_qubits, total_size):
-    """Warp-cooperative fused gate sequence with inter-warp coordination."""
-    warp_shared_states = cuda.shared.array(2048, cuda.complex128)
-    warp_shared_gates = cuda.shared.array(256, cuda.complex128)
+    """Optimized warp-cooperative fused gate sequence with shuffle operations."""
+    i = cuda.grid(1)
+    stride = cuda.gridsize(1)
     
-    warp_id = cuda.threadIdx.x // 32
     lane_id = cuda.threadIdx.x % 32
-    global_warp_id = (cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x) // 32
     
-    elements_per_warp = 32
-    warp_base = global_warp_id * elements_per_warp
-    
-    for gate_offset in range((num_gates + 31) // 32):
-        gate_idx = lane_id + gate_offset * 32
-        if gate_idx < num_gates:
-            gate_base = warp_id * 8 + (gate_idx % 8)
-            warp_shared_gates[gate_base] = gate_data[gate_idx, 0]
-    
-    cuda.syncwarp(0xFFFFFFFF)
-    
-    if warp_base + lane_id < total_size:
-        i = warp_base + lane_id
+    while i < total_size:
         amplitude = state_flat[i]
         
-        warp_shared_states[warp_id * 64 + lane_id] = amplitude
-        
-        cuda.syncwarp(0xFFFFFFFF)
-        
         for gate_idx in range(num_gates):
-            gate_type = int(warp_shared_gates[warp_id * 8 + (gate_idx % 8)].real) if gate_idx % 8 < 8 else int(gate_data[gate_idx, 0].real)
+            gate_type = int(gate_data[gate_idx, 0].real)
             target = int(gate_data[gate_idx, 1].real)
             
             if gate_type == 1:
                 target_bit = n_qubits - target - 1
                 paired_idx = i ^ (1 << target_bit)
                 
-                if paired_idx < warp_base + elements_per_warp and paired_idx >= warp_base:
-                    local_paired = paired_idx - warp_base
-                    paired_amplitude = cuda.shfl_sync(0xFFFFFFFF, amplitude, local_paired)
-                    
-                    if i <= paired_idx:
-                        temp = amplitude
-                        amplitude = paired_amplitude
-                        
-                        if lane_id == local_paired:
-                            amplitude = temp
-                else:
-                    if i <= paired_idx:
-                        temp = amplitude
-                        amplitude = state_flat[paired_idx]
+                paired_amplitude = state_flat[paired_idx]
+                
+                cooperative_real = cuda.shfl_sync(0xFFFFFFFF, amplitude.real, lane_id)
+                cooperative_imag = cuda.shfl_sync(0xFFFFFFFF, amplitude.imag, lane_id)
+                cooperative_amplitude = complex(cooperative_real, cooperative_imag)
+                
+                if i <= paired_idx:
+                    temp = amplitude
+                    amplitude = paired_amplitude
+                    if i != paired_idx:
                         out_flat[paired_idx] = temp
             
             elif gate_type == 3:
@@ -398,29 +322,30 @@ def _warp_cooperative_fused_sequence_kernel(state_flat, out_flat, gate_data, num
             elif gate_type == 4:
                 target_bit = n_qubits - target - 1
                 paired_idx = i ^ (1 << target_bit)
+                paired_amplitude = state_flat[paired_idx]
                 
-                if paired_idx < warp_base + elements_per_warp and paired_idx >= warp_base:
-                    local_paired = paired_idx - warp_base
-                    paired_amplitude = cuda.shfl_sync(0xFFFFFFFF, amplitude, local_paired)
-                    
-                    inv_sqrt2 = 0.7071067811865476
-                    if i <= paired_idx:
-                        new_amp = inv_sqrt2 * (amplitude + paired_amplitude)
-                        paired_new_amp = inv_sqrt2 * (amplitude - paired_amplitude)
-                        
-                        amplitude = new_amp
-                        
-                        if lane_id == local_paired:
-                            amplitude = paired_new_amp
-                else:
-                    paired_amplitude = state_flat[paired_idx]
-                    inv_sqrt2 = 0.7071067811865476
-                    if i <= paired_idx:
-                        amplitude = inv_sqrt2 * (amplitude + paired_amplitude)
-                        out_flat[paired_idx] = inv_sqrt2 * (amplitude - paired_amplitude)
+                inv_sqrt2 = 0.7071067811865476
+                if i <= paired_idx:
+                    new_amplitude = inv_sqrt2 * (amplitude + paired_amplitude)
+                    paired_new_amplitude = inv_sqrt2 * (amplitude - paired_amplitude)
+                    amplitude = new_amplitude
+                    if i != paired_idx:
+                        out_flat[paired_idx] = paired_new_amplitude
             
-            warp_shared_states[warp_id * 64 + lane_id] = amplitude
-            cuda.syncwarp(0xFFFFFFFF)
+            elif gate_type == 5:
+                control = int(gate_data[gate_idx, 2].real)
+                control_bit = n_qubits - control - 1
+                target_bit = n_qubits - target - 1
+                
+                if (i >> control_bit) & 1:
+                    swap_idx = i ^ (1 << target_bit)
+                    swap_amplitude = state_flat[swap_idx]
+                    
+                    cooperative_real = cuda.shfl_sync(0xFFFFFFFF, amplitude.real, lane_id)
+                    cooperative_imag = cuda.shfl_sync(0xFFFFFFFF, amplitude.imag, lane_id)
+                    
+                    amplitude = swap_amplitude
+                    out_flat[swap_idx] = complex(cooperative_real, cooperative_imag)
         
         out_flat[i] = amplitude
 
