@@ -84,8 +84,6 @@ def clear_gpu_caches():
     if gpu_manager is not None:
         gpu_manager.force_cleanup()
     
-    cuda.close()
-    
     import gc
     gc.collect()
     
