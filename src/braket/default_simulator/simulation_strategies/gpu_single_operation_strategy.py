@@ -70,10 +70,14 @@ from braket.default_simulator.warp_cooperative_kernels import (
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Optimized quantum operations with direct fast-path routing for maximum speed."""
-    if not _GPU_AVAILABLE:
+    """Optimized quantum operations with intelligent CPU/GPU routing."""
+    use_gpu = _GPU_AVAILABLE and qubit_count >= 8 and state.size >= 256
+    
+    if not use_gpu:
+        print(f"Using CPU for {qubit_count} qubits ({state.size} elements)")
         return single_operation_strategy.apply_operations(state, qubit_count, operations)
     
+    print(f"Using GPU for {qubit_count} qubits ({state.size} elements)")
     return _execute_optimized_fast_path(state, qubit_count, operations)
 
 
@@ -87,41 +91,22 @@ def clear_gpu_caches():
 def _execute_optimized_fast_path(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Execution with maximum GPU parallelism and persistent buffer management.""" 
-    current_buffer = cuda.to_device(state)
+    """Optimized GPU execution with minimal memory transfers and better utilization."""
+    stream = cuda.stream()
+    
+    current_buffer = cuda.to_device(state, stream=stream)
     output_buffer = cuda.device_array_like(current_buffer)
     
-    if len(operations) >= 3:
-        mega_kernel_success = execute_mega_kernel_circuit(operations, current_buffer, qubit_count)
-        
-        if not mega_kernel_success:
-            batch_size = min(20, len(operations))
-            
-            for i in range(0, len(operations), batch_size):
-                batch_ops = operations[i:i + batch_size]
-                
-                mega_batch_success = execute_mega_kernel_circuit(batch_ops, current_buffer, qubit_count)
-                
-                if not mega_batch_success:
-                    if len(batch_ops) >= 3:
-                        success = execute_template_fused_kernel(batch_ops, current_buffer, output_buffer, qubit_count)
-                        if success:
-                            current_buffer, output_buffer = output_buffer, current_buffer
-                            continue
-                        else:
-                            for op in batch_ops:
-                                _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
-                                current_buffer, output_buffer = output_buffer, current_buffer
-                    else:
-                        for op in batch_ops:
-                            _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
-                            current_buffer, output_buffer = output_buffer, current_buffer
-    else:
-        for op in operations:
-            _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
-            current_buffer, output_buffer = output_buffer, current_buffer
+    stream.synchronize()
     
-    return current_buffer.copy_to_host()
+    for op in operations:
+        _apply_operation_direct_dispatch(op, current_buffer, output_buffer, qubit_count, current_buffer.size)
+        current_buffer, output_buffer = output_buffer, current_buffer
+    
+    result = current_buffer.copy_to_host(stream=stream)
+    stream.synchronize()
+    
+    return result
 
 
 def _apply_operation_direct_dispatch(
