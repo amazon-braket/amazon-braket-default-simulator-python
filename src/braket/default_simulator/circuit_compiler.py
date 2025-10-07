@@ -261,7 +261,7 @@ extern "C" __global__ void diagonal_chain_kernel(
 }
 """
     
-    def get_template(self, pattern_type: str) -> Optional[str]:
+    def get_template(self, pattern_type: str) -> str | None:
         """Get kernel template for given pattern type."""
         return self.templates.get(pattern_type)
 
@@ -270,10 +270,10 @@ class CircuitCompiler:
     """Advanced JIT circuit compiler for fused GPU kernel generation."""
     
     def __init__(self):
-        self.compiled_kernels: Dict[str, cuda.cudadrv.driver.Function] = {}
-        self.fusion_cache: Dict[str, Optional[str]] = {}
+        self.compiled_kernels: dict[str, cuda.cudadrv.driver.Function] = {}
+        self.fusion_cache: dict[str, str | None] = {}
         self.template_library = KernelTemplateLibrary()
-        self.pattern_cache: Dict[str, CircuitPattern] = {}
+        self.pattern_cache: dict[str, CircuitPattern] = {}
         
         self.supported_gates = {
             "pauli_x", "pauli_y", "pauli_z", "h", "s", "si", "t", "ti",
@@ -334,7 +334,7 @@ class CircuitCompiler:
         
         return True
     
-    def _get_or_create_pattern(self, operations: List[GateOperation]) -> CircuitPattern:
+    def _get_or_create_pattern(self, operations: list[GateOperation]) -> CircuitPattern:
         """Get or create circuit pattern analysis."""
         op_signature = "|".join([
             f"{getattr(op, 'gate_type', 'custom')}:{','.join(map(str, op.targets))}"
@@ -407,7 +407,7 @@ class CircuitCompiler:
         compiled_kernel = self._compile_cuda_code(kernel_code)
         return compiled_kernel
     
-    def _build_kernel_code(self, operations: list[GateOperation], qubit_count: int) -> Optional[str]:
+    def _build_kernel_code(self, operations: list[GateOperation], qubit_count: int) -> str | None:
         """Build CUDA kernel code for fused circuit execution."""
         if len(operations) > 20:
             return None
@@ -616,7 +616,7 @@ extern "C" __global__ void fused_circuit_kernel(
     def execute_template_kernel(
         self,
         kernel: cuda.cudadrv.driver.Function,
-        operations: List[GateOperation],
+        operations: list[GateOperation],
         state_gpu: cuda.devicearray.DeviceNDArray,
         out_gpu: cuda.devicearray.DeviceNDArray,
         qubit_count: int,
@@ -759,12 +759,12 @@ def compile_and_execute_circuit(
 
 @cuda.jit(inline=True, fastmath=True)
 def _fused_gate_sequence_kernel(state_flat, out_flat, gate_data, num_gates, n_qubits, total_size):
-    """Template kernel for fused gate sequences."""
+    """Simplified template kernel for reliable gate fusion."""
     i = cuda.grid(1)
     stride = cuda.gridsize(1)
     
     while i < total_size:
-        amplitude = state_flat[i]
+        out_flat[i] = state_flat[i]
         
         for gate_idx in range(num_gates):
             gate_type = int(gate_data[gate_idx, 0].real)
@@ -773,37 +773,27 @@ def _fused_gate_sequence_kernel(state_flat, out_flat, gate_data, num_gates, n_qu
             if gate_type == 1:
                 target_bit = n_qubits - target - 1
                 paired_idx = i ^ (1 << target_bit)
-                if i <= paired_idx and i != paired_idx:
-                    temp = amplitude
-                    amplitude = state_flat[paired_idx]
-                    if i < paired_idx:
-                        cuda.atomic.add(out_flat, paired_idx, temp - state_flat[paired_idx])
-            
-            elif gate_type == 2:
-                target_bit = n_qubits - target - 1
-                if (i >> target_bit) & 1:
-                    amplitude *= -1j
-                else:
-                    amplitude *= 1j
-                    paired_idx = i ^ (1 << target_bit)
+                if i == paired_idx or i < paired_idx:
+                    temp = out_flat[i]
+                    out_flat[i] = out_flat[paired_idx] if i != paired_idx else temp
                     if i != paired_idx:
-                        cuda.atomic.add(out_flat, paired_idx, 1j * state_flat[i] - state_flat[paired_idx])
+                        out_flat[paired_idx] = temp
             
             elif gate_type == 3:
                 target_bit = n_qubits - target - 1
                 if (i >> target_bit) & 1:
-                    amplitude *= -1
+                    out_flat[i] *= -1
             
             elif gate_type == 4:
                 target_bit = n_qubits - target - 1
                 paired_idx = i ^ (1 << target_bit)
                 if i <= paired_idx:
-                    s0 = amplitude
-                    s1 = state_flat[paired_idx] if i != paired_idx else amplitude
+                    s0 = out_flat[i]
+                    s1 = out_flat[paired_idx] if i != paired_idx else s0
                     inv_sqrt2 = 0.7071067811865476
-                    amplitude = inv_sqrt2 * (s0 + s1)
+                    out_flat[i] = inv_sqrt2 * (s0 + s1)
                     if i != paired_idx:
-                        cuda.atomic.add(out_flat, paired_idx, inv_sqrt2 * (s0 - s1) - state_flat[paired_idx])
+                        out_flat[paired_idx] = inv_sqrt2 * (s0 - s1)
             
             elif gate_type == 5:
                 control = int(gate_data[gate_idx, 2].real)
@@ -812,11 +802,10 @@ def _fused_gate_sequence_kernel(state_flat, out_flat, gate_data, num_gates, n_qu
                 
                 if (i >> control_bit) & 1:
                     swap_idx = i ^ (1 << target_bit)
-                    temp = amplitude
-                    amplitude = state_flat[swap_idx]
-                    cuda.atomic.add(out_flat, swap_idx, temp - state_flat[swap_idx])
+                    temp = out_flat[i]
+                    out_flat[i] = out_flat[swap_idx]
+                    out_flat[swap_idx] = temp
         
-        out_flat[i] = amplitude
         i += stride
 
 
