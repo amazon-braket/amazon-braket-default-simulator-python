@@ -11,17 +11,30 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+"""
+Persistent GPU state manager for quantum simulations.
+
+This module provides advanced GPU state management that eliminates redundant
+host↔device transfers through intelligent caching, zero-copy optimization,
+and unified memory when available.
+"""
+
 import gc
+import threading
 import time
 import weakref
-from typing import Any
 from concurrent.futures import ThreadPoolExecutor
-import threading
+from typing import Any, Dict, List, Optional, Tuple
+
+import numba
 import numpy as np
 from numba import cuda
-import numba
 
-from braket.default_simulator.linalg_utils import _GPU_AVAILABLE, _OPTIMAL_THREADS_PER_BLOCK, _MAX_BLOCKS_PER_GRID
+from braket.default_simulator.linalg_utils import (
+    _GPU_AVAILABLE,
+    _MAX_BLOCKS_PER_GRID,
+    _OPTIMAL_THREADS_PER_BLOCK,
+)
 
 
 class GPUMemoryPool:
@@ -202,18 +215,6 @@ class GPUMemoryPool:
             
             for buffer_id in to_remove:
                 self.deallocate(buffer_id)
-    
-    def get_memory_stats(self) -> dict[str, Any]:
-        """Get memory pool statistics."""
-        with self.lock:
-            return {
-                'total_allocated_mb': self.total_allocated / (1024 * 1024),
-                'peak_allocated_mb': self.peak_allocated / (1024 * 1024),
-                'active_buffers': len(self.allocated_buffers),
-                'free_buffers': sum(len(buffers) for buffers in self.free_buffers.values()),
-                'unified_memory_enabled': self.unified_memory_enabled,
-                'reference_counts': dict(self.reference_counts)
-            }
 
 
 class PersistentGPUState:
@@ -277,14 +278,7 @@ class PersistentGPUStateManager:
         self.cleanup_interval = cleanup_interval_seconds
         self.last_cleanup = time.time()
         self.lock = threading.RLock()
-        self.stats = {
-            'cache_hits': 0,
-            'cache_misses': 0,
-            'transfers_avoided': 0,
-            'total_transfer_time_saved_ms': 0.0
-        }
         
-        # Background cleanup thread
         self.cleanup_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="gpu-cleanup")
         self._schedule_cleanup()
     
@@ -303,49 +297,30 @@ class PersistentGPUStateManager:
         key = (host_state.shape, host_state.dtype)
         
         with self.lock:
-            # Check if we have a cached state
             if not force_refresh and key in self.persistent_states:
                 persistent_state = self.persistent_states[key]
                 persistent_state.access()
                 
-                # Move to end of access order (LRU)
                 if key in self.state_access_order:
                     self.state_access_order.remove(key)
                 self.state_access_order.append(key)
                 
-                self.stats['cache_hits'] += 1
-                self.stats['transfers_avoided'] += 1
-                
-                # Estimate transfer time saved (0.5-2ms per transfer)
-                transfer_time_saved = max(0.5, min(2.0, host_state.nbytes / (1024 * 1024 * 1000)))
-                self.stats['total_transfer_time_saved_ms'] += transfer_time_saved
-                
-                # Get ping-pong buffers
                 return self._get_ping_pong_buffers(persistent_state.buffer)
             
-            # Cache miss - need to allocate/transfer
-            self.stats['cache_misses'] += 1
-            
-            # Allocate new GPU buffers
             buffer_a, buffer_a_id = self.memory_pool.allocate(host_state.size, host_state.dtype, host_state.shape)
             buffer_b, buffer_b_id = self.memory_pool.allocate(host_state.size, host_state.dtype, host_state.shape)
             
-            # Transfer data to GPU
             if self.memory_pool.unified_memory_enabled:
-                # Zero-copy transfer for unified memory
                 host_view = buffer_a.view()
                 np.copyto(host_view, host_state)
                 persistent_state = PersistentGPUState(buffer_a, buffer_a_id, self.memory_pool, host_view)
             else:
-                # Regular transfer
                 cuda.to_device(host_state, to=buffer_a)
                 persistent_state = PersistentGPUState(buffer_a, buffer_a_id, self.memory_pool)
             
-            # Cache the state
             self.persistent_states[key] = persistent_state
             self.state_access_order.append(key)
             
-            # Evict old states if cache is full
             self._evict_old_states()
             
             return buffer_a, buffer_b
@@ -422,21 +397,6 @@ class PersistentGPUStateManager:
         with self.lock:
             self.persistent_states.clear()
             self.state_access_order.clear()
-    
-    def get_performance_stats(self) -> dict[str, Any]:
-        """Get performance statistics."""
-        with self.lock:
-            total_accesses = self.stats['cache_hits'] + self.stats['cache_misses']
-            hit_rate = (self.stats['cache_hits'] / total_accesses * 100) if total_accesses > 0 else 0.0
-            
-            stats = dict(self.stats)
-            stats.update({
-                'cache_hit_rate_percent': hit_rate,
-                'cached_states_count': len(self.persistent_states),
-                'memory_stats': self.memory_pool.get_memory_stats()
-            })
-            
-            return stats
     
     def shutdown(self):
         """Shutdown the manager and clean up resources."""

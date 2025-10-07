@@ -11,12 +11,22 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+"""
+Mega-kernel generator for optimized quantum circuit execution.
+
+This module generates optimized mega-kernels that fuse entire quantum circuits
+into single CUDA kernels for maximum performance, reducing kernel launch
+overhead and improving memory locality.
+"""
+
+import hashlib
+import os
+import subprocess
+import tempfile
+from typing import Optional
+
 import numpy as np
 from numba import cuda
-import hashlib
-import tempfile
-import subprocess
-import os
 
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.linalg_utils import (

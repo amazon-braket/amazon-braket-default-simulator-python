@@ -11,9 +11,19 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+"""
+Advanced GPU memory optimization for quantum state processing.
+
+This module provides sophisticated memory optimization strategies including
+shared memory utilization, memory coalescing, and bandwidth optimization
+for GPU-accelerated quantum operations.
+"""
+
+from typing import Any, Dict
+import time
+
 import numpy as np
 from numba import cuda
-import time
 
 from braket.default_simulator.linalg_utils import (
     _GPU_AVAILABLE,
@@ -252,12 +262,12 @@ def _memory_profiler_kernel(state_flat, profiling_data, access_patterns, total_s
     """Memory access profiling kernel for optimization analysis."""
     i = cuda.grid(1)
     stride = cuda.gridsize(1)
+    thread_id = cuda.threadIdx.x
     
     access_count = 0
     cache_hits = 0
     
     while i < total_size:
-        
         current_value = state_flat[i]
         
         if i > 0 and abs(state_flat[i] - state_flat[i-1]) < 1e-12:
@@ -487,38 +497,3 @@ def apply_controlled_gate_memory_optimized(
         state_flat, out_flat, matrix_gpu, control_mask, target_mask,
         control_state_mask, qubit_count, state_gpu.size, matrix_size
     )
-
-
-def profile_memory_access_patterns(state_gpu, operation_sequence, qubit_count) -> dict:
-    """Profile memory access patterns for optimization analysis."""
-    if not _gpu_memory_optimizer:
-        return {'error': 'GPU memory optimizer not available'}
-    
-    profiling_data = cuda.device_array(1024, dtype=np.int32)
-    access_patterns = cuda.device_array(1024, dtype=np.int32)
-    
-    state_flat = state_gpu.reshape(-1)
-    
-    threads_per_block = 256
-    blocks_per_grid = min(8, (state_gpu.size + threads_per_block - 1) // threads_per_block)
-    
-    start_time = time.perf_counter()
-    
-    _memory_profiler_kernel[blocks_per_grid, threads_per_block](
-        state_flat, profiling_data, access_patterns, state_gpu.size
-    )
-    
-    profiling_time = time.perf_counter() - start_time
-    
-    profile_data = profiling_data.copy_to_host()
-    pattern_data = access_patterns.copy_to_host()
-    
-    return {
-        'profiling_time_ms': profiling_time * 1000,
-        'average_accesses_per_thread': np.mean(profile_data[profile_data > 0]),
-        'cache_hit_rate_estimate': np.mean(pattern_data[pattern_data > 0]) / max(1, np.mean(profile_data[profile_data > 0])),
-        'memory_access_efficiency': min(1.0, np.mean(profile_data[profile_data > 0]) / (state_gpu.size / 1024)),
-        'coalescing_score': _gpu_memory_optimizer.calculate_memory_bandwidth_utilization(
-            'general', threads_per_block, blocks_per_grid
-        )['coalescing_efficiency']
-    }

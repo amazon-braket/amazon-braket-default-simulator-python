@@ -11,30 +11,38 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+"""
+Advanced JIT circuit compiler for fused GPU kernel generation.
+
+This module provides sophisticated circuit fusion capabilities that can compile
+quantum circuits into optimized CUDA kernels for high-performance execution.
+"""
+
+from typing import Dict, List, Optional, Tuple
+import hashlib
+import os
+import subprocess
+import tempfile
+from collections import defaultdict
+
 import numpy as np
 from numba import cuda
-from typing import Tuple, Optional, Dict, List, Set
-import hashlib
-import time
-import tempfile
-import subprocess
-import os
-from collections import defaultdict
 
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.linalg_utils import (
-    _OPTIMAL_THREADS_PER_BLOCK,
-    _MAX_BLOCKS_PER_GRID,
     DIAGONAL_GATES,
     _GPU_AVAILABLE,
+    _MAX_BLOCKS_PER_GRID,
+    _OPTIMAL_THREADS_PER_BLOCK,
 )
 
 from braket.default_simulator.tensor_core_acceleration import (
+    _tensor_core_accelerator,
     accelerate_with_tensor_cores,
     get_tensor_core_capability,
-    _tensor_core_accelerator
 )
-_TENSOR_CORES_AVAILABLE = True
+
+_TENSOR_CORES_AVAILABLE = _tensor_core_accelerator is not None
 
 
 class CircuitPattern:

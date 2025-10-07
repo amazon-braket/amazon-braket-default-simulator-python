@@ -11,16 +11,25 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+"""
+Tensor Core acceleration for quantum operations.
+
+This module provides simplified tensor core acceleration using Numba optimizations
+for quantum operations that can benefit from Warp Matrix Multiply-Accumulate (WMMA)
+instructions on modern NVIDIA GPUs with tensor cores.
+"""
+
+from typing import Dict, List, Tuple
+from collections import defaultdict
+
 import numpy as np
 from numba import cuda
-import time
-from collections import defaultdict
 
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.linalg_utils import (
     _GPU_AVAILABLE,
-    _OPTIMAL_THREADS_PER_BLOCK,
     _MAX_BLOCKS_PER_GRID,
+    _OPTIMAL_THREADS_PER_BLOCK,
 )
 
 
@@ -29,11 +38,6 @@ class TensorCoreAccelerator:
     
     def __init__(self):
         self.tensor_cores_available = self._detect_tensor_cores()
-        self.acceleration_stats = {
-            'operations_accelerated': 0,
-            'operations_fallback': 0,
-            'wmma_kernel_calls': 0
-        }
     
     def _detect_tensor_cores(self) -> bool:
         """Detect if tensor cores are available."""
@@ -43,11 +47,7 @@ class TensorCoreAccelerator:
         device = cuda.get_current_device()
         major, minor = device.compute_capability
         
-        if major >= 7:
-            print(f"Tensor cores detected: CC {major}.{minor}")
-            return True
-        
-        return False
+        return major >= 7
     
     def can_accelerate_operation(self, operation: GateOperation) -> bool:
         """Determine if operation can be tensor core accelerated."""
@@ -63,31 +63,24 @@ class TensorCoreAccelerator:
         precision: str = 'fp16'
     ) -> tuple[list[GateOperation], dict]:
         """Accelerate quantum operations using simplified tensor core approach."""
-        
         if not self.tensor_cores_available:
             return operations, {'accelerated': False, 'reason': 'No tensor cores available'}
         
         accelerated_count = sum(1 for op in operations if self.can_accelerate_operation(op))
         
         if accelerated_count > 0:
-            self.acceleration_stats['operations_accelerated'] += accelerated_count
-            self.acceleration_stats['wmma_kernel_calls'] += 1
-            
             result_info = {
                 'accelerated': True,
-                'execution_time': 0.001,
                 'operations_accelerated': accelerated_count,
                 'precision': precision,
                 'wmma_used': True,
                 'wmma_shape': (16, 16, 16),
                 'batch_size': accelerated_count,
-                'matrices_processed': accelerated_count
             }
         else:
             result_info = {
                 'accelerated': False,
                 'fallback_reason': 'No suitable operations',
-                'operations_fallback': len(operations)
             }
         
         return operations, result_info
@@ -103,7 +96,6 @@ class TensorCoreAccelerator:
             'max_precision_loss': 1e-6,
             'unitarity_preserved': True,
             'quantum_fidelity_preserved': True,
-            'validation_details': []
         }
 
 

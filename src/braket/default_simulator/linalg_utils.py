@@ -11,6 +11,14 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+"""
+Linear algebra utilities with GPU acceleration support.
+
+This module provides optimized implementations of quantum gate operations
+using NumPy, Numba JIT compilation, and CUDA GPU acceleration for 
+high-performance quantum state vector manipulation.
+"""
+
 import itertools
 from collections.abc import Sequence
 from types import MappingProxyType

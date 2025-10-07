@@ -11,9 +11,18 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+"""
+Warp-level cooperative kernel implementations for quantum operations.
+
+This module provides highly optimized warp-cooperative CUDA kernels that leverage
+32-thread warp synchronization, shuffle operations, and cooperative execution
+patterns for maximum GPU efficiency in quantum state manipulation.
+"""
+
+from typing import Dict, List, Optional
+
 import numpy as np
 from numba import cuda
-import time
 
 from braket.default_simulator.linalg_utils import (
     _GPU_AVAILABLE,
@@ -101,7 +110,7 @@ def _warp_cooperative_single_qubit_kernel(state_flat, out_flat, a, b, c, d, targ
 
 
 @cuda.jit(inline=True, fastmath=True)
-def _warp_cooperative_diagonal_kernel(state_flat, out_flat, a, d, target_mask, total_size):
+def _warp_cooperative_diagonal_kernel(state_flat, out_flat, a_real, a_imag, d_real, d_imag, target_mask, total_size):
     """Warp-cooperative diagonal gate with perfect coalescing."""
     warp_id = cuda.threadIdx.x // 32
     lane_id = cuda.threadIdx.x % 32
@@ -114,10 +123,18 @@ def _warp_cooperative_diagonal_kernel(state_flat, out_flat, a, d, target_mask, t
         i = warp_base + lane_id
         
         mask_bit = i & target_mask
-        factor = cuda.shfl_sync(0xFFFFFFFF, d if mask_bit else a, lane_id)
+        if mask_bit:
+            factor_real = d_real
+            factor_imag = d_imag
+        else:
+            factor_real = a_real
+            factor_imag = a_imag
         
         state_value = state_flat[i]
-        result = factor * state_value
+        result = complex(
+            factor_real * state_value.real - factor_imag * state_value.imag,
+            factor_real * state_value.imag + factor_imag * state_value.real
+        )
         
         out_flat[i] = result
 
@@ -381,7 +398,7 @@ def apply_diagonal_warp_cooperative(state_gpu, matrix, target, out_gpu):
     warp_config = _warp_optimizer.calculate_optimal_warp_configuration(state_gpu.size, 1)
     
     _warp_cooperative_diagonal_kernel[warp_config['blocks_per_grid'], warp_config['threads_per_block']](
-        state_flat, out_flat, a, d, target_mask, state_gpu.size
+        state_flat, out_flat, a.real, a.imag, d.real, d.imag, target_mask, state_gpu.size
     )
 
 
@@ -506,75 +523,3 @@ def calculate_measurement_probabilities_warp_cooperative(state_gpu, target_qubit
         probabilities_gpu[outcome] = prob_result[0]
     
     return probabilities_gpu.copy_to_host()
-
-
-class WarpLevelMemoryProfiler:
-    """Advanced memory profiling for warp-level quantum operations."""
-    
-    def __init__(self):
-        self.profiling_enabled = _GPU_AVAILABLE
-        self.warp_memory_patterns = {}
-        self.bandwidth_metrics = {}
-    
-    def profile_warp_operation(self, operation_type: str, state_size: int, execution_time: float) -> dict:
-        """Profile memory access patterns for warp-cooperative operations."""
-        if not self.profiling_enabled:
-            return {'error': 'Profiling not available'}
-        
-        warp_count = (state_size + 31) // 32
-        theoretical_bandwidth = 900e9
-        bytes_per_element = 16
-        
-        memory_throughput = (state_size * bytes_per_element) / execution_time
-        bandwidth_utilization = memory_throughput / theoretical_bandwidth
-        
-        warp_efficiency = min(1.0, state_size / (warp_count * 32))
-        
-        profile_data = {
-            'operation_type': operation_type,
-            'state_size': state_size,
-            'warp_count': warp_count,
-            'execution_time_ms': execution_time * 1000,
-            'memory_throughput_gb_s': memory_throughput / 1e9,
-            'bandwidth_utilization': bandwidth_utilization * 100,
-            'warp_efficiency': warp_efficiency * 100,
-            'cooperative_score': self._calculate_cooperative_score(operation_type, warp_efficiency)
-        }
-        
-        self.warp_memory_patterns[operation_type] = profile_data
-        return profile_data
-    
-    def _calculate_cooperative_score(self, operation_type: str, warp_efficiency: float) -> float:
-        """Calculate warp cooperation effectiveness score."""
-        base_scores = {
-            'warp_single_qubit': 0.92,
-            'warp_diagonal': 0.96,
-            'warp_cnot': 0.89,
-            'warp_two_qubit': 0.85,
-            'warp_controlled': 0.81,
-            'warp_fused': 0.88
-        }
-        
-        base_score = base_scores.get(operation_type, 0.80)
-        return base_score * warp_efficiency
-    
-    def get_warp_optimization_summary(self) -> dict:
-        """Get comprehensive warp optimization performance summary."""
-        if not self.warp_memory_patterns:
-            return {'status': 'No profiling data available'}
-        
-        total_operations = len(self.warp_memory_patterns)
-        avg_bandwidth = np.mean([p['bandwidth_utilization'] for p in self.warp_memory_patterns.values()])
-        avg_warp_efficiency = np.mean([p['warp_efficiency'] for p in self.warp_memory_patterns.values()])
-        avg_cooperative_score = np.mean([p['cooperative_score'] for p in self.warp_memory_patterns.values()])
-        
-        return {
-            'total_operations_profiled': total_operations,
-            'average_bandwidth_utilization': avg_bandwidth,
-            'average_warp_efficiency': avg_warp_efficiency,
-            'average_cooperative_score': avg_cooperative_score,
-            'optimization_level': 'Excellent' if avg_cooperative_score > 0.85 else 'Good' if avg_cooperative_score > 0.75 else 'Needs Improvement'
-        }
-
-
-_warp_profiler = WarpLevelMemoryProfiler() if _GPU_AVAILABLE else None
