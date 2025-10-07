@@ -68,7 +68,11 @@ def apply_operations(
     print(f"Using GPU for {qubit_count} qubits ({state.size} elements)")
     print(f"GPU memory usage: {memory_info['required_gb']:.2f}/{memory_info['available_gb']:.2f} GB")
     
-    return _execute_gpu_operations(state, qubit_count, operations, memory_info)
+    result = _execute_gpu_operations(state, qubit_count, operations, memory_info)
+    
+    clear_gpu_caches()
+    
+    return result
 
 
 def clear_gpu_caches():
