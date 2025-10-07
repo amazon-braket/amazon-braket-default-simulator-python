@@ -237,37 +237,35 @@ def _single_qubit_gate_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_si
 
 @cuda.jit(inline=True, fastmath=True)
 def _controlled_phase_shift_kernel_linalg(state_flat, phase_factor_real, phase_factor_imag, controlled_mask, total_size):
-    """CUDA kernel for controlled phase shift in linalg_utils."""
+    """Optimized CUDA kernel for controlled phase shift."""
     i = cuda.grid(1)
-    stride = cuda.gridsize(1)
     
-    while i < total_size:
-        if (i & controlled_mask) == controlled_mask:
-            real_part = state_flat[i].real
-            imag_part = state_flat[i].imag
-            
-            new_real = real_part * phase_factor_real - imag_part * phase_factor_imag
-            new_imag = real_part * phase_factor_imag + imag_part * phase_factor_real
-            
-            state_flat[i] = complex(new_real, new_imag)
+    if i >= total_size:
+        return
+    
+    if (i & controlled_mask) == controlled_mask:
+        real_part = state_flat[i].real
+        imag_part = state_flat[i].imag
         
-        i += stride
+        new_real = real_part * phase_factor_real - imag_part * phase_factor_imag
+        new_imag = real_part * phase_factor_imag + imag_part * phase_factor_real
+        
+        state_flat[i] = complex(new_real, new_imag)
 
 
 @cuda.jit(inline=True, fastmath=True)
 def _diagonal_gate_kernel(state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size):
     """Optimized CUDA kernel for diagonal gate application."""
     i = cuda.grid(1)
-    stride = cuda.gridsize(1)
     
-    while i < half_size:
-        idx0 = (i & ~shifted_target_mask) << 1 | (i & shifted_target_mask)
-        idx1 = idx0 | target_mask
-        
-        out_flat[idx0] = a * state_flat[idx0]
-        out_flat[idx1] = d * state_flat[idx1]
-        
-        i += stride
+    if i >= half_size:
+        return
+    
+    idx0 = (i & ~shifted_target_mask) << 1 | (i & shifted_target_mask)
+    idx1 = idx0 | target_mask
+    
+    out_flat[idx0] = a * state_flat[idx0]
+    out_flat[idx1] = d * state_flat[idx1]
 
 
 def _apply_diagonal_gate_gpu_inplace(
@@ -302,17 +300,16 @@ def _apply_diagonal_gate_gpu_inplace(
 def _cnot_kernel(state_flat, control_stride, target_stride, swap_offset, iterations):
     """Optimized CUDA kernel for CNOT gate application."""
     i = cuda.grid(1)
-    stride = cuda.gridsize(1)
     
-    while i < iterations:
-        idx0 = control_stride + i
-        idx1 = idx0 + swap_offset
-        
-        temp = state_flat[idx0]
-        state_flat[idx0] = state_flat[idx1]
-        state_flat[idx1] = temp
-        
-        i += stride
+    if i >= iterations:
+        return
+    
+    idx0 = control_stride + i
+    idx1 = idx0 + swap_offset
+    
+    temp = state_flat[idx0]
+    state_flat[idx0] = state_flat[idx1]
+    state_flat[idx1] = temp
 
 
 @cuda.jit(inline=True, fastmath=True)
@@ -363,39 +360,37 @@ def _apply_cnot_gpu_inplace(
 def _swap_kernel(state_flat, pos_0, pos_1, mask_0, mask_1, iterations):
     """Optimized CUDA kernel for SWAP gate application."""
     i = cuda.grid(1)
-    stride = cuda.gridsize(1)
     
-    while i < iterations:
-        base = i + ((i >> pos_0) << pos_0)
-        base += (base >> pos_1) << pos_1
-        
-        idx0 = base | mask_1
-        idx1 = base | mask_0
-        
-        temp = state_flat[idx0]
-        state_flat[idx0] = state_flat[idx1]
-        state_flat[idx1] = temp
-        
-        i += stride
+    if i >= iterations:
+        return
+    
+    base = i + ((i >> pos_0) << pos_0)
+    base += (base >> pos_1) << pos_1
+    
+    idx0 = base | mask_1
+    idx1 = base | mask_0
+    
+    temp = state_flat[idx0]
+    state_flat[idx0] = state_flat[idx1]
+    state_flat[idx1] = temp
 
 
 @cuda.jit(inline=True, fastmath=True)
 def _swap_ping_pong_kernel(state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations):
-    """SWAP kernel for ping-pong buffer operations."""
+    """Optimized SWAP kernel for ping-pong buffer operations."""
     i = cuda.grid(1)
-    stride = cuda.gridsize(1)
     
-    while i < iterations:
-        base = i + ((i >> pos_0) << pos_0)
-        base += (base >> pos_1) << pos_1
-        
-        idx0 = base | mask_1
-        idx1 = base | mask_0
-        
-        out_flat[idx0] = state_flat[idx1]
-        out_flat[idx1] = state_flat[idx0]
-        
-        i += stride
+    if i >= iterations:
+        return
+    
+    base = i + ((i >> pos_0) << pos_0)
+    base += (base >> pos_1) << pos_1
+    
+    idx0 = base | mask_1
+    idx1 = base | mask_0
+    
+    out_flat[idx0] = state_flat[idx1]
+    out_flat[idx1] = state_flat[idx0]
 
 
 def _apply_controlled_phase_shift_gpu_inplace(
@@ -412,10 +407,10 @@ def _apply_controlled_phase_shift_gpu_inplace(
     
     state_flat = state_gpu.reshape(-1)
     
-    threads_per_block = 256
-    blocks_per_grid = max(
-        min((total_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
-        128
+    threads_per_block = 512
+    blocks_per_grid = min(
+        (total_size + threads_per_block - 1) // threads_per_block, 
+        _MAX_BLOCKS_PER_GRID
     )
     
     _controlled_phase_shift_kernel_linalg[blocks_per_grid, threads_per_block](
@@ -444,10 +439,10 @@ def _apply_swap_gpu_inplace(
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    threads_per_block = 256
-    blocks_per_grid = max(
-        min((iterations + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
-        128
+    threads_per_block = 512
+    blocks_per_grid = min(
+        (iterations + threads_per_block - 1) // threads_per_block, 
+        _MAX_BLOCKS_PER_GRID
     )
     
     _swap_ping_pong_kernel[blocks_per_grid, threads_per_block](
@@ -1148,10 +1143,10 @@ def _apply_single_qubit_gate_gpu_inplace(
         state_flat = state_gpu.reshape(-1)
         out_flat = out_gpu.reshape(-1)
         
-        threads_per_block = 256
-        blocks_per_grid = max(
-            min((half_size + threads_per_block - 1) // threads_per_block, _MAX_BLOCKS_PER_GRID),
-            128
+        threads_per_block = 512
+        blocks_per_grid = min(
+            (half_size + threads_per_block - 1) // threads_per_block, 
+            _MAX_BLOCKS_PER_GRID
         )
         
         _single_qubit_gate_kernel[blocks_per_grid, threads_per_block](
