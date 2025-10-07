@@ -15,11 +15,14 @@
 GPU single operation strategy for quantum simulations.
 
 This module provides GPU acceleration for quantum circuit execution using
-efficient ping-pong buffering and cuda.jit kernels.
+efficient ping-pong buffering, cuda.jit kernels, and advanced memory management
+for scaling to high qubit counts.
 """
 
 import numpy as np
 from numba import cuda
+import math
+import warnings
 
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.simulation_strategies import single_operation_strategy
@@ -39,21 +42,33 @@ from braket.default_simulator.linalg_utils import (
 from braket.default_simulator.persistent_gpu_state_manager import (
     get_persistent_gpu_manager,
 )
+from braket.default_simulator.gpu_memory_optimizer import GPUMemoryOptimizer
 
 
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
-    """Apply operations to state vector using GPU acceleration."""
-    use_gpu = _GPU_AVAILABLE and qubit_count >= 8 and state.size >= 256
+    """Apply operations to state vector using GPU acceleration with advanced memory management."""
+    memory_info = _check_gpu_memory_availability(state.size)
+    use_gpu = (_GPU_AVAILABLE and 
+               qubit_count >= 8 and 
+               state.size >= 256 and 
+               memory_info['can_fit'])
     
     if not use_gpu:
-        print(f"Using CPU for {qubit_count} qubits ({state.size} elements)")
+        if not _GPU_AVAILABLE:
+            print(f"Using CPU for {qubit_count} qubits ({state.size} elements): GPU not available")
+        elif not memory_info['can_fit']:
+            print(f"Using CPU for {qubit_count} qubits ({state.size} elements): Insufficient GPU memory")
+            print(f"Required: {memory_info['required_gb']:.2f} GB, Available: {memory_info['available_gb']:.2f} GB")
+        else:
+            print(f"Using CPU for {qubit_count} qubits ({state.size} elements): Below GPU threshold")
         return single_operation_strategy.apply_operations(state, qubit_count, operations)
     
     print(f"Using GPU for {qubit_count} qubits ({state.size} elements)")
+    print(f"GPU memory usage: {memory_info['required_gb']:.2f}/{memory_info['available_gb']:.2f} GB")
     
-    return _execute_gpu_operations(state, qubit_count, operations)
+    return _execute_gpu_operations(state, qubit_count, operations, memory_info)
 
 
 def clear_gpu_caches():
@@ -61,26 +76,98 @@ def clear_gpu_caches():
     gpu_manager = get_persistent_gpu_manager()
     if gpu_manager is not None:
         gpu_manager.clear_cache()
+    
+    if _GPU_AVAILABLE:
+        cuda.synchronize()
+
+
+def _check_gpu_memory_availability(state_size: int) -> dict:
+    """Check if GPU has sufficient memory for the given state size.
+    
+    Args:
+        state_size: Number of complex128 elements in the state vector
+        
+    Returns:
+        Dictionary with memory availability information
+    """
+    if not _GPU_AVAILABLE:
+        return {'can_fit': False, 'required_gb': 0, 'available_gb': 0}
+    
+    free_bytes, total_bytes = cuda.current_context().get_memory_info()
+    
+    bytes_per_complex = 16
+    state_bytes = state_size * bytes_per_complex
+    required_bytes = state_bytes * 2.5
+    
+    safety_margin = total_bytes * 0.2
+    effective_available = free_bytes - safety_margin
+    can_fit = required_bytes <= effective_available
+    
+    return {
+        'can_fit': can_fit,
+        'required_gb': required_bytes / (1024**3),
+        'available_gb': effective_available / (1024**3),
+        'total_gb': total_bytes / (1024**3),
+        'free_gb': free_bytes / (1024**3)
+    }
+
+
+def _get_optimal_launch_config(total_size: int, qubit_count: int) -> tuple[int, int]:
+    """Calculate optimal GPU launch configuration using grid-stride loop strategy.
+    
+    Args:
+        total_size: Total number of elements to process
+        qubit_count: Number of qubits in the system
+        
+    Returns:
+        Tuple of (blocks_per_grid, threads_per_block)
+    """
+    if total_size >= 2**22:
+        threads_per_block = 256
+    elif total_size >= 2**18:
+        threads_per_block = 512
+    else:
+        threads_per_block = _OPTIMAL_THREADS_PER_BLOCK
+    
+    if total_size >= 2**20:
+        blocks_per_grid = min(32 * 80, _MAX_BLOCKS_PER_GRID)
+        min_blocks_needed = (total_size + threads_per_block * 32 - 1) // (threads_per_block * 32)
+        blocks_per_grid = max(blocks_per_grid, min(min_blocks_needed, _MAX_BLOCKS_PER_GRID))
+    else:
+        blocks_needed = (total_size + threads_per_block - 1) // threads_per_block
+        blocks_per_grid = min(blocks_needed, _MAX_BLOCKS_PER_GRID)
+    
+    return blocks_per_grid, threads_per_block
 
 
 def _execute_gpu_operations(
-    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation], memory_info: dict
 ) -> np.ndarray:
-    """Execute operations on GPU: write once, compute on GPU, read once."""
+    """Execute operations on GPU with advanced memory management and optimized configurations."""
     gpu_manager = get_persistent_gpu_manager()
     
     if gpu_manager is not None and qubit_count >= 22:
         result_buffer, temp_buffer = gpu_manager.get_persistent_state(state, force_refresh=False)
         use_persistent = True
+        stream = None
     else:
         stream = cuda.stream()
         
-        if state.flags.c_contiguous:
-            pinned_state = cuda.pinned_array_like(state)
-            pinned_state[:] = state
-            result_buffer = cuda.to_device(pinned_state, stream=stream)
+        if qubit_count >= 20:
+            if state.flags.c_contiguous:
+                pinned_state = cuda.pinned_array_like(state)
+                pinned_state[:] = state
+                result_buffer = cuda.to_device(pinned_state, stream=stream)
+            else:
+                contiguous_state = np.ascontiguousarray(state)
+                pinned_state = cuda.pinned_array_like(contiguous_state)
+                pinned_state[:] = contiguous_state
+                result_buffer = cuda.to_device(pinned_state, stream=stream)
         else:
-            result_buffer = cuda.to_device(np.ascontiguousarray(state), stream=stream)
+            if state.flags.c_contiguous:
+                result_buffer = cuda.to_device(state, stream=stream)
+            else:
+                result_buffer = cuda.to_device(np.ascontiguousarray(state), stream=stream)
         
         temp_buffer = cuda.device_array_like(result_buffer)
         stream.synchronize()
@@ -98,12 +185,22 @@ def _execute_gpu_operations(
         if needs_swap:
             result_buffer, temp_buffer = temp_buffer, result_buffer
     
+    if stream:
+        stream.synchronize()
+    else:
+        cuda.synchronize()
+    
     if use_persistent:
         return gpu_manager.get_result_array(result_buffer, use_zero_copy=True)
     else:
-        pinned_result = cuda.pinned_array_like(state)
-        result_buffer.copy_to_host(ary=pinned_result)
-        return pinned_result.copy()
+        if qubit_count >= 20:
+            pinned_result = cuda.pinned_array_like(state)
+            result_buffer.copy_to_host(ary=pinned_result, stream=stream)
+            if stream:
+                stream.synchronize()
+            return pinned_result.copy()
+        else:
+            return result_buffer.copy_to_host()
 
 
 def _apply_operation_gpu(
@@ -195,7 +292,7 @@ def _apply_controlled_gpu(
     op: GateOperation,
     qubit_count: int
 ) -> bool:
-    """Apply controlled gate on GPU using efficient kernel."""
+    """Apply controlled gate on GPU using efficient kernel with optimal configuration."""
     targets = op.targets
     num_ctrl = len(getattr(op, "_ctrl_modifiers", []))
     matrix = op.matrix
@@ -218,14 +315,13 @@ def _apply_controlled_gpu(
     state_flat = state_gpu.reshape(-1)
     out_flat = out_gpu.reshape(-1)
     
-    matrix_size = matrix.shape[0]
-    matrix_gpu = cuda.to_device(matrix.flatten())
+    blocks_per_grid, threads_per_block = _get_optimal_launch_config(total_size, qubit_count)
     
-    threads_per_block = min(1024, max(512, total_size // 2048))
-    blocks_per_grid = min(
-        (total_size + threads_per_block - 1) // threads_per_block, 
-        _MAX_BLOCKS_PER_GRID
-    )
+    matrix_size = matrix.shape[0]
+    if matrix_size <= 16 and qubit_count >= 20:
+        matrix_gpu = cuda.to_device(np.ascontiguousarray(matrix.flatten()))
+    else:
+        matrix_gpu = cuda.to_device(matrix.flatten())
     
     _controlled_gate_kernel[blocks_per_grid, threads_per_block](
         state_flat, out_flat, matrix_gpu, control_mask, target_mask,
@@ -238,11 +334,11 @@ def _apply_controlled_gpu(
 @cuda.jit(inline=True, fastmath=True)
 def _controlled_gate_kernel(state_flat, out_flat, matrix_flat, control_mask, target_mask, 
                            control_state_mask, n_qubits, total_size, matrix_size):
-    """Controlled gate kernel using efficient bit manipulation."""
-    i = cuda.grid(1)
-    stride = cuda.gridsize(1)
+    """Controlled gate kernel using efficient bit manipulation and grid-stride loops."""
+    i_start = cuda.grid(1)
+    threads_per_grid = cuda.gridsize(1)
     
-    while i < total_size:
+    for i in range(i_start, total_size, threads_per_grid):
         if (i & control_mask) == control_state_mask:
             target_state = 0
             for bit in range(matrix_size):
@@ -263,5 +359,3 @@ def _controlled_gate_kernel(state_flat, out_flat, matrix_flat, control_mask, tar
             out_flat[i] = new_amplitude
         else:
             out_flat[i] = state_flat[i]
-        
-        i += stride

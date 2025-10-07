@@ -52,6 +52,17 @@ _MAX_BLOCKS_PER_GRID = 65535
 _TENSOR_CORE_THRESHOLD = 1048576  # 2^20 elements
 _WARP_COOPERATIVE_THRESHOLD = 4194304  # 2^22 elements
 
+_LARGE_ARRAY_THRESHOLD = 2**25
+_MEMORY_COALESCING_ALIGNMENT = 128
+_SHARED_MEMORY_PER_BLOCK = 48 * 1024
+_MAX_THREADS_PER_BLOCK = 1024
+_WARP_SIZE = 32
+_L2_CACHE_HINT_SIZE = 2**18
+
+_PINNED_MEMORY_THRESHOLD = 2**20
+_ZERO_COPY_THRESHOLD = 2**18
+_ASYNC_TRANSFER_THRESHOLD = 2**22
+
 _GPU_AVAILABLE = False
 try:
     _GPU_AVAILABLE = cuda.is_available()
@@ -222,11 +233,15 @@ def _should_use_gpu(work_size: int, n_qubits: int) -> bool:
 
 @cuda.jit(inline=True, fastmath=True)
 def _single_qubit_gate_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_size):
-    """Optimized CUDA kernel for single qubit gate application."""
-    i = cuda.grid(1)
-    stride = cuda.gridsize(1)
+    """Optimized CUDA kernel for single qubit gate application using grid-stride loops.
     
-    while i < half_size:
+    Grid-stride loops allow efficient processing of arrays larger than the number of
+    GPU threads, minimizing thread creation overhead and maximizing reuse.
+    """
+    i_start = cuda.grid(1)
+    threads_per_grid = cuda.gridsize(1)
+    
+    for i in range(i_start, half_size, threads_per_grid):
         idx0 = ((i >> n) << (n + 1)) | (i & mask)
         idx1 = idx0 | (1 << n)
         
@@ -235,8 +250,6 @@ def _single_qubit_gate_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_si
         
         out_flat[idx0] = a * s0 + b * s1
         out_flat[idx1] = c * s0 + d * s1
-        
-        i += stride
 
 
 @cuda.jit(inline=True, fastmath=True)
