@@ -77,12 +77,19 @@ def apply_operations(
 
 def clear_gpu_caches():
     """Clear all GPU caches and reset state."""
+    if not _GPU_AVAILABLE:
+        return
+        
     gpu_manager = get_persistent_gpu_manager()
     if gpu_manager is not None:
-        gpu_manager.clear_cache()
+        gpu_manager.force_cleanup()
     
-    if _GPU_AVAILABLE:
-        cuda.synchronize()
+    cuda.close()
+    
+    import gc
+    gc.collect()
+    
+    cuda.synchronize()
 
 
 def _check_gpu_memory_availability(state_size: int) -> dict:
@@ -97,13 +104,17 @@ def _check_gpu_memory_availability(state_size: int) -> dict:
     if not _GPU_AVAILABLE:
         return {'can_fit': False, 'required_gb': 0, 'available_gb': 0}
     
+    import gc
+    gc.collect()
+    cuda.synchronize()
+    
     free_bytes, total_bytes = cuda.current_context().get_memory_info()
     
     bytes_per_complex = 16
     state_bytes = state_size * bytes_per_complex
     required_bytes = state_bytes * 2.5
     
-    safety_margin = total_bytes * 0.2
+    safety_margin = total_bytes * 0.15
     effective_available = free_bytes - safety_margin
     can_fit = required_bytes <= effective_available
     

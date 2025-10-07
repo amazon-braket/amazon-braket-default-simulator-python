@@ -102,14 +102,11 @@ class GPUMemoryPool:
     def _allocate_unified_memory_buffer(self, size: int, dtype: np.dtype) -> cuda.devicearray.DeviceNDArray:
         """Allocate CUDA unified memory buffer for zero-copy access."""
         try:
-            # Calculate buffer size in bytes
             itemsize = np.dtype(dtype).itemsize
             total_bytes = size * itemsize
             
-            # Allocate unified memory
             ptr, _ = cuda.cuda.cuMemAllocManaged(total_bytes, cuda.cuda.CU_MEM_ATTACH_GLOBAL)
             
-            # Create device array from the pointer
             buffer = cuda.devicearray.DeviceNDArray(
                 shape=(size,),
                 strides=(itemsize,),
@@ -122,7 +119,6 @@ class GPUMemoryPool:
             return buffer
             
         except Exception as e:
-            # Fallback to regular device array
             return cuda.device_array(size, dtype=dtype)
     
     def allocate(self, size: int, dtype: np.dtype = np.complex128, 
@@ -134,12 +130,10 @@ class GPUMemoryPool:
         key = (size, dtype)
         
         with self.lock:
-            # Try to reuse an existing buffer
             if key in self.free_buffers and self.free_buffers[key]:
                 buffer = self.free_buffers[key].pop()
                 buffer_id = id(buffer)
             else:
-                # Allocate new buffer
                 if self.unified_memory_enabled:
                     buffer = self._allocate_unified_memory_buffer(size, dtype)
                 else:
@@ -149,11 +143,9 @@ class GPUMemoryPool:
                 
                 buffer_id = id(buffer)
             
-            # Reshape if needed
             if buffer.shape != shape:
                 buffer = buffer.reshape(shape)
             
-            # Track allocation
             self.allocated_buffers[buffer_id] = buffer
             self.buffer_sizes[buffer_id] = key
             self.allocation_times[buffer_id] = time.time()
@@ -172,16 +164,13 @@ class GPUMemoryPool:
             buffer = self.allocated_buffers[buffer_id]
             key = self.buffer_sizes[buffer_id]
             
-            # Decrement reference count
             self.reference_counts[buffer_id] -= 1
             
             if self.reference_counts[buffer_id] <= 0:
-                # Return buffer to free pool
                 if key not in self.free_buffers:
                     self.free_buffers[key] = []
                 self.free_buffers[key].append(buffer)
                 
-                # Clean up tracking
                 del self.allocated_buffers[buffer_id]
                 del self.buffer_sizes[buffer_id]
                 del self.allocation_times[buffer_id]
@@ -215,6 +204,26 @@ class GPUMemoryPool:
             
             for buffer_id in to_remove:
                 self.deallocate(buffer_id)
+    
+    def force_cleanup(self):
+        """Force immediate cleanup of all GPU buffers."""
+        with self.lock:
+            for buffer_list in self.free_buffers.values():
+                buffer_list.clear()
+            self.free_buffers.clear()
+            
+            buffer_ids = list(self.allocated_buffers.keys())
+            for buffer_id in buffer_ids:
+                self.deallocate(buffer_id)
+            
+            self.allocated_buffers.clear()
+            self.buffer_sizes.clear()
+            self.allocation_times.clear()
+            self.reference_counts.clear()
+            self.pinned_host_buffers.clear()
+            
+            self.total_allocated = 0
+            self.peak_allocated = 0
 
 
 class PersistentGPUState:
@@ -327,19 +336,16 @@ class PersistentGPUStateManager:
     
     def _get_ping_pong_buffers(self, primary_buffer: cuda.devicearray.DeviceNDArray) -> tuple[cuda.devicearray.DeviceNDArray, cuda.devicearray.DeviceNDArray]:
         """Get ping-pong buffers for the given primary buffer."""
-        # Allocate secondary buffer with same properties
         buffer_b, _ = self.memory_pool.allocate(primary_buffer.size, primary_buffer.dtype, primary_buffer.shape)
         return primary_buffer, buffer_b
     
     def _evict_old_states(self):
         """Evict least recently used states when cache is full."""
         while len(self.persistent_states) > self.max_cached_states:
-            # Remove least recently used state
             oldest_key = self.state_access_order.pop(0)
             if oldest_key in self.persistent_states:
                 old_state = self.persistent_states[oldest_key]
                 del self.persistent_states[oldest_key]
-                # State will be cleaned up automatically via weak reference
     
     def _cleanup_old_states(self):
         """Periodic cleanup of old GPU memory."""
@@ -349,10 +355,8 @@ class PersistentGPUStateManager:
             return
         
         with self.lock:
-            # Clean up memory pool
             self.memory_pool.cleanup_old_buffers(max_age_seconds=300.0)
             
-            # Remove very old cached states (older than 10 minutes)
             old_keys = []
             for key, state in self.persistent_states.items():
                 if current_time - state.last_access_time > 600.0:
@@ -366,7 +370,6 @@ class PersistentGPUStateManager:
             
             self.last_cleanup = current_time
             
-            # Trigger garbage collection to clean up any remaining references
             gc.collect()
     
     def get_result_array(self, gpu_buffer: cuda.devicearray.DeviceNDArray, 
@@ -397,6 +400,17 @@ class PersistentGPUStateManager:
         with self.lock:
             self.persistent_states.clear()
             self.state_access_order.clear()
+    
+    def force_cleanup(self):
+        """Force immediate cleanup of all GPU resources."""
+        with self.lock:
+            self.persistent_states.clear()
+            self.state_access_order.clear()
+            
+            self.memory_pool.force_cleanup()
+            
+            import gc
+            gc.collect()
     
     def shutdown(self):
         """Shutdown the manager and clean up resources."""
