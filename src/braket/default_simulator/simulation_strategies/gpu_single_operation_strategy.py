@@ -103,25 +103,6 @@ def _execute_high_performance_path(
     
     current_buffer, output_buffer = gpu_manager.get_persistent_state(state, force_refresh=False)
     
-    if _tensor_core_accelerator and len(operations) > 4:
-        accelerated_ops, accel_info = accelerate_with_tensor_cores(operations)
-        if accel_info.get('accelerated', False):
-            print(f"Tensor core acceleration: {accel_info['operations_accelerated']} operations")
-            operations = accelerated_ops
-    
-    if _circuit_compiler and len(operations) > 8:
-        compiled_kernel = _circuit_compiler.compile_circuit(operations, qubit_count)
-        if compiled_kernel:
-            execute_template_fused_kernel(current_buffer, compiled_kernel, qubit_count)
-            return gpu_manager.get_result_array(current_buffer, use_zero_copy=True)
-    
-    if _mega_kernel_generator and len(operations) > 16:
-        mega_kernel_success = execute_mega_kernel_circuit(
-            current_buffer, output_buffer, operations, qubit_count
-        )
-        if mega_kernel_success:
-            return gpu_manager.get_result_array(output_buffer, use_zero_copy=True)
-    
     if _warp_optimizer and state.size >= 1048576:
         return _execute_warp_cooperative_path(
             current_buffer, output_buffer, operations, qubit_count, gpu_manager
@@ -542,8 +523,6 @@ def _apply_controlled_gate_gpu_optimized(state_gpu, out_gpu, op, qubit_count, th
         control_state_mask, qubit_count, total_size, matrix_size
     )
 
-
-# High-performance CUDA kernels with better memory access patterns
 
 @cuda.jit(inline=True, fastmath=True)
 def _optimized_diagonal_kernel(state_flat, out_flat, a, d, target_bit, target_mask, shifted_target_mask, half_size):
