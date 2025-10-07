@@ -67,18 +67,7 @@ class TensorCoreAccelerator:
         if not self.tensor_cores_available:
             return operations, {'accelerated': False, 'reason': 'No tensor cores available'}
         
-        accelerable_ops = []
-        accelerated_count = 0
-        
-        for op in operations:
-            if self.can_accelerate_operation(op):
-                if precision == 'fp16':
-                    converted_matrix = op.matrix.astype(np.complex64)
-                    op.matrix = converted_matrix
-                accelerable_ops.append(op)
-                accelerated_count += 1
-            else:
-                accelerable_ops.append(op)
+        accelerated_count = sum(1 for op in operations if self.can_accelerate_operation(op))
         
         if accelerated_count > 0:
             self.acceleration_stats['operations_accelerated'] += accelerated_count
@@ -101,7 +90,7 @@ class TensorCoreAccelerator:
                 'operations_fallback': len(operations)
             }
         
-        return accelerable_ops, result_info
+        return operations, result_info
     
     def validate_acceleration_precision(
         self, 
