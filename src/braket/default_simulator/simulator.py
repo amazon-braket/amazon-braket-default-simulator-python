@@ -345,9 +345,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         Args:
             program_set (ProgramSet): Program set containing programs to validate.
         """
-        if DeviceActionType.OPENQASM not in self.properties.action:
-            return
-
         for program in program_set.programs:
             if (
                 hasattr(program, "inputs")
