@@ -389,6 +389,23 @@ def sv_adder():
     """
 
 
+def test_indices_jumbled():
+    qasm = """
+    OPENQASM 3;
+    qubit[3] q;
+    bit[3] c;
+    h q[0];
+    cnot q[0], q[1];
+    cnot q[1], q[2];
+    c[1] = measure q[2];
+    c[2] = measure q[1];
+    c[0] = measure q[0];
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=100)
+    assert result.measuredQubits == [0, 2, 1]
+
+
 def test_gphase():
     qasm = """
     qubit[2] qs;
