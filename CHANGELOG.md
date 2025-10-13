@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.4 (2025-10-07)
+
+### Bug Fixes and Other Changes
+
+ * only apply basis instructions when needed
+
 ## v1.31.3 (2025-10-06)
 
 ### Bug Fixes and Other Changes

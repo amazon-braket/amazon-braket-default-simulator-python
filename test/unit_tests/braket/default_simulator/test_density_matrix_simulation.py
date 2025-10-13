@@ -142,6 +142,17 @@ evolve_testdata = [
             0.0,
         ],
     ),
+    (
+        [gate_operations.Hadamard([0]), noise_operations.TwoQubitDepolarizing([0, 1], 0.0)],
+        2,
+        [
+            [0.5, 0, 0.5, 0],
+            [0, 0, 0, 0],
+            [0.5, 0, 0.5, 0],
+            [0, 0, 0, 0],
+        ],
+        [0.5, 0, 0.5, 0],
+    ),
 ]
 
 kraus_branch_specific_testdata = [

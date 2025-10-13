@@ -703,7 +703,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
         circuit = self.parse_program(openqasm_ir).circuit
         qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
         qubit_count = circuit.num_qubits
-        measured_qubits = circuit.measured_qubits
+        classical_bit_positions = {b: i for i, b in enumerate(circuit.target_classical_indices)}
+        measured_qubits = [
+            circuit.measured_qubits[classical_bit_positions[i]]
+            for i in sorted(circuit.target_classical_indices)
+        ]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
