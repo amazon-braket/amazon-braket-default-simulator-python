@@ -39,7 +39,7 @@ nb.config.CAPTURED_ERRORS = "new_style"
 
 _NEG_CONTROL_SLICE = slice(None, 1)
 _CONTROL_SLICE = slice(1, None)
-_NO_CONTROL_SLICE = slice(None, None)
+_NO_CONTROL_SLICE = slice(None)
 
 BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 
@@ -849,9 +849,9 @@ def _apply_cnot_small(
     """CNOT optimization path."""
     n_qubits = state.ndim
 
-    slice_list = [slice(None)] * n_qubits
+    slice_list = [_NO_CONTROL_SLICE] * n_qubits
 
-    slice_list[control] = 1
+    slice_list[control] = _CONTROL_SLICE
     slice_list[target] = 0
     slices_c1t0 = tuple(slice_list)
 
@@ -997,7 +997,7 @@ def _apply_controlled_phase_shift_small(
     state: np.ndarray, phase_factor: complex, controls, target: int
 ) -> tuple[np.ndarray, bool]:
     """C Phase shift gate optimization path for smaller vectors using numpy slicing."""
-    slices = [slice(None)] * len(state.shape)
+    slices = [_NO_CONTROL_SLICE] * len(state.shape)
     for c in controls:
         slices[c] = 1
     slices[target] = 1
@@ -1065,7 +1065,7 @@ def _apply_two_qubit_gate_small(
 
     slices = {}
     for bits in [(0, 0), (0, 1), (1, 0), (1, 1)]:
-        slice_list = [slice(None)] * n_qubits
+        slice_list = [_NO_CONTROL_SLICE] * n_qubits
         slice_list[target0] = bits[0]
         slice_list[target1] = bits[1]
         slices[bits] = tuple(slice_list)
