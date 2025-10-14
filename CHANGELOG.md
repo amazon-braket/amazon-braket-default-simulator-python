@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.31.6 (2025-10-13)
+
+### Bug Fixes and Other Changes
+
+ * Bump version number manually
+
+## v1.31.4 (2025-10-07)
+
+### Bug Fixes and Other Changes
+
+ * only apply basis instructions when needed
+
+## v1.31.3 (2025-10-06)
+
+### Bug Fixes and Other Changes
+
+ * remove some specialized gate multiplications
+
+## v1.31.2 (2025-09-23)
+
+### Bug Fixes and Other Changes
+
+ * Support control modifiers in `braket_dm`
+
+## v1.31.1 (2025-09-20)
+
+### Bug Fixes and Other Changes
+
+ * Remove superoperator gate application
+ * add gate_applications back to the dm sim
+
 ## v1.31.0 (2025-09-19)
 
 ### Features

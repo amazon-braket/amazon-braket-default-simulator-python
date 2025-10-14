@@ -272,6 +272,66 @@ evolve_testdata = [
         [0, 0, 1, 0],
         [0, 0, 1, 0],
     ),
+    # Test cases with non-contiguous qubits - simple cases
+    (
+        [gate_operations.PauliX([2])],
+        3,
+        [0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0],
+    ),
+    (
+        [gate_operations.Hadamard([2])],
+        3,
+        [0.70710678, 0.70710678, 0, 0, 0, 0, 0, 0],
+        [0.5, 0.5, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with unordered qubits - CX with control on higher index
+    (
+        [gate_operations.CX([2, 0])],
+        3,
+        [1, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0],
+    ),
+    (
+        [gate_operations.PauliX([2]), gate_operations.CX([2, 0])],
+        3,
+        [0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0],
+    ),
+    # Test case with non-contiguous qubits in two-qubit gates
+    (
+        [gate_operations.CX([0, 3])],
+        4,
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ),
+    (
+        [gate_operations.PauliX([0]), gate_operations.CX([0, 3])],
+        4,
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with Swap on non-contiguous qubits
+    (
+        [gate_operations.PauliX([1]), gate_operations.Swap([1, 3])],
+        4,
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with rotation gates on non-contiguous qubits
+    (
+        [gate_operations.RotX([2], np.pi / 2)],
+        3,
+        [0.70710678, -0.70710678j, 0, 0, 0, 0, 0, 0],
+        [0.5, 0.5, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with phase gates on non-contiguous qubits
+    (
+        [gate_operations.PauliX([3]), gate_operations.PhaseShift([3], np.pi / 4)],
+        4,
+        [0, 0.70710678 + 0.70710678j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ),
 ]
 
 apply_observables_testdata = [
@@ -305,6 +365,25 @@ apply_observables_testdata = [
         [observables.TensorProduct([observables.PauliX([2]), observables.PauliZ([0])])],
         [gate_operations.Hadamard([2])],
         3,
+    ),
+    # Test cases with non-contiguous qubits in observables - simple case
+    (
+        [observables.PauliX([2])],
+        [gate_operations.Hadamard([2])],
+        3,
+    ),
+    # Test case with unordered qubits in tensor product observable
+    (
+        [
+            observables.TensorProduct(
+                [
+                    observables.PauliZ([3]),
+                    observables.PauliX([1]),
+                ]
+            )
+        ],
+        [gate_operations.Hadamard([1])],
+        4,
     ),
 ]
 

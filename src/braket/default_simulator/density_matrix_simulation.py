@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import numpy as np
+from scipy.linalg import block_diag
 
 from braket.default_simulator.linalg_utils import (
     QuantumGateDispatcher,
@@ -157,17 +158,19 @@ class DensityMatrixSimulation(Simulation):
 
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
-                matrix = operation.matrix
+                targets = operation.targets
+                num_ctrl = len(operation._ctrl_modifiers)
                 # Extract gate_type if available
-                gate_type = getattr(operation, "gate_type", None)
                 result, temp = DensityMatrixSimulation._apply_gate(
                     result,
                     temp,
                     qubit_count,
-                    matrix,
-                    operation.targets,
+                    operation.matrix,
+                    targets[num_ctrl:],
+                    targets[:num_ctrl],
+                    operation._ctrl_modifiers,
                     dispatcher,
-                    gate_type,
+                    getattr(operation, "gate_type"),
                 )
             if isinstance(operation, KrausOperation):
                 result, temp = DensityMatrixSimulation._apply_kraus(
@@ -189,7 +192,9 @@ class DensityMatrixSimulation(Simulation):
         temp: np.ndarray,
         qubit_count: int,
         matrix: np.ndarray,
-        targets: tuple[int],
+        targets: tuple[int, ...],
+        controls: tuple[int, ...] | None,
+        control_state: tuple[int, ...] | None,
         dispatcher: QuantumGateDispatcher,
         gate_type: str | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
@@ -210,7 +215,11 @@ class DensityMatrixSimulation(Simulation):
             qubit_count (int): Number of qubits in the circuit.
             matrix (np.ndarray): Unitary gate matrix U to be applied to the density matrix.
                 Will be converted to complex dtype if necessary.
-            targets (tuple[int]): Target qubits that the unitary gate acts upon.
+            targets (tuple[int, ...]): Target qubits that the unitary gate acts upon.
+            controls (tuple[int, ...] | None): The qubits to control the operation on. Default ().
+            control_state (tuple[int, ...] | None): A tuple of same length as `controls` with either
+                a 0 or 1 in each index, corresponding to whether to control on the `|0⟩` or `|1⟩` state.
+                Default (1,) * len(controls).
             dispatcher (QuantumGateDispatcher): Dispatches multiplying based on qubit count.
             gate_type (str | None): Optional gate type identifier for optimized dispatch.
 
@@ -229,28 +238,40 @@ class DensityMatrixSimulation(Simulation):
             state=result,
             matrix=matrix,
             targets=targets,
+            controls=controls,
+            control_state=control_state,
             out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
             gate_type=gate_type,
         )
-
         if needs_swap1:
             result, temp = temp, result
 
-        _, needs_swap2 = multiply_matrix(
+        multiply_matrix(
             state=result,
-            matrix=matrix.conj(),
-            targets=tuple(t + qubit_count for t in targets),
+            # TODO: Fix control slicing for right multiplication
+            matrix=DensityMatrixSimulation._get_controlled_matrix(matrix, control_state).conj(),
+            targets=tuple(t + qubit_count for t in controls + targets),
             out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
             # TODO: remove condition once CNot dispatch is fixed
             gate_type=gate_type if len(targets) == 1 else None,
         )
-        # Always true with new gate dispatch
+        # Always swap with new gate dispatch
         result, temp = temp, result
         return result, temp
+
+    @staticmethod
+    def _get_controlled_matrix(matrix: np.ndarray, ctrl_state: tuple[int, ...]) -> np.ndarray:
+        new_matrix = matrix
+        for state in ctrl_state:
+            identity = np.eye(len(new_matrix))
+            new_matrix = (
+                block_diag(identity, new_matrix) if state else block_diag(new_matrix, identity)
+            )
+        return new_matrix
 
     @staticmethod
     def _apply_kraus(
@@ -260,7 +281,7 @@ class DensityMatrixSimulation(Simulation):
         work_buffer2: np.ndarray,
         qubit_count: int,
         matrices: list[np.ndarray],
-        targets: tuple[int],
+        targets: tuple[int, ...],
         dispatcher: QuantumGateDispatcher,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Apply a list of matrices {E_i} to a density matrix D according to:
@@ -282,7 +303,7 @@ class DensityMatrixSimulation(Simulation):
                 Must have the same shape and dtype as result.
             qubit_count (int): Number of qubits in the circuit.
             matrices (list[np.ndarray]): Kraus operators {E_i} to be applied to the density matrix.
-            targets (tuple[int]): Target qubits that the Kraus operators act upon.
+            targets (tuple[int, ...]): Target qubits that the Kraus operators act upon.
             dispatcher (QuantumGateDispatcher): Dispatches multiplying based on quibit count.
 
         Returns:

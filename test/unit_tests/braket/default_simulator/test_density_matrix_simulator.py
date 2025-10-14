@@ -397,6 +397,12 @@ def test_properties(simulator):
                         {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                     ],
                 },
+                "braket.ir.openqasm.program_set": {
+                    "actionType": "braket.ir.openqasm.program_set",
+                    "version": ["1"],
+                    "maximumExecutables": 100,
+                    "maximumTotalShots": 200_000,
+                },
             },
             "paradigm": {"qubitCount": qubit_count},
             "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
@@ -465,6 +471,53 @@ def bell_ir_with_result(ir_type):
         )
 
     return _bell_ir_with_result
+
+
+def test_ghz_0():
+    qasm = """
+    qubit[4] q;
+    h q[0];
+    cnot q[0], q[1];
+    cnot q[0], q[2];
+    ctrl @ x q[0], q[3];
+    #pragma braket result probability
+    """
+    simulator = DensityMatrixSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm))
+    probs = result.resultTypes[0].value
+    assert np.allclose(probs, np.array([0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5]))
+
+
+def test_gphase():
+    qasm = """
+    qubit[2] qs;
+
+    int[8] two = 2;
+
+    gate x a { U(π, 0, π) a; }
+    gate cx c, a { ctrl @ x c, a; }
+    gate phase c, a {
+        gphase(π/2);
+        pow(1) @ ctrl(two) @ gphase(π) c, a;
+    }
+    gate h a { U(π/2, 0, π) a; }
+
+    inv @ U(π/2, 0, π) qs[0];
+    cx qs[0], qs[1];
+    phase qs[0], qs[1];
+
+    gphase(π);
+    inv @ gphase(π / 2);
+    negctrl @ ctrl @ gphase(2 * π) qs[0], qs[1];
+
+    #pragma braket result density_matrix
+    """
+    simulator = DensityMatrixSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm))
+    dm = result.resultTypes[0].value
+    assert np.allclose(
+        dm, np.array([[0.5, 0, 0, -0.5], [0, 0, 0, 0], [0, 0, 0, 0], [-0.5, 0, 0, 0.5]])
+    )
 
 
 @pytest.mark.parametrize("result_type", invalid_ir_result_types)

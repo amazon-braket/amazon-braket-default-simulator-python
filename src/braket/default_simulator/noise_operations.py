@@ -157,7 +157,7 @@ class TwoQubitDepolarizing(KrausOperation):
 
     @property
     def matrices(self) -> list[np.ndarray]:
-        k_list_single = [_PAULI_X, _PAULI_X, _PAULI_Y, _PAULI_Z]
+        k_list_single = [_PAULI_I, _PAULI_X, _PAULI_Y, _PAULI_Z]
         k_list = [np.kron(i, j) for i in k_list_single for j in k_list_single]
         k_list[0] *= np.sqrt(1 - self._probability)
         k_list[1:] = [np.sqrt(self._probability / 15) * i for i in k_list[1:]]
