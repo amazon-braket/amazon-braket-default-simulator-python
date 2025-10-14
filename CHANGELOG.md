@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.31.7 (2025-10-14)
+
+### Bug Fixes and Other Changes
+
+ * add program set action type to device properties
+ * Expand controlled matrices for DM right multiplication
+
 ## v1.31.6 (2025-10-13)
 
 ### Bug Fixes and Other Changes
