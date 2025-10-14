@@ -248,13 +248,11 @@ class DensityMatrixSimulation(Simulation):
         if needs_swap1:
             result, temp = temp, result
 
-        controlled_matrix = DensityMatrixSimulation._get_controlled_matrix(matrix, control_state)
-        targets = controls + targets
-
         multiply_matrix(
             state=result,
-            matrix=controlled_matrix.conj(),
-            targets=tuple(t + qubit_count for t in targets),
+            # TODO: Fix control slicing for right multiplication
+            matrix=DensityMatrixSimulation._get_controlled_matrix(matrix, control_state).conj(),
+            targets=tuple(t + qubit_count for t in controls + targets),
             out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
