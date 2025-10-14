@@ -153,6 +153,38 @@ evolve_testdata = [
         ],
         [0.5, 0, 0.5, 0],
     ),
+    # Test cases with non-contiguous qubits - simple cases
+    (
+        [gate_operations.PauliX([2])],
+        3,
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        [0, 1, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with unordered qubits - CX with control on higher index
+    (
+        [gate_operations.CX([2, 0])],
+        3,
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        [1, 0, 0, 0, 0, 0, 0, 0],
+    ),
 ]
 
 kraus_branch_specific_testdata = [
@@ -217,6 +249,18 @@ kraus_branch_specific_testdata = [
         ],
         5,
     ),
+    # Test case with non-contiguous qubits in Kraus operation - simple identity
+    (
+        [
+            noise_operations.Kraus(
+                [0, 2],
+                [
+                    np.eye(4),
+                ],
+            ),
+        ],
+        3,
+    ),
 ]
 
 
@@ -249,6 +293,12 @@ apply_observables_testdata = [
     ([observables.TensorProduct([observables.Identity([2]), observables.PauliZ([0])])], [], 3),
     (
         [observables.TensorProduct([observables.PauliX([2]), observables.PauliZ([0])])],
+        [gate_operations.Hadamard([2])],
+        3,
+    ),
+    # Test cases with non-contiguous qubits in observables - simple case
+    (
+        [observables.PauliX([2])],
         [gate_operations.Hadamard([2])],
         3,
     ),
