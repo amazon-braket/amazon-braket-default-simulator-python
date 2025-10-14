@@ -267,8 +267,10 @@ class DensityMatrixSimulation(Simulation):
     def _get_controlled_matrix(matrix: np.ndarray, ctrl_state: tuple[int, ...]) -> np.ndarray:
         new_matrix = matrix
         for state in ctrl_state:
-            id = np.eye(len(new_matrix))
-            new_matrix = block_diag(id, new_matrix) if state else block_diag(new_matrix, id)
+            identity = np.eye(len(new_matrix))
+            new_matrix = (
+                block_diag(identity, new_matrix) if state else block_diag(new_matrix, identity)
+            )
         return new_matrix
 
     @staticmethod
