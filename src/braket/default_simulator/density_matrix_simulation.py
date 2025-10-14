@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 
 import numpy as np
+from scipy.linalg import block_diag
 
 from braket.default_simulator.linalg_utils import (
     QuantumGateDispatcher,
@@ -151,7 +152,6 @@ class DensityMatrixSimulation(Simulation):
         original_shape = state.shape
         result = state.view()
         result.shape = [2] * 2 * qubit_count
-        axes = [i + qubit_count for i in range(qubit_count)] + list(range(qubit_count))
         temp = np.zeros_like(result, dtype=complex)
         work_buffer1 = np.zeros_like(result, dtype=complex)
         work_buffer2 = np.zeros_like(result, dtype=complex)
@@ -164,7 +164,7 @@ class DensityMatrixSimulation(Simulation):
                 result, temp = DensityMatrixSimulation._apply_gate(
                     result,
                     temp,
-                    axes,
+                    qubit_count,
                     operation.matrix,
                     targets[num_ctrl:],
                     targets[:num_ctrl],
@@ -190,7 +190,7 @@ class DensityMatrixSimulation(Simulation):
     def _apply_gate(
         result: np.ndarray,
         temp: np.ndarray,
-        axes: list[int],
+        qubit_count: int,
         matrix: np.ndarray,
         targets: tuple[int, ...],
         controls: tuple[int, ...] | None,
@@ -248,22 +248,30 @@ class DensityMatrixSimulation(Simulation):
         if needs_swap1:
             result, temp = temp, result
 
-        np.copyto(temp, result.transpose(axes))
-        _, needs_swap2 = multiply_matrix(
-            state=temp,
-            matrix=matrix.conj(),
-            targets=targets,
-            controls=controls,
-            control_state=control_state,
-            out=result,
+        controlled_matrix = DensityMatrixSimulation._get_controlled_matrix(matrix, control_state)
+        targets = controls + targets
+
+        multiply_matrix(
+            state=result,
+            matrix=controlled_matrix.conj(),
+            targets=tuple(t + qubit_count for t in targets),
+            out=temp,
             return_swap_info=True,
             dispatcher=dispatcher,
-            gate_type=gate_type,
+            # TODO: remove condition once CNot dispatch is fixed
+            gate_type=gate_type if len(targets) == 1 else None,
         )
-        if needs_swap2:
-            result, temp = temp, result
-        np.copyto(result, temp.transpose(axes))
+        # Always swap with new gate dispatch
+        result, temp = temp, result
         return result, temp
+
+    @staticmethod
+    def _get_controlled_matrix(matrix: np.ndarray, ctrl_state: tuple[int, ...]) -> np.ndarray:
+        new_matrix = matrix
+        for state in ctrl_state:
+            id = np.eye(len(new_matrix))
+            new_matrix = block_diag(id, new_matrix) if state else block_diag(new_matrix, id)
+        return new_matrix
 
     @staticmethod
     def _apply_kraus(
