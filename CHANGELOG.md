@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.6 (2025-10-13)
+
+### Bug Fixes and Other Changes
+
+ * Bump version number manually
+
 ## v1.31.4 (2025-10-07)
 
 ### Bug Fixes and Other Changes
