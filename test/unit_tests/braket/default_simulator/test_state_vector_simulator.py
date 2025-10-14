@@ -326,6 +326,12 @@ def test_properties():
                         {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                     ],
                 },
+                "braket.ir.openqasm.program_set": {
+                    "actionType": "braket.ir.openqasm.program_set",
+                    "version": ["1"],
+                    "maximumExecutables": 100,
+                    "maximumTotalShots": 200_000,
+                },
             },
             "paradigm": {"qubitCount": qubit_count},
             "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
@@ -1659,3 +1665,19 @@ def test_program_set_invalid_shots():
         StateVectorSimulator().run(program_set, shots=0)
     with pytest.raises(ValueError):
         StateVectorSimulator().run(program_set, shots=5)
+
+
+def test_program_set_validation():
+    """Test that program set validation works correctly for valid and invalid programs."""
+    valid_program = Program(source="bit[2] b;\nqubit[2] q;\nx q;\nb = measure q;")
+    valid_program_set = ProgramSet(programs=[valid_program])
+
+    simulator = StateVectorSimulator()
+    result = simulator.run(valid_program_set, shots=10)
+    assert result is not None
+
+    valid_program_2 = Program(source="bit[1] b;\nqubit[1] q;\nh q;\nb = measure q;")
+    multi_program_set = ProgramSet(programs=[valid_program, valid_program_2])
+
+    result = simulator.run(multi_program_set, shots=10)
+    assert result is not None
