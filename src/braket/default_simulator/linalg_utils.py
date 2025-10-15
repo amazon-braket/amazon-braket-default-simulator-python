@@ -14,7 +14,6 @@
 import itertools
 from collections.abc import Sequence
 from types import MappingProxyType
-from typing import Union
 
 import numba as nb
 import numpy as np
@@ -105,7 +104,7 @@ def multiply_matrix(
     dispatcher: QuantumGateDispatcher | None = None,
     return_swap_info: bool = False,
     gate_type: str | None = None,
-) -> Union[np.ndarray, tuple[np.ndarray, bool]]:
+) -> np.ndarray | tuple[np.ndarray, bool]:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
     controlling the operation as specified.
 
@@ -123,7 +122,7 @@ def multiply_matrix(
         return_swap_info (bool): For backwards comp. Used to indicate whether the ping-pong buffer swaps should happen.
 
     Returns:
-        Union[np.ndarray, tuple[np.ndarray, bool]]: The state after the matrix has been applied.
+        np.ndarray | tuple[np.ndarray, bool]: The state after the matrix has been applied.
             When return_swap_info is True, returns a tuple of (state, swap_occurred).
             When return_swap_info is False, returns just the state array.
     """

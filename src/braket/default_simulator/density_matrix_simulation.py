@@ -140,8 +140,8 @@ class DensityMatrixSimulation(Simulation):
         Args:
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubits in the circuit
-            operations (list[Union[GateOperation, KrausOperation, Observable]]): list of GateOperation and
-                KrausOperation to be applied to the density matrix
+            operations (list[GateOperation | KrausOperation | Observable]): operations to be applied
+                to the density matrix
 
         Returns:
             np.ndarray: output density matrix
