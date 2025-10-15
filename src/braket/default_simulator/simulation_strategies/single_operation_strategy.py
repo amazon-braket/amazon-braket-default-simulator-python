@@ -36,13 +36,13 @@ def apply_operations(
     dispatcher = QuantumGateDispatcher(state.ndim)
     for op in operations:
         targets = op.targets
-        num_ctrl = len(op._ctrl_modifiers)
+        num_ctrl = len(op.ctrl_modifiers)
         _, needs_swap = multiply_matrix(
             result,
             op.matrix,
             targets[num_ctrl:],
             targets[:num_ctrl],
-            op._ctrl_modifiers,
+            op.ctrl_modifiers,
             temp,
             dispatcher,
             True,

@@ -159,7 +159,7 @@ class DensityMatrixSimulation(Simulation):
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
                 targets = operation.targets
-                num_ctrl = len(operation._ctrl_modifiers)
+                num_ctrl = len(operation.ctrl_modifiers)
                 # Extract gate_type if available
                 result, temp = DensityMatrixSimulation._apply_gate(
                     result,
@@ -168,7 +168,7 @@ class DensityMatrixSimulation(Simulation):
                     operation.matrix,
                     targets[num_ctrl:],
                     targets[:num_ctrl],
-                    operation._ctrl_modifiers,
+                    operation.ctrl_modifiers,
                     dispatcher,
                     getattr(operation, "gate_type"),
                 )
