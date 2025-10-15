@@ -65,6 +65,11 @@ class GateOperation(Operation, ABC):
             unitary = fractional_matrix_power(unitary, self._power)
         return unitary
 
+    @property
+    def control_state(self) -> tuple[int, ...]:
+        """tuple[int, ...]: Quantum state that the operator is controlled by."""
+        return self._ctrl_modifiers
+
     def __eq__(self, other):
         possible_parameters = "_angle", "_angle_1", "_angle_2"
         return self.targets == other.targets and all(
