@@ -683,7 +683,7 @@ def _multiply_matrix(
     return out, True
 
 
-def controlled_matrix(matrix: np.ndarray, ctrl_state: tuple[int, ...]) -> np.ndarray:
+def controlled_matrix(matrix: np.ndarray, control_state: tuple[int, ...]) -> np.ndarray:
     """Returns the controlled form of the given matrix
 
     A controlled matrix is produced by successively taking the direct sum of the matrix :math:`U_n`
@@ -701,14 +701,14 @@ def controlled_matrix(matrix: np.ndarray, ctrl_state: tuple[int, ...]) -> np.nda
 
     Args:
         matrix (np.ndarray): The matrix to control
-        ctrl_state (tuple[int, ...]): Basis state on which to control the operation.
+        control_state (tuple[int, ...]): Basis state on which to control the operation.
             Each appearance of 1 yields a left direct sum, and 0 yields a right direct sum.
 
     Returns:
         np.ndarray: The controlled form of the matrix
     """
     new_matrix = matrix
-    for state in ctrl_state:
+    for state in control_state:
         identity = np.eye(len(new_matrix))
         new_matrix = block_diag(identity, new_matrix) if state else block_diag(new_matrix, identity)
     return new_matrix

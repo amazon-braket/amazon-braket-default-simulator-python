@@ -66,7 +66,7 @@ class GateOperation(Operation, ABC):
         return unitary
 
     @property
-    def ctrl_modifiers(self) -> tuple[int, ...]:
+    def control_state(self) -> tuple[int, ...]:
         """tuple[int, ...]: Quantum state that the operator is controlled by."""
         return self._ctrl_modifiers
 
