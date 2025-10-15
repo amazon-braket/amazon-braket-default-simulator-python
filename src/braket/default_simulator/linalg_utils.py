@@ -687,12 +687,12 @@ def controlled_matrix(matrix: np.ndarray, ctrl_state: tuple[int, ...]) -> np.nda
     """Returns the controlled form of the given matrix
 
     A controlled matrix is produced by successively taking the direct sum of the matrix :math:`U_n`
-    with an equal-rank identity matrix :math:`I_n`, with regular control (given with a control value
-    of 1) taking the direct sum on the left
+    with an equal-rank identity matrix :math:`I_n`, with regular control (indicated by a control
+    value of 1) taking the direct sum on the left
 
         .. math:: C_1(U_n) := I_n \oplus U_n
 
-    and negative control (given with a control value of 0) taking the direct sum on the right
+    and negative control (indicated by a control value of 0) taking the direct sum on the right
 
         .. math:: C_0(U_n) := U_n \oplus I_n
 
