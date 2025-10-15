@@ -12,10 +12,10 @@
 # language governing permissions and limitations under the License.
 
 import numpy as np
-from scipy.linalg import block_diag
 
 from braket.default_simulator.linalg_utils import (
     QuantumGateDispatcher,
+    controlled_matrix,
     multiply_matrix,
     partial_trace,
 )
@@ -251,7 +251,7 @@ class DensityMatrixSimulation(Simulation):
         multiply_matrix(
             state=result,
             # TODO: Fix control slicing for right multiplication
-            matrix=DensityMatrixSimulation._get_controlled_matrix(matrix, control_state).conj(),
+            matrix=controlled_matrix(matrix, control_state).conj(),
             targets=tuple(t + qubit_count for t in controls + targets),
             out=temp,
             return_swap_info=True,
@@ -262,16 +262,6 @@ class DensityMatrixSimulation(Simulation):
         # Always swap with new gate dispatch
         result, temp = temp, result
         return result, temp
-
-    @staticmethod
-    def _get_controlled_matrix(matrix: np.ndarray, ctrl_state: tuple[int, ...]) -> np.ndarray:
-        new_matrix = matrix
-        for state in ctrl_state:
-            identity = np.eye(len(new_matrix))
-            new_matrix = (
-                block_diag(identity, new_matrix) if state else block_diag(new_matrix, identity)
-            )
-        return new_matrix
 
     @staticmethod
     def _apply_kraus(
