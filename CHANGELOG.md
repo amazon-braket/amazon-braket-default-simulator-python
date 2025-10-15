@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.8 (2025-10-15)
+
+### Bug Fixes and Other Changes
+
+ * Extract `controlled_matrix` function
+
 ## v1.31.7 (2025-10-14)
 
 ### Bug Fixes and Other Changes
