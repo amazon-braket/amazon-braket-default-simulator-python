@@ -131,7 +131,7 @@ class OpenQASMSimulator(BraketSimulator, ABC):
 class BaseLocalSimulator(OpenQASMSimulator):
     def run(
         self, circuit_ir: OpenQASMProgram | ProgramSet | JaqcdProgram, *args, **kwargs
-    ) -> GateModelTaskResult:
+    ) -> GateModelTaskResult | ProgramSetTaskResult:
         """
         Simulate a program using either OpenQASM or Jaqcd.
 
@@ -147,7 +147,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 optimized contraction.
 
         Returns:
-            GateModelTaskResult: object that represents the result
+            GateModelTaskResult | ProgramSetTaskResult: object that represents the result
 
         Raises:
             ValueError: If result types are not specified in the IR or sample is specified

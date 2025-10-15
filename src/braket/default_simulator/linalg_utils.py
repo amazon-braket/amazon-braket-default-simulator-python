@@ -14,10 +14,10 @@
 import itertools
 from collections.abc import Sequence
 from types import MappingProxyType
-from typing import Union
 
 import numba as nb
 import numpy as np
+from scipy.linalg import block_diag
 
 nb.config.NUMBA_OPT = 3
 nb.config.NUMBA_CPU_NAME = "native"
@@ -104,7 +104,7 @@ def multiply_matrix(
     dispatcher: QuantumGateDispatcher | None = None,
     return_swap_info: bool = False,
     gate_type: str | None = None,
-) -> Union[np.ndarray, tuple[np.ndarray, bool]]:
+) -> np.ndarray | tuple[np.ndarray, bool]:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits,
     controlling the operation as specified.
 
@@ -122,7 +122,7 @@ def multiply_matrix(
         return_swap_info (bool): For backwards comp. Used to indicate whether the ping-pong buffer swaps should happen.
 
     Returns:
-        Union[np.ndarray, tuple[np.ndarray, bool]]: The state after the matrix has been applied.
+        np.ndarray | tuple[np.ndarray, bool]: The state after the matrix has been applied.
             When return_swap_info is True, returns a tuple of (state, swap_occurred).
             When return_swap_info is False, returns just the state array.
     """
@@ -554,7 +554,7 @@ def _apply_two_qubit_gate_small(
     target1: int,
     out: np.ndarray,
 ) -> tuple[np.ndarray, bool]:
-    """Two qubit gate application with numppy."""
+    """Two qubit gate application with numpy."""
     n_qubits = state.ndim
     out.fill(0)
 
@@ -680,6 +680,37 @@ def _multiply_matrix(
 
     np.copyto(out, np.transpose(product, np.argsort([*targets, *unused_idxs])))
     return out, True
+
+
+def controlled_matrix(matrix: np.ndarray, control_state: tuple[int, ...]) -> np.ndarray:
+    """Returns the controlled form of the given matrix
+
+    A controlled matrix is produced by successively taking the direct sum of the matrix :math:`U_n`
+    with an equal-rank identity matrix :math:`I_n`, with regular control (indicated by a control
+    value of 1) taking the direct sum on the left
+
+        .. math:: C_1(U_n) := I_n \oplus U_n
+
+    and negative control (indicated by a control value of 0) taking the direct sum on the right
+
+        .. math:: C_0(U_n) := U_n \oplus I_n
+
+    The control state is read from left to right, with each control bit doubling the size of the
+    matrix. The output matrix will have rank `2**len(ctrl_state)` times that of the input matrix.
+
+    Args:
+        matrix (np.ndarray): The matrix to control
+        control_state (tuple[int, ...]): Basis state on which to control the operation.
+            Each appearance of 1 yields a left direct sum, and 0 yields a right direct sum.
+
+    Returns:
+        np.ndarray: The controlled form of the matrix
+    """
+    new_matrix = matrix
+    for state in control_state:
+        identity = np.eye(len(new_matrix))
+        new_matrix = block_diag(identity, new_matrix) if state else block_diag(new_matrix, identity)
+    return new_matrix
 
 
 def marginal_probability(
