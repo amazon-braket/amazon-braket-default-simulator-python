@@ -60,7 +60,7 @@ def validate_net_detuning_with_warning(
         program (Program): The given program
         time_points (np.ndarray): The time points for both global and local detunings
         global_detuning_coefs (np.ndarray): The values of global detuning
-        local_detuning_patterns (List): The pattern of local detuning
+        local_detuning_patterns (list): The pattern of local detuning
         local_detuning_coefs (np.ndarray): The values of local detuning
         capabilities (CapabilitiesConstants): The capability constants
 
@@ -104,13 +104,13 @@ def validate_net_detuning_with_warning(
                 return program
 
 
-def validate_time_separation(times: List[Decimal], min_time_separation: Decimal, name: str) -> None:
+def validate_time_separation(times: list[Decimal], min_time_separation: Decimal, name: str) -> None:
     """
     Used in Device Emulation; Validate that the time points in a time series are separated by at
     least min_time_separation.
 
     Args:
-        times (List[Decimal]): A list of time points in a time series.
+        times (list[Decimal]): A list of time points in a time series.
         min_time_separation (Decimal): The minimal amount of time any two time points should be
             separated by.
         name (str): The name of the time series, used for logging.
@@ -129,13 +129,13 @@ def validate_time_separation(times: List[Decimal], min_time_separation: Decimal,
             )
 
 
-def validate_value_precision(values: List[Decimal], max_precision: Decimal, name: str) -> None:
+def validate_value_precision(values: list[Decimal], max_precision: Decimal, name: str) -> None:
     """
     Used in Device Emulation; Validate that the precision of a set of values do not
     exceed max_precision.
 
     Args:
-        times (List[Decimal]): A list of values from a time series to validate.
+        times (list[Decimal]): A list of values from a time series to validate.
         max_precision (Decimal): The maximum allowed precision.
         name (str): The name of the time series, used for logging.
 
@@ -151,7 +151,7 @@ def validate_value_precision(values: List[Decimal], max_precision: Decimal, name
 
 
 def validate_max_absolute_slope(
-    times: List[Decimal], values: List[Decimal], max_slope: Decimal, name: str
+    times: list[Decimal], values: List[Decimal], max_slope: Decimal, name: str
 ):
     """
     Used in Device Emulation; Validate that the magnitude of the slope between any
@@ -159,7 +159,7 @@ def validate_max_absolute_slope(
     exceed max_slope.
 
     Args:
-        times (List[Decimal]): A list of time points in a time series.
+        times (list[Decimal]): A list of time points in a time series.
         max_slope (Decimal): The maximum allowed rate of change between points in the time series.
         name (str): The name of the time series, used for logging.
 
@@ -177,13 +177,13 @@ def validate_max_absolute_slope(
             )
 
 
-def validate_time_precision(times: List[Decimal], time_precision: Decimal, name: str):
+def validate_time_precision(times: list[Decimal], time_precision: Decimal, name: str):
     """
     Used in Device Emulation; Validate that the precision of a set of time points do not
     exceed max_precision.
 
     Args:
-        times (List[Decimal]): A list of time points to validate.
+        times (list[Decimal]): A list of time points to validate.
         max_precision (Decimal): The maximum allowed precision.
         name (str): The name of the time series, used for logging.
 
