@@ -13,13 +13,12 @@
 
 import sys
 
+from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-
-from braket.default_simulator.simulator import BaseLocalSimulator
-from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 
 class StateVectorSimulator(BaseLocalSimulator):
@@ -243,6 +242,12 @@ class StateVectorSimulator(BaseLocalSimulator):
                         "requiresAllQubitsMeasurement": False,
                         "supportsUnassignedMeasurements": True,
                         "disabledQubitRewiringSupported": False,
+                    },
+                    "braket.ir.openqasm.program_set": {
+                        "actionType": "braket.ir.openqasm.program_set",
+                        "version": ["1"],
+                        "maximumExecutables": 100,
+                        "maximumTotalShots": 200_000,
                     },
                 },
                 "paradigm": {"qubitCount": qubit_count},

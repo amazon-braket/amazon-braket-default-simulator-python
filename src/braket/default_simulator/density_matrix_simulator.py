@@ -13,13 +13,12 @@
 
 import sys
 
+from braket.default_simulator import DensityMatrixSimulation
+from braket.default_simulator.simulator import BaseLocalSimulator
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
-
-from braket.default_simulator import DensityMatrixSimulation
-from braket.default_simulator.simulator import BaseLocalSimulator
 
 
 class DensityMatrixSimulator(BaseLocalSimulator):
@@ -256,6 +255,12 @@ class DensityMatrixSimulator(BaseLocalSimulator):
                             {"name": "Probability", "minShots": 0, "maxShots": max_shots},
                             {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
                         ],
+                    },
+                    "braket.ir.openqasm.program_set": {
+                        "actionType": "braket.ir.openqasm.program_set",
+                        "version": ["1"],
+                        "maximumExecutables": 100,
+                        "maximumTotalShots": 200_000,
                     },
                 },
                 "paradigm": {"qubitCount": qubit_count},

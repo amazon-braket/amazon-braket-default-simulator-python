@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Union
 
 __all__ = [
     "AccessControl",
@@ -125,7 +124,7 @@ class Span:
 class QASMNode:
     """Base class for all OpenQASM 3 nodes"""
 
-    span: Optional[Span] = field(init=False, default=None, compare=False)
+    span: Span | None = field(init=False, default=None, compare=False)
     """
     The span(location) of the node in the source code.
     Because not all the nodes are generated from source, the span is optional.
@@ -139,8 +138,8 @@ class Program(QASMNode):
     An entire OpenQASM 3 program represented by a list of top level statements
     """
 
-    statements: List[Statement]
-    version: Optional[str] = None
+    statements: list[Statement]
+    version: str | None = None
 
 
 @dataclass
@@ -148,14 +147,14 @@ class Annotation(QASMNode):
     """An annotation applied to a statment."""
 
     keyword: str
-    command: Optional[str] = None
+    command: str | None = None
 
 
 @dataclass
 class Statement(QASMNode):
     """A statement: anything that can appear on its own line"""
 
-    annotations: List[Annotation] = field(init=False, default_factory=list)
+    annotations: list[Annotation] = field(init=False, default_factory=list)
 
 
 @dataclass
@@ -192,7 +191,7 @@ class QubitDeclaration(Statement):
     """
 
     qubit: Identifier
-    size: Optional[Expression] = None
+    size: Expression | None = None
 
 
 @dataclass
@@ -209,9 +208,9 @@ class QuantumGateDefinition(Statement):
     """
 
     name: Identifier
-    arguments: List[Identifier]
-    qubits: List[Identifier]
-    body: List[QuantumStatement]
+    arguments: list[Identifier]
+    qubits: list[Identifier]
+    body: list[QuantumStatement]
 
 
 class QuantumStatement(Statement):
@@ -234,8 +233,8 @@ class ExternDeclaration(Statement):
     """
 
     name: Identifier
-    arguments: List[ExternArgument]
-    return_type: Optional[ExternArgument] = None
+    arguments: list[ExternArgument]
+    return_type: ExternArgument | None = None
 
 
 class Expression(QASMNode):
@@ -367,7 +366,7 @@ class ArrayLiteral(Expression):
         array[uint[8], 2, 2] my_array = {row, row};
     """
 
-    values: List[Expression]
+    values: list[Expression]
 
 
 @dataclass
@@ -384,7 +383,7 @@ class FunctionCall(Expression):
     """
 
     name: Identifier
-    arguments: List[Expression]
+    arguments: list[Expression]
 
 
 @dataclass
@@ -412,7 +411,7 @@ class DiscreteSet(QASMNode):
         let alias = qubits[{2, 3, 4}];
     """
 
-    values: List[Expression]
+    values: list[Expression]
 
 
 @dataclass
@@ -427,12 +426,12 @@ class RangeDefinition(QASMNode):
         :
     """
 
-    start: Optional[Expression]
-    end: Optional[Expression]
-    step: Optional[Expression]
+    start: Expression | None
+    end: Expression | None
+    step: Expression | None
 
 
-IndexElement = Union[DiscreteSet, List[Union[Expression, RangeDefinition]]]
+IndexElement = DiscreteSet | list[Expression | RangeDefinition]
 
 
 @dataclass
@@ -462,7 +461,7 @@ class IndexedIdentifier(QASMNode):
     """
 
     name: Identifier
-    indices: List[IndexElement]
+    indices: list[IndexElement]
 
 
 @dataclass
@@ -496,11 +495,11 @@ class QuantumGate(QuantumStatement):
         a, b // <- qubit
     """
 
-    modifiers: List[QuantumGateModifier]
+    modifiers: list[QuantumGateModifier]
     name: Identifier
-    arguments: List[Expression]
-    qubits: List[Union[IndexedIdentifier, Identifier]]
-    duration: Optional[Expression] = None
+    arguments: list[Expression]
+    qubits: list[IndexedIdentifier | Identifier]
+    duration: Expression | None = None
 
 
 @dataclass
@@ -520,7 +519,7 @@ class QuantumGateModifier(QASMNode):
     """
 
     modifier: GateModifierName
-    argument: Optional[Expression] = None
+    argument: Expression | None = None
 
 
 @dataclass
@@ -538,9 +537,9 @@ class QuantumPhase(QuantumStatement):
 
     """
 
-    modifiers: List[QuantumGateModifier]
+    modifiers: list[QuantumGateModifier]
     argument: Expression
-    qubits: List[Union[IndexedIdentifier, Identifier]]
+    qubits: list[IndexedIdentifier | Identifier]
 
 
 # Not a full expression because it can only be used in limited contexts.
@@ -554,7 +553,7 @@ class QuantumMeasurement(QASMNode):
         measure q;
     """
 
-    qubit: Union[IndexedIdentifier, Identifier]
+    qubit: IndexedIdentifier | Identifier
 
 
 # Note that this is not a QuantumStatement because it involves access to
@@ -567,7 +566,7 @@ class QuantumMeasurementStatement(Statement):
     and returns)."""
 
     measure: QuantumMeasurement
-    target: Optional[Union[IndexedIdentifier, Identifier]]
+    target: IndexedIdentifier | Identifier | None
 
 
 @dataclass
@@ -580,7 +579,7 @@ class QuantumBarrier(QuantumStatement):
         barrier q;
     """
 
-    qubits: List[Expression]
+    qubits: list[Expression]
 
 
 @dataclass
@@ -593,7 +592,7 @@ class QuantumReset(QuantumStatement):
         reset q;
     """
 
-    qubits: Union[IndexedIdentifier, Identifier]
+    qubits: IndexedIdentifier | Identifier
 
 
 @dataclass
@@ -604,7 +603,7 @@ class ClassicalArgument(QASMNode):
 
     type: ClassicalType
     name: Identifier
-    access: Optional[AccessControl] = None
+    access: AccessControl | None = None
 
 
 @dataclass
@@ -612,7 +611,7 @@ class ExternArgument(QASMNode):
     """Classical argument for an extern declaration."""
 
     type: ClassicalType
-    access: Optional[AccessControl] = None
+    access: AccessControl | None = None
 
 
 @dataclass
@@ -627,7 +626,7 @@ class ClassicalDeclaration(Statement):
 
     type: ClassicalType
     identifier: Identifier
-    init_expression: Optional[Union[Expression, QuantumMeasurement]] = None
+    init_expression: Expression | QuantumMeasurement | None = None
 
 
 @dataclass
@@ -679,7 +678,7 @@ class IntType(ClassicalType):
         int[16]
     """
 
-    size: Optional[Expression] = None
+    size: Expression | None = None
 
 
 @dataclass
@@ -694,7 +693,7 @@ class UintType(ClassicalType):
         uint[16]
     """
 
-    size: Optional[Expression] = None
+    size: Expression | None = None
 
 
 @dataclass
@@ -709,7 +708,7 @@ class FloatType(ClassicalType):
         float[64]
     """
 
-    size: Optional[Expression] = None
+    size: Expression | None = None
 
 
 @dataclass
@@ -723,7 +722,7 @@ class ComplexType(ClassicalType):
         complex[float[32]]
     """
 
-    base_type: Optional[FloatType]
+    base_type: FloatType | None
 
 
 @dataclass
@@ -737,7 +736,7 @@ class AngleType(ClassicalType):
         angle[16]
     """
 
-    size: Optional[Expression] = None
+    size: Expression | None = None
 
 
 @dataclass
@@ -751,7 +750,7 @@ class BitType(ClassicalType):
         creg[8]
     """
 
-    size: Optional[Expression] = None
+    size: Expression | None = None
 
 
 class BoolType(ClassicalType):
@@ -768,8 +767,8 @@ class ArrayType(ClassicalType):
     arrays declared by being arguments to subroutines.
     """
 
-    base_type: Union[IntType, UintType, FloatType, AngleType, BitType, BoolType, ComplexType]
-    dimensions: List[Expression]
+    base_type: IntType | UintType | FloatType | AngleType | BitType | BoolType | ComplexType
+    dimensions: list[Expression]
 
 
 @dataclass
@@ -790,8 +789,8 @@ class ArrayReferenceType(ClassicalType):
         def f(const array[uint[8], #dim=3] b) {}
     """
 
-    base_type: Union[IntType, UintType, FloatType, AngleType, BitType, BoolType, ComplexType]
-    dimensions: Union[Expression, List[Expression]]
+    base_type: IntType | UintType | FloatType | AngleType | BitType | BoolType | ComplexType
+    dimensions: Expression | list[Expression]
 
 
 class DurationType(ClassicalType):
@@ -832,9 +831,9 @@ class CalibrationDefinition(Statement):
     """
 
     name: Identifier
-    arguments: List[ClassicalArgument]
-    qubits: List[Identifier]
-    return_type: Optional[ClassicalType]
+    arguments: list[ClassicalArgument]
+    qubits: list[Identifier]
+    return_type: ClassicalType | None
     body: str
 
 
@@ -853,9 +852,9 @@ class SubroutineDefinition(Statement):
     """
 
     name: Identifier
-    arguments: List[Union[ClassicalArgument, QuantumArgument]]
-    body: List[Statement]
-    return_type: Optional[ClassicalType] = None
+    arguments: list[ClassicalArgument | QuantumArgument]
+    body: list[Statement]
+    return_type: ClassicalType | None = None
 
 
 @dataclass
@@ -865,7 +864,7 @@ class QuantumArgument(QASMNode):
     """
 
     name: Identifier
-    size: Optional[Expression] = None
+    size: Expression | None = None
 
 
 @dataclass
@@ -881,7 +880,7 @@ class ReturnStatement(Statement):
 
     """
 
-    expression: Optional[Union[Expression, QuantumMeasurement]] = None
+    expression: Expression | QuantumMeasurement | None = None
 
 
 class BreakStatement(Statement):
@@ -927,8 +926,8 @@ class BranchingStatement(Statement):
     """
 
     condition: Expression
-    if_block: List[Statement]
-    else_block: List[Statement]
+    if_block: list[Statement]
+    else_block: list[Statement]
 
 
 @dataclass
@@ -946,7 +945,7 @@ class WhileLoop(Statement):
     """
 
     while_condition: Expression
-    block: List[Statement]
+    block: list[Statement]
 
 
 @dataclass
@@ -963,8 +962,8 @@ class ForInLoop(Statement):
 
     type: ClassicalType
     identifier: Identifier
-    set_declaration: Union[RangeDefinition, DiscreteSet, Identifier]
-    block: List[Statement]
+    set_declaration: RangeDefinition | DiscreteSet | Identifier
+    block: list[Statement]
 
 
 @dataclass
@@ -978,7 +977,7 @@ class DelayInstruction(QuantumStatement):
     """
 
     duration: Expression
-    qubits: List[Union[IndexedIdentifier, Identifier]]
+    qubits: list[IndexedIdentifier | Identifier]
 
 
 @dataclass
@@ -994,8 +993,8 @@ class Box(QuantumStatement):
         }
     """
 
-    duration: Optional[Expression]
-    body: List[QuantumStatement]
+    duration: Expression | None
+    body: list[QuantumStatement]
 
 
 @dataclass
@@ -1008,7 +1007,7 @@ class DurationOf(Expression):
         durationof({x $0;})
     """
 
-    target: List[Statement]
+    target: list[Statement]
 
 
 @dataclass
@@ -1016,7 +1015,7 @@ class SizeOf(Expression):
     """``sizeof`` an array's dimensions."""
 
     target: Expression
-    index: Optional[Expression] = None
+    index: Expression | None = None
 
 
 @dataclass
@@ -1031,7 +1030,7 @@ class AliasStatement(Statement):
     """
 
     target: Identifier
-    value: Union[Identifier, Concatenation]
+    value: Identifier | Concatenation
 
 
 @dataclass
@@ -1044,7 +1043,7 @@ class ClassicalAssignment(Statement):
         a[0] = 1;
     """
 
-    lvalue: Union[Identifier, IndexedIdentifier]
+    lvalue: Identifier | IndexedIdentifier
     op: AssignmentOperator
     rvalue: Expression
 

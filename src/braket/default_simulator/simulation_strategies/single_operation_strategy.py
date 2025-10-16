@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from braket.default_simulator.linalg_utils import multiply_matrix
+from braket.default_simulator.linalg_utils import QuantumGateDispatcher, multiply_matrix
 from braket.default_simulator.operation import GateOperation
 
 
@@ -21,23 +21,33 @@ def apply_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
     """Applies operations to a state vector one at a time.
-
     Args:
         state (np.ndarray): The state vector to apply the given operations to, as a type
             (num_qubits, 0) tensor
         qubit_count (int): Unused parameter; in signature for backwards-compatibility
         operations (list[GateOperation]): The operations to apply to the state vector
-
     Returns:
         np.ndarray: The state vector after applying the given operations, as a type
         (qubit_count, 0) tensor
     """
-    for operation in operations:
-        matrix = operation.matrix
-        all_targets = operation.targets
-        num_ctrl = len(operation._ctrl_modifiers)
-        control_state = operation._ctrl_modifiers
-        controls = all_targets[:num_ctrl]
-        targets = all_targets[num_ctrl:]
-        state = multiply_matrix(state, matrix, targets, controls, control_state)
-    return state
+    result = state.copy()
+    temp = np.zeros_like(state, dtype=complex)
+
+    dispatcher = QuantumGateDispatcher(state.ndim)
+    for op in operations:
+        targets = op.targets
+        num_ctrl = len(op.control_state)
+        _, needs_swap = multiply_matrix(
+            result,
+            op.matrix,
+            targets[num_ctrl:],
+            targets[:num_ctrl],
+            op.control_state,
+            temp,
+            dispatcher,
+            True,
+            gate_type=getattr(op, "gate_type"),
+        )
+        if needs_swap:
+            result, temp = temp, result
+    return result

@@ -16,6 +16,7 @@ import json
 import re
 import sys
 from collections import Counter, namedtuple
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -27,7 +28,15 @@ from braket.ir.jaqcd import Amplitude, DensityMatrix, Expectation, Probability
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.jaqcd import StateVector, Variance
 from braket.ir.openqasm import Program as OpenQASMProgram
+from braket.ir.openqasm.program_set_v1 import ProgramSet
+from braket.ir.openqasm.program_v1 import Program
 from braket.task_result import AdditionalMetadata, TaskMetadata
+from braket.default_simulator.linalg_utils import multiply_matrix
+from braket.task_result.program_set_executable_result_v1 import (
+    ProgramSetExecutableResult,
+    ProgramSetExecutableResultMetadata,
+)
+from braket.task_result.program_set_task_metadata_v1 import ProgramMetadata, ProgramSetTaskMetadata
 
 from braket.default_simulator import DefaultSimulator, StateVectorSimulator, observables
 
@@ -317,6 +326,12 @@ def test_properties():
                         {"name": "Amplitude", "minShots": 0, "maxShots": 0},
                     ],
                 },
+                "braket.ir.openqasm.program_set": {
+                    "actionType": "braket.ir.openqasm.program_set",
+                    "version": ["1"],
+                    "maximumExecutables": 100,
+                    "maximumTotalShots": 200_000,
+                },
             },
             "paradigm": {"qubitCount": qubit_count},
             "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
@@ -372,6 +387,23 @@ def sv_adder():
     #pragma braket result probability cout
     #pragma braket result probability b
     """
+
+
+def test_indices_jumbled():
+    qasm = """
+    OPENQASM 3;
+    qubit[3] q;
+    bit[3] c;
+    h q[0];
+    cnot q[0], q[1];
+    cnot q[1], q[2];
+    c[1] = measure q[2];
+    c[2] = measure q[1];
+    c[0] = measure q[0];
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=100)
+    assert result.measuredQubits == [0, 2, 1]
 
 
 def test_gphase():
@@ -1445,3 +1477,207 @@ def test_run_multiple():
     assert np.allclose(results[0].resultTypes[0].value, np.array([1, 1]) / np.sqrt(2))
     assert np.allclose(results[1].resultTypes[0].value, np.array([1, 0]))
     assert np.allclose(results[2].resultTypes[0].value, np.array([0, 1]))
+
+
+@pytest.mark.parametrize(
+    "n_qubits,qubit_0,qubit_1",
+    [
+        (2, 0, 1),  # 2 qubits, swap 0 and 1
+        (3, 0, 2),  # 3 qubits, swap 0 and 2
+        (4, 1, 2),  # 4 qubits, swap 1 and 2
+    ],
+)
+def test_run_multiple_swap_large(n_qubits, qubit_0, qubit_1):
+    payload = OpenQASMProgram(
+        source=f"""
+        OPENQASM 3.0;
+        qubit[{n_qubits}] q;
+        h q[0:{n_qubits}];
+        swap q[{qubit_0}], q[{qubit_1}];
+        #pragma braket result state_vector
+        """
+    )
+
+    simulator = StateVectorSimulator()
+    result = simulator.run(payload, shots=0)
+
+    size = 1 << n_qubits
+    assert np.allclose(np.sum(np.abs(result.resultTypes[0].value) ** 2), 1.0)
+    assert len(result.resultTypes[0].value) == size
+
+    double_swap = OpenQASMProgram(
+        source=f"""
+        OPENQASM 3.0;
+        qubit[{n_qubits}] q;
+        h q[0:{n_qubits}];
+        swap q[{qubit_0}], q[{qubit_1}];
+        swap q[{qubit_0}], q[{qubit_1}];
+        #pragma braket result state_vector
+        """
+    )
+
+    double_result = simulator.run(double_swap, shots=0)
+    expected_state = np.ones(size) / np.sqrt(size)
+    assert np.allclose(double_result.resultTypes[0].value, expected_state)
+
+
+def test_multiply_matrix_controlled_no_swap_info():
+    state = np.zeros((2, 2), dtype=complex)
+    state[0, 1] = 1.0
+
+    x_matrix = np.array([[0, 1], [1, 0]], dtype=complex)
+
+    result = multiply_matrix(
+        state=state,
+        matrix=x_matrix,
+        targets=(1,),
+        controls=(0,),
+        control_state=(0,),
+        return_swap_info=False,
+    )
+
+    expected = np.zeros((2, 2), dtype=complex)
+    expected[0, 0] = 1.0
+
+    assert isinstance(result, np.ndarray)
+    assert not isinstance(result, tuple)
+    assert np.allclose(result, expected)
+
+    result_with_swap = multiply_matrix(
+        state=state,
+        matrix=x_matrix,
+        targets=(1,),
+        controls=(0,),
+        control_state=(0,),
+        return_swap_info=True,
+    )
+
+    assert isinstance(result_with_swap, tuple)
+    assert len(result_with_swap) == 2
+    assert isinstance(result_with_swap[0], np.ndarray)
+    assert isinstance(result_with_swap[1], bool)
+    assert np.allclose(result_with_swap[0], expected)
+
+
+@pytest.mark.parametrize(
+    "qasm_all_one, qasm_all_zero",
+    [
+        (
+            "bit[2] b;\nqubit[6] q;\nx q[2];\nx q[5];\nb[0] = measure q[2];\nb[1] = measure q[5];",
+            "bit[2] b;\nqubit[6] q;\nz q[2];\nz q[5];\nb[0] = measure q[2];\nb[1] = measure q[5];",
+        ),
+        (
+            "bit[2] b;\nx $2;\nx $5;\nb[0] = measure $2;\nb[1] = measure $5;",
+            "bit[2] b;\nz $2;\nz $5;\nb[0] = measure $2;\nb[1] = measure $5;",
+        ),
+    ],
+)
+@patch("uuid.uuid4")
+def test_run_program_set(mock_uuid, qasm_all_one, qasm_all_zero):
+    shots = 10
+    patched_id = "foo-bar"
+
+    mock_uuid.return_value = patched_id
+    prog1 = Program(source=qasm_all_one)
+    prog2 = Program(source=qasm_all_zero)
+    program_set = ProgramSet(programs=[prog1, prog2])
+    result = StateVectorSimulator().run(program_set, shots=shots)
+
+    expected_metadata = ProgramSetTaskMetadata(
+        id=patched_id,
+        requestedShots=shots,
+        successfulShots=shots,
+        totalFailedExecutables=0,
+        deviceId="braket_sv",
+        programMetadata=[
+            ProgramMetadata(executables=[ProgramSetExecutableResultMetadata()]),
+            ProgramMetadata(executables=[ProgramSetExecutableResultMetadata()]),
+        ],
+    )
+    expected_program_0_executable_results = ProgramSetExecutableResult(
+        inputsIndex=0,
+        measurements=[[1, 1], [1, 1], [1, 1], [1, 1], [1, 1]],
+        measuredQubits=[2, 5],
+    )
+    expected_program_1_executable_results = ProgramSetExecutableResult(
+        inputsIndex=0,
+        measurements=[[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]],
+        measuredQubits=[2, 5],
+    )
+    assert result.programResults[0].executableResults[0] == expected_program_0_executable_results
+    assert result.programResults[1].executableResults[0] == expected_program_1_executable_results
+    assert result.taskMetadata == expected_metadata
+
+
+@patch("uuid.uuid4")
+def test_program_set_parametric(mock_uuid):
+    shots = 10
+    patched_id = "foo-bar-parametric"
+
+    mock_uuid.return_value = patched_id
+    qasm = """
+    OPENQASM 3.0;
+    input float theta;
+    bit[1] b;
+    qubit[1] q;
+    rx(theta) q[0];
+    b = measure q;
+    """
+    program_set = ProgramSet(
+        programs=[Program(source=qasm, inputs={"theta": [3.141592653589793, 6.283185307179586]})]
+    )
+    result = StateVectorSimulator().run(program_set, shots=shots)
+
+    expected_metadata = ProgramSetTaskMetadata(
+        id=patched_id,
+        requestedShots=shots,
+        successfulShots=shots,
+        totalFailedExecutables=0,
+        deviceId="braket_sv",
+        programMetadata=[
+            ProgramMetadata(
+                executables=[
+                    ProgramSetExecutableResultMetadata(),
+                    ProgramSetExecutableResultMetadata(),
+                ]
+            )
+        ],
+    )
+    expected_program_executable_0_results = ProgramSetExecutableResult(
+        inputsIndex=0,
+        measurements=[[1], [1], [1], [1], [1]],
+        measuredQubits=[0],
+    )
+    expected_program_executable_1_results = ProgramSetExecutableResult(
+        inputsIndex=1,
+        measurements=[[0], [0], [0], [0], [0]],
+        measuredQubits=[0],
+    )
+    assert result.programResults[0].executableResults[0] == expected_program_executable_0_results
+    assert result.programResults[0].executableResults[1] == expected_program_executable_1_results
+    assert result.taskMetadata == expected_metadata
+
+
+def test_program_set_invalid_shots():
+    program = Program(source="bit[2] b;\nqubit[2] q;\nx q;\nb = measure q;")
+    program_set = ProgramSet(programs=[program, program])
+    with pytest.raises(ValueError):
+        StateVectorSimulator().run(program_set, shots=0)
+    with pytest.raises(ValueError):
+        StateVectorSimulator().run(program_set, shots=5)
+
+
+def test_program_set_validation():
+    """Test that program set validation works correctly for valid and invalid programs."""
+    valid_program = Program(source="bit[2] b;\nqubit[2] q;\nx q;\nb = measure q;")
+    valid_program_set = ProgramSet(programs=[valid_program])
+
+    simulator = StateVectorSimulator()
+    result = simulator.run(valid_program_set, shots=10)
+    assert result is not None
+
+    valid_program_2 = Program(source="bit[1] b;\nqubit[1] q;\nh q;\nb = measure q;")
+    multi_program_set = ProgramSet(programs=[valid_program, valid_program_2])
+
+    result = simulator.run(multi_program_set, shots=10)
+    assert result is not None

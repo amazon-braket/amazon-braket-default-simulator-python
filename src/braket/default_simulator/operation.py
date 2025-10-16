@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import numpy as np
 from scipy.linalg import fractional_matrix_power
@@ -65,6 +64,11 @@ class GateOperation(Operation, ABC):
         else:
             unitary = fractional_matrix_power(unitary, self._power)
         return unitary
+
+    @property
+    def control_state(self) -> tuple[int, ...]:
+        """tuple[int, ...]: Quantum state that the operator is controlled by."""
+        return self._ctrl_modifiers
 
     def __eq__(self, other):
         possible_parameters = "_angle", "_angle_1", "_angle_2"
@@ -162,7 +166,7 @@ class Observable(Operation, ABC):
         """
 
     @abstractmethod
-    def diagonalizing_gates(self, num_qubits: Optional[int] = None) -> tuple[GateOperation, ...]:
+    def diagonalizing_gates(self, num_qubits: int | None = None) -> tuple[GateOperation, ...]:
         """The gates that diagonalize the observable in the computational basis.
 
         Args:

@@ -14,12 +14,6 @@
 import sys
 
 import numpy as np
-from braket.device_schema import DeviceCapabilities
-from braket.ir.ahs.program_v1 import Program
-from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
-    AnalogHamiltonianSimulationTaskResult,
-)
-from braket.task_result.task_metadata_v1 import TaskMetadata
 from pydantic.v1 import create_model  # This is temporary for defining properties below
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import (
@@ -49,6 +43,12 @@ from braket.analog_hamiltonian_simulator.rydberg.validators.rydberg_coefficient 
 )
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.device_schema import DeviceCapabilities
+from braket.ir.ahs.program_v1 import Program
+from braket.task_result.analog_hamiltonian_simulation_task_result_v1 import (
+    AnalogHamiltonianSimulationTaskResult,
+)
+from braket.task_result.task_metadata_v1 import TaskMetadata
 
 
 class RydbergAtomSimulator(BaseLocalSimulator):
@@ -71,7 +71,7 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         max_step: int = 0,
         min_step: int = 0,
         *args,
-        **kwargs
+        **kwargs,
     ) -> AnalogHamiltonianSimulationTaskResult:
         """
         Run the simulation for the dynamics of the Rydberg system, and return the result

@@ -11,8 +11,9 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from braket.ir.ahs.hamiltonian import Hamiltonian
 from pydantic.v1 import root_validator
+
+from braket.ir.ahs.hamiltonian import Hamiltonian
 
 
 class HamiltonianValidator(Hamiltonian):

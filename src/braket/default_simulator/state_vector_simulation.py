@@ -62,6 +62,7 @@ class StateVectorSimulation(Simulation):
         self._state_vector = initial_state
         self._batch_size = batch_size
         self._post_observables = None
+        self._rng_generator = np.random.default_rng()
 
     def evolve(self, operations: list[GateOperation]) -> None:
         self._state_vector = StateVectorSimulation._apply_operations(
@@ -106,8 +107,10 @@ class StateVectorSimulation(Simulation):
         )
         return np.reshape(final, 2**qubit_count)
 
-    def retrieve_samples(self) -> list[int]:
-        return np.random.choice(len(self._state_vector), p=self.probabilities, size=self._shots)
+    def retrieve_samples(self) -> np.ndarray:
+        return np.searchsorted(
+            np.cumsum(self.probabilities), self._rng_generator.random(size=self._shots)
+        )
 
     @property
     def state_vector(self) -> np.ndarray:

@@ -25,20 +25,20 @@ setup(
     name="amazon-braket-default-simulator",
     version=version,
     license="Apache License 2.0",
-    python_requires=">= 3.9",
+    python_requires=">= 3.10",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     package_data={"": ["*.g4", "*.inc"]},
     include_package_data=True,
     install_requires=[
+        "numba",
         "numpy",
         "opt_einsum",
         "pydantic>2",
         "scipy",
         "sympy",
-        # pinned for compatibility with strawberry fields
-        "antlr4-python3-runtime==4.9.2",
-        "amazon-braket-schemas>=1.21.2",
+        "antlr4-python3-runtime==4.13.2",
+        "amazon-braket-schemas>=1.25.0",
     ],
     entry_points={
         "braket.simulators": [
@@ -54,17 +54,15 @@ setup(
     },
     extras_require={
         "test": [
-            "black",
-            "flake8",
-            "flake8-rst-docstrings",
-            "isort",
             "pre-commit",
             "pylint",
-            "pytest==7.1.2",
+            "pytest==7.4.4",
             "pytest-benchmark",
             "pytest-cov",
-            "pytest-rerunfailures",
+            # https://github.com/pytest-dev/pytest-rerunfailures/issues/302
+            "pytest-rerunfailures<16.0",
             "pytest-xdist",
+            "ruff",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
@@ -74,7 +72,7 @@ setup(
     url="https://github.com/amazon-braket/amazon-braket-default-simulator-python",
     author="Amazon Web Services",
     description=(
-        "An open source quantum circuit simulator to be run locally with the Amazon Braket SDK"
+        "An open source quantum program simulator to be run locally with the Amazon Braket SDK"
     ),
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -85,8 +83,9 @@ setup(
         "Natural Language :: English",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
 )

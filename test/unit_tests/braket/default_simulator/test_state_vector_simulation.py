@@ -202,6 +202,136 @@ evolve_testdata = [
         [0.69916673 + 0.10566872j, 0.69916673 + 0.10566872j],
         [0.5, 0.5],
     ),
+    (
+        [gate_operations.RotX([0], np.pi / 4)],
+        1,
+        [0.92387953, -0.38268343j],
+        [0.85355339, 0.14644661],
+    ),
+    ([gate_operations.RotX([0], np.pi)], 1, [0, -1j], [0, 1]),
+    ([gate_operations.RotX([0], 2 * np.pi)], 1, [-1, 0], [1, 0]),
+    ([gate_operations.RotY([0], np.pi / 4)], 1, [0.92387953, 0.38268343], [0.85355339, 0.14644661]),
+    ([gate_operations.RotY([0], np.pi)], 1, [0, 1], [0, 1]),
+    ([gate_operations.RotY([0], 2 * np.pi)], 1, [-1, 0], [1, 0]),
+    ([gate_operations.RotZ([0], np.pi / 4)], 1, [0.92387953 - 0.38268343j, 0], [1, 0]),
+    ([gate_operations.RotZ([0], np.pi)], 1, [-1j, 0], [1, 0]),
+    ([gate_operations.RotZ([0], 2 * np.pi)], 1, [-1, 0], [1, 0]),
+    (
+        [gate_operations.PauliX([0]), gate_operations.RotZ([0], np.pi / 4)],
+        1,
+        [0, 0.92387953 + 0.38268343j],
+        [0, 1],
+    ),
+    ([gate_operations.PhaseShift([0], np.pi / 4)], 1, [1, 0], [1, 0]),
+    ([gate_operations.PhaseShift([0], np.pi)], 1, [1, 0], [1, 0]),
+    (
+        [gate_operations.PauliX([0]), gate_operations.PhaseShift([0], np.pi / 4)],
+        1,
+        [0, 0.70710678 + 0.70710678j],
+        [0, 1],
+    ),
+    (
+        [gate_operations.PauliX([0]), gate_operations.PhaseShift([0], np.pi)],
+        1,
+        [0, -1],
+        [0, 1],
+    ),
+    (
+        [gate_operations.RotX([1], np.pi / 2)],
+        2,
+        [0.70710678, -0.70710678j, 0, 0],
+        [0.5, 0.5, 0, 0],
+    ),
+    (
+        [gate_operations.PauliX([0]), gate_operations.RotX([1], np.pi / 2)],
+        2,
+        [0, 0, 0.70710678, -0.70710678j],
+        [0, 0, 0.5, 0.5],
+    ),
+    (
+        [gate_operations.RotY([0], np.pi / 2)],
+        2,
+        [0.70710678, 0, 0.70710678, 0],
+        [0.5, 0, 0.5, 0],
+    ),
+    (
+        [gate_operations.Hadamard([0]), gate_operations.RotZ([1], np.pi / 3)],
+        2,
+        [0.70710678 * (0.8660254 - 0.5j), 0, 0.70710678 * (0.8660254 - 0.5j), 0],
+        [0.5, 0, 0.5, 0],
+    ),
+    (
+        [gate_operations.PhaseShift([1], np.pi / 3)],
+        2,
+        [1, 0, 0, 0],
+        [1, 0, 0, 0],
+    ),
+    (
+        [gate_operations.PauliX([0]), gate_operations.PhaseShift([1], np.pi / 3)],
+        2,
+        [0, 0, 1, 0],
+        [0, 0, 1, 0],
+    ),
+    # Test cases with non-contiguous qubits - simple cases
+    (
+        [gate_operations.PauliX([2])],
+        3,
+        [0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0],
+    ),
+    (
+        [gate_operations.Hadamard([2])],
+        3,
+        [0.70710678, 0.70710678, 0, 0, 0, 0, 0, 0],
+        [0.5, 0.5, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with unordered qubits - CX with control on higher index
+    (
+        [gate_operations.CX([2, 0])],
+        3,
+        [1, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0],
+    ),
+    (
+        [gate_operations.PauliX([2]), gate_operations.CX([2, 0])],
+        3,
+        [0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0],
+    ),
+    # Test case with non-contiguous qubits in two-qubit gates
+    (
+        [gate_operations.CX([0, 3])],
+        4,
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ),
+    (
+        [gate_operations.PauliX([0]), gate_operations.CX([0, 3])],
+        4,
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with Swap on non-contiguous qubits
+    (
+        [gate_operations.PauliX([1]), gate_operations.Swap([1, 3])],
+        4,
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with rotation gates on non-contiguous qubits
+    (
+        [gate_operations.RotX([2], np.pi / 2)],
+        3,
+        [0.70710678, -0.70710678j, 0, 0, 0, 0, 0, 0],
+        [0.5, 0.5, 0, 0, 0, 0, 0, 0],
+    ),
+    # Test case with phase gates on non-contiguous qubits
+    (
+        [gate_operations.PauliX([3]), gate_operations.PhaseShift([3], np.pi / 4)],
+        4,
+        [0, 0.70710678 + 0.70710678j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ),
 ]
 
 apply_observables_testdata = [
@@ -235,6 +365,25 @@ apply_observables_testdata = [
         [observables.TensorProduct([observables.PauliX([2]), observables.PauliZ([0])])],
         [gate_operations.Hadamard([2])],
         3,
+    ),
+    # Test cases with non-contiguous qubits in observables - simple case
+    (
+        [observables.PauliX([2])],
+        [gate_operations.Hadamard([2])],
+        3,
+    ),
+    # Test case with unordered qubits in tensor product observable
+    (
+        [
+            observables.TensorProduct(
+                [
+                    observables.PauliZ([3]),
+                    observables.PauliX([1]),
+                ]
+            )
+        ],
+        [gate_operations.Hadamard([1])],
+        4,
     ),
 ]
 

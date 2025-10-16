@@ -1,5 +1,149 @@
 # Changelog
 
+## v1.31.8 (2025-10-15)
+
+### Bug Fixes and Other Changes
+
+ * Extract `controlled_matrix` function
+
+## v1.31.7 (2025-10-14)
+
+### Bug Fixes and Other Changes
+
+ * add program set action type to device properties
+ * Expand controlled matrices for DM right multiplication
+
+## v1.31.6 (2025-10-13)
+
+### Bug Fixes and Other Changes
+
+ * Bump version number manually
+
+## v1.31.4 (2025-10-07)
+
+### Bug Fixes and Other Changes
+
+ * only apply basis instructions when needed
+
+## v1.31.3 (2025-10-06)
+
+### Bug Fixes and Other Changes
+
+ * remove some specialized gate multiplications
+
+## v1.31.2 (2025-09-23)
+
+### Bug Fixes and Other Changes
+
+ * Support control modifiers in `braket_dm`
+
+## v1.31.1 (2025-09-20)
+
+### Bug Fixes and Other Changes
+
+ * Remove superoperator gate application
+ * add gate_applications back to the dm sim
+
+## v1.31.0 (2025-09-19)
+
+### Features
+
+ * generalize diagonal gate dispatch
+ * Optimize performance with ping-pong buffers and optimized gate application
+
+### Bug Fixes and Other Changes
+
+ * add gate_types for dispatch and use np.kron for dm gate_ops
+ * correctly pull formatted results
+ * formatting results
+ * change retrieve_samples for the dm simulator
+
+## v1.30.1 (2025-09-10)
+
+### Bug Fixes and Other Changes
+
+ * Python 3.10 syntax
+
+## v1.30.0 (2025-09-08)
+
+### Features
+
+ * add tests to make sure that the simulators can handle barrier instructions
+
+## v1.29.0 (2025-08-21)
+
+### Deprecations and Removals
+
+ * Drop Python 3.9, support 3.12, 3.13
+
+### Bug Fixes and Other Changes
+
+ * Pass username to testenv
+ * Formatting
+
+### Documentation Changes
+
+ * Add Python 3.12, 3.13 to supported versions
+
+## v1.28.0 (2025-08-18)
+
+### Features
+
+ * Support verbatim boxes in interpreter
+
+### Bug Fixes and Other Changes
+
+ * bump antlr to 4.13.2
+
+## v1.27.0 (2025-08-13)
+
+### Features
+
+ * Program sets
+
+## v1.26.7 (2025-06-19)
+
+### Bug Fixes and Other Changes
+
+ * Input type in _apply_hamiltonian
+
+## v1.26.6 (2025-06-18)
+
+### Bug Fixes and Other Changes
+
+ * change numpy tostring to tobytes
+
+## v1.26.5 (2025-05-21)
+
+### Bug Fixes and Other Changes
+
+ * typo detuing to detuning
+
+## v1.26.4 (2025-02-08)
+
+### Bug Fixes and Other Changes
+
+ * update pytest version to fix security vuln
+ * Failing linting CI test
+
+## v1.26.3 (2025-01-28)
+
+### Bug Fixes and Other Changes
+
+ * Feature/rydberg longer evolution time
+
+## v1.26.2 (2024-12-06)
+
+### Bug Fixes and Other Changes
+
+ * remove redundant reshape
+
+## v1.26.1 (2024-11-25)
+
+### Bug Fixes and Other Changes
+
+ * update numpy random function to use a generator
+
 ## v1.26.0 (2024-06-27)
 
 ### Features
