@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.32.0 (2025-10-16)
+
+### Deprecations and Removals
+
+ * Ensure schema compatibility
+
 ## v1.31.8 (2025-10-15)
 
 ### Bug Fixes and Other Changes
