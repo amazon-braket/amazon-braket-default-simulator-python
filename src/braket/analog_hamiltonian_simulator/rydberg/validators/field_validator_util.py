@@ -151,7 +151,7 @@ def validate_value_precision(values: list[Decimal], max_precision: Decimal, name
 
 
 def validate_max_absolute_slope(
-    times: list[Decimal], values: List[Decimal], max_slope: Decimal, name: str
+    times: list[Decimal], values: list[Decimal], max_slope: Decimal, name: str
 ):
     """
     Used in Device Emulation; Validate that the magnitude of the slope between any
