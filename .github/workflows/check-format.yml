@@ -9,6 +9,9 @@ on:
       - main
       - feature/**
 
+permissions:
+  contents: read
+
 jobs:
   check-code-format:
     runs-on: ubuntu-latest
