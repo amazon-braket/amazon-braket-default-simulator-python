@@ -13,12 +13,27 @@
 
 
 from setuptools import find_namespace_packages, setup
+from setuptools.command.install import install
+import subprocess
+import sys
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 with open("src/braket/default_simulator/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
+
+
+class PostInstallCommand(install):
+    """Post-installation command to warm up Numba JIT cache."""
+
+    def run(self):
+        install.run(self)
+        try:
+            subprocess.check_call([sys.executable, "scripts/warmup_numba_cache.py"])
+        except Exception as e:
+            print(f"Warning: Could not warm up Numba cache: {e}")
+            print("This is not critical - JIT functions will compile on first use")
 
 
 setup(
@@ -30,6 +45,9 @@ setup(
     package_dir={"": "src"},
     package_data={"": ["*.g4", "*.inc"]},
     include_package_data=True,
+    cmdclass={
+        "install": PostInstallCommand,
+    },
     install_requires=[
         "numba",
         "numpy",
