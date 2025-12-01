@@ -232,12 +232,7 @@ def test_float_declaration():
 
 
 def test_conditional_measurement():
-    """Test that conditional statements work with measurement assignments.
-
-    This test verifies that when we have 'c = measure q', the classical
-    variable 'c' is properly initialized so it can be used in conditional
-    statements like 'if (c)'.
-    """
+    """Test that conditional statements work with measurement assignments."""
     qasm = """
     qubit q;
     bit c;
@@ -248,16 +243,11 @@ def test_conditional_measurement():
     """
     context = Interpreter().run(qasm)
 
-    # Verify the variable is properly initialized
     assert context.get_value("c") is not None
 
 
 def test_conditional_measurement_bit_array():
-    """Test conditional measurement with bit arrays.
-
-    This test verifies that measurement assignments work correctly with
-    bit arrays and can be used in conditional statements.
-    """
+    """Test conditional measurement with bit arrays."""
     qasm = """
     qubit[2] q;
     bit[2] c;
@@ -267,11 +257,9 @@ def test_conditional_measurement_bit_array():
     }
     """
     context = Interpreter().run(qasm)
-
-    # Verify the bit array is properly initialized
     value = context.get_value("c")
+
     assert value is not None
-    # Should be an ArrayLiteral for bit arrays
     assert isinstance(value, ArrayLiteral)
 
 
