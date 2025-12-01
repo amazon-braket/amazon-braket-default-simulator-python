@@ -274,11 +274,20 @@ def test_conditional_measurement_bit_array():
     # Should be an ArrayLiteral for bit arrays
     assert isinstance(value, ArrayLiteral)
 
-    # Verify the bit array is properly initialized
-    value = context.get_value("c")
-    assert value is not None
-    # Should be an ArrayLiteral for bit arrays
-    assert isinstance(value, ArrayLiteral)
+
+def test_measurement_assignment_invalid_type():
+    """Test that measurement assignment to non-bit types raises TypeError."""
+    qasm = """
+    qubit q;
+    int[8] result;
+    result = measure q;
+    """
+
+    with pytest.raises(
+        TypeError,
+        match=r"Cannot assign measurement result to IntType variable 'result'\. Measurements must be assigned to bit or bit\[n\] types\.",
+    ):
+        Interpreter().run(qasm)
 
 
 def test_angle_declaration():
