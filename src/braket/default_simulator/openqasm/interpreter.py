@@ -485,7 +485,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
-        """The measure is performed but the assignment is ignored"""
+        """Handle quantum measurement statements with classical assignment"""
         qubits = self.visit(node.measure)
         targets = []
         if node.target:
@@ -513,6 +513,31 @@ class Interpreter:
                 f"Number of qubits ({len(qubits)}) does not match number of provided classical targets ({len(targets)})"
             )
         self.context.add_measure(qubits, targets)
+
+        # Handle classical assignment for measurement statements
+        # When we have 'c = measure q', we need to mark 'c' as initialized
+        # so it can be used in subsequent conditional statements
+        if node.target:
+            # Assign a placeholder value to mark the variable as initialized
+            # The actual measurement result will be determined at runtime
+            target_name = get_identifier_name(node.target)
+            target_type = self.context.get_type(target_name)
+
+            if isinstance(target_type, BitType):
+                # Only initialize for direct assignments, not indexed assignments
+                # Indexed assignments (like b[0] = measure q) should work with already declared arrays
+                if not isinstance(node.target, IndexedIdentifier):
+                    if target_type.size:
+                        size = target_type.size.value
+                        placeholder = ArrayLiteral([BooleanLiteral(False)] * size)
+                    else:
+                        # Single bit
+                        placeholder = BooleanLiteral(False)
+                    self.context.update_value(node.target, placeholder)
+            else:
+                raise TypeError(
+                    f"Cannot assign measurement result to {type(target_type).__name__} variable '{target_name}'. Measurements must be assigned to bit or bit[n] types."
+                )
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
