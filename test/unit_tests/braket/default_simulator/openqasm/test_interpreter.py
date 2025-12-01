@@ -242,7 +242,7 @@ def test_conditional_measurement():
     qubit q;
     bit c;
     c = measure q;
-    if (c) {
+    if (c==1) {
         x q;
     }
     """
@@ -262,7 +262,7 @@ def test_conditional_measurement_bit_array():
     qubit[2] q;
     bit[2] c;
     c = measure q;
-    if (c[0]) {
+    if (c[0]==1) {
         x q[1];
     }
     """
