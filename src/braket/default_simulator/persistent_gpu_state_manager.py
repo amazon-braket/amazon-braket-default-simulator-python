@@ -277,9 +277,16 @@ class PersistentGPUState:
 
 
 class PersistentGPUStateManager:
-    """Advanced GPU state manager that eliminates redundant host↔device transfers."""
+    """Advanced GPU state manager that eliminates redundant host↔device transfers.
     
-    def __init__(self, max_cached_states: int = 16, cleanup_interval_seconds: float = 60.0):
+    Key optimizations:
+    - Caches GPU buffers by shape/dtype to avoid repeated allocations
+    - Uses pinned memory for faster host↔device transfers
+    - Implements LRU eviction for memory management
+    - Provides zero-copy access when unified memory is available
+    """
+    
+    def __init__(self, max_cached_states: int = 16, cleanup_interval_seconds: float = 120.0):
         self.memory_pool = GPUMemoryPool()
         self.persistent_states: dict[tuple[tuple[int, ...], np.dtype], PersistentGPUState] = {}
         self.state_access_order: list[tuple[tuple[int, ...], np.dtype]] = []
@@ -287,6 +294,7 @@ class PersistentGPUStateManager:
         self.cleanup_interval = cleanup_interval_seconds
         self.last_cleanup = time.time()
         self.lock = threading.RLock()
+        self._shutdown_requested = False
         
         self.cleanup_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="gpu-cleanup")
         self._schedule_cleanup()
@@ -294,11 +302,15 @@ class PersistentGPUStateManager:
     def _schedule_cleanup(self):
         """Schedule periodic cleanup of old GPU states."""
         def cleanup_task():
+            if self._shutdown_requested:
+                return
             time.sleep(self.cleanup_interval)
-            self._cleanup_old_states()
-            self._schedule_cleanup()
+            if not self._shutdown_requested:
+                self._cleanup_old_states()
+                self._schedule_cleanup()
         
-        self.cleanup_executor.submit(cleanup_task)
+        if not self._shutdown_requested:
+            self.cleanup_executor.submit(cleanup_task)
     
     def get_persistent_state(self, host_state: np.ndarray, 
                            force_refresh: bool = False) -> tuple[cuda.devicearray.DeviceNDArray, cuda.devicearray.DeviceNDArray]:
@@ -414,6 +426,7 @@ class PersistentGPUStateManager:
     
     def shutdown(self):
         """Shutdown the manager and clean up resources."""
+        self._shutdown_requested = True
         self.clear_cache()
         self.cleanup_executor.shutdown(wait=False)
 
