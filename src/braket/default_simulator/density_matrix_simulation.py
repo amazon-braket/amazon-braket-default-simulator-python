@@ -15,12 +15,15 @@ import numpy as np
 
 from braket.default_simulator.linalg_utils import (
     QuantumGateDispatcher,
+    _GPU_AVAILABLE,
     controlled_matrix,
     multiply_matrix,
     partial_trace,
 )
 from braket.default_simulator.operation import GateOperation, KrausOperation, Observable
 from braket.default_simulator.simulation import Simulation
+
+_DM_GPU_QUBIT_THRESHOLD = 8
 
 
 class DensityMatrixSimulation(Simulation):
@@ -148,6 +151,31 @@ class DensityMatrixSimulation(Simulation):
         """
         if not operations:
             return state
+        
+        has_kraus = any(isinstance(op, KrausOperation) for op in operations)
+        has_controls = any(
+            isinstance(op, (GateOperation, Observable)) and len(op.control_state) > 0
+            for op in operations
+        )
+        
+        use_gpu = (
+            _GPU_AVAILABLE and 
+            qubit_count >= _DM_GPU_QUBIT_THRESHOLD and 
+            not has_kraus and
+            not has_controls
+        )
+        
+        if use_gpu:
+            try:
+                from braket.default_simulator.gpu_optimized_operations import (
+                    apply_dm_operations_optimized,
+                )
+                result = apply_dm_operations_optimized(state, qubit_count, operations)
+                if result is not None:
+                    return result
+            except Exception:
+                pass
+        
         dispatcher = QuantumGateDispatcher(state.size)
         original_shape = state.shape
         result = state.view()
@@ -160,7 +188,6 @@ class DensityMatrixSimulation(Simulation):
             if isinstance(operation, (GateOperation, Observable)):
                 targets = operation.targets
                 num_ctrl = len(operation.control_state)
-                # Extract gate_type if available
                 result, temp = DensityMatrixSimulation._apply_gate(
                     result,
                     temp,

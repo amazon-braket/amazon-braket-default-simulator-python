@@ -304,8 +304,18 @@ class OptimizedGPUExecutor:
         out_flat = out_gpu.reshape(-1)
 
         blocks, threads = _get_optimal_config(half_size)
+        mask = (1 << target_bit) - 1
 
-        if gate_type and gate_type in DIAGONAL_GATES:
+        if gate_type == "pauli_x" or gate_type == "x":
+            _x_gate_kernel[blocks, threads, self._stream](
+                state_flat, out_flat, target_bit, mask, half_size
+            )
+        elif gate_type == "hadamard" or gate_type == "h":
+            inv_sqrt2 = 1.0 / np.sqrt(2.0)
+            _h_gate_kernel[blocks, threads, self._stream](
+                state_flat, out_flat, target_bit, mask, half_size, inv_sqrt2
+            )
+        elif gate_type and gate_type in DIAGONAL_GATES:
             a, d = matrix[0, 0], matrix[1, 1]
             target_mask = 1 << target_bit
             _diagonal_kernel[blocks, threads, self._stream](
@@ -313,7 +323,6 @@ class OptimizedGPUExecutor:
             )
         else:
             a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-            mask = (1 << target_bit) - 1
             _single_qubit_kernel[blocks, threads, self._stream](
                 state_flat, out_flat, a, b, c, d, target_bit, mask, half_size
             )
@@ -467,6 +476,37 @@ def _single_qubit_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_size):
 
         out_flat[idx0] = a * s0 + b * s1
         out_flat[idx1] = c * s0 + d * s1
+
+
+@cuda.jit(fastmath=True)
+def _x_gate_kernel(state_flat, out_flat, n, mask, half_size):
+    """Optimized X gate kernel - just swaps amplitudes."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+
+    for i in range(idx, half_size, stride):
+        idx0 = ((i >> n) << (n + 1)) | (i & mask)
+        idx1 = idx0 | (1 << n)
+
+        out_flat[idx0] = state_flat[idx1]
+        out_flat[idx1] = state_flat[idx0]
+
+
+@cuda.jit(fastmath=True)
+def _h_gate_kernel(state_flat, out_flat, n, mask, half_size, inv_sqrt2):
+    """Optimized Hadamard gate kernel."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+
+    for i in range(idx, half_size, stride):
+        idx0 = ((i >> n) << (n + 1)) | (i & mask)
+        idx1 = idx0 | (1 << n)
+
+        s0 = state_flat[idx0]
+        s1 = state_flat[idx1]
+
+        out_flat[idx0] = inv_sqrt2 * (s0 + s1)
+        out_flat[idx1] = inv_sqrt2 * (s0 - s1)
 
 
 @cuda.jit(fastmath=True)
@@ -710,19 +750,34 @@ class OptimizedDensityMatrixExecutor:
         dm_flat = dm_gpu.reshape(-1)
         temp_flat = temp_gpu.reshape(-1)
         
+        blocks, threads = _get_optimal_config(total_size)
+        
         if len(targets) == 1:
             target = targets[0]
             a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
             a_conj, b_conj = np.conj(a), np.conj(b)
             c_conj, d_conj = np.conj(c), np.conj(d)
             
-            blocks, threads = _get_optimal_config(total_size)
-            
             _dm_single_qubit_kernel[blocks, threads, self._stream](
                 dm_flat, temp_flat,
                 a, b, c, d,
                 a_conj, b_conj, c_conj, d_conj,
                 target, n, total_size
+            )
+            return True
+        
+        elif len(targets) == 2:
+            cache_key = f"dm_2q_{hash(matrix.tobytes())}"
+            matrix_gpu = self.matrix_cache.get_or_upload(matrix, cache_key)
+            
+            matrix_conj = np.conj(matrix)
+            cache_key_conj = f"dm_2q_conj_{hash(matrix_conj.tobytes())}"
+            matrix_conj_gpu = self.matrix_cache.get_or_upload(matrix_conj, cache_key_conj)
+            
+            _dm_two_qubit_kernel[blocks, threads, self._stream](
+                dm_flat, temp_flat,
+                matrix_gpu, matrix_conj_gpu,
+                targets[0], targets[1], n, total_size
             )
             return True
         
@@ -783,6 +838,67 @@ def _dm_single_qubit_kernel(
             out_flat[flat_idx] = new_10
         else:
             out_flat[flat_idx] = new_11
+
+
+@cuda.jit(fastmath=True)
+def _dm_two_qubit_kernel(
+    dm_flat, out_flat,
+    matrix_flat, matrix_conj_flat,
+    target0, target1, n_qubits, total_size
+):
+    """Apply two-qubit gate U * rho * U† on density matrix."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    dim = 1 << n_qubits
+    bit0 = n_qubits - target0 - 1
+    bit1 = n_qubits - target1 - 1
+    mask0 = 1 << bit0
+    mask1 = 1 << bit1
+    mask_both = mask0 | mask1
+    
+    for flat_idx in range(idx, total_size, stride):
+        row = flat_idx // dim
+        col = flat_idx % dim
+        
+        row_base = row & ~mask_both
+        col_base = col & ~mask_both
+        
+        result = 0j
+        for ri in range(4):
+            row_i = row_base
+            if ri & 1:
+                row_i |= mask1
+            if ri & 2:
+                row_i |= mask0
+            
+            for ci in range(4):
+                col_i = col_base
+                if ci & 1:
+                    col_i |= mask1
+                if ci & 2:
+                    col_i |= mask0
+                
+                rho_val = dm_flat[row_i * dim + col_i]
+                
+                row_state = 0
+                if row & mask1:
+                    row_state |= 1
+                if row & mask0:
+                    row_state |= 2
+                
+                col_state = 0
+                if col & mask1:
+                    col_state |= 1
+                if col & mask0:
+                    col_state |= 2
+                
+                u_elem = matrix_flat[row_state * 4 + ri]
+                u_dag_elem = matrix_conj_flat[ci * 4 + col_state]
+                
+                result += u_elem * rho_val * u_dag_elem
+        
+        out_flat[flat_idx] = result
 
 
 _global_dm_executor: OptimizedDensityMatrixExecutor | None = None
