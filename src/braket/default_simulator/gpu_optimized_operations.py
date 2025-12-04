@@ -198,43 +198,44 @@ class OptimizedGPUExecutor:
             return operations
         
         fused = []
-        i = 0
+        pending: dict[int, list] = {}
         
-        while i < len(operations):
-            op = operations[i]
+        for op in operations:
             targets = op.targets
             ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
             
             if len(targets) == 1 and len(ctrl_modifiers) == 0:
                 target = targets[0]
-                matrices = [op.matrix]
-                j = i + 1
-                
-                while j < len(operations):
-                    next_op = operations[j]
-                    next_targets = next_op.targets
-                    next_ctrl = getattr(next_op, "_ctrl_modifiers", [])
-                    
-                    if (len(next_targets) == 1 and 
-                        len(next_ctrl) == 0 and 
-                        next_targets[0] == target and
-                        len(matrices) < 4):
-                        matrices.append(next_op.matrix)
-                        j += 1
-                    else:
-                        break
-                
-                if len(matrices) > 1:
-                    fused_matrix = matrices[0]
-                    for m in matrices[1:]:
-                        fused_matrix = m @ fused_matrix
-                    fused.append(_FusedOperation(target, fused_matrix))
+                if target in pending:
+                    pending[target].append(op.matrix)
+                    if len(pending[target]) >= 4:
+                        fused_matrix = pending[target][0]
+                        for m in pending[target][1:]:
+                            fused_matrix = m @ fused_matrix
+                        fused.append(_FusedOperation(target, fused_matrix))
+                        del pending[target]
                 else:
-                    fused.append(op)
-                i = j
+                    pending[target] = [op.matrix]
             else:
+                for t, matrices in pending.items():
+                    if len(matrices) > 1:
+                        fused_matrix = matrices[0]
+                        for m in matrices[1:]:
+                            fused_matrix = m @ fused_matrix
+                        fused.append(_FusedOperation(t, fused_matrix))
+                    else:
+                        fused.append(_FusedOperation(t, matrices[0]))
+                pending.clear()
                 fused.append(op)
-                i += 1
+        
+        for t, matrices in pending.items():
+            if len(matrices) > 1:
+                fused_matrix = matrices[0]
+                for m in matrices[1:]:
+                    fused_matrix = m @ fused_matrix
+                fused.append(_FusedOperation(t, fused_matrix))
+            else:
+                fused.append(_FusedOperation(t, matrices[0]))
         
         return fused
     
@@ -268,8 +269,12 @@ class OptimizedGPUExecutor:
             )
 
         elif len(actual_targets) == 2 and not controls:
-            if gate_type == "cx":
+            if gate_type == "cx" or gate_type == "cnot":
                 return self._apply_cnot(
+                    state_gpu, out_gpu, actual_targets[0], actual_targets[1]
+                )
+            elif gate_type == "cz":
+                return self._apply_cz(
                     state_gpu, out_gpu, actual_targets[0], actual_targets[1]
                 )
             elif gate_type == "swap":
@@ -311,6 +316,14 @@ class OptimizedGPUExecutor:
             _x_gate_kernel[blocks, threads, self._stream](
                 state_flat, out_flat, target_bit, mask, half_size
             )
+        elif gate_type == "pauli_y" or gate_type == "y":
+            _y_gate_kernel[blocks, threads, self._stream](
+                state_flat, out_flat, target_bit, mask, half_size
+            )
+        elif gate_type == "pauli_z" or gate_type == "z":
+            _z_gate_kernel[blocks, threads, self._stream](
+                state_flat, out_flat, target_bit, mask, half_size
+            )
         elif gate_type == "hadamard" or gate_type == "h":
             inv_sqrt2 = 1.0 / np.sqrt(2.0)
             _h_gate_kernel[blocks, threads, self._stream](
@@ -348,6 +361,30 @@ class OptimizedGPUExecutor:
         blocks, threads = _get_optimal_config(total_size)
 
         _cnot_kernel[blocks, threads, self._stream](
+            state_flat, out_flat, 1 << control_bit, 1 << target_bit, total_size
+        )
+
+        return True
+
+    def _apply_cz(
+        self,
+        state_gpu: cuda.devicearray.DeviceNDArray,
+        out_gpu: cuda.devicearray.DeviceNDArray,
+        control: int,
+        target: int,
+    ) -> bool:
+        """Apply CZ gate with optimized kernel."""
+        n_qubits = len(state_gpu.shape)
+        control_bit = n_qubits - control - 1
+        target_bit = n_qubits - target - 1
+        total_size = state_gpu.size
+
+        state_flat = state_gpu.reshape(-1)
+        out_flat = out_gpu.reshape(-1)
+
+        blocks, threads = _get_optimal_config(total_size)
+
+        _cz_kernel[blocks, threads, self._stream](
             state_flat, out_flat, 1 << control_bit, 1 << target_bit, total_size
         )
 
@@ -393,10 +430,14 @@ class OptimizedGPUExecutor:
     ) -> bool:
         """Apply two-qubit gate with optimized kernel."""
         n_qubits = len(state_gpu.shape)
+        pos_0 = n_qubits - 1 - target0
+        pos_1 = n_qubits - 1 - target1
+        if pos_0 > pos_1:
+            pos_0, pos_1 = pos_1, pos_0
         mask_0 = 1 << (n_qubits - 1 - target0)
         mask_1 = 1 << (n_qubits - 1 - target1)
         mask_both = mask_0 | mask_1
-        total_size = state_gpu.size
+        quarter_size = state_gpu.size >> 2
 
         state_flat = state_gpu.reshape(-1)
         out_flat = out_gpu.reshape(-1)
@@ -404,10 +445,10 @@ class OptimizedGPUExecutor:
         cache_key = f"2q_{hash(matrix.tobytes())}"
         matrix_gpu = self.matrix_cache.get_or_upload(matrix, cache_key)
 
-        blocks, threads = _get_optimal_config(total_size)
+        blocks, threads = _get_optimal_config(quarter_size)
 
         _two_qubit_kernel[blocks, threads, self._stream](
-            state_flat, out_flat, matrix_gpu, mask_0, mask_1, mask_both, total_size
+            state_flat, out_flat, matrix_gpu, mask_0, mask_1, mask_both, quarter_size, pos_0, pos_1
         )
 
         return True
@@ -529,6 +570,53 @@ def _diagonal_kernel(state_flat, out_flat, a, d, n, mask, half_size):
 
 
 @cuda.jit(fastmath=True)
+def _y_gate_kernel(state_flat, out_flat, n, mask, half_size):
+    """Y gate: [[0, -i], [i, 0]]."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+
+    target_mask = 1 << n
+    for i in range(idx, half_size, stride):
+        idx0 = (i & ~mask) << 1 | (i & mask)
+        idx1 = idx0 | target_mask
+
+        s0 = state_flat[idx0]
+        s1 = state_flat[idx1]
+
+        out_flat[idx0] = -1j * s1
+        out_flat[idx1] = 1j * s0
+
+
+@cuda.jit(fastmath=True)
+def _z_gate_kernel(state_flat, out_flat, n, mask, half_size):
+    """Z gate: [[1, 0], [0, -1]]."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+
+    target_mask = 1 << n
+    for i in range(idx, half_size, stride):
+        idx0 = (i & ~mask) << 1 | (i & mask)
+        idx1 = idx0 | target_mask
+
+        out_flat[idx0] = state_flat[idx0]
+        out_flat[idx1] = -state_flat[idx1]
+
+
+@cuda.jit(fastmath=True)
+def _cz_kernel(state_flat, out_flat, control_mask, target_mask, total_size):
+    """CZ gate - applies -1 phase when both control and target are |1>."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+
+    both_mask = control_mask | target_mask
+    for i in range(idx, total_size, stride):
+        if (i & both_mask) == both_mask:
+            out_flat[i] = -state_flat[i]
+        else:
+            out_flat[i] = state_flat[i]
+
+
+@cuda.jit(fastmath=True)
 def _cnot_kernel(state_flat, out_flat, control_mask, target_mask, total_size):
     """CNOT gate - copies with conditional swap based on control bit."""
     idx = cuda.grid(1)
@@ -561,43 +649,31 @@ def _swap_kernel(state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations)
 
 @cuda.jit(fastmath=True)
 def _two_qubit_kernel(
-    state_flat, out_flat, matrix_flat, mask_0, mask_1, mask_both, total_size
+    state_flat, out_flat, matrix_flat, mask_0, mask_1, mask_both, quarter_size, pos_0, pos_1
 ):
-    """Two-qubit gate - only processes base indices where both target bits are 0."""
+    """Two-qubit gate - iterates only over valid base indices (1/4 of total)."""
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
 
-    for i in range(idx, total_size, stride):
-        if (i & mask_both) == 0:
-            s0 = state_flat[i]
-            s1 = state_flat[i | mask_1]
-            s2 = state_flat[i | mask_0]
-            s3 = state_flat[i | mask_both]
+    m = cuda.shared.array(16, dtype=numba.complex128)
+    if cuda.threadIdx.x < 16:
+        m[cuda.threadIdx.x] = matrix_flat[cuda.threadIdx.x]
+    cuda.syncthreads()
 
-            out_flat[i] = (
-                matrix_flat[0] * s0
-                + matrix_flat[1] * s1
-                + matrix_flat[2] * s2
-                + matrix_flat[3] * s3
-            )
-            out_flat[i | mask_1] = (
-                matrix_flat[4] * s0
-                + matrix_flat[5] * s1
-                + matrix_flat[6] * s2
-                + matrix_flat[7] * s3
-            )
-            out_flat[i | mask_0] = (
-                matrix_flat[8] * s0
-                + matrix_flat[9] * s1
-                + matrix_flat[10] * s2
-                + matrix_flat[11] * s3
-            )
-            out_flat[i | mask_both] = (
-                matrix_flat[12] * s0
-                + matrix_flat[13] * s1
-                + matrix_flat[14] * s2
-                + matrix_flat[15] * s3
-            )
+    for j in range(idx, quarter_size, stride):
+        i = j
+        i = (i & ~((1 << pos_0) - 1)) << 1 | (i & ((1 << pos_0) - 1))
+        i = (i & ~((1 << pos_1) - 1)) << 1 | (i & ((1 << pos_1) - 1))
+
+        s0 = state_flat[i]
+        s1 = state_flat[i | mask_1]
+        s2 = state_flat[i | mask_0]
+        s3 = state_flat[i | mask_both]
+
+        out_flat[i] = m[0] * s0 + m[1] * s1 + m[2] * s2 + m[3] * s3
+        out_flat[i | mask_1] = m[4] * s0 + m[5] * s1 + m[6] * s2 + m[7] * s3
+        out_flat[i | mask_0] = m[8] * s0 + m[9] * s1 + m[10] * s2 + m[11] * s3
+        out_flat[i | mask_both] = m[12] * s0 + m[13] * s1 + m[14] * s2 + m[15] * s3
 
 
 @cuda.jit(fastmath=True)
