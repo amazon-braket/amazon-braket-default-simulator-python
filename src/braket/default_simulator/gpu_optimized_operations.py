@@ -28,13 +28,14 @@ from __future__ import annotations
 import threading
 from typing import TYPE_CHECKING
 
+import numba
 import numpy as np
 from numba import cuda
 
 from braket.default_simulator.linalg_utils import (
-    DIAGONAL_GATES,
     _GPU_AVAILABLE,
     _MAX_BLOCKS_PER_GRID,
+    DIAGONAL_GATES,
 )
 
 if TYPE_CHECKING:
@@ -239,7 +240,7 @@ class OptimizedGPUExecutor:
     
     def _apply_fused(
         self,
-        op: "_FusedOperation",
+        op: _FusedOperation,
         state_gpu: cuda.devicearray.DeviceNDArray,
         out_gpu: cuda.devicearray.DeviceNDArray,
     ) -> bool:
@@ -295,16 +296,16 @@ class OptimizedGPUExecutor:
         target: int,
         gate_type: str = None,
     ) -> bool:
-        """Apply single qubit gate with optimized kernel."""
+        """Apply single qubit gate with optimized kernel matching _large patterns."""
         n_qubits = len(state_gpu.shape)
         target_bit = n_qubits - target - 1
         half_size = state_gpu.size >> 1
+        mask = (1 << target_bit) - 1
 
         state_flat = state_gpu.reshape(-1)
         out_flat = out_gpu.reshape(-1)
 
         blocks, threads = _get_optimal_config(half_size)
-        mask = (1 << target_bit) - 1
 
         if gate_type == "pauli_x" or gate_type == "x":
             _x_gate_kernel[blocks, threads, self._stream](
@@ -317,9 +318,8 @@ class OptimizedGPUExecutor:
             )
         elif gate_type and gate_type in DIAGONAL_GATES:
             a, d = matrix[0, 0], matrix[1, 1]
-            target_mask = 1 << target_bit
             _diagonal_kernel[blocks, threads, self._stream](
-                state_flat, out_flat, a, d, target_mask, state_gpu.size
+                state_flat, out_flat, a, d, target_bit, mask, half_size
             )
         else:
             a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
@@ -464,12 +464,14 @@ class OptimizedGPUExecutor:
 
 @cuda.jit(fastmath=True)
 def _single_qubit_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_size):
+    """Single qubit gate using bit masking pattern from _apply_single_qubit_gate_large."""
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
 
+    target_mask = 1 << n
     for i in range(idx, half_size, stride):
-        idx0 = ((i >> n) << (n + 1)) | (i & mask)
-        idx1 = idx0 | (1 << n)
+        idx0 = (i & ~mask) << 1 | (i & mask)
+        idx1 = idx0 | target_mask
 
         s0 = state_flat[idx0]
         s1 = state_flat[idx1]
@@ -480,13 +482,14 @@ def _single_qubit_kernel(state_flat, out_flat, a, b, c, d, n, mask, half_size):
 
 @cuda.jit(fastmath=True)
 def _x_gate_kernel(state_flat, out_flat, n, mask, half_size):
-    """Optimized X gate kernel - just swaps amplitudes."""
+    """X gate using bit masking pattern from _apply_x_gate_large."""
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
 
+    target_mask = 1 << n
     for i in range(idx, half_size, stride):
-        idx0 = ((i >> n) << (n + 1)) | (i & mask)
-        idx1 = idx0 | (1 << n)
+        idx0 = (i & ~mask) << 1 | (i & mask)
+        idx1 = idx0 | target_mask
 
         out_flat[idx0] = state_flat[idx1]
         out_flat[idx1] = state_flat[idx0]
@@ -494,13 +497,14 @@ def _x_gate_kernel(state_flat, out_flat, n, mask, half_size):
 
 @cuda.jit(fastmath=True)
 def _h_gate_kernel(state_flat, out_flat, n, mask, half_size, inv_sqrt2):
-    """Optimized Hadamard gate kernel."""
+    """Hadamard gate using bit masking pattern."""
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
 
+    target_mask = 1 << n
     for i in range(idx, half_size, stride):
-        idx0 = ((i >> n) << (n + 1)) | (i & mask)
-        idx1 = idx0 | (1 << n)
+        idx0 = (i & ~mask) << 1 | (i & mask)
+        idx1 = idx0 | target_mask
 
         s0 = state_flat[idx0]
         s1 = state_flat[idx1]
@@ -510,17 +514,23 @@ def _h_gate_kernel(state_flat, out_flat, n, mask, half_size, inv_sqrt2):
 
 
 @cuda.jit(fastmath=True)
-def _diagonal_kernel(state_flat, out_flat, a, d, target_mask, total_size):
+def _diagonal_kernel(state_flat, out_flat, a, d, n, mask, half_size):
+    """Diagonal gate using bit masking pattern from _apply_diagonal_gate_large."""
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
 
-    for i in range(idx, total_size, stride):
-        factor = d if (i & target_mask) else a
-        out_flat[i] = factor * state_flat[i]
+    target_mask = 1 << n
+    for i in range(idx, half_size, stride):
+        idx0 = (i & ~mask) << 1 | (i & mask)
+        idx1 = idx0 | target_mask
+
+        out_flat[idx0] = a * state_flat[idx0]
+        out_flat[idx1] = d * state_flat[idx1]
 
 
 @cuda.jit(fastmath=True)
 def _cnot_kernel(state_flat, out_flat, control_mask, target_mask, total_size):
+    """CNOT gate - copies with conditional swap based on control bit."""
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
 
@@ -534,6 +544,7 @@ def _cnot_kernel(state_flat, out_flat, control_mask, target_mask, total_size):
 
 @cuda.jit(fastmath=True)
 def _swap_kernel(state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations):
+    """SWAP gate using bit masking pattern from _apply_swap_large."""
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
 
@@ -552,6 +563,7 @@ def _swap_kernel(state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations)
 def _two_qubit_kernel(
     state_flat, out_flat, matrix_flat, mask_0, mask_1, mask_both, total_size
 ):
+    """Two-qubit gate - only processes base indices where both target bits are 0."""
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
 
@@ -745,15 +757,19 @@ class OptimizedDensityMatrixExecutor:
         matrix = op.matrix
         targets = op.targets
         n = self.qubit_count
-        total_size = dm_gpu.size
+        dim = 1 << n
         
         dm_flat = dm_gpu.reshape(-1)
         temp_flat = temp_gpu.reshape(-1)
         
-        blocks, threads = _get_optimal_config(total_size)
-        
         if len(targets) == 1:
             target = targets[0]
+            target_bit = n - target - 1
+            total_size = dim * dim
+            quarter_size = total_size >> 2
+            
+            blocks, threads = _get_optimal_config(quarter_size)
+            
             a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
             a_conj, b_conj = np.conj(a), np.conj(b)
             c_conj, d_conj = np.conj(c), np.conj(d)
@@ -762,11 +778,21 @@ class OptimizedDensityMatrixExecutor:
                 dm_flat, temp_flat,
                 a, b, c, d,
                 a_conj, b_conj, c_conj, d_conj,
-                target, n, total_size
+                target_bit, n, total_size
             )
             return True
         
         elif len(targets) == 2:
+            target0, target1 = targets[0], targets[1]
+            row_mask_0 = 1 << (n - 1 - target0)
+            row_mask_1 = 1 << (n - 1 - target1)
+            col_mask_0 = row_mask_0
+            col_mask_1 = row_mask_1
+            total_size = dim * dim
+            sixteenth_size = total_size >> 4
+            
+            blocks, threads = _get_optimal_config(sixteenth_size)
+            
             cache_key = f"dm_2q_{hash(matrix.tobytes())}"
             matrix_gpu = self.matrix_cache.get_or_upload(matrix, cache_key)
             
@@ -777,7 +803,8 @@ class OptimizedDensityMatrixExecutor:
             _dm_two_qubit_kernel[blocks, threads, self._stream](
                 dm_flat, temp_flat,
                 matrix_gpu, matrix_conj_gpu,
-                targets[0], targets[1], n, total_size
+                row_mask_0, row_mask_1, col_mask_0, col_mask_1,
+                n, total_size
             )
             return True
         
@@ -789,116 +816,134 @@ def _dm_single_qubit_kernel(
     dm_flat, out_flat,
     a, b, c, d,
     a_conj, b_conj, c_conj, d_conj,
-    target, n_qubits, total_size
+    target_bit, dim_log2, total_size
 ):
     """
     Apply U * rho * U† for single-qubit gate on density matrix.
+    Uses bit masking pattern from _apply_single_qubit_gate_large.
     
-    For density matrix rho stored as [2^n, 2^n], we need to apply U on left
-    (row indices) and U† on right (column indices).
+    Iterates over all elements where both row and col target bits are 0,
+    then processes the 2x2 block.
     """
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
     
-    dim = 1 << n_qubits
-    row_bit = n_qubits - target - 1
-    col_bit = row_bit
-    row_mask = 1 << row_bit
-    col_mask = 1 << col_bit
+    dim = 1 << dim_log2
+    row_target = 1 << target_bit
+    col_target = row_target
+    quarter_size = total_size >> 2
     
-    for flat_idx in range(idx, total_size, stride):
-        row = flat_idx // dim
-        col = flat_idx % dim
+    for i in range(idx, quarter_size, stride):
+        flat_i = i
+        flat_i = (flat_i & ~((1 << target_bit) - 1)) << 1 | (flat_i & ((1 << target_bit) - 1))
+        flat_i = (flat_i & ~((1 << (target_bit + dim_log2)) - 1)) << 1 | (flat_i & ((1 << (target_bit + dim_log2)) - 1))
         
-        row_0 = row & ~row_mask
-        row_1 = row | row_mask
-        col_0 = col & ~col_mask
-        col_1 = col | col_mask
+        row_0 = flat_i >> dim_log2
+        col_0 = flat_i & (dim - 1)
+        row_1 = row_0 | row_target
+        col_1 = col_0 | col_target
         
-        rho_00 = dm_flat[row_0 * dim + col_0]
-        rho_01 = dm_flat[row_0 * dim + col_1]
-        rho_10 = dm_flat[row_1 * dim + col_0]
-        rho_11 = dm_flat[row_1 * dim + col_1]
+        idx_00 = row_0 * dim + col_0
+        idx_01 = row_0 * dim + col_1
+        idx_10 = row_1 * dim + col_0
+        idx_11 = row_1 * dim + col_1
+        
+        rho_00 = dm_flat[idx_00]
+        rho_01 = dm_flat[idx_01]
+        rho_10 = dm_flat[idx_10]
+        rho_11 = dm_flat[idx_11]
         
         u_rho_00 = a * rho_00 + b * rho_10
         u_rho_01 = a * rho_01 + b * rho_11
         u_rho_10 = c * rho_00 + d * rho_10
         u_rho_11 = c * rho_01 + d * rho_11
         
-        new_00 = u_rho_00 * a_conj + u_rho_01 * b_conj
-        new_01 = u_rho_00 * c_conj + u_rho_01 * d_conj
-        new_10 = u_rho_10 * a_conj + u_rho_11 * b_conj
-        new_11 = u_rho_10 * c_conj + u_rho_11 * d_conj
-        
-        if (row & row_mask) == 0 and (col & col_mask) == 0:
-            out_flat[flat_idx] = new_00
-        elif (row & row_mask) == 0 and (col & col_mask) != 0:
-            out_flat[flat_idx] = new_01
-        elif (row & row_mask) != 0 and (col & col_mask) == 0:
-            out_flat[flat_idx] = new_10
-        else:
-            out_flat[flat_idx] = new_11
+        out_flat[idx_00] = u_rho_00 * a_conj + u_rho_01 * b_conj
+        out_flat[idx_01] = u_rho_00 * c_conj + u_rho_01 * d_conj
+        out_flat[idx_10] = u_rho_10 * a_conj + u_rho_11 * b_conj
+        out_flat[idx_11] = u_rho_10 * c_conj + u_rho_11 * d_conj
 
 
 @cuda.jit(fastmath=True)
 def _dm_two_qubit_kernel(
     dm_flat, out_flat,
     matrix_flat, matrix_conj_flat,
-    target0, target1, n_qubits, total_size
+    row_mask_0, row_mask_1, col_mask_0, col_mask_1,
+    dim_log2, total_size
 ):
-    """Apply two-qubit gate U * rho * U† on density matrix."""
+    """
+    Apply U * rho * U† for two-qubit gate on density matrix.
+    Processes 16 elements (4x4 block) per iteration using bit masking.
+    """
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
     
-    dim = 1 << n_qubits
-    bit0 = n_qubits - target0 - 1
-    bit1 = n_qubits - target1 - 1
-    mask0 = 1 << bit0
-    mask1 = 1 << bit1
-    mask_both = mask0 | mask1
+    dim = 1 << dim_log2
+    sixteenth_size = total_size >> 4
     
-    for flat_idx in range(idx, total_size, stride):
-        row = flat_idx // dim
-        col = flat_idx % dim
+    pos_0 = 0
+    pos_1 = 0
+    temp = row_mask_0
+    while temp > 1:
+        temp >>= 1
+        pos_0 += 1
+    temp = row_mask_1
+    while temp > 1:
+        temp >>= 1
+        pos_1 += 1
+    
+    if pos_0 > pos_1:
+        pos_0, pos_1 = pos_1, pos_0
+    
+    for i in range(idx, sixteenth_size, stride):
+        flat_i = i
+        flat_i = (flat_i & ~((1 << pos_0) - 1)) << 1 | (flat_i & ((1 << pos_0) - 1))
+        flat_i = (flat_i & ~((1 << pos_1) - 1)) << 1 | (flat_i & ((1 << pos_1) - 1))
+        flat_i = (flat_i & ~((1 << (pos_0 + dim_log2)) - 1)) << 1 | (flat_i & ((1 << (pos_0 + dim_log2)) - 1))
+        flat_i = (flat_i & ~((1 << (pos_1 + dim_log2)) - 1)) << 1 | (flat_i & ((1 << (pos_1 + dim_log2)) - 1))
         
-        row_base = row & ~mask_both
-        col_base = col & ~mask_both
+        row_0 = flat_i >> dim_log2
+        col_0 = flat_i & (dim - 1)
         
-        result = 0j
+        rho = cuda.local.array((4, 4), dtype=numba.complex128)
         for ri in range(4):
-            row_i = row_base
+            row_idx = row_0
             if ri & 1:
-                row_i |= mask1
+                row_idx |= row_mask_1
             if ri & 2:
-                row_i |= mask0
-            
+                row_idx |= row_mask_0
             for ci in range(4):
-                col_i = col_base
+                col_idx = col_0
                 if ci & 1:
-                    col_i |= mask1
+                    col_idx |= col_mask_1
                 if ci & 2:
-                    col_i |= mask0
-                
-                rho_val = dm_flat[row_i * dim + col_i]
-                
-                row_state = 0
-                if row & mask1:
-                    row_state |= 1
-                if row & mask0:
-                    row_state |= 2
-                
-                col_state = 0
-                if col & mask1:
-                    col_state |= 1
-                if col & mask0:
-                    col_state |= 2
-                
-                u_elem = matrix_flat[row_state * 4 + ri]
-                u_dag_elem = matrix_conj_flat[ci * 4 + col_state]
-                
-                result += u_elem * rho_val * u_dag_elem
+                    col_idx |= col_mask_0
+                rho[ri, ci] = dm_flat[row_idx * dim + col_idx]
         
-        out_flat[flat_idx] = result
+        u_rho = cuda.local.array((4, 4), dtype=numba.complex128)
+        for ri in range(4):
+            for ci in range(4):
+                acc = 0j
+                for k in range(4):
+                    acc += matrix_flat[ri * 4 + k] * rho[k, ci]
+                u_rho[ri, ci] = acc
+        
+        for ri in range(4):
+            row_idx = row_0
+            if ri & 1:
+                row_idx |= row_mask_1
+            if ri & 2:
+                row_idx |= row_mask_0
+            for ci in range(4):
+                col_idx = col_0
+                if ci & 1:
+                    col_idx |= col_mask_1
+                if ci & 2:
+                    col_idx |= col_mask_0
+                acc = 0j
+                for k in range(4):
+                    acc += u_rho[ri, k] * matrix_conj_flat[ci * 4 + k]
+                out_flat[row_idx * dim + col_idx] = acc
 
 
 _global_dm_executor: OptimizedDensityMatrixExecutor | None = None
