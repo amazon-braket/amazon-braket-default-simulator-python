@@ -748,6 +748,40 @@ def _apply_diagonal_gate_gpu(
         return _to_cpu(out_gpu), True
 
 
+def _apply_single_qubit_gate_gpu(
+    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Applies single qubit gate using GPU acceleration."""
+    state_gpu = _to_gpu(state)
+    out_gpu = _to_gpu(out)
+    
+    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+    n = state.ndim - target - 1
+    mask = (1 << n) - 1
+    
+    half_size = state.size >> 1
+    state_flat = state_gpu.reshape(-1)
+    out_flat = out_gpu.reshape(-1)
+    
+    threads_per_block = 512
+    blocks_per_grid = min(
+        (half_size + threads_per_block - 1) // threads_per_block,
+        _MAX_BLOCKS_PER_GRID
+    )
+    
+    _single_qubit_gate_kernel[blocks_per_grid, threads_per_block](
+        state_flat, out_flat, a, b, c, d, n, mask, half_size
+    )
+    
+    cuda.synchronize()
+    
+    if isinstance(out, np.ndarray):
+        out[:] = _to_cpu(out_gpu)
+        return out, True
+    else:
+        return _to_cpu(out_gpu), True
+
+
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
 def _apply_y_gate_large(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
