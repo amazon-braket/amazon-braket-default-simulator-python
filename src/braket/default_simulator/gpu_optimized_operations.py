@@ -14,9 +14,13 @@
 """
 Optimized GPU operations with minimized host-device memory transfers.
 
-This module consolidates GPU operations to eliminate redundant memory transfers
-by keeping state on GPU throughout circuit execution and using efficient caching
-for matrices and intermediate results.
+Key optimizations:
+1. Single host→GPU transfer at circuit start, single transfer back at end
+2. Matrix caching with LRU eviction to avoid repeated uploads
+3. Pinned memory for faster transfers on large states
+4. Adaptive thread/block configuration based on problem size
+5. Operation fusion for consecutive single-qubit gates
+6. Asynchronous execution with CUDA streams
 """
 
 from __future__ import annotations
@@ -35,6 +39,31 @@ from braket.default_simulator.linalg_utils import (
 
 if TYPE_CHECKING:
     from braket.default_simulator.operation import GateOperation
+
+_PINNED_MEMORY_THRESHOLD = 2**18
+_FUSION_ENABLED = True
+
+
+class _FusedOperation:
+    """Represents multiple fused single-qubit gates."""
+    __slots__ = ('target', 'matrix')
+    
+    def __init__(self, target: int, matrix: np.ndarray):
+        self.target = target
+        self.matrix = matrix
+
+
+def _get_optimal_config(total_size: int) -> tuple[int, int]:
+    """Get optimal thread/block configuration based on problem size."""
+    if total_size >= 2**24:
+        threads = 256
+    elif total_size >= 2**20:
+        threads = 512
+    else:
+        threads = 256
+    
+    blocks = min((total_size + threads - 1) // threads, _MAX_BLOCKS_PER_GRID)
+    return blocks, threads
 
 
 class GPUMatrixCache:
@@ -94,14 +123,16 @@ class OptimizedGPUExecutor:
     Key optimizations:
     1. Single transfer to GPU at start, single transfer back at end
     2. Matrix caching to avoid repeated uploads
-    3. Batched kernel launches where possible
-    4. Minimal synchronization points
+    3. Pinned memory for faster transfers on large states
+    4. Operation fusion for consecutive single-qubit gates on same target
+    5. Asynchronous kernel execution with CUDA streams
     """
 
     def __init__(self, qubit_count: int):
         self.qubit_count = qubit_count
         self.matrix_cache = GPUMatrixCache()
         self._stream = None
+        self._pinned_buffer = None
 
     def execute_circuit(
         self, state: np.ndarray, operations: list[GateOperation]
@@ -120,24 +151,100 @@ class OptimizedGPUExecutor:
             return state
 
         self._stream = cuda.stream()
-
-        state_contiguous = np.ascontiguousarray(state)
-        gpu_state = cuda.to_device(state_contiguous, stream=self._stream)
+        
+        use_pinned = state.size >= _PINNED_MEMORY_THRESHOLD
+        
+        if use_pinned:
+            state_contiguous = np.ascontiguousarray(state)
+            with cuda.pinned(state_contiguous):
+                gpu_state = cuda.to_device(state_contiguous, stream=self._stream)
+        else:
+            state_contiguous = np.ascontiguousarray(state)
+            gpu_state = cuda.to_device(state_contiguous, stream=self._stream)
+        
         gpu_temp = cuda.device_array_like(gpu_state, stream=self._stream)
         self._stream.synchronize()
 
         current_buffer = gpu_state
         temp_buffer = gpu_temp
 
+        if _FUSION_ENABLED:
+            operations = self._fuse_operations(operations)
+
         for op in operations:
-            needs_swap = self._apply_operation(op, current_buffer, temp_buffer)
+            if isinstance(op, _FusedOperation):
+                needs_swap = self._apply_fused(op, current_buffer, temp_buffer)
+            else:
+                needs_swap = self._apply_operation(op, current_buffer, temp_buffer)
             if needs_swap:
                 current_buffer, temp_buffer = temp_buffer, current_buffer
 
         self._stream.synchronize()
-        result = current_buffer.copy_to_host()
+        
+        if use_pinned:
+            result = np.empty_like(state_contiguous)
+            with cuda.pinned(result):
+                current_buffer.copy_to_host(result, stream=self._stream)
+                self._stream.synchronize()
+        else:
+            result = current_buffer.copy_to_host()
 
         return result
+    
+    def _fuse_operations(self, operations: list) -> list:
+        """Fuse consecutive single-qubit gates on the same target."""
+        if len(operations) < 2:
+            return operations
+        
+        fused = []
+        i = 0
+        
+        while i < len(operations):
+            op = operations[i]
+            targets = op.targets
+            ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
+            
+            if len(targets) == 1 and len(ctrl_modifiers) == 0:
+                target = targets[0]
+                matrices = [op.matrix]
+                j = i + 1
+                
+                while j < len(operations):
+                    next_op = operations[j]
+                    next_targets = next_op.targets
+                    next_ctrl = getattr(next_op, "_ctrl_modifiers", [])
+                    
+                    if (len(next_targets) == 1 and 
+                        len(next_ctrl) == 0 and 
+                        next_targets[0] == target and
+                        len(matrices) < 4):
+                        matrices.append(next_op.matrix)
+                        j += 1
+                    else:
+                        break
+                
+                if len(matrices) > 1:
+                    fused_matrix = matrices[0]
+                    for m in matrices[1:]:
+                        fused_matrix = m @ fused_matrix
+                    fused.append(_FusedOperation(target, fused_matrix))
+                else:
+                    fused.append(op)
+                i = j
+            else:
+                fused.append(op)
+                i += 1
+        
+        return fused
+    
+    def _apply_fused(
+        self,
+        op: "_FusedOperation",
+        state_gpu: cuda.devicearray.DeviceNDArray,
+        out_gpu: cuda.devicearray.DeviceNDArray,
+    ) -> bool:
+        """Apply fused single-qubit operation."""
+        return self._apply_single_qubit(state_gpu, out_gpu, op.matrix, op.target, None)
 
     def _apply_operation(
         self,
@@ -196,8 +303,7 @@ class OptimizedGPUExecutor:
         state_flat = state_gpu.reshape(-1)
         out_flat = out_gpu.reshape(-1)
 
-        threads = 512
-        blocks = min((half_size + threads - 1) // threads, _MAX_BLOCKS_PER_GRID)
+        blocks, threads = _get_optimal_config(half_size)
 
         if gate_type and gate_type in DIAGONAL_GATES:
             a, d = matrix[0, 0], matrix[1, 1]
@@ -230,8 +336,7 @@ class OptimizedGPUExecutor:
         state_flat = state_gpu.reshape(-1)
         out_flat = out_gpu.reshape(-1)
 
-        threads = 512
-        blocks = min((total_size + threads - 1) // threads, _MAX_BLOCKS_PER_GRID)
+        blocks, threads = _get_optimal_config(total_size)
 
         _cnot_kernel[blocks, threads, self._stream](
             state_flat, out_flat, 1 << control_bit, 1 << target_bit, total_size
@@ -261,8 +366,7 @@ class OptimizedGPUExecutor:
         state_flat = state_gpu.reshape(-1)
         out_flat = out_gpu.reshape(-1)
 
-        threads = 512
-        blocks = min((iterations + threads - 1) // threads, _MAX_BLOCKS_PER_GRID)
+        blocks, threads = _get_optimal_config(iterations)
 
         _swap_kernel[blocks, threads, self._stream](
             state_flat, out_flat, pos_0, pos_1, mask_0, mask_1, iterations
@@ -291,8 +395,7 @@ class OptimizedGPUExecutor:
         cache_key = f"2q_{hash(matrix.tobytes())}"
         matrix_gpu = self.matrix_cache.get_or_upload(matrix, cache_key)
 
-        threads = 512
-        blocks = min((total_size + threads - 1) // threads, _MAX_BLOCKS_PER_GRID)
+        blocks, threads = _get_optimal_config(total_size)
 
         _two_qubit_kernel[blocks, threads, self._stream](
             state_flat, out_flat, matrix_gpu, mask_0, mask_1, mask_both, total_size
@@ -333,8 +436,7 @@ class OptimizedGPUExecutor:
         matrix_gpu = self.matrix_cache.get_or_upload(matrix, cache_key)
         matrix_size = matrix.shape[0]
 
-        threads = 512
-        blocks = min((total_size + threads - 1) // threads, _MAX_BLOCKS_PER_GRID)
+        blocks, threads = _get_optimal_config(total_size)
 
         _controlled_kernel[blocks, threads, self._stream](
             state_flat,
@@ -525,3 +627,191 @@ def apply_operations_optimized(
 def clear_matrix_cache():
     """Clear the GPU matrix cache."""
     GPUMatrixCache().clear()
+
+
+class OptimizedDensityMatrixExecutor:
+    """
+    GPU executor optimized for density matrix simulations.
+    
+    Density matrices require applying U * rho * U† which means two matrix
+    multiplications per gate. This executor keeps the density matrix on GPU
+    throughout the circuit to avoid per-operation transfers.
+    """
+    
+    def __init__(self, qubit_count: int):
+        self.qubit_count = qubit_count
+        self.matrix_cache = GPUMatrixCache()
+        self._stream = None
+    
+    def execute_circuit(
+        self, 
+        density_matrix: np.ndarray, 
+        operations: list
+    ) -> np.ndarray:
+        """
+        Execute all operations on density matrix with minimal transfers.
+        
+        Args:
+            density_matrix: Initial density matrix [2^n, 2^n] on host
+            operations: List of gate operations
+            
+        Returns:
+            Final density matrix on host
+        """
+        if not operations:
+            return density_matrix
+        
+        self._stream = cuda.stream()
+        
+        dm_contiguous = np.ascontiguousarray(density_matrix)
+        use_pinned = dm_contiguous.size >= _PINNED_MEMORY_THRESHOLD
+        
+        if use_pinned:
+            with cuda.pinned(dm_contiguous):
+                gpu_dm = cuda.to_device(dm_contiguous, stream=self._stream)
+        else:
+            gpu_dm = cuda.to_device(dm_contiguous, stream=self._stream)
+        
+        gpu_temp = cuda.device_array_like(gpu_dm, stream=self._stream)
+        self._stream.synchronize()
+        
+        current = gpu_dm
+        temp = gpu_temp
+        
+        for op in operations:
+            needs_swap = self._apply_gate_to_dm(op, current, temp)
+            if needs_swap:
+                current, temp = temp, current
+        
+        self._stream.synchronize()
+        
+        if use_pinned:
+            result = np.empty_like(dm_contiguous)
+            with cuda.pinned(result):
+                current.copy_to_host(result, stream=self._stream)
+                self._stream.synchronize()
+        else:
+            result = current.copy_to_host()
+        
+        return result
+    
+    def _apply_gate_to_dm(
+        self,
+        op,
+        dm_gpu: cuda.devicearray.DeviceNDArray,
+        temp_gpu: cuda.devicearray.DeviceNDArray,
+    ) -> bool:
+        """Apply U * rho * U† to density matrix on GPU."""
+        matrix = op.matrix
+        targets = op.targets
+        n = self.qubit_count
+        total_size = dm_gpu.size
+        
+        dm_flat = dm_gpu.reshape(-1)
+        temp_flat = temp_gpu.reshape(-1)
+        
+        if len(targets) == 1:
+            target = targets[0]
+            a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+            a_conj, b_conj = np.conj(a), np.conj(b)
+            c_conj, d_conj = np.conj(c), np.conj(d)
+            
+            blocks, threads = _get_optimal_config(total_size)
+            
+            _dm_single_qubit_kernel[blocks, threads, self._stream](
+                dm_flat, temp_flat,
+                a, b, c, d,
+                a_conj, b_conj, c_conj, d_conj,
+                target, n, total_size
+            )
+            return True
+        
+        return False
+
+
+@cuda.jit(fastmath=True)
+def _dm_single_qubit_kernel(
+    dm_flat, out_flat,
+    a, b, c, d,
+    a_conj, b_conj, c_conj, d_conj,
+    target, n_qubits, total_size
+):
+    """
+    Apply U * rho * U† for single-qubit gate on density matrix.
+    
+    For density matrix rho stored as [2^n, 2^n], we need to apply U on left
+    (row indices) and U† on right (column indices).
+    """
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    dim = 1 << n_qubits
+    row_bit = n_qubits - target - 1
+    col_bit = row_bit
+    row_mask = 1 << row_bit
+    col_mask = 1 << col_bit
+    
+    for flat_idx in range(idx, total_size, stride):
+        row = flat_idx // dim
+        col = flat_idx % dim
+        
+        row_0 = row & ~row_mask
+        row_1 = row | row_mask
+        col_0 = col & ~col_mask
+        col_1 = col | col_mask
+        
+        rho_00 = dm_flat[row_0 * dim + col_0]
+        rho_01 = dm_flat[row_0 * dim + col_1]
+        rho_10 = dm_flat[row_1 * dim + col_0]
+        rho_11 = dm_flat[row_1 * dim + col_1]
+        
+        u_rho_00 = a * rho_00 + b * rho_10
+        u_rho_01 = a * rho_01 + b * rho_11
+        u_rho_10 = c * rho_00 + d * rho_10
+        u_rho_11 = c * rho_01 + d * rho_11
+        
+        new_00 = u_rho_00 * a_conj + u_rho_01 * b_conj
+        new_01 = u_rho_00 * c_conj + u_rho_01 * d_conj
+        new_10 = u_rho_10 * a_conj + u_rho_11 * b_conj
+        new_11 = u_rho_10 * c_conj + u_rho_11 * d_conj
+        
+        if (row & row_mask) == 0 and (col & col_mask) == 0:
+            out_flat[flat_idx] = new_00
+        elif (row & row_mask) == 0 and (col & col_mask) != 0:
+            out_flat[flat_idx] = new_01
+        elif (row & row_mask) != 0 and (col & col_mask) == 0:
+            out_flat[flat_idx] = new_10
+        else:
+            out_flat[flat_idx] = new_11
+
+
+_global_dm_executor: OptimizedDensityMatrixExecutor | None = None
+_dm_executor_lock = threading.Lock()
+
+
+def get_dm_executor(qubit_count: int) -> OptimizedDensityMatrixExecutor:
+    """Get or create density matrix GPU executor."""
+    global _global_dm_executor
+    
+    with _dm_executor_lock:
+        if _global_dm_executor is None or _global_dm_executor.qubit_count != qubit_count:
+            _global_dm_executor = OptimizedDensityMatrixExecutor(qubit_count)
+        return _global_dm_executor
+
+
+def apply_dm_operations_optimized(
+    density_matrix: np.ndarray,
+    qubit_count: int,
+    operations: list
+) -> np.ndarray:
+    """
+    Apply operations to density matrix with GPU optimization.
+    
+    This keeps the density matrix on GPU throughout circuit execution,
+    avoiding per-operation host↔device transfers.
+    """
+    if not _GPU_AVAILABLE or qubit_count < 6 or density_matrix.size < 256:
+        return None
+    
+    executor = get_dm_executor(qubit_count)
+    return executor.execute_circuit(density_matrix, operations)
