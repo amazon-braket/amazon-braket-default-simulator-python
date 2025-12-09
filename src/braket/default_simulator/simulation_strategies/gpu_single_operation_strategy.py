@@ -64,11 +64,18 @@ def apply_operations(
     - Multi-stream pipelining for independent qubit operations
     - Shared memory tiling for matrix and state data
     """
+    MIN_GPU_QUBITS = 18
+    MIN_GPU_STATE_SIZE = 2**18
+    MIN_OPS_FOR_GPU = 50
+    
     memory_info = _check_gpu_memory_availability(state.size)
-    use_gpu = (_GPU_AVAILABLE and 
-               qubit_count >= 8 and 
-               state.size >= 256 and 
-               memory_info['can_fit'])
+    use_gpu = (
+        _GPU_AVAILABLE
+        and qubit_count >= MIN_GPU_QUBITS
+        and state.size >= MIN_GPU_STATE_SIZE
+        and len(operations) >= MIN_OPS_FOR_GPU
+        and memory_info['can_fit']
+    )
     
     if not use_gpu:
         return single_operation_strategy.apply_operations(state, qubit_count, operations)
