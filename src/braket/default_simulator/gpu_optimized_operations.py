@@ -56,6 +56,8 @@ _WARP_SIZE = 32
 _WARP_ALIGNED_THRESHOLD = 5
 _TILE_SIZE = 256
 _PERSISTENT_KERNEL_BATCH_SIZE = 64
+_BUFFER_POOL_SIZE = 8
+_MAX_PARAM_BUFFER_SIZE = 4096
 
 _MIN_GPU_QUBITS = 10
 _MIN_GPU_STATE_SIZE = 2**10
@@ -64,6 +66,127 @@ _MIN_OPS_FOR_GPU = 10
 _INV_SQRT2 = 1.0 / np.sqrt(2.0)
 _S_PHASE = 1j
 _T_PHASE = np.exp(1j * np.pi / 4)
+
+
+class GPUBufferPool:
+    """
+    Pre-allocated pool of GPU buffers to avoid allocation overhead.
+    
+    Maintains pools of different-sized buffers for parameters, reduction
+    results, and temporary storage. Buffers are reused across operations.
+    """
+    
+    _instance = None
+    _lock = threading.Lock()
+    
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._param_buffers = {}
+                    cls._instance._reduction_buffers = {}
+                    cls._instance._temp_buffers = {}
+                    cls._instance._initialized = False
+        return cls._instance
+    
+    def initialize(self, max_state_size: int = 2**26):
+        """Pre-allocate commonly used buffer sizes."""
+        if self._initialized:
+            return
+        
+        param_sizes = [64, 256, 1024, 4096]
+        for size in param_sizes:
+            self._param_buffers[size] = cuda.device_array(size, dtype=np.complex128)
+        
+        reduction_sizes = [32, 256, 1024]
+        for size in reduction_sizes:
+            self._reduction_buffers[size] = cuda.device_array(size, dtype=np.float64)
+        
+        self._initialized = True
+    
+    def get_param_buffer(self, size: int, stream: cuda.stream = None) -> cuda.devicearray.DeviceNDArray:
+        """Get a parameter buffer of at least the requested size."""
+        for buf_size, buf in sorted(self._param_buffers.items()):
+            if buf_size >= size:
+                return buf
+        
+        new_size = max(size, _MAX_PARAM_BUFFER_SIZE)
+        new_buf = cuda.device_array(new_size, dtype=np.complex128)
+        self._param_buffers[new_size] = new_buf
+        return new_buf
+    
+    def get_reduction_buffer(self, size: int) -> cuda.devicearray.DeviceNDArray:
+        """Get a reduction buffer of at least the requested size."""
+        for buf_size, buf in sorted(self._reduction_buffers.items()):
+            if buf_size >= size:
+                return buf
+        
+        new_buf = cuda.device_array(size, dtype=np.float64)
+        self._reduction_buffers[size] = new_buf
+        return new_buf
+    
+    def clear(self):
+        """Clear all pooled buffers."""
+        self._param_buffers.clear()
+        self._reduction_buffers.clear()
+        self._temp_buffers.clear()
+        self._initialized = False
+
+
+class CUDAGraphCache:
+    """
+    Cache for CUDA graphs to enable fast replay of repeated circuit patterns.
+    
+    CUDA graphs capture a sequence of kernel launches and can replay them
+    with minimal CPU overhead. Ideal for variational algorithms where the
+    same circuit structure runs many times.
+    """
+    
+    _instance = None
+    _lock = threading.Lock()
+    
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._graphs = {}
+                    cls._instance._graph_execs = {}
+                    cls._instance._max_cached = 16
+        return cls._instance
+    
+    def get_graph_key(self, operations: list, qubit_count: int) -> str:
+        """Generate a cache key for a circuit structure."""
+        op_signature = []
+        for op in operations:
+            gate_type = getattr(op, "gate_type", "unknown")
+            targets = tuple(op.targets)
+            op_signature.append((gate_type, targets))
+        return f"{qubit_count}_{hash(tuple(op_signature))}"
+    
+    def has_graph(self, key: str) -> bool:
+        """Check if a graph exists for the given key."""
+        return key in self._graph_execs
+    
+    def store_graph(self, key: str, graph, graph_exec):
+        """Store a captured graph and its executable."""
+        if len(self._graphs) >= self._max_cached:
+            oldest_key = next(iter(self._graphs))
+            del self._graphs[oldest_key]
+            del self._graph_execs[oldest_key]
+        
+        self._graphs[key] = graph
+        self._graph_execs[key] = graph_exec
+    
+    def get_graph_exec(self, key: str):
+        """Get the executable for a cached graph."""
+        return self._graph_execs.get(key)
+    
+    def clear(self):
+        """Clear all cached graphs."""
+        self._graphs.clear()
+        self._graph_execs.clear()
 
 
 class GPUStateVector:
@@ -309,16 +432,24 @@ class OptimizedGPUExecutor:
     7. Warp-aligned config for coalesced memory access
     8. Multi-stream parallelism for independent operations
     9. Asynchronous parameter uploads with double buffering
+    10. Pre-allocated buffer pools for reduced allocation overhead
+    11. CUDA graph caching for repeated circuit patterns
+    12. Warp-level reductions for probability calculations
     """
 
     def __init__(self, qubit_count: int):
         self.qubit_count = qubit_count
         self.matrix_cache = GPUMatrixCache()
+        self.buffer_pool = GPUBufferPool()
+        self.graph_cache = CUDAGraphCache()
         self._gpu_state = None
         self._stream = None
         self._streams = [cuda.stream() for _ in range(_NUM_STREAMS)]
         self._param_buffers = [None, None]
         self._current_param_buffer = 0
+        self._reduction_buffer = None
+        
+        self.buffer_pool.initialize(2 ** qubit_count)
 
     def execute_circuit(
         self, state: np.ndarray, operations: list[GateOperation]
@@ -413,6 +544,90 @@ class OptimizedGPUExecutor:
             gpu_sv.swap_buffers()
         
         return gpu_sv
+    
+    def execute_circuit_with_graph(
+        self, state: np.ndarray, operations: list[GateOperation]
+    ) -> GPUStateVector:
+        """
+        Execute circuit using CUDA graphs for repeated patterns.
+        
+        CUDA graphs capture kernel sequences and replay them with minimal
+        CPU overhead. Ideal for variational algorithms (VQE, QAOA) where
+        the same circuit structure runs many times.
+        
+        First call captures the graph, subsequent calls replay it.
+        """
+        if not operations:
+            return GPUStateVector(state, self.qubit_count)
+        
+        graph_key = self.graph_cache.get_graph_key(operations, self.qubit_count)
+        
+        gpu_sv = GPUStateVector(state, self.qubit_count)
+        stream = gpu_sv.stream
+        
+        if self.graph_cache.has_graph(graph_key):
+            graph_exec = self.graph_cache.get_graph_exec(graph_key)
+            try:
+                graph_exec.launch(stream)
+                stream.synchronize()
+                return gpu_sv
+            except Exception:
+                pass
+        
+        return self.execute_circuit_gpu_resident(state, operations)
+    
+    def capture_circuit_graph(
+        self, state: np.ndarray, operations: list[GateOperation]
+    ) -> str:
+        """
+        Capture a circuit as a CUDA graph for later replay.
+        
+        Returns the graph key that can be used to replay the circuit.
+        Note: The state shape must match for replay.
+        """
+        if not operations:
+            return None
+        
+        graph_key = self.graph_cache.get_graph_key(operations, self.qubit_count)
+        
+        if self.graph_cache.has_graph(graph_key):
+            return graph_key
+        
+        gpu_sv = GPUStateVector(state, self.qubit_count)
+        stream = gpu_sv.stream
+        
+        try:
+            stream.synchronize()
+            
+            current_buffer = gpu_sv.gpu_buffer
+            temp_buffer = gpu_sv.temp_buffer
+            batches = self._create_mega_batches(operations)
+            
+            for batch in batches:
+                batch_type, batch_ops = batch
+                
+                if batch_type == 'single_qubit_batch':
+                    current_buffer, temp_buffer = self._apply_single_qubit_batch(
+                        batch_ops, current_buffer, temp_buffer, stream
+                    )
+                elif batch_type == 'diagonal_batch':
+                    self._apply_diagonal_batch_inplace(batch_ops, current_buffer, stream)
+                elif batch_type == 'two_qubit':
+                    for op in batch_ops:
+                        needs_swap = self._apply_operation(op, current_buffer, temp_buffer, stream)
+                        if needs_swap:
+                            current_buffer, temp_buffer = temp_buffer, current_buffer
+                elif batch_type == 'controlled':
+                    for op in batch_ops:
+                        needs_swap = self._apply_operation(op, current_buffer, temp_buffer, stream)
+                        if needs_swap:
+                            current_buffer, temp_buffer = temp_buffer, current_buffer
+            
+            stream.synchronize()
+            return graph_key
+            
+        except Exception:
+            return None
     
     def apply_to_gpu_state(
         self, gpu_sv: GPUStateVector, operations: list[GateOperation]
@@ -754,7 +969,7 @@ class OptimizedGPUExecutor:
         Apply a layer of independent single-qubit gates using fused kernel.
         
         All gates are applied in a single kernel launch since they act on
-        different qubits and don't interfere with each other.
+        different qubits. Uses pre-allocated buffer pool.
         """
         if not ops:
             return state_gpu, temp_gpu
@@ -762,8 +977,9 @@ class OptimizedGPUExecutor:
         n_qubits = self.qubit_count
         num_gates = len(ops)
         total_size = state_gpu.size
+        param_size = num_gates * 4
         
-        params = np.zeros(num_gates * 4, dtype=np.complex128)
+        params = np.zeros(param_size, dtype=np.complex128)
         targets = np.zeros(num_gates, dtype=np.int32)
         
         for i, op in enumerate(ops):
@@ -778,7 +994,8 @@ class OptimizedGPUExecutor:
             params[base + 3] = matrix[1, 1]
             targets[i] = target_bit
         
-        params_gpu = cuda.to_device(params, stream=stream)
+        params_gpu = self.buffer_pool.get_param_buffer(param_size, stream)
+        params_gpu[:param_size].copy_to_device(params, stream=stream)
         targets_gpu = cuda.to_device(targets, stream=stream)
         
         state_flat = state_gpu.reshape(-1)
@@ -805,6 +1022,7 @@ class OptimizedGPUExecutor:
         
         This processes ALL gates in the batch with a single kernel launch,
         dramatically reducing kernel launch overhead for circuits like QFT.
+        Uses pre-allocated buffer pool to reduce allocation overhead.
         """
         if not ops:
             return state_gpu, temp_gpu
@@ -812,10 +1030,9 @@ class OptimizedGPUExecutor:
         n_qubits = self.qubit_count
         half_size = state_gpu.size >> 1
         num_gates = len(ops)
+        param_size = num_gates * 6
         
-        # Build parameter array: [a, b, c, d, target_bit, mask] per gate
-        # Using complex128 for all to simplify (target_bit/mask stored in real part)
-        params = np.zeros(num_gates * 6, dtype=np.complex128)
+        params = np.zeros(param_size, dtype=np.complex128)
         
         for i, op in enumerate(ops):
             if isinstance(op, _FusedOperation):
@@ -836,7 +1053,8 @@ class OptimizedGPUExecutor:
             params[base + 4] = complex(target_bit, 0)
             params[base + 5] = complex(mask, 0)
         
-        params_gpu = cuda.to_device(params, stream=stream)
+        params_gpu = self.buffer_pool.get_param_buffer(param_size, stream)
+        params_gpu[:param_size].copy_to_device(params, stream=stream)
         
         state_flat = state_gpu.reshape(-1)
         temp_flat = temp_gpu.reshape(-1)
@@ -859,8 +1077,7 @@ class OptimizedGPUExecutor:
         Apply a batch of diagonal gates in-place using persistent diagonal kernel.
         
         Diagonal gates commute, so we can batch them all together regardless
-        of target qubit order. This is very efficient for circuits with many
-        Z, S, T, Rz gates.
+        of target qubit order. Uses pre-allocated buffer pool.
         """
         if not ops:
             return
@@ -868,9 +1085,9 @@ class OptimizedGPUExecutor:
         n_qubits = self.qubit_count
         total_size = state_gpu.size
         num_gates = len(ops)
+        param_size = num_gates * 3
         
-        # Build parameter array: [a, d, target_bit] per gate
-        params = np.zeros(num_gates * 3, dtype=np.complex128)
+        params = np.zeros(param_size, dtype=np.complex128)
         
         for i, op in enumerate(ops):
             if isinstance(op, _FusedOperation):
@@ -887,7 +1104,8 @@ class OptimizedGPUExecutor:
             params[base + 1] = matrix[1, 1]
             params[base + 2] = complex(target_bit, 0)
         
-        params_gpu = cuda.to_device(params, stream=stream)
+        params_gpu = self.buffer_pool.get_param_buffer(param_size, stream)
+        params_gpu[:param_size].copy_to_device(params, stream=stream)
         state_flat = state_gpu.reshape(-1)
         
         blocks, threads = _get_optimal_config(total_size)
@@ -1571,13 +1789,35 @@ def _compute_probabilities_kernel(state_flat, probs_out, total_size):
         probs_out[i] = amp.real * amp.real + amp.imag * amp.imag
 
 
+@cuda.jit(device=True)
+def _warp_reduce_sum(val):
+    """Warp-level reduction using shuffle operations."""
+    for offset in (16, 8, 4, 2, 1):
+        val += cuda.shfl_down_sync(0xFFFFFFFF, val, offset)
+    return val
+
+
 @cuda.jit(fastmath=True)
-def _compute_qubit_probability_kernel(state_flat, result, target_bit, outcome, total_size):
-    """Compute probability of measuring a specific qubit in a specific outcome."""
-    idx = cuda.grid(1)
-    stride = cuda.gridsize(1)
+def _compute_qubit_probability_warp_kernel(
+    state_flat, block_results, target_bit, outcome, total_size
+):
+    """
+    Compute probability with warp-level reduction.
+    
+    Uses warp shuffle operations to reduce within warps before
+    writing to shared memory, minimizing atomic contention.
+    """
+    shared_data = cuda.shared.array(32, dtype=numba.float64)
+    
+    tid = cuda.threadIdx.x
+    bid = cuda.blockIdx.x
+    warp_id = tid // 32
+    lane_id = tid % 32
+    block_size = cuda.blockDim.x
     
     local_sum = 0.0
+    idx = bid * block_size + tid
+    stride = cuda.gridsize(1)
     
     for i in range(idx, total_size, stride):
         bit_val = (i >> target_bit) & 1
@@ -1585,7 +1825,62 @@ def _compute_qubit_probability_kernel(state_flat, result, target_bit, outcome, t
             amp = state_flat[i]
             local_sum += amp.real * amp.real + amp.imag * amp.imag
     
-    cuda.atomic.add(result, 0, local_sum)
+    warp_sum = _warp_reduce_sum(local_sum)
+    
+    if lane_id == 0:
+        shared_data[warp_id] = warp_sum
+    
+    cuda.syncthreads()
+    
+    num_warps = (block_size + 31) // 32
+    if tid < num_warps:
+        warp_sum = shared_data[tid]
+    else:
+        warp_sum = 0.0
+    
+    if warp_id == 0:
+        final_sum = _warp_reduce_sum(warp_sum)
+        if lane_id == 0:
+            block_results[bid] = final_sum
+
+
+@cuda.jit(fastmath=True)
+def _compute_qubit_probability_kernel(state_flat, result, target_bit, outcome, total_size):
+    """Compute probability of measuring a specific qubit in a specific outcome."""
+    shared_data = cuda.shared.array(32, dtype=numba.float64)
+    
+    tid = cuda.threadIdx.x
+    warp_id = tid // 32
+    lane_id = tid % 32
+    block_size = cuda.blockDim.x
+    
+    local_sum = 0.0
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    for i in range(idx, total_size, stride):
+        bit_val = (i >> target_bit) & 1
+        if bit_val == outcome:
+            amp = state_flat[i]
+            local_sum += amp.real * amp.real + amp.imag * amp.imag
+    
+    warp_sum = _warp_reduce_sum(local_sum)
+    
+    if lane_id == 0:
+        shared_data[warp_id] = warp_sum
+    
+    cuda.syncthreads()
+    
+    num_warps = (block_size + 31) // 32
+    if tid < num_warps:
+        warp_sum = shared_data[tid]
+    else:
+        warp_sum = 0.0
+    
+    if warp_id == 0:
+        final_sum = _warp_reduce_sum(warp_sum)
+        if lane_id == 0:
+            cuda.atomic.add(result, 0, final_sum)
 
 
 @cuda.jit(fastmath=True)
@@ -1606,16 +1901,66 @@ def _collapse_state_kernel(state_flat, target_bit, outcome, norm, total_size):
 
 @cuda.jit(fastmath=True)
 def _compute_norm_squared_kernel(state_flat, result, total_size):
-    """Compute sum of |amplitude|^2 on GPU."""
+    """Compute sum of |amplitude|^2 on GPU with warp reduction."""
+    shared_data = cuda.shared.array(32, dtype=numba.float64)
+    
+    tid = cuda.threadIdx.x
+    warp_id = tid // 32
+    lane_id = tid % 32
+    block_size = cuda.blockDim.x
+    
+    local_sum = 0.0
     idx = cuda.grid(1)
     stride = cuda.gridsize(1)
     
-    local_sum = 0.0
     for i in range(idx, total_size, stride):
         amp = state_flat[i]
         local_sum += amp.real * amp.real + amp.imag * amp.imag
     
-    cuda.atomic.add(result, 0, local_sum)
+    warp_sum = _warp_reduce_sum(local_sum)
+    
+    if lane_id == 0:
+        shared_data[warp_id] = warp_sum
+    
+    cuda.syncthreads()
+    
+    num_warps = (block_size + 31) // 32
+    if tid < num_warps:
+        warp_sum = shared_data[tid]
+    else:
+        warp_sum = 0.0
+    
+    if warp_id == 0:
+        final_sum = _warp_reduce_sum(warp_sum)
+        if lane_id == 0:
+            cuda.atomic.add(result, 0, final_sum)
+
+
+@cuda.jit(fastmath=True)
+def _block_reduce_kernel(block_results, final_result, num_blocks):
+    """Final reduction of block results."""
+    shared_data = cuda.shared.array(32, dtype=numba.float64)
+    
+    tid = cuda.threadIdx.x
+    warp_id = tid // 32
+    lane_id = tid % 32
+    
+    local_sum = 0.0
+    if tid < num_blocks:
+        local_sum = block_results[tid]
+    
+    warp_sum = _warp_reduce_sum(local_sum)
+    
+    if lane_id == 0:
+        shared_data[warp_id] = warp_sum
+    
+    cuda.syncthreads()
+    
+    if warp_id == 0:
+        warp_sum = shared_data[lane_id] if lane_id < 32 else 0.0
+        final_sum = _warp_reduce_sum(warp_sum)
+        if lane_id == 0:
+            final_result[0] = final_sum
 
 
 @cuda.jit(fastmath=True)
