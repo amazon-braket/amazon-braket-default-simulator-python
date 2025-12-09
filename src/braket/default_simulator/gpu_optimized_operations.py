@@ -57,13 +57,139 @@ _WARP_ALIGNED_THRESHOLD = 5
 _TILE_SIZE = 256
 _PERSISTENT_KERNEL_BATCH_SIZE = 64
 
-_MIN_GPU_QUBITS = 18
-_MIN_GPU_STATE_SIZE = 2**18
-_MIN_OPS_FOR_GPU = 50
+_MIN_GPU_QUBITS = 10
+_MIN_GPU_STATE_SIZE = 2**10
+_MIN_OPS_FOR_GPU = 10
 
 _INV_SQRT2 = 1.0 / np.sqrt(2.0)
 _S_PHASE = 1j
 _T_PHASE = np.exp(1j * np.pi / 4)
+
+
+class GPUStateVector:
+    """
+    GPU-resident state vector that stays on device until results are needed.
+    
+    This eliminates CPU↔GPU transfers during circuit execution. The state
+    is only transferred back when measurements or probabilities are requested.
+    """
+    
+    __slots__ = ('_gpu_state', '_gpu_temp', '_qubit_count', '_stream', '_on_gpu')
+    
+    def __init__(self, state: np.ndarray, qubit_count: int):
+        self._qubit_count = qubit_count
+        self._stream = cuda.stream()
+        self._on_gpu = False
+        
+        state_contiguous = np.ascontiguousarray(state)
+        if state.size >= _PINNED_MEMORY_THRESHOLD:
+            with cuda.pinned(state_contiguous):
+                self._gpu_state = cuda.to_device(state_contiguous, stream=self._stream)
+        else:
+            self._gpu_state = cuda.to_device(state_contiguous, stream=self._stream)
+        
+        self._gpu_temp = cuda.device_array_like(self._gpu_state, stream=self._stream)
+        self._stream.synchronize()
+        self._on_gpu = True
+    
+    @property
+    def gpu_buffer(self) -> cuda.devicearray.DeviceNDArray:
+        return self._gpu_state
+    
+    @property
+    def temp_buffer(self) -> cuda.devicearray.DeviceNDArray:
+        return self._gpu_temp
+    
+    @property
+    def stream(self) -> cuda.stream:
+        return self._stream
+    
+    @property
+    def qubit_count(self) -> int:
+        return self._qubit_count
+    
+    def swap_buffers(self):
+        self._gpu_state, self._gpu_temp = self._gpu_temp, self._gpu_state
+    
+    def get_probabilities(self) -> np.ndarray:
+        """Compute probabilities on GPU and return to host."""
+        total_size = self._gpu_state.size
+        probs_gpu = cuda.device_array(total_size, dtype=np.float64, stream=self._stream)
+        
+        blocks, threads = _get_optimal_config(total_size)
+        state_flat = self._gpu_state.reshape(-1)
+        
+        _compute_probabilities_kernel[blocks, threads, self._stream](
+            state_flat, probs_gpu, total_size
+        )
+        self._stream.synchronize()
+        
+        return probs_gpu.copy_to_host()
+    
+    def get_probability_for_qubit(self, qubit: int, outcome: int) -> float:
+        """Compute probability for single qubit measurement on GPU."""
+        n_qubits = self._qubit_count
+        total_size = self._gpu_state.size
+        target_bit = n_qubits - qubit - 1
+        
+        result_gpu = cuda.device_array(1, dtype=np.float64, stream=self._stream)
+        result_gpu[0] = 0.0
+        
+        blocks, threads = _get_optimal_config(total_size)
+        state_flat = self._gpu_state.reshape(-1)
+        
+        _compute_qubit_probability_kernel[blocks, threads, self._stream](
+            state_flat, result_gpu, target_bit, outcome, total_size
+        )
+        self._stream.synchronize()
+        
+        return result_gpu.copy_to_host()[0]
+    
+    def sample_measurement(self, qubit: int, random_val: float) -> tuple[int, float]:
+        """Sample measurement outcome on GPU and collapse state."""
+        prob_0 = self.get_probability_for_qubit(qubit, 0)
+        
+        if random_val < prob_0:
+            outcome = 0
+            norm = np.sqrt(prob_0)
+        else:
+            outcome = 1
+            norm = np.sqrt(1.0 - prob_0)
+        
+        n_qubits = self._qubit_count
+        target_bit = n_qubits - qubit - 1
+        total_size = self._gpu_state.size
+        
+        blocks, threads = _get_optimal_config(total_size)
+        state_flat = self._gpu_state.reshape(-1)
+        
+        _collapse_state_kernel[blocks, threads, self._stream](
+            state_flat, target_bit, outcome, norm, total_size
+        )
+        self._stream.synchronize()
+        
+        return outcome, prob_0 if outcome == 0 else (1.0 - prob_0)
+    
+    def to_numpy(self) -> np.ndarray:
+        """Transfer state back to host only when explicitly requested."""
+        self._stream.synchronize()
+        return self._gpu_state.copy_to_host()
+    
+    def norm_squared(self) -> float:
+        """Compute norm squared on GPU."""
+        total_size = self._gpu_state.size
+        result_gpu = cuda.device_array(1, dtype=np.float64, stream=self._stream)
+        result_gpu[0] = 0.0
+        
+        blocks, threads = _get_optimal_config(total_size)
+        state_flat = self._gpu_state.reshape(-1)
+        
+        _compute_norm_squared_kernel[blocks, threads, self._stream](
+            state_flat, result_gpu, total_size
+        )
+        self._stream.synchronize()
+        
+        return result_gpu.copy_to_host()[0]
 
 
 class _FusedOperation:
@@ -174,87 +300,71 @@ class OptimizedGPUExecutor:
     Optimized GPU executor that minimizes host-device transfers.
 
     Key optimizations:
-    1. Single transfer to GPU at start, single transfer back at end
+    1. GPU-resident state - stays on device until results needed
     2. Matrix caching to avoid repeated uploads
     3. Pinned memory for faster transfers on large states
-    4. Operation fusion for consecutive single-qubit gates (threshold: 2)
-    5. Batch phase kernel for consecutive diagonal gates
-    6. Persistent kernel for multiple gates in one launch
-    7. In-place diagonal gate operations (no buffer swap)
-    8. CUDA events for fine-grained synchronization
-    9. Shared memory tiling for better cache utilization
-    10. Multi-stream pipelining for independent qubit operations
-    11. Warp-aligned config for coalesced memory access
+    4. Mega-batch processing - multiple gates per kernel launch
+    5. In-place diagonal operations (no buffer swap)
+    6. GPU-native probability/measurement computation
+    7. Warp-aligned config for coalesced memory access
     """
 
     def __init__(self, qubit_count: int):
         self.qubit_count = qubit_count
         self.matrix_cache = GPUMatrixCache()
-        self._streams = None
-        self._events = None
-        self._pinned_buffer = None
+        self._gpu_state = None
+        self._stream = None
 
     def execute_circuit(
         self, state: np.ndarray, operations: list[GateOperation]
     ) -> np.ndarray:
         """
         Execute all operations on GPU with minimal memory transfers.
-
-        Uses mega-batch strategy: batch as many operations as possible into
-        single kernel launches to minimize kernel launch overhead.
-
-        Args:
-            state: Initial state vector (on host)
-            operations: List of gate operations to apply
-
-        Returns:
-            Final state vector (on host)
+        
+        Returns final state on host. For GPU-resident execution, use
+        execute_circuit_gpu_resident() instead.
         """
         if not operations:
             return state
 
-        # Use single stream for simplicity - multi-stream adds overhead for small circuits
-        stream = cuda.stream()
+        gpu_state = self.execute_circuit_gpu_resident(state, operations)
+        return gpu_state.to_numpy()
+    
+    def execute_circuit_gpu_resident(
+        self, state: np.ndarray, operations: list[GateOperation]
+    ) -> GPUStateVector:
+        """
+        Execute circuit and return GPU-resident state.
         
-        use_pinned = state.size >= _PINNED_MEMORY_THRESHOLD
-        
-        # Transfer to GPU
-        state_contiguous = np.ascontiguousarray(state)
-        if use_pinned:
-            with cuda.pinned(state_contiguous):
-                gpu_state = cuda.to_device(state_contiguous, stream=stream)
-        else:
-            gpu_state = cuda.to_device(state_contiguous, stream=stream)
-        
-        gpu_temp = cuda.device_array_like(gpu_state, stream=stream)
-        stream.synchronize()
+        The state stays on GPU - use get_probabilities(), sample_measurement(),
+        or to_numpy() to get results without intermediate transfers.
+        """
+        if not operations:
+            return GPUStateVector(state, self.qubit_count)
 
-        current_buffer = gpu_state
-        temp_buffer = gpu_temp
+        gpu_sv = GPUStateVector(state, self.qubit_count)
+        stream = gpu_sv.stream
+        
+        current_buffer = gpu_sv.gpu_buffer
+        temp_buffer = gpu_sv.temp_buffer
 
-        # Mega-batch strategy: group operations into batches that can be
-        # processed with minimal kernel launches
         batches = self._create_mega_batches(operations)
         
         for batch in batches:
             batch_type, batch_ops = batch
             
             if batch_type == 'single_qubit_batch':
-                # Process all single-qubit gates in one kernel
                 current_buffer, temp_buffer = self._apply_single_qubit_batch(
                     batch_ops, current_buffer, temp_buffer, stream
                 )
             elif batch_type == 'diagonal_batch':
-                # Process all diagonal gates in one kernel (in-place)
                 self._apply_diagonal_batch_inplace(batch_ops, current_buffer, stream)
             elif batch_type == 'two_qubit':
-                # Two-qubit gates processed individually
                 for op in batch_ops:
                     needs_swap = self._apply_operation(op, current_buffer, temp_buffer, stream)
                     if needs_swap:
                         current_buffer, temp_buffer = temp_buffer, current_buffer
             elif batch_type == 'controlled':
-                # Controlled gates processed individually
                 for op in batch_ops:
                     needs_swap = self._apply_operation(op, current_buffer, temp_buffer, stream)
                     if needs_swap:
@@ -262,16 +372,10 @@ class OptimizedGPUExecutor:
         
         stream.synchronize()
         
-        # Transfer result back
-        if use_pinned:
-            result = np.empty_like(state_contiguous)
-            with cuda.pinned(result):
-                current_buffer.copy_to_host(result, stream=stream)
-                stream.synchronize()
-        else:
-            result = current_buffer.copy_to_host()
-
-        return result
+        if current_buffer is not gpu_sv.gpu_buffer:
+            gpu_sv.swap_buffers()
+        
+        return gpu_sv
     
     def _create_mega_batches(self, operations: list) -> list[tuple[str, list]]:
         """
@@ -720,6 +824,10 @@ class OptimizedGPUExecutor:
                 return self._apply_cz(
                     state_gpu, out_gpu, actual_targets[0], actual_targets[1], stream
                 )
+            elif gate_type == "cphaseshift" or gate_type == "cp":
+                return self._apply_cphase_inplace(
+                    state_gpu, op.matrix, actual_targets[0], actual_targets[1], stream
+                )
             elif gate_type == "swap":
                 return self._apply_swap(
                     state_gpu, out_gpu, actual_targets[0], actual_targets[1], stream
@@ -729,8 +837,13 @@ class OptimizedGPUExecutor:
                     state_gpu, out_gpu, actual_targets[0], actual_targets[1], stream
                 )
             else:
+                matrix = op.matrix
+                if self._is_diagonal_matrix(matrix):
+                    return self._apply_two_qubit_diagonal_inplace(
+                        state_gpu, matrix, actual_targets[0], actual_targets[1], stream
+                    )
                 return self._apply_two_qubit(
-                    state_gpu, out_gpu, op.matrix, actual_targets[0], actual_targets[1], stream
+                    state_gpu, out_gpu, matrix, actual_targets[0], actual_targets[1], stream
                 )
 
         elif controls:
@@ -869,19 +982,76 @@ class OptimizedGPUExecutor:
         target: int,
         stream: cuda.stream,
     ) -> bool:
-        """Apply CZ gate - can be done in-place since it's diagonal."""
+        """Apply CZ gate in-place since it's diagonal."""
         n_qubits = len(state_gpu.shape)
         control_bit = n_qubits - control - 1
         target_bit = n_qubits - target - 1
         total_size = state_gpu.size
 
         state_flat = state_gpu.reshape(-1)
-
         blocks, threads = _get_optimal_config(total_size)
 
-        # CZ is diagonal - use in-place kernel
         _cz_inplace_kernel[blocks, threads, stream](
             state_flat, 1 << control_bit, 1 << target_bit, total_size
+        )
+
+        return False
+    
+    def _apply_cphase_inplace(
+        self,
+        state_gpu: cuda.devicearray.DeviceNDArray,
+        matrix: np.ndarray,
+        control: int,
+        target: int,
+        stream: cuda.stream,
+    ) -> bool:
+        """Apply controlled-phase gate in-place (diagonal)."""
+        n_qubits = len(state_gpu.shape)
+        control_bit = n_qubits - control - 1
+        target_bit = n_qubits - target - 1
+        total_size = state_gpu.size
+        
+        phase = matrix[3, 3]
+        
+        state_flat = state_gpu.reshape(-1)
+        blocks, threads = _get_optimal_config(total_size)
+
+        _cphase_inplace_kernel[blocks, threads, stream](
+            state_flat, 1 << control_bit, 1 << target_bit, phase, total_size
+        )
+
+        return False
+    
+    def _is_diagonal_matrix(self, matrix: np.ndarray) -> bool:
+        """Check if a matrix is diagonal."""
+        n = matrix.shape[0]
+        for i in range(n):
+            for j in range(n):
+                if i != j and abs(matrix[i, j]) > 1e-10:
+                    return False
+        return True
+    
+    def _apply_two_qubit_diagonal_inplace(
+        self,
+        state_gpu: cuda.devicearray.DeviceNDArray,
+        matrix: np.ndarray,
+        target0: int,
+        target1: int,
+        stream: cuda.stream,
+    ) -> bool:
+        """Apply diagonal two-qubit gate in-place."""
+        n_qubits = len(state_gpu.shape)
+        mask_0 = 1 << (n_qubits - 1 - target0)
+        mask_1 = 1 << (n_qubits - 1 - target1)
+        total_size = state_gpu.size
+        
+        d00, d01, d10, d11 = matrix[0, 0], matrix[1, 1], matrix[2, 2], matrix[3, 3]
+        
+        state_flat = state_gpu.reshape(-1)
+        blocks, threads = _get_optimal_config(total_size)
+
+        _two_qubit_diagonal_inplace_kernel[blocks, threads, stream](
+            state_flat, mask_0, mask_1, d00, d01, d10, d11, total_size
         )
 
         return False
@@ -1034,7 +1204,79 @@ class OptimizedGPUExecutor:
 
 
 # =============================================================================
-# CUDA Kernels
+# CUDA Kernels - Measurement and Probability
+# =============================================================================
+
+@cuda.jit(fastmath=True)
+def _compute_probabilities_kernel(state_flat, probs_out, total_size):
+    """Compute |amplitude|^2 for all basis states on GPU."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    for i in range(idx, total_size, stride):
+        amp = state_flat[i]
+        probs_out[i] = amp.real * amp.real + amp.imag * amp.imag
+
+
+@cuda.jit(fastmath=True)
+def _compute_qubit_probability_kernel(state_flat, result, target_bit, outcome, total_size):
+    """Compute probability of measuring a specific qubit in a specific outcome."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    local_sum = 0.0
+    
+    for i in range(idx, total_size, stride):
+        bit_val = (i >> target_bit) & 1
+        if bit_val == outcome:
+            amp = state_flat[i]
+            local_sum += amp.real * amp.real + amp.imag * amp.imag
+    
+    cuda.atomic.add(result, 0, local_sum)
+
+
+@cuda.jit(fastmath=True)
+def _collapse_state_kernel(state_flat, target_bit, outcome, norm, total_size):
+    """Collapse state after measurement - zero out non-matching and renormalize."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    inv_norm = 1.0 / norm
+    
+    for i in range(idx, total_size, stride):
+        bit_val = (i >> target_bit) & 1
+        if bit_val == outcome:
+            state_flat[i] = state_flat[i] * inv_norm
+        else:
+            state_flat[i] = 0.0 + 0.0j
+
+
+@cuda.jit(fastmath=True)
+def _compute_norm_squared_kernel(state_flat, result, total_size):
+    """Compute sum of |amplitude|^2 on GPU."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    local_sum = 0.0
+    for i in range(idx, total_size, stride):
+        amp = state_flat[i]
+        local_sum += amp.real * amp.real + amp.imag * amp.imag
+    
+    cuda.atomic.add(result, 0, local_sum)
+
+
+@cuda.jit(fastmath=True)
+def _sample_from_probabilities_kernel(probs, cumsum_out, total_size):
+    """Compute cumulative sum for sampling (prefix sum)."""
+    idx = cuda.grid(1)
+    if idx == 0:
+        cumsum_out[0] = probs[0]
+        for i in range(1, total_size):
+            cumsum_out[i] = cumsum_out[i-1] + probs[i]
+
+
+# =============================================================================
+# CUDA Kernels - Gate Operations
 # =============================================================================
 
 @cuda.jit(fastmath=True)
@@ -1250,6 +1492,38 @@ def _cz_inplace_kernel(state_flat, control_mask, target_mask, total_size):
     for i in range(idx, total_size, stride):
         if (i & both_mask) == both_mask:
             state_flat[i] = -state_flat[i]
+
+
+@cuda.jit(fastmath=True)
+def _cphase_inplace_kernel(state_flat, control_mask, target_mask, phase, total_size):
+    """Controlled-phase gate in-place - applies phase when both control and target are |1>."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+
+    both_mask = control_mask | target_mask
+    for i in range(idx, total_size, stride):
+        if (i & both_mask) == both_mask:
+            state_flat[i] = phase * state_flat[i]
+
+
+@cuda.jit(fastmath=True)
+def _two_qubit_diagonal_inplace_kernel(state_flat, mask_0, mask_1, d00, d01, d10, d11, total_size):
+    """Two-qubit diagonal gate in-place - applies diagonal elements based on qubit states."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+
+    for i in range(idx, total_size, stride):
+        b0 = 1 if (i & mask_0) else 0
+        b1 = 1 if (i & mask_1) else 0
+        idx_2q = b0 * 2 + b1
+        if idx_2q == 0:
+            state_flat[i] = d00 * state_flat[i]
+        elif idx_2q == 1:
+            state_flat[i] = d01 * state_flat[i]
+        elif idx_2q == 2:
+            state_flat[i] = d10 * state_flat[i]
+        else:
+            state_flat[i] = d11 * state_flat[i]
 
 
 @cuda.jit(fastmath=True)
@@ -1532,19 +1806,9 @@ def apply_operations_optimized(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
     """
-    Apply operations with optimized GPU execution.
-
-    This is the main entry point that replaces the existing gpu_single_operation_strategy.
-    Key improvements:
-    - Single host to GPU transfer at start
-    - Single GPU to host transfer at end
-    - Matrix caching to avoid repeated uploads
-    - Advanced operation fusion (threshold: 2)
-    - Batch phase kernel for diagonal gates
-    - In-place diagonal operations
-    - CUDA events for fine-grained sync
-    - Multi-stream pipelining
-    - Warp-aligned config for coalesced access
+    Apply operations with optimized GPU execution, returning numpy array.
+    
+    For GPU-resident execution (no transfer back), use apply_operations_gpu_resident().
     """
     use_gpu = (
         _GPU_AVAILABLE
@@ -1562,6 +1826,27 @@ def apply_operations_optimized(
 
     executor = get_gpu_executor(qubit_count)
     return executor.execute_circuit(state, operations)
+
+
+def apply_operations_gpu_resident(
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
+) -> GPUStateVector:
+    """
+    Apply operations and return GPU-resident state vector.
+    
+    The state stays on GPU until you explicitly request results:
+    - gpu_state.get_probabilities() - compute probabilities on GPU
+    - gpu_state.sample_measurement(qubit, random_val) - measure on GPU
+    - gpu_state.to_numpy() - transfer state back to host
+    
+    This avoids CPU↔GPU transfer overhead when you only need
+    probabilities or measurements, not the full state vector.
+    """
+    if not _GPU_AVAILABLE:
+        raise RuntimeError("GPU not available")
+    
+    executor = get_gpu_executor(qubit_count)
+    return executor.execute_circuit_gpu_resident(state, operations)
 
 
 def clear_matrix_cache():
