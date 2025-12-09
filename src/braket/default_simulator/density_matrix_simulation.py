@@ -154,7 +154,6 @@ class DensityMatrixSimulation(Simulation):
         if not operations:
             return state
         
-        has_kraus = any(isinstance(op, KrausOperation) for op in operations)
         has_controls = any(
             isinstance(op, (GateOperation, Observable)) and len(op.control_state) > 0
             for op in operations
@@ -163,7 +162,6 @@ class DensityMatrixSimulation(Simulation):
         use_gpu = (
             _GPU_AVAILABLE and 
             qubit_count >= _DM_GPU_QUBIT_THRESHOLD and 
-            not has_kraus and
             not has_controls
         )
         

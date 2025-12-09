@@ -64,9 +64,10 @@ def apply_operations(
     - Multi-stream pipelining for independent qubit operations
     - Shared memory tiling for matrix and state data
     """
-    MIN_GPU_QUBITS = 10
-    MIN_GPU_STATE_SIZE = 2**10
-    MIN_OPS_FOR_GPU = 10
+    # GPU only beneficial for large state vectors
+    MIN_GPU_QUBITS = 18
+    MIN_GPU_STATE_SIZE = 2**18  # ~262K amplitudes
+    MIN_OPS_FOR_GPU = 100
     
     memory_info = _check_gpu_memory_availability(state.size)
     use_gpu = (

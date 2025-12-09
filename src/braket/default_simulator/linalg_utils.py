@@ -53,9 +53,10 @@ _NO_CONTROL_SLICE = slice(None)
 BASIS_MAPPING = {0: (0, 0), 1: (0, 1), 2: (1, 0), 3: (1, 1)}
 
 _QUBIT_THRESHOLD = nb.int32(10)
-_GPU_QUBIT_THRESHOLD = 12
+# GPU only beneficial for large state vectors - CPU wins for smaller circuits
+_GPU_QUBIT_THRESHOLD = 18
 _HIGH_PERFORMANCE_QUBIT_THRESHOLD = 22
-_MIN_GPU_WORK_SIZE = 4096
+_MIN_GPU_WORK_SIZE = 2**18  # ~262K elements minimum for GPU
 _OPTIMAL_THREADS_PER_BLOCK = 512
 _MAX_BLOCKS_PER_GRID = 65535
 

@@ -70,11 +70,13 @@ class StateVectorSimulation(Simulation):
         self._rng_generator = np.random.default_rng()
 
     def evolve(self, operations: list[GateOperation]) -> None:
+        # GPU only beneficial for large state vectors (18+ qubits, 100+ ops)
         use_gpu = (
             _GPU_AVAILABLE
             and self._batch_size == 1
+            and self._qubit_count >= 18
             and _should_use_gpu(2**self._qubit_count, self._qubit_count)
-            and len(operations) >= 10
+            and len(operations) >= 100
         )
         
         if use_gpu:

@@ -59,15 +59,17 @@ _PERSISTENT_KERNEL_BATCH_SIZE = 64
 _BUFFER_POOL_SIZE = 8
 _MAX_PARAM_BUFFER_SIZE = 4096
 
-_MIN_GPU_QUBITS = 10
-_MIN_GPU_STATE_SIZE = 2**10
-_MIN_OPS_FOR_GPU = 10
+_MIN_GPU_QUBITS = 18
+_MIN_GPU_STATE_SIZE = 2**18
+_MIN_OPS_FOR_GPU = 100
+
+_MIN_DM_GPU_QUBITS = 8
+_MIN_DM_GPU_SIZE = 2**16
 
 _INV_SQRT2 = 1.0 / np.sqrt(2.0)
 _S_PHASE = 1j
 _T_PHASE = np.exp(1j * np.pi / 4)
 
-# Identity matrix for comparisons
 _IDENTITY_2x2 = np.eye(2, dtype=np.complex128)
 _IDENTITY_4x4 = np.eye(4, dtype=np.complex128)
 
@@ -462,6 +464,9 @@ def optimize_circuit(operations: list, qubit_count: int) -> list:
     if not operations:
         return operations
     
+    if len(operations) < 10:
+        return operations
+    
     optimizer = get_circuit_optimizer()
     fuser = get_gate_fuser()
     
@@ -615,7 +620,6 @@ class GPUStateVector:
             self._gpu_state = cuda.to_device(state_contiguous, stream=self._stream)
         
         self._gpu_temp = cuda.device_array_like(self._gpu_state, stream=self._stream)
-        self._stream.synchronize()
         self._on_gpu = True
     
     @property
@@ -1170,86 +1174,18 @@ class OptimizedGPUExecutor:
         self, state: np.ndarray, operations: list[GateOperation], optimize: bool = True
     ) -> GPUStateVector:
         """
-        Execute circuit with pipelined parameter uploads.
+        Execute circuit with pipelined execution.
         
         Args:
             state: Initial state vector
             operations: List of gate operations
             optimize: Whether to apply circuit optimization (default True)
         
-        Uses double buffering to overlap parameter preparation with execution.
+        Note: This now uses the same execution path as execute_circuit_gpu_resident
+        since individual kernel launches are actually faster than persistent kernels
+        due to race condition issues and modern GPU kernel launch overhead (~5-10us).
         """
-        if not operations:
-            return GPUStateVector(state, self.qubit_count)
-
-        if optimize and len(operations) >= 2:
-            operations = optimize_circuit(operations, self.qubit_count)
-
-        gpu_sv = GPUStateVector(state, self.qubit_count)
-        main_stream = gpu_sv.stream
-        upload_stream = self._streams[0]
-        
-        current_buffer = gpu_sv.gpu_buffer
-        temp_buffer = gpu_sv.temp_buffer
-
-        batches = self._create_mega_batches(operations)
-        
-        next_params = None
-        if batches:
-            next_params = self._prepare_batch_params_async(
-                batches[0][0], batches[0][1], upload_stream
-            )
-        
-        for i, (batch_type, batch_ops) in enumerate(batches):
-            current_params = next_params
-            
-            if i + 1 < len(batches):
-                next_params = self._prepare_batch_params_async(
-                    batches[i + 1][0], batches[i + 1][1], upload_stream
-                )
-            else:
-                next_params = None
-            
-            if batch_type == 'single_qubit_batch' and current_params is not None:
-                upload_stream.synchronize()
-                state_flat = current_buffer.reshape(-1)
-                temp_flat = temp_buffer.reshape(-1)
-                half_size = current_buffer.size >> 1
-                blocks, threads = _get_optimal_config(half_size)
-                
-                _persistent_single_qubit_kernel[blocks, threads, main_stream](
-                    state_flat, temp_flat, current_params, len(batch_ops), half_size
-                )
-                current_buffer, temp_buffer = temp_buffer, current_buffer
-                
-            elif batch_type == 'diagonal_batch' and current_params is not None:
-                upload_stream.synchronize()
-                state_flat = current_buffer.reshape(-1)
-                total_size = current_buffer.size
-                blocks, threads = _get_optimal_config(total_size)
-                
-                _persistent_diagonal_kernel[blocks, threads, main_stream](
-                    state_flat, current_params, len(batch_ops), total_size
-                )
-                
-            elif batch_type == 'two_qubit':
-                for op in batch_ops:
-                    needs_swap = self._apply_operation(op, current_buffer, temp_buffer, main_stream)
-                    if needs_swap:
-                        current_buffer, temp_buffer = temp_buffer, current_buffer
-                        
-            elif batch_type == 'controlled':
-                for op in batch_ops:
-                    needs_swap = self._apply_operation(op, current_buffer, temp_buffer, main_stream)
-                    if needs_swap:
-                        current_buffer, temp_buffer = temp_buffer, current_buffer
-        
-        main_stream.synchronize()
-        
-        if current_buffer is not gpu_sv.gpu_buffer:
-            gpu_sv.swap_buffers()
-        
-        return gpu_sv
+        return self.execute_circuit_gpu_resident(state, operations, optimize)
     
     def _create_mega_batches(self, operations: list) -> list[tuple[str, list]]:
         """
@@ -1260,7 +1196,12 @@ class OptimizedGPUExecutor:
         - Consecutive diagonal gates (any qubit) -> diagonal_batch (commute!)
         - Two-qubit gates -> two_qubit
         - Controlled gates -> controlled
+        
+        For small circuits (< 50 ops), skip batching overhead and process directly.
         """
+        if len(operations) < 50:
+            return self._create_simple_batches(operations)
+        
         batches = []
         current_batch_type = None
         current_batch = []
@@ -1273,7 +1214,6 @@ class OptimizedGPUExecutor:
             actual_targets = targets[num_ctrl:]
             controls = targets[:num_ctrl]
             
-            # Determine operation type
             if controls:
                 op_type = 'controlled'
             elif len(actual_targets) == 2:
@@ -1284,31 +1224,68 @@ class OptimizedGPUExecutor:
             else:
                 op_type = 'controlled'
             
-            # Diagonal gates can always be batched together (they commute)
-            # Single-qubit non-diagonal gates can be batched if on different qubits
             if op_type == current_batch_type:
                 if op_type == 'diagonal_batch':
-                    # Diagonal gates always batch
                     current_batch.append(op)
                 elif op_type == 'single_qubit_batch':
-                    # Single-qubit batch - add to batch
                     current_batch.append(op)
                 else:
-                    # Two-qubit/controlled - flush and add
                     if current_batch:
                         batches.append((current_batch_type, current_batch))
                     current_batch = [op]
                     current_batch_type = op_type
             else:
-                # Type changed - flush current batch
                 if current_batch:
                     batches.append((current_batch_type, current_batch))
                 current_batch = [op]
                 current_batch_type = op_type
         
-        # Flush final batch
         if current_batch:
             batches.append((current_batch_type, current_batch))
+        
+        return batches
+    
+    def _create_simple_batches(self, operations: list) -> list[tuple[str, list]]:
+        """
+        Simple batching for small circuits - minimal overhead.
+        
+        Groups consecutive diagonal gates together (they commute and can use
+        the persistent diagonal kernel), but processes other gates individually.
+        """
+        batches = []
+        diagonal_batch = []
+        
+        for op in operations:
+            targets = op.targets
+            ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
+            gate_type = getattr(op, "gate_type", None)
+            num_ctrl = len(ctrl_modifiers)
+            actual_targets = targets[num_ctrl:]
+            controls = targets[:num_ctrl]
+            
+            is_single_qubit_diagonal = (
+                len(actual_targets) == 1 and 
+                not controls and 
+                gate_type and 
+                gate_type in DIAGONAL_GATES
+            )
+            
+            if is_single_qubit_diagonal:
+                diagonal_batch.append(op)
+            else:
+                if diagonal_batch:
+                    batches.append(('diagonal_batch', diagonal_batch))
+                    diagonal_batch = []
+                
+                if controls:
+                    batches.append(('controlled', [op]))
+                elif len(actual_targets) == 2:
+                    batches.append(('two_qubit', [op]))
+                else:
+                    batches.append(('single_qubit_batch', [op]))
+        
+        if diagonal_batch:
+            batches.append(('diagonal_batch', diagonal_batch))
         
         return batches
     
@@ -1362,7 +1339,6 @@ class OptimizedGPUExecutor:
         
         if len(layer) == 1:
             needs_swap = self._apply_operation(layer[0], state_gpu, temp_gpu, stream)
-            stream.synchronize()
             if needs_swap:
                 return temp_gpu, state_gpu
             return state_gpu, temp_gpu
@@ -1395,7 +1371,6 @@ class OptimizedGPUExecutor:
             if needs_swap:
                 current, temp = temp, current
         
-        stream.synchronize()
         return current, temp
     
     def _apply_fused_layer(
@@ -1406,49 +1381,30 @@ class OptimizedGPUExecutor:
         stream: cuda.stream,
     ) -> tuple:
         """
-        Apply a layer of independent single-qubit gates using fused kernel.
+        Apply a layer of independent single-qubit gates.
         
-        All gates are applied in a single kernel launch since they act on
-        different qubits. Uses pre-allocated buffer pool.
+        Since gates act on different qubits, we can apply them sequentially
+        without conflicts. Individual kernel launches are fast on modern GPUs.
         """
         if not ops:
             return state_gpu, temp_gpu
         
-        n_qubits = self.qubit_count
-        num_gates = len(ops)
-        total_size = state_gpu.size
-        param_size = num_gates * 4
+        current = state_gpu
+        temp = temp_gpu
         
-        params = np.zeros(param_size, dtype=np.complex128)
-        targets = np.zeros(num_gates, dtype=np.int32)
-        
-        for i, op in enumerate(ops):
+        for op in ops:
             matrix = op.matrix
             target = op.targets[0]
-            target_bit = n_qubits - target - 1
+            gate_type = getattr(op, "gate_type", None)
             
-            base = i * 4
-            params[base] = matrix[0, 0]
-            params[base + 1] = matrix[0, 1]
-            params[base + 2] = matrix[1, 0]
-            params[base + 3] = matrix[1, 1]
-            targets[i] = target_bit
+            needs_swap = self._apply_single_qubit(current, temp, matrix, target, gate_type, stream)
+            if needs_swap:
+                current, temp = temp, current
         
-        params_gpu = self.buffer_pool.get_param_buffer(param_size, stream)
-        params_gpu[:param_size].copy_to_device(params, stream=stream)
-        targets_gpu = cuda.to_device(targets, stream=stream)
-        
-        state_flat = state_gpu.reshape(-1)
-        temp_flat = temp_gpu.reshape(-1)
-        
-        blocks, threads = _get_optimal_config(total_size)
-        
-        _fused_layer_kernel[blocks, threads, stream](
-            state_flat, temp_flat, params_gpu, targets_gpu,
-            num_gates, total_size, n_qubits
-        )
-        
-        return temp_gpu, state_gpu
+        if current is state_gpu:
+            return state_gpu, temp_gpu
+        else:
+            return temp_gpu, state_gpu
     
     def _apply_single_qubit_batch(
         self,
@@ -1458,54 +1414,36 @@ class OptimizedGPUExecutor:
         stream: cuda.stream,
     ) -> tuple:
         """
-        Apply a batch of single-qubit gates using persistent kernel.
+        Apply a batch of single-qubit gates.
         
-        This processes ALL gates in the batch with a single kernel launch,
-        dramatically reducing kernel launch overhead for circuits like QFT.
-        Uses pre-allocated buffer pool to reduce allocation overhead.
+        Launches individual kernels per gate - this is actually faster than
+        the "persistent" kernel approach because it avoids race conditions
+        and memory conflicts. Modern GPU kernel launch overhead is ~5-10us.
         """
         if not ops:
             return state_gpu, temp_gpu
         
-        n_qubits = self.qubit_count
-        half_size = state_gpu.size >> 1
-        num_gates = len(ops)
-        param_size = num_gates * 6
+        current = state_gpu
+        temp = temp_gpu
         
-        params = np.zeros(param_size, dtype=np.complex128)
-        
-        for i, op in enumerate(ops):
+        for op in ops:
             if isinstance(op, _FusedOperation):
                 matrix = op.matrix
                 target = op.target
+                gate_type = 'fused'
             else:
                 matrix = op.matrix
                 target = op.targets[0]
+                gate_type = getattr(op, "gate_type", None)
             
-            target_bit = n_qubits - target - 1
-            mask = (1 << target_bit) - 1
-            
-            base = i * 6
-            params[base] = matrix[0, 0]
-            params[base + 1] = matrix[0, 1]
-            params[base + 2] = matrix[1, 0]
-            params[base + 3] = matrix[1, 1]
-            params[base + 4] = complex(target_bit, 0)
-            params[base + 5] = complex(mask, 0)
+            needs_swap = self._apply_single_qubit(current, temp, matrix, target, gate_type, stream)
+            if needs_swap:
+                current, temp = temp, current
         
-        params_gpu = self.buffer_pool.get_param_buffer(param_size, stream)
-        params_gpu[:param_size].copy_to_device(params, stream=stream)
-        
-        state_flat = state_gpu.reshape(-1)
-        temp_flat = temp_gpu.reshape(-1)
-        
-        blocks, threads = _get_optimal_config(half_size)
-        
-        _persistent_single_qubit_kernel[blocks, threads, stream](
-            state_flat, temp_flat, params_gpu, num_gates, half_size
-        )
-        
-        return temp_gpu, state_gpu
+        if current is state_gpu:
+            return state_gpu, temp_gpu
+        else:
+            return temp_gpu, state_gpu
     
     def _apply_diagonal_batch_inplace(
         self,
@@ -1544,8 +1482,7 @@ class OptimizedGPUExecutor:
             params[base + 1] = matrix[1, 1]
             params[base + 2] = complex(target_bit, 0)
         
-        params_gpu = self.buffer_pool.get_param_buffer(param_size, stream)
-        params_gpu[:param_size].copy_to_device(params, stream=stream)
+        params_gpu = cuda.to_device(np.ascontiguousarray(params), stream=stream)
         state_flat = state_gpu.reshape(-1)
         
         blocks, threads = _get_optimal_config(total_size)
@@ -1573,11 +1510,9 @@ class OptimizedGPUExecutor:
             """Flush pending diagonal gates as batched operation."""
             if not pending_diagonal:
                 return
-            # Combine all diagonal gates into single batch
             all_targets = []
             all_phases = []
             for target, phase_list in pending_diagonal.items():
-                # Multiply all phases for this target
                 combined_phase = 1.0 + 0j
                 for _, phase1 in phase_list:
                     combined_phase *= phase1
@@ -1591,13 +1526,11 @@ class OptimizedGPUExecutor:
             """Flush pending non-diagonal gates as fused operations."""
             for target, matrices in pending_nondiag.items():
                 if len(matrices) >= _FUSION_THRESHOLD:
-                    # Fuse matrices via multiplication
                     fused_matrix = matrices[0]
                     for m in matrices[1:]:
                         fused_matrix = m @ fused_matrix
                     fused.append(_FusedOperation(target, fused_matrix, is_diagonal=False))
                 else:
-                    # Not enough to fuse, emit individually
                     fused.extend(_FusedOperation(target, m, is_diagonal=False) for m in matrices)
             pending_nondiag.clear()
         
@@ -1606,29 +1539,23 @@ class OptimizedGPUExecutor:
             ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
             gate_type = getattr(op, "gate_type", None)
             
-            # Only fuse single-qubit gates without controls
             if len(targets) == 1 and len(ctrl_modifiers) == 0:
                 target = targets[0]
                 matrix = op.matrix
                 is_diagonal = gate_type and gate_type in DIAGONAL_GATES
                 
                 if is_diagonal:
-                    # Flush non-diagonal first (order matters)
                     flush_nondiag()
-                    # Accumulate diagonal gate
                     phase0, phase1 = matrix[0, 0], matrix[1, 1]
                     if target not in pending_diagonal:
                         pending_diagonal[target] = []
                     pending_diagonal[target].append((phase0, phase1))
                 else:
-                    # Flush diagonal first
                     flush_diagonal()
-                    # Accumulate non-diagonal gate
                     if target not in pending_nondiag:
                         pending_nondiag[target] = []
                     pending_nondiag[target].append(matrix)
                     
-                    # Flush if we hit threshold
                     if len(pending_nondiag[target]) >= 8:
                         matrices = pending_nondiag[target]
                         fused_matrix = matrices[0]
@@ -1637,12 +1564,10 @@ class OptimizedGPUExecutor:
                         fused.append(_FusedOperation(target, fused_matrix, is_diagonal=False))
                         del pending_nondiag[target]
             else:
-                # Multi-qubit or controlled gate - flush pending and pass through
                 flush_diagonal()
                 flush_nondiag()
                 fused.append(op)
         
-        # Final flush
         flush_diagonal()
         flush_nondiag()
         
@@ -3150,20 +3075,21 @@ class OptimizedDensityMatrixExecutor:
         
         gpu_temp = cuda.device_array_like(gpu_dm, stream=self._stream)
         
-        # Fine-grained sync with events
-        self._events['transfer_done'].record(self._stream)
-        self._events['transfer_done'].wait(self._stream)
-        
         current = gpu_dm
         temp = gpu_temp
+        gpu_accum = None
         
         for op in operations:
-            needs_swap = self._apply_gate_to_dm(op, current, temp)
-            if needs_swap:
-                current, temp = temp, current
+            if hasattr(op, 'matrices'):
+                if gpu_accum is None:
+                    gpu_accum = cuda.device_array_like(gpu_dm, stream=self._stream)
+                current = self._apply_kraus_to_dm(op, current, temp, gpu_accum)
+            else:
+                needs_swap = self._apply_gate_to_dm(op, current, temp)
+                if needs_swap:
+                    current, temp = temp, current
         
-        self._events['compute_done'].record(self._stream)
-        self._events['compute_done'].wait(self._stream)
+        self._stream.synchronize()
         
         if use_pinned:
             result = np.empty_like(dm_contiguous)
@@ -3237,6 +3163,109 @@ class OptimizedDensityMatrixExecutor:
             return True
         
         return False
+    
+    def _apply_kraus_to_dm(
+        self,
+        op,
+        dm_gpu: cuda.devicearray.DeviceNDArray,
+        temp_gpu: cuda.devicearray.DeviceNDArray,
+        accum_gpu: cuda.devicearray.DeviceNDArray,
+    ) -> cuda.devicearray.DeviceNDArray:
+        """
+        Apply Kraus operation to density matrix: ρ → Σ_i E_i ρ E_i†
+        
+        Returns the buffer containing the result.
+        """
+        matrices = op.matrices
+        targets = op.targets
+        n = self.qubit_count
+        dim = 1 << n
+        total_size = dim * dim
+        
+        blocks, threads = _get_optimal_config(total_size)
+        _zero_buffer_kernel[blocks, threads, self._stream](accum_gpu.reshape(-1), total_size)
+        
+        for matrix in matrices:
+            if len(targets) == 1:
+                target = targets[0]
+                target_bit = n - target - 1
+                quarter_size = total_size >> 2
+                
+                blocks, threads = _get_optimal_config(quarter_size)
+                
+                a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+                a_conj, b_conj = np.conj(a), np.conj(b)
+                c_conj, d_conj = np.conj(c), np.conj(d)
+                
+                _dm_single_qubit_kernel[blocks, threads, self._stream](
+                    dm_gpu.reshape(-1), temp_gpu.reshape(-1),
+                    a, b, c, d,
+                    a_conj, b_conj, c_conj, d_conj,
+                    target_bit, n, total_size
+                )
+            elif len(targets) == 2:
+                target0, target1 = targets[0], targets[1]
+                row_mask_0 = 1 << (n - 1 - target0)
+                row_mask_1 = 1 << (n - 1 - target1)
+                col_mask_0 = row_mask_0
+                col_mask_1 = row_mask_1
+                sixteenth_size = total_size >> 4
+                
+                blocks, threads = _get_optimal_config(sixteenth_size)
+                
+                cache_key = f"kraus_{hash(matrix.tobytes())}"
+                matrix_gpu = self.matrix_cache.get_or_upload(matrix, cache_key)
+                
+                matrix_conj = np.conj(matrix)
+                cache_key_conj = f"kraus_conj_{hash(matrix_conj.tobytes())}"
+                matrix_conj_gpu = self.matrix_cache.get_or_upload(matrix_conj, cache_key_conj)
+                
+                _dm_two_qubit_kernel[blocks, threads, self._stream](
+                    dm_gpu.reshape(-1), temp_gpu.reshape(-1),
+                    matrix_gpu, matrix_conj_gpu,
+                    row_mask_0, row_mask_1, col_mask_0, col_mask_1,
+                    n, total_size
+                )
+            else:
+                raise NotImplementedError(f"GPU Kraus for {len(targets)} qubits not implemented")
+            
+            blocks, threads = _get_optimal_config(total_size)
+            _add_buffers_kernel[blocks, threads, self._stream](
+                accum_gpu.reshape(-1), temp_gpu.reshape(-1), total_size
+            )
+        
+        _copy_buffer_kernel[blocks, threads, self._stream](
+            dm_gpu.reshape(-1), accum_gpu.reshape(-1), total_size
+        )
+        
+        return dm_gpu
+
+
+@cuda.jit(fastmath=True)
+def _zero_buffer_kernel(buf, size):
+    """Zero out a buffer."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    for i in range(idx, size, stride):
+        buf[i] = 0j
+
+
+@cuda.jit(fastmath=True)
+def _add_buffers_kernel(dst, src, size):
+    """Add src to dst: dst += src"""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    for i in range(idx, size, stride):
+        dst[i] = dst[i] + src[i]
+
+
+@cuda.jit(fastmath=True)
+def _copy_buffer_kernel(dst, src, size):
+    """Copy src to dst."""
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    for i in range(idx, size, stride):
+        dst[i] = src[i]
 
 
 @cuda.jit(fastmath=True)
@@ -3402,8 +3431,12 @@ def apply_dm_operations_optimized(
     
     This keeps the density matrix on GPU throughout circuit execution,
     avoiding per-operation host↔device transfers.
+    
+    Note: Density matrix is 2^n × 2^n = 2^(2n) elements, so GPU is
+    beneficial at lower qubit counts than state vector simulation.
     """
-    if not _GPU_AVAILABLE or qubit_count < 6 or density_matrix.size < 256:
+    # DM size = 2^(2n), so 8 qubits = 2^16 = 65K elements
+    if not _GPU_AVAILABLE or qubit_count < _MIN_DM_GPU_QUBITS or density_matrix.size < _MIN_DM_GPU_SIZE:
         return None
     
     executor = get_dm_executor(qubit_count)
