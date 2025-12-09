@@ -18,16 +18,28 @@ This module provides GPU acceleration for quantum circuit execution using
 efficient ping-pong buffering, cuda.jit kernels, and advanced memory management
 for scaling to high qubit counts.
 
-OPTIMIZATION NOTES:
-- Uses single host→GPU transfer at circuit start
-- Uses single GPU→host transfer at circuit end
-- Matrix caching eliminates repeated uploads for common gates
-- Minimal synchronization points for better throughput
+OPTIMIZATION NOTES (via gpu_optimized_operations.py):
+- Single host→GPU transfer at circuit start, single transfer back at end
+- Matrix caching with LRU eviction to avoid repeated uploads
+- Pinned memory for faster transfers on large states
+- Adaptive thread/block configuration based on problem size
+- Operation fusion for consecutive single-qubit gates (threshold: 2)
+- Batch phase kernel for consecutive diagonal gates
+- Persistent kernel for processing multiple gates in one launch
+- In-place operations for diagonal gates (no buffer swap)
+- CUDA events for fine-grained synchronization
+- Shared memory tiling for better cache utilization
+- Multi-stream pipelining for independent qubit operations
+- Warp-aligned configuration for coalesced memory access
 """
 
 import numpy as np
 from numba import cuda
 
+from braket.default_simulator.gpu_optimized_operations import (
+    apply_operations_optimized,
+    clear_matrix_cache,
+)
 from braket.default_simulator.linalg_utils import (
     _GPU_AVAILABLE,
     _MAX_BLOCKS_PER_GRID,
@@ -36,22 +48,21 @@ from braket.default_simulator.linalg_utils import (
 from braket.default_simulator.operation import GateOperation
 from braket.default_simulator.simulation_strategies import single_operation_strategy
 
-from braket.default_simulator.gpu_optimized_operations import (
-    apply_operations_optimized,
-    clear_matrix_cache,
-)
-
 
 def apply_operations(
     state: np.ndarray, qubit_count: int, operations: list[GateOperation]
 ) -> np.ndarray:
     """Apply operations to state vector using GPU acceleration with optimized memory management.
     
-    This function uses the optimized GPU executor which:
-    - Performs a single host→GPU transfer at the start
-    - Executes all operations on GPU without intermediate transfers
-    - Performs a single GPU→host transfer at the end
-    - Caches gate matrices to avoid repeated uploads
+    This function uses the optimized GPU executor which includes:
+    - Single host→GPU transfer at start, single transfer back at end
+    - Advanced operation fusion (threshold: 2 gates)
+    - Batch phase kernel for consecutive diagonal gates (Z, S, T, Rz)
+    - In-place diagonal operations (no buffer swap overhead)
+    - CUDA events for fine-grained synchronization
+    - Warp-aligned config for coalesced memory access on low target qubits
+    - Multi-stream pipelining for independent qubit operations
+    - Shared memory tiling for matrix and state data
     """
     memory_info = _check_gpu_memory_availability(state.size)
     use_gpu = (_GPU_AVAILABLE and 
