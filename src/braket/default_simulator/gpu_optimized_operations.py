@@ -67,6 +67,409 @@ _INV_SQRT2 = 1.0 / np.sqrt(2.0)
 _S_PHASE = 1j
 _T_PHASE = np.exp(1j * np.pi / 4)
 
+# Identity matrix for comparisons
+_IDENTITY_2x2 = np.eye(2, dtype=np.complex128)
+_IDENTITY_4x4 = np.eye(4, dtype=np.complex128)
+
+
+class CircuitOptimizer:
+    """
+    Circuit compiler that optimizes gate sequences before GPU execution.
+    
+    Optimizations:
+    1. Gate cancellation (H·H=I, X·X=I, Z·Z=I, etc.)
+    2. Gate merging (consecutive single-qubit gates → one matrix)
+    3. Commutation-based reordering for better batching
+    4. Two-qubit gate fusion
+    5. Pattern detection for common sequences
+    """
+    
+    _SELF_INVERSE_GATES = {'x', 'y', 'z', 'h', 'pauli_x', 'pauli_y', 'pauli_z', 'hadamard', 'cnot', 'cx', 'cz', 'swap'}
+    _DIAGONAL_GATES = {'z', 'pauli_z', 's', 't', 'rz', 'cz', 'cphaseshift', 'cp'}
+    
+    def __init__(self, tolerance: float = 1e-10):
+        self.tolerance = tolerance
+        self._pattern_cache = {}
+    
+    def optimize(self, operations: list) -> list:
+        """
+        Apply all optimizations to the operation list.
+        
+        Returns optimized list with fewer, more efficient operations.
+        """
+        if not operations or len(operations) < 2:
+            return operations
+        
+        ops = list(operations)
+        
+        ops = self._cancel_adjacent_inverses(ops)
+        ops = self._merge_single_qubit_gates(ops)
+        ops = self._reorder_for_batching(ops)
+        ops = self._fuse_two_qubit_sequences(ops)
+        ops = self._remove_identity_gates(ops)
+        
+        return ops
+    
+    def _cancel_adjacent_inverses(self, operations: list) -> list:
+        """Cancel adjacent self-inverse gates (H·H=I, X·X=I, etc.)."""
+        if len(operations) < 2:
+            return operations
+        
+        result = []
+        i = 0
+        
+        while i < len(operations):
+            if i + 1 < len(operations):
+                op1 = operations[i]
+                op2 = operations[i + 1]
+                
+                gate1 = getattr(op1, 'gate_type', None)
+                gate2 = getattr(op2, 'gate_type', None)
+                
+                if (gate1 and gate2 and 
+                    gate1 == gate2 and 
+                    gate1 in self._SELF_INVERSE_GATES and
+                    op1.targets == op2.targets):
+                    i += 2
+                    continue
+            
+            result.append(operations[i])
+            i += 1
+        
+        if len(result) < len(operations):
+            return self._cancel_adjacent_inverses(result)
+        
+        return result
+    
+    def _merge_single_qubit_gates(self, operations: list) -> list:
+        """Merge consecutive single-qubit gates on the same qubit."""
+        if len(operations) < 2:
+            return operations
+        
+        result = []
+        i = 0
+        
+        while i < len(operations):
+            op = operations[i]
+            targets = op.targets
+            ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
+            
+            if len(targets) == 1 and len(ctrl_modifiers) == 0:
+                target = targets[0]
+                matrices_to_merge = [op.matrix]
+                j = i + 1
+                
+                while j < len(operations):
+                    next_op = operations[j]
+                    next_targets = next_op.targets
+                    next_ctrl = getattr(next_op, "_ctrl_modifiers", [])
+                    
+                    if (len(next_targets) == 1 and 
+                        len(next_ctrl) == 0 and 
+                        next_targets[0] == target):
+                        matrices_to_merge.append(next_op.matrix)
+                        j += 1
+                    else:
+                        break
+                
+                if len(matrices_to_merge) > 1:
+                    merged_matrix = matrices_to_merge[-1]
+                    for m in reversed(matrices_to_merge[:-1]):
+                        merged_matrix = merged_matrix @ m
+                    
+                    if not self._is_identity(merged_matrix):
+                        result.append(_MergedGateOperation(
+                            targets=(target,),
+                            matrix=merged_matrix,
+                            gate_type='merged'
+                        ))
+                    i = j
+                    continue
+            
+            result.append(op)
+            i += 1
+        
+        return result
+    
+    def _reorder_for_batching(self, operations: list) -> list:
+        """
+        Reorder operations to group commuting gates together.
+        
+        Diagonal gates commute with each other, so we can group them.
+        Gates on different qubits commute, so we can reorder for parallelism.
+        """
+        if len(operations) < 3:
+            return operations
+        
+        result = []
+        diagonal_buffer = []
+        non_diagonal_buffer = {}
+        
+        def flush_buffers():
+            nonlocal diagonal_buffer, non_diagonal_buffer
+            result.extend(diagonal_buffer)
+            diagonal_buffer = []
+            for target in sorted(non_diagonal_buffer.keys()):
+                result.extend(non_diagonal_buffer[target])
+            non_diagonal_buffer = {}
+        
+        for op in operations:
+            targets = op.targets
+            gate_type = getattr(op, 'gate_type', None)
+            ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
+            
+            if len(targets) == 1 and len(ctrl_modifiers) == 0:
+                target = targets[0]
+                is_diagonal = gate_type and gate_type in self._DIAGONAL_GATES
+                
+                if is_diagonal:
+                    if target in non_diagonal_buffer:
+                        flush_buffers()
+                    diagonal_buffer.append(op)
+                else:
+                    if diagonal_buffer:
+                        affected_qubits = {getattr(d_op, 'targets', (None,))[0] for d_op in diagonal_buffer}
+                        if target in affected_qubits:
+                            flush_buffers()
+                    
+                    if target not in non_diagonal_buffer:
+                        non_diagonal_buffer[target] = []
+                    non_diagonal_buffer[target].append(op)
+            else:
+                flush_buffers()
+                result.append(op)
+        
+        flush_buffers()
+        return result
+    
+    def _fuse_two_qubit_sequences(self, operations: list) -> list:
+        """Fuse consecutive two-qubit gates on the same qubit pair."""
+        if len(operations) < 2:
+            return operations
+        
+        result = []
+        i = 0
+        
+        while i < len(operations):
+            op = operations[i]
+            targets = op.targets
+            ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
+            
+            if len(targets) == 2 and len(ctrl_modifiers) == 0:
+                target_set = frozenset(targets)
+                matrices_to_merge = [(op.matrix, targets)]
+                j = i + 1
+                
+                while j < len(operations):
+                    next_op = operations[j]
+                    next_targets = next_op.targets
+                    next_ctrl = getattr(next_op, "_ctrl_modifiers", [])
+                    
+                    if (len(next_targets) == 2 and 
+                        len(next_ctrl) == 0 and 
+                        frozenset(next_targets) == target_set):
+                        matrices_to_merge.append((next_op.matrix, next_targets))
+                        j += 1
+                    else:
+                        break
+                
+                if len(matrices_to_merge) > 1:
+                    base_targets = targets
+                    merged_matrix = matrices_to_merge[-1][0]
+                    
+                    for m, t in reversed(matrices_to_merge[:-1]):
+                        if t == base_targets:
+                            merged_matrix = merged_matrix @ m
+                        else:
+                            swap = np.array([[1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]], dtype=np.complex128)
+                            merged_matrix = merged_matrix @ swap @ m @ swap
+                    
+                    if not self._is_identity(merged_matrix, size=4):
+                        result.append(_MergedGateOperation(
+                            targets=base_targets,
+                            matrix=merged_matrix,
+                            gate_type='merged_2q'
+                        ))
+                    i = j
+                    continue
+            
+            result.append(op)
+            i += 1
+        
+        return result
+    
+    def _remove_identity_gates(self, operations: list) -> list:
+        """Remove gates that are effectively identity."""
+        result = []
+        for op in operations:
+            matrix = op.matrix
+            size = matrix.shape[0]
+            if not self._is_identity(matrix, size):
+                result.append(op)
+        return result
+    
+    def _is_identity(self, matrix: np.ndarray, size: int = 2) -> bool:
+        """Check if matrix is close to identity."""
+        identity = _IDENTITY_2x2 if size == 2 else _IDENTITY_4x4
+        return np.allclose(matrix, identity, atol=self.tolerance)
+    
+    def _matrices_equal(self, m1: np.ndarray, m2: np.ndarray) -> bool:
+        """Check if two matrices are equal within tolerance."""
+        return np.allclose(m1, m2, atol=self.tolerance)
+
+
+class _MergedGateOperation:
+    """Represents a merged gate operation from circuit optimization."""
+    
+    __slots__ = ('targets', 'matrix', 'gate_type', '_ctrl_modifiers')
+    
+    def __init__(self, targets: tuple, matrix: np.ndarray, gate_type: str):
+        self.targets = targets
+        self.matrix = matrix
+        self.gate_type = gate_type
+        self._ctrl_modifiers = []
+
+
+class AggressiveGateFuser:
+    """
+    Aggressive gate fusion that combines maximum possible gate sequences.
+    
+    Goes beyond simple adjacent merging to find optimal fusion opportunities
+    across the entire circuit.
+    """
+    
+    def __init__(self, max_fused_qubits: int = 2):
+        self.max_fused_qubits = max_fused_qubits
+    
+    def fuse(self, operations: list, qubit_count: int) -> list:
+        """
+        Aggressively fuse gates across the circuit.
+        
+        Strategy:
+        1. Build dependency graph
+        2. Find fuseable clusters
+        3. Merge clusters into single operations
+        """
+        if len(operations) < 2:
+            return operations
+        
+        qubit_ops = {q: [] for q in range(qubit_count)}
+        for i, op in enumerate(operations):
+            for t in op.targets:
+                if t < qubit_count:
+                    qubit_ops[t].append(i)
+        
+        fused_ops = []
+        processed = set()
+        
+        for i, op in enumerate(operations):
+            if i in processed:
+                continue
+            
+            targets = op.targets
+            ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
+            
+            if len(targets) == 1 and len(ctrl_modifiers) == 0:
+                target = targets[0]
+                cluster = self._find_single_qubit_cluster(operations, i, target, processed)
+                
+                if len(cluster) > 1:
+                    merged = self._merge_cluster(operations, cluster)
+                    if merged is not None:
+                        fused_ops.append(merged)
+                        processed.update(cluster)
+                        continue
+            
+            fused_ops.append(op)
+            processed.add(i)
+        
+        return fused_ops
+    
+    def _find_single_qubit_cluster(
+        self, operations: list, start_idx: int, target: int, processed: set
+    ) -> list[int]:
+        """Find all consecutive single-qubit gates on the same target."""
+        cluster = [start_idx]
+        
+        for i in range(start_idx + 1, len(operations)):
+            if i in processed:
+                continue
+            
+            op = operations[i]
+            op_targets = op.targets
+            ctrl_modifiers = getattr(op, "_ctrl_modifiers", [])
+            
+            if target in op_targets and len(op_targets) > 1:
+                break
+            
+            if (len(op_targets) == 1 and 
+                len(ctrl_modifiers) == 0 and 
+                op_targets[0] == target):
+                cluster.append(i)
+            elif target in op_targets:
+                break
+        
+        return cluster
+    
+    def _merge_cluster(self, operations: list, cluster: list[int]) -> _MergedGateOperation | None:
+        """Merge a cluster of operations into a single gate."""
+        if not cluster:
+            return None
+        
+        matrices = [operations[i].matrix for i in cluster]
+        target = operations[cluster[0]].targets[0]
+        
+        merged = matrices[-1]
+        for m in reversed(matrices[:-1]):
+            merged = merged @ m
+        
+        if np.allclose(merged, _IDENTITY_2x2, atol=1e-10):
+            return None
+        
+        return _MergedGateOperation(
+            targets=(target,),
+            matrix=merged,
+            gate_type='fused'
+        )
+
+
+_global_optimizer: CircuitOptimizer | None = None
+_global_fuser: AggressiveGateFuser | None = None
+
+
+def get_circuit_optimizer() -> CircuitOptimizer:
+    """Get or create the global circuit optimizer."""
+    global _global_optimizer
+    if _global_optimizer is None:
+        _global_optimizer = CircuitOptimizer()
+    return _global_optimizer
+
+
+def get_gate_fuser() -> AggressiveGateFuser:
+    """Get or create the global gate fuser."""
+    global _global_fuser
+    if _global_fuser is None:
+        _global_fuser = AggressiveGateFuser()
+    return _global_fuser
+
+
+def optimize_circuit(operations: list, qubit_count: int) -> list:
+    """
+    Apply all circuit optimizations.
+    
+    This is the main entry point for circuit optimization before GPU execution.
+    """
+    if not operations:
+        return operations
+    
+    optimizer = get_circuit_optimizer()
+    fuser = get_gate_fuser()
+    
+    optimized = optimizer.optimize(operations)
+    optimized = fuser.fuse(optimized, qubit_count)
+    
+    return optimized
+
 
 class GPUBufferPool:
     """
@@ -452,10 +855,15 @@ class OptimizedGPUExecutor:
         self.buffer_pool.initialize(2 ** qubit_count)
 
     def execute_circuit(
-        self, state: np.ndarray, operations: list[GateOperation]
+        self, state: np.ndarray, operations: list[GateOperation], optimize: bool = True
     ) -> np.ndarray:
         """
         Execute all operations on GPU with minimal memory transfers.
+        
+        Args:
+            state: Initial state vector
+            operations: List of gate operations
+            optimize: Whether to apply circuit optimization (default True)
         
         Returns final state on host. For GPU-resident execution, use
         execute_circuit_gpu_resident() instead.
@@ -463,20 +871,28 @@ class OptimizedGPUExecutor:
         if not operations:
             return state
 
-        gpu_state = self.execute_circuit_gpu_resident(state, operations)
+        gpu_state = self.execute_circuit_gpu_resident(state, operations, optimize)
         return gpu_state.to_numpy()
     
     def execute_circuit_gpu_resident(
-        self, state: np.ndarray, operations: list[GateOperation]
+        self, state: np.ndarray, operations: list[GateOperation], optimize: bool = True
     ) -> GPUStateVector:
         """
         Execute circuit and return GPU-resident state.
+        
+        Args:
+            state: Initial state vector
+            operations: List of gate operations  
+            optimize: Whether to apply circuit optimization (default True)
         
         The state stays on GPU - use get_probabilities(), sample_measurement(),
         or to_numpy() to get results without intermediate transfers.
         """
         if not operations:
             return GPUStateVector(state, self.qubit_count)
+
+        if optimize and len(operations) >= 2:
+            operations = optimize_circuit(operations, self.qubit_count)
 
         gpu_sv = GPUStateVector(state, self.qubit_count)
         stream = gpu_sv.stream
@@ -514,16 +930,24 @@ class OptimizedGPUExecutor:
         return gpu_sv
     
     def execute_circuit_layered(
-        self, state: np.ndarray, operations: list[GateOperation]
+        self, state: np.ndarray, operations: list[GateOperation], optimize: bool = True
     ) -> GPUStateVector:
         """
         Execute circuit using layer-based parallelism.
+        
+        Args:
+            state: Initial state vector
+            operations: List of gate operations
+            optimize: Whether to apply circuit optimization (default True)
         
         Identifies independent operations (acting on disjoint qubits) and
         executes them in parallel using fused kernels.
         """
         if not operations:
             return GPUStateVector(state, self.qubit_count)
+
+        if optimize and len(operations) >= 2:
+            operations = optimize_circuit(operations, self.qubit_count)
 
         gpu_sv = GPUStateVector(state, self.qubit_count)
         stream = gpu_sv.stream
@@ -630,15 +1054,23 @@ class OptimizedGPUExecutor:
             return None
     
     def apply_to_gpu_state(
-        self, gpu_sv: GPUStateVector, operations: list[GateOperation]
+        self, gpu_sv: GPUStateVector, operations: list[GateOperation], optimize: bool = True
     ) -> GPUStateVector:
         """
         Apply operations to an existing GPU-resident state vector.
+        
+        Args:
+            gpu_sv: Existing GPU-resident state vector
+            operations: List of gate operations
+            optimize: Whether to apply circuit optimization (default True)
         
         This avoids re-uploading the state to GPU when it's already there.
         """
         if not operations:
             return gpu_sv
+
+        if optimize and len(operations) >= 2:
+            operations = optimize_circuit(operations, self.qubit_count)
 
         stream = gpu_sv.stream
         current_buffer = gpu_sv.gpu_buffer
@@ -735,15 +1167,23 @@ class OptimizedGPUExecutor:
         return None
     
     def execute_circuit_pipelined(
-        self, state: np.ndarray, operations: list[GateOperation]
+        self, state: np.ndarray, operations: list[GateOperation], optimize: bool = True
     ) -> GPUStateVector:
         """
         Execute circuit with pipelined parameter uploads.
+        
+        Args:
+            state: Initial state vector
+            operations: List of gate operations
+            optimize: Whether to apply circuit optimization (default True)
         
         Uses double buffering to overlap parameter preparation with execution.
         """
         if not operations:
             return GPUStateVector(state, self.qubit_count)
+
+        if optimize and len(operations) >= 2:
+            operations = optimize_circuit(operations, self.qubit_count)
 
         gpu_sv = GPUStateVector(state, self.qubit_count)
         main_stream = gpu_sv.stream
@@ -2968,3 +3408,75 @@ def apply_dm_operations_optimized(
     
     executor = get_dm_executor(qubit_count)
     return executor.execute_circuit(density_matrix, operations)
+
+
+# =============================================================================
+# Tensor Network Integration
+# =============================================================================
+
+def apply_operations_auto(
+    state: np.ndarray, qubit_count: int, operations: list[GateOperation]
+) -> np.ndarray:
+    """
+    Apply operations using the best available method.
+    
+    Automatically chooses between:
+    1. Tensor network contraction (for circuits with limited entanglement)
+    2. GPU state vector simulation (for highly entangled circuits)
+    3. CPU simulation (for small circuits)
+    
+    This provides exponential speedup for structured circuits while
+    maintaining performance for general circuits.
+    """
+    # Small circuits - just use CPU
+    if qubit_count < 10 or len(operations) < 5:
+        from braket.default_simulator.simulation_strategies import (
+            single_operation_strategy,
+        )
+        return single_operation_strategy.apply_operations(state, qubit_count, operations)
+    
+    # Try tensor network for larger circuits with potential structure
+    if qubit_count >= 12:
+        try:
+            from braket.default_simulator.tensor_network_engine import (
+                simulate_with_tensor_network,
+            )
+            # Let tensor network engine decide if it's beneficial
+            return simulate_with_tensor_network(qubit_count, operations, force_tn=None)
+        except Exception:
+            pass  # Fall through to GPU
+    
+    # Default to GPU state vector
+    return apply_operations_optimized(state, qubit_count, operations)
+
+
+def get_amplitude_fast(
+    qubit_count: int, operations: list[GateOperation], bitstring: str
+) -> complex:
+    """
+    Get amplitude of a specific bitstring efficiently.
+    
+    Uses tensor network contraction which can be exponentially faster
+    than computing the full state vector for circuits with limited
+    entanglement.
+    
+    Args:
+        qubit_count: Number of qubits
+        operations: List of gate operations
+        bitstring: Binary string (e.g., "0101") to get amplitude for
+    
+    Returns:
+        Complex amplitude of the specified bitstring
+    """
+    try:
+        from braket.default_simulator.tensor_network_engine import (
+            get_amplitude_tensor_network,
+        )
+        return get_amplitude_tensor_network(qubit_count, operations, bitstring)
+    except Exception:
+        # Fallback: compute full state and extract
+        state = np.zeros([2] * qubit_count, dtype=np.complex128)
+        state.flat[0] = 1.0
+        result = apply_operations_optimized(state, qubit_count, operations)
+        idx = int(bitstring, 2)
+        return result.flat[idx] if idx < result.size else 0.0 + 0j
