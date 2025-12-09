@@ -11,8 +11,9 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from __future__ import annotations
+
 import numpy as np
-import time
 
 from braket.default_simulator.operation import GateOperation, Observable
 from braket.default_simulator.simulation import Simulation
@@ -63,14 +64,33 @@ class StateVectorSimulation(Simulation):
         initial_state = np.zeros(2**qubit_count, dtype=complex)
         initial_state[0] = 1
         self._state_vector = initial_state
+        self._gpu_state = None
         self._batch_size = batch_size
         self._post_observables = None
         self._rng_generator = np.random.default_rng()
 
     def evolve(self, operations: list[GateOperation]) -> None:
-        self._state_vector = StateVectorSimulation._apply_operations(
-            self._state_vector, self._qubit_count, operations, self._batch_size
+        use_gpu = (
+            _GPU_AVAILABLE
+            and self._batch_size == 1
+            and _should_use_gpu(2**self._qubit_count, self._qubit_count)
+            and len(operations) >= 10
         )
+        
+        if use_gpu:
+            self._gpu_state = StateVectorSimulation._apply_operations_gpu_resident(
+                self._state_vector if self._gpu_state is None else self._gpu_state,
+                self._qubit_count,
+                operations,
+            )
+            self._state_vector = None
+        else:
+            if self._gpu_state is not None:
+                self._state_vector = self._gpu_state.to_numpy().reshape(2**self._qubit_count)
+                self._gpu_state = None
+            self._state_vector = StateVectorSimulation._apply_operations(
+                self._state_vector, self._qubit_count, operations, self._batch_size
+            )
 
     def apply_observables(self, observables: list[Observable]) -> None:
         """Applies the diagonalizing matrices of the given observables
@@ -92,8 +112,9 @@ class StateVectorSimulation(Simulation):
                 (),
             )
         )
+        sv = self.state_vector
         self._post_observables = StateVectorSimulation._apply_operations(
-            self._state_vector, self._qubit_count, operations, self._batch_size
+            sv, self._qubit_count, operations, self._batch_size
         )
 
     @staticmethod
@@ -101,16 +122,30 @@ class StateVectorSimulation(Simulation):
         state: np.ndarray, qubit_count: int, operations: list[GateOperation], batch_size: int
     ) -> np.ndarray:
         state_tensor = np.reshape(state, [2] * qubit_count)
-        if batch_size == 1 and _should_use_gpu(state.size, qubit_count):
-            final = gpu_single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
-        elif batch_size == 1:
+        if batch_size == 1:
             final = single_operation_strategy.apply_operations(state_tensor, qubit_count, operations)
         else:
             final = batch_operation_strategy.apply_operations(
                 state_tensor, qubit_count, operations, batch_size
             )
-        
         return np.reshape(final, 2**qubit_count)
+    
+    @staticmethod
+    def _apply_operations_gpu_resident(
+        state, qubit_count: int, operations: list[GateOperation]
+    ):
+        from braket.default_simulator.gpu_optimized_operations import (
+            GPUStateVector,
+            get_gpu_executor,
+        )
+        
+        if isinstance(state, GPUStateVector):
+            executor = get_gpu_executor(qubit_count)
+            return executor.apply_to_gpu_state(state, operations)
+        else:
+            state_tensor = np.reshape(state, [2] * qubit_count)
+            executor = get_gpu_executor(qubit_count)
+            return executor.execute_circuit_gpu_resident(state_tensor, operations)
 
     def retrieve_samples(self) -> np.ndarray:
         return np.searchsorted(
@@ -124,15 +159,22 @@ class StateVectorSimulation(Simulation):
 
         Note:
             Mutating this array will mutate the state of the simulation.
+            If state is on GPU, this triggers a transfer back to CPU.
         """
+        if self._gpu_state is not None:
+            self._state_vector = self._gpu_state.to_numpy().reshape(2**self._qubit_count)
+            self._gpu_state = None
         return self._state_vector
 
     @property
     def density_matrix(self) -> np.ndarray:
         """
         np.ndarray: The density matrix specifying the current state of the simulation.
+        
+        Note: This requires the full state vector, so will transfer from GPU if needed.
         """
-        return np.outer(self._state_vector, self._state_vector.conj())
+        sv = self.state_vector
+        return np.outer(sv, sv.conj())
 
     @property
     def state_with_observables(self) -> np.ndarray:
@@ -147,10 +189,11 @@ class StateVectorSimulation(Simulation):
         return self._post_observables
 
     def expectation(self, observable: Observable) -> float:
+        sv = self.state_vector
         qubit_count = self._qubit_count
-        with_observables = observable.apply(np.reshape(self._state_vector, [2] * qubit_count))
+        with_observables = observable.apply(np.reshape(sv, [2] * qubit_count))
         return complex(
-            np.dot(self._state_vector.conj(), np.reshape(with_observables, 2**qubit_count))
+            np.dot(sv.conj(), np.reshape(with_observables, 2**qubit_count))
         ).real
 
     @property
@@ -158,8 +201,12 @@ class StateVectorSimulation(Simulation):
         """
         np.ndarray: The probabilities of each computational basis state of the current state
             vector of the simulation.
+            
+        If state is on GPU, probabilities are computed on GPU (no full state transfer).
         """
-        return self._probabilities(self.state_vector)
+        if self._gpu_state is not None:
+            return self._gpu_state.get_probabilities()
+        return self._probabilities(self._state_vector)
 
     @staticmethod
     def _probabilities(state: np.ndarray) -> np.ndarray:

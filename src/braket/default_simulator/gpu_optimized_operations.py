@@ -307,6 +307,8 @@ class OptimizedGPUExecutor:
     5. In-place diagonal operations (no buffer swap)
     6. GPU-native probability/measurement computation
     7. Warp-aligned config for coalesced memory access
+    8. Multi-stream parallelism for independent operations
+    9. Asynchronous parameter uploads with double buffering
     """
 
     def __init__(self, qubit_count: int):
@@ -314,6 +316,9 @@ class OptimizedGPUExecutor:
         self.matrix_cache = GPUMatrixCache()
         self._gpu_state = None
         self._stream = None
+        self._streams = [cuda.stream() for _ in range(_NUM_STREAMS)]
+        self._param_buffers = [None, None]
+        self._current_param_buffer = 0
 
     def execute_circuit(
         self, state: np.ndarray, operations: list[GateOperation]
@@ -371,6 +376,220 @@ class OptimizedGPUExecutor:
                         current_buffer, temp_buffer = temp_buffer, current_buffer
         
         stream.synchronize()
+        
+        if current_buffer is not gpu_sv.gpu_buffer:
+            gpu_sv.swap_buffers()
+        
+        return gpu_sv
+    
+    def execute_circuit_layered(
+        self, state: np.ndarray, operations: list[GateOperation]
+    ) -> GPUStateVector:
+        """
+        Execute circuit using layer-based parallelism.
+        
+        Identifies independent operations (acting on disjoint qubits) and
+        executes them in parallel using fused kernels.
+        """
+        if not operations:
+            return GPUStateVector(state, self.qubit_count)
+
+        gpu_sv = GPUStateVector(state, self.qubit_count)
+        stream = gpu_sv.stream
+        
+        current_buffer = gpu_sv.gpu_buffer
+        temp_buffer = gpu_sv.temp_buffer
+
+        layers = self._extract_parallel_layers(operations)
+        
+        for layer in layers:
+            current_buffer, temp_buffer = self._execute_layer_parallel(
+                layer, current_buffer, temp_buffer, stream
+            )
+        
+        stream.synchronize()
+        
+        if current_buffer is not gpu_sv.gpu_buffer:
+            gpu_sv.swap_buffers()
+        
+        return gpu_sv
+    
+    def apply_to_gpu_state(
+        self, gpu_sv: GPUStateVector, operations: list[GateOperation]
+    ) -> GPUStateVector:
+        """
+        Apply operations to an existing GPU-resident state vector.
+        
+        This avoids re-uploading the state to GPU when it's already there.
+        """
+        if not operations:
+            return gpu_sv
+
+        stream = gpu_sv.stream
+        current_buffer = gpu_sv.gpu_buffer
+        temp_buffer = gpu_sv.temp_buffer
+
+        batches = self._create_mega_batches(operations)
+        
+        for batch in batches:
+            batch_type, batch_ops = batch
+            
+            if batch_type == 'single_qubit_batch':
+                current_buffer, temp_buffer = self._apply_single_qubit_batch(
+                    batch_ops, current_buffer, temp_buffer, stream
+                )
+            elif batch_type == 'diagonal_batch':
+                self._apply_diagonal_batch_inplace(batch_ops, current_buffer, stream)
+            elif batch_type == 'two_qubit':
+                for op in batch_ops:
+                    needs_swap = self._apply_operation(op, current_buffer, temp_buffer, stream)
+                    if needs_swap:
+                        current_buffer, temp_buffer = temp_buffer, current_buffer
+            elif batch_type == 'controlled':
+                for op in batch_ops:
+                    needs_swap = self._apply_operation(op, current_buffer, temp_buffer, stream)
+                    if needs_swap:
+                        current_buffer, temp_buffer = temp_buffer, current_buffer
+        
+        stream.synchronize()
+        
+        if current_buffer is not gpu_sv.gpu_buffer:
+            gpu_sv.swap_buffers()
+        
+        return gpu_sv
+    
+    def _prepare_batch_params_async(
+        self,
+        batch_type: str,
+        batch_ops: list,
+        stream: cuda.stream,
+    ) -> cuda.devicearray.DeviceNDArray | None:
+        """
+        Prepare and upload batch parameters asynchronously.
+        
+        This allows overlapping parameter preparation with kernel execution.
+        """
+        if batch_type == 'single_qubit_batch' and batch_ops:
+            n_qubits = self.qubit_count
+            num_gates = len(batch_ops)
+            params = np.zeros(num_gates * 6, dtype=np.complex128)
+            
+            for i, op in enumerate(batch_ops):
+                if isinstance(op, _FusedOperation):
+                    matrix = op.matrix
+                    target = op.target
+                else:
+                    matrix = op.matrix
+                    target = op.targets[0]
+                
+                target_bit = n_qubits - target - 1
+                mask = (1 << target_bit) - 1
+                
+                base = i * 6
+                params[base] = matrix[0, 0]
+                params[base + 1] = matrix[0, 1]
+                params[base + 2] = matrix[1, 0]
+                params[base + 3] = matrix[1, 1]
+                params[base + 4] = complex(target_bit, 0)
+                params[base + 5] = complex(mask, 0)
+            
+            return cuda.to_device(params, stream=stream)
+        
+        elif batch_type == 'diagonal_batch' and batch_ops:
+            n_qubits = self.qubit_count
+            num_gates = len(batch_ops)
+            params = np.zeros(num_gates * 3, dtype=np.complex128)
+            
+            for i, op in enumerate(batch_ops):
+                if isinstance(op, _FusedOperation):
+                    matrix = op.matrix
+                    target = op.target
+                else:
+                    matrix = op.matrix
+                    target = op.targets[0]
+                
+                target_bit = n_qubits - target - 1
+                
+                base = i * 3
+                params[base] = matrix[0, 0]
+                params[base + 1] = matrix[1, 1]
+                params[base + 2] = complex(target_bit, 0)
+            
+            return cuda.to_device(params, stream=stream)
+        
+        return None
+    
+    def execute_circuit_pipelined(
+        self, state: np.ndarray, operations: list[GateOperation]
+    ) -> GPUStateVector:
+        """
+        Execute circuit with pipelined parameter uploads.
+        
+        Uses double buffering to overlap parameter preparation with execution.
+        """
+        if not operations:
+            return GPUStateVector(state, self.qubit_count)
+
+        gpu_sv = GPUStateVector(state, self.qubit_count)
+        main_stream = gpu_sv.stream
+        upload_stream = self._streams[0]
+        
+        current_buffer = gpu_sv.gpu_buffer
+        temp_buffer = gpu_sv.temp_buffer
+
+        batches = self._create_mega_batches(operations)
+        
+        next_params = None
+        if batches:
+            next_params = self._prepare_batch_params_async(
+                batches[0][0], batches[0][1], upload_stream
+            )
+        
+        for i, (batch_type, batch_ops) in enumerate(batches):
+            current_params = next_params
+            
+            if i + 1 < len(batches):
+                next_params = self._prepare_batch_params_async(
+                    batches[i + 1][0], batches[i + 1][1], upload_stream
+                )
+            else:
+                next_params = None
+            
+            if batch_type == 'single_qubit_batch' and current_params is not None:
+                upload_stream.synchronize()
+                state_flat = current_buffer.reshape(-1)
+                temp_flat = temp_buffer.reshape(-1)
+                half_size = current_buffer.size >> 1
+                blocks, threads = _get_optimal_config(half_size)
+                
+                _persistent_single_qubit_kernel[blocks, threads, main_stream](
+                    state_flat, temp_flat, current_params, len(batch_ops), half_size
+                )
+                current_buffer, temp_buffer = temp_buffer, current_buffer
+                
+            elif batch_type == 'diagonal_batch' and current_params is not None:
+                upload_stream.synchronize()
+                state_flat = current_buffer.reshape(-1)
+                total_size = current_buffer.size
+                blocks, threads = _get_optimal_config(total_size)
+                
+                _persistent_diagonal_kernel[blocks, threads, main_stream](
+                    state_flat, current_params, len(batch_ops), total_size
+                )
+                
+            elif batch_type == 'two_qubit':
+                for op in batch_ops:
+                    needs_swap = self._apply_operation(op, current_buffer, temp_buffer, main_stream)
+                    if needs_swap:
+                        current_buffer, temp_buffer = temp_buffer, current_buffer
+                        
+            elif batch_type == 'controlled':
+                for op in batch_ops:
+                    needs_swap = self._apply_operation(op, current_buffer, temp_buffer, main_stream)
+                    if needs_swap:
+                        current_buffer, temp_buffer = temp_buffer, current_buffer
+        
+        main_stream.synchronize()
         
         if current_buffer is not gpu_sv.gpu_buffer:
             gpu_sv.swap_buffers()
@@ -438,6 +657,142 @@ class OptimizedGPUExecutor:
         
         return batches
     
+    def _extract_parallel_layers(self, operations: list) -> list[list]:
+        """
+        Extract layers of independent operations that can execute in parallel.
+        
+        Operations are independent if they act on disjoint sets of qubits.
+        Each layer contains operations that can be executed concurrently.
+        """
+        layers = []
+        current_layer = []
+        used_qubits = set()
+        
+        for op in operations:
+            op_qubits = set(op.targets)
+            
+            if op_qubits & used_qubits:
+                if current_layer:
+                    layers.append(current_layer)
+                current_layer = [op]
+                used_qubits = op_qubits.copy()
+            else:
+                current_layer.append(op)
+                used_qubits |= op_qubits
+        
+        if current_layer:
+            layers.append(current_layer)
+        
+        return layers
+    
+    def _execute_layer_parallel(
+        self,
+        layer: list,
+        state_gpu: cuda.devicearray.DeviceNDArray,
+        temp_gpu: cuda.devicearray.DeviceNDArray,
+        stream: cuda.stream = None,
+    ) -> tuple:
+        """
+        Execute a layer of independent operations using fused kernel.
+        
+        For single-qubit gates on different qubits, uses a fused kernel that
+        processes all gates in a single launch. This is more efficient than
+        multi-stream for small operations.
+        """
+        if not layer:
+            return state_gpu, temp_gpu
+        
+        if stream is None:
+            stream = self._streams[0]
+        
+        if len(layer) == 1:
+            needs_swap = self._apply_operation(layer[0], state_gpu, temp_gpu, stream)
+            stream.synchronize()
+            if needs_swap:
+                return temp_gpu, state_gpu
+            return state_gpu, temp_gpu
+        
+        diagonal_ops = []
+        single_qubit_ops = []
+        other_ops = []
+        
+        for op in layer:
+            gate_type = getattr(op, "gate_type", None)
+            is_diagonal = gate_type and gate_type in DIAGONAL_GATES
+            if is_diagonal and len(op.targets) == 1:
+                diagonal_ops.append(op)
+            elif len(op.targets) == 1:
+                single_qubit_ops.append(op)
+            else:
+                other_ops.append(op)
+        
+        if diagonal_ops:
+            self._apply_diagonal_batch_inplace(diagonal_ops, state_gpu, stream)
+        
+        current = state_gpu
+        temp = temp_gpu
+        
+        if single_qubit_ops:
+            current, temp = self._apply_fused_layer(single_qubit_ops, current, temp, stream)
+        
+        for op in other_ops:
+            needs_swap = self._apply_operation(op, current, temp, stream)
+            if needs_swap:
+                current, temp = temp, current
+        
+        stream.synchronize()
+        return current, temp
+    
+    def _apply_fused_layer(
+        self,
+        ops: list,
+        state_gpu: cuda.devicearray.DeviceNDArray,
+        temp_gpu: cuda.devicearray.DeviceNDArray,
+        stream: cuda.stream,
+    ) -> tuple:
+        """
+        Apply a layer of independent single-qubit gates using fused kernel.
+        
+        All gates are applied in a single kernel launch since they act on
+        different qubits and don't interfere with each other.
+        """
+        if not ops:
+            return state_gpu, temp_gpu
+        
+        n_qubits = self.qubit_count
+        num_gates = len(ops)
+        total_size = state_gpu.size
+        
+        params = np.zeros(num_gates * 4, dtype=np.complex128)
+        targets = np.zeros(num_gates, dtype=np.int32)
+        
+        for i, op in enumerate(ops):
+            matrix = op.matrix
+            target = op.targets[0]
+            target_bit = n_qubits - target - 1
+            
+            base = i * 4
+            params[base] = matrix[0, 0]
+            params[base + 1] = matrix[0, 1]
+            params[base + 2] = matrix[1, 0]
+            params[base + 3] = matrix[1, 1]
+            targets[i] = target_bit
+        
+        params_gpu = cuda.to_device(params, stream=stream)
+        targets_gpu = cuda.to_device(targets, stream=stream)
+        
+        state_flat = state_gpu.reshape(-1)
+        temp_flat = temp_gpu.reshape(-1)
+        
+        blocks, threads = _get_optimal_config(total_size)
+        
+        _fused_layer_kernel[blocks, threads, stream](
+            state_flat, temp_flat, params_gpu, targets_gpu,
+            num_gates, total_size, n_qubits
+        )
+        
+        return temp_gpu, state_gpu
+    
     def _apply_single_qubit_batch(
         self,
         ops: list,
@@ -481,7 +836,6 @@ class OptimizedGPUExecutor:
             params[base + 4] = complex(target_bit, 0)
             params[base + 5] = complex(mask, 0)
         
-        # Upload parameters
         params_gpu = cuda.to_device(params, stream=stream)
         
         state_flat = state_gpu.reshape(-1)
@@ -493,7 +847,6 @@ class OptimizedGPUExecutor:
             state_flat, temp_flat, params_gpu, num_gates, half_size
         )
         
-        # After persistent kernel, result is in temp_flat
         return temp_gpu, state_gpu
     
     def _apply_diagonal_batch_inplace(
@@ -1782,6 +2135,105 @@ def _persistent_diagonal_kernel(
                 val = a * val
         
         state_flat[i] = val
+
+
+@cuda.jit(fastmath=True)
+def _parallel_independent_gates_kernel(
+    state_flat, out_flat,
+    gate_params,
+    num_gates, total_size
+):
+    """
+    Kernel for applying multiple independent single-qubit gates in parallel.
+    
+    Unlike _persistent_single_qubit_kernel which applies gates sequentially,
+    this kernel applies all gates simultaneously since they act on different qubits.
+    Each element is affected by at most one gate.
+    
+    This is optimal when gates in a layer act on disjoint qubits.
+    """
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    PARAMS_PER_GATE = 6
+    
+    for i in range(idx, total_size, stride):
+        new_val = state_flat[i]
+        applied = False
+        
+        for g in range(num_gates):
+            base = g * PARAMS_PER_GATE
+            target_bit = int(gate_params[base + 4].real)
+            target_mask = 1 << target_bit
+            mask = int(gate_params[base + 5].real)
+            
+            half_idx = (i & ~target_mask) >> 1
+            half_idx = (half_idx & mask) | ((half_idx & ~mask) >> 1)
+            
+            is_idx0 = (i & target_mask) == 0
+            partner = i ^ target_mask
+            
+            a = gate_params[base]
+            b = gate_params[base + 1]
+            c = gate_params[base + 2]
+            d = gate_params[base + 3]
+            
+            s0 = state_flat[i] if is_idx0 else state_flat[partner]
+            s1 = state_flat[partner] if is_idx0 else state_flat[i]
+            
+            if is_idx0:
+                new_val = a * s0 + b * s1
+            else:
+                new_val = c * s0 + d * s1
+            applied = True
+            break
+        
+        out_flat[i] = new_val if applied else state_flat[i]
+
+
+@cuda.jit(fastmath=True)
+def _fused_layer_kernel(
+    state_flat, out_flat,
+    gate_params, gate_targets,
+    num_gates, total_size, n_qubits
+):
+    """
+    Fused kernel for a layer of independent gates.
+    
+    Processes all gates in a single pass by checking which gate (if any)
+    affects each state vector element.
+    """
+    idx = cuda.grid(1)
+    stride = cuda.gridsize(1)
+    
+    PARAMS_PER_GATE = 4
+    
+    for i in range(idx, total_size, stride):
+        result = state_flat[i]
+        
+        for g in range(num_gates):
+            target_bit = gate_targets[g]
+            target_mask = 1 << target_bit
+            
+            base = g * PARAMS_PER_GATE
+            a = gate_params[base]
+            b = gate_params[base + 1]
+            c = gate_params[base + 2]
+            d = gate_params[base + 3]
+            
+            partner = i ^ target_mask
+            is_lower = (i & target_mask) == 0
+            
+            if is_lower:
+                s0 = state_flat[i]
+                s1 = state_flat[partner]
+                result = a * s0 + b * s1
+            else:
+                s0 = state_flat[partner]
+                s1 = state_flat[i]
+                result = c * s0 + d * s1
+        
+        out_flat[i] = result
 
 
 # =============================================================================
