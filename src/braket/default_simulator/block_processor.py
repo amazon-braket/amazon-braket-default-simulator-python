@@ -63,15 +63,13 @@ class BlockMatrixProcessor:
         self.n_qubits = n_qubits
         self.control_qubits = control_qubits
         self.target_qubits = n_qubits - control_qubits
-        self.block_size = 2 ** self.target_qubits
-        self.n_blocks = 2 ** control_qubits
+        self.block_size = 2**self.target_qubits
+        self.n_blocks = 2**control_qubits
         self.blocks: dict[int, np.ndarray] = {}
         self.block_amplitudes: dict[int, complex] = {}
         self._dtype = np.complex128
 
-    def identify_block_structure(
-        self, operations: list[GateOperation]
-    ) -> BlockStructure | None:
+    def identify_block_structure(self, operations: list[GateOperation]) -> BlockStructure | None:
         if not operations:
             return None
 
@@ -95,7 +93,7 @@ class BlockMatrixProcessor:
         self.blocks = {}
         self.block_amplitudes = {}
 
-        for block_idx, block_class in block_types.items():
+        for block_idx in block_types.keys():
             state = np.zeros(self.block_size, dtype=self._dtype)
             state[0] = 1.0
             self.blocks[block_idx] = state
@@ -111,9 +109,7 @@ class BlockMatrixProcessor:
     def set_block_amplitude(self, block_idx: int, amplitude: complex) -> None:
         self.block_amplitudes[block_idx] = amplitude
 
-    def apply_block_local_operation(
-        self, block_idx: int, matrix: np.ndarray
-    ) -> None:
+    def apply_block_local_operation(self, block_idx: int, matrix: np.ndarray) -> None:
         if block_idx not in self.blocks:
             return
 
@@ -123,9 +119,7 @@ class BlockMatrixProcessor:
         else:
             raise ValueError("Matrix size doesn't match block size")
 
-    def apply_block_diagonal_unitary(
-        self, block_unitaries: dict[int, np.ndarray]
-    ) -> None:
+    def apply_block_diagonal_unitary(self, block_unitaries: dict[int, np.ndarray]) -> None:
         for block_idx, unitary in block_unitaries.items():
             if block_idx in self.blocks:
                 self.blocks[block_idx] = unitary @ self.blocks[block_idx]
@@ -172,15 +166,13 @@ class BlockMatrixProcessor:
         block_probs = {}
         total_prob = 0.0
         for block_idx, amp in self.block_amplitudes.items():
-            if block_idx in self.blocks:
-                block_norm = np.sum(np.abs(self.blocks[block_idx]) ** 2)
-                prob = (np.abs(amp) ** 2) * block_norm
-                block_probs[block_idx] = prob
-                total_prob += prob
+            block_norm = np.sum(np.abs(self.blocks[block_idx]) ** 2)
+            prob = (np.abs(amp) ** 2) * block_norm
+            block_probs[block_idx] = prob
+            total_prob += prob
 
-        if total_prob > 0:
-            for k in block_probs:
-                block_probs[k] /= total_prob
+        for k in block_probs:
+            block_probs[k] /= total_prob
 
         block_indices = list(block_probs.keys())
         block_prob_values = [block_probs[k] for k in block_indices]
@@ -199,10 +191,7 @@ class BlockMatrixProcessor:
         return dict(Counter(results))
 
     def get_active_blocks(self) -> list[int]:
-        return [
-            idx for idx, amp in self.block_amplitudes.items()
-            if abs(amp) > 1e-15
-        ]
+        return [idx for idx, amp in self.block_amplitudes.items() if abs(amp) > 1e-15]
 
     def prune_negligible_blocks(self, threshold: float = 1e-10) -> None:
         to_remove = []
@@ -225,7 +214,7 @@ class BlockMatrixProcessor:
                 self.block_amplitudes[idx] *= norm_factor
 
     def get_state_vector(self) -> np.ndarray:
-        full_state = np.zeros(2 ** self.n_qubits, dtype=self._dtype)
+        full_state = np.zeros(2**self.n_qubits, dtype=self._dtype)
 
         for block_idx, amp in self.block_amplitudes.items():
             if block_idx in self.blocks:

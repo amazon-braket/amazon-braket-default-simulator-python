@@ -298,12 +298,19 @@ class StabilizerSimulator:
     """
 
     GATE_MAP = {
-        "hadamard": "h", "h": "h",
-        "pauli_x": "x", "x": "x",
-        "pauli_y": "y", "y": "y",
-        "pauli_z": "z", "z": "z",
-        "s": "s", "si": "sdg", "sdg": "sdg",
-        "cx": "cnot", "cnot": "cnot",
+        "hadamard": "h",
+        "h": "h",
+        "pauli_x": "x",
+        "x": "x",
+        "pauli_y": "y",
+        "y": "y",
+        "pauli_z": "z",
+        "z": "z",
+        "s": "s",
+        "si": "sdg",
+        "sdg": "sdg",
+        "cx": "cnot",
+        "cnot": "cnot",
         "cz": "cz",
         "swap": "swap",
     }
@@ -401,7 +408,7 @@ class StabilizerSimulator:
         if self.n_qubits > 20:
             raise ValueError("State vector too large to compute explicitly")
 
-        dim = 2 ** self.n_qubits
+        dim = 2**self.n_qubits
         state = np.zeros(dim, dtype=np.complex128)
 
         for basis_idx in range(dim):
@@ -425,13 +432,12 @@ class StabilizerSimulator:
             if valid:
                 state[basis_idx] = amplitude
 
-        norm = np.linalg.norm(state)
-        if norm > 0:
-            state /= norm
-
+        state /= np.linalg.norm(state)
         return state
 
-    def _is_deterministic_copy(self, tableau: StabilizerTableau, qubit: int) -> tuple[bool, int | None]:
+    def _is_deterministic_copy(
+        self, tableau: StabilizerTableau, qubit: int
+    ) -> tuple[bool, int | None]:
         n = tableau.n
         for i in range(n, 2 * n):
             if tableau.tableau[i, qubit] == 1:

@@ -65,6 +65,7 @@ class QubitPartitioner:
         self.entanglement_graph: dict[int, set[int]] = defaultdict(set)
         self.partitions: list[QubitPartition] = []
         self._analyzed = False
+        self._entanglement_analyzed = False
 
     def analyze_entanglement(self) -> dict[int, set[int]]:
         for i in range(self.n_qubits):
@@ -74,14 +75,15 @@ class QubitPartitioner:
             targets = op.targets
             if len(targets) >= 2:
                 for i, q1 in enumerate(targets):
-                    for q2 in targets[i + 1:]:
+                    for q2 in targets[i + 1 :]:
                         self.entanglement_graph[q1].add(q2)
                         self.entanglement_graph[q2].add(q1)
 
+        self._entanglement_analyzed = True
         return dict(self.entanglement_graph)
 
     def find_connected_components(self) -> list[set[int]]:
-        if not self.entanglement_graph:
+        if not self._entanglement_analyzed:
             self.analyze_entanglement()
 
         visited = set()
@@ -130,10 +132,7 @@ class QubitPartitioner:
         return self.partitions
 
     def extract_local_operations(self, qubits: set[int]) -> list[GateOperation]:
-        local_ops = []
-        for op in self.operations:
-            if set(op.targets) <= qubits:
-                local_ops.append(op)
+        local_ops = [op for op in self.operations if set(op.targets) <= qubits]
         return local_ops
 
     def create_remapped_operations(
@@ -179,7 +178,7 @@ class QubitPartitioner:
                     single_operation_strategy,
                 )
 
-                state = np.zeros(2 ** n_local, dtype=np.complex128)
+                state = np.zeros(2**n_local, dtype=np.complex128)
                 state[0] = 1.0
                 state_tensor = state.reshape([2] * n_local)
 
@@ -193,12 +192,14 @@ class QubitPartitioner:
                 remapped_ops = []
                 for op in partition.operations:
                     new_targets = tuple(partition.qubit_map[q] for q in op.targets)
-                    remapped_ops.append(RemappedOp(
-                        op.matrix,
-                        new_targets,
-                        getattr(op, "control_state", ()),
-                        getattr(op, "gate_type", None)
-                    ))
+                    remapped_ops.append(
+                        RemappedOp(
+                            op.matrix,
+                            new_targets,
+                            getattr(op, "control_state", ()),
+                            getattr(op, "gate_type", None),
+                        )
+                    )
 
                 final_state = single_operation_strategy.apply_operations(
                     state_tensor, n_local, remapped_ops
@@ -206,7 +207,7 @@ class QubitPartitioner:
                 probs = np.abs(final_state.flatten()) ** 2
 
                 rng = np.random.default_rng()
-                samples = rng.choice(2 ** n_local, size=shots, p=probs)
+                samples = rng.choice(2**n_local, size=shots, p=probs)
                 counts = Counter(samples)
                 result = {format(k, f"0{n_local}b"): v for k, v in counts.items()}
 
@@ -215,9 +216,7 @@ class QubitPartitioner:
         return self.combine_partition_results(partition_results, shots)
 
     def combine_partition_results(
-        self,
-        partition_results: list[tuple[QubitPartition, dict[str, int]]],
-        shots: int
+        self, partition_results: list[tuple[QubitPartition, dict[str, int]]], shots: int
     ) -> dict[str, int]:
         rng = np.random.default_rng()
         combined_results = []

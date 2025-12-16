@@ -38,7 +38,7 @@ class TestBlockStructureIdentification:
             control_qubits=[0, 1],
             target_qubits=[2, 3],
             active_blocks={0},
-            block_types={0: CircuitClass.GENERAL}
+            block_types={0: CircuitClass.GENERAL},
         )
         assert len(structure.control_qubits) == 2
         assert len(structure.target_qubits) == 2
@@ -62,7 +62,7 @@ class TestBlockInitialization:
             0: CircuitClass.PRODUCT,
             1: CircuitClass.CLIFFORD,
             2: CircuitClass.GENERAL,
-            3: CircuitClass.DIAGONAL
+            3: CircuitClass.DIAGONAL,
         }
         processor.initialize_blocks(block_types)
         assert len(processor.blocks) == 4
@@ -261,6 +261,7 @@ class TestBlockPruning:
 class TestBlockStructureWithOperations:
     def test_identify_with_single_qubit_ops(self):
         from braket.default_simulator.gate_operations import Hadamard
+
         processor = BlockMatrixProcessor(4, 2)
         ops = [Hadamard([2]), Hadamard([3])]
         structure = processor.identify_block_structure(ops)
@@ -270,6 +271,7 @@ class TestBlockStructureWithOperations:
 
     def test_identify_with_cross_partition_ops(self):
         from braket.default_simulator.gate_operations import CX
+
         processor = BlockMatrixProcessor(4, 2)
         ops = [CX([1, 2])]
         structure = processor.identify_block_structure(ops)
@@ -378,6 +380,7 @@ class TestBlockProcessorEdgeCases:
 class TestBlockProcessorBranchCoverage:
     def test_identify_structure_single_qubit_two_qubit_mix(self):
         from braket.default_simulator.gate_operations import CX, Hadamard
+
         processor = BlockMatrixProcessor(4, 2)
         ops = [Hadamard([2]), CX([2, 3])]
         structure = processor.identify_block_structure(ops)
@@ -405,3 +408,29 @@ class TestBlockProcessorBranchCoverage:
         active = processor.get_active_blocks()
         assert 0 in active
         assert 1 not in active
+
+    def test_mixing_produces_negligible_amplitude(self):
+        processor = BlockMatrixProcessor(3, 1)
+        processor.blocks = {0: np.array([1, 0, 0, 0], dtype=complex)}
+        processor.block_amplitudes = {0: 1e-20}
+        identity = np.eye(2, dtype=complex)
+        processor.apply_block_mixing_operation(identity)
+        assert len(processor.block_amplitudes) == 0
+
+    def test_mixing_block_already_exists(self):
+        processor = BlockMatrixProcessor(3, 1)
+        processor.blocks = {
+            0: np.array([1, 0, 0, 0], dtype=complex),
+            1: np.array([0, 1, 0, 0], dtype=complex),
+        }
+        processor.block_amplitudes = {0: 1.0}
+        h = hadamard_matrix()
+        processor.apply_block_mixing_operation(h)
+        assert np.allclose(processor.blocks[1], [0, 1, 0, 0])
+
+    def test_prune_with_zero_total_prob(self):
+        processor = BlockMatrixProcessor(3, 1)
+        processor.blocks = {}
+        processor.block_amplitudes = {0: 1e-15}
+        processor.prune_negligible_blocks(threshold=1e-10)
+        assert len(processor.block_amplitudes) == 0

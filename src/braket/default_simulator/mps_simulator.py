@@ -93,11 +93,7 @@ class MPSSimulator:
     """
 
     def __init__(
-        self,
-        n_qubits: int,
-        max_bond_dim: int = 64,
-        svd_cutoff: float = 1e-10,
-        dtype=np.complex128
+        self, n_qubits: int, max_bond_dim: int = 64, svd_cutoff: float = 1e-10, dtype=np.complex128
     ):
         self.n_qubits = n_qubits
         self.max_bond_dim = max_bond_dim
@@ -152,9 +148,7 @@ class MPSSimulator:
         swapped = np.transpose(gate_tensor, (1, 0, 3, 2))
         return swapped.reshape(4, 4)
 
-    def _apply_two_qubit_gate_adjacent(
-        self, gate: np.ndarray, qubit1: int, qubit2: int
-    ) -> None:
+    def _apply_two_qubit_gate_adjacent(self, gate: np.ndarray, qubit1: int, qubit2: int) -> None:
         t1 = self.tensors[qubit1]
         t2 = self.tensors[qubit2]
 
@@ -171,7 +165,7 @@ class MPSSimulator:
 
         mask = s > self.svd_cutoff
         if self.max_bond_dim is not None:
-            mask[self.max_bond_dim:] = False
+            mask[self.max_bond_dim :] = False
 
         if np.sum(mask) == 0:
             mask[0] = True
@@ -199,12 +193,9 @@ class MPSSimulator:
             qubit1, qubit2 = qubit2, qubit1
             gate = self._swap_gate_qubits(gate)
 
-        swap_gate = np.array([
-            [1, 0, 0, 0],
-            [0, 0, 1, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, 1]
-        ], dtype=self.dtype)
+        swap_gate = np.array(
+            [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=self.dtype
+        )
 
         for i in range(qubit1, qubit2 - 1):
             self._apply_two_qubit_gate_adjacent(swap_gate, i, i + 1)
@@ -215,6 +206,12 @@ class MPSSimulator:
             self._apply_two_qubit_gate_adjacent(swap_gate, i, i + 1)
 
     def apply_operations(self, operations: list[GateOperation]) -> None:
+        # Apply single-qubit fusion to reduce gate count
+        from braket.default_simulator.gate_fusion import fuse_single_qubit_gates
+
+        if len(operations) >= 4:
+            operations = fuse_single_qubit_gates(operations)
+
         for op in operations:
             n_targets = len(op.targets)
             if n_targets == 1:
@@ -253,19 +250,14 @@ class MPSSimulator:
                 prob_1 = np.sum(np.abs(prob_1_vec) ** 2)
                 total = prob_0 + prob_1
 
-                if total > 0:
-                    prob_0 /= total
+                prob_0 /= total
 
                 if rng.random() < prob_0:
                     outcome += "0"
-                    left_vector = prob_0_vec
-                    if np.linalg.norm(left_vector) > 0:
-                        left_vector /= np.linalg.norm(left_vector)
+                    left_vector = prob_0_vec / np.linalg.norm(prob_0_vec)
                 else:
                     outcome += "1"
-                    left_vector = prob_1_vec
-                    if np.linalg.norm(left_vector) > 0:
-                        left_vector /= np.linalg.norm(left_vector)
+                    left_vector = prob_1_vec / np.linalg.norm(prob_1_vec)
 
             results.append(outcome)
 
@@ -305,7 +297,7 @@ class MPSSimulator:
         _, s, _ = np.linalg.svd(matrix, full_matrices=False)
 
         s_normalized = s / np.linalg.norm(s)
-        s_squared = s_normalized ** 2
+        s_squared = s_normalized**2
         s_squared = s_squared[s_squared > 1e-15]
 
         entropy = -np.sum(s_squared * np.log2(s_squared))
@@ -326,12 +318,7 @@ class MPSSimulator:
         return result.flatten()
 
     def copy(self) -> MPSSimulator:
-        new_sim = MPSSimulator(
-            self.n_qubits,
-            self.max_bond_dim,
-            self.svd_cutoff,
-            self.dtype
-        )
+        new_sim = MPSSimulator(self.n_qubits, self.max_bond_dim, self.svd_cutoff, self.dtype)
         new_sim.tensors = [t.copy() for t in self.tensors]
         new_sim.truncation_error = self.truncation_error
         return new_sim

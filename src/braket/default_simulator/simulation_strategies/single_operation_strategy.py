@@ -13,90 +13,14 @@
 
 import numpy as np
 
+from braket.default_simulator.gate_fusion import optimize_circuit
 from braket.default_simulator.linalg_utils import (
-    DIAGONAL_GATES,
     QuantumGateDispatcher,
     multiply_matrix,
 )
 from braket.default_simulator.operation import GateOperation
 
-
-class _FusedGateOperation:
-    """Represents a fused gate operation from multiple consecutive single-qubit gates."""
-
-    __slots__ = ("targets", "matrix", "control_state", "gate_type")
-
-    def __init__(self, target: int, matrix: np.ndarray, is_diagonal: bool = False):
-        self.targets = (target,)
-        self.matrix = matrix
-        self.control_state = ()
-        self.gate_type = "fused_diagonal" if is_diagonal else "fused"
-
-
-def _fuse_operations(operations: list[GateOperation]) -> list[GateOperation]:
-    """
-    Fuse consecutive single-qubit gates on the same target into single matrix operations.
-
-    This optimization reduces the number of state vector traversals by combining
-    multiple gates into one. For example, H-T-H on qubit 0 becomes a single 2x2 matrix.
-
-    Args:
-        operations: List of gate operations to potentially fuse
-
-    Returns:
-        List of operations with consecutive single-qubit gates fused
-    """
-    if len(operations) < 2:
-        return operations
-
-    fused = []
-    i = 0
-
-    while i < len(operations):
-        op = operations[i]
-        targets = op.targets
-        ctrl_state = op.control_state
-
-        # Only fuse uncontrolled single-qubit gates
-        if len(targets) == 1 and len(ctrl_state) == 0:
-            target = targets[0]
-            matrix = op.matrix
-            gate_type = getattr(op, "gate_type", None)
-            all_diagonal = gate_type in DIAGONAL_GATES if gate_type else False
-
-            j = i + 1
-            while j < len(operations):
-                next_op = operations[j]
-                next_targets = next_op.targets
-                next_ctrl = next_op.control_state
-
-                # Check if next op is also single-qubit on same target without controls
-                if (
-                    len(next_targets) == 1
-                    and next_targets[0] == target
-                    and len(next_ctrl) == 0
-                ):
-                    # Fuse: new_matrix = next_matrix @ current_matrix
-                    matrix = next_op.matrix @ matrix
-                    next_gate_type = getattr(next_op, "gate_type", None)
-                    if next_gate_type not in DIAGONAL_GATES:
-                        all_diagonal = False
-                    j += 1
-                else:
-                    break
-
-            if j > i + 1:
-                # Multiple gates were fused
-                fused.append(_FusedGateOperation(target, matrix, all_diagonal))
-            else:
-                # No fusion occurred, keep original
-                fused.append(op)
-            i = j
-        else:
-            fused.append(op)
-            i += 1
-
-    return fused
+_FUSION_THRESHOLD = 10
 
 
 def apply_operations(
@@ -104,8 +28,9 @@ def apply_operations(
 ) -> np.ndarray:
     """Applies operations to a state vector one at a time with gate fusion optimization.
 
-    Consecutive single-qubit gates on the same target are fused into a single matrix
-    operation before application, reducing the number of state vector traversals.
+    Consecutive single-qubit and two-qubit gates on the same targets are fused into
+    single matrix operations before application, reducing the number of state vector
+    traversals.
 
     Args:
         state (np.ndarray): The state vector to apply the given operations to, as a type
@@ -117,8 +42,16 @@ def apply_operations(
         np.ndarray: The state vector after applying the given operations, as a type
         (qubit_count, 0) tensor
     """
-    # Apply gate fusion optimization
-    operations = _fuse_operations(operations)
+    if not operations:
+        return state
+
+    if len(operations) >= _FUSION_THRESHOLD:
+        operations = optimize_circuit(
+            operations,
+            enable_single_qubit_fusion=True,
+            enable_two_qubit_fusion=True,
+            enable_block_fusion=False,
+        )
 
     result = state.copy()
     temp = np.zeros_like(state, dtype=complex)
@@ -126,13 +59,14 @@ def apply_operations(
     dispatcher = QuantumGateDispatcher(state.ndim)
     for op in operations:
         targets = op.targets
-        num_ctrl = len(op.control_state)
+        ctrl_state = op.control_state
+        num_ctrl = len(ctrl_state)
         _, needs_swap = multiply_matrix(
             result,
             op.matrix,
             targets[num_ctrl:],
             targets[:num_ctrl],
-            op.control_state,
+            ctrl_state,
             temp,
             dispatcher,
             True,

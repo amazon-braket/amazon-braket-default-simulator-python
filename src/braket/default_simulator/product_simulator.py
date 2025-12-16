@@ -129,9 +129,7 @@ class ProductStateSimulator:
 
     def initialize_from_product(self, single_qubit_states: list[np.ndarray]) -> None:
         if len(single_qubit_states) != self.n_qubits:
-            raise ValueError(
-                f"Expected {self.n_qubits} states, got {len(single_qubit_states)}"
-            )
+            raise ValueError(f"Expected {self.n_qubits} states, got {len(single_qubit_states)}")
         for i, state in enumerate(single_qubit_states):
             if state.shape != (2,):
                 raise ValueError(f"State {i} must have shape (2,), got {state.shape}")
@@ -156,10 +154,10 @@ class ProductStateSimulator:
     def apply_qft(self, start_qubit: int = 0, end_qubit: int | None = None) -> None:
         """
         Apply QFT directly in O(n) time by computing phases analytically.
-        
+
         QFT|j⟩ produces a product state where qubit k has state:
             (|0⟩ + e^(2πij/2^(k+1))|1⟩) / √2
-        
+
         This avoids O(n²) gate applications for QFT circuits.
         """
         if end_qubit is None:

@@ -891,3 +891,134 @@ def test_apply_diagonal_gate_large_via_single_qubit_gate():
         assert np.isclose(original_norm, result_norm, atol=1e-7), (
             f"Norm not preserved for target {target_qubit}"
         )
+
+
+class TestSpecializedGateOptimizations:
+    def test_cz_small(self):
+        from braket.default_simulator.linalg_utils import _apply_cz_small
+
+        state = np.array([0.5, 0.5, 0.5, 0.5], dtype=complex).reshape([2, 2])
+        result, swap = _apply_cz_small(state.copy(), 0, 1)
+        expected = np.array([0.5, 0.5, 0.5, -0.5], dtype=complex)
+        assert np.allclose(result.flatten(), expected, atol=1e-7)
+        assert swap is False
+
+    def test_cz_large(self):
+        from braket.default_simulator.linalg_utils import _apply_cz_large
+
+        qubit_count = 12
+        state_size = 2**qubit_count
+        state_flat = np.zeros(state_size, dtype=complex)
+        state_flat[0] = 0.5
+        state_flat[1024] = 0.5
+        state_flat[2048] = 0.5
+        state_flat[3072] = 0.5
+        state = state_flat.reshape([2] * qubit_count)
+
+        result, swap = _apply_cz_large(state.copy(), 0, 1)
+        result_flat = result.flatten()
+        assert np.isclose(result_flat[0], 0.5, atol=1e-7)
+        assert np.isclose(result_flat[1024], 0.5, atol=1e-7)
+        assert np.isclose(result_flat[2048], 0.5, atol=1e-7)
+        assert np.isclose(result_flat[3072], -0.5, atol=1e-7)
+        assert swap is False
+
+    def test_pauli_x_small(self):
+        from braket.default_simulator.linalg_utils import _apply_pauli_x_small
+
+        state = np.array([1, 0], dtype=complex).reshape([2])
+        out = np.zeros_like(state)
+        result, swap = _apply_pauli_x_small(state, 0, out)
+        expected = np.array([0, 1], dtype=complex)
+        assert np.allclose(result.flatten(), expected, atol=1e-7)
+        assert swap is True
+
+    def test_pauli_x_large(self):
+        from braket.default_simulator.linalg_utils import _apply_pauli_x_large
+
+        qubit_count = 12
+        state_size = 2**qubit_count
+        state_flat = np.zeros(state_size, dtype=complex)
+        state_flat[0] = 1.0
+        state = state_flat.reshape([2] * qubit_count)
+        out = np.zeros_like(state)
+
+        result, swap = _apply_pauli_x_large(state.copy(), 0, out)
+        result_flat = result.flatten()
+        assert np.isclose(result_flat[2048], 1.0, atol=1e-7)
+        assert np.isclose(result_flat[0], 0.0, atol=1e-7)
+        assert swap is True
+
+    def test_hadamard_small(self):
+        from braket.default_simulator.linalg_utils import _apply_hadamard_small
+
+        state = np.array([1, 0], dtype=complex).reshape([2])
+        out = np.zeros_like(state)
+        result, swap = _apply_hadamard_small(state, 0, out)
+        expected = np.array([1, 1], dtype=complex) / np.sqrt(2)
+        assert np.allclose(result.flatten(), expected, atol=1e-7)
+        assert swap is True
+
+    def test_hadamard_large(self):
+        from braket.default_simulator.linalg_utils import _apply_hadamard_large
+
+        qubit_count = 12
+        state_size = 2**qubit_count
+        state_flat = np.zeros(state_size, dtype=complex)
+        state_flat[0] = 1.0
+        state = state_flat.reshape([2] * qubit_count)
+        out = np.zeros_like(state)
+
+        result, swap = _apply_hadamard_large(state.copy(), 0, out)
+        result_flat = result.flatten()
+        sqrt2_inv = 1.0 / np.sqrt(2)
+        assert np.isclose(result_flat[0], sqrt2_inv, atol=1e-7)
+        assert np.isclose(result_flat[2048], sqrt2_inv, atol=1e-7)
+        assert swap is True
+
+    def test_specialized_dispatch_pauli_x(self):
+        qubit_count = 12
+        state_size = 2**qubit_count
+        state_flat = np.zeros(state_size, dtype=complex)
+        state_flat[0] = 1.0
+        state = state_flat.reshape([2] * qubit_count)
+        out = np.zeros_like(state)
+
+        result, _ = _apply_single_qubit_gate(state, x_matrix(), 0, out, gate_type="pauli_x")
+        result_flat = result.flatten()
+        assert np.isclose(result_flat[2048], 1.0, atol=1e-7)
+
+    def test_specialized_dispatch_hadamard(self):
+        qubit_count = 12
+        state_size = 2**qubit_count
+        state_flat = np.zeros(state_size, dtype=complex)
+        state_flat[0] = 1.0
+        state = state_flat.reshape([2] * qubit_count)
+        out = np.zeros_like(state)
+
+        result, _ = _apply_single_qubit_gate(state, hadamard_matrix(), 0, out, gate_type="hadamard")
+        result_flat = result.flatten()
+        sqrt2_inv = 1.0 / np.sqrt(2)
+        assert np.isclose(result_flat[0], sqrt2_inv, atol=1e-7)
+        assert np.isclose(result_flat[2048], sqrt2_inv, atol=1e-7)
+
+    def test_cz_dispatch_through_multiply_matrix(self):
+        state = np.array([0.5, 0.5, 0.5, 0.5], dtype=complex).reshape([2, 2])
+        result = multiply_matrix(state, cz_matrix(), (0, 1), gate_type="cz")
+        expected = np.array([0.5, 0.5, 0.5, -0.5], dtype=complex)
+        assert np.allclose(result.flatten(), expected, atol=1e-7)
+
+    def test_specialized_gates_preserve_norm(self):
+        qubit_count = 12
+        state_size = 2**qubit_count
+        np.random.seed(42)
+        state_flat = np.random.random(state_size) + 1j * np.random.random(state_size)
+        state_flat = state_flat / np.linalg.norm(state_flat)
+        state = state_flat.reshape([2] * qubit_count)
+
+        for gate_type, matrix in [("pauli_x", x_matrix()), ("hadamard", hadamard_matrix())]:
+            out = np.zeros_like(state)
+            result, _ = _apply_single_qubit_gate(state.copy(), matrix, 0, out, gate_type=gate_type)
+            original_norm = np.linalg.norm(state_flat)
+            result_norm = np.linalg.norm(result.flatten())
+            assert np.isclose(original_norm, result_norm, atol=1e-7)

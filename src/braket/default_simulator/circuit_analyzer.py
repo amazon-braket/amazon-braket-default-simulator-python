@@ -31,29 +31,82 @@ class CircuitClass(Enum):
     GENERAL = auto()
 
 
-CLIFFORD_GATES = frozenset({
-    "hadamard", "pauli_x", "pauli_y", "pauli_z", "s", "si", "cx", "cz", "swap",
-    "h", "x", "y", "z", "cnot", "sdg"
-})
+CLIFFORD_GATES = frozenset(
+    {
+        "hadamard",
+        "pauli_x",
+        "pauli_y",
+        "pauli_z",
+        "s",
+        "si",
+        "cx",
+        "cz",
+        "swap",
+        "h",
+        "x",
+        "y",
+        "z",
+        "cnot",
+        "sdg",
+    }
+)
 
-DIAGONAL_GATES = frozenset({
-    "pauli_z", "s", "si", "t", "ti", "rz", "phaseshift", "cz", "cphaseshift",
-    "cphaseshift01", "cphaseshift00", "cphaseshift10", "zz", "z", "sdg", "tdg"
-})
+DIAGONAL_GATES = frozenset(
+    {
+        "pauli_z",
+        "s",
+        "si",
+        "t",
+        "ti",
+        "rz",
+        "phaseshift",
+        "cz",
+        "cphaseshift",
+        "cphaseshift01",
+        "cphaseshift00",
+        "cphaseshift10",
+        "zz",
+        "z",
+        "sdg",
+        "tdg",
+    }
+)
 
-PRODUCT_GATES = frozenset({
-    "hadamard", "pauli_x", "pauli_y", "pauli_z", "s", "si", "t", "ti",
-    "rx", "ry", "rz", "phaseshift", "u", "h", "x", "y", "z", "sdg", "tdg",
-    "identity", "gpi", "gpi2", "v", "vi", "prx"
-})
+PRODUCT_GATES = frozenset(
+    {
+        "hadamard",
+        "pauli_x",
+        "pauli_y",
+        "pauli_z",
+        "s",
+        "si",
+        "t",
+        "ti",
+        "rx",
+        "ry",
+        "rz",
+        "phaseshift",
+        "u",
+        "h",
+        "x",
+        "y",
+        "z",
+        "sdg",
+        "tdg",
+        "identity",
+        "gpi",
+        "gpi2",
+        "v",
+        "vi",
+        "prx",
+    }
+)
 
-CONTROLLED_PHASE_GATES = frozenset({
-    "cphaseshift", "cphaseshift00", "cphaseshift01", "cphaseshift10", "cz", "zz"
-})
+CONTROLLED_PHASE_GATES = frozenset(
+    {"cphaseshift", "cphaseshift00", "cphaseshift01", "cphaseshift10", "cz", "zz"}
+)
 
-QFT_GATES = frozenset({
-    "h", "hadamard", "cphaseshift", "swap"
-})
+QFT_GATES = frozenset({"h", "hadamard", "cphaseshift", "swap"})
 
 
 @dataclass
@@ -96,9 +149,7 @@ class CircuitAnalyzer:
         controlled_phase_count = 0
         hadamard_count = 0
 
-        max_qubit_idx = max(
-            max(op.targets) for op in self.operations if op.targets
-        )
+        max_qubit_idx = max(max(op.targets) for op in self.operations if op.targets)
         effective_n_qubits = max(self.n_qubits, max_qubit_idx + 1)
 
         parent = list(range(effective_n_qubits))
@@ -149,9 +200,9 @@ class CircuitAnalyzer:
 
         is_nearest_neighbor = max_distance <= 1
         is_qft_like = (
-            hadamard_count >= self.n_qubits // 2 and
-            controlled_phase_count >= two_qubit_count * 0.7 and
-            two_qubit_count > 0
+            hadamard_count >= self.n_qubits // 2
+            and controlled_phase_count >= two_qubit_count * 0.7
+            and two_qubit_count > 0
         )
 
         if not has_two_qubit:
@@ -175,7 +226,7 @@ class CircuitAnalyzer:
             backend = "mps"
             bond_dim = min(2 ** (two_qubit_count // self.n_qubits + 1), 64)
         else:
-            bond_dim = min(2 ** two_qubit_count, 2 ** (self.n_qubits // 2))
+            bond_dim = min(2**two_qubit_count, 2 ** (self.n_qubits // 2))
             if bond_dim <= 64:
                 circuit_class = CircuitClass.LOW_ENTANGLEMENT
                 backend = "mps"
@@ -184,9 +235,7 @@ class CircuitAnalyzer:
                 backend = "full"
 
         if len(components) > 1 and backend == "full":
-            max_size = max(len(c) for c in components)
-            if max_size < self.n_qubits:
-                backend = "partitioned"
+            backend = "partitioned"
 
         return AnalysisReport(
             n_qubits=self.n_qubits,
@@ -206,16 +255,14 @@ class CircuitAnalyzer:
 
     def get_entanglement_graph(self) -> dict[int, set[int]]:
         max_qubit = self.n_qubits - 1
-        if self.operations:
-            for op in self.operations:
-                if op.targets:
-                    max_qubit = max(max_qubit, max(op.targets))
+        for op in self.operations:
+            max_qubit = max(max_qubit, max(op.targets))
         graph = {i: set() for i in range(max_qubit + 1)}
         for op in self.operations:
             targets = op.targets
             if len(targets) >= 2:
                 for i, q1 in enumerate(targets):
-                    for q2 in targets[i + 1:]:
+                    for q2 in targets[i + 1 :]:
                         graph[q1].add(q2)
                         graph[q2].add(q1)
         return graph

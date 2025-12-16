@@ -21,6 +21,7 @@ from braket.default_simulator.gate_operations import (
     CPhaseShift,
     CX,
     Hadamard,
+    ISwap,
     PauliX,
     PauliZ,
     RotX,
@@ -193,6 +194,7 @@ class TestDiagonalCircuitDetection:
 
     def test_diagonal_with_two_qubit_gates(self):
         from braket.default_simulator.gate_operations import CPhaseShift
+
         ops = [PauliZ([0]), CPhaseShift([0, 1], np.pi / 4), T([1])]
         analyzer = CircuitAnalyzer(ops, 2)
         result = analyzer.classify()
@@ -202,8 +204,12 @@ class TestDiagonalCircuitDetection:
 class TestQFTLikeDetection:
     def test_qft_like_circuit(self):
         from braket.default_simulator.gate_operations import CPhaseShift
+
         ops = [
-            Hadamard([0]), Hadamard([1]), Hadamard([2]), Hadamard([3]),
+            Hadamard([0]),
+            Hadamard([1]),
+            Hadamard([2]),
+            Hadamard([3]),
             CPhaseShift([0, 1], np.pi / 2),
             CPhaseShift([0, 2], np.pi / 4),
             CPhaseShift([0, 3], np.pi / 8),
@@ -219,9 +225,12 @@ class TestQFTLikeDetection:
 class TestLowEntanglementDetection:
     def test_nearest_neighbor_circuit(self):
         ops = [
-            Hadamard([0]), CX([0, 1]),
-            Hadamard([1]), CX([1, 2]),
-            Hadamard([2]), CX([2, 3]),
+            Hadamard([0]),
+            CX([0, 1]),
+            Hadamard([1]),
+            CX([1, 2]),
+            Hadamard([2]),
+            CX([2, 3]),
         ]
         analyzer = CircuitAnalyzer(ops, 4)
         report = analyzer.analyze()
@@ -238,10 +247,18 @@ class TestLowEntanglementDetection:
 class TestPartitionedBackendRecommendation:
     def test_disconnected_components_recommend_partitioned(self):
         ops = [
-            Hadamard([0]), T([0]), CX([0, 1]),
-            Hadamard([2]), T([2]), CX([2, 3]),
-            Hadamard([4]), T([4]), CX([4, 5]),
-            Hadamard([6]), T([6]), CX([6, 7]),
+            Hadamard([0]),
+            T([0]),
+            CX([0, 1]),
+            Hadamard([2]),
+            T([2]),
+            CX([2, 3]),
+            Hadamard([4]),
+            T([4]),
+            CX([4, 5]),
+            Hadamard([6]),
+            T([6]),
+            CX([6, 7]),
         ]
         analyzer = CircuitAnalyzer(ops, 8)
         report = analyzer.analyze()
@@ -399,6 +416,7 @@ class TestFusableBlocksBranchCoverage:
 class TestClassifyOpBranches:
     def test_classify_two_qubit_general_gate(self):
         from braket.default_simulator.gate_operations import XX
+
         ops = [XX([0, 1], np.pi / 4)]
         analyzer = CircuitAnalyzer(ops, 2)
         regions = analyzer.identify_subcircuit_classes()
@@ -418,3 +436,74 @@ class TestClassifyOpBranches:
         regions = analyzer.identify_subcircuit_classes()
         assert len(regions) == 1
         assert regions[0][1] == CircuitClass.DIAGONAL
+
+
+class TestEdgeCases:
+    def test_entanglement_graph_with_three_qubit_gate(self):
+        from braket.default_simulator.gate_operations import CCNot
+
+        ops = [CCNot([0, 1, 2])]
+        analyzer = CircuitAnalyzer(ops, 3)
+        graph = analyzer.get_entanglement_graph()
+        assert 1 in graph[0] and 2 in graph[0]
+        assert 0 in graph[1] and 2 in graph[1]
+        assert 0 in graph[2] and 1 in graph[2]
+
+    def test_analyze_partitioned_recommendation(self):
+        ops = []
+        for _ in range(20):
+            ops.append(ISwap([0, 5]))
+            ops.append(ISwap([1, 6]))
+        for _ in range(20):
+            ops.append(ISwap([10, 15]))
+            ops.append(ISwap([11, 16]))
+        analyzer = CircuitAnalyzer(ops, 20)
+        report = analyzer.analyze()
+        assert report.recommended_backend == "partitioned"
+
+    def test_analyze_mps_for_nearest_neighbor(self):
+        ops = [
+            ISwap([0, 1]),
+            ISwap([0, 1]),
+            ISwap([0, 1]),
+            ISwap([0, 1]),
+            ISwap([3, 4]),
+            ISwap([3, 4]),
+            ISwap([3, 4]),
+            ISwap([3, 4]),
+        ]
+        analyzer = CircuitAnalyzer(ops, 6)
+        report = analyzer.analyze()
+        assert report.recommended_backend == "mps"
+
+
+class TestPartitionedBackendBranchCoverage:
+    """Test branch coverage for partitioned backend recommendation."""
+
+    def test_multiple_components_non_full_backend(self):
+        """Test branch where len(components) > 1 but backend != 'full'."""
+        ops = [
+            Hadamard([0]),
+            CX([0, 1]),
+            Hadamard([4]),
+            CX([4, 5]),
+        ]
+        analyzer = CircuitAnalyzer(ops, 6)
+        report = analyzer.analyze()
+        assert len(report.connected_components) > 1
+        assert report.recommended_backend == "clifford"
+
+    def test_single_component_full_backend(self):
+        """Test branch where len(components) == 1 and backend == 'full'."""
+        ops = []
+        n = 14
+        for i in range(n):
+            ops.append(Hadamard([i]))
+        for i in range(n):
+            for j in range(i + 2, n):
+                ops.append(CX([i, j]))
+                ops.append(T([i]))
+        analyzer = CircuitAnalyzer(ops, n)
+        report = analyzer.analyze()
+        assert len(report.connected_components) == 1
+        assert report.recommended_backend == "full"

@@ -301,6 +301,7 @@ class TestStabilizerApplyGate:
 class TestStabilizerApplyOperations:
     def test_apply_operations(self):
         from braket.default_simulator.gate_operations import CX, Hadamard
+
         sim = StabilizerSimulator(2)
         ops = [Hadamard([0]), CX([0, 1])]
         sim.apply_operations(ops)
@@ -323,10 +324,10 @@ class TestStabilizerCopy:
         sim = StabilizerSimulator(2)
         sim.tableau.h(0)
         sim_copy = sim.copy()
-        sim.tableau.x(0)
-        result_orig = sim.sample(100)
-        result_copy = sim_copy.sample(100)
-        assert result_orig != result_copy or len(result_orig) != len(result_copy)
+        sim.tableau.cnot(0, 1)
+        sv_orig = sim.get_state_vector()
+        sv_copy = sim_copy.get_state_vector()
+        assert not np.allclose(sv_orig, sv_copy, atol=1e-7)
 
 
 class TestStabilizerStateVector:
@@ -472,4 +473,91 @@ class TestStabilizerEdgeCases:
         tableau.h(1)
         tableau.cnot(0, 1)
         result = tableau.measure(0)
+        assert result in [0, 1]
+
+    def test_rowsum_g_function_z_only_branch(self):
+        tableau = StabilizerTableau(2)
+        tableau.s(0)
+        tableau.h(0)
+        tableau.s(0)
+        tableau.cnot(0, 1)
+        tableau.s(1)
+        tableau.h(1)
+        result = tableau.measure(0)
+        assert result in [0, 1]
+
+    def test_is_deterministic_copy_with_multiple_destabilizers(self):
+        sim = StabilizerSimulator(3)
+        sim.tableau.h(0)
+        sim.tableau.cnot(0, 1)
+        sim.tableau.h(2)
+        sim.tableau.cnot(2, 1)
+        sim.measure(0)
+        sim.measure(2)
+        is_det, val = sim.is_deterministic(1)
+        assert is_det is True
+
+
+class TestStabilizerNumbaRowsum:
+    def test_rowsum_numba_path_explicit(self):
+        tableau = StabilizerTableau(18)
+        tableau.h(0)
+        tableau.cnot(0, 1)
+        tableau.h(2)
+        tableau.cnot(2, 3)
+        result = tableau.measure(0)
+        assert result in [0, 1]
+        result2 = tableau.measure(2)
+        assert result2 in [0, 1]
+
+
+class TestStabilizerCoverageGaps:
+    def test_rowsum_numba_path_via_measurement(self):
+        """Test _rowsum Numba path is triggered during measurement on large tableau."""
+        tableau = StabilizerTableau(18)
+        # Create entanglement to ensure _rowsum is called during measurement
+        for i in range(17):
+            tableau.h(i)
+            tableau.cnot(i, i + 1)
+        # Measurement should trigger _rowsum for rows with qubit set
+        result = tableau.measure(0)
+        assert result in [0, 1]
+
+
+class TestStabilizerRowsumNumbaPath:
+    """Test _rowsum Numba path with >= 16 qubits."""
+
+    def test_rowsum_numba_path_triggered(self):
+        """Test that _rowsum uses Numba path with >= 16 qubits (lines 142-143)."""
+        # Create a tableau with >= 16 qubits to trigger Numba path
+        # _NUMBA_THRESHOLD = 16, so we need n >= 16
+        tableau = StabilizerTableau(18)
+        # Create GHZ-like state: H on first qubit, then CNOT chain
+        # This creates entanglement where multiple stabilizers have X on qubit 0
+        tableau.h(0)
+        for i in range(17):
+            tableau.cnot(i, i + 1)
+        # After this, measuring qubit 0 will find p (a stabilizer with X on qubit 0)
+        # and then call _rowsum for other rows that also have X on qubit 0
+        # The CNOT chain propagates X operators, so multiple rows will have X on qubit 0
+        result = tableau.measure(0)
+        assert result in [0, 1]
+        # Verify subsequent measurements are deterministic
+        result2 = tableau.measure(0)
+        assert result == result2
+
+    def test_rowsum_numba_multiple_rows(self):
+        """Test _rowsum Numba path with multiple rows needing combination."""
+        # Create 20-qubit tableau (well above threshold)
+        tableau = StabilizerTableau(20)
+        # Create highly entangled state to ensure multiple rows have X on measured qubit
+        for i in range(20):
+            tableau.h(i)
+        for i in range(19):
+            tableau.cnot(i, i + 1)
+        # Add more entanglement
+        for i in range(0, 18, 2):
+            tableau.cz(i, i + 2)
+        # Measure middle qubit - should trigger _rowsum multiple times
+        result = tableau.measure(10)
         assert result in [0, 1]

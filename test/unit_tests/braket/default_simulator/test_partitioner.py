@@ -30,7 +30,6 @@ class TestEntanglementGraphConstruction:
         assert 1 in graph[0]
         assert 0 in graph[1]
 
-
     def test_multiple_entangling_gates(self):
         ops = [CX([0, 1]), CX([1, 2])]
         partitioner = QubitPartitioner(ops, 3)
@@ -236,8 +235,11 @@ class TestPartitionSimulationPaths:
     def test_mixed_partition_types(self):
         ops = [
             Hadamard([0]),
-            Hadamard([2]), CX([2, 3]),
-            Hadamard([4]), T([4]), CX([4, 5]),
+            Hadamard([2]),
+            CX([2, 3]),
+            Hadamard([4]),
+            T([4]),
+            CX([4, 5]),
         ]
         partitioner = QubitPartitioner(ops, 6)
         results = partitioner.simulate_partitioned(1000)
@@ -253,3 +255,37 @@ class TestPartitionSimulationPaths:
         partitions1 = partitioner.partition()
         partitions2 = partitioner.partition()
         assert partitions1 is partitions2
+
+
+class TestPartitionerCoverageGaps:
+    def test_find_connected_components_without_analyze(self):
+        """Test find_connected_components auto-calls analyze_entanglement."""
+        ops = [CX([0, 1]), CX([2, 3])]
+        partitioner = QubitPartitioner(ops, 4)
+        # Verify _entanglement_analyzed starts as False
+        assert partitioner._entanglement_analyzed is False
+        # Don't call analyze_entanglement first - find_connected_components should call it
+        components = partitioner.find_connected_components()
+        assert len(components) == 2
+        # Verify analyze_entanglement was called
+        assert partitioner._entanglement_analyzed is True
+        assert len(partitioner.entanglement_graph) > 0
+
+
+class TestPartitionerEntanglementAnalyzedBranch:
+    """Test branch coverage for _entanglement_analyzed flag."""
+
+    def test_find_connected_components_after_analyze(self):
+        """Test find_connected_components when _entanglement_analyzed is already True (line 86->89)."""
+        ops = [CX([0, 1]), CX([2, 3])]
+        partitioner = QubitPartitioner(ops, 4)
+        # First call analyze_entanglement
+        partitioner.analyze_entanglement()
+        assert partitioner._entanglement_analyzed is True
+        # Now call find_connected_components - should skip analyze_entanglement
+        components = partitioner.find_connected_components()
+        assert len(components) == 2
+        # Verify it still works correctly
+        component_sets = [frozenset(c) for c in components]
+        assert frozenset({0, 1}) in component_sets
+        assert frozenset({2, 3}) in component_sets

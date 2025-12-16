@@ -235,7 +235,7 @@ class TestProductStateBlochVector:
         sim = ProductStateSimulator(1)
         sim.apply_gate(ry_matrix(np.pi / 4), 0)
         x, y, z = sim.get_bloch_vector(0)
-        norm = np.sqrt(x ** 2 + y ** 2 + z ** 2)
+        norm = np.sqrt(x**2 + y**2 + z**2)
         assert np.isclose(norm, 1, atol=1e-7)
 
 
@@ -246,10 +246,7 @@ class TestProductSimulatorCorrectness:
         sim.apply_gate(x_matrix(), 1)
 
         state = sim.get_state_vector()
-        expected = np.kron(
-            np.array([1, 1]) / np.sqrt(2),
-            np.array([0, 1])
-        )
+        expected = np.kron(np.array([1, 1]) / np.sqrt(2), np.array([0, 1]))
         assert np.allclose(state, expected, atol=1e-7)
 
     def test_matches_full_simulator_medium(self):
@@ -350,6 +347,7 @@ class TestProductSimulatorProbabilities:
 class TestProductSimulatorApplyOperations:
     def test_apply_operations_single_gate(self):
         from braket.default_simulator.gate_operations import Hadamard
+
         sim = ProductStateSimulator(2)
         ops = [Hadamard([0])]
         sim.apply_operations(ops)
@@ -359,6 +357,7 @@ class TestProductSimulatorApplyOperations:
 
     def test_apply_operations_multiple_gates(self):
         from braket.default_simulator.gate_operations import Hadamard, PauliX
+
         sim = ProductStateSimulator(2)
         ops = [Hadamard([0]), PauliX([1])]
         sim.apply_operations(ops)
@@ -369,6 +368,7 @@ class TestProductSimulatorApplyOperations:
 
     def test_apply_operations_rejects_two_qubit_gate(self):
         from braket.default_simulator.gate_operations import CX
+
         sim = ProductStateSimulator(2)
         ops = [CX([0, 1])]
         with pytest.raises(ValueError, match="single-qubit gates"):
@@ -401,7 +401,7 @@ class TestProductSimulatorNumbaThreshold:
         for i in range(n_qubits):
             sim.apply_gate(hadamard_matrix(), i)
         state = sim.get_state_vector()
-        assert len(state) == 2 ** n_qubits
+        assert len(state) == 2**n_qubits
         assert np.isclose(np.linalg.norm(state), 1.0, atol=1e-7)
         expected_amp = 1.0 / (2 ** (n_qubits / 2))
         assert np.allclose(np.abs(state), expected_amp, atol=1e-7)
@@ -412,7 +412,7 @@ class TestProductSimulatorNumbaThreshold:
         for i in range(n_qubits):
             sim.apply_gate(hadamard_matrix(), i)
         state = sim.get_state_vector()
-        assert len(state) == 2 ** n_qubits
+        assert len(state) == 2**n_qubits
         assert np.isclose(np.linalg.norm(state), 1.0, atol=1e-7)
 
     def test_state_vector_too_large(self):
@@ -474,3 +474,50 @@ class TestProductSimulatorQFT:
         samples = sim.sample(1000)
         total = sum(samples.values())
         assert total == 1000
+
+
+class TestProductSimulatorCoverageGaps:
+    def test_inverse_qft_default_end_qubit(self):
+        """Test apply_inverse_qft with default end_qubit (None)."""
+        sim = ProductStateSimulator(4)
+        sim.initialize(0)
+        sim.apply_qft()
+        sim.apply_inverse_qft()  # end_qubit defaults to None -> n_qubits
+        state = sim.get_state_vector()
+        assert np.isclose(np.linalg.norm(state), 1.0, atol=1e-7)
+
+    def test_get_probabilities_numba_path(self):
+        """Test get_probabilities with >= 12 qubits to trigger Numba path."""
+        n_qubits = 12
+        sim = ProductStateSimulator(n_qubits)
+        for i in range(n_qubits):
+            sim.apply_gate(hadamard_matrix(), i)
+        probs = sim.get_probabilities()
+        assert len(probs) == 2**n_qubits
+        assert np.isclose(np.sum(probs), 1.0, atol=1e-7)
+        expected = 1.0 / (2**n_qubits)
+        assert np.allclose(probs, expected, atol=1e-7)
+
+
+class TestProductSimulatorInverseQFTBranch:
+    """Test branch coverage for apply_inverse_qft."""
+
+    def test_inverse_qft_explicit_end_qubit(self):
+        """Test apply_inverse_qft with explicit end_qubit parameter (line 179->181)."""
+        sim = ProductStateSimulator(4)
+        sim.initialize(0)
+        sim.apply_qft(start_qubit=0, end_qubit=4)
+        # Apply inverse QFT with explicit end_qubit (not None)
+        sim.apply_inverse_qft(start_qubit=0, end_qubit=4)
+        state = sim.get_state_vector()
+        assert np.isclose(np.linalg.norm(state), 1.0, atol=1e-7)
+
+    def test_inverse_qft_partial_explicit_end(self):
+        """Test partial inverse QFT with explicit end_qubit."""
+        sim = ProductStateSimulator(6)
+        sim.initialize(0)
+        sim.apply_qft(start_qubit=1, end_qubit=4)
+        # Apply inverse QFT with explicit end_qubit
+        sim.apply_inverse_qft(start_qubit=1, end_qubit=4)
+        state = sim.get_state_vector()
+        assert np.isclose(np.linalg.norm(state), 1.0, atol=1e-7)

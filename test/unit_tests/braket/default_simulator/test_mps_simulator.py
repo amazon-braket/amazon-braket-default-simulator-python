@@ -335,6 +335,7 @@ class TestMPSGateValidation:
 class TestMPSApplyOperations:
     def test_apply_operations_single_qubit(self):
         from braket.default_simulator.gate_operations import Hadamard, PauliX
+
         sim = MPSSimulator(2)
         ops = [Hadamard([0]), PauliX([1])]
         sim.apply_operations(ops)
@@ -343,6 +344,7 @@ class TestMPSApplyOperations:
 
     def test_apply_operations_two_qubit(self):
         from braket.default_simulator.gate_operations import CX, Hadamard
+
         sim = MPSSimulator(2)
         ops = [Hadamard([0]), CX([0, 1])]
         sim.apply_operations(ops)
@@ -356,6 +358,7 @@ class TestMPSApplyOperations:
             def __init__(self):
                 self.targets = [0, 1, 2]
                 self.matrix = np.eye(8)
+
         sim = MPSSimulator(3)
         with pytest.raises(ValueError, match="up to 2-qubit"):
             sim.apply_operations([FakeOp()])
@@ -434,6 +437,18 @@ class TestMPSSVDTruncation:
         state = sim.get_state_vector()
         assert np.isclose(np.linalg.norm(state), 1.0, atol=1e-7)
 
+    def test_svd_extreme_cutoff_keeps_one_singular_value(self):
+        """Test that at least one singular value is kept even with extreme cutoff."""
+        # Use very high cutoff to trigger the mask[0] = True fallback
+        sim = MPSSimulator(2, svd_cutoff=10.0, max_bond_dim=None)
+        sim.apply_single_qubit_gate(hadamard_matrix(), 0)
+        sim.apply_two_qubit_gate(cnot_matrix(), 0, 1)
+        # Should not crash - at least one singular value is kept
+        state = sim.get_state_vector()
+        # State won't be normalized due to extreme truncation, but should exist
+        assert state is not None
+        assert len(state) == 4
+
 
 class TestMPSSamplingEdgeCases:
     def test_sample_with_zero_probability_normalization(self):
@@ -451,3 +466,52 @@ class TestMPSSamplingEdgeCases:
         results = sim.sample(1000)
         total = sum(results.values())
         assert total == 1000
+
+
+class TestMPSFusionIntegration:
+    def test_apply_operations_with_fusion(self):
+        """Test that apply_operations uses single-qubit fusion."""
+        from braket.default_simulator.gate_operations import Hadamard, S, T
+
+        sim = MPSSimulator(3)
+        # Create consecutive single-qubit gates that should be fused
+        ops = [
+            Hadamard([0]),
+            T([0]),
+            S([0]),
+            Hadamard([1]),
+            T([1]),
+        ]
+        sim.apply_operations(ops)
+        sv = sim.get_state_vector()
+        assert np.isclose(np.linalg.norm(sv), 1.0, atol=1e-7)
+
+    def test_apply_operations_fusion_correctness(self):
+        """Test that fusion produces correct results."""
+        from braket.default_simulator.gate_operations import Hadamard, T
+
+        # Without fusion
+        sim1 = MPSSimulator(2)
+        sim1.apply_single_qubit_gate(hadamard_matrix(), 0)
+        sim1.apply_single_qubit_gate(np.diag([1, np.exp(1j * np.pi / 4)]), 0)
+        sv1 = sim1.get_state_vector()
+
+        # With fusion via apply_operations
+        sim2 = MPSSimulator(2)
+        ops = [Hadamard([0]), T([0])]
+        sim2.apply_operations(ops)
+        sv2 = sim2.get_state_vector()
+
+        np.testing.assert_allclose(sv1, sv2, atol=1e-10)
+
+
+class TestMPSBondDimensionsEmptyTensors:
+    """Test get_bond_dimensions when tensors list is empty."""
+
+    def test_get_bond_dimensions_empty_tensors(self):
+        """Test get_bond_dimensions returns empty list when tensors is empty (line 268)."""
+        sim = MPSSimulator(3)
+        # Manually clear tensors to trigger the empty check
+        sim.tensors = []
+        bond_dims = sim.get_bond_dimensions()
+        assert bond_dims == []

@@ -54,9 +54,15 @@ DIAGONAL_GATES = frozenset(
     }
 )
 
+PAULI_GATES = frozenset({"pauli_x", "pauli_y", "pauli_z", "x", "y", "z"})
+HADAMARD_GATE = frozenset({"hadamard", "h"})
+
 TWO_QUBIT_GATE_DISPATCH = MappingProxyType(
     {
         "cx": lambda dispatcher, state, target0, target1, out: dispatcher.apply_cnot(
+            state, target0, target1, out
+        ),
+        "cnot": lambda dispatcher, state, target0, target1, out: dispatcher.apply_cnot(
             state, target0, target1, out
         ),
         "swap": lambda dispatcher, state, target0, target1, out: dispatcher.apply_swap(
@@ -68,6 +74,9 @@ TWO_QUBIT_GATE_DISPATCH = MappingProxyType(
         target0,
         target1,
         out: dispatcher.apply_controlled_phase_shift(state, matrix[3, 3], (target0,), target1),
+        "cz": lambda dispatcher, state, target0, target1, out: dispatcher.apply_cz(
+            state, target0, target1
+        ),
     }
 )
 
@@ -87,11 +96,17 @@ class QuantumGateDispatcher:
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_large
             self.apply_cnot = _apply_cnot_large
             self.apply_two_qubit_gate = _apply_two_qubit_gate_large
+            self.apply_cz = _apply_cz_large
+            self.apply_pauli_x = _apply_pauli_x_large
+            self.apply_hadamard = _apply_hadamard_large
         else:
             self.apply_swap = _apply_swap_small
             self.apply_controlled_phase_shift = _apply_controlled_phase_shift_small
             self.apply_cnot = _apply_cnot_small
             self.apply_two_qubit_gate = _apply_two_qubit_gate_small
+            self.apply_cz = _apply_cz_small
+            self.apply_pauli_x = _apply_pauli_x_small
+            self.apply_hadamard = _apply_hadamard_small
 
 
 def multiply_matrix(
@@ -207,18 +222,7 @@ def _apply_single_qubit_gate_large(  # pragma: no cover
 def _apply_diagonal_gate_small(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
-    """
-    Applies a diagonal single-qubit gate using array slicing.
-
-    Args:
-        state: Input quantum state
-        matrix: 2x2 diagonal gate matrix
-        target: Target qubit index
-        out: Output array
-
-    Returns:
-        Tuple of (output_state, swap_occurred)
-    """
+    """Applies a diagonal single-qubit gate using array slicing."""
     a, d = matrix[0, 0], matrix[1, 1]
 
     shape = state.shape
@@ -228,11 +232,8 @@ def _apply_diagonal_gate_small(
     state_reshaped = state.reshape(before_size, 2, after_size)
     out_reshaped = out.reshape(before_size, 2, after_size)
 
-    state_0 = state_reshaped[:, 0, :]
-    state_1 = state_reshaped[:, 1, :]
-
-    out_reshaped[:, 0, :] = a * state_0
-    out_reshaped[:, 1, :] = d * state_1
+    out_reshaped[:, 0, :] = a * state_reshaped[:, 0, :]
+    out_reshaped[:, 1, :] = d * state_reshaped[:, 1, :]
 
     return out, True
 
@@ -241,37 +242,22 @@ def _apply_diagonal_gate_small(
 def _apply_diagonal_gate_large(  # pragma: no cover
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
-    """
-    Applies a diagonal single-qubit gate using bit masking.
-
-    Args:
-        state: Input quantum state
-        matrix: 2x2 diagonal gate matrix
-        target: Target qubit index
-        out: Output array
-
-    Returns:
-        Tuple of (output_state, swap_occurred)
-    """
+    """Applies a diagonal single-qubit gate using bit masking."""
     a, d = matrix[0, 0], matrix[1, 1]
 
     target_bit = state.ndim - target - 1
     target_mask = np.int64(1 << target_bit)
-    shifted_target_mask = np.int64(target_mask - 1)
+    lower_mask = np.int64(target_mask - 1)
 
     half_size = state.size >> 1
     state_flat = state.reshape(-1)
     out_flat = out.reshape(-1)
 
     for i in nb.prange(half_size):
-        idx0 = (i & ~(shifted_target_mask)) << 1 | (i & (shifted_target_mask))
+        idx0 = ((i & ~lower_mask) << 1) | (i & lower_mask)
         idx1 = idx0 | target_mask
-
-        state0 = state_flat[idx0]
-        state1 = state_flat[idx1]
-
-        out_flat[idx0] = a * state0
-        out_flat[idx1] = d * state1
+        out_flat[idx0] = a * state_flat[idx0]
+        out_flat[idx1] = d * state_flat[idx1]
 
     return out, True
 
@@ -502,14 +488,132 @@ def _apply_controlled_phase_shift_small(
     return state, False
 
 
+def _apply_cz_small(state: np.ndarray, control: int, target: int) -> tuple[np.ndarray, bool]:
+    """CZ gate using numpy slicing - applies -1 phase to |11> state."""
+    slices = [_NO_CONTROL_SLICE] * state.ndim
+    slices[control] = 1
+    slices[target] = 1
+    state[tuple(slices)] *= -1
+    return state, False
+
+
 @nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
-def _apply_two_qubit_gate_large(
+def _apply_cz_large(
+    state: np.ndarray, control: int, target: int
+) -> tuple[np.ndarray, bool]:  # pragma: no cover
+    """CZ gate using bit manipulation - applies -1 phase to |11> state."""
+    n_qubits = state.ndim
+    control_mask = np.int64(1) << (n_qubits - 1 - control)
+    target_mask = np.int64(1) << (n_qubits - 1 - target)
+    both_mask = control_mask | target_mask
+
+    state_flat = state.reshape(-1)
+    total_size = state.size
+
+    for i in nb.prange(total_size):
+        if (i & both_mask) == both_mask:
+            state_flat[i] = -state_flat[i]
+
+    return state, False
+
+
+def _apply_pauli_x_small(
+    state: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Pauli X gate using numpy - swaps |0> and |1> amplitudes."""
+    shape = state.shape
+    before_size = int(np.prod(shape[:target]))
+    after_size = int(np.prod(shape[target + 1 :]))
+
+    state_reshaped = state.reshape(before_size, 2, after_size)
+    out_reshaped = out.reshape(before_size, 2, after_size)
+
+    out_reshaped[:, 0, :] = state_reshaped[:, 1, :]
+    out_reshaped[:, 1, :] = state_reshaped[:, 0, :]
+
+    return out, True
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_pauli_x_large(  # pragma: no cover
+    state: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Pauli X gate using bit manipulation - swaps |0> and |1> amplitudes."""
+    n_qubits = state.ndim
+    target_bit = n_qubits - 1 - target
+    target_mask = np.int64(1) << target_bit
+    lower_mask = target_mask - 1
+
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+    half_size = state.size >> 1
+
+    for i in nb.prange(half_size):
+        idx0 = ((i & ~lower_mask) << 1) | (i & lower_mask)
+        idx1 = idx0 | target_mask
+        out_flat[idx0] = state_flat[idx1]
+        out_flat[idx1] = state_flat[idx0]
+
+    return out, True
+
+
+_SQRT2_INV = np.complex128(1.0 / np.sqrt(2.0))
+
+
+def _apply_hadamard_small(
+    state: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Hadamard gate using numpy slicing."""
+    shape = state.shape
+    before_size = int(np.prod(shape[:target]))
+    after_size = int(np.prod(shape[target + 1 :]))
+
+    state_reshaped = state.reshape(before_size, 2, after_size)
+    out_reshaped = out.reshape(before_size, 2, after_size)
+
+    state_0 = state_reshaped[:, 0, :]
+    state_1 = state_reshaped[:, 1, :]
+
+    out_reshaped[:, 0, :] = _SQRT2_INV * (state_0 + state_1)
+    out_reshaped[:, 1, :] = _SQRT2_INV * (state_0 - state_1)
+
+    return out, True
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_hadamard_large(  # pragma: no cover
+    state: np.ndarray, target: int, out: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Hadamard gate using bit manipulation."""
+    sqrt2_inv = np.complex128(1.0 / np.sqrt(2.0))
+    n_qubits = state.ndim
+    target_bit = n_qubits - 1 - target
+    target_mask = np.int64(1) << target_bit
+    lower_mask = target_mask - 1
+
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+    half_size = state.size >> 1
+
+    for i in nb.prange(half_size):
+        idx0 = ((i & ~lower_mask) << 1) | (i & lower_mask)
+        idx1 = idx0 | target_mask
+
+        s0, s1 = state_flat[idx0], state_flat[idx1]
+        out_flat[idx0] = sqrt2_inv * (s0 + s1)
+        out_flat[idx1] = sqrt2_inv * (s0 - s1)
+
+    return out, True
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_two_qubit_gate_large(  # pragma: no cover
     state: np.ndarray,
     matrix: np.ndarray,
     target0: int,
     target1: int,
     out: np.ndarray,
-) -> tuple[np.ndarray, bool]:  # pragma: no cover
+) -> tuple[np.ndarray, bool]:
     """Two-qubit gate implementation using bit manipulation."""
     n_qubits = state.ndim
     total_size = 1 << n_qubits
@@ -604,13 +708,10 @@ def _apply_two_qubit_gate(
     target0, target1 = targets
 
     if gate_type and (gate_func := TWO_QUBIT_GATE_DISPATCH.get(gate_type)):
-        # TODO: fix this to generalize...
         if gate_type == "cphaseshift":
             return gate_func(dispatcher, state, matrix, target0, target1, out)
-        else:
-            return gate_func(dispatcher, state, target0, target1, out)
-    else:
-        return dispatcher.apply_two_qubit_gate(state, matrix, target0, target1, out)
+        return gate_func(dispatcher, state, target0, target1, out)
+    return dispatcher.apply_two_qubit_gate(state, matrix, target0, target1, out)
 
 
 def _apply_single_qubit_gate(
@@ -631,17 +732,27 @@ def _apply_single_qubit_gate(
             indicating whether a buffer swap occurred.
     """
     n_qubits = state.ndim
+    use_large = n_qubits > _QUBIT_THRESHOLD
 
-    if gate_type and gate_type in DIAGONAL_GATES:
-        if n_qubits > _QUBIT_THRESHOLD:
-            return _apply_diagonal_gate_large(state, matrix, target, out)
-        else:
+    if gate_type:
+        if gate_type in DIAGONAL_GATES:
+            if use_large:
+                return _apply_diagonal_gate_large(state, matrix, target, out)
             return _apply_diagonal_gate_small(state, matrix, target, out)
-    else:
-        if n_qubits > _QUBIT_THRESHOLD:
-            return _apply_single_qubit_gate_large(state, matrix, target, out)
-        else:
-            return _apply_single_qubit_gate_small(state, matrix, target, out)
+
+        if gate_type in ("pauli_x", "x"):
+            if use_large:
+                return _apply_pauli_x_large(state, target, out)
+            return _apply_pauli_x_small(state, target, out)
+
+        if gate_type in HADAMARD_GATE:
+            if use_large:
+                return _apply_hadamard_large(state, target, out)
+            return _apply_hadamard_small(state, target, out)
+
+    if use_large:
+        return _apply_single_qubit_gate_large(state, matrix, target, out)
+    return _apply_single_qubit_gate_small(state, matrix, target, out)
 
 
 def _multiply_matrix(
