@@ -1,0 +1,269 @@
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+# ANY KIND, either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
+import sys
+
+from braket.default_simulator.hybrid_simulation import HybridSimulation
+from braket.default_simulator.simulator import BaseLocalSimulator
+from braket.device_schema.simulators import (
+    GateModelSimulatorDeviceCapabilities,
+    GateModelSimulatorDeviceParameters,
+)
+
+
+class HybridSimulator(BaseLocalSimulator):
+    """
+    Hybrid quantum circuit simulator with automatic backend selection.
+
+    This simulator analyzes circuits to determine the optimal simulation
+    strategy and dispatches to specialized backends when beneficial.
+
+    Supported backends:
+    - product: For circuits with no entanglement
+    - clifford: For Clifford circuits (H, S, CX, CZ, Pauli gates)
+    - mps: For low-entanglement circuits using Matrix Product States
+    - partitioned: For circuits with disconnected qubit groups
+    - full: Standard state vector simulation
+    """
+
+    DEVICE_ID = "braket_hybrid"
+
+    def initialize_simulation(self, **kwargs) -> HybridSimulation:
+        """
+        Initialize hybrid simulation.
+
+        Args:
+            **kwargs: qubit_count, shots, batch_size, auto_select, force_backend, max_bond_dim
+
+        Returns:
+            HybridSimulation: Initialized simulation.
+        """
+        qubit_count = kwargs.get("qubit_count")
+        shots = kwargs.get("shots")
+        batch_size = kwargs.get("batch_size", 1)
+        auto_select = kwargs.get("auto_select", True)
+        force_backend = kwargs.get("force_backend", None)
+        max_bond_dim = kwargs.get("max_bond_dim", 64)
+        return HybridSimulation(
+            qubit_count,
+            shots,
+            batch_size,
+            auto_select,
+            force_backend,
+            max_bond_dim,
+        )
+
+    @property
+    def properties(self) -> GateModelSimulatorDeviceCapabilities:
+        """
+        Device properties for the HybridSimulator.
+
+        Returns:
+            GateModelSimulatorDeviceCapabilities: Device capabilities for this simulator.
+        """
+        observables = ["x", "y", "z", "h", "i", "hermitian"]
+        max_shots = sys.maxsize
+        qubit_count = 26
+        return GateModelSimulatorDeviceCapabilities.parse_obj(
+            {
+                "service": {
+                    "executionWindows": [
+                        {
+                            "executionDay": "Everyday",
+                            "windowStartHour": "00:00",
+                            "windowEndHour": "23:59:59",
+                        }
+                    ],
+                    "shotsRange": [0, max_shots],
+                },
+                "action": {
+                    "braket.ir.jaqcd.program": {
+                        "actionType": "braket.ir.jaqcd.program",
+                        "version": ["1"],
+                        "supportedOperations": [
+                            "ccnot",
+                            "cnot",
+                            "cphaseshift",
+                            "cphaseshift00",
+                            "cphaseshift01",
+                            "cphaseshift10",
+                            "cswap",
+                            "cv",
+                            "cy",
+                            "cz",
+                            "ecr",
+                            "h",
+                            "i",
+                            "iswap",
+                            "pswap",
+                            "phaseshift",
+                            "rx",
+                            "ry",
+                            "rz",
+                            "s",
+                            "si",
+                            "swap",
+                            "t",
+                            "ti",
+                            "unitary",
+                            "v",
+                            "vi",
+                            "x",
+                            "xx",
+                            "xy",
+                            "y",
+                            "yy",
+                            "z",
+                            "zz",
+                        ],
+                        "supportedResultTypes": [
+                            {
+                                "name": "Sample",
+                                "observables": observables,
+                                "minShots": 1,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Expectation",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Variance",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                            {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
+                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+                        ],
+                    },
+                    "braket.ir.openqasm.program": {
+                        "actionType": "braket.ir.openqasm.program",
+                        "version": ["1"],
+                        "supportedOperations": [
+                            "U",
+                            "GPhase",
+                            "ccnot",
+                            "cnot",
+                            "cphaseshift",
+                            "cphaseshift00",
+                            "cphaseshift01",
+                            "cphaseshift10",
+                            "cswap",
+                            "cv",
+                            "cy",
+                            "cz",
+                            "ecr",
+                            "gpi",
+                            "gpi2",
+                            "h",
+                            "i",
+                            "iswap",
+                            "ms",
+                            "pswap",
+                            "phaseshift",
+                            "prx",
+                            "rx",
+                            "ry",
+                            "rz",
+                            "s",
+                            "si",
+                            "swap",
+                            "t",
+                            "ti",
+                            "unitary",
+                            "v",
+                            "vi",
+                            "x",
+                            "xx",
+                            "xy",
+                            "y",
+                            "yy",
+                            "z",
+                            "zz",
+                        ],
+                        "supportedModifiers": [
+                            {"name": "ctrl"},
+                            {"name": "negctrl"},
+                            {"name": "pow", "exponent_types": ["int", "float"]},
+                            {"name": "inv"},
+                        ],
+                        "supportedPragmas": [
+                            "braket_unitary_matrix",
+                            "braket_result_type_state_vector",
+                            "braket_result_type_density_matrix",
+                            "braket_result_type_sample",
+                            "braket_result_type_expectation",
+                            "braket_result_type_variance",
+                            "braket_result_type_probability",
+                            "braket_result_type_amplitude",
+                        ],
+                        "forbiddenPragmas": [
+                            "braket_noise_amplitude_damping",
+                            "braket_noise_bit_flip",
+                            "braket_noise_depolarizing",
+                            "braket_noise_kraus",
+                            "braket_noise_pauli_channel",
+                            "braket_noise_generalized_amplitude_damping",
+                            "braket_noise_phase_flip",
+                            "braket_noise_phase_damping",
+                            "braket_noise_two_qubit_dephasing",
+                            "braket_noise_two_qubit_depolarizing",
+                            "braket_result_type_adjoint_gradient",
+                        ],
+                        "supportedResultTypes": [
+                            {
+                                "name": "Sample",
+                                "observables": observables,
+                                "minShots": 1,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Expectation",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {
+                                "name": "Variance",
+                                "observables": observables,
+                                "minShots": 0,
+                                "maxShots": max_shots,
+                            },
+                            {"name": "Probability", "minShots": 0, "maxShots": max_shots},
+                            {"name": "StateVector", "minShots": 0, "maxShots": 0},
+                            {"name": "DensityMatrix", "minShots": 0, "maxShots": 0},
+                            {"name": "Amplitude", "minShots": 0, "maxShots": 0},
+                        ],
+                        "supportPhysicalQubits": False,
+                        "supportsPartialVerbatimBox": False,
+                        "requiresContiguousQubitIndices": False,
+                        "requiresAllQubitsMeasurement": False,
+                        "supportsUnassignedMeasurements": True,
+                        "disabledQubitRewiringSupported": False,
+                    },
+                    "braket.ir.openqasm.program_set": {
+                        "actionType": "braket.ir.openqasm.program_set",
+                        "version": ["1"],
+                        "maximumExecutables": 100,
+                        "maximumTotalShots": 200_000,
+                    },
+                },
+                "paradigm": {"qubitCount": qubit_count},
+                "deviceParameters": GateModelSimulatorDeviceParameters.schema(),
+            }
+        )
