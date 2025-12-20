@@ -118,11 +118,18 @@ class Interpreter:
     the ProgramContext object, which can be used for debugging or other customizability.
     """
 
-    def __init__(self, context: AbstractProgramContext | None = None, logger: Logger | None = None):
+    def __init__(
+        self,
+        context: AbstractProgramContext | None = None,
+        logger: Logger | None = None,
+        *,
+        warn_advanced_features: bool = False,
+    ):
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
+        self._warn_advanced_features = warn_advanced_features
 
     def build_circuit(
         self, source: str, inputs: dict[str, io_type] | None = None, is_file: bool = False
@@ -143,7 +150,7 @@ class Interpreter:
 
         self._uses_advanced_language_features = False
         self.visit(parse(source))
-        if self._uses_advanced_language_features:
+        if self._warn_advanced_features and self._uses_advanced_language_features:
             self.logger.warning(
                 "This program uses OpenQASM language features that may "
                 "not be supported on QPUs or on-demand simulators."

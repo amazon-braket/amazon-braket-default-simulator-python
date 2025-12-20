@@ -1979,7 +1979,7 @@ def test_noise():
     ),
 )
 def test_advanced_language_features(qasm, caplog):
-    Interpreter().run(qasm, inputs={"x": 1})
+    Interpreter(warn_advanced_features=True).run(qasm, inputs={"x": 1})
     assert re.match(
         (
             "WARNING.*"

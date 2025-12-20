@@ -120,7 +120,7 @@ class OpenQASMSimulator(BraketSimulator, ABC):
             AbstractProgramContext: The program context after the program has been parsed.
         """
         is_file = program.source.endswith(".qasm")
-        interpreter = Interpreter(self.create_program_context())
+        interpreter = Interpreter(self.create_program_context(), warn_advanced_features=True)
         return interpreter.run(
             source=program.source,
             inputs=program.inputs,
