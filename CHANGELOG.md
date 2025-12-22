@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.32.1 (2025-12-22)
+
+### Bug Fixes and Other Changes
+
+ * Make advanced OpenQASM warning optional
+
 ## v1.32.0 (2025-10-16)
 
 ### Deprecations and Removals
