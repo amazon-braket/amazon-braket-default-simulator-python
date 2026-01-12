@@ -840,6 +840,15 @@ class AbstractProgramContext(ABC):
     def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
         """Add qubit targets to be measured"""
 
+    def add_barrier(self, target: list[int] | None = None) -> None:
+        """Abstract method to add a barrier instruction to the circuit
+
+        Args:
+            target (list[int] | None): The target qubits for the barrier. If None,
+                applies to all qubits in the circuit.
+        """
+        raise NotImplementedError
+
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
 
@@ -906,3 +915,14 @@ class ProgramContext(AbstractProgramContext):
 
     def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
         self._circuit.add_measure(target, classical_targets)
+
+    def add_barrier(self, target: list[int] | None = None) -> None:
+        """Add a barrier instruction to the circuit.
+
+        Args:
+            target (list[int] | None): The target qubits for the barrier. If None,
+                applies to all qubits in the circuit.
+        """
+        # Barriers are no-ops in simulation but need to be tracked for circuit conversion
+        # The simulator doesn't need to do anything special for barriers during execution
+        pass
