@@ -105,7 +105,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         ctx: BraketPragmasParser.StandardObservableIdentifierContext,
     ) -> tuple[tuple[str], int]:
         observable = ctx.standardObservableName().getText()
-        target_tuple = self.visit(ctx.indexedIdentifier())
+        target_tuple = self.visit(ctx.gateOperand())
         if len(target_tuple) != 1:
             raise ValueError("Standard observable target must be exactly 1 qubit.")
         return (observable,), target_tuple
@@ -135,6 +135,12 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         converted = np.append(matrix.real, matrix.imag, axis=-1).tolist()
         target = self.visit(ctx.multiTarget())
         return (converted,), target
+
+    def visitGateOperand(self, ctx: BraketPragmasParser.GateOperandContext) -> tuple[int]:
+        """Handle both indexedIdentifier (q[0]) and HardwareQubit ($0) in pragmas."""
+        if ctx.HardwareQubit():
+            return (int(ctx.HardwareQubit().getText()[1:]),)
+        return self.visit(ctx.indexedIdentifier())
 
     def visitIndexedIdentifier(
         self, ctx: BraketPragmasParser.IndexedIdentifierContext
