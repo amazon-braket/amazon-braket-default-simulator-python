@@ -58,8 +58,8 @@ optionalMultiTargetResultTypeName
     ;
 
 multiTarget
-    : indexedIdentifier (COMMA indexedIdentifier)*      # MultiTargetIdentifiers
-    | ALL                                               # MultiTargetAll
+    : gateOperand (COMMA gateOperand)*      # MultiTargetIdentifiers
+    | ALL                                   # MultiTargetAll
     ;
 
 multiStateResultType
@@ -85,8 +85,8 @@ observable
     ;
 
 standardObservable
-    : standardObservableName LPAREN indexedIdentifier RPAREN    # StandardObservableIdentifier
-    | standardObservableName ALL                                # StandardObservableAll
+    : standardObservableName LPAREN gateOperand RPAREN    # StandardObservableIdentifier
+    | standardObservableName ALL                          # StandardObservableAll
     ;
 
 tensorProductObservable
