@@ -1689,6 +1689,44 @@ def test_verbatim_pragma():
     )
 
 
+def test_physical_qubit_result_pragma():
+    """Test that result pragmas work with physical qubit syntax ($0)."""
+    qasm = """
+    OPENQASM 3.0;
+    h $0;
+    cnot $0, $1;
+    #pragma braket result expectation z($0)
+    #pragma braket result expectation z($1)
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
+    assert len(circuit.results) == 2
+    assert circuit.results[0].observable == ["z"]
+    assert circuit.results[0].targets == [0]
+    assert circuit.results[1].targets == [1]
+
+
+def test_physical_qubit_multi_target_result_pragma():
+    """Test that result pragmas work with multiple physical qubits."""
+    qasm = """
+    OPENQASM 3.0;
+    h $0;
+    cnot $0, $1;
+    #pragma braket result probability $0, $1
+    #pragma braket result expectation z($0) @ z($1)
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
+    assert len(circuit.results) == 2
+    assert circuit.results[0].targets == [0, 1]
+    assert circuit.results[1].observable == ["z", "z"]
+    assert circuit.results[1].targets == [0, 1]
+
+
 def test_unsupported_pragma():
     qasm = """
     qubit q;
