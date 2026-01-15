@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.32.2 (2026-01-15)
+
+### Bug Fixes and Other Changes
+
+ * support physical qubit syntax in result pragmas
+
 ## v1.32.1 (2025-12-22)
 
 ### Bug Fixes and Other Changes
