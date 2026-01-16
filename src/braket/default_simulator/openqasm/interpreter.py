@@ -86,6 +86,7 @@ from .parser.openqasm_ast import (
     Pragma,
     Program,
     QASMNode,
+    QuantumBarrier,
     QuantumGate,
     QuantumGateDefinition,
     QuantumGateModifier,
@@ -261,6 +262,20 @@ class Interpreter:
     @visit.register
     def _(self, node: QuantumReset) -> None:
         raise NotImplementedError("Reset not supported")
+
+    @visit.register
+    def _(self, node: QuantumBarrier) -> None:
+        """Handle quantum barrier statements"""
+        if node.qubits:
+            # Convert qubit expressions to qubit indices
+            qubits = []
+            for qubit_expr in node.qubits:
+                qubit_indices = self.context.get_qubits(self.visit(qubit_expr))
+                qubits.extend(qubit_indices)
+            self.context.add_barrier(qubits)
+        else:
+            # Barrier with no qubits applies to all qubits
+            self.context.add_barrier(None)
 
     @visit.register
     def _(self, node: IndexedIdentifier) -> IndexedIdentifier | LiteralType:

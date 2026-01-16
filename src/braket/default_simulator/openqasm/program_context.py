@@ -840,6 +840,15 @@ class AbstractProgramContext(ABC):
     def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
         """Add qubit targets to be measured"""
 
+    def add_barrier(self, target: list[int] | None = None) -> None:
+        """Abstract method to add a barrier instruction to the circuit. By defaul barrier is ignored.
+        Barriers act as no-ops in simulation.
+
+        Args:
+            target (list[int] | None): The target qubits for the barrier. If None,
+                applies to all qubits in the circuit.
+        """
+
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
 
