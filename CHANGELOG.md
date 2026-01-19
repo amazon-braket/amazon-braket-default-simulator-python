@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.33.0 (2026-01-19)
+
+### Features
+
+ * add visitor for barrier in interpreter
+
 ## v1.32.2 (2026-01-15)
 
 ### Bug Fixes and Other Changes
