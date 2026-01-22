@@ -61,7 +61,7 @@ class ProgramValidator(Program):
         # If no local detuning, we simply return the values
         # because there are separate validators to validate
         # the global driving fields in the program
-        if not len(local_detuning):
+        if not len(local_detuning) or not capabilities.MAX_NET_DETUNING:
             return values
 
         detuning_times = [

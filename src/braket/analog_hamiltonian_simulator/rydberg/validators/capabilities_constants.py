@@ -33,4 +33,4 @@ class CapabilitiesConstants(BaseModel):
 
     MAGNITUDE_PATTERN_VALUE_MIN: Decimal
     MAGNITUDE_PATTERN_VALUE_MAX: Decimal
-    MAX_NET_DETUNING: Decimal
+    MAX_NET_DETUNING: Decimal | None
