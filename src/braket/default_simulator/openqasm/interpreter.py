@@ -14,7 +14,7 @@
 from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import fields
-from enum import Enum
+from enum import StrEnum
 from functools import singledispatchmethod
 from logging import Logger, getLogger
 
@@ -700,6 +700,6 @@ class Interpreter:
         self.context.add_phase(phase, qubits)
 
 
-class VerbatimBoxDelimiter(str, Enum):
+class VerbatimBoxDelimiter(StrEnum):
     START_VERBATIM = "StartVerbatim"
     END_VERBATIM = "EndVerbatim"
