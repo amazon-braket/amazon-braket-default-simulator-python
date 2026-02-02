@@ -25,7 +25,7 @@ setup(
     name="amazon-braket-default-simulator",
     version=version,
     license="Apache License 2.0",
-    python_requires=">= 3.10",
+    python_requires=">= 3.11",
     packages=find_namespace_packages(where="src", exclude=("test",)),
     package_dir={"": "src"},
     package_data={"": ["*.g4", "*.inc"]},
@@ -38,7 +38,7 @@ setup(
         "scipy",
         "sympy",
         "antlr4-python3-runtime==4.13.2",
-        "amazon-braket-schemas>=1.25.0",
+        "amazon-braket-schemas>=1.26.1",
     ],
     entry_points={
         "braket.simulators": [
@@ -84,7 +84,6 @@ setup(
         "Natural Language :: English",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",

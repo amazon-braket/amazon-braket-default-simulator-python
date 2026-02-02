@@ -149,3 +149,27 @@ def test_prebuilt_circuit():
         gate_operations.Hadamard([0]),
         gate_operations.CX([0, 1]),
     ]
+
+
+def test_add_barrier_method_exists():
+    """Test that add_barrier method exists and can be called without errors."""
+    context = ProgramContext()
+
+    # Should not raise any exceptions
+    context.add_barrier([0, 1])  # With specific qubits
+    context.add_barrier(None)  # Global barrier
+    context.add_barrier([])  # Empty qubit list
+
+
+def test_add_barrier_is_noop():
+    """Test that add_barrier doesn't add any instructions to the circuit."""
+    context = ProgramContext()
+    initial_instruction_count = len(context.circuit.instructions)
+
+    # Add barriers with different parameters
+    context.add_barrier([0, 1])
+    context.add_barrier(None)
+    context.add_barrier([2])
+
+    # Circuit should remain unchanged
+    assert len(context.circuit.instructions) == initial_instruction_count

@@ -14,7 +14,7 @@
 from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import fields
-from enum import Enum
+from enum import StrEnum
 from functools import singledispatchmethod
 from logging import Logger, getLogger
 
@@ -86,6 +86,7 @@ from .parser.openqasm_ast import (
     Pragma,
     Program,
     QASMNode,
+    QuantumBarrier,
     QuantumGate,
     QuantumGateDefinition,
     QuantumGateModifier,
@@ -118,11 +119,18 @@ class Interpreter:
     the ProgramContext object, which can be used for debugging or other customizability.
     """
 
-    def __init__(self, context: AbstractProgramContext | None = None, logger: Logger | None = None):
+    def __init__(
+        self,
+        context: AbstractProgramContext | None = None,
+        logger: Logger | None = None,
+        *,
+        warn_advanced_features: bool = False,
+    ):
         # context keeps track of all state
         self.context = context or ProgramContext()
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
+        self._warn_advanced_features = warn_advanced_features
 
     def build_circuit(
         self, source: str, inputs: dict[str, io_type] | None = None, is_file: bool = False
@@ -143,7 +151,7 @@ class Interpreter:
 
         self._uses_advanced_language_features = False
         self.visit(parse(source))
-        if self._uses_advanced_language_features:
+        if self._warn_advanced_features and self._uses_advanced_language_features:
             self.logger.warning(
                 "This program uses OpenQASM language features that may "
                 "not be supported on QPUs or on-demand simulators."
@@ -254,6 +262,20 @@ class Interpreter:
     @visit.register
     def _(self, node: QuantumReset) -> None:
         raise NotImplementedError("Reset not supported")
+
+    @visit.register
+    def _(self, node: QuantumBarrier) -> None:
+        """Handle quantum barrier statements"""
+        if node.qubits:
+            # Convert qubit expressions to qubit indices
+            qubits = []
+            for qubit_expr in node.qubits:
+                qubit_indices = self.context.get_qubits(self.visit(qubit_expr))
+                qubits.extend(qubit_indices)
+            self.context.add_barrier(qubits)
+        else:
+            # Barrier with no qubits applies to all qubits
+            self.context.add_barrier(None)
 
     @visit.register
     def _(self, node: IndexedIdentifier) -> IndexedIdentifier | LiteralType:
@@ -678,6 +700,6 @@ class Interpreter:
         self.context.add_phase(phase, qubits)
 
 
-class VerbatimBoxDelimiter(str, Enum):
+class VerbatimBoxDelimiter(StrEnum):
     START_VERBATIM = "StartVerbatim"
     END_VERBATIM = "EndVerbatim"

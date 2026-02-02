@@ -12,10 +12,10 @@
 # language governing permissions and limitations under the License.
 
 import numpy as np
-from scipy.linalg import block_diag
 
 from braket.default_simulator.linalg_utils import (
     QuantumGateDispatcher,
+    controlled_matrix,
     multiply_matrix,
     partial_trace,
 )
@@ -140,8 +140,8 @@ class DensityMatrixSimulation(Simulation):
         Args:
             state (np.ndarray): initial density matrix
             qubit_count (int): number of qubits in the circuit
-            operations (list[Union[GateOperation, KrausOperation, Observable]]): list of GateOperation and
-                KrausOperation to be applied to the density matrix
+            operations (list[GateOperation | KrausOperation | Observable]): operations to be applied
+                to the density matrix
 
         Returns:
             np.ndarray: output density matrix
@@ -159,7 +159,7 @@ class DensityMatrixSimulation(Simulation):
         for operation in operations:
             if isinstance(operation, (GateOperation, Observable)):
                 targets = operation.targets
-                num_ctrl = len(operation._ctrl_modifiers)
+                num_ctrl = len(operation.control_state)
                 # Extract gate_type if available
                 result, temp = DensityMatrixSimulation._apply_gate(
                     result,
@@ -168,7 +168,7 @@ class DensityMatrixSimulation(Simulation):
                     operation.matrix,
                     targets[num_ctrl:],
                     targets[:num_ctrl],
-                    operation._ctrl_modifiers,
+                    operation.control_state,
                     dispatcher,
                     getattr(operation, "gate_type"),
                 )
@@ -251,7 +251,7 @@ class DensityMatrixSimulation(Simulation):
         multiply_matrix(
             state=result,
             # TODO: Fix control slicing for right multiplication
-            matrix=DensityMatrixSimulation._get_controlled_matrix(matrix, control_state).conj(),
+            matrix=controlled_matrix(matrix, control_state).conj(),
             targets=tuple(t + qubit_count for t in controls + targets),
             out=temp,
             return_swap_info=True,
@@ -262,16 +262,6 @@ class DensityMatrixSimulation(Simulation):
         # Always swap with new gate dispatch
         result, temp = temp, result
         return result, temp
-
-    @staticmethod
-    def _get_controlled_matrix(matrix: np.ndarray, ctrl_state: tuple[int, ...]) -> np.ndarray:
-        new_matrix = matrix
-        for state in ctrl_state:
-            identity = np.eye(len(new_matrix))
-            new_matrix = (
-                block_diag(identity, new_matrix) if state else block_diag(new_matrix, identity)
-            )
-        return new_matrix
 
     @staticmethod
     def _apply_kraus(

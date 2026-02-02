@@ -23,7 +23,6 @@ from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.openqasm.parser import openqasm_parser
-from braket.default_simulator.openqasm.parser.openqasm_ast import QuantumBarrier
 from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
 from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX
 from braket.default_simulator.gate_operations import PauliY as Y
@@ -61,6 +60,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     IndexedIdentifier,
     IntegerLiteral,
     IntType,
+    QuantumBarrier,
     QuantumGate,
     QuantumGateDefinition,
     SymbolLiteral,
@@ -1689,6 +1689,44 @@ def test_verbatim_pragma():
     )
 
 
+def test_physical_qubit_result_pragma():
+    """Test that result pragmas work with physical qubit syntax ($0)."""
+    qasm = """
+    OPENQASM 3.0;
+    h $0;
+    cnot $0, $1;
+    #pragma braket result expectation z($0)
+    #pragma braket result expectation z($1)
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
+    assert len(circuit.results) == 2
+    assert circuit.results[0].observable == ["z"]
+    assert circuit.results[0].targets == [0]
+    assert circuit.results[1].targets == [1]
+
+
+def test_physical_qubit_multi_target_result_pragma():
+    """Test that result pragmas work with multiple physical qubits."""
+    qasm = """
+    OPENQASM 3.0;
+    h $0;
+    cnot $0, $1;
+    #pragma braket result probability $0, $1
+    #pragma braket result expectation z($0) @ z($1)
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    simulation = StateVectorSimulation(2, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])
+    assert len(circuit.results) == 2
+    assert circuit.results[0].targets == [0, 1]
+    assert circuit.results[1].observable == ["z", "z"]
+    assert circuit.results[1].targets == [0, 1]
+
+
 def test_unsupported_pragma():
     qasm = """
     qubit q;
@@ -1979,7 +2017,7 @@ def test_noise():
     ),
 )
 def test_advanced_language_features(qasm, caplog):
-    Interpreter().run(qasm, inputs={"x": 1})
+    Interpreter(warn_advanced_features=True).run(qasm, inputs={"x": 1})
     assert re.match(
         (
             "WARNING.*"
@@ -2393,3 +2431,34 @@ def test_barrier_global():
 
     assert isinstance(barrier_stmt, QuantumBarrier)
     assert len(barrier_stmt.qubits) == 0  # Empty means all qubits
+
+
+def test_barrier_visitor_with_specific_qubits():
+    """Test that barrier visitor correctly handles specific qubits."""
+    qasm = """
+    qubit[3] q;
+    barrier q[0];
+    barrier q[1], q[2];
+    """
+    # Should parse without errors and produce no instructions
+    circuit = Interpreter().build_circuit(qasm)
+    assert len(circuit.instructions) == 0
+
+
+def test_barrier_visitor_mixed_with_gates():
+    """Test barrier visitor doesn't interfere with gate instructions."""
+    qasm = """
+    qubit[2] q;
+    h q[0];
+    barrier q[0];
+    cnot q[0], q[1];
+    barrier;
+    x q[1];
+    """
+    circuit = Interpreter().build_circuit(qasm)
+
+    # Should have exactly 3 gate instructions (h, cnot, x) and no barrier instructions
+    assert len(circuit.instructions) == 3
+    assert isinstance(circuit.instructions[0], Hadamard)
+    assert isinstance(circuit.instructions[1], CX)
+    assert isinstance(circuit.instructions[2], PauliX)

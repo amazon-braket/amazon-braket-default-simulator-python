@@ -43,13 +43,13 @@ def apply_operations(
         else:
             gate_type = op.gate_type if hasattr(op, "gate_type") else None
             targets = op.targets
-            num_ctrl = len(op._ctrl_modifiers)
+            num_ctrl = len(op.control_state)
             _, needs_swap = multiply_matrix(
                 result,
                 op.matrix,
                 targets[num_ctrl:],
                 targets[:num_ctrl],
-                op._ctrl_modifiers,
+                op.control_state,
                 temp,
                 dispatcher,
                 True,

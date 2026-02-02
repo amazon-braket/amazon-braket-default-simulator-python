@@ -15,14 +15,17 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from multiprocessing import Pool
 from os import cpu_count
-from typing import Optional, Union
 
 from braket.device_schema import DeviceCapabilities
 from braket.ir.ahs import Program as AHSProgram
 from braket.ir.jaqcd import Program as JaqcdProgram
 from braket.ir.openqasm import Program as OQ3Program
 from braket.ir.openqasm.program_set_v1 import ProgramSet
-from braket.task_result import AnalogHamiltonianSimulationTaskResult, GateModelTaskResult
+from braket.task_result import (
+    AnalogHamiltonianSimulationTaskResult,
+    GateModelTaskResult,
+    ProgramSetTaskResult,
+)
 
 
 class BraketSimulator(ABC):
@@ -47,8 +50,8 @@ class BraketSimulator(ABC):
 
     @abstractmethod
     def run(
-        self, ir: Union[OQ3Program, AHSProgram, JaqcdProgram, ProgramSet], *args, **kwargs
-    ) -> Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]:
+        self, ir: OQ3Program | AHSProgram | JaqcdProgram | ProgramSet, *args, **kwargs
+    ) -> GateModelTaskResult | ProgramSetTaskResult | AnalogHamiltonianSimulationTaskResult:
         """
         Run the task specified by the given IR.
 
@@ -56,20 +59,21 @@ class BraketSimulator(ABC):
         such as the extra parameters for AHS simulations.
 
         Args:
-            ir (Union[OQ3Program, AHSProgram, JaqcdProgram]): The IR representation of the program
+            ir (OQ3Program | AHSProgram | JaqcdProgram | ProgramSet): The IR representation
+                of the program
 
         Returns:
-            Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]: An object
-            representing the results of the simulation.
+            GateModelTaskResult | ProgramSetTaskResult | AnalogHamiltonianSimulationTaskResult: An
+            object representing the results of the simulation.
         """
 
     def run_multiple(
         self,
-        programs: Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]],
-        max_parallel: Optional[int] = None,
+        programs: Sequence[OQ3Program | AHSProgram | JaqcdProgram],
+        max_parallel: int | None = None,
         *args,
         **kwargs,
-    ) -> list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]:
+    ) -> list[GateModelTaskResult | AnalogHamiltonianSimulationTaskResult]:
         """
         Run the tasks specified by the given IR programs.
 
@@ -77,14 +81,14 @@ class BraketSimulator(ABC):
         such as the extra parameters for AHS simulations.
 
         Args:
-            programs (Sequence[Union[OQ3Program, AHSProgram, JaqcdProgram]]): The IR representations
+            programs (Sequence[OQ3Program | AHSProgram | JaqcdProgram]): The IR representations
                 of the programs
-            max_parallel (Optional[int]): The maximum number of programs to run in parallel.
+            max_parallel (int | None): The maximum number of programs to run in parallel.
                 Default is the number of logical CPUs.
 
         Returns:
-            list[Union[GateModelTaskResult, AnalogHamiltonianSimulationTaskResult]]: A list of
-            result objects, with the ith object being the result of the ith program.
+            list[GateModelTaskResult | AnalogHamiltonianSimulationTaskResult]: A list of result
+            objects, with the ith object being the result of the ith program.
         """
         max_parallel = max_parallel or cpu_count()
         with Pool(min(max_parallel, len(programs))) as pool:
@@ -93,7 +97,7 @@ class BraketSimulator(ABC):
         return results
 
     def _run_wrapped(
-        self, ir: Union[OQ3Program, AHSProgram, JaqcdProgram], args, kwargs
+        self, ir: OQ3Program | AHSProgram | JaqcdProgram, args, kwargs
     ):  # pragma: no cover
         return self.run(ir, *args, **kwargs)
 

@@ -1,5 +1,48 @@
 # Changelog
 
+## v1.34.0 (2026-01-30)
+
+### Deprecations and Removals
+
+ * Drop Python 3.10
+
+## v1.33.0 (2026-01-19)
+
+### Features
+
+ * add visitor for barrier in interpreter
+
+## v1.32.2 (2026-01-15)
+
+### Bug Fixes and Other Changes
+
+ * support physical qubit syntax in result pragmas
+
+## v1.32.1 (2025-12-22)
+
+### Bug Fixes and Other Changes
+
+ * Make advanced OpenQASM warning optional
+
+## v1.32.0 (2025-10-16)
+
+### Deprecations and Removals
+
+ * Ensure schema compatibility
+
+## v1.31.8 (2025-10-15)
+
+### Bug Fixes and Other Changes
+
+ * Extract `controlled_matrix` function
+
+## v1.31.7 (2025-10-14)
+
+### Bug Fixes and Other Changes
+
+ * add program set action type to device properties
+ * Expand controlled matrices for DM right multiplication
+
 ## v1.31.6 (2025-10-13)
 
 ### Bug Fixes and Other Changes
