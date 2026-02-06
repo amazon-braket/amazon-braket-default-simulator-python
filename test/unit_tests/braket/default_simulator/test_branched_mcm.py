@@ -17,16 +17,14 @@ Tests actual simulation functionality, not just attributes.
 Converted from Julia test suite in test_branched_simulator_operators_openqasm.jl
 """
 
-import numpy as np
 import pytest
 from collections import Counter
-import math
 
 from braket.default_simulator.branched_simulator import BranchedSimulator
 from braket.default_simulator.branched_simulation import BranchedSimulation
 from braket.default_simulator.openqasm.branched_interpreter import BranchedInterpreter
 from braket.ir.openqasm import Program as OpenQASMProgram
-from braket.default_simulator.openqasm.branched_interpreter import some_function
+from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
 
 class TestBranchedSimulatorOperatorsOpenQASM:
@@ -41,8 +39,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         h q[0];       // Put qubit 0 in superposition
         cnot q[0], q[1];  // Create Bell state
         """
-
-        some_function()
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
         simulator = BranchedSimulator()
@@ -355,9 +351,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         }
         """
 
-        # Use the new execute_with_branching approach
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         # Parse the QASM program
         ast = parse(qasm_source)
 
@@ -443,9 +436,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
             U(rotate * pi, 0.0, 0.0) q[0];
         }
         """
-
-        # Use the new execute_with_branching approach
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         # Parse the QASM program
         ast = parse(qasm_source)
@@ -544,9 +534,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         }
         """
 
-        # Use the new execute_with_branching approach
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         # Parse the QASM program
         ast = parse(qasm_source)
 
@@ -631,8 +618,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[0] = measure q[0];
         """
 
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
         interpreter = BranchedInterpreter()
@@ -680,9 +665,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
             x q[1];
         }
         """
-
-        # Use the new execute_with_branching approach
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         # Parse the QASM program
         ast = parse(qasm_source)
@@ -758,9 +740,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
             y q[0];  // Apply Y to qubit 0
         }
         """
-
-        # Use the new execute_with_branching approach
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         # Parse the QASM program
         ast = parse(qasm_source)
@@ -1186,9 +1165,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[0] = measure_and_reset(q[0], b[1]);
         """
 
-        # Use the new execute_with_branching approach to test the actual quantum behavior
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         # Parse the QASM program
         ast = parse(qasm_source)
 
@@ -1275,9 +1251,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         // Measure qubit 1
         b[1] = measure q[1];
         """
-
-        # Use the new execute_with_branching approach to test the actual quantum behavior
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         # Parse the QASM program
         ast = parse(qasm_source)
@@ -2747,9 +2720,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[1] = measure q[1];
         """
 
-        # Use the new execute_with_branching approach
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         # Parse the QASM program
         ast = parse(qasm_source)
 
@@ -2835,8 +2805,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[1] = measure q[1];
         """
 
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
         interpreter = BranchedInterpreter()
@@ -2918,8 +2886,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[1] = measure q[1];
         """
 
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
         interpreter = BranchedInterpreter()
@@ -2966,8 +2932,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[0] = measure q[0];
         """
 
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
         interpreter = BranchedInterpreter()
@@ -2996,8 +2960,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
 
         b[0] = measure q[0];
         """
-
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         ast_array = parse(qasm_source_array)
         simulation_array = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
@@ -3052,8 +3014,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[2] = measure q[2];
         """
 
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
         interpreter = BranchedInterpreter()
@@ -3098,8 +3058,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[0] = measure q[0];
         """
 
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
         interpreter = BranchedInterpreter()
@@ -3122,8 +3080,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
 
         b[0] = measure q[0];
         """
-
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
@@ -3156,8 +3112,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         
         b[1] = measure q[1];
         """
-
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
@@ -3198,8 +3152,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[0] = measure q[0];
         b[1] = measure q[1];
         """
-
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
@@ -3263,8 +3215,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[1] = measure q[1];
         """
 
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=1000, batch_size=1)
         interpreter = BranchedInterpreter()
@@ -3322,8 +3272,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         b[2] = measure q[2];
         """
 
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
-
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)
         interpreter = BranchedInterpreter()
@@ -3378,8 +3326,6 @@ class TestBranchedSimulatorOperatorsOpenQASM:
 
         b[0] = measure q[0];
         """
-
-        from braket.default_simulator.openqasm.parser.openqasm_parser import parse
 
         ast = parse(qasm_source)
         simulation = BranchedSimulation(qubit_count=0, shots=100, batch_size=1)

@@ -14,7 +14,7 @@
 import re
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -78,66 +78,8 @@ from ._helpers.quantum import (
     is_inverted,
 )
 
-
-# Inside src/my_code.py
-def some_function():
-    print(">>> some_function called from", __file__)
-
-
-def get_type_info(type_node: Any) -> dict[str, Any]:
-    """Extract type information from AST type nodes."""
-    if isinstance(type_node, BitType):
-        size = type_node.size
-        if size:
-            # This is a bit vector/register
-            return {"type": type_node, "size": size.value}
-        else:
-            # Single bit
-            return {"type": type_node, "size": 1}
-    elif isinstance(type_node, IntType):
-        size = getattr(type_node, "size", 32)  # Default to 32-bit
-        return {"type": type_node, "size": size}
-    elif isinstance(type_node, FloatType):
-        size = getattr(type_node, "size", 64)  # Default to 64-bit
-        return {"type": type_node, "size": size}
-    elif isinstance(type_node, BoolType):
-        return {"type": type_node, "size": 1}
-    elif isinstance(type_node, ArrayType):
-        return {"type": type_node, "size": [d.value for d in type_node.dimensions]}
-    else:
-        raise NotImplementedError(
-            "Other classical types have not been implemented " + str(type_node)
-        )
-
-
-def initialize_default_variable_value(
-    type_info: dict[str, Any], size_override: Optional[int] = None
-) -> Any:
-    """Initialize a variable with the appropriate default value based on its type."""
-    var_type = type_info["type"]
-    size = size_override if size_override is not None else type_info.get("size", 1)
-
-    if isinstance(var_type, BitType):
-        if size > 1:
-            return [0] * size
-        else:
-            return [0]
-    elif isinstance(var_type, IntType):
-        return 0
-    elif isinstance(var_type, FloatType):
-        return 0.0
-    elif isinstance(var_type, BoolType):
-        return False
-    elif isinstance(var_type, ArrayType):
-        return np.zeros(type_info["size"]).tolist()
-    else:
-        raise NotImplementedError(
-            "Other classical types have not been implemented " + str(type_info)
-        )
-
-
 # Binary operation lookup table for constant time access
-BINARY_OPS = {
+_BINARY_OPS = {
     "=": lambda lhs, rhs: rhs,
     "+": lambda lhs, rhs: lhs + rhs,
     "-": lambda lhs, rhs: lhs - rhs,
@@ -166,12 +108,50 @@ BINARY_OPS = {
 }
 
 
-def evaluate_binary_op(op: str, lhs: Any, rhs: Any) -> Any:
+def _get_type_info(type_node: Any) -> dict[str, Any]:
+    """Extract type information from AST type nodes."""
+    if isinstance(type_node, BitType):
+        size = type_node.size
+        return {"type": type_node, "size": size.value if size else 1}
+    elif isinstance(type_node, IntType):
+        size = getattr(type_node, "size", 32)  # Default to 32-bit
+        return {"type": type_node, "size": size}
+    elif isinstance(type_node, FloatType):
+        size = getattr(type_node, "size", 64)  # Default to 64-bit
+        return {"type": type_node, "size": size}
+    elif isinstance(type_node, BoolType):
+        return {"type": type_node, "size": 1}
+    elif isinstance(type_node, ArrayType):
+        return {"type": type_node, "size": [d.value for d in type_node.dimensions]}
+    raise NotImplementedError("Other classical types have not been implemented " + str(type_node))
+
+
+def _initialize_default_variable_value(
+    type_info: dict[str, Any], size_override: int | None = None
+) -> Any:
+    """Initialize a variable with the appropriate default value based on its type."""
+    var_type = type_info["type"]
+    size = size_override if size_override is not None else type_info.get("size", 1)
+
+    if isinstance(var_type, BitType):
+        return [0] * (size if size > 1 else 1)
+    elif isinstance(var_type, IntType):
+        return 0
+    elif isinstance(var_type, FloatType):
+        return 0.0
+    elif isinstance(var_type, BoolType):
+        return False
+    elif isinstance(var_type, ArrayType):
+        return np.zeros(type_info["size"]).tolist()
+    raise NotImplementedError("Other classical types have not been implemented " + str(type_info))
+
+
+def _evaluate_binary_op(op: str, lhs: Any, rhs: Any) -> Any:
     """Evaluate binary operations between classical variables."""
-    return BINARY_OPS.get(op, lambda lhs, rhs: rhs)(lhs, rhs)
+    return _BINARY_OPS.get(op, lambda lhs, rhs: rhs)(lhs, rhs)
 
 
-def is_dollar_number(s):
+def _is_physical_qubit(s):
     return bool(re.fullmatch(r"\$\d+", s))
 
 
@@ -261,7 +241,7 @@ class BranchedInterpreter:
 
     def _evolve_branched_ast_operators(
         self, sim: BranchedSimulation, node: Any
-    ) -> Optional[dict[int, Any]]:
+    ) -> dict[int, Any] | None:
         """
         Main recursive function for AST traversal - equivalent to Julia's _evolve_branched_ast_operators.
 
@@ -396,7 +376,7 @@ class BranchedInterpreter:
         var_type = node.type
 
         # Extract type information
-        type_info = get_type_info(var_type)
+        type_info = _get_type_info(var_type)
 
         if node.init_expression:
             # Declaration with initialization
@@ -423,13 +403,13 @@ class BranchedInterpreter:
                     # Use initialize_variable_value with size override
                     type_info_with_size = type_info.copy()
                     type_info_with_size["size"] = size
-                    default_value = initialize_default_variable_value(type_info_with_size, size)
+                    default_value = _initialize_default_variable_value(type_info_with_size, size)
                     framed_var = FramedVariable(
                         var_name, type_info_with_size, default_value, False, sim._curr_frame
                     )
                 else:
                     # For other types, use default initialization
-                    default_value = initialize_default_variable_value(type_info)
+                    default_value = _initialize_default_variable_value(type_info)
                     framed_var = FramedVariable(
                         var_name, type_info, default_value, False, sim._curr_frame
                     )
@@ -480,7 +460,7 @@ class BranchedInterpreter:
                         else new_value
                     )
                 else:
-                    existing_var.val = evaluate_binary_op(
+                    existing_var.val = _evaluate_binary_op(
                         op,
                         existing_var.val,
                         new_value[0]
@@ -1049,7 +1029,7 @@ class BranchedInterpreter:
 
     def _evaluate_qubits(
         self, sim: BranchedSimulation, qubit_expr: Any
-    ) -> dict[int, Union[int, list[int]]]:
+    ) -> dict[int, int | list[int]]:
         """
         Evaluate qubit expressions to get qubit indices.
         Returns a dictionary mapping path indices to qubit indices.
@@ -1063,7 +1043,7 @@ class BranchedInterpreter:
                     results[path_idx] = sim._variables[path_idx][qubit_name].val
                 elif qubit_name in sim._qubit_mapping:
                     results[path_idx] = sim.get_qubit_indices(qubit_name)
-                elif is_dollar_number(qubit_name):
+                elif _is_physical_qubit(qubit_name):
                     sim.add_qubit_mapping(qubit_name, sim._qubit_count)
                     results[path_idx] = sim._qubit_count - 1
                 else:
@@ -1378,7 +1358,7 @@ class BranchedInterpreter:
         self.restore_original_scope(sim, original_variables)
 
     def _handle_loop_control(
-        self, sim: BranchedSimulation, node: Union[BreakStatement, ContinueStatement]
+        self, sim: BranchedSimulation, node: BreakStatement | ContinueStatement
     ) -> None:
         """Handle break and continue statements."""
         if isinstance(node, BreakStatement):
@@ -1510,7 +1490,7 @@ class BranchedInterpreter:
                 else ValueError("Value should exist for right hand side of binary op of {node}")
             )
 
-            results[path_idx] = evaluate_binary_op(node.op.name, lhs_val, rhs_val)
+            results[path_idx] = _evaluate_binary_op(node.op.name, lhs_val, rhs_val)
 
         return results
 

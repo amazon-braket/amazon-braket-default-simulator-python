@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from copy import deepcopy
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -90,11 +90,11 @@ class BranchedSimulation(Simulation):
         self._continue_paths: list[int] = []
 
         # Qubit management
-        self._qubit_mapping: dict[str, Union[int, list[int]]] = {}
+        self._qubit_mapping: dict[str, int | list[int]] = {}
         self._measured_qubits: list[int] = []
 
     def measure_qubit_on_path(
-        self, path_idx: int, qubit_idx: int, qubit_name: Optional[str] = None
+        self, path_idx: int, qubit_idx: int, qubit_name: str | None = None
     ) -> int:
         """
         Perform measurement on a qubit for a specific path.
@@ -236,7 +236,7 @@ class BranchedSimulation(Simulation):
         """Get a classical variable for a specific path."""
         return self._variables[path_idx].get(var_name, default)
 
-    def add_qubit_mapping(self, name: str, indices: Union[int, list[int]]) -> None:
+    def add_qubit_mapping(self, name: str, indices: int | list[int]) -> None:
         """Add a mapping from qubit name to indices."""
         self._qubit_mapping[name] = indices
         # Update qubit count based on the maximum index used
@@ -245,7 +245,7 @@ class BranchedSimulation(Simulation):
         else:
             self._qubit_count += 1
 
-    def get_qubit_indices(self, name: str) -> Union[int, list[int]]:
+    def get_qubit_indices(self, name: str) -> int | list[int]:
         """Get qubit indices for a given name."""
         return self._qubit_mapping[name]
 
