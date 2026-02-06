@@ -594,7 +594,12 @@ class BranchedInterpreter:
                 # Otherwise it is a qubit register
                 else:
                     qubits = self._evaluate_qubits(sim, node.collection)
-                    results[path_idx] = qubits[path_idx][index]
+                    qubit_val = qubits[path_idx]
+                    if isinstance(qubit_val, list):
+                        results[path_idx] = qubit_val[index]
+                    else:
+                        # Single qubit — index must be 0
+                        results[path_idx] = qubit_val
 
             return results
 
