@@ -182,13 +182,16 @@ class BranchedSimulation(Simulation):
 
     def _get_measurement_probabilities(self, state: np.ndarray, qubit_idx: int) -> np.ndarray:
         """
-        Calculate measurement probabilities for a specific qubit using little-endian convention.
+        Calculate measurement probabilities for a specific qubit.
 
-        In little-endian: for state |10⟩, qubit 0 is |1⟩ and qubit 1 is |0⟩.
-        The tensor axes are ordered such that qubit 0 is the rightmost (last) axis.
+        The state vector uses big-endian indexing where qubit 0 is the most significant bit.
+        When reshaped to a tensor of shape [2] * n_qubits:
+        - axis 0 corresponds to qubit 0
+        - axis k corresponds to qubit k
+
+        To measure qubit q, we use axis = q.
         """
-        # Reshape state to tensor form with little-endian qubit ordering
-        # qubit 0 is the last axis, qubit 1 is second-to-last, etc.
+        # Reshape state to tensor form
         state_tensor = np.reshape(state, [2] * self._qubit_count)
 
         # Extract slices for |0⟩ and |1⟩ states of the target qubit
@@ -196,7 +199,6 @@ class BranchedSimulation(Simulation):
         slice_1 = np.take(state_tensor, 1, axis=qubit_idx)
 
         # Calculate probabilities by summing over all remaining dimensions
-        # After np.take(), we have one fewer dimension, so sum over all remaining axes
         prob_0 = np.sum(np.abs(slice_0) ** 2)
         prob_1 = np.sum(np.abs(slice_1) ** 2)
 

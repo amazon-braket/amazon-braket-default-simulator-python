@@ -1356,24 +1356,33 @@ class TestBranchedSimulatorOperatorsOpenQASM:
         # Maximum recursion analysis:
         # 1. H q[0], b[0] = measure q[0] → 50% chance of 0 or 1
         # 2. Loop 10 times: if b[0]=1 then H q[1], measure q[1], if q[1]=1 then X q[0], measure q[0]
-        # Complex recursive measurement-dependent logic with potential state flipping
-        # The exact outcome depends on the sequence of measurements and state changes
+        # When b[0]=0: loop body is skipped entirely → outcome "00" (~50%)
+        # When b[0]=1: each iteration flips a coin on q[1].
+        #   If b[1]=1: X flips q[0] back to |0⟩, re-measure → b[0]=0, loop body skipped next → "01"
+        #   If b[1]=0 for all 10 iterations: b[0] stays 1 → "10" (probability (1/2)^10 ≈ 0.1%)
+        # Outcome "11" is IMPOSSIBLE: whenever b[1]=1, q[0] is flipped and re-measured to 0,
+        # so b[0] and b[1] can never both be 1 at the end.
 
         measurements = result.measurements
         counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see various outcomes for 2 qubits due to recursive logic
-        expected_outcomes = {"00", "01", "10", "11"}
-        assert set(counter.keys()).issubset(expected_outcomes)
 
         # Verify circuit executed successfully
         total = sum(counter.values())
         assert total == 1000, f"Expected 1000 measurements, got {total}"
 
-        # Each outcome should have some probability due to complex recursive behavior
-        for outcome in counter:
-            ratio = counter[outcome] / total
-            assert 0.05 < ratio < 0.95, f"Unexpected probability {ratio} for outcome {outcome}"
+        # Only valid outcomes are "00", "01", "10" — "11" is impossible
+        assert set(counter.keys()).issubset({"00", "01", "10"}), (
+            f"Unexpected outcomes present: {counter}"
+        )
+        assert "11" not in counter, f"Outcome '11' should be impossible, got {counter}"
+
+        # "00" and "01" dominate (~50% each), "10" is extremely rare
+        assert counter.get("00", 0) + counter.get("01", 0) > 0.95 * total, (
+            f"Expected '00' and '01' to dominate, got {counter}"
+        )
+        assert counter.get("10", 0) < 0.02 * total, (
+            f"Expected '10' to be very rare (<2%), got {counter}"
+        )
 
     def test_9_1_basic_gate_modifiers(self):
         """9.1 Basic gate modifiers"""

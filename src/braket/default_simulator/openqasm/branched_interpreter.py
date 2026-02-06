@@ -134,7 +134,9 @@ def _initialize_default_variable_value(
     size = size_override if size_override is not None else type_info.get("size", 1)
 
     if isinstance(var_type, BitType):
-        return [0] * (size if size > 1 else 1)
+        if size == 1:
+            return 0  # Single bit variable should be a scalar, not a list
+        return [0] * size
     elif isinstance(var_type, IntType):
         return 0
     elif isinstance(var_type, FloatType):
@@ -977,9 +979,11 @@ class BranchedInterpreter:
 
                     # Get or create the FramedVariable array
                     existing_var = sim.get_variable(path_idx, base_name)
-                    existing_var.val[index] = measurement[
-                        0
-                    ]  # Assumed here that the variable we are storing the measurement result in is a classical register
+                    if isinstance(existing_var.val, list):
+                        existing_var.val[index] = measurement[0]
+                    else:
+                        # Scalar bit variable (bit[1] stored as int) — assign directly
+                        existing_var.val = measurement[0]
             else:
                 # Simple assignment
                 target_name = target.name
