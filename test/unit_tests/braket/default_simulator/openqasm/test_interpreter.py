@@ -2284,6 +2284,80 @@ def test_measure_qubit_out_of_range(qasm, expected):
 
 
 @pytest.mark.parametrize(
+    "qasm, expected",
+    [
+        (
+            """
+                bit[2] b;
+                qubit["10"] r1;
+                b = measure r1;
+            """,
+            [0, 1],
+        ),
+        (
+            """
+                bit[3] b;
+                qubit["11"] r1;
+                b = measure r1;
+            """,
+            [0, 1, 2],
+        ),
+        (
+            """
+                bit[1] b;
+                qubit[!"1"] r1;
+                b = measure r1;
+            """,
+            [],
+        ),
+        (
+            """
+                qubit["1" ^ "0"] r1;
+            """,
+            [],
+        ),
+        (
+            """
+                bit[1] b;
+                qubit["1" != "0"] r1;
+                b = measure r1;
+            """,
+            [0],
+        ),
+        (
+            """
+                bit[1] b;
+                qubit["1" == "0"] r1;
+                b = measure r1;
+            """,
+            [],
+        ),
+        (
+            """
+                bit[1] b;
+                qubit[1] r1;
+                h r1["0" << "1"];
+                b = measure r1;
+            """,
+            [0],
+        ),
+        (
+            """
+                bit[2] b;
+                qubit[1] r1;
+                h r1["0" >> "1"];
+                b = measure r1;
+            """,
+            [0],
+        ),
+    ],
+)
+def test_circuit_from_string_literal(qasm, expected):
+    circ = Interpreter().build_circuit(source=qasm)
+    assert expected == circ.measured_qubits
+
+    
+@pytest.mark.parametrize(
     "qasm,error_message",
     [
         (
