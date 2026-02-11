@@ -14,6 +14,7 @@
 import re
 from collections import defaultdict
 from copy import deepcopy
+from functools import singledispatchmethod
 from typing import Any
 
 import numpy as np
@@ -40,14 +41,12 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     Cast,
     ClassicalAssignment,
     ClassicalDeclaration,
-    Concatenation,
     ConstantDeclaration,
     ContinueStatement,
     DiscreteSet,
     ExpressionStatement,
     FloatLiteral,
     FloatType,
-    # Additional node types for advanced features
     ForInLoop,
     FunctionCall,
     GateModifierName,
@@ -107,6 +106,22 @@ _BINARY_OPS = {
     "&=": lambda lhs, rhs: lhs & rhs,
 }
 
+_FUNCTIONS = {
+    "sin": lambda x: np.sin(x),
+    "cos": lambda x: np.cos(x),
+    "tan": lambda x: np.tan(x),
+    "exp": lambda x: np.exp(x),
+    "log": lambda x: np.log(x),
+    "sqrt": lambda x: np.sqrt(x),
+    "abs": lambda x: abs(x),
+    "floor": lambda x: np.floor(x),
+    "ceiling": lambda x: np.ceil(x),
+    "arccos": lambda x: np.acos(x),
+    "arcsin": lambda x: np.asin(x),
+    "arctan": lambda x: np.atan(x),
+    "mod": lambda x, y: x % y,
+}
+
 
 def _get_type_info(type_node: Any) -> dict[str, Any]:
     """Extract type information from AST type nodes."""
@@ -134,9 +149,7 @@ def _initialize_default_variable_value(
     size = size_override if size_override is not None else type_info.get("size", 1)
 
     if isinstance(var_type, BitType):
-        if size == 1:
-            return 0  # Single bit variable should be a scalar, not a list
-        return [0] * size
+        return 0 if size == 1 else [0] * size
     elif isinstance(var_type, IntType):
         return 0
     elif isinstance(var_type, FloatType):
@@ -171,23 +184,7 @@ class BranchedInterpreter:
         # Advanced features support
         self.gate_defs = {}  # Custom gate definitions
         self.function_defs = {}  # Custom function definitions
-
-        # Built-in functions (can be extended)
-        self.function_builtin = {
-            "sin": lambda x: np.sin(x),
-            "cos": lambda x: np.cos(x),
-            "tan": lambda x: np.tan(x),
-            "exp": lambda x: np.exp(x),
-            "log": lambda x: np.log(x),
-            "sqrt": lambda x: np.sqrt(x),
-            "abs": lambda x: abs(x),
-            "floor": lambda x: np.floor(x),
-            "ceiling": lambda x: np.ceil(x),
-            "arccos": lambda x: np.acos(x),
-            "arcsin": lambda x: np.asin(x),
-            "arctan": lambda x: np.atan(x),
-            "mod": lambda x, y: x % y,
-        }
+        self.simulation = None
 
     def execute_with_branching(
         self, ast: Program, simulation: BranchedSimulation, inputs: dict[str, Any]
@@ -206,7 +203,7 @@ class BranchedInterpreter:
         self._collect_qubits(simulation, ast)
 
         # Main AST traversal - this is where the dynamic execution happens
-        self._evolve_branched_ast_operators(simulation, ast)
+        self._visit(ast, simulation)
 
         # Collect results
         measured_qubits = (
@@ -241,9 +238,8 @@ class BranchedInterpreter:
         # Store qubit count in simulation
         sim._qubit_count = current_index
 
-    def _evolve_branched_ast_operators(
-        self, sim: BranchedSimulation, node: Any
-    ) -> dict[int, Any] | None:
+    @singledispatchmethod
+    def _visit(self, node: Any, sim: BranchedSimulation) -> dict[int, Any] | None:
         """
         Main recursive function for AST traversal - equivalent to Julia's _evolve_branched_ast_operators.
 
@@ -252,126 +248,32 @@ class BranchedInterpreter:
         """
 
         # Handle AST nodes
-        if isinstance(node, Program):
-            # Process each statement in sequence
-            for statement in node.statements:
-                self._evolve_branched_ast_operators(sim, statement)
-            return None
-
-        elif isinstance(node, QubitDeclaration):
-            # Already handled in first pass
-            return None
-
-        elif isinstance(node, ClassicalDeclaration):
-            self._handle_classical_declaration(sim, node)
-            return None
-
-        elif isinstance(node, ClassicalAssignment):
-            self._handle_classical_assignment(sim, node)
-            return None
-
-        elif isinstance(node, QuantumGate):
-            self._handle_quantum_gate(sim, node)
-            return None
-
-        elif isinstance(node, QuantumPhase):
-            self._handle_phase(sim, node)
-            return None
-
-        elif isinstance(node, QuantumMeasurementStatement):
-            return self._handle_measurement(sim, node)
-
-        elif isinstance(node, BranchingStatement):
-            self._handle_conditional(sim, node)
-            return None
-
-        elif isinstance(node, IntegerLiteral):
-            return {path_idx: node.value for path_idx in sim._active_paths}
-
-        elif isinstance(node, FloatLiteral):
-            return {path_idx: node.value for path_idx in sim._active_paths}
-
-        elif isinstance(node, BooleanLiteral):
-            return {path_idx: node.value for path_idx in sim._active_paths}
-
-        elif isinstance(node, Identifier):
-            return self._handle_identifier(sim, node)
-
-        elif isinstance(node, BinaryExpression):
-            return self._handle_binary_expression(sim, node)
-
-        elif isinstance(node, UnaryExpression):
-            return self._handle_unary_expression(sim, node)
-
-        elif isinstance(node, ArrayLiteral):
-            return self._handle_array_literal(sim, node)
-
-        elif isinstance(node, ForInLoop):
-            self._handle_for_loop(sim, node)
-            return None
-
-        elif isinstance(node, WhileLoop):
-            self._handle_while_loop(sim, node)
-            return None
-
-        elif isinstance(node, QuantumGateDefinition):
-            self._handle_gate_definition(sim, node)
-            return None
-
-        elif isinstance(node, SubroutineDefinition):
-            self._handle_function_definition(sim, node)
-            return None
-
-        elif isinstance(node, FunctionCall):
-            return self._handle_function_call(sim, node)
-
-        elif isinstance(node, ReturnStatement):
-            return self._handle_return_statement(sim, node)
-
-        elif isinstance(node, (BreakStatement, ContinueStatement)):
-            self._handle_loop_control(sim, node)
-            return None
-
-        elif isinstance(node, ConstantDeclaration):
-            self._handle_const_declaration(sim, node)
-            return None
-
-        elif isinstance(node, AliasStatement):
-            self._handle_alias(sim, node)
-            return None
-
-        elif isinstance(node, QuantumReset):
-            self._handle_reset(sim, node)
-            return None
-
-        elif isinstance(node, RangeDefinition):
-            return self._handle_range(sim, node)
-
-        elif isinstance(node, Cast):
-            return self._handle_cast(sim, node)
-
-        elif isinstance(node, IndexExpression):
-            return self._handle_index_expression(sim, node)
-
-        elif isinstance(node, ExpressionStatement):
-            return self._evolve_branched_ast_operators(sim, node.expression)
-
-        elif isinstance(node, BitstringLiteral):
-            return self.convert_string_to_bool_array(sim, node)
-
-        elif node is None:
-            return None
-
-        else:
-            # For unsupported node types, return None
-            raise NotImplementedError("Unsupported node type " + str(node))
+        match node:
+            case Program(statements=statements):
+                # Process each statement in sequence
+                for statement in statements:
+                    self._visit(statement, sim)
+                return None
+            case QubitDeclaration():
+                # Already handled in first pass
+                return None
+            case BooleanLiteral() | FloatLiteral() | IntegerLiteral():
+                return {path_idx: node.value for path_idx in sim._active_paths}
+            case ExpressionStatement():
+                return self._visit(node.expression, sim)
+            case None:
+                return None
+            case _:
+                # For unsupported node types, return None
+                raise NotImplementedError("Unsupported node type " + str(node))
 
     ################################################
     # CLASSICAL VARIABLE MANIPULATION AND INDEXING #
     ################################################
 
+    @_visit.register
     def _handle_classical_declaration(
-        self, sim: BranchedSimulation, node: ClassicalDeclaration
+        self, node: ClassicalDeclaration, sim: BranchedSimulation
     ) -> None:
         """Handle classical variable declaration based on Julia implementation."""
         var_name = node.identifier.name
@@ -382,7 +284,7 @@ class BranchedInterpreter:
 
         if node.init_expression:
             # Declaration with initialization
-            init_value = self._evolve_branched_ast_operators(sim, node.init_expression)
+            init_value = self._visit(node.init_expression, sim)
 
             for path_idx, value in init_value.items():
                 value = init_value[path_idx]
@@ -395,12 +297,16 @@ class BranchedInterpreter:
                 # Handle bit vectors (registers) specially
                 if isinstance(var_type, BitType):
                     # For bit vectors, we need to evaluate the size
-                    if hasattr(var_type, "size") and var_type.size:
-                        size_result = self._evolve_branched_ast_operators(sim, var_type.size)
-                        if size_result and path_idx in size_result:
-                            size = size_result[path_idx]
-                    else:
-                        size = type_info.get("size", 1)
+                    size = (
+                        size_result[path_idx]
+                        if (
+                            hasattr(var_type, "size")
+                            and var_type.size
+                            and (size_result := self._visit(var_type.size, sim))
+                            and path_idx in size_result
+                        )
+                        else type_info.get("size", 1)
+                    )
 
                     # Use initialize_variable_value with size override
                     type_info_with_size = type_info.copy()
@@ -411,15 +317,19 @@ class BranchedInterpreter:
                     )
                 else:
                     # For other types, use default initialization
-                    default_value = _initialize_default_variable_value(type_info)
                     framed_var = FramedVariable(
-                        var_name, type_info, default_value, False, sim._curr_frame
+                        var_name,
+                        type_info,
+                        _initialize_default_variable_value(type_info),
+                        False,
+                        sim._curr_frame,
                     )
 
                 sim.set_variable(path_idx, var_name, framed_var)
 
+    @_visit.register
     def _handle_classical_assignment(
-        self, sim: BranchedSimulation, node: ClassicalAssignment
+        self, node: ClassicalAssignment, sim: BranchedSimulation
     ) -> None:
         """Handle classical variable assignment based on Julia implementation."""
         # Extract assignment operation and operands
@@ -429,7 +339,7 @@ class BranchedInterpreter:
         rhs = node.rvalue
 
         # Evaluate the right-hand side
-        rhs_value = self._evolve_branched_ast_operators(sim, rhs)
+        rhs_value = self._visit(rhs, sim)
 
         # Handle different types of left-hand side
         if isinstance(lhs, Identifier):
@@ -441,7 +351,7 @@ class BranchedInterpreter:
             # Indexed assignment: var[index] = value
             var_name = lhs.name.name
             index_results = self._get_indexed_indices(sim, lhs)
-            self._assign_to_indexed_variable(sim, var_name, index_results, op, rhs_value)
+            self._assign_to_indexed_variable(var_name, sim, index_results, op, rhs_value)
 
     def _assign_to_variable(
         self, sim: BranchedSimulation, var_name: str, op: str, rhs_value: Any
@@ -472,8 +382,8 @@ class BranchedInterpreter:
 
     def _assign_to_indexed_variable(
         self,
-        sim: BranchedSimulation,
         var_name: str,
+        sim: BranchedSimulation,
         index_results: dict[int, list[int]],
         op: str,
         rhs_value: Any,
@@ -486,11 +396,12 @@ class BranchedInterpreter:
             existing_var = sim.get_variable(path_idx, var_name)
             existing_var.val[index] = new_val
 
-    def _handle_const_declaration(self, sim: BranchedSimulation, node: ConstantDeclaration) -> None:
+    @_visit.register
+    def _handle_const_declaration(self, node: ConstantDeclaration, sim: BranchedSimulation) -> None:
         """Handle constant declarations."""
         var_name = node.identifier.name
-        init_value = self._evolve_branched_ast_operators(
-            sim, node.init_expression
+        init_value = self._visit(
+            node.init_expression, sim
         )  # Must be declared since parser checks if there is a declaration
 
         # Set constant for each active path
@@ -499,7 +410,8 @@ class BranchedInterpreter:
             framed_var = FramedVariable(var_name, type_info, value, True, sim._curr_frame)
             sim.set_variable(path_idx, var_name, framed_var)
 
-    def _handle_alias(self, sim: BranchedSimulation, node: AliasStatement) -> None:
+    @_visit.register
+    def _handle_alias(self, node: AliasStatement, sim: BranchedSimulation) -> None:
         """Handle alias statements (let statements)."""
         alias_name = node.target.name
 
@@ -518,7 +430,7 @@ class BranchedInterpreter:
                         ),
                     )
         # Handle concatenation type
-        elif isinstance(node.value, Concatenation):
+        else:
             lhs = self._evaluate_qubits(sim, node.value.lhs)
             rhs = self._evaluate_qubits(sim, node.value.rhs)
             for path_idx in sim._active_paths:
@@ -532,7 +444,8 @@ class BranchedInterpreter:
                     ),
                 )
 
-    def _handle_identifier(self, sim: BranchedSimulation, node: Identifier) -> dict[int, Any]:
+    @_visit.register
+    def _handle_identifier(self, node: Identifier, sim: BranchedSimulation) -> dict[int, Any]:
         """Handle classical variable identifier reference."""
         id_name = node.name
         results = {}
@@ -552,7 +465,10 @@ class BranchedInterpreter:
 
         return results
 
-    def _handle_index_expression(self, sim: BranchedSimulation, node) -> dict[int, Any]:
+    @_visit.register
+    def _handle_index_expression(
+        self, node: IndexExpression, sim: BranchedSimulation
+    ) -> dict[int, Any]:
         """Handle IndexExpression nodes - these represent indexed access like c[0]."""
 
         # This is an indexed access like c[0] in a conditional
@@ -570,7 +486,7 @@ class BranchedInterpreter:
                     index_results[path_idx] = index_expr.value
             else:
                 # Complex index expression
-                index_results = self._evolve_branched_ast_operators(sim, index_expr)
+                index_results = self._visit(index_expr, sim)
 
             results = {}
             for path_idx in sim._active_paths:
@@ -621,7 +537,7 @@ class BranchedInterpreter:
                         index_results[path_idx] = index_expr.value
                 else:
                     # Complex index expression
-                    index_results = self._evolve_branched_ast_operators(sim, index_expr)
+                    index_results = self._visit(index_expr, sim)
             elif isinstance(first_index_group, DiscreteSet):
                 index_results = self._handle_discrete_set(sim, first_index_group)
 
@@ -665,15 +581,16 @@ class BranchedInterpreter:
     def _handle_discrete_set(self, sim: BranchedSimulation, node: DiscreteSet) -> dict[int, Any]:
         range_values = defaultdict(list)
         for value_expr in node.values:
-            val_result = self._evolve_branched_ast_operators(sim, value_expr)
+            val_result = self._visit(value_expr, sim)
 
             for path_idx in sim._active_paths:
                 range_values[path_idx].append(val_result[path_idx])
 
         return range_values
 
-    def convert_string_to_bool_array(
-        self, sim, bit_string: BitstringLiteral
+    @_visit.register
+    def _convert_string_to_bool_array(
+        self, bit_string: BitstringLiteral, sim
     ) -> dict[int, list[int]]:
         """Convert BitstringLiteral to Boolean ArrayLiteral"""
         result = {}
@@ -686,7 +603,8 @@ class BranchedInterpreter:
     # GATE AND MEASUREMENT HANDLERS #
     #################################
 
-    def _handle_gate_definition(self, sim: BranchedSimulation, node: QuantumGateDefinition) -> None:
+    @_visit.register
+    def _handle_gate_definition(self, node: QuantumGateDefinition, sim: BranchedSimulation) -> None:
         """Handle custom gate definitions."""
         gate_name = node.name.name
 
@@ -701,7 +619,8 @@ class BranchedInterpreter:
             name=gate_name, arguments=argument_names, qubit_targets=qubit_targets, body=node.body
         )
 
-    def _handle_quantum_gate(self, sim: BranchedSimulation, node: QuantumGate) -> None:
+    @_visit.register
+    def _handle_quantum_gate(self, node: QuantumGate, sim: BranchedSimulation) -> None:
         """Handle quantum gate application."""
 
         gate_name = node.name.name
@@ -710,7 +629,7 @@ class BranchedInterpreter:
         arguments = defaultdict(list)
         if node.arguments:
             for arg in node.arguments:
-                arg_result = self._evolve_branched_ast_operators(sim, arg)
+                arg_result = self._visit(arg, sim)
 
                 for idx in sim._active_paths:
                     arguments[idx].append(arg_result[idx])
@@ -825,7 +744,7 @@ class BranchedInterpreter:
                 sim._active_paths = [idx]
 
                 for statement in modified_gate_body[idx]:
-                    self._evolve_branched_ast_operators(sim, statement)
+                    self._visit(statement, sim)
 
             sim._active_paths = original_path
 
@@ -858,9 +777,7 @@ class BranchedInterpreter:
             ctrl_mod_ix = ctrl_mod_map.get(mod.modifier)
 
             args = (
-                1
-                if mod.argument is None
-                else self._evolve_branched_ast_operators(sim, mod.argument)
+                1 if mod.argument is None else self._visit(mod.argument, sim)
             )  # Set 1 to be default modifier
 
             if ctrl_mod_ix is not None:
@@ -897,7 +814,8 @@ class BranchedInterpreter:
                     s.qubits = ctrl_qubits[idx] + s.qubits
         return bodies
 
-    def _handle_reset(self, sim: BranchedSimulation, node: QuantumReset) -> None:
+    @_visit.register
+    def _handle_reset(self, node: QuantumReset, sim: BranchedSimulation) -> None:
         qubits = self._evaluate_qubits(sim, node.qubits)
         for idx, qs in qubits.items():
             if isinstance(qs, int):
@@ -905,8 +823,9 @@ class BranchedInterpreter:
             for q in qs:
                 sim._instruction_sequences[idx].append(Reset([q]))
 
+    @_visit.register
     def _handle_measurement(
-        self, sim: BranchedSimulation, node: QuantumMeasurementStatement
+        self, node: QuantumMeasurementStatement, sim: BranchedSimulation
     ) -> None:
         """
         Handle quantum measurement with potential branching.
@@ -920,9 +839,8 @@ class BranchedInterpreter:
         # Get qubit indices for measurement
         qubit_indices_dict = self._evaluate_qubits(sim, qubit)
 
-        measurement_results: dict[
-            int, list[int]
-        ] = {}  # We store the list of measurement results because we can measure a register
+        # We store the list of measurement results because we can measure a register
+        measurement_results: dict[int, list[int]] = {}
 
         # Process each active path - use the actual measurement logic from BranchedSimulation
         for path_idx in sim._active_paths.copy():
@@ -944,7 +862,7 @@ class BranchedInterpreter:
                 # Use the path-specific measurement method which handles branching and optimization
                 for idx in paths_to_measure.copy():
                     new_idx = sim.measure_qubit_on_path(idx, qubit_idx, qubit_name)
-                    if not new_idx == -1:  # A measurement created a split in the path
+                    if new_idx != -1:  # A measurement created a split in the path
                         new_paths[idx] = new_idx
 
                 paths_to_measure.extend(
@@ -960,7 +878,7 @@ class BranchedInterpreter:
                     measurement_results[idx].append(sim._measurements[idx][qubit_idx][-1])
 
         # If this measurement has an assignment target, handle the assignment directly
-        if hasattr(node, "target") and node.target:
+        if node.target:
             target = node.target
 
             # Handle the assignment directly here
@@ -994,10 +912,11 @@ class BranchedInterpreter:
                 target_name = target.name
                 self._assign_to_variable(sim, target_name, "=", measurement_results)
 
-    def _handle_phase(self, sim: BranchedSimulation, node: QuantumPhase) -> None:
+    @_visit.register
+    def _handle_phase(self, node: QuantumPhase, sim: BranchedSimulation) -> None:
         """Handle global phase operations."""
         # Evaluate the phase argument for each active path
-        phase_results = self._evolve_branched_ast_operators(sim, node.argument)
+        phase_results = self._visit(node.argument, sim)
 
         # Get modifiers (control, power, etc.)
         _, power = self._handle_modifiers(sim, node.modifiers)
@@ -1043,8 +962,12 @@ class BranchedInterpreter:
         Evaluate qubit expressions to get qubit indices.
         Returns a dictionary mapping path indices to qubit indices.
         """
-        results = {}
 
+        if isinstance(qubit_expr, IndexedIdentifier):
+            # Evaluate index/indices
+            return self._handle_indexed_identifier(sim, qubit_expr)
+
+        results = {}
         if isinstance(qubit_expr, Identifier):
             qubit_name = qubit_expr.name
             for path_idx in sim._active_paths:
@@ -1057,11 +980,6 @@ class BranchedInterpreter:
                     results[path_idx] = sim._qubit_count - 1
                 else:
                     raise NameError("The qubit with name " + qubit_name + " can't be found")
-
-        elif isinstance(qubit_expr, IndexedIdentifier):
-            # Evaluate index/indices
-            results = self._handle_indexed_identifier(sim, qubit_expr)
-
         return results
 
     def _get_qubit_name_with_index(self, sim: BranchedSimulation, qubit_idx: int) -> str:
@@ -1207,10 +1125,11 @@ class BranchedInterpreter:
     # CONTROL SEQUENCE AND FUNCTION HANDLERS #
     ##########################################
 
-    def _handle_conditional(self, sim: BranchedSimulation, node: BranchingStatement) -> None:
+    @_visit.register
+    def _handle_conditional(self, node: BranchingStatement, sim: BranchedSimulation) -> None:
         """Handle conditional branching based on classical variables with proper scoping."""
         # Evaluate condition for each active path
-        condition_results = self._evolve_branched_ast_operators(sim, node.condition)
+        condition_results = self._visit(node.condition, sim)
 
         true_paths = []
         false_paths = []
@@ -1234,7 +1153,7 @@ class BranchedInterpreter:
 
             # Process if branch
             for statement in node.if_block:
-                self._evolve_branched_ast_operators(sim, statement)
+                self._visit(statement, sim)
                 if not sim._active_paths:  # Path was terminated
                     break
 
@@ -1253,7 +1172,7 @@ class BranchedInterpreter:
 
             # Process else branch
             for statement in node.else_block:
-                self._evolve_branched_ast_operators(sim, statement)
+                self._visit(statement, sim)
                 if not sim._active_paths:  # Path was terminated
                     break
 
@@ -1269,7 +1188,8 @@ class BranchedInterpreter:
         # Update active paths
         sim._active_paths = surviving_paths
 
-    def _handle_for_loop(self, sim: BranchedSimulation, node: ForInLoop) -> None:
+    @_visit.register
+    def _handle_for_loop(self, node: ForInLoop, sim: BranchedSimulation) -> None:
         """Handle for-in loops with proper scoping."""
         loop_var_name = node.identifier.name
 
@@ -1278,7 +1198,7 @@ class BranchedInterpreter:
         # Create a new scope for the loop
         original_variables = self.create_block_scope(sim)
 
-        range_values = self._evolve_branched_ast_operators(sim, node.set_declaration)
+        range_values = self._visit(node.set_declaration, sim)
 
         # For each path, iterate through the range
         for path_idx, values in range_values.items():
@@ -1297,7 +1217,7 @@ class BranchedInterpreter:
 
                 # Execute loop body
                 for statement in node.block:
-                    self._evolve_branched_ast_operators(sim, statement)
+                    self._visit(statement, sim)
                     if not sim._active_paths:  # Path was terminated (break/return)
                         break
 
@@ -1315,7 +1235,8 @@ class BranchedInterpreter:
         # Restore original scope
         self.restore_original_scope(sim, original_variables)
 
-    def _handle_while_loop(self, sim: BranchedSimulation, node: WhileLoop) -> None:
+    @_visit.register
+    def _handle_while_loop(self, node: WhileLoop, sim: BranchedSimulation) -> None:
         """Handle while loops with condition evaluation and proper scoping."""
         paths_not_to_add = set(range(0, len(sim._instruction_sequences))) - set(sim._active_paths)
 
@@ -1330,7 +1251,7 @@ class BranchedInterpreter:
             sim._active_paths = continue_paths
 
             # Evaluate condition for all paths at once
-            condition_results = self._evolve_branched_ast_operators(sim, node.while_condition)
+            condition_results = self._visit(node.while_condition, sim)
 
             # Determine which paths should continue looping
             new_continue_paths = []
@@ -1348,7 +1269,7 @@ class BranchedInterpreter:
             # Execute the loop body
             sim._active_paths = new_continue_paths
             for statement in node.block:
-                self._evolve_branched_ast_operators(sim, statement)
+                self._visit(statement, sim)
                 if not sim._active_paths:
                     break
 
@@ -1366,20 +1287,18 @@ class BranchedInterpreter:
         # Restore original scope
         self.restore_original_scope(sim, original_variables)
 
+    @_visit.register
     def _handle_loop_control(
-        self, sim: BranchedSimulation, node: BreakStatement | ContinueStatement
+        self, node: BreakStatement | ContinueStatement, sim: BranchedSimulation
     ) -> None:
         """Handle break and continue statements."""
-        if isinstance(node, BreakStatement):
-            # Break terminates all active paths
-            sim._active_paths = []
-        elif isinstance(node, ContinueStatement):
-            # Continue moves paths to continue list
+        if isinstance(node, ContinueStatement):
             sim._continue_paths.extend(sim._active_paths)
-            sim._active_paths = []
+        sim._active_paths = []
 
+    @_visit.register
     def _handle_function_definition(
-        self, sim: BranchedSimulation, node: SubroutineDefinition
+        self, node: SubroutineDefinition, sim: BranchedSimulation
     ) -> None:
         """Handle function/subroutine definitions."""
         function_name = node.name.name
@@ -1392,7 +1311,8 @@ class BranchedInterpreter:
             return_type=node.return_type,
         )
 
-    def _handle_function_call(self, sim: BranchedSimulation, node: FunctionCall) -> dict[int, Any]:
+    @_visit.register
+    def _handle_function_call(self, node: FunctionCall, sim: BranchedSimulation) -> dict[int, Any]:
         """Handle function calls."""
         function_name = node.name.name
 
@@ -1401,15 +1321,15 @@ class BranchedInterpreter:
         for path_idx in sim._active_paths:
             args = []
             for arg in node.arguments:
-                arg_result = self._evolve_branched_ast_operators(sim, arg)
+                arg_result = self._visit(arg, sim)
                 args.append(arg_result[path_idx])
             evaluated_args[path_idx] = args
 
         # Check if it's a built-in function
-        if function_name in self.function_builtin:
+        if function_name in _FUNCTIONS:
             results = {}
             for path_idx, args in evaluated_args.items():
-                results[path_idx] = self.function_builtin[function_name](*args)
+                results[path_idx] = _FUNCTIONS[function_name](*args)
             return results
 
         # Check if it's a user-defined function
@@ -1437,7 +1357,7 @@ class BranchedInterpreter:
 
             # Execute function body
             for statement in func_def.body:
-                self._evolve_branched_ast_operators(sim, statement)
+                self._visit(statement, sim)
 
             # Get return value
             if not (len(sim._return_values) == 0):
@@ -1455,12 +1375,13 @@ class BranchedInterpreter:
             # Unknown function
             raise NameError("Function " + function_name + " doesn't exist.")
 
+    @_visit.register
     def _handle_return_statement(
-        self, sim: BranchedSimulation, node: ReturnStatement
+        self, node: ReturnStatement, sim: BranchedSimulation
     ) -> dict[int, Any]:
         """Handle return statements."""
         if node.expression:
-            return_values = self._evolve_branched_ast_operators(sim, node.expression)
+            return_values = self._visit(node.expression, sim)
 
             # Store return values and clear active paths
             for path_idx, return_value in return_values.items():
@@ -1479,12 +1400,13 @@ class BranchedInterpreter:
     # MISCELLANEOUS HANDLERS #
     ##########################
 
+    @_visit.register
     def _handle_binary_expression(
-        self, sim: BranchedSimulation, node: BinaryExpression
+        self, node: BinaryExpression, sim: BranchedSimulation
     ) -> dict[int, Any]:
         """Handle binary expressions."""
-        lhs = self._evolve_branched_ast_operators(sim, node.lhs)
-        rhs = self._evolve_branched_ast_operators(sim, node.rhs)
+        lhs = self._visit(node.lhs, sim)
+        rhs = self._visit(node.rhs, sim)
 
         results = {}
         for path_idx in sim._active_paths:
@@ -1503,11 +1425,12 @@ class BranchedInterpreter:
 
         return results
 
+    @_visit.register
     def _handle_unary_expression(
-        self, sim: BranchedSimulation, node: UnaryExpression
+        self, node: UnaryExpression, sim: BranchedSimulation
     ) -> dict[int, Any]:
         """Handle unary expressions."""
-        operand = self._evolve_branched_ast_operators(sim, node.expression)
+        operand = self._visit(node.expression, sim)
 
         results = {}
         for path_idx in sim._active_paths:
@@ -1522,25 +1445,27 @@ class BranchedInterpreter:
 
         return results
 
-    def _handle_array_literal(self, sim: BranchedSimulation, node: ArrayLiteral) -> dict[int, Any]:
+    @_visit.register
+    def _handle_array_literal(self, node: ArrayLiteral, sim: BranchedSimulation) -> dict[int, Any]:
         """Handle array literals."""
         results = {}
 
         for path_idx in sim._active_paths:
             array_values = []
             for element in node.values:
-                element_result = self._evolve_branched_ast_operators(sim, element)
+                element_result = self._visit(element, sim)
                 array_values.append(element_result[path_idx])
             results[path_idx] = array_values
 
         return results
 
-    def _handle_range(self, sim: BranchedSimulation, node: RangeDefinition) -> dict[int, list[int]]:
+    @_visit.register
+    def _handle_range(self, node: RangeDefinition, sim: BranchedSimulation) -> dict[int, list[int]]:
         """Handle range definitions."""
         results = {}
-        start_result = self._evolve_branched_ast_operators(sim, node.start)
-        end_result = self._evolve_branched_ast_operators(sim, node.end)
-        step_result = self._evolve_branched_ast_operators(sim, node.step)
+        start_result = self._visit(node.start, sim)
+        end_result = self._visit(node.end, sim)
+        step_result = self._visit(node.step, sim)
 
         for path_idx in sim._active_paths:
             # Generate range
@@ -1554,10 +1479,11 @@ class BranchedInterpreter:
 
         return results
 
-    def _handle_cast(self, sim: BranchedSimulation, node: Cast) -> dict[int, Any]:
+    @_visit.register
+    def _handle_cast(self, node: Cast, sim: BranchedSimulation) -> dict[int, Any]:
         """Handle type casting."""
         # Evaluate the argument
-        arg_results = self._evolve_branched_ast_operators(sim, node.argument)
+        arg_results = self._visit(node.argument, sim)
 
         results = {}
         for path_idx, value in arg_results.items():

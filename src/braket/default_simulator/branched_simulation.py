@@ -109,8 +109,7 @@ class BranchedSimulation(Simulation):
         probs = self._get_measurement_probabilities(current_state, qubit_idx)
 
         path_shots = self._shots_per_path[path_idx]
-        rng_generator = np.random.default_rng()
-        path_samples = rng_generator.choice(len(probs), size=path_shots, p=probs)
+        path_samples = np.random.default_rng().choice(len(probs), size=path_shots, p=probs)
 
         shots_for_outcome_1 = sum(path_samples)
         shots_for_outcome_0 = path_shots - shots_for_outcome_1
@@ -133,39 +132,38 @@ class BranchedSimulation(Simulation):
 
             return -1
 
-        else:
-            # Path for outcome 0
-            path_0_instructions = self._instruction_sequences[path_idx]
-            path_1_instructions = path_0_instructions.copy()
+        # Path for outcome 0
+        path_0_instructions = self._instruction_sequences[path_idx]
+        path_1_instructions = path_0_instructions.copy()
 
-            measure_op_0 = Measure([qubit_idx], result=0)
-            path_0_instructions.append(measure_op_0)
+        measure_op_0 = Measure([qubit_idx], result=0)
+        path_0_instructions.append(measure_op_0)
 
-            self._shots_per_path[path_idx] = shots_for_outcome_0
-            new_measurements_0 = self._measurements[path_idx]
-            new_measurements_1 = deepcopy(self._measurements[path_idx])
+        self._shots_per_path[path_idx] = shots_for_outcome_0
+        new_measurements_0 = self._measurements[path_idx]
+        new_measurements_1 = deepcopy(self._measurements[path_idx])
 
-            if qubit_idx not in new_measurements_0:
-                new_measurements_0[qubit_idx] = []
-            new_measurements_0[qubit_idx].append(0)
+        if qubit_idx not in new_measurements_0:
+            new_measurements_0[qubit_idx] = []
+        new_measurements_0[qubit_idx].append(0)
 
-            # Path for outcome 1
-            path_1_idx = len(self._instruction_sequences)
-            measure_op_1 = Measure([qubit_idx], result=1)
-            path_1_instructions.append(measure_op_1)
-            self._instruction_sequences.append(path_1_instructions)
-            self._shots_per_path.append(shots_for_outcome_1)
+        # Path for outcome 1
+        path_1_idx = len(self._instruction_sequences)
+        measure_op_1 = Measure([qubit_idx], result=1)
+        path_1_instructions.append(measure_op_1)
+        self._instruction_sequences.append(path_1_instructions)
+        self._shots_per_path.append(shots_for_outcome_1)
 
-            if qubit_idx not in new_measurements_1:
-                new_measurements_1[qubit_idx] = []
-            new_measurements_1[qubit_idx].append(1)
-            self._measurements.append(new_measurements_1)
-            self._variables.append(deepcopy(self._variables[path_idx]))
+        if qubit_idx not in new_measurements_1:
+            new_measurements_1[qubit_idx] = []
+        new_measurements_1[qubit_idx].append(1)
+        self._measurements.append(new_measurements_1)
+        self._variables.append(deepcopy(self._variables[path_idx]))
 
-            # Add new paths to active paths
-            self._active_paths.append(path_1_idx)
+        # Add new paths to active paths
+        self._active_paths.append(path_1_idx)
 
-            return path_1_idx
+        return path_1_idx
 
     def _get_path_state(self, path_idx: int) -> np.ndarray:
         """
