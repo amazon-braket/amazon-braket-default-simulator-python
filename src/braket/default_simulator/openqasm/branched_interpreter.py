@@ -254,15 +254,11 @@ class BranchedInterpreter:
                 for statement in statements:
                     self._visit(statement, sim)
                 return None
-            case QubitDeclaration():
+            case QubitDeclaration() | None:
                 # Already handled in first pass
                 return None
             case BooleanLiteral() | FloatLiteral() | IntegerLiteral():
                 return {path_idx: node.value for path_idx in sim._active_paths}
-            case ExpressionStatement():
-                return self._visit(node.expression, sim)
-            case None:
-                return None
             case _:
                 # For unsupported node types, return None
                 raise NotImplementedError("Unsupported node type " + str(node))
@@ -589,9 +585,7 @@ class BranchedInterpreter:
         return range_values
 
     @_visit.register
-    def _convert_string_to_bool_array(
-        self, bit_string: BitstringLiteral, sim
-    ) -> dict[int, list[int]]:
+    def _handle_bitstring_literal(self, bit_string: BitstringLiteral, sim) -> dict[int, list[int]]:
         """Convert BitstringLiteral to Boolean ArrayLiteral"""
         result = {}
         value = [int(x) for x in np.binary_repr(bit_string.value, bit_string.width)]
@@ -1399,6 +1393,10 @@ class BranchedInterpreter:
     ##########################
     # MISCELLANEOUS HANDLERS #
     ##########################
+
+    @_visit.register
+    def _handle_expression(self, node: ExpressionStatement, sim: BranchedSimulation):
+        return self._visit(node.expression, sim)
 
     @_visit.register
     def _handle_binary_expression(
