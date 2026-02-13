@@ -550,7 +550,10 @@ class Interpreter:
             raise ValueError(
                 f"Number of qubits ({len(qubits)}) does not match number of provided classical targets ({len(targets)})"
             )
-        self.context.add_measure(qubits, targets, measurement_target=node.target)
+        if node.target:
+            self.context.add_measure(qubits, targets, measurement_target=node.target)
+        else:
+            self.context.add_measure(qubits, targets)
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:

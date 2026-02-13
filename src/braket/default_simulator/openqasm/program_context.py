@@ -862,8 +862,24 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
-    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None, **kwargs):
-        """Add qubit targets to be measured"""
+    def add_measure(
+        self,
+        target: tuple[int],
+        classical_targets: Iterable[int] | None = None,
+        measurement_target: Identifier | IndexedIdentifier | None = None,
+    ) -> None:
+        """Add a measurement to the circuit.
+
+        Args:
+            target (tuple[int]): The qubit indices to measure.
+            classical_targets (Iterable[int] | None): The classical bit indices
+                to write results into for the circuit's final output. Used by the simulation
+                infrastructure for bit-level bookkeeping.
+            measurement_target (Identifier | IndexedIdentifier | None): The AST node
+                for the classical variable being assigned, e.g. ``b`` in
+                ``b = measure q[0]``. Used by the branched MCM path to update
+                per-path classical variables. None for end-of-circuit measurements.
+        """
 
     def add_barrier(self, target: list[int] | None = None) -> None:
         """Abstract method to add a barrier instruction to the circuit. By defaul barrier is ignored.
@@ -1209,9 +1225,9 @@ class ProgramContext(AbstractProgramContext):
     def add_measure(
         self,
         target: tuple[int],
-        classical_targets: Iterable[int] = None,
-        measurement_target=None,
-    ):
+        classical_targets: Iterable[int] | None = None,
+        measurement_target: Identifier | IndexedIdentifier | None = None,
+    ) -> None:
         if self._is_branched:
             if measurement_target is not None:
                 self._measure_and_branch(target)
