@@ -62,12 +62,9 @@ TWO_QUBIT_GATE_DISPATCH = MappingProxyType(
         "swap": lambda dispatcher, state, target0, target1, out: dispatcher.apply_swap(
             state, target0, target1, out
         ),
-        "cphaseshift": lambda dispatcher,
-        state,
-        matrix,
-        target0,
-        target1,
-        out: dispatcher.apply_controlled_phase_shift(state, matrix[3, 3], (target0,), target1),
+        "cphaseshift": lambda dispatcher, state, matrix, target0, target1, out: (
+            dispatcher.apply_controlled_phase_shift(state, matrix[3, 3], (target0,), target1)
+        ),
     }
 )
 
