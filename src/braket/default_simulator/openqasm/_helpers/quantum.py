@@ -52,17 +52,16 @@ def is_controlled(phase: QuantumPhase) -> bool:
     return False
 
 
-def convert_phase_to_gate(controlled_phase: QuantumPhase) -> QuantumGate:
+def convert_phase_to_gate(controlled_phase: QuantumPhase) -> Union[QuantumGate, list[QuantumGate]]:
     """Convert a controlled quantum phase into a quantum gate"""
     ctrl_modifiers = get_ctrl_modifiers(controlled_phase.modifiers)
     first_ctrl_modifier = ctrl_modifiers[-1]
-    if first_ctrl_modifier.modifier == GateModifierName.negctrl:
-        raise ValueError("negctrl modifier undefined for gphase operation")
     if first_ctrl_modifier.argument.value == 1:
         ctrl_modifiers.pop()
     else:
         ctrl_modifiers[-1].argument.value -= 1
-    return QuantumGate(
+
+    ctrl_phaseshift = QuantumGate(
         ctrl_modifiers,
         Identifier("U"),
         [
@@ -72,6 +71,17 @@ def convert_phase_to_gate(controlled_phase: QuantumPhase) -> QuantumGate:
         ],
         controlled_phase.qubits,
     )
+
+    if first_ctrl_modifier.modifier == GateModifierName.negctrl:
+        X = QuantumGate(
+            [],
+            Identifier("x"),
+            [],
+            [controlled_phase.qubits[-1]],
+        )
+        return [X, ctrl_phaseshift, X]
+    else:
+        return ctrl_phaseshift
 
 
 def get_ctrl_modifiers(modifiers: list[QuantumGateModifier]) -> list[QuantumGateModifier]:

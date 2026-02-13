@@ -433,7 +433,12 @@ class AbstractProgramContext(ABC):
     def __repr__(self):
         return "\n\n".join(
             repr(x)
-            for x in (self.symbol_table, self.variable_table, self.gate_table, self.qubit_mapping)
+            for x in (
+                self.symbol_table,
+                self.variable_table,
+                self.gate_table,
+                self.qubit_mapping,
+            )
         )
 
     def load_inputs(self, inputs: dict[str, Any]) -> None:
@@ -789,7 +794,12 @@ class AbstractProgramContext(ABC):
 
     @abstractmethod
     def add_gate_instruction(
-        self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
+        self,
+        gate_name: str,
+        target: tuple[int, ...],
+        params,
+        ctrl_modifiers: list[int],
+        power: int,
     ):
         """Abstract method to add Braket gate to the circuit.
         Args:
@@ -871,12 +881,17 @@ class ProgramContext(AbstractProgramContext):
         user_defined_gate = self.is_user_defined_gate(name)
         return name in BRAKET_GATES and not user_defined_gate
 
-    def add_phase_instruction(self, target: tuple[int], phase_value: int):
+    def add_phase_instruction(self, target: tuple[int], phase_value: float):
         phase_instruction = GPhase(target, phase_value)
         self._circuit.add_instruction(phase_instruction)
 
     def add_gate_instruction(
-        self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
+        self,
+        gate_name: str,
+        target: tuple[int, ...],
+        params,
+        ctrl_modifiers: list[int],
+        power: int,
     ):
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
