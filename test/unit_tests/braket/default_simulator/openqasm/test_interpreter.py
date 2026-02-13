@@ -106,7 +106,7 @@ def test_bool_declaration():
     assert context.get_type("initialized_int") == BoolType()
     assert context.get_type("initialized_bool") == BoolType()
 
-    assert context.get_value("uninitialized") is None
+    assert context.get_value("uninitialized") == BooleanLiteral(False)
     assert context.get_value("initialized_int") == BooleanLiteral(False)
     assert context.get_value("initialized_bool") == BooleanLiteral(True)
 
@@ -135,7 +135,7 @@ def test_int_declaration():
     assert context.get_type("neg_overflow") == IntType(IntegerLiteral(3))
     assert context.get_type("no_size") == IntType(None)
 
-    assert context.get_value("uninitialized") is None
+    assert context.get_value("uninitialized") == IntegerLiteral(0)
     assert context.get_value("pos") == IntegerLiteral(10)
     assert context.get_value("neg") == IntegerLiteral(-4)
     assert context.get_value("int_min") == IntegerLiteral(-128)
@@ -172,7 +172,7 @@ def test_uint_declaration():
     assert context.get_type("neg_overflow") == UintType(IntegerLiteral(3))
     assert context.get_type("no_size") == UintType(None)
 
-    assert context.get_value("uninitialized") is None
+    assert context.get_value("uninitialized") == IntegerLiteral(0)
     assert context.get_value("pos") == IntegerLiteral(10)
     assert context.get_value("pos_not_overflow") == IntegerLiteral(5)
     assert context.get_value("pos_overflow") == IntegerLiteral(0)
@@ -224,7 +224,7 @@ def test_float_declaration():
     assert context.get_type("precise") == FloatType(IntegerLiteral(64))
     assert context.get_type("unsized") == FloatType(None)
 
-    assert context.get_value("uninitialized") is None
+    assert context.get_value("uninitialized") == FloatLiteral(0.0)
     assert context.get_value("pos") == FloatLiteral(10)
     assert context.get_value("neg") == FloatLiteral(-4.2)
     assert context.get_value("precise") == FloatLiteral(np.pi)
@@ -530,11 +530,18 @@ def test_indexed_expression():
 def test_reset_qubit():
     qasm = """
     qubit q;
+    x q;
     reset q;
     """
-    no_reset = "Reset not supported"
-    with pytest.raises(NotImplementedError, match=no_reset):
-        Interpreter().run(qasm)
+    context = Interpreter().run(qasm)
+    # Reset should add a Reset instruction to the circuit
+    from braket.default_simulator.gate_operations import Reset
+
+    instructions = context.circuit.instructions
+    # Should have an X gate followed by a Reset
+    assert len(instructions) == 2
+    assert isinstance(instructions[1], Reset)
+    assert instructions[1].targets == (0,)
 
 
 def test_for_loop():

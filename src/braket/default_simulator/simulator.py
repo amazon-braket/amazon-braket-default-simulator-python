@@ -737,7 +737,20 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
-        circuit = self.parse_program(openqasm_ir).circuit
+        # Parse the program. When shots > 0, use _parse_program_with_shots so
+        # that ProgramContext._shots is set and mid-circuit measurements can
+        # trigger path branching during interpretation.
+        if shots > 0:
+            context = self._parse_program_with_shots(openqasm_ir, shots)
+        else:
+            context = self.parse_program(openqasm_ir)
+
+        if context.is_branched:
+            # Multi-path execution for programs with mid-circuit measurements
+            return self._run_branched(context, openqasm_ir, shots, batch_size)
+
+        # Single-path execution (current behavior, unchanged)
+        circuit = context.circuit
         qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
         qubit_count = circuit.num_qubits
         classical_bit_positions = {b: i for i, b in enumerate(circuit.target_classical_indices)}
@@ -787,6 +800,121 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         return self._create_results_obj(
             results, openqasm_ir, simulation, measured_qubits, mapped_measured_qubits
+        )
+
+    def _parse_program_with_shots(
+        self, program: OpenQASMProgram, shots: int
+    ) -> AbstractProgramContext:
+        """Parse an OpenQASM program with shot count information.
+
+        Creates a ProgramContext with the shot count set so that mid-circuit
+        measurements can trigger path branching during interpretation.
+        Currently, branching is only activated when the program contains
+        control flow that depends on measurement results (MCM).
+
+        Args:
+            program (OpenQASMProgram): The program to parse.
+            shots (int): The number of shots for the simulation.
+
+        Returns:
+            AbstractProgramContext: The program context after parsing.
+        """
+        context = self.create_program_context()
+        if hasattr(context, "_shots"):
+            context._shots = shots
+        is_file = program.source.endswith(".qasm")
+        interpreter = Interpreter(context, warn_advanced_features=True)
+        return interpreter.run(
+            source=program.source,
+            inputs=program.inputs,
+            is_file=is_file,
+        )
+
+    def _run_branched(
+        self,
+        context: AbstractProgramContext,
+        openqasm_ir: OpenQASMProgram,
+        shots: int,
+        batch_size: int,
+    ) -> GateModelTaskResult:
+        """Execute a branched (multi-path) simulation and aggregate results.
+
+        After interpretation, the context contains multiple active paths, each
+        with its own instruction sequence and shot allocation. This method
+        creates a fresh Simulation for each path, evolves it, collects samples,
+        and aggregates them into a single GateModelTaskResult.
+
+        Args:
+            context: The program context with branched paths.
+            openqasm_ir: The original OpenQASM program IR.
+            shots: Total number of shots.
+            batch_size: Batch size for simulation.
+
+        Returns:
+            GateModelTaskResult: Aggregated result across all paths.
+        """
+        circuit = context.circuit
+        qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
+        qubit_count = circuit.num_qubits
+
+        # Determine measured qubits from the circuit
+        classical_bit_positions = {b: i for i, b in enumerate(circuit.target_classical_indices)}
+        measured_qubits = [
+            circuit.measured_qubits[classical_bit_positions[i]]
+            for i in sorted(circuit.target_classical_indices)
+        ]
+        mapped_measured_qubits = (
+            [qubit_map[q] for q in measured_qubits] if measured_qubits else None
+        )
+
+        # For path simulation, we need enough qubits to cover all qubit indices
+        # referenced in the instructions (handles noncontiguous qubit indices).
+        # Use the context's num_qubits (total declared qubits) to ensure all
+        # qubits are accounted for, even those without explicit gate operations.
+        sim_qubit_count = qubit_count
+        if hasattr(context, "num_qubits"):
+            sim_qubit_count = max(sim_qubit_count, context.num_qubits)
+        if circuit.qubit_set:
+            sim_qubit_count = max(sim_qubit_count, max(circuit.qubit_set) + 1)
+
+        # Aggregate samples across all active paths
+        all_samples = []
+        for path in context.active_paths:
+            if path.shots > 0:
+                sim = self.initialize_simulation(
+                    qubit_count=sim_qubit_count, shots=path.shots, batch_size=batch_size
+                )
+                sim.evolve(path.instructions)
+                all_samples.extend(sim.retrieve_samples())
+
+        # Build measurements in the same format as _formatted_measurements
+        measurements = [
+            list("{number:0{width}b}".format(number=sample, width=sim_qubit_count))[
+                -sim_qubit_count:
+            ]
+            for sample in all_samples
+        ]
+        if mapped_measured_qubits is not None and mapped_measured_qubits != []:
+            mapped_arr = np.array(mapped_measured_qubits)
+            in_circuit_mask = mapped_arr < sim_qubit_count
+            qubits_in_circuit = mapped_arr[in_circuit_mask]
+            qubits_not_in_circuit = mapped_arr[~in_circuit_mask]
+            measurements_array = np.array(measurements)
+            selected = measurements_array[:, qubits_in_circuit]
+            measurements = np.pad(selected, ((0, 0), (0, len(qubits_not_in_circuit)))).tolist()
+
+        return GateModelTaskResult.construct(
+            taskMetadata=TaskMetadata(
+                id=str(uuid.uuid4()),
+                shots=shots,
+                deviceId=self.DEVICE_ID,
+            ),
+            additionalMetadata=AdditionalMetadata(
+                action=openqasm_ir,
+            ),
+            resultTypes=[],
+            measurements=measurements,
+            measuredQubits=(measured_qubits or list(range(qubit_count))),
         )
 
     def run_jaqcd(
