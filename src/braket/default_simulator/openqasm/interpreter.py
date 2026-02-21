@@ -177,9 +177,13 @@ class Interpreter:
     @visit.register
     def _(self, node: Program) -> None:
         for i, stmt in enumerate(node.statements):
-            if isinstance(stmt, Pragma) and stmt.command.startswith("braket verbatim"):
-                if i + 1 < len(node.statements) and not isinstance(node.statements[i + 1], Box):
-                    raise ValueError("braket verbatim pragma must be followed by a box statement")
+            if (
+                isinstance(stmt, Pragma)
+                and stmt.command.startswith("braket verbatim")
+                and i + 1 < len(node.statements)
+                and not isinstance(node.statements[i + 1], Box)
+            ):
+                raise ValueError("braket verbatim pragma must be followed by a box statement")
         self.visit(node.statements)
 
     @visit.register
@@ -510,22 +514,21 @@ class Interpreter:
         """The measure is performed but the assignment is ignored"""
         qubits = self.visit(node.measure)
         targets = []
-        if node.target:
-            if isinstance(node.target, IndexedIdentifier):
-                indices = flatten_indices(node.target.indices)
-                if len(node.target.indices) != 1:
-                    raise ValueError(
-                        "Multi-Dimensional indexing not supported for classical registers."
-                    )
-                match elem := indices[0]:
-                    case DiscreteSet(values):
-                        self._uses_advanced_language_features = True
-                        targets.extend([self.visit(val).value for val in values])
-                    case RangeDefinition():
-                        self._uses_advanced_language_features = True
-                        targets.extend(convert_range_def_to_range(self.visit(elem)))
-                    case _:
-                        targets.append(elem.value)
+        if node.target and isinstance(node.target, IndexedIdentifier):
+            indices = flatten_indices(node.target.indices)
+            if len(node.target.indices) != 1:
+                raise ValueError(
+                    "Multi-Dimensional indexing not supported for classical registers."
+                )
+            match elem := indices[0]:
+                case DiscreteSet(values):
+                    self._uses_advanced_language_features = True
+                    targets.extend([self.visit(val).value for val in values])
+                case RangeDefinition():
+                    self._uses_advanced_language_features = True
+                    targets.extend(convert_range_def_to_range(self.visit(elem)))
+                case _:
+                    targets.append(elem.value)
 
         if not len(targets):
             targets = None
@@ -654,17 +657,16 @@ class Interpreter:
                     break
 
             for arg_passed, arg_defined in zip(node.arguments, function_def.arguments):
-                if isinstance(arg_defined, ClassicalArgument):
-                    if isinstance(arg_defined.type, ArrayReferenceType):
-                        if isinstance(arg_passed, IndexExpression):
-                            identifier = IndexedIdentifier(
-                                arg_passed.collection, [arg_passed.index]
-                            )
-                            identifier.indices = self.visit(identifier.indices)
-                        else:
-                            identifier = arg_passed
-                        reference_value = self.context.get_value(arg_defined.name.name)
-                        self.context.update_value(identifier, reference_value)
+                if isinstance(arg_defined, ClassicalArgument) and isinstance(
+                    arg_defined.type, ArrayReferenceType
+                ):
+                    if isinstance(arg_passed, IndexExpression):
+                        identifier = IndexedIdentifier(arg_passed.collection, [arg_passed.index])
+                        identifier.indices = self.visit(identifier.indices)
+                    else:
+                        identifier = arg_passed
+                    reference_value = self.context.get_value(arg_defined.name.name)
+                    self.context.update_value(identifier, reference_value)
 
             return return_value
 

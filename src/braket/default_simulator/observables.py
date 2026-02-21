@@ -243,7 +243,7 @@ class Hermitian(Observable):
     """Arbitrary Hermitian observable"""
 
     # Cache of eigenpairs for each used Hermitian matrix
-    _eigenpairs = {}
+    _eigenpairs = {}  # noqa: RUF012
 
     def __init__(self, matrix: np.ndarray, targets: list[int] | None = None):
         clone = np.array(matrix, dtype=complex)
@@ -375,22 +375,23 @@ class TensorProduct(Observable):
     @staticmethod
     def _compute_eigenvalues(factors: list[Observable], qubits: tuple[int, ...]) -> np.ndarray:
         # Check if there are any non-standard observables, namely Hermitian and Identity
-        if any({not observable.is_standard for observable in factors}):
+        if any(not observable.is_standard for observable in factors):
             # Tensor product of observables contains a mixture
             # of standard and nonstandard observables
             factors_sorted = sorted(factors, key=lambda x: x.measured_qubits)
             eigenvalues = np.ones(1)
             for is_standard, group in itertools.groupby(factors_sorted, lambda x: x.is_standard):
                 # Group observables by whether or not they are standard
+                values = list(group)
                 group_eigenvalues = (
                     # `group` contains only standard observables, so eigenvalues
                     # are simply Pauli eigenvalues
-                    pauli_eigenvalues(len(list(group)))
+                    pauli_eigenvalues(len(values))
                     if is_standard
                     # `group` contains only nonstandard observables, so eigenvalues
                     # must be calculated
                     else functools.reduce(
-                        np.kron, tuple(nonstandard.eigenvalues for nonstandard in group)
+                        np.kron, tuple(nonstandard.eigenvalues for nonstandard in values)
                     )
                 )
                 eigenvalues = np.kron(eigenvalues, group_eigenvalues)

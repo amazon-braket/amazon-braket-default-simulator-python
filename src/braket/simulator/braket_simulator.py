@@ -93,8 +93,7 @@ class BraketSimulator(ABC):
         max_parallel = max_parallel or cpu_count()
         with Pool(min(max_parallel, len(programs))) as pool:
             param_list = [(program, args, kwargs) for program in programs]
-            results = pool.starmap(self._run_wrapped, param_list)
-        return results
+            return pool.starmap(self._run_wrapped, param_list)
 
     def _run_wrapped(
         self, ir: OQ3Program | AHSProgram | JaqcdProgram, args, kwargs

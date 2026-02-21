@@ -72,18 +72,16 @@ def validate_net_detuning_with_warning(
         # Get the contributions from all the global detunings
         # (there could be multiple global driving fields) at the time point
         values_global_detuning = sum(
-            [detuning_coef[time_ind] for detuning_coef in global_detuning_coefs]
+            detuning_coef[time_ind] for detuning_coef in global_detuning_coefs
         )
 
         for atom_index in range(len(local_detuning_patterns[0])):
             # Get the contributions from local detuning at the time point
             values_local_detuning = sum(
-                [
-                    shift_coef[time_ind] * float(detuning_pattern[atom_index])
-                    for detuning_pattern, shift_coef in zip(
-                        local_detuning_patterns, local_detuning_coefs
-                    )
-                ]
+                shift_coef[time_ind] * float(detuning_pattern[atom_index])
+                for detuning_pattern, shift_coef in zip(
+                    local_detuning_patterns, local_detuning_coefs
+                )
             )
 
             # The net detuning is the sum of both the global and local detunings

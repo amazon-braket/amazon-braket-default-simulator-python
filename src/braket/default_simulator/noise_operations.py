@@ -30,6 +30,12 @@ _PAULI_I = np.eye(2)
 _PAULI_X = np.array([[0, 1], [1, 0]], dtype=complex)
 _PAULI_Y = np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex)
 _PAULI_Z = np.diag([1.0, -1.0])
+_PAULIS = {
+    "I": _PAULI_I,
+    "X": _PAULI_X,
+    "Y": _PAULI_Y,
+    "Z": _PAULI_Z,
+}
 
 
 class BitFlip(KrausOperation):
@@ -341,14 +347,8 @@ def _kraus(instruction) -> Kraus:
 class TwoQubitPauliChannel(KrausOperation):
     """Two qubit Pauli noise channel"""
 
-    _paulis = {
-        "I": _PAULI_I,
-        "X": _PAULI_X,
-        "Y": _PAULI_Y,
-        "Z": _PAULI_Z,
-    }
-    _tensor_products_strings = itertools.product(_paulis.keys(), repeat=2)
-    _names_list = ["".join(x) for x in _tensor_products_strings]
+    _tensor_products_strings = itertools.product(_PAULIS.keys(), repeat=2)
+    _names_list = tuple("".join(x) for x in _tensor_products_strings)
 
     def __init__(self, targets, probabilities):
         self._targets = tuple(targets)
@@ -360,7 +360,7 @@ class TwoQubitPauliChannel(KrausOperation):
         for pstring in self._names_list[1:]:  # ignore "II"
             if pstring in self.probabilities:
                 mat = np.sqrt(self.probabilities[pstring]) * np.kron(
-                    self._paulis[pstring[0]], self._paulis[pstring[1]]
+                    _PAULIS[pstring[0]], _PAULIS[pstring[1]]
                 )
                 k_list.append(mat)
             else:

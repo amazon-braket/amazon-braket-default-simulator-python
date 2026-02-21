@@ -46,7 +46,7 @@ def apply_operations(
             temp,
             dispatcher,
             True,
-            gate_type=getattr(op, "gate_type"),
+            gate_type=op.gate_type,
         )
         if needs_swap:
             result, temp = temp, result

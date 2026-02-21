@@ -12,6 +12,8 @@
 # language governing permissions and limitations under the License.
 
 from copy import deepcopy
+from functools import reduce
+from operator import iadd
 
 from pydantic.v1 import root_validator
 
@@ -32,11 +34,7 @@ class ProgramValidator(Program):
     @root_validator(pre=True, skip_on_failure=True)
     def local_detuning_pattern_has_the_same_length_as_atom_array_sites(cls, values):
         num_sites = len(values["setup"]["ahs_register"]["sites"])
-        for idx, local_detuning in enumerate(
-            values["hamiltonian"]["localDetuning"]
-            if "localDetuning" in values["hamiltonian"].keys()
-            else values["hamiltonian"]["localDetuning"]
-        ):
+        for idx, local_detuning in enumerate(values["hamiltonian"]["localDetuning"]):
             pattern_size = len(local_detuning["magnitude"]["pattern"])
             if num_sites != pattern_size:
                 raise ValueError(
@@ -69,7 +67,7 @@ class ProgramValidator(Program):
         ]
 
         # Merge the time points for different shifting terms and detuning term
-        all_times = set(sum(detuning_times, []))
+        all_times = set(reduce(iadd, detuning_times, []))
         for driving_field in driving_fields:
             all_times.update(driving_field.detuning.time_series.times)
         time_points = sorted(all_times)

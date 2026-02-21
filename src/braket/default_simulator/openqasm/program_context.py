@@ -669,9 +669,10 @@ class AbstractProgramContext(ABC):
         """
         try:
             self.get_gate_definition(name)
-            return True
         except ValueError:
             return False
+        else:
+            return True
 
     @abstractmethod
     def is_builtin_gate(self, name: str) -> bool:
@@ -837,7 +838,7 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
-    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
+    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] | None = None):
         """Add qubit targets to be measured"""
 
     def add_barrier(self, target: list[int] | None = None) -> None:
@@ -913,5 +914,5 @@ class ProgramContext(AbstractProgramContext):
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
 
-    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
+    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] | None = None):
         self._circuit.add_measure(target, classical_targets)

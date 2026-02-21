@@ -114,7 +114,7 @@ def scipy_integrate_ode_run(
             _print_progress_bar(len(simulation_times), index_time, start_time)
 
         if not integrator.successful():
-            raise Exception(
+            raise RuntimeError(
                 "ODE integration error: Try to increase "
                 "the allowed number of substeps by increasing "
                 "the parameter `nsteps`."

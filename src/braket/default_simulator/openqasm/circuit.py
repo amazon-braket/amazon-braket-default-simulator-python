@@ -62,7 +62,7 @@ class Circuit:
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
 
-    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] = None):
+    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] | None = None):
         for index, qubit in enumerate(target):
             if qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
@@ -109,11 +109,10 @@ class Circuit:
                         if type(previously_measured) is not type(observable):
                             raise ValueError("Conflicting result types applied to a single qubit")
                         # including matrix value for Hermitians
-                        if isinstance(observable, Hermitian):
-                            if not np.allclose(previously_measured.matrix, observable.matrix):
-                                raise ValueError(
-                                    "Conflicting result types applied to a single qubit"
-                                )
+                        if isinstance(observable, Hermitian) and not np.allclose(
+                            previously_measured.matrix, observable.matrix
+                        ):
+                            raise ValueError("Conflicting result types applied to a single qubit")
             observable_map[measured_qubits] = observable
 
         for result in self.results:

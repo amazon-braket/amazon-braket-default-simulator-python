@@ -36,6 +36,7 @@ setup(
         "opt_einsum",
         "pydantic>2",
         "scipy",
+        "setuptools==81.0.0",
         "sympy",
         "antlr4-python3-runtime==4.13.2",
         "amazon-braket-schemas>=1.26.1",

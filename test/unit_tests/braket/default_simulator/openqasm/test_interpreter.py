@@ -1547,7 +1547,7 @@ def test_bad_update_values_declaration_non_array():
     x[0:1] = 1;
     """
     invalid_value = "Must assign Array type to slice"
-    with pytest.raises(ValueError, match=invalid_value):
+    with pytest.raises(TypeError, match=invalid_value):
         Interpreter().run(qasm)
 
 
