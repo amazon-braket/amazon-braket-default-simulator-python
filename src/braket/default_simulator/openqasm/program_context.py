@@ -694,9 +694,10 @@ class AbstractProgramContext(ABC):
         """
         try:
             self.get_gate_definition(name)
-            return True
         except ValueError:
             return False
+        else:
+            return True
 
     @abstractmethod
     def is_builtin_gate(self, name: str) -> bool:

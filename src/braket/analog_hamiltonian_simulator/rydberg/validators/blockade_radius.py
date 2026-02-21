@@ -32,7 +32,7 @@ def validate_blockade_radius(blockade_radius: float) -> float:
     if blockade_radius < 0:
         raise ValueError("`blockade_radius` needs to be non-negative.")
 
-    if 0 < blockade_radius and blockade_radius < MIN_BLOCKADE_RADIUS:
+    if 0 < blockade_radius < MIN_BLOCKADE_RADIUS:
         warnings.warn(
             f"Blockade radius {blockade_radius} meter is smaller than the typical value "
             f"({MIN_BLOCKADE_RADIUS} meter). "

@@ -265,8 +265,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
         results: list[dict[str, Any]],
         openqasm_ir: OpenQASMProgram,
         simulation: Simulation,
-        measured_qubits: list[int] = None,
-        mapped_measured_qubits: list[int] = None,
+        measured_qubits: list[int] | None = None,
+        mapped_measured_qubits: list[int] | None = None,
     ) -> GateModelTaskResult:
         return GateModelTaskResult.construct(
             taskMetadata=TaskMetadata(
@@ -494,7 +494,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             qubit_map (dict): A dictionary mapping original qubits to new qubits.
         """
         for ins in circuit.instructions:
-            ins._targets = tuple([qubit_map[q] for q in ins.targets])
+            ins._targets = tuple(qubit_map[q] for q in ins.targets)
 
     @staticmethod
     def _map_circuit_results(circuit: Circuit, qubit_map: dict):

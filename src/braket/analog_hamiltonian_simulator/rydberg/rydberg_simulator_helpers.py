@@ -149,7 +149,7 @@ def _get_detuning_dict(
     detuning = {}  # The detuning term in the basis of configurations, as a dictionary
 
     for ind_1, config in enumerate(configurations):
-        value = sum([1 for ind_2, item in enumerate(config) if item == "r" and ind_2 in targets])
+        value = sum(1 for ind_2, item in enumerate(config) if item == "r" and ind_2 in targets)
         if value > 0:
             detuning[(ind_1, ind_1)] = value
 
@@ -209,10 +209,10 @@ def _get_sparse_from_dict(
     Returns:
         scipy.sparse.csr_matrix: The sparse matrix in CSR format
     """
-    rows = [key[0] for key in matrix_dict.keys()]
-    cols = [key[1] for key in matrix_dict.keys()]
+    rows = [key[0] for key in matrix_dict]
+    cols = [key[1] for key in matrix_dict]
     return scipy.sparse.csr_matrix(
-        tuple([list(matrix_dict.values()), [rows, cols]]),
+        (list(matrix_dict.values()), [rows, cols]),
         shape=(matrix_dimension, matrix_dimension),
     )
 
@@ -444,8 +444,7 @@ def sample_state(state: np.ndarray, shots: int) -> np.ndarray:
 
     weights = (np.abs(state) ** 2).flatten()
     weights /= sum(weights)
-    sample = np.random.multinomial(shots, weights)
-    return sample
+    return np.random.multinomial(shots, weights)
 
 
 def _print_progress_bar(num_time_points: int, index_time: int, start_time: float) -> None:

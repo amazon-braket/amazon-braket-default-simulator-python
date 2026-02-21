@@ -21,7 +21,6 @@ class PhysicalFieldValidator(PhysicalField):
     @root_validator(pre=True, skip_on_failure=True)
     def pattern_str(cls, values):
         pattern = values["pattern"]
-        if isinstance(pattern, str):
-            if pattern != "uniform":
-                raise ValueError(f'Invalid pattern string ({pattern}); only string: "uniform"')
+        if isinstance(pattern, str) and pattern != "uniform":
+            raise ValueError(f'Invalid pattern string ({pattern}); only string: "uniform"')
         return values
