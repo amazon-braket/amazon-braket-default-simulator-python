@@ -363,7 +363,7 @@ def _from_single_observable(
                     num_qubits = int(np.log2(len(matrix)))
                     return Hermitian(matrix, _actual_targets(targets, num_qubits, True))
                 return Hermitian(matrix, targets)
-            except Exception:  # noqa: BLE001
+            except ValueError:
                 raise ValueError(f"Invalid observable specified: {observable}, targets: {targets}")
 
 
@@ -372,5 +372,5 @@ def _actual_targets(targets: list[int], num_qubits: int, is_factor: bool):
         return targets
     try:
         return [targets.pop(0) for _ in range(num_qubits)]
-    except Exception:  # noqa: BLE001
+    except IndexError:
         raise ValueError("Insufficient target qubits for tensor product")
