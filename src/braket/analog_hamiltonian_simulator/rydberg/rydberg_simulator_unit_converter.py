@@ -56,11 +56,10 @@ def convert_unit(program: Program) -> Program:
 
     new_hamiltonian = {"drivingFields": new_driving_fields, "localDetuning": new_local_detunings}
 
-    new_program = Program(
+    return Program(
         setup=new_setup,
         hamiltonian=new_hamiltonian,
     )
-    return new_program
 
 
 def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) -> dict:
@@ -84,6 +83,4 @@ def _convert_unit_for_field(field: PhysicalField, convertvalues: bool = True) ->
     else:
         values = [float(value) for value in field.time_series.values]
 
-    new_field = {"pattern": field.pattern, "time_series": {"times": times, "values": values}}
-
-    return new_field
+    return {"pattern": field.pattern, "time_series": {"times": times, "values": values}}

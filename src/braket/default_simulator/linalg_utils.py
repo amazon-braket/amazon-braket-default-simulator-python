@@ -62,12 +62,9 @@ TWO_QUBIT_GATE_DISPATCH = MappingProxyType(
         "swap": lambda dispatcher, state, target0, target1, out: dispatcher.apply_swap(
             state, target0, target1, out
         ),
-        "cphaseshift": lambda dispatcher,
-        state,
-        matrix,
-        target0,
-        target1,
-        out: dispatcher.apply_controlled_phase_shift(state, matrix[3, 3], (target0,), target1),
+        "cphaseshift": lambda dispatcher, state, matrix, target0, target1, out: (
+            dispatcher.apply_controlled_phase_shift(state, matrix[3, 3], (target0,), target1)
+        ),
     }
 )
 
@@ -583,7 +580,7 @@ def _apply_two_qubit_gate(
     targets: tuple[int, int],
     out: np.ndarray,
     dispatcher: QuantumGateDispatcher,
-    gate_type: str = None,
+    gate_type: str | None = None,
 ) -> tuple[np.ndarray, bool]:
     """Two-qubit gates optimization path.
 
@@ -614,7 +611,11 @@ def _apply_two_qubit_gate(
 
 
 def _apply_single_qubit_gate(
-    state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray, gate_type: str = None
+    state: np.ndarray,
+    matrix: np.ndarray,
+    target: int,
+    out: np.ndarray,
+    gate_type: str | None = None,
 ) -> tuple[np.ndarray, bool]:
     """Applies single gates based on qubit count and gate type.
 
@@ -650,7 +651,7 @@ def _multiply_matrix(
     targets: tuple[int, ...],
     out: np.ndarray,
     dispatcher: QuantumGateDispatcher,
-    gate_type: str = None,
+    gate_type: str | None = None,
 ) -> tuple[np.ndarray, bool]:
     """Multiplies the given matrix by the given state, applying the matrix on the target qubits.
 
@@ -683,7 +684,7 @@ def _multiply_matrix(
 
 
 def controlled_matrix(matrix: np.ndarray, control_state: tuple[int, ...]) -> np.ndarray:
-    """Returns the controlled form of the given matrix
+    r"""Returns the controlled form of the given matrix
 
     A controlled matrix is produced by successively taking the direct sum of the matrix :math:`U_n`
     with an equal-rank identity matrix :math:`I_n`, with regular control (indicated by a control
@@ -715,7 +716,7 @@ def controlled_matrix(matrix: np.ndarray, control_state: tuple[int, ...]) -> np.
 
 def marginal_probability(
     probabilities: np.ndarray,
-    targets: Sequence[int] = None,
+    targets: Sequence[int] | None = None,
 ) -> np.ndarray:
     """Return the marginal probability of the computational basis states.
 

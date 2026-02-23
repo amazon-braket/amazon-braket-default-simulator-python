@@ -122,6 +122,6 @@ def check_cptp(matrices: list[np.ndarray]):
     Raises:
         ValueError: If the matrices do not define a CPTP map
     """
-    E = sum([np.matmul(matrix.T.conjugate(), matrix) for matrix in matrices])
+    E = sum(np.matmul(matrix.T.conjugate(), matrix) for matrix in matrices)
     if not np.allclose(E, np.eye(*E.shape)):
         raise ValueError(f"{matrices} do not define a CPTP map")

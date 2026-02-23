@@ -27,13 +27,13 @@ The rest of this module provides some lower-level internals of the parser.
 # pylint: disable=wrong-import-order
 
 __all__ = [
-    "parse",
-    "get_span",
+    "QASM3ParsingError",
+    "QASMNodeVisitor",
     "add_span",
     "combine_span",
+    "get_span",
+    "parse",
     "span",
-    "QASMNodeVisitor",
-    "QASM3ParsingError",
 ]
 
 from contextlib import contextmanager

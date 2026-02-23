@@ -215,4 +215,3 @@ class RydbergAtomSimulator(BaseLocalSimulator):
         Returns:
             Simulation: Initialized simulation.
         """
-        pass

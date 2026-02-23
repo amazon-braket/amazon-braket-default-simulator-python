@@ -170,7 +170,7 @@ def update_value(
             )
         else:
             if not isinstance(value, ArrayLiteral):
-                raise ValueError("Must assign Array type to slice")
+                raise TypeError("Must assign Array type to slice")
             index_as_range = range(len(current_value.values))[first_ix]
             if len(index_as_range) != len(value.values):
                 raise ValueError(

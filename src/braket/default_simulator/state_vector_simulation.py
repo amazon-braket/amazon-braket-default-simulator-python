@@ -83,14 +83,11 @@ class StateVectorSimulation(Simulation):
         """
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
-        operations = list(
-            sum(
-                [observable.diagonalizing_gates(self._qubit_count) for observable in observables],
-                (),
-            )
-        )
+        operations = [
+            observable.diagonalizing_gates(self._qubit_count) for observable in observables
+        ]
         self._post_observables = StateVectorSimulation._apply_operations(
-            self._state_vector, self._qubit_count, operations, self._batch_size
+            self._state_vector, self._qubit_count, [*sum(operations, ())], self._batch_size
         )
 
     @staticmethod

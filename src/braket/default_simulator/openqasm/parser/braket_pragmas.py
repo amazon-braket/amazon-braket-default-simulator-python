@@ -63,11 +63,10 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         parsable = f"target {''.join(x.getText() for x in ctx.getChildren())};"
         parsed_statement = parse(parsable)
         target_identifiers = parsed_statement.statements[0].qubits
-        target = sum(
+        return sum(
             (self.qubit_table.get_by_identifier(identifier) for identifier in target_identifiers),
             (),
         )
-        return target
 
     def visitMultiTargetAll(self, ctx: BraketPragmasParser.MultiTargetAllContext):
         return
@@ -84,8 +83,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
 
     def visitMultiState(self, ctx: BraketPragmasParser.MultiStateContext) -> list[str]:
         # unquote and skip commas
-        states = [x.getText()[1:-1] for x in list(ctx.getChildren())[::2]]
-        return states
+        return [x.getText()[1:-1] for x in list(ctx.getChildren())[::2]]
 
     def visitObservableResultType(
         self, ctx: BraketPragmasParser.ObservableResultTypeContext
@@ -97,8 +95,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
             "variance": Variance,
         }
         observables, targets = self.visit(ctx.observable())
-        obs = observable_result_type_map[result_type](targets=targets, observable=observables)
-        return obs
+        return observable_result_type_map[result_type](targets=targets, observable=observables)
 
     def visitStandardObservableIdentifier(
         self,
@@ -148,8 +145,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         parsable = f"target {''.join(x.getText() for x in ctx.getChildren())};"
         parsed_statement = parse(parsable)
         identifier = parsed_statement.statements[0].qubits[0]
-        target = self.qubit_table.get_by_identifier(identifier)
-        return target
+        return self.qubit_table.get_by_identifier(identifier)
 
     def visitComplexOneValue(self, ctx: BraketPragmasParser.ComplexOneValueContext) -> list[float]:
         sign = -1 if ctx.neg else 1
@@ -190,8 +186,7 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         rows = [self.visit(row) for row in ctx.children[1::2]]
         if not all(len(r) == len(rows) for r in rows):
             raise TypeError("Not a valid square matrix")
-        matrix = np.array(rows)
-        return matrix
+        return np.array(rows)
 
     def visitNoise(self, ctx: BraketPragmasParser.NoiseContext):
         target = self.visit(ctx.target)
@@ -220,5 +215,4 @@ def parse_braket_pragma(pragma_body: str, qubit_table: "QubitTable"):  # noqa: F
     stream = CommonTokenStream(lexer)
     parser = BraketPragmasParser(stream)
     tree = parser.braketPragma()
-    visited = BraketPragmaNodeVisitor(qubit_table).visit(tree)
-    return visited
+    return BraketPragmaNodeVisitor(qubit_table).visit(tree)

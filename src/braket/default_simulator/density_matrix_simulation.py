@@ -65,13 +65,10 @@ class DensityMatrixSimulation(Simulation):
         if self._post_observables is not None:
             raise RuntimeError("Observables have already been applied.")
         operations = [
-            *sum(
-                [observable.diagonalizing_gates(self._qubit_count) for observable in observables],
-                (),
-            )
+            observable.diagonalizing_gates(self._qubit_count) for observable in observables
         ]
         self._post_observables = DensityMatrixSimulation._apply_operations(
-            self._density_matrix, self._qubit_count, operations
+            self._density_matrix, self._qubit_count, [*sum(operations, ())]
         )
 
     def retrieve_samples(self) -> np.ndarray:
@@ -105,7 +102,7 @@ class DensityMatrixSimulation(Simulation):
         with_observables = observable.apply(
             np.reshape(self._density_matrix, [2] * 2 * self._qubit_count)
         )
-        return complex(partial_trace(with_observables)).real
+        return complex(partial_trace(with_observables).squeeze()).real
 
     @property
     def probabilities(self) -> np.ndarray:
@@ -170,7 +167,7 @@ class DensityMatrixSimulation(Simulation):
                     targets[:num_ctrl],
                     operation.control_state,
                     dispatcher,
-                    getattr(operation, "gate_type"),
+                    operation.gate_type,
                 )
             if isinstance(operation, KrausOperation):
                 result, temp = DensityMatrixSimulation._apply_kraus(
@@ -201,7 +198,7 @@ class DensityMatrixSimulation(Simulation):
         """Apply a unitary gate matrix U to a density matrix \rho according to:
 
             .. math::
-                \rho \rightarrow U \rho U^{\dagger}
+                \rho \rightarrow U \rho U^{\\dagger}
 
         This represents the quantum evolution of a density matrix under a unitary
         operation, where the gate is applied on the left and its Hermitian conjugate
@@ -277,7 +274,7 @@ class DensityMatrixSimulation(Simulation):
         """Apply a list of matrices {E_i} to a density matrix D according to:
 
             .. math::
-                D \rightarrow \\sum_i E_i D E_i^{\dagger}
+                D \rightarrow \\sum_i E_i D E_i^{\\dagger}
 
         This version uses pre-allocated buffers for memory-efficient computation,
         avoiding repeated memory allocations during the Kraus operation loop.
@@ -308,8 +305,8 @@ class DensityMatrixSimulation(Simulation):
         """
         if len(targets) <= 2:
             superop = sum(np.kron(matrix, matrix.conj()) for matrix in matrices)
-            targets_new = targets + tuple([target + qubit_count for target in targets])
-            _, needs_swap = multiply_matrix(
+            targets_new = targets + tuple(target + qubit_count for target in targets)
+            multiply_matrix(
                 result, superop, targets_new, out=temp, return_swap_info=True, dispatcher=dispatcher
             )
             # With gate_type dispatch, swaps won't occur. An optimization would be to do is add matrix matching to avoid general 1q, 2q cases.
