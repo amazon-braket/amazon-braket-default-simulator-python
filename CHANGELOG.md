@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.34.1 (2026-02-23)
+
+### Bug Fixes and Other Changes
+
+ * Fix build failures
+
 ## v1.34.0 (2026-01-30)
 
 ### Deprecations and Removals
