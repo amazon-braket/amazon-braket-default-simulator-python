@@ -530,7 +530,6 @@ class Interpreter:
         qubits = self.visit(node.measure)
         targets = []
         if node.target and isinstance(node.target, IndexedIdentifier):
-            
             indices = flatten_indices(node.target.indices)
             if len(node.target.indices) != 1:
                 raise ValueError(
