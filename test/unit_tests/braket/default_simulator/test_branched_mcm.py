@@ -3244,3 +3244,90 @@ class TestUnifiedMCMEdgeCases:
         # q[0]=0 -> |00>, q[0]=1 -> |10>
         assert "00" in counter
         assert "10" in counter
+
+
+    def test_get_value_reads_correct_path_in_shared_if_body(self):
+        """Regression test for get_value reading wrong path inside a shared if-block body.
+
+        Bug: when multiple paths are active simultaneously inside an if-block
+        (because all paths evaluated the condition as True), get_value always
+        reads from _active_path_indices[0] (path 0). This means path 1 silently
+        gets path 0's variable value instead of its own.
+
+        Setup:
+          - MCM on q[0] creates two paths: path 0 (c=0), path 1 (c=1)
+          - x is assigned differently per path: path 0 → x=0, path 1 → x=1
+          - `if (true)` puts both paths in true_paths simultaneously
+          - Inside the body: y = x
+            - Correct: path 0 gets y=0, path 1 gets y=1
+            - Buggy:   path 0 gets y=0, path 1 gets y=0 (reads path 0's x)
+          - `if (y == 0) { x q[1]; }` applies X to q[1] only when y==0
+            - Correct: path 0 applies X (q[1]=1), path 1 does NOT (q[1]=0)
+            - Buggy:   both paths apply X (q[1]=1 for both)
+
+        Expected final measurement of q[1]:
+          - 50% shots see q[1]=1 (path 0: c=0, y=0, X applied)
+          - 50% shots see q[1]=0 (path 1: c=1, y=1, X not applied)
+          → both "0" and "1" outcomes for q[1] must appear
+
+        With the bug, all shots see q[1]=1 because both paths apply X.
+        """
+        qasm_source = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit c;
+        bit[2] result;
+        int[32] x = 0;
+        int[32] y = 0;
+
+        h q[0];
+        c = measure q[0];
+
+        // Assign x differently per path (each if narrows to one path — correct)
+        if (c == 0) { x = 0; }
+        if (c == 1) { x = 1; }
+
+        // get_value("x") reads only path 0's x=0 for both paths.
+        y = x;
+
+        // Use y to drive a gate: only apply X to q[1] when y == 0
+        if (y == 0) {
+            x q[1];
+        }
+
+        result[0] = measure q[0];
+        result[1] = measure q[1];
+        """
+
+        program = OpenQASMProgram(source=qasm_source, inputs={})
+        simulator = StateVectorSimulator()
+        result = simulator.run_openqasm(program, shots=1000)
+
+        assert result is not None
+        assert len(result.measurements) == 1000
+
+        # result[0] is the re-measurement of q[0] after MCM collapse:
+        #   path 0 (c=0): q[0] collapsed to |0⟩ → result[0] = 0
+        #   path 1 (c=1): q[0] collapsed to |1⟩ → result[0] = 1
+        # result[1] is q[1]:
+        #   path 0: y=0 → X applied → result[1] = 1  → outcome "01"
+        #   path 1: y=1 → X NOT applied → result[1] = 0  → outcome "10"
+        counter = Counter(["".join(m) for m in result.measurements])
+
+        # Both outcomes must appear with roughly equal probability
+        assert "01" in counter, (
+            f"Expected outcome '01' (path 0: q[0]=0, q[1]=1) but got {dict(counter)}. "
+            "Bug: get_value reads wrong path inside shared if-body."
+        )
+        assert "10" in counter, (
+            f"Expected outcome '10' (path 1: q[0]=1, q[1]=0) but got {dict(counter)}. "
+            "Bug: get_value reads wrong path inside shared if-body — "
+            "path 1 got path 0's x=0, so X was incorrectly applied to q[1]."
+        )
+
+        total = sum(counter.values())
+        ratio_01 = counter.get("01", 0) / total
+        ratio_10 = counter.get("10", 0) / total
+
+        assert 0.4 < ratio_01 < 0.6, f"Expected ~50% for '01', got {ratio_01:.2%}"
+        assert 0.4 < ratio_10 < 0.6, f"Expected ~50% for '10', got {ratio_10:.2%}"
