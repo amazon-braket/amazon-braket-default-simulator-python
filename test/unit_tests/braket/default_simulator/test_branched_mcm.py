@@ -3245,7 +3245,6 @@ class TestUnifiedMCMEdgeCases:
         assert "00" in counter
         assert "10" in counter
 
-
     def test_get_value_reads_correct_path_in_shared_if_body(self):
         """Regression test for get_value reading wrong path inside a shared if-block body.
 
@@ -3331,3 +3330,334 @@ class TestUnifiedMCMEdgeCases:
 
         assert 0.4 < ratio_01 < 0.6, f"Expected ~50% for '01', got {ratio_01:.2%}"
         assert 0.4 < ratio_10 < 0.6, f"Expected ~50% for '10', got {ratio_10:.2%}"
+
+
+class TestMCMResetOperations:
+    """Reset operation tests — no existing coverage for `reset q` in branched mode."""
+
+    def test_reset_qubit_in_one_state(self, simulator):
+        """Put qubit in |1⟩ via X, reset, measure → always 0."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit q;
+        x q;
+        reset q;
+        b = measure q;
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"0": 1000}
+
+    def test_reset_from_superposition(self, simulator):
+        """H then reset should always give |0⟩."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit q;
+        h q;
+        reset q;
+        b = measure q;
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"0": 1000}
+
+    def test_double_reset(self, simulator):
+        """Two resets in a row should still give |0⟩."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit q;
+        x q;
+        reset q;
+        reset q;
+        b = measure q;
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"0": 1000}
+
+    def test_reset_then_gate(self, simulator):
+        """Reset then X should give |1⟩."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit q;
+        h q;
+        reset q;
+        x q;
+        b = measure q;
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"1": 1000}
+
+    def test_reset_one_qubit_of_two(self, simulator):
+        """Reset only q[0]; q[1] should be unaffected."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        x q[0];
+        x q[1];
+        reset q[0];
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"01": 1000}
+
+    def test_conditional_reset_when_one(self, simulator):
+        """X → measure → if 1: reset → measure → always 0."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit q;
+        x q;
+        b = measure q;
+        if (b == 1) {
+            reset q;
+        }
+        result = measure q;
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for key in counter:
+            assert key[-1] == "0", f"After conditional reset, should be 0, got {key}"
+
+    def test_conditional_reset_superposition(self, simulator):
+        """H → measure → if 1: reset → measure.
+        When b=0: no reset, q stays |0⟩ → result=0
+        When b=1: reset to |0⟩ → result=0
+        Either way result=0.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit q;
+        h q;
+        b = measure q;
+        if (b == 1) {
+            reset q;
+        }
+        result = measure q;
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for key in counter:
+            assert key[-1] == "0", f"After conditional reset, result should be 0, got {key}"
+
+    def test_reset_in_if_else_both_branches(self, simulator):
+        """Reset in both if and else branches."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        h q[0];
+        x q[1];
+        b = measure q[0];
+        if (b == 1) {
+            reset q[1];
+        } else {
+            reset q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for key in counter:
+            assert key[-1] == "0", f"q[1] should be 0 after reset in both branches, got {key}"
+
+    def test_reset_inside_loop(self, simulator):
+        """X then reset in a loop — qubit should always end at |0⟩."""
+        qasm = """
+        OPENQASM 3.0;
+        bit m;
+        bit b;
+        qubit[2] q;
+        h q[0];
+        m = measure q[0];
+        for int i in [0:2] {
+            x q[1];
+            reset q[1];
+        }
+        b = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for key in counter:
+            assert key[-1] == "0", f"q[1] should be 0 after reset in loop, got {key}"
+
+
+class TestMCMDeeplyNestedControlFlow:
+    """Deeply nested for>if>for>if — not covered by existing tests."""
+
+    def test_for_if_for_if_even(self, simulator):
+        """for i in [0:1]: if b==1: for j in [0:1]: if b==1: x q[1].
+        2 outer x 2 inner = 4 X gates → even → |0⟩.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        x q[0];
+        b = measure q[0];
+        for int i in [0:1] {
+            if (b == 1) {
+                for int j in [0:1] {
+                    if (b == 1) {
+                        x q[1];
+                    }
+                }
+            }
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"10": 1000}
+
+    def test_for_if_for_if_odd(self, simulator):
+        """for i in [0:2]: if b==1: for j in [0:0]: x q[1].
+        3 outer x 1 inner = 3 X gates → odd → |1⟩.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        x q[0];
+        b = measure q[0];
+        for int i in [0:2] {
+            if (b == 1) {
+                for int j in [0:0] {
+                    x q[1];
+                }
+            }
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"11": 1000}
+
+
+class TestMCMVariableMod:
+    """Variable modification inside branches and for loops."""
+
+    def test_int_accumulator_in_loop(self, simulator):
+        """Accumulate int in loop [0:2]=3 iters → count=3 → if count==3: x q[1]."""
+        qasm = """
+        OPENQASM 3.0;
+        bit m;
+        bit b;
+        qubit[2] q;
+        int count = 0;
+        h q[0];
+        m = measure q[0];
+        for int i in [0:2] {
+            count = count + 1;
+        }
+        if (count == 3) {
+            x q[1];
+        }
+        b = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for key in counter:
+            assert key[-1] == "1", f"q[1] should be 1 (count=3), got {key}"
+
+    def test_bit_toggle_in_loop(self, simulator):
+        """Toggle bit in loop [0:2]=3 iters: 0→1→0→1 → flag=1 → x q[1]."""
+        qasm = """
+        OPENQASM 3.0;
+        bit flag = 0;
+        bit result;
+        qubit[2] q;
+        bit m;
+        h q[0];
+        m = measure q[0];
+        for int i in [0:2] {
+            if (flag == 0) {
+                flag = 1;
+            } else {
+                flag = 0;
+            }
+        }
+        if (flag == 1) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for key in counter:
+            assert key[-1] == "1", f"flag should be 1 after 3 toggles, got {key}"
+
+    def test_set_variable_in_else(self, simulator):
+        """q[0]=|0⟩ → b=0 → else: val=10 → if val==10: x q[1]."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        int val = 0;
+        b = measure q[0];
+        if (b == 1) {
+            val = 5;
+        } else {
+            val = 10;
+        }
+        if (val == 10) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"01": 1000}
+
+
+class TestMCMAsymmetricMeasurement:
+    """Measure only in one branch — not covered by existing tests."""
+
+    def test_measure_only_in_if_branch_x(self, simulator):
+        """X q[0] → b=1 → measure q[1] only in if block."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        x q[0];
+        b = measure q[0];
+        if (b == 1) {
+            result = measure q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"10": 1000}
+
+    def test_measure_only_in_if_branch_z(self, simulator):
+        """X q[0] → b=1 → measure q[1] only in if block."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        z q[0];
+        b = measure q[0];
+        if (b == 1) {
+            result = measure q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"00": 1000}
