@@ -1300,27 +1300,31 @@ class ProgramContext(AbstractProgramContext):
 
         surviving_paths = []
 
-        # Process if-block for true paths
+        # Process if-block for true paths — execute per-path so that
+        # expression evaluation (e.g., ``y = x``) reads from the correct
+        # path rather than always reading from the first active path.
         if true_paths and node.if_block:
-            self._active_path_indices = true_paths
-            self._enter_frame_for_active_paths()
-            for statement in node.if_block:
-                visit_block(statement)
-                if not self._active_path_indices:
-                    break
-            surviving_paths.extend(self._active_path_indices)
-            self._exit_frame_for_active_paths()
+            for path_idx in true_paths:
+                self._active_path_indices = [path_idx]
+                self._enter_frame_for_active_paths()
+                for statement in node.if_block:
+                    visit_block(deepcopy(statement))
+                    if not self._active_path_indices:
+                        break
+                surviving_paths.extend(self._active_path_indices)
+                self._exit_frame_for_active_paths()
 
         # Process else-block for false paths
         if false_paths and node.else_block:
-            self._active_path_indices = false_paths
-            self._enter_frame_for_active_paths()
-            for statement in node.else_block:
-                visit_block(statement)
-                if not self._active_path_indices:
-                    break
-            surviving_paths.extend(self._active_path_indices)
-            self._exit_frame_for_active_paths()
+            for path_idx in false_paths:
+                self._active_path_indices = [path_idx]
+                self._enter_frame_for_active_paths()
+                for statement in node.else_block:
+                    visit_block(deepcopy(statement))
+                    if not self._active_path_indices:
+                        break
+                surviving_paths.extend(self._active_path_indices)
+                self._exit_frame_for_active_paths()
         elif false_paths:
             # No else block — false paths survive unchanged
             surviving_paths.extend(false_paths)
@@ -1523,7 +1527,7 @@ class ProgramContext(AbstractProgramContext):
                 try:
                     shared_val = super().get_value(idx_val.name)
                     return int(shared_val.value if hasattr(shared_val, "value") else shared_val)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return 0
             if hasattr(idx_val, "value"):
                 return idx_val.value
@@ -1538,7 +1542,7 @@ class ProgramContext(AbstractProgramContext):
 
         Returns 0 if no measurement has been recorded for the qubit.
         """
-        if qubit_idx in path.measurements and path.measurements[qubit_idx]:
+        if path.measurements.get(qubit_idx) is not None:
             return path.measurements[qubit_idx][-1]
         return 0
 
@@ -1578,8 +1582,8 @@ class ProgramContext(AbstractProgramContext):
                 frame_number=path.frame_number,
             )
             path.set_variable(name, fv)
-            return fv
-        except Exception:
+            return fv  # noqa: TRY300
+        except Exception:  # noqa: BLE001
             return None
 
     def _update_classical_from_measurement(self, qubit_target, measurement_target) -> None:

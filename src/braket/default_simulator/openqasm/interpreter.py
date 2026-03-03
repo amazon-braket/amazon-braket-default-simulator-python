@@ -560,6 +560,18 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
+        if not self.context._is_branched or len(self.context._active_path_indices) <= 1:
+            self._execute_classical_assignment(node)
+        else:
+            # When multiple paths are active, evaluate the rvalue per-path
+            # so that expressions like ``y = x`` read from the correct path.
+            saved_active = list(self.context._active_path_indices)
+            for path_idx in saved_active:
+                self.context._active_path_indices = [path_idx]
+                self._execute_classical_assignment(deepcopy(node))
+            self.context._active_path_indices = saved_active
+
+    def _execute_classical_assignment(self, node: ClassicalAssignment) -> None:
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")

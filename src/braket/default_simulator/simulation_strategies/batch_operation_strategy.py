@@ -14,6 +14,7 @@
 import numpy as np
 import opt_einsum
 
+from braket.default_simulator.gate_operations import Measure
 from braket.default_simulator.operation import GateOperation
 
 
@@ -55,7 +56,8 @@ def apply_operations(
     processed_operations = []
     i = 0
     while i < len(operations):
-        if operations[i].__class__.__name__ == "Measure":
+        operation = operations[i]
+        if isinstance(operation, Measure):
             # Apply any accumulated operations first
             if processed_operations:
                 partitions = [
@@ -67,14 +69,12 @@ def apply_operations(
                 processed_operations = []
 
             # Apply the Measure operation individually
-            measure_op = operations[i]
             state_1d = np.reshape(state, 2**qubit_count)
-            state_1d = measure_op.apply(state_1d)  # type: ignore
+            state_1d = operation.apply(state_1d)  # type: ignore
             state = np.reshape(state_1d, [2] * qubit_count)
-            i += 1
         else:
-            processed_operations.append(operations[i])
-            i += 1
+            processed_operations.append(operation)
+        i += 1
 
     # Apply any remaining operations
     if processed_operations:
