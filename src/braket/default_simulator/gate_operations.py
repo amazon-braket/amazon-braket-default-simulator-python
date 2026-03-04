@@ -1353,11 +1353,7 @@ class Reset(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        """
-        Return the projection matrix for the measurement outcome.
-        If result is -1 (unset), return identity (no projection).
-        """
-        return np.eye(2)  # Default matrix because it isn't used
+        raise NotImplementedError("Reset does not havea matrix implementation")
 
     def apply(self, state: np.ndarray) -> np.ndarray:
         """

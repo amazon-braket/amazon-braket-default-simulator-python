@@ -167,9 +167,9 @@ class TestMeasureApply:
 class TestResetApply:
     """Cover Reset._base_matrix and Reset.apply()."""
 
-    def test_base_matrix_is_identity(self):
-        r = Reset([0])
-        np.testing.assert_array_equal(r._base_matrix, np.eye(2))
+    def test_matrix_not_implemented(self):
+        with pytest.raises(NotImplementedError):
+            Reset([0]).matrix
 
     def test_reset_qubit_in_one_state(self):
         # |1⟩ → reset → |0⟩
