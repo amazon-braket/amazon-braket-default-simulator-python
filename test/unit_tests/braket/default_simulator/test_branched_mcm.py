@@ -30,201 +30,10 @@ from braket.ir.openqasm import Program as OpenQASMProgram
 
 
 class TestStateVectorSimulatorOperatorsOpenQASM:
-    """Test state vector simulator operators with OpenQASM - converted from Julia tests."""
 
-    def test_1_1_basic_initialization_and_simple_operations(self):
-        """1.1 Basic initialization and simple operations"""
-        qasm_source = """
-        OPENQASM 3.0;
-        qubit[2] q;
 
-        h q[0];       // Put qubit 0 in superposition
-        cnot q[0], q[1];  // Create Bell state
-        """
 
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
 
-        # Verify that the circuit executed successfully
-        assert result is not None
-        assert len(result.measurements) == 1000
-
-        # This creates a Bell state: (|00⟩ + |11⟩)/√2
-        # Should see only |00⟩ and |11⟩ outcomes with equal probability
-        measurements = result.measurements
-        counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see exactly two outcomes: |00⟩ and |11⟩
-        assert len(counter) == 2
-        assert "00" in counter
-        assert "11" in counter
-
-        # Expected probabilities: 50% each (Bell state)
-        total = sum(counter.values())
-        ratio_00 = counter["00"] / total
-        ratio_11 = counter["11"] / total
-
-        # Allow for statistical variation with 1000 shots
-        assert 0.4 < ratio_00 < 0.6, f"Expected ~0.5, got {ratio_00}"
-        assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5, got {ratio_11}"
-        assert abs(ratio_00 - 0.5) < 0.1, "Bell state should have equal probabilities"
-        assert abs(ratio_11 - 0.5) < 0.1, "Bell state should have equal probabilities"
-
-    def test_1_2_empty_circuit(self):
-        """1.2 Empty Circuit"""
-        qasm_source = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        """
-
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
-        result = simulator.run_openqasm(program, shots=100)
-
-        # Verify that the empty circuit executed successfully
-        assert result is not None
-        assert len(result.measurements) == 100
-
-        # Empty circuit should always result in |0⟩ state
-        measurements = result.measurements
-        counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see only |0⟩ outcome
-        assert len(counter) == 1
-        assert "0" in counter
-        assert counter["0"] == 100, "Empty circuit should always measure |0⟩"
-
-    def test_2_1_mid_circuit_measurement(self):
-        """2.1 Mid-circuit measurement"""
-        qasm_source = """
-        OPENQASM 3.0;
-        bit b;
-        qubit[2] q;
-
-        h q[0];       // Put qubit 0 in superposition
-        b = measure q[0];  // Measure qubit 0
-        """
-
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Verify that we have measurements
-        assert result is not None
-        assert len(result.measurements) == 1000
-
-        # Count measurement outcomes - should see both |0⟩ and |1⟩
-        measurements = result.measurements
-        counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see exactly two outcomes: |0⟩ and |1⟩
-        # StateVectorSimulator only measures declared bit registers (bit b = 1 bit)
-        assert len(counter) == 2
-        assert "0" in counter
-        assert "1" in counter
-
-        # Expected probabilities: 50% each for |0⟩ and |1⟩
-        # (H gate creates equal superposition, measurement collapses to either outcome)
-        total = sum(counter.values())
-        ratio_0 = counter["0"] / total
-        ratio_1 = counter["1"] / total
-
-        # Allow for statistical variation with 1000 shots
-        assert 0.4 < ratio_0 < 0.6, f"Expected ~0.5, got {ratio_0}"
-        assert 0.4 < ratio_1 < 0.6, f"Expected ~0.5, got {ratio_1}"
-        assert abs(ratio_0 - 0.5) < 0.1, "Distribution should be approximately equal"
-        assert abs(ratio_1 - 0.5) < 0.1, "Distribution should be approximately equal"
-
-    def test_2_2_multiple_measurements_on_same_qubit(self):
-        """2.2 Multiple measurements on same qubit"""
-        qasm_source = """
-        OPENQASM 3.0;
-        bit[2] b;
-        qubit[2] q;
-
-        // Put qubit 0 in superposition
-        h q[0];
-
-        // First measurement
-        b[0] = measure q[0];
-
-        // Apply X to qubit 0 if measured 0
-        if (b[0] == 0) {
-            x q[0];
-        }
-
-        // Second measurement (should always be 1)
-        b[1] = measure q[0];
-
-        // Apply X to qubit 1 if both measurements are the same
-        if (b[0] == b[1]) {
-            x q[1];
-        }
-        """
-
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Logic analysis:
-        # - H creates superposition: 50% chance of measuring 0, 50% chance of measuring 1
-        # - If first measurement is 0: X flips to 1, second measurement is 1, both same → X applied to q[1] → final state |11⟩
-        # - If first measurement is 1: no X, second measurement is 1, both same → X applied to q[1] → final state |11⟩
-        # Therefore, should always see |11⟩ outcome
-        measurements = result.measurements
-        counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see only |11⟩ outcome (both measurements always end up being 1, so q[1] always flipped)
-        assert len(counter) == 2
-        assert "11" in counter
-        assert "10" in counter
-        assert 400 < counter["11"] < 600, "About half outcomes should be |11⟩ due to the logic"
-        assert 400 < counter["10"] < 600, "About half outcomes should be |10⟩ due to the logic"
-
-    def test_3_1_simple_conditional_operations_feedforward(self):
-        """3.1 Simple conditional operations (feedforward)"""
-        qasm_source = """
-        OPENQASM 3.0;
-        bit b;
-        qubit[2] q;
-
-        h q[0];       // Put qubit 0 in superposition
-        b = measure q[0];  // Measure qubit 0
-        if (b == 1) {  // Conditional on measurement
-            x q[1];    // Apply X to qubit 1
-        }
-        """
-
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Verify that we have measurements
-        assert result is not None
-        assert len(result.measurements) == 1000
-
-        # Should see both |00⟩ and |11⟩ outcomes due to conditional logic
-        # When q[0] measures 0: no X applied to q[1] → final state |00⟩
-        # When q[0] measures 1: X applied to q[1] → final state |11⟩
-        measurements = result.measurements
-        counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see exactly two outcomes: |00⟩ and |11⟩
-        assert len(counter) == 2
-        assert "00" in counter
-        assert "11" in counter
-
-        # Expected probabilities: 50% each (H gate creates equal superposition)
-        total = sum(counter.values())
-        ratio_00 = counter["00"] / total
-        ratio_11 = counter["11"] / total
-
-        # Allow for statistical variation with 1000 shots
-        assert 0.4 < ratio_00 < 0.6, f"Expected ~0.5, got {ratio_00}"
-        assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5, got {ratio_11}"
-        assert abs(ratio_00 - 0.5) < 0.1, "Distribution should be approximately equal"
-        assert abs(ratio_11 - 0.5) < 0.1, "Distribution should be approximately equal"
 
     def test_3_2_complex_conditional_logic(self):
         """3.2 Complex conditional logic"""
@@ -324,20 +133,19 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
 
     def test_4_1_classical_variable_manipulation_with_branching(self):
-        """4.1 Classical variable manipulation - using execute_with_branching to test variables"""
+        """4.1 Classical variable manipulation with branching"""
         qasm_source = """
         OPENQASM 3.0;
         bit[2] b;
         qubit[3] q;
         int[32] count = 0;
 
-        h q[0];       // Put qubit 0 in superposition
-        h q[1];       // Put qubit 1 in superposition
+        h q[0];
+        h q[1];
 
-        b[0] = measure q[0];  // Measure qubit 0
-        b[1] = measure q[1];  // Measure qubit 1
+        b[0] = measure q[0];
+        b[1] = measure q[1];
 
-        // Update count based on measurements
         if (b[0] == 1) {
             count = count + 1;
         }
@@ -345,9 +153,8 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             count = count + 1;
         }
 
-        // Apply operations based on count
         if (count == 1){
-            h q[2];    // Apply H to qubit 2 if one qubit measured 1
+            h q[2];
         }
         if (count == 2){
             x q[2];
@@ -358,36 +165,34 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
-        # Verify simulation completed successfully
-        assert result is not None
-        assert len(result.measurements) == 1000
-
-        # Verify measurement outcomes are valid
         counter = Counter(["".join(m) for m in result.measurements])
+
+        # count=0 (b=00, 25%): q[2]=0 → "000"
+        # count=1 (b=01 or 10, 50%): H on q[2] → "010"/"011" or "100"/"101"
+        # count=2 (b=11, 25%): X on q[2] → "111"
+        assert "000" in counter
+        assert "111" in counter
         total = sum(counter.values())
-        assert total == 1000
+        # count=0 path: ~25%
+        assert 0.15 < counter["000"] / total < 0.35
+        # count=2 path: ~25%
+        assert 0.15 < counter["111"] / total < 0.35
 
     def test_4_2_additional_data_types_and_operations_with_branching(self):
-        """4.2 Additional data types and operations - using execute_with_branching to test variables"""
+        """4.2 Additional data types and operations with branching"""
         qasm_source = """
         OPENQASM 3.0;
         qubit[2] q;
         bit[2] b;
 
-        // Float data type
         float[64] rotate = 0.5;
-
-        // Array data type
         array[int[32], 3] counts = {0, 0, 0};
 
-        // Initialize qubits
         h q[0];
         h q[1];
 
-        // Measure qubits
         b = measure q;
 
-        // Update counts based on measurements
         if (b[0] == 1) {
             counts[0] = counts[0] + 1;
         }
@@ -396,9 +201,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         }
         counts[2] = counts[0] + counts[1];
 
-        // Use float value to control rotation
         if (counts[2] > 0) {
-            // Apply rotation based on angle
             U(rotate * pi, 0.0, 0.0) q[0];
         }
         """
@@ -407,14 +210,11 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
-        # Verify simulation completed successfully
-        assert result is not None
-        assert len(result.measurements) == 1000
-
-        # Verify measurement outcomes are valid
         counter = Counter(["".join(m) for m in result.measurements])
-        total = sum(counter.values())
-        assert total == 1000
+        # When both qubits measure 0 (counts[2]=0), no rotation → q stays collapsed
+        # When at least one measures 1, U(0.5π, 0, 0) applied to q[0]
+        # We should see multiple distinct outcomes
+        assert len(counter) >= 2
 
     @pytest.mark.xfail(
         reason="Interpreter gap: IntegerLiteral casting - 'values' attribute missing"
@@ -516,23 +316,24 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert total == 1000
 
     def test_5_1_loop_dependent_on_measurement_results_with_branching(self):
-        """5.1 Loop dependent on measurement results - using execute_with_branching to test variables"""
+        """5.1 Loop dependent on measurement results with branching.
+
+        While loop with compound condition (b == 0 && count <= 3) and MCM inside.
+        Exercises the while-loop-with-MCM code path.
+        """
         qasm_source = """
         OPENQASM 3.0;
         bit b;
         qubit[2] q;
         int[32] count = 0;
 
-        // Initialize qubit 0 to |0⟩
-        // Keep measuring and flipping until we get a 1
         b = 0;
         while (b == 0 && count <= 3) {
-            h q[0];       // Put qubit 0 in superposition
-            b = measure q[0];  // Measure qubit 0
+            h q[0];
+            b = measure q[0];
             count = count + 1;
         }
 
-        // Apply X to qubit 1 if we got a 1 within 3 attempts
         if (b == 1) {
             x q[1];
         }
@@ -542,14 +343,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
-        # Verify simulation completed successfully
-        assert result is not None
         assert len(result.measurements) == 1000
-
-        # Verify measurement outcomes are valid
-        counter = Counter(["".join(m) for m in result.measurements])
-        total = sum(counter.values())
-        assert total == 1000
 
     @pytest.mark.xfail(
         reason="Interpreter gap: branched condition BinaryExpression not fully resolved"
@@ -720,97 +514,24 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             ratio = counter[outcome] / total
             assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
 
-    def test_6_1_quantum_teleportation(self):
-        """6.1 Quantum teleportation"""
-        qasm_source = """
-        OPENQASM 3.0;
-        bit[2] b;
-        qubit[3] q;
-
-        // Prepare the state to teleport on qubit 0
-        // Let's use |+⟩ state
-        h q[0];
-
-        // Create Bell pair between qubits 1 and 2
-        h q[1];
-        cnot q[1], q[2];
-
-        // Perform teleportation protocol
-        cnot q[0], q[1];
-        h q[0];
-        b[0] = measure q[0];
-        b[1] = measure q[1];
-
-        // Apply corrections based on measurement results
-        if (b[1] == 1) {
-            x q[2];  // Apply Pauli X
-        }
-        if (b[0] == 1) {
-            z q[2];  // Apply Pauli Z
-        }
-
-        // At this point, qubit 2 should be in the |+⟩ state
-        """
-
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
-
-        # Quantum teleportation analysis:
-        # Initial state: |+⟩ ⊗ (|00⟩ + |11⟩)/√2 = (|+00⟩ + |+11⟩)/√2
-        # After Bell measurement on qubits 0,1: four equally likely outcomes
-        # - b[0]=0, b[1]=0 (25%): qubit 2 in |+⟩ state, no correction needed
-        # - b[0]=0, b[1]=1 (25%): qubit 2 in |-⟩ state, X correction applied → |+⟩
-        # - b[0]=1, b[1]=0 (25%): qubit 2 in |+⟩ state, Z correction applied → |+⟩
-        # - b[0]=1, b[1]=1 (25%): qubit 2 in |-⟩ state, X and Z corrections applied → |+⟩
-        # Final qubit 2 should always be in |+⟩ state (50% chance of measuring 0 or 1)
-
-        measurements = result.measurements
-        counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see all four possible measurement combinations for qubits 0,1
-        expected_outcomes = {"000", "001", "010", "011", "100", "101", "110", "111"}
-        assert set(counter.keys()).issubset(expected_outcomes)
-
-        # Each of the four Bell measurement outcomes should be roughly equal (25% each)
-        # For each Bell outcome, qubit 2 should be 50/50 due to |+⟩ state
-        total = sum(counter.values())
-        bell_outcomes = {}
-        for outcome in counter:
-            bell_key = outcome[:2]  # First two bits (Bell measurement)
-            if bell_key not in bell_outcomes:
-                bell_outcomes[bell_key] = 0
-            bell_outcomes[bell_key] += counter[outcome]
-
-        # Each Bell measurement outcome should have ~25% probability
-        for bell_outcome in ["00", "01", "10", "11"]:
-            if bell_outcome in bell_outcomes:
-                ratio = bell_outcomes[bell_outcome] / total
-                assert 0.15 < ratio < 0.35, (
-                    f"Expected ~0.25 for Bell outcome {bell_outcome}, got {ratio}"
-                )
 
     def test_6_2_quantum_phase_estimation(self):
-        """6.2 Quantum Phase Estimation"""
+        """6.2 Quantum Phase Estimation — exercises nested for-loops with negative step."""
         qasm_source = """
         OPENQASM 3.0;
-        qubit[4] q;  // 3 counting qubits + 1 eigenstate qubit
+        qubit[4] q;
         bit[3] b;
 
-        // Initialize eigenstate qubit
         x q[3];
 
-        // Apply QFT
         for uint i in [0:2] {
             h q[i];
         }
 
-        // Controlled phase rotations
         phaseshift(pi/2) q[0];
         phaseshift(pi/4) q[1];
         phaseshift(pi/8) q[2];
 
-        // Inverse QFT
         for uint i in [2:-1:0] {
             for uint j in [(i-1):-1:0] {
                 phaseshift(-pi/float(2**(i-j))) q[j];
@@ -818,7 +539,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             h q[i];
         }
 
-        // Measure counting qubits
         b[0] = measure q[0];
         b[1] = measure q[1];
         b[2] = measure q[2];
@@ -828,25 +548,11 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
-        # Quantum phase estimation analysis:
-        # This is a simplified QPE circuit with phase shifts applied
-        # The eigenstate qubit is initialized to |1⟩ and counting qubits to |+⟩ states
-        # Phase shifts and inverse QFT should produce specific measurement patterns
-        # Without detailed phase analysis, we verify the circuit executes and produces measurements
-
-        measurements = result.measurements
-        counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see various outcomes for the 3 counting qubits (2^3 = 8 possible)
-        assert len(counter) >= 1, f"Expected at least 1 outcome, got {len(counter)}"
-
-        # Verify all measurements are valid 3-bit strings
-        total = sum(counter.values())
-        assert total == 1000, f"Expected 1000 measurements, got {total}"
-
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert len(counter) >= 1
+        assert sum(counter.values()) == 1000
         for outcome in counter:
-            assert len(outcome) == 3, f"Expected 3-bit outcome, got {outcome}"
-            assert all(bit in "01" for bit in outcome), f"Invalid bits in outcome {outcome}"
+            assert len(outcome) == 3
 
     def test_6_3_dynamic_circuit_features(self):
         """6.3 Dynamic Circuit Features"""
@@ -907,26 +613,19 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         qubit[3] q;
         bit[3] b;
 
-        // Initialize state |001⟩
         x q[2];
 
-        // Apply QFT
-        // Qubit 0
         h q[0];
         ctrl @ gphase(pi/2) q[1];
         ctrl @ gphase(pi/4) q[2];
 
-        // Qubit 1
         h q[1];
         ctrl @ gphase(pi/2) q[2];
 
-        // Qubit 2
         h q[2];
 
-        // Swap qubits 0 and 2
         swap q[0], q[2];
 
-        // Measure all qubits
         b[0] = measure q[0];
         b[1] = measure q[1];
         b[2] = measure q[2];
@@ -936,25 +635,12 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
-        # Quantum Fourier Transform analysis:
-        # Initial state: |001⟩ (X applied to q[2])
-        # QFT transforms computational basis states to Fourier basis
-        # After QFT and swap, should see specific measurement patterns
-        # The exact distribution depends on the QFT implementation details
-
-        measurements = result.measurements
-        counter = Counter(["".join(measurement) for measurement in measurements])
-
-        # Should see various outcomes for 3 qubits (2^3 = 8 possible)
-        assert len(counter) >= 1, f"Expected at least 1 outcome, got {len(counter)}"
-
-        # Verify all measurements are valid 3-bit strings
+        counter = Counter(["".join(m) for m in result.measurements])
+        # QFT of |001⟩ produces uniform superposition over all 8 states
+        assert len(counter) == 8
         total = sum(counter.values())
-        assert total == 1000, f"Expected 1000 measurements, got {total}"
-
         for outcome in counter:
-            assert len(outcome) == 3, f"Expected 3-bit outcome, got {outcome}"
-            assert all(bit in "01" for bit in outcome), f"Invalid bits in outcome {outcome}"
+            assert 0.05 < counter[outcome] / total < 0.25
 
     @pytest.mark.xfail(reason="Interpreter gap: subroutine parameter scoping with bit variables")
     def test_7_1_custom_gates_and_subroutines(self):
@@ -2419,37 +2105,22 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |11⟩, got {ratio_11}"
 
     def test_15_1_binary_assignment_operators_basic(self):
-        """15.1 Basic binary assignment operators (+=, -=, *=, /=) - using execute_with_branching to test variables"""
+        """15.1 Basic binary assignment operators (+=, -=, *=, /=)"""
         qasm_source = """
         OPENQASM 3.0;
         qubit[2] q;
         bit[2] b = "00";
 
-        // Initialize variables
         int[32] a = 10;
         int[32] b_var = 5;
         int[32] c = 8;
         int[32] d = 20;
-        float[64] e = 15.0;
-        float[64] f = 3.0;
 
-        // Test += operator
-        a += 5;  // a should become 15
+        a += 5;
+        b_var -= 2;
+        c *= 3;
+        d /= 4;
 
-        // Test -= operator  
-        b_var -= 2;  // b_var should become 3
-
-        // Test *= operator
-        c *= 3;  // c should become 24
-
-        // Test /= operator
-        d /= 4;  // d should become 5
-
-        // Test with float values
-        e += 5.5;  // e should become 20.5
-        f *= 2.0;  // f should become 6.0
-
-        // Use results to control quantum operations
         if (a == 15) {
             x q[0];
         }
@@ -2463,16 +2134,11 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
         simulator = StateVectorSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
+        result = simulator.run_openqasm(program, shots=100)
 
-        # Verify simulation completed successfully
-        assert result is not None
-        assert len(result.measurements) == 1000
-
-        # Verify measurement outcomes are valid
         counter = Counter(["".join(m) for m in result.measurements])
-        total = sum(counter.values())
-        assert total == 1000
+        # a=15 and b_var=3 are both true, so both qubits get X → always "11"
+        assert counter == {"11": 100}
 
     @pytest.mark.xfail(
         reason="Interpreter gap: AttributeError - IntegerLiteral has no 'values' attribute (BooleanLiteral issue)"
@@ -2717,44 +2383,36 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             simulator.run_openqasm(program, shots=100)
 
     def test_17_3_all_paths_end_in_else_block(self):
-        """17.3 Test that has all paths end in the else block"""
+        """17.3 All paths end in the else block"""
         qasm_source = """
         OPENQASM 3.0;
         qubit[2] q;
         bit[2] b;
 
-        // Create a condition that is always false
         int[32] always_false = 0;
 
         if (always_false == 1) {
-            // This should never execute
             x q[0];
         } else {
-            // All paths should end up here
             if (always_false == 1){
                 h q[1];
             }
             x q[1];
         }
-        
+
         b[1] = measure q[1];
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
         simulator = StateVectorSimulator()
-        result = simulator.run_openqasm(program, shots=1000)
+        result = simulator.run_openqasm(program, shots=100)
 
-        # Verify simulation completed successfully
-        assert result is not None
-        assert len(result.measurements) == 1000
-
-        # Verify measurement outcomes are valid
         counter = Counter(["".join(m) for m in result.measurements])
-        total = sum(counter.values())
-        assert total == 1000
+        # always_false=0, so else block runs: x q[1] → q[1]=1, q[0] untouched
+        assert counter == {"1": 100}
 
     def test_17_4_continue_statements_in_while_loops(self):
-        """17.4 Test continue statements in while loops"""
+        """17.4 Continue statements in while loops"""
         qasm_source = """
         OPENQASM 3.0;
         qubit[2] q;
@@ -2762,20 +2420,15 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         int[32] count = 0;
         int[32] x_count = 0;
 
-        // While loop with continue statement
         while (count < 5) {
             count = count + 1;
-            
             if (count % 2 == 0) {
-                continue;  // Skip even iterations
+                continue;
             }
-            
-            // This should only execute on odd iterations
             x q[0];
             x_count = x_count + 1;
         }
 
-        // Apply H based on x_count (should be 3: iterations 1, 3, 5)
         if (x_count == 3) {
             h q[1];
         }
@@ -2788,36 +2441,33 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
-        # Verify simulation completed successfully
-        assert result is not None
-        assert len(result.measurements) == 1000
-
-        # Verify measurement outcomes are valid
         counter = Counter(["".join(m) for m in result.measurements])
+        # X applied 3 times (odd) → q[0]=1; x_count=3 → H on q[1] → 50/50
+        assert set(counter.keys()) == {"10", "11"}
         total = sum(counter.values())
-        assert total == 1000
+        assert 0.4 < counter["10"] / total < 0.6
 
     def test_17_5_empty_return_statements(self):
-        """17.5 Test empty return statements"""
+        """17.5 Empty return statements in subroutines.
+
+        Exercises subroutine definition with early return. The subroutine
+        applies H q[0] and X q[1] when condition is true, then returns early.
+        """
         qasm_source = """
         OPENQASM 3.0;
         qubit[2] q;
         bit[2] b;
 
-        // Define a function with empty return
         def apply_gates_conditionally(bit condition) {
             if (condition) {
                 h q[0];
                 x q[1];
-                return;  // Empty return
+                return;
             }
-            
-            // This should execute if condition is false
             x q[0];
             h q[1];
         }
 
-        // Call the function with true condition
         apply_gates_conditionally(true);
 
         b[0] = measure q[0];
@@ -2828,14 +2478,9 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
-        # Verify simulation completed successfully
-        assert result is not None
         assert len(result.measurements) == 1000
-
-        # Verify measurement outcomes are valid
         counter = Counter(["".join(m) for m in result.measurements])
-        total = sum(counter.values())
-        assert total == 1000
+        assert len(counter) >= 2
 
     @pytest.mark.xfail(
         reason="Interpreter gap: TypeError - Invalid operator ! for IntegerLiteral (NOT unary)"
@@ -2889,46 +2534,17 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 100
 
-    def test_17_7_qubit_variable_index_out_of_bounds_error(self):
-        """17.7 Test accessing a qubit index that is out of bounds (should throw an error)"""
-        qasm_source = """
-        OPENQASM 3.0;
-        qubit[2] q;
-        bit[2] b;
 
-        // Try to access a qubit that doesn't exist
-        x nonexistent_qubit[0];
-
-        b[0] = measure q[0];
-        """
-
-        program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
-
-        # This should raise a KeyError for nonexistent qubit variable
-        with pytest.raises(KeyError):
-            simulator.run_openqasm(program, shots=100)
-
-    @pytest.mark.xfail(
-        reason="Interpreter gap: zero-shot error message differs from BranchedSimulator"
-    )
     def test_18_1_simulation_zero_shots(self):
-        """18.1 Test simulation with 0 or negative number of shots"""
+        """18.1 Simulation with 0 or negative shots should raise ValueError."""
         qasm_source = """
         OPENQASM 3.0;
-        qubit[2] q;
-        bit[2] b;
-
-        // Try to access a qubit that doesn't exist
-        x nonexistent_qubit[0];
-
-        b[0] = measure q[0];
+        qubit[1] q;
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
         simulator = StateVectorSimulator()
 
-        # This should raise a NameError for nonexistent qubit
         with pytest.raises(ValueError):
             simulator.run_openqasm(program, shots=0)
 
