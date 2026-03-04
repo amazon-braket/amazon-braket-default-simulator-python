@@ -667,11 +667,10 @@ class Interpreter:
             combined = tuple(lhs_qubits) + tuple(rhs_qubits)
             self.context.qubit_mapping[alias_name] = combined
             self.context.declare_qubit_alias(alias_name, Identifier(alias_name))
-        elif isinstance(node.value, IndexedIdentifier):
-            # Sliced alias: let q1 = q[0:1]
-            source_qubits = self.context.get_qubits(node.value)
-            self.context.qubit_mapping[alias_name] = source_qubits
-            self.context.declare_qubit_alias(alias_name, Identifier(alias_name))
+        else:
+            raise NotImplementedError(
+                f"Alias with {type(node.value).__name__} is not supported"
+            )
 
     @visit.register
     def _(self, node: Include) -> None:

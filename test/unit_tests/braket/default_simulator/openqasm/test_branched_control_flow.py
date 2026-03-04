@@ -955,10 +955,10 @@ class TestProgramContextBranchedVariables:
         )
 
         ctx = self._make_branched_context()
+        arr_type = ArrayType(IntType(IntegerLiteral(32)), [IntegerLiteral(2)])
         arr_val = ArrayLiteral([IntegerLiteral(0), IntegerLiteral(0)])
-        ctx.declare_variable(
-            "arr", ArrayType(IntType(IntegerLiteral(32)), [IntegerLiteral(2)]), arr_val
-        )
+        # declare_variable in branched mode adds to symbol_table and per-path
+        ctx.declare_variable("arr", arr_type, arr_val)
         # Update arr[1] = 99 on path 0
         ctx._active_path_indices = [0]
         indexed = IndexedIdentifier(Identifier("arr"), [[IntegerLiteral(1)]])
@@ -1035,3 +1035,102 @@ class TestProgramContextBranchedInstructions:
         ctx.add_reset([0])
         assert len(ctx._paths[0].instructions) == 1
         assert len(ctx._paths[1].instructions) == 1
+
+
+class TestProgramContextBranchedEdgeCases:
+    """Cover remaining branched-mode edge cases."""
+
+    def _make_branched_context(self):
+        ctx = ProgramContext()
+        ctx._is_branched = True
+        path0 = SimulationPath([], 50, {}, {})
+        ctx._paths = [path0]
+        ctx._active_path_indices = [0]
+        return ctx
+
+    def test_update_value_branched_missing_variable_raises(self):
+        """update_value raises KeyError when variable not found on path."""
+        ctx = self._make_branched_context()
+        # Declare in symbol table so get_type works, but don't set on path
+        ctx.symbol_table.add_symbol("missing", IntType(IntegerLiteral(32)), False)
+        with pytest.raises(KeyError, match="Variable 'missing' not found"):
+            ctx.update_value(Identifier("missing"), IntegerLiteral(1))
+
+    def test_get_value_by_identifier_branched_indexed(self):
+        """get_value_by_identifier with IndexedIdentifier in branched mode."""
+        from braket.default_simulator.openqasm.parser.openqasm_ast import (
+            ArrayLiteral,
+            ArrayType,
+            IndexedIdentifier,
+        )
+
+        ctx = self._make_branched_context()
+        arr_val = ArrayLiteral([IntegerLiteral(10), IntegerLiteral(20), IntegerLiteral(30)])
+        ctx.declare_variable(
+            "arr", ArrayType(IntType(IntegerLiteral(32)), [IntegerLiteral(3)]), arr_val
+        )
+        indexed = IndexedIdentifier(Identifier("arr"), [[IntegerLiteral(1)]])
+        val = ctx.get_value_by_identifier(indexed)
+        assert val.value == 20
+
+    def test_get_value_by_identifier_branched_falls_back(self):
+        """get_value_by_identifier falls back to shared table for pre-branching vars."""
+        ctx = self._make_branched_context()
+        ctx.symbol_table.add_symbol("shared", IntType(IntegerLiteral(32)), False)
+        ctx.variable_table.add_variable("shared", IntegerLiteral(99))
+        val = ctx.get_value_by_identifier(Identifier("shared"))
+        assert val.value == 99
+
+    def test_get_value_branched_wraps_raw_python(self):
+        """get_value wraps raw Python values into AST literals."""
+        ctx = self._make_branched_context()
+        ctx.declare_variable("x", IntType(IntegerLiteral(32)), IntegerLiteral(5))
+        # Manually set a raw int to test wrapping
+        ctx._paths[0].get_variable("x").value = 42
+        val = ctx.get_value("x")
+        assert val.value == 42
+
+    def test_handle_branching_non_branched_else(self):
+        """handle_branching_statement non-branched path with else block."""
+        ctx = ProgramContext()
+        assert not ctx._is_branched
+
+        visited = []
+
+        def mock_visit(node):
+            if isinstance(node, BooleanLiteral):
+                return node
+            if isinstance(node, list):
+                for item in node:
+                    mock_visit(item)
+                return
+            visited.append(node)
+            return node
+
+        node = BranchingStatement(
+            condition=BooleanLiteral(False),
+            if_block=["if_stmt"],
+            else_block=["else_stmt"],
+        )
+        ctx.handle_branching_statement(node, mock_visit)
+        assert "else_stmt" in visited
+        assert "if_stmt" not in visited
+
+    def test_handle_branching_non_branched_no_else(self):
+        """handle_branching_statement non-branched path with no else block."""
+        ctx = ProgramContext()
+        visited = []
+
+        def mock_visit(node):
+            if isinstance(node, BooleanLiteral):
+                return node
+            visited.append(node)
+            return node
+
+        node = BranchingStatement(
+            condition=BooleanLiteral(False),
+            if_block=["if_stmt"],
+            else_block=[],
+        )
+        ctx.handle_branching_statement(node, mock_visit)
+        assert visited == []
