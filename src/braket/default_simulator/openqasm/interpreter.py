@@ -553,8 +553,8 @@ class Interpreter:
             raise ValueError(
                 f"Number of qubits ({len(qubits)}) does not match number of provided classical targets ({len(targets)})"
             )
-        if node.target:
-            self.context.add_measure(qubits, targets, measurement_target=node.target)
+        if node.target and self.context.supports_midcircuit_measurement:
+            self.context.add_measure(qubits, targets, classical_destination=node.target)
         else:
             self.context.add_measure(qubits, targets)
 

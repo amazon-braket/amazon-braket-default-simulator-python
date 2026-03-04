@@ -451,6 +451,11 @@ class AbstractProgramContext(ABC):
         return False
 
     @property
+    def supports_midcircuit_measurement(self) -> bool:
+        """Whether this context supports mid-circuit measurement branching."""
+        return False
+
+    @property
     def active_paths(self) -> list[SimulationPath]:
         """The currently active simulation paths."""
         return []
@@ -867,7 +872,7 @@ class AbstractProgramContext(ABC):
         self,
         target: tuple[int],
         classical_targets: Iterable[int] | None = None,
-        measurement_target: Identifier | IndexedIdentifier | None = None,
+        **kwargs,
     ) -> None:
         """Add a measurement to the circuit.
 
@@ -876,10 +881,6 @@ class AbstractProgramContext(ABC):
             classical_targets (Iterable[int] | None): The classical bit indices
                 to write results into for the circuit's final output. Used by the simulation
                 infrastructure for bit-level bookkeeping.
-            measurement_target (Identifier | IndexedIdentifier | None): The AST node
-                for the classical variable being assigned, e.g. ``b`` in
-                ``b = measure q[0]``. Used by the branched MCM path to update
-                per-path classical variables. None for end-of-circuit measurements.
         """
 
     def add_barrier(self, target: list[int] | None = None) -> None:
@@ -1014,16 +1015,21 @@ class ProgramContext(AbstractProgramContext):
         self._flush_pending_mcm_targets()
         return self._is_branched
 
+    @property
+    def supports_midcircuit_measurement(self) -> bool:
+        """Whether this context supports mid-circuit measurement branching."""
+        return True
+
     def _flush_pending_mcm_targets(self) -> None:
         """Flush pending MCM targets to the circuit as regular measurements.
 
         Called when interpretation is complete and branching never triggered.
-        Measurements that were deferred (because they had a measurement_target
+        Measurements that were deferred (because they had a classical_destination
         but no control flow depended on them) are registered in the circuit
         as normal end-of-circuit measurements.
         """
         if not self._is_branched and self._pending_mcm_targets:
-            for mcm_target, mcm_classical, _mcm_meas_target in self._pending_mcm_targets:
+            for mcm_target, mcm_classical, _mcm_dest in self._pending_mcm_targets:
                 self._circuit.add_measure(mcm_target, mcm_classical)
             self._pending_mcm_targets.clear()
 
@@ -1227,22 +1233,39 @@ class ProgramContext(AbstractProgramContext):
         self,
         target: tuple[int],
         classical_targets: Iterable[int] | None = None,
-        measurement_target: Identifier | IndexedIdentifier | None = None,
+        *,
+        classical_destination: Identifier | IndexedIdentifier | None = None,
     ) -> None:
+        """Add a measurement, with optional MCM support.
+
+        The ``classical_destination`` keyword argument is only passed by the
+        Interpreter when ``supports_midcircuit_measurement`` is True, so
+        downstream subclasses that override the two-argument base signature
+        are unaffected.
+
+        Args:
+            target (tuple[int]): The qubit indices to measure.
+            classical_targets (Iterable[int] | None): Classical bit indices for
+                the circuit's final output bookkeeping.
+            classical_destination (Identifier | IndexedIdentifier | None): The
+                AST node for the classical variable being assigned (e.g. ``b``
+                in ``b = measure q[0]``). When provided, the measurement is
+                treated as a mid-circuit measurement candidate.
+        """
         if self._is_branched:
-            if measurement_target is not None:
+            if classical_destination is not None:
                 self._measure_and_branch(target)
-                self._update_classical_from_measurement(target, measurement_target)
+                self._update_classical_from_measurement(target, classical_destination)
             else:
                 # End-of-circuit measurement in branched mode: record in circuit
                 # for qubit tracking but don't branch further
                 self._circuit.add_measure(target, classical_targets)
-        elif measurement_target is not None:
+        elif classical_destination is not None:
             # Potential MCM — defer registration. Don't add to circuit yet;
             # if branching triggers later the measurement is applied per-path.
             # If branching never triggers, _flush_pending_mcm_targets will
             # register them in the circuit as normal end-of-circuit measurements.
-            self._pending_mcm_targets.append((target, classical_targets, measurement_target))
+            self._pending_mcm_targets.append((target, classical_targets, classical_destination))
         else:
             # Standard non-MCM measurement — register in circuit immediately
             self._circuit.add_measure(target, classical_targets)
@@ -1259,9 +1282,9 @@ class ProgramContext(AbstractProgramContext):
         if not self._is_branched and self._pending_mcm_targets and self._shots > 0:
             self._is_branched = True
             self._initialize_paths_from_circuit()
-            for mcm_target, mcm_classical, mcm_meas_target in self._pending_mcm_targets:
+            for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
                 self._measure_and_branch(mcm_target)
-                self._update_classical_from_measurement(mcm_target, mcm_meas_target)
+                self._update_classical_from_measurement(mcm_target, mcm_dest)
             self._pending_mcm_targets.clear()
 
     def handle_branching_statement(self, node: BranchingStatement, visit_block: Callable) -> None:
@@ -1586,7 +1609,7 @@ class ProgramContext(AbstractProgramContext):
         except Exception:  # noqa: BLE001
             return None
 
-    def _update_classical_from_measurement(self, qubit_target, measurement_target) -> None:
+    def _update_classical_from_measurement(self, qubit_target, classical_destination) -> None:
         """Update classical variables per path with measurement outcomes.
 
         After _measure_and_branch has branched paths and recorded measurement
@@ -1596,30 +1619,30 @@ class ProgramContext(AbstractProgramContext):
 
         Args:
             qubit_target: The qubit indices that were measured.
-            measurement_target: The AST node for the classical target
-                (Identifier or IndexedIdentifier).
+            classical_destination: The AST node for the classical variable
+                being assigned (Identifier or IndexedIdentifier).
         """
         for path_idx in self._active_path_indices:
             path = self._paths[path_idx]
 
-            if isinstance(measurement_target, IndexedIdentifier):
-                self._update_indexed_target(path, qubit_target, measurement_target)
-            elif isinstance(measurement_target, Identifier):
-                self._update_identifier_target(path, qubit_target, measurement_target)
+            if isinstance(classical_destination, IndexedIdentifier):
+                self._update_indexed_target(path, qubit_target, classical_destination)
+            elif isinstance(classical_destination, Identifier):
+                self._update_identifier_target(path, qubit_target, classical_destination)
 
     def _update_indexed_target(
-        self, path: SimulationPath, qubit_target, measurement_target: IndexedIdentifier
+        self, path: SimulationPath, qubit_target, classical_destination: IndexedIdentifier
     ) -> None:
         """Update a single indexed classical variable on one path.
 
         Handles the ``b[i] = measure q[j]`` case.
         """
         base_name = (
-            measurement_target.name.name
-            if hasattr(measurement_target.name, "name")
-            else measurement_target.name
+            classical_destination.name.name
+            if hasattr(classical_destination.name, "name")
+            else classical_destination.name
         )
-        index = self._resolve_index(path, measurement_target.indices)
+        index = self._resolve_index(path, classical_destination.indices)
         meas_result = self._get_path_measurement_result(path, qubit_target[0])
 
         framed_var = self._ensure_path_variable(path, base_name)
@@ -1633,14 +1656,14 @@ class ProgramContext(AbstractProgramContext):
             framed_var.value = meas_result
 
     def _update_identifier_target(
-        self, path: SimulationPath, qubit_target, measurement_target: Identifier
+        self, path: SimulationPath, qubit_target, classical_destination: Identifier
     ) -> None:
         """Update a plain identifier classical variable on one path.
 
         Handles both single-qubit (``b = measure q[0]``) and multi-qubit
         register (``b = measure q``) cases.
         """
-        var_name = measurement_target.name
+        var_name = classical_destination.name
 
         if len(qubit_target) == 1:
             meas_result = self._get_path_measurement_result(path, qubit_target[0])
