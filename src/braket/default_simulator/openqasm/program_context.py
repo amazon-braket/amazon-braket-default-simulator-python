@@ -448,17 +448,17 @@ class AbstractProgramContext(ABC):
     @property
     def is_branched(self) -> bool:
         """Whether mid-circuit measurement branching has occurred."""
-        return False  # pragma: no cover
+        return False
 
     @property
     def supports_midcircuit_measurement(self) -> bool:
         """Whether this context supports mid-circuit measurement branching."""
-        return False  # pragma: no cover
+        return False
 
     @property
     def active_paths(self) -> list[SimulationPath]:
         """The currently active simulation paths."""
-        return []  # pragma: no cover
+        return []
 
     def __repr__(self):
         return "\n\n".join(

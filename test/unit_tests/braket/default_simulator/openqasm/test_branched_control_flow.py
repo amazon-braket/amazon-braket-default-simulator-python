@@ -607,19 +607,18 @@ class TestFrameManagement:
 
 
 class TestAbstractContextControlFlow:
-    """Tests that AbstractProgramContext.handle_* methods raise NotImplementedError."""
+    """Tests for AbstractProgramContext defaults via SimpleProgramContext."""
 
-    def test_abstract_branching_raises(self):
-        """AbstractProgramContext.handle_branching_statement raises NotImplementedError."""
-        # ProgramContext overrides this, so we need to call the abstract version directly
-        context = ProgramContext()
+    def test_handle_branching_raises(self):
+        """handle_branching_statement raises NotImplementedError on a non-MCM context."""
+        ctx = SimpleProgramContext()
         node = BranchingStatement(condition=BooleanLiteral(True), if_block=[], else_block=[])
         with pytest.raises(NotImplementedError):
-            AbstractProgramContext.handle_branching_statement(context, node, lambda x: x)
+            ctx.handle_branching_statement(node, lambda x: x)
 
-    def test_abstract_for_loop_raises(self):
-        """AbstractProgramContext.handle_for_loop raises NotImplementedError."""
-        context = ProgramContext()
+    def test_handle_for_loop_raises(self):
+        """handle_for_loop raises NotImplementedError on a non-MCM context."""
+        ctx = SimpleProgramContext()
         node = ForInLoop(
             type=IntType(IntegerLiteral(32)),
             identifier=Identifier("i"),
@@ -629,14 +628,26 @@ class TestAbstractContextControlFlow:
             block=[],
         )
         with pytest.raises(NotImplementedError):
-            AbstractProgramContext.handle_for_loop(context, node, lambda x: x)
+            ctx.handle_for_loop(node, lambda x: x)
 
-    def test_abstract_while_loop_raises(self):
-        """AbstractProgramContext.handle_while_loop raises NotImplementedError."""
-        context = ProgramContext()
+    def test_handle_while_loop_raises(self):
+        """handle_while_loop raises NotImplementedError on a non-MCM context."""
+        ctx = SimpleProgramContext()
         node = WhileLoop(while_condition=BooleanLiteral(True), block=[])
         with pytest.raises(NotImplementedError):
-            AbstractProgramContext.handle_while_loop(context, node, lambda x: x)
+            ctx.handle_while_loop(node, lambda x: x)
+
+    def test_is_branched_returns_false(self):
+        ctx = SimpleProgramContext()
+        assert ctx.is_branched is False
+
+    def test_supports_midcircuit_measurement_returns_false(self):
+        ctx = SimpleProgramContext()
+        assert ctx.supports_midcircuit_measurement is False
+
+    def test_active_paths_returns_empty(self):
+        ctx = SimpleProgramContext()
+        assert ctx.active_paths == []
 
 
 class TestProgramContextResolveIndex:
