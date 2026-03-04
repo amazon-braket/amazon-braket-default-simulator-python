@@ -24,7 +24,7 @@ from sympy import Symbol
 from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.openqasm.parser import openqasm_parser
 from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
-from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX
+from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX, Reset
 from braket.default_simulator.gate_operations import PauliY as Y
 from braket.default_simulator.gate_operations import RotX, U, Unitary
 from braket.default_simulator.noise_operations import (
@@ -535,8 +535,6 @@ def test_reset_qubit():
     """
     context = Interpreter().run(qasm)
     # Reset should add a Reset instruction to the circuit
-    from braket.default_simulator.gate_operations import Reset
-
     instructions = context.circuit.instructions
     # Should have an X gate followed by a Reset
     assert len(instructions) == 2

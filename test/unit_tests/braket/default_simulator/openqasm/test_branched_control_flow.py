@@ -22,13 +22,17 @@ Tests verify that:
 
 import pytest
 
+from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    ArrayLiteral,
+    ArrayType,
     BooleanLiteral,
     BranchingStatement,
     BreakStatement,
     ContinueStatement,
     ForInLoop,
     Identifier,
+    IndexedIdentifier,
     IntegerLiteral,
     IntType,
     RangeDefinition,
@@ -43,8 +47,6 @@ from braket.default_simulator.openqasm.program_context import (
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.simulation_path import FramedVariable, SimulationPath
 from braket.default_simulator.openqasm.circuit import Circuit
-
-BRAKET_GATES = ProgramContext._BRAKET_GATES if hasattr(ProgramContext, "_BRAKET_GATES") else None
 
 
 class SimpleProgramContext(AbstractProgramContext):
@@ -64,18 +66,12 @@ class SimpleProgramContext(AbstractProgramContext):
         return self._circuit
 
     def is_builtin_gate(self, name: str) -> bool:
-        from braket.default_simulator.openqasm.program_context import BRAKET_GATES
-
         return name in BRAKET_GATES
 
     def add_phase_instruction(self, target, phase_value):
-        from braket.default_simulator.gate_operations import GPhase
-
         self._circuit.add_instruction(GPhase(target, phase_value))
 
     def add_gate_instruction(self, gate_name, target, params, ctrl_modifiers, power):
-        from braket.default_simulator.openqasm.program_context import BRAKET_GATES
-
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
         )
@@ -616,8 +612,6 @@ class TestAbstractContextControlFlow:
     def test_abstract_branching_raises(self):
         """AbstractProgramContext.handle_branching_statement raises NotImplementedError."""
         # ProgramContext overrides this, so we need to call the abstract version directly
-        from braket.default_simulator.openqasm.program_context import AbstractProgramContext
-
         context = ProgramContext()
         node = BranchingStatement(condition=BooleanLiteral(True), if_block=[], else_block=[])
         with pytest.raises(NotImplementedError):
@@ -625,8 +619,6 @@ class TestAbstractContextControlFlow:
 
     def test_abstract_for_loop_raises(self):
         """AbstractProgramContext.handle_for_loop raises NotImplementedError."""
-        from braket.default_simulator.openqasm.program_context import AbstractProgramContext
-
         context = ProgramContext()
         node = ForInLoop(
             type=IntType(IntegerLiteral(32)),
@@ -641,8 +633,6 @@ class TestAbstractContextControlFlow:
 
     def test_abstract_while_loop_raises(self):
         """AbstractProgramContext.handle_while_loop raises NotImplementedError."""
-        from braket.default_simulator.openqasm.program_context import AbstractProgramContext
-
         context = ProgramContext()
         node = WhileLoop(while_condition=BooleanLiteral(True), block=[])
         with pytest.raises(NotImplementedError):
@@ -695,8 +685,6 @@ class TestProgramContextHelpers:
         assert val[1].value == 1
 
     def test_set_value_at_index_array_literal(self):
-        from braket.default_simulator.openqasm.parser.openqasm_ast import ArrayLiteral
-
         val = ArrayLiteral([IntegerLiteral(0), IntegerLiteral(0)])
         ProgramContext._set_value_at_index(val, 0, 1)
         assert val.values[0].value == 1
@@ -754,12 +742,6 @@ class TestProgramContextBranchedVariables:
 
     def test_update_value_branched_indexed(self):
         """update_value with IndexedIdentifier in branched mode."""
-        from braket.default_simulator.openqasm.parser.openqasm_ast import (
-            ArrayLiteral,
-            ArrayType,
-            IndexedIdentifier,
-        )
-
         ctx = self._make_branched_context()
         arr_type = ArrayType(IntType(IntegerLiteral(32)), [IntegerLiteral(2)])
         arr_val = ArrayLiteral([IntegerLiteral(0), IntegerLiteral(0)])
@@ -864,12 +846,6 @@ class TestProgramContextBranchedEdgeCases:
 
     def test_get_value_by_identifier_branched_indexed(self):
         """get_value_by_identifier with IndexedIdentifier in branched mode."""
-        from braket.default_simulator.openqasm.parser.openqasm_ast import (
-            ArrayLiteral,
-            ArrayType,
-            IndexedIdentifier,
-        )
-
         ctx = self._make_branched_context()
         arr_val = ArrayLiteral([IntegerLiteral(10), IntegerLiteral(20), IntegerLiteral(30)])
         ctx.declare_variable(

@@ -11,6 +11,8 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from unittest.mock import MagicMock
+
 from braket.default_simulator.openqasm.simulation_path import FramedVariable, SimulationPath
 
 
@@ -68,8 +70,6 @@ class TestSimulationPath:
 
     def test_add_instruction(self):
         """Test that instructions are appended correctly."""
-        from unittest.mock import MagicMock
-
         path = SimulationPath()
         mock_op = MagicMock()
         path.add_instruction(mock_op)
@@ -123,8 +123,6 @@ class TestSimulationPath:
 
     def test_branch_instructions_independent(self):
         """Instructions list is independent after branching."""
-        from unittest.mock import MagicMock
-
         parent = SimulationPath(instructions=[MagicMock()])
         child = parent.branch()
 
