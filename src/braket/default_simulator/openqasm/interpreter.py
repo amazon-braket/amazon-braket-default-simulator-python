@@ -560,7 +560,8 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
-        if not self.context._is_branched or len(self.context._active_path_indices) <= 1:
+        is_branched = getattr(self.context, "_is_branched", False)
+        if not is_branched or len(self.context._active_path_indices) <= 1:
             self._execute_classical_assignment(node)
         else:
             # When multiple paths are active, evaluate the rvalue per-path
@@ -668,9 +669,7 @@ class Interpreter:
             self.context.qubit_mapping[alias_name] = combined
             self.context.declare_qubit_alias(alias_name, Identifier(alias_name))
         else:
-            raise NotImplementedError(
-                f"Alias with {type(node.value).__name__} is not supported"
-            )
+            raise NotImplementedError(f"Alias with {type(node.value).__name__} is not supported")
 
     @visit.register
     def _(self, node: Include) -> None:

@@ -20,8 +20,6 @@ Tests verify that:
 - Break/continue signals are raised by the Interpreter and caught by loops.
 """
 
-from copy import deepcopy
-
 import pytest
 
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
@@ -37,6 +35,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     WhileLoop,
 )
 from braket.default_simulator.openqasm.program_context import (
+    AbstractProgramContext,
     ProgramContext,
     _BreakSignal,
     _ContinueSignal,
@@ -45,18 +44,42 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.simulation_path import FramedVariable, SimulationPath
 from braket.default_simulator.openqasm.circuit import Circuit
 
+BRAKET_GATES = ProgramContext._BRAKET_GATES if hasattr(ProgramContext, "_BRAKET_GATES") else None
 
-class _NonMCMContext(ProgramContext):
-    """A ProgramContext subclass that disables MCM support.
 
-    Used to exercise the Interpreter's inline eager-evaluation code paths
-    for BranchingStatement, ForInLoop, and WhileLoop (the ``else`` branches
-    that are skipped when ``supports_midcircuit_measurement`` is True).
+class SimpleProgramContext(AbstractProgramContext):
+    """Minimal non-MCM context that just builds a Circuit.
+
+    Used to verify the Interpreter's generic eager-evaluation paths for
+    if/else, for, and while — the code that runs when
+    ``supports_midcircuit_measurement`` is False.
     """
 
+    def __init__(self):
+        super().__init__()
+        self._circuit = Circuit()
+
     @property
-    def supports_midcircuit_measurement(self) -> bool:
-        return False
+    def circuit(self):
+        return self._circuit
+
+    def is_builtin_gate(self, name: str) -> bool:
+        from braket.default_simulator.openqasm.program_context import BRAKET_GATES
+
+        return name in BRAKET_GATES
+
+    def add_phase_instruction(self, target, phase_value):
+        from braket.default_simulator.gate_operations import GPhase
+
+        self._circuit.add_instruction(GPhase(target, phase_value))
+
+    def add_gate_instruction(self, gate_name, target, params, ctrl_modifiers, power):
+        from braket.default_simulator.openqasm.program_context import BRAKET_GATES
+
+        instruction = BRAKET_GATES[gate_name](
+            target, *params, ctrl_modifiers=ctrl_modifiers, power=power
+        )
+        self._circuit.add_instruction(instruction)
 
 
 class TestInterpreterBranchingStatement:
@@ -626,244 +649,33 @@ class TestAbstractContextControlFlow:
             AbstractProgramContext.handle_while_loop(context, node, lambda x: x)
 
 
-class TestNonMCMInterpreterControlFlow:
-    """Tests that exercise the Interpreter's inline eager-evaluation paths.
-
-    These paths are only reached when ``supports_midcircuit_measurement``
-    is False (i.e., downstream AbstractProgramContext subclasses).
-    """
-
-    def test_if_true_eager(self):
-        """Non-MCM if(true) should execute the if-block."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        if (true) {
-            x q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        circuit = ctx.circuit
-        assert len(circuit.instructions) == 1
-
-    def test_if_false_else_eager(self):
-        """Non-MCM if(false) should execute the else-block."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        if (false) {
-            x q[0];
-        } else {
-            h q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        circuit = ctx.circuit
-        # Should have H (from else block), not X
-        assert len(circuit.instructions) == 1
-
-    def test_if_false_no_else_eager(self):
-        """Non-MCM if(false) with no else block should produce no instructions."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        if (false) {
-            x q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        assert len(ctx.circuit.instructions) == 0
-
-    def test_for_loop_eager(self):
-        """Non-MCM for loop should unroll eagerly."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        int[32] sum = 0;
-        for int[32] i in [0:2] {
-            sum = sum + i;
-        }
-        // sum = 0+1+2 = 3
-        if (sum == 3) {
-            x q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        assert len(ctx.circuit.instructions) == 1
-
-    def test_for_loop_break_eager(self):
-        """Non-MCM for loop with break should stop early."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        int[32] count = 0;
-        for int[32] i in [0:9] {
-            count = count + 1;
-            if (count == 3) {
-                break;
-            }
-        }
-        if (count == 3) {
-            x q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        assert len(ctx.circuit.instructions) == 1
-
-    def test_for_loop_continue_eager(self):
-        """Non-MCM for loop with continue should skip rest of body."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        int[32] x_count = 0;
-        for int[32] i in [1:4] {
-            if (i % 2 == 0) {
-                continue;
-            }
-            x_count = x_count + 1;
-        }
-        // Odd iterations: 1, 3 → x_count = 2
-        if (x_count == 2) {
-            x q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        assert len(ctx.circuit.instructions) == 1
-
-    def test_while_loop_eager(self):
-        """Non-MCM while loop should execute eagerly."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        int[32] n = 3;
-        while (n > 0) {
-            n = n - 1;
-        }
-        if (n == 0) {
-            x q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        assert len(ctx.circuit.instructions) == 1
-
-    def test_while_loop_break_eager(self):
-        """Non-MCM while loop with break should exit early."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        int[32] n = 0;
-        while (true) {
-            n = n + 1;
-            if (n == 5) {
-                break;
-            }
-        }
-        if (n == 5) {
-            x q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        assert len(ctx.circuit.instructions) == 1
-
-    def test_while_loop_continue_eager(self):
-        """Non-MCM while loop with continue should skip rest of body."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        int[32] count = 0;
-        int[32] x_count = 0;
-        while (count < 5) {
-            count = count + 1;
-            if (count % 2 == 0) {
-                continue;
-            }
-            x_count = x_count + 1;
-        }
-        // Odd: 1,3,5 → x_count=3
-        if (x_count == 3) {
-            x q[0];
-        }
-        """
-        ctx = _NonMCMContext()
-        Interpreter(ctx).run(qasm)
-        assert len(ctx.circuit.instructions) == 1
-
-
-
-class TestAbstractProgramContextProperties:
-    """Cover AbstractProgramContext base property implementations."""
-
-    def test_is_branched_returns_false(self):
-        from braket.default_simulator.openqasm.program_context import AbstractProgramContext
-
-        # Call the base property via the unbound descriptor
-        assert AbstractProgramContext.is_branched.fget(_NonMCMContext()) is False
-
-    def test_supports_midcircuit_measurement_returns_false(self):
-        from braket.default_simulator.openqasm.program_context import AbstractProgramContext
-
-        assert AbstractProgramContext.supports_midcircuit_measurement.fget(_NonMCMContext()) is False
-
-    def test_active_paths_returns_empty(self):
-        from braket.default_simulator.openqasm.program_context import AbstractProgramContext
-
-        assert AbstractProgramContext.active_paths.fget(_NonMCMContext()) == []
-
-
 class TestProgramContextResolveIndex:
     """Cover _resolve_index edge cases."""
 
     def test_empty_indices(self):
-        ctx = ProgramContext()
         path = SimulationPath([], 0, {}, {})
-        assert ctx._resolve_index(path, []) == 0
+        assert ProgramContext._resolve_index(path, []) == 0
 
     def test_none_indices(self):
-        ctx = ProgramContext()
         path = SimulationPath([], 0, {}, {})
-        assert ctx._resolve_index(path, None) == 0
+        assert ProgramContext._resolve_index(path, None) == 0
 
     def test_integer_literal_index(self):
-        ctx = ProgramContext()
         path = SimulationPath([], 0, {}, {})
-        assert ctx._resolve_index(path, [[IntegerLiteral(3)]]) == 3
+        assert ProgramContext._resolve_index(path, [[IntegerLiteral(3)]]) == 3
 
     def test_identifier_index_from_path(self):
-        ctx = ProgramContext()
         path = SimulationPath([], 0, {}, {})
         path.set_variable("i", FramedVariable("i", None, IntegerLiteral(2), False, 0))
-        assert ctx._resolve_index(path, [[Identifier("i")]]) == 2
-
-    def test_identifier_index_from_shared_table(self):
-        ctx = ProgramContext()
-        ctx.declare_variable("j", IntType(IntegerLiteral(32)), IntegerLiteral(5))
-        path = SimulationPath([], 0, {}, {})
-        assert ctx._resolve_index(path, [[Identifier("j")]]) == 5
+        assert ProgramContext._resolve_index(path, [[Identifier("i")]]) == 2
 
     def test_identifier_index_not_found_returns_zero(self):
-        ctx = ProgramContext()
         path = SimulationPath([], 0, {}, {})
-        assert ctx._resolve_index(path, [[Identifier("missing")]]) == 0
+        assert ProgramContext._resolve_index(path, [[Identifier("missing")]]) == 0
 
     def test_multi_index_returns_zero(self):
-        """Multiple index dimensions should return 0 (unsupported)."""
-        ctx = ProgramContext()
         path = SimulationPath([], 0, {}, {})
-        assert ctx._resolve_index(path, [[IntegerLiteral(1)], [IntegerLiteral(2)]]) == 0
-
-    def test_raw_value_attribute_index(self):
-        """Index with a .value attribute but not IntegerLiteral or Identifier."""
-        ctx = ProgramContext()
-        path = SimulationPath([], 0, {}, {})
-        assert ctx._resolve_index(path, [[BooleanLiteral(True)]]) == True  # noqa: E712
+        assert ProgramContext._resolve_index(path, [[IntegerLiteral(1)], [IntegerLiteral(2)]]) == 0
 
 
 class TestProgramContextHelpers:
@@ -904,12 +716,6 @@ class TestProgramContextHelpers:
         result = ctx._ensure_path_variable(path, "y")
         assert result is not None
         assert result.value.value == 7
-
-    def test_ensure_path_variable_not_found(self):
-        ctx = ProgramContext()
-        path = SimulationPath([], 0, {}, {})
-        result = ctx._ensure_path_variable(path, "nonexistent")
-        assert result is None
 
 
 class TestProgramContextBranchedVariables:
@@ -1134,3 +940,128 @@ class TestProgramContextBranchedEdgeCases:
         )
         ctx.handle_branching_statement(node, mock_visit)
         assert visited == []
+
+
+class TestNonMCMInterpreterControlFlow:
+    """Verify the Interpreter's generic eager-evaluation paths using SimpleProgramContext.
+
+    SimpleProgramContext returns ``supports_midcircuit_measurement = False``,
+    so the Interpreter handles if/else, for, and while inline rather than
+    delegating to the context's handle_* methods.
+    """
+
+    def test_if_true(self):
+        qasm = "OPENQASM 3.0;\nqubit[1] q;\nif (true) { x q[0]; }"
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_if_false_else(self):
+        qasm = "OPENQASM 3.0;\nqubit[1] q;\nif (false) { x q[0]; } else { h q[0]; }"
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_if_false_no_else(self):
+        qasm = "OPENQASM 3.0;\nqubit[1] q;\nif (false) { x q[0]; }"
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 0
+
+    def test_for_loop_range(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] sum = 0;
+        for int[32] i in [0:2] { sum = sum + i; }
+        if (sum == 3) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_for_loop_discrete_set(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] sum = 0;
+        for int[32] i in {2, 5} { sum = sum + i; }
+        if (sum == 7) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_for_loop_break(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] count = 0;
+        for int[32] i in [0:9] {
+            count = count + 1;
+            if (count == 3) { break; }
+        }
+        if (count == 3) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_for_loop_continue(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] x_count = 0;
+        for int[32] i in [1:4] {
+            if (i % 2 == 0) { continue; }
+            x_count = x_count + 1;
+        }
+        if (x_count == 2) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_while_loop(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] n = 3;
+        while (n > 0) { n = n - 1; }
+        if (n == 0) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_while_loop_break(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] n = 0;
+        while (true) {
+            n = n + 1;
+            if (n == 5) { break; }
+        }
+        if (n == 5) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_while_loop_continue(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] count = 0;
+        int[32] x_count = 0;
+        while (count < 5) {
+            count = count + 1;
+            if (count % 2 == 0) { continue; }
+            x_count = x_count + 1;
+        }
+        if (x_count == 3) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1

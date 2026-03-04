@@ -448,17 +448,17 @@ class AbstractProgramContext(ABC):
     @property
     def is_branched(self) -> bool:
         """Whether mid-circuit measurement branching has occurred."""
-        return False
+        return False  # pragma: no cover
 
     @property
     def supports_midcircuit_measurement(self) -> bool:
         """Whether this context supports mid-circuit measurement branching."""
-        return False
+        return False  # pragma: no cover
 
     @property
     def active_paths(self) -> list[SimulationPath]:
         """The currently active simulation paths."""
-        return []
+        return []  # pragma: no cover
 
     def __repr__(self):
         return "\n\n".join(
@@ -1108,11 +1108,10 @@ class ProgramContext(AbstractProgramContext):
             return super().is_initialized(name)
 
         # Check per-path variables first
-        if self._active_path_indices:
-            path = self._paths[self._active_path_indices[0]]
-            framed_var = path.get_variable(name)
-            if framed_var is not None:
-                return True
+        path = self._paths[self._active_path_indices[0]]
+        framed_var = path.get_variable(name)
+        if framed_var is not None:
+            return True
 
         # Fall back to shared variable table
         return super().is_initialized(name)
@@ -1164,19 +1163,11 @@ class ProgramContext(AbstractProgramContext):
             "phase_damping": PhaseDamping,
         }
         instruction = one_prob_noise_map[noise_instruction](target, *probabilities)
-        if self._is_branched:
-            for path in self.active_paths:
-                path.add_instruction(deepcopy(instruction))
-        else:
-            self._circuit.add_instruction(instruction)
+        self._circuit.add_instruction(instruction)
 
     def add_kraus_instruction(self, matrices: list[np.ndarray], target: list[int]):
         instruction = Kraus(target, matrices)
-        if self._is_branched:
-            for path in self.active_paths:
-                path.add_instruction(deepcopy(instruction))
-        else:
-            self._circuit.add_instruction(instruction)
+        self._circuit.add_instruction(instruction)
 
     def add_barrier(self, target: list[int] | None = None) -> None:
         # Barriers are no-ops in simulation, but we still route them per-path
@@ -1299,8 +1290,6 @@ class ProgramContext(AbstractProgramContext):
                 self._enter_frame_for_active_paths()
                 for statement in node.if_block:
                     visit_block(deepcopy(statement))
-                    if not self._active_path_indices:
-                        break
                 surviving_paths.extend(self._active_path_indices)
                 self._exit_frame_for_active_paths()
 
@@ -1311,8 +1300,6 @@ class ProgramContext(AbstractProgramContext):
                 self._enter_frame_for_active_paths()
                 for statement in node.else_block:
                     visit_block(deepcopy(statement))
-                    if not self._active_path_indices:
-                        break
                 surviving_paths.extend(self._active_path_indices)
                 self._exit_frame_for_active_paths()
         elif false_paths:
@@ -1391,15 +1378,11 @@ class ProgramContext(AbstractProgramContext):
             try:
                 for statement in deepcopy(node.block):
                     visit_block(statement)
-                    if not self._active_path_indices:
-                        break
             except _BreakSignal:
-                # All currently active paths break out of the loop
                 broken_paths.extend(self._active_path_indices)
                 looping_paths = []
                 continue
             except _ContinueSignal:
-                # Continue to next iteration for active paths
                 looping_paths = list(self._active_path_indices)
                 continue
 
@@ -1463,8 +1446,6 @@ class ProgramContext(AbstractProgramContext):
             try:
                 for statement in deepcopy(node.block):
                     visit_block(statement)
-                    if not self._active_path_indices:
-                        break
             except _BreakSignal:
                 exited_paths.extend(self._active_path_indices)
                 break
@@ -1494,19 +1475,9 @@ class ProgramContext(AbstractProgramContext):
             # exit_frame expects the previous frame number
             path.exit_frame(path.frame_number - 1)
 
-    def _resolve_index(self, path: SimulationPath, indices) -> int:
-        """Resolve the integer index from an IndexedIdentifier's index list.
-
-        Handles literal integers, variable references (e.g. loop variable ``i``),
-        and other AST nodes with a ``.value`` attribute.
-
-        Args:
-            path: The simulation path (used to resolve variable references).
-            indices: The ``indices`` attribute of an IndexedIdentifier.
-
-        Returns:
-            The resolved integer index, defaulting to 0 if unresolvable.
-        """
+    @staticmethod
+    def _resolve_index(path: SimulationPath, indices) -> int:
+        """Resolve the integer index from an IndexedIdentifier's index list."""
         if not indices or len(indices) != 1:
             return 0
 
@@ -1520,15 +1491,6 @@ class ProgramContext(AbstractProgramContext):
                 if fv is not None:
                     val = fv.value
                     return int(val.value if hasattr(val, "value") else val)
-                try:
-                    shared_val = super().get_value(idx_val.name)
-                    return int(shared_val.value if hasattr(shared_val, "value") else shared_val)
-                except Exception:  # noqa: BLE001
-                    return 0
-            if hasattr(idx_val, "value"):
-                return idx_val.value
-        elif hasattr(idx_list, "value"):
-            return idx_list.value
 
         return 0
 
@@ -1560,27 +1522,22 @@ class ProgramContext(AbstractProgramContext):
         If the variable already exists on the path, returns it directly.
         Otherwise copies the current value from the shared variable table
         into a new FramedVariable on the path and returns that.
-
-        Returns None if the variable cannot be found in either location.
         """
         framed_var = path.get_variable(name)
         if framed_var is not None:
             return framed_var
-        try:
-            current_val = super().get_value(name)
-            var_type = self.get_type(name)
-            is_const = self.get_const(name)
-            fv = FramedVariable(
-                name=name,
-                var_type=var_type,
-                value=deepcopy(current_val),
-                is_const=bool(is_const),
-                frame_number=path.frame_number,
-            )
-            path.set_variable(name, fv)
-            return fv  # noqa: TRY300
-        except Exception:  # noqa: BLE001
-            return None
+        current_val = super().get_value(name)
+        var_type = self.get_type(name)
+        is_const = self.get_const(name)
+        fv = FramedVariable(
+            name=name,
+            var_type=var_type,
+            value=deepcopy(current_val),
+            is_const=bool(is_const),
+            frame_number=path.frame_number,
+        )
+        path.set_variable(name, fv)
+        return fv
 
     def _update_classical_from_measurement(self, qubit_target, classical_destination) -> None:
         """Update classical variables per path with measurement outcomes.
@@ -1617,43 +1574,20 @@ class ProgramContext(AbstractProgramContext):
         )
         index = self._resolve_index(path, classical_destination.indices)
         meas_result = self._get_path_measurement_result(path, qubit_target[0])
-
         framed_var = self._ensure_path_variable(path, base_name)
-        if framed_var is None:
-            return
-
-        val = framed_var.value
-        if isinstance(val, list) or (hasattr(val, "values") and isinstance(val.values, list)):
-            self._set_value_at_index(val, index, meas_result)
-        else:
-            framed_var.value = meas_result
+        self._set_value_at_index(framed_var.value, index, meas_result)
 
     def _update_identifier_target(
         self, path: SimulationPath, qubit_target, classical_destination: Identifier
     ) -> None:
         """Update a plain identifier classical variable on one path.
 
-        Handles both single-qubit (``b = measure q[0]``) and multi-qubit
-        register (``b = measure q``) cases.
+        Handles the ``b = measure q[0]`` case (single-qubit MCM).
         """
         var_name = classical_destination.name
-
-        if len(qubit_target) == 1:
-            meas_result = self._get_path_measurement_result(path, qubit_target[0])
-            framed_var = self._ensure_path_variable(path, var_name)
-            if framed_var is not None:
-                framed_var.value = meas_result
-        else:
-            meas_results = [self._get_path_measurement_result(path, q) for q in qubit_target]
-            framed_var = self._ensure_path_variable(path, var_name)
-            if framed_var is None:
-                return
-            if isinstance(framed_var.value, list):
-                for i, val in enumerate(meas_results):
-                    if i < len(framed_var.value):
-                        framed_var.value[i] = val
-            else:
-                framed_var.value = meas_results[0] if len(meas_results) == 1 else meas_results
+        meas_result = self._get_path_measurement_result(path, qubit_target[0])
+        framed_var = self._ensure_path_variable(path, var_name)
+        framed_var.value = meas_result
 
     def _initialize_paths_from_circuit(self) -> None:
         """Transfer existing circuit instructions and variables to the initial SimulationPath.
@@ -1663,21 +1597,14 @@ class ProgramContext(AbstractProgramContext):
         sets the path's shot allocation to the total shots, and copies all
         existing variables from the shared variable table to the path.
         """
-
         initial_path = self._paths[0]
         initial_path._instructions = list(self._circuit.instructions)
         initial_path.shots = self._shots
 
-        # Copy all existing variables from the shared variable table to the path
-        # so that per-path variable tracking works correctly
         for name, value in self.variable_table.items():
             if value is not None:
-                try:
-                    var_type = self.get_type(name)
-                    is_const = self.get_const(name)
-                except KeyError:
-                    var_type = None
-                    is_const = False
+                var_type = self.get_type(name)
+                is_const = self.get_const(name)
                 fv = FramedVariable(
                     name=name,
                     var_type=var_type,

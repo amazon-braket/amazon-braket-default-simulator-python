@@ -30,11 +30,6 @@ from braket.ir.openqasm import Program as OpenQASMProgram
 
 
 class TestStateVectorSimulatorOperatorsOpenQASM:
-
-
-
-
-
     def test_3_2_complex_conditional_logic(self):
         """3.2 Complex conditional logic"""
         qasm_source = """
@@ -513,7 +508,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         for outcome in expected_outcomes:
             ratio = counter[outcome] / total
             assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
-
 
     def test_6_2_quantum_phase_estimation(self):
         """6.2 Quantum Phase Estimation — exercises nested for-loops with negative step."""
@@ -2534,7 +2528,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 100
 
-
     def test_18_1_simulation_zero_shots(self):
         """18.1 Simulation with 0 or negative shots should raise ValueError."""
         qasm_source = """
@@ -3516,13 +3509,16 @@ class TestMCMBranchedGphase:
     """Cover add_phase_instruction branched path via gphase after MCM."""
 
     def test_gphase_after_mcm(self, simulator):
-        """gphase after MCM should not crash and should not affect measurements."""
+        """gphase after MCM branching should route to all active paths."""
         qasm = """
         OPENQASM 3.0;
         bit b;
         qubit[2] q;
         h q[0];
         b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
         gphase(pi);
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
@@ -3560,3 +3556,127 @@ class TestMCMBranchedContinueInForLoop:
             assert key[-1] == "1"
 
 
+class TestMCMBranchedControlFlowCoverage:
+    """Cover branched handle_branching_statement else-block and continue in loops."""
+
+    def test_branched_if_else_block_executed(self, simulator):
+        """Branched if/else where some paths take the else block."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        } else {
+            z q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        # b=0 → Z on q[1] (no effect on |0⟩) → result=0 → "00"
+        # b=1 → X on q[1] → result=1 → "11"
+        assert "00" in counter
+        assert "11" in counter
+
+    def test_branched_if_no_else_false_paths_survive(self, simulator):
+        """Branched if with no else — false paths survive unchanged."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert "00" in counter
+        assert "11" in counter
+
+    def test_continue_in_branched_for_loop_coverage(self, simulator):
+        """Continue in branched for loop — covers ContinueSignal path."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        int x_count = 0;
+        x q[0];
+        b = measure q[0];
+        for int i in [1:4] {
+            if (i % 2 == 0) {
+                continue;
+            }
+            x_count = x_count + 1;
+        }
+        if (x_count == 2) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for key in counter:
+            assert key[-1] == "1"
+
+    def test_continue_in_branched_while_loop_coverage(self, simulator):
+        """Continue in branched while loop — covers ContinueSignal path."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        int count = 0;
+        int x_count = 0;
+        x q[0];
+        b = measure q[0];
+        while (count < 4) {
+            count = count + 1;
+            if (count % 2 == 0) {
+                continue;
+            }
+            x_count = x_count + 1;
+        }
+        if (x_count == 2) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for key in counter:
+            assert key[-1] == "1"
+
+
+class TestMCMBranchedCustomUnitary:
+    """Cover add_custom_unitary branched path."""
+
+    def test_custom_unitary_after_mcm_branching(self, simulator):
+        """Custom unitary pragma after MCM branching should route to all active paths."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        #pragma braket unitary([[0, 1], [1, 0]]) q[1]
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        # b=0 → q[1]=0, then X unitary → q[1]=1 → "01"
+        # b=1 → q[1]=1 (from if), then X unitary → q[1]=0 → "10"
+        assert "01" in counter
+        assert "10" in counter
