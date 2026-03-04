@@ -113,7 +113,7 @@ from .parser.openqasm_ast import (
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
-from .program_context import AbstractProgramContext, ProgramContext
+from .program_context import AbstractProgramContext, ProgramContext, _BreakSignal, _ContinueSignal
 
 
 class Interpreter:
@@ -596,25 +596,60 @@ class Interpreter:
     @visit.register
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
-        self.context.handle_branching_statement(node, self.visit)
+        if self.context.supports_midcircuit_measurement:
+            self.context.handle_branching_statement(node, self.visit)
+        else:
+            condition = self.visit(node.condition)
+            condition = cast_to(BooleanLiteral, condition)
+            if condition.value:
+                self.visit(node.if_block)
+            elif node.else_block:
+                self.visit(node.else_block)
 
     @visit.register
     def _(self, node: ForInLoop) -> None:
         self._uses_advanced_language_features = True
-        self.context.handle_for_loop(node, self.visit)
+        if self.context.supports_midcircuit_measurement:
+            self.context.handle_for_loop(node, self.visit)
+        else:
+            loop_var_name = node.identifier.name
+            index = self.visit(node.set_declaration)
+            if isinstance(index, RangeDefinition):
+                index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+            else:
+                index_values = index.values
+
+            for i in index_values:
+                with self.context.enter_scope():
+                    self.context.declare_variable(loop_var_name, node.type, i)
+                    try:
+                        self.visit(deepcopy(node.block))
+                    except _BreakSignal:
+                        break
+                    except _ContinueSignal:
+                        continue
 
     @visit.register
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
-        self.context.handle_while_loop(node, self.visit)
+        if self.context.supports_midcircuit_measurement:
+            self.context.handle_while_loop(node, self.visit)
+        else:
+            while cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
+                try:
+                    self.visit(deepcopy(node.block))
+                except _BreakSignal:
+                    break
+                except _ContinueSignal:
+                    continue
 
     @visit.register
     def _(self, node: BreakStatement) -> None:
-        self.context.handle_break_statement()
+        raise _BreakSignal()
 
     @visit.register
     def _(self, node: ContinueStatement) -> None:
-        self.context.handle_continue_statement()
+        raise _ContinueSignal()
 
     @visit.register
     def _(self, node: AliasStatement) -> None:

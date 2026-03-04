@@ -905,77 +905,43 @@ class AbstractProgramContext(ABC):
         """Add verbatim markers"""
 
     def handle_branching_statement(self, node: BranchingStatement, visit_block: Callable) -> None:
-        """Handle if/else branching. Default: evaluate condition eagerly.
+        """Handle if/else branching for mid-circuit measurement contexts.
 
-        Evaluates the condition using the visitor callback, then visits the
-        appropriate block (if_block or else_block) based on the boolean result.
+        Called by the Interpreter only when ``supports_midcircuit_measurement``
+        is True. Subclasses that support MCM must override this to provide
+        per-path condition evaluation.
 
         Args:
             node (BranchingStatement): The if/else AST node.
-            visit_block (Callable): The Interpreter's visit method, used to
-                evaluate expressions and visit statement blocks.
-
-        Raises:
-            NotImplementedError: If the condition depends on a measurement result.
+            visit_block (Callable): The Interpreter's visit method.
         """
-        condition = cast_to(BooleanLiteral, visit_block(node.condition))
-        for statement in node.if_block if condition.value else node.else_block:
-            visit_block(statement)
+        raise NotImplementedError
 
     def handle_for_loop(self, node: ForInLoop, visit_block: Callable) -> None:
-        """Handle for loops. Default: unroll the loop eagerly.
+        """Handle for loops for mid-circuit measurement contexts.
 
-        Evaluates the set declaration to get index values, then iterates over
-        them, declaring the loop variable in a new scope for each iteration
-        and visiting the loop body. Supports break and continue statements.
+        Called by the Interpreter only when ``supports_midcircuit_measurement``
+        is True. Subclasses that support MCM must override this to provide
+        per-path loop execution.
 
         Args:
             node (ForInLoop): The for-in loop AST node.
-            visit_block (Callable): The Interpreter's visit method, used to
-                evaluate expressions and visit statement blocks.
+            visit_block (Callable): The Interpreter's visit method.
         """
-        index = visit_block(node.set_declaration)
-        if isinstance(index, RangeDefinition):
-            index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-        else:
-            index_values = index.values
-        for i in index_values:
-            try:
-                with self.enter_scope():
-                    self.declare_variable(node.identifier.name, node.type, i)
-                    visit_block(deepcopy(node.block))
-            except _BreakSignal:
-                break
-            except _ContinueSignal:
-                continue
+        raise NotImplementedError
 
     def handle_while_loop(self, node: WhileLoop, visit_block: Callable) -> None:
-        """Handle while loops. Default: evaluate eagerly.
+        """Handle while loops for mid-circuit measurement contexts.
 
-        Evaluates the while condition using the visitor callback, and repeatedly
-        visits the loop body as long as the condition is true. Supports break
-        and continue statements.
+        Called by the Interpreter only when ``supports_midcircuit_measurement``
+        is True. Subclasses that support MCM must override this to provide
+        per-path loop execution.
 
         Args:
             node (WhileLoop): The while loop AST node.
-            visit_block (Callable): The Interpreter's visit method, used to
-                evaluate expressions and visit statement blocks.
+            visit_block (Callable): The Interpreter's visit method.
         """
-        while cast_to(BooleanLiteral, visit_block(deepcopy(node.while_condition))).value:
-            try:
-                visit_block(deepcopy(node.block))
-            except _BreakSignal:
-                break
-            except _ContinueSignal:
-                continue
-
-    def handle_break_statement(self) -> None:
-        """Handle a break statement by raising _BreakSignal."""
-        raise _BreakSignal()
-
-    def handle_continue_statement(self) -> None:
-        """Handle a continue statement by raising _ContinueSignal."""
-        raise _ContinueSignal()
+        raise NotImplementedError
 
 
 class _BreakSignal(Exception):
@@ -1290,13 +1256,10 @@ class ProgramContext(AbstractProgramContext):
     def handle_branching_statement(self, node: BranchingStatement, visit_block: Callable) -> None:
         """Handle if/else branching with per-path condition evaluation.
 
-        When not branched, delegates to the default eager evaluation in
-        AbstractProgramContext. When branched, evaluates the condition for
-        each active path independently and routes paths through the
-        appropriate block (if_block or else_block).
-
-        If there are pending mid-circuit measurements and shots > 0,
-        transitions to branched mode before evaluating the condition.
+        Attempts to transition to branched mode first. If still not branched,
+        performs eager evaluation using the shared variable table. When
+        branched, evaluates the condition for each active path independently
+        and routes paths through the appropriate block.
 
         Args:
             node (BranchingStatement): The if/else AST node.
@@ -1305,7 +1268,11 @@ class ProgramContext(AbstractProgramContext):
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            super().handle_branching_statement(node, visit_block)
+            condition = cast_to(BooleanLiteral, visit_block(node.condition))
+            if condition.value:
+                visit_block(node.if_block)
+            elif node.else_block:
+                visit_block(node.else_block)
             return
 
         # Evaluate condition per-path
@@ -1357,9 +1324,10 @@ class ProgramContext(AbstractProgramContext):
     def handle_for_loop(self, node: ForInLoop, visit_block: Callable) -> None:
         """Handle for loops with per-path execution.
 
-        When not branched, delegates to the default eager unrolling in
-        AbstractProgramContext. When branched, each active path iterates
-        through the loop independently with its own variable state.
+        Attempts to transition to branched mode first. If still not branched,
+        performs eager loop unrolling using the shared variable table. When
+        branched, each active path iterates independently with its own
+        variable state.
 
         Args:
             node (ForInLoop): The for-in loop AST node.
@@ -1368,7 +1336,21 @@ class ProgramContext(AbstractProgramContext):
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            super().handle_for_loop(node, visit_block)
+            loop_var_name = node.identifier.name
+            index = visit_block(node.set_declaration)
+            if isinstance(index, RangeDefinition):
+                index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+            else:
+                index_values = index.values
+            for i in index_values:
+                with self.enter_scope():
+                    self.declare_variable(loop_var_name, node.type, i)
+                    try:
+                        visit_block(deepcopy(node.block))
+                    except _BreakSignal:
+                        break
+                    except _ContinueSignal:
+                        continue
             return
 
         loop_var_name = node.identifier.name
@@ -1430,9 +1412,10 @@ class ProgramContext(AbstractProgramContext):
     def handle_while_loop(self, node: WhileLoop, visit_block: Callable) -> None:
         """Handle while loops with per-path condition evaluation.
 
-        When not branched, delegates to the default eager evaluation in
-        AbstractProgramContext. When branched, each active path evaluates
-        the while condition independently and loops independently.
+        Attempts to transition to branched mode first. If still not branched,
+        performs eager loop execution using the shared variable table. When
+        branched, each active path evaluates the while condition independently
+        and loops independently.
 
         Args:
             node (WhileLoop): The while loop AST node.
@@ -1441,7 +1424,13 @@ class ProgramContext(AbstractProgramContext):
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            super().handle_while_loop(node, visit_block)
+            while cast_to(BooleanLiteral, visit_block(deepcopy(node.while_condition))).value:
+                try:
+                    visit_block(deepcopy(node.block))
+                except _BreakSignal:
+                    break
+                except _ContinueSignal:
+                    continue
             return
 
         saved_active = list(self._active_path_indices)
@@ -1488,22 +1477,6 @@ class ProgramContext(AbstractProgramContext):
         # Restore all surviving paths
         self._active_path_indices = continue_paths + exited_paths
         self._exit_frame_for_active_paths()
-
-    def handle_break_statement(self) -> None:
-        """Handle a break statement.
-
-        Raises _BreakSignal to unwind the call stack back to the
-        enclosing loop handler.
-        """
-        raise _BreakSignal()
-
-    def handle_continue_statement(self) -> None:
-        """Handle a continue statement.
-
-        Raises _ContinueSignal to unwind the call stack back to the
-        enclosing loop handler.
-        """
-        raise _ContinueSignal()
 
     def _enter_frame_for_active_paths(self) -> None:
         """Enter a new variable scope frame for all active paths."""
