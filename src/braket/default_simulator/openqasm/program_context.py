@@ -158,8 +158,7 @@ class QubitTable(Table):
             # used for gate calls on registers, index will be IntegerLiteral
             secondary_index = identifier.indices[1][0].value
             return (target[secondary_index],)
-        else:
-            raise IndexError("Cannot index multiple dimensions for qubits.")
+        raise IndexError("Cannot index multiple dimensions for qubits.")
 
     def get_qubit_size(self, identifier: Identifier | IndexedIdentifier) -> int:
         return len(self.get_by_identifier(identifier))
@@ -963,7 +962,7 @@ class ProgramContext(AbstractProgramContext):
         self._circuit = circuit or Circuit()
 
         # Path tracking for branched simulation (MCM support)
-        self._paths: list[SimulationPath] = [SimulationPath([], 0, {}, {})]
+        self._paths: list[SimulationPath] = [SimulationPath()]
         self._active_path_indices: list[int] = [0]
         self._is_branched: bool = False
         self._shots: int = 0
@@ -1026,10 +1025,9 @@ class ProgramContext(AbstractProgramContext):
         # Store value per-path as a FramedVariable
         for path_idx in self._active_path_indices:
             path = self._paths[path_idx]
-            framed_var = FramedVariable(
-                name, symbol_type, deepcopy(value), const, path.frame_number
+            path.set_variable(
+                name, FramedVariable(name, symbol_type, value, const, path.frame_number)
             )
-            path.set_variable(name, framed_var)
 
     def update_value(self, variable: Identifier | IndexedIdentifier, value: Any) -> None:
         """Update variable value, operating per-path when branched.
@@ -1051,12 +1049,11 @@ class ProgramContext(AbstractProgramContext):
             framed_var = path.get_variable(name)
             if framed_var is None:
                 raise KeyError(f"Variable '{name}' not found in path {path_idx}")
-            new_value = deepcopy(value)
-            if indices:
-                new_value = update_value(
-                    framed_var.value, new_value, flatten_indices(indices), var_type
-                )
-            framed_var.value = new_value
+            framed_var.value = (
+                update_value(framed_var.value, value, flatten_indices(indices), var_type)
+                if indices
+                else value
+            )
 
     def get_value(self, name: str) -> LiteralType:
         """Get variable value, reading from the first active path when branched."""
@@ -1070,9 +1067,7 @@ class ProgramContext(AbstractProgramContext):
             # before branching started (e.g., qubit aliases, inputs)
             return super().get_value(name)
         value = framed_var.value
-        if not isinstance(value, QASMNode):
-            value = wrap_value_into_literal(value)
-        return value
+        return value if isinstance(value, QASMNode) else wrap_value_into_literal(value)
 
     def get_value_by_identifier(self, identifier: Identifier | IndexedIdentifier) -> LiteralType:
         """Get variable value by identifier, reading from the first active path when branched."""
@@ -1095,7 +1090,7 @@ class ProgramContext(AbstractProgramContext):
         if isinstance(identifier, IndexedIdentifier) and identifier.indices:
             var_type = self.get_type(name)
             type_width = get_type_width(var_type)
-            value = get_elements(value, flatten_indices(identifier.indices), type_width)
+            return get_elements(value, flatten_indices(identifier.indices), type_width)
         return value
 
     def is_builtin_gate(self, name: str) -> bool:
@@ -1120,7 +1115,7 @@ class ProgramContext(AbstractProgramContext):
         phase_instruction = GPhase(target, phase_value)
         if self._is_branched:
             for path in self.active_paths:
-                path.add_instruction(deepcopy(phase_instruction))
+                path.add_instruction(phase_instruction)
         else:
             self._circuit.add_instruction(phase_instruction)
 
@@ -1132,7 +1127,7 @@ class ProgramContext(AbstractProgramContext):
         )
         if self._is_branched:
             for path in self.active_paths:
-                path.add_instruction(deepcopy(instruction))
+                path.add_instruction(instruction)
         else:
             self._circuit.add_instruction(instruction)
 
@@ -1144,7 +1139,7 @@ class ProgramContext(AbstractProgramContext):
         instruction = Unitary(target, unitary)
         if self._is_branched:
             for path in self.active_paths:
-                path.add_instruction(deepcopy(instruction))
+                path.add_instruction(instruction)
         else:
             self._circuit.add_instruction(instruction)
 
@@ -1273,7 +1268,7 @@ class ProgramContext(AbstractProgramContext):
 
         for path_idx in saved_active:
             self._active_path_indices = [path_idx]
-            condition = cast_to(BooleanLiteral, visit_block(deepcopy(node.condition)))
+            condition = cast_to(BooleanLiteral, visit_block(node.condition))
             if condition.value:
                 true_paths.append(path_idx)
             else:
@@ -1289,7 +1284,7 @@ class ProgramContext(AbstractProgramContext):
                 self._active_path_indices = [path_idx]
                 self._enter_frame_for_active_paths()
                 for statement in node.if_block:
-                    visit_block(deepcopy(statement))
+                    visit_block(statement)
                 surviving_paths.extend(self._active_path_indices)
                 self._exit_frame_for_active_paths()
 
@@ -1299,7 +1294,7 @@ class ProgramContext(AbstractProgramContext):
                 self._active_path_indices = [path_idx]
                 self._enter_frame_for_active_paths()
                 for statement in node.else_block:
-                    visit_block(deepcopy(statement))
+                    visit_block(statement)
                 surviving_paths.extend(self._active_path_indices)
                 self._exit_frame_for_active_paths()
         elif false_paths:
@@ -1325,10 +1320,11 @@ class ProgramContext(AbstractProgramContext):
         if not self._is_branched:
             loop_var_name = node.identifier.name
             index = visit_block(node.set_declaration)
-            if isinstance(index, RangeDefinition):
-                index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-            else:
-                index_values = index.values
+            index_values = (
+                [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+                if isinstance(index, RangeDefinition)
+                else index.values
+            )
             for i in index_values:
                 with self.enter_scope():
                     self.declare_variable(loop_var_name, node.type, i)
@@ -1347,10 +1343,11 @@ class ProgramContext(AbstractProgramContext):
         # Use the first active path's context for evaluation (range is the same for all paths)
         self._active_path_indices = [saved_active[0]]
         index = visit_block(node.set_declaration)
-        if isinstance(index, RangeDefinition):
-            index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-        else:
-            index_values = index.values
+        index_values = (
+            [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+            if isinstance(index, RangeDefinition)
+            else index.values
+        )
 
         # Enter a new frame for all active paths
         self._active_path_indices = saved_active
@@ -1369,9 +1366,7 @@ class ProgramContext(AbstractProgramContext):
             # Set loop variable for each active path
             for path_idx in looping_paths:
                 path = self._paths[path_idx]
-                framed_var = FramedVariable(
-                    loop_var_name, node.type, deepcopy(i), False, path.frame_number
-                )
+                framed_var = FramedVariable(loop_var_name, node.type, i, False, path.frame_number)
                 path.set_variable(loop_var_name, framed_var)
 
             # Execute loop body
@@ -1407,7 +1402,7 @@ class ProgramContext(AbstractProgramContext):
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            while cast_to(BooleanLiteral, visit_block(deepcopy(node.while_condition))).value:
+            while cast_to(BooleanLiteral, visit_block(node.while_condition)).value:
                 try:
                     visit_block(deepcopy(node.block))
                 except _BreakSignal:
@@ -1431,7 +1426,7 @@ class ProgramContext(AbstractProgramContext):
             still_true = []
             for path_idx in continue_paths:
                 self._active_path_indices = [path_idx]
-                condition = cast_to(BooleanLiteral, visit_block(deepcopy(node.while_condition)))
+                condition = cast_to(BooleanLiteral, visit_block(node.while_condition))
                 if condition.value:
                     still_true.append(path_idx)
                 else:
@@ -1532,7 +1527,7 @@ class ProgramContext(AbstractProgramContext):
         fv = FramedVariable(
             name=name,
             var_type=var_type,
-            value=deepcopy(current_val),
+            value=current_val,
             is_const=bool(is_const),
             frame_number=path.frame_number,
         )
@@ -1608,7 +1603,7 @@ class ProgramContext(AbstractProgramContext):
                 fv = FramedVariable(
                     name=name,
                     var_type=var_type,
-                    value=deepcopy(value),
+                    value=value,
                     is_const=bool(is_const),
                     frame_number=initial_path.frame_number,
                 )

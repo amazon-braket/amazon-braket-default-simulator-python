@@ -279,8 +279,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumReset) -> None:
-        qubits = self.context.get_qubits(self.visit(node.qubits))
-        self.context.add_reset(list(qubits))
+        self.context.add_reset(list(self.context.get_qubits(self.visit(node.qubits))))
 
     @visit.register
     def _(self, node: QuantumBarrier) -> None:
@@ -600,8 +599,7 @@ class Interpreter:
         if self.context.supports_midcircuit_measurement:
             self.context.handle_branching_statement(node, self.visit)
         else:
-            condition = self.visit(node.condition)
-            condition = cast_to(BooleanLiteral, condition)
+            condition = cast_to(BooleanLiteral, self.visit(node.condition))
             if condition.value:
                 self.visit(node.if_block)
             elif node.else_block:
@@ -613,13 +611,13 @@ class Interpreter:
         if self.context.supports_midcircuit_measurement:
             self.context.handle_for_loop(node, self.visit)
         else:
-            loop_var_name = node.identifier.name
             index = self.visit(node.set_declaration)
             if isinstance(index, RangeDefinition):
                 index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
             else:
                 index_values = index.values
 
+            loop_var_name = node.identifier.name
             for i in index_values:
                 with self.context.enter_scope():
                     self.context.declare_variable(loop_var_name, node.type, i)
@@ -636,7 +634,7 @@ class Interpreter:
         if self.context.supports_midcircuit_measurement:
             self.context.handle_while_loop(node, self.visit)
         else:
-            while cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
+            while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
                 try:
                     self.visit(deepcopy(node.block))
                 except _BreakSignal:
@@ -658,15 +656,13 @@ class Interpreter:
         alias_name = node.target.name
         if isinstance(node.value, Identifier):
             # Simple alias: let q1 = q
-            source_qubits = self.context.get_qubits(node.value)
-            self.context.qubit_mapping[alias_name] = source_qubits
+            self.context.qubit_mapping[alias_name] = self.context.get_qubits(node.value)
             self.context.declare_qubit_alias(alias_name, node.value)
         elif isinstance(node.value, Concatenation):
             # Concatenation alias: let combined = q1 ++ q2
-            lhs_qubits = self.context.get_qubits(node.value.lhs)
-            rhs_qubits = self.context.get_qubits(node.value.rhs)
-            combined = tuple(lhs_qubits) + tuple(rhs_qubits)
-            self.context.qubit_mapping[alias_name] = combined
+            lhs_qubits = tuple(self.context.get_qubits(node.value.lhs))
+            rhs_qubits = tuple(self.context.get_qubits(node.value.rhs))
+            self.context.qubit_mapping[alias_name] = lhs_qubits + rhs_qubits
             self.context.declare_qubit_alias(alias_name, Identifier(alias_name))
         else:
             raise NotImplementedError(f"Alias with {type(node.value).__name__} is not supported")
