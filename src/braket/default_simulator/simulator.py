@@ -871,20 +871,18 @@ class BaseLocalSimulator(OpenQASMSimulator):
         # Use the context's num_qubits (total declared qubits) to ensure all
         # qubits are accounted for, even those without explicit gate operations.
         sim_qubit_count = qubit_count
-        if hasattr(context, "num_qubits"):
-            sim_qubit_count = max(sim_qubit_count, context.num_qubits)
+        sim_qubit_count = max(sim_qubit_count, context.num_qubits)
         if circuit.qubit_set:
             sim_qubit_count = max(sim_qubit_count, max(circuit.qubit_set) + 1)
 
         # Aggregate samples across all active paths
         all_samples = []
         for path in context.active_paths:
-            if path.shots > 0:
-                sim = self.initialize_simulation(
-                    qubit_count=sim_qubit_count, shots=path.shots, batch_size=batch_size
-                )
-                sim.evolve(path.instructions)
-                all_samples.extend(sim.retrieve_samples())
+            sim = self.initialize_simulation(
+                qubit_count=sim_qubit_count, shots=path.shots, batch_size=batch_size
+            )
+            sim.evolve(path.instructions)
+            all_samples.extend(sim.retrieve_samples())
 
         # Build measurements in the same format as _formatted_measurements
         measurements = [
