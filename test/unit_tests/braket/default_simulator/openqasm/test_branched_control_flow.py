@@ -683,10 +683,6 @@ class TestProgramContextResolveIndex:
         path.set_variable("i", FramedVariable("i", None, IntegerLiteral(2), False, 0))
         assert ProgramContext._resolve_index(path, [[Identifier("i")]]) == 2
 
-    def test_identifier_index_not_found_returns_zero(self):
-        path = SimulationPath([], 0, {}, {})
-        assert ProgramContext._resolve_index(path, [[Identifier("missing")]]) == 0
-
     def test_multi_index_returns_zero(self):
         path = SimulationPath([], 0, {}, {})
         assert ProgramContext._resolve_index(path, [[IntegerLiteral(1)], [IntegerLiteral(2)]]) == 0
@@ -702,11 +698,6 @@ class TestProgramContextHelpers:
     def test_get_path_measurement_result_absent(self):
         path = SimulationPath([], 0, {}, {})
         assert ProgramContext._get_path_measurement_result(path, 0) == 0
-
-    def test_set_value_at_index_list(self):
-        val = [IntegerLiteral(0), IntegerLiteral(0)]
-        ProgramContext._set_value_at_index(val, 1, 1)
-        assert val[1].value == 1
 
     def test_set_value_at_index_array_literal(self):
         val = ArrayLiteral([IntegerLiteral(0), IntegerLiteral(0)])

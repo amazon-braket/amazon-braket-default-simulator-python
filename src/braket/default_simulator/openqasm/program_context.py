@@ -1268,8 +1268,7 @@ class ProgramContext(AbstractProgramContext):
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            condition = cast_to(BooleanLiteral, self._visitor(node.condition))
-            if condition.value:
+            if cast_to(BooleanLiteral, self._visitor(node.condition)).value:
                 self._visitor(node.if_block)
             elif node.else_block:
                 self._visitor(node.else_block)
@@ -1282,8 +1281,7 @@ class ProgramContext(AbstractProgramContext):
 
         for path_idx in saved_active:
             self._active_path_indices = [path_idx]
-            condition = cast_to(BooleanLiteral, self._visitor(node.condition))
-            if condition.value:
+            if cast_to(BooleanLiteral, self._visitor(node.condition)).value:
                 true_paths.append(path_idx)
             else:
                 false_paths.append(path_idx)
@@ -1379,8 +1377,10 @@ class ProgramContext(AbstractProgramContext):
             # Set loop variable for each active path
             for path_idx in looping_paths:
                 path = self._paths[path_idx]
-                framed_var = FramedVariable(loop_var_name, node.type, i, False, path.frame_number)
-                path.set_variable(loop_var_name, framed_var)
+                path.set_variable(
+                    loop_var_name,
+                    FramedVariable(loop_var_name, node.type, i, False, path.frame_number),
+                )
 
             # Execute loop body
             try:
@@ -1433,13 +1433,12 @@ class ProgramContext(AbstractProgramContext):
         # Paths that exited the loop (condition became false or break)
         exited_paths = []
 
-        while continue_paths:
+        while True:
             # Evaluate condition per-path
             still_true = []
             for path_idx in continue_paths:
                 self._active_path_indices = [path_idx]
-                condition = cast_to(BooleanLiteral, self._visitor(node.while_condition))
-                if condition.value:
+                if cast_to(BooleanLiteral, self._visitor(node.while_condition)).value:
                     still_true.append(path_idx)
                 else:
                     exited_paths.append(path_idx)
@@ -1455,6 +1454,7 @@ class ProgramContext(AbstractProgramContext):
                     self._visitor(statement)
             except _BreakSignal:
                 exited_paths.extend(self._active_path_indices)
+                continue_paths = []
                 break
             except _ContinueSignal:
                 continue_paths = list(self._active_path_indices)
@@ -1488,18 +1488,11 @@ class ProgramContext(AbstractProgramContext):
         if not indices or len(indices) != 1:
             return 0
 
-        idx_list = indices[0]
-        if isinstance(idx_list, list) and len(idx_list) == 1:
-            idx_val = idx_list[0]
-            if isinstance(idx_val, IntegerLiteral):
-                return idx_val.value
-            if isinstance(idx_val, Identifier):
-                fv = path.get_variable(idx_val.name)
-                if fv is not None:
-                    val = fv.value
-                    return int(val.value if hasattr(val, "value") else val)
-
-        return 0
+        idx_val = indices[0][0]
+        if isinstance(idx_val, IntegerLiteral):
+            return idx_val.value
+        # Identifier — a loop variable used as index (e.g. b[i] = measure q[0])
+        return path.get_variable(idx_val.name).value.value
 
     @staticmethod
     def _get_path_measurement_result(path: SimulationPath, qubit_idx: int) -> int:
@@ -1515,13 +1508,10 @@ class ProgramContext(AbstractProgramContext):
     def _set_value_at_index(value, index: int, result) -> None:
         """Set a measurement result at a specific index within a classical value.
 
-        Mutates ``value`` in place. Handles plain lists and objects with a
-        ``.values`` list attribute (e.g. ArrayLiteral).
+        Mutates ``value`` in place. The value is expected to be an
+        ArrayLiteral (or similar object with a ``.values`` list).
         """
-        if isinstance(value, list):
-            value[index] = IntegerLiteral(value=result)
-        elif hasattr(value, "values") and isinstance(value.values, list):
-            value.values[index] = IntegerLiteral(value=result)
+        value.values[index] = IntegerLiteral(value=result)
 
     def _ensure_path_variable(self, path: SimulationPath, name: str) -> FramedVariable:
         """Get or create a FramedVariable for ``name`` on the given path.
@@ -1564,7 +1554,7 @@ class ProgramContext(AbstractProgramContext):
 
             if isinstance(classical_destination, IndexedIdentifier):
                 self._update_indexed_target(path, qubit_target, classical_destination)
-            elif isinstance(classical_destination, Identifier):
+            else:
                 self._update_identifier_target(path, qubit_target, classical_destination)
 
     def _update_indexed_target(
