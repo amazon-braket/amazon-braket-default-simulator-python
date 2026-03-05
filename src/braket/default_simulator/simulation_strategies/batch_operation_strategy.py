@@ -14,7 +14,6 @@
 import numpy as np
 import opt_einsum
 
-from braket.default_simulator.gate_operations import Measure
 from braket.default_simulator.operation import GateOperation
 
 
@@ -51,39 +50,12 @@ def apply_operations(
         np.ndarray: The state vector after applying the given operations, as a type
         (num_qubits, 0) tensor
     """
-    # Handle Measure operations separately since they need special normalization
-    # and cannot be batched with other operations
-    processed_operations = []
-    i = 0
-    while i < len(operations):
-        operation = operations[i]
-        if isinstance(operation, Measure):
-            # Apply any accumulated operations first
-            if processed_operations:
-                partitions = [
-                    processed_operations[j : j + batch_size]
-                    for j in range(0, len(processed_operations), batch_size)
-                ]
-                for partition in partitions:
-                    state = _contract_operations(state, qubit_count, partition)
-                processed_operations = []
+    # TODO: Write algorithm to determine partition size based on operations and qubit count
+    partitions = [operations[i : i + batch_size] for i in range(0, len(operations), batch_size)]
 
-            # Apply the Measure operation individually
-            state_1d = np.reshape(state, 2**qubit_count)
-            state_1d = operation.apply(state_1d)  # type: ignore
-            state = np.reshape(state_1d, [2] * qubit_count)
-        else:
-            processed_operations.append(operation)
-        i += 1
-
-    # Apply any remaining operations
-    if processed_operations:
-        partitions = [
-            processed_operations[i : i + batch_size]
-            for i in range(0, len(processed_operations), batch_size)
-        ]
-        for partition in partitions:
-            state = _contract_operations(state, qubit_count, partition)
+    # TODO: support MCM
+    for partition in partitions:
+        state = _contract_operations(state, qubit_count, partition)
 
     return state
 
