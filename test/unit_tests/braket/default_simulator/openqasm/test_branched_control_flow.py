@@ -311,7 +311,8 @@ class TestBranchedBranchingStatement:
             else_block=["else_stmt"],
         )
 
-        context.handle_branching_statement(node, mock_visit)
+        context.set_visitor(mock_visit)
+        context.handle_branching_statement(node)
 
         assert 0 in if_visited_paths
         assert 1 in else_visited_paths
@@ -346,7 +347,8 @@ class TestBranchedBranchingStatement:
             else_block=[],
         )
 
-        context.handle_branching_statement(node, mock_visit)
+        context.set_visitor(mock_visit)
+        context.handle_branching_statement(node)
 
         assert 0 in if_visited
         assert 1 not in if_visited
@@ -390,7 +392,8 @@ class TestBranchedForLoop:
             block=["body_stmt"],
         )
 
-        context.handle_for_loop(node, mock_visit)
+        context.set_visitor(mock_visit)
+        context.handle_for_loop(node)
 
         assert len(loop_var_values) >= 2
         assert set(context._active_path_indices) == {0, 1}
@@ -427,7 +430,8 @@ class TestBranchedForLoop:
             block=["body_stmt", BreakStatement()],
         )
 
-        context.handle_for_loop(node, mock_visit)
+        context.set_visitor(mock_visit)
+        context.handle_for_loop(node)
 
         assert iteration_count[0] == 1
         assert 0 in context._active_path_indices
@@ -467,7 +471,8 @@ class TestBranchedForLoop:
             block=["pre_continue", ContinueStatement(), "post_continue"],
         )
 
-        context.handle_for_loop(node, mock_visit)
+        context.set_visitor(mock_visit)
+        context.handle_for_loop(node)
 
         assert pre_continue_count[0] == 3
         assert post_continue_count[0] == 0
@@ -516,7 +521,8 @@ class TestBranchedWhileLoop:
             block=["body_stmt"],
         )
 
-        context.handle_while_loop(node, mock_visit)
+        context.set_visitor(mock_visit)
+        context.handle_while_loop(node)
 
         assert body_executions[0] == 2
         assert body_executions[1] == 0
@@ -552,7 +558,8 @@ class TestBranchedWhileLoop:
             block=["body_stmt", BreakStatement()],
         )
 
-        context.handle_while_loop(node, mock_visit)
+        context.set_visitor(mock_visit)
+        context.handle_while_loop(node)
 
         assert iteration_count[0] == 1
         assert 0 in context._active_path_indices
@@ -614,7 +621,7 @@ class TestAbstractContextControlFlow:
         ctx = SimpleProgramContext()
         node = BranchingStatement(condition=BooleanLiteral(True), if_block=[], else_block=[])
         with pytest.raises(NotImplementedError):
-            ctx.handle_branching_statement(node, lambda x: x)
+            ctx.handle_branching_statement(node)
 
     def test_handle_for_loop_raises(self):
         """handle_for_loop raises NotImplementedError on a non-MCM context."""
@@ -628,14 +635,20 @@ class TestAbstractContextControlFlow:
             block=[],
         )
         with pytest.raises(NotImplementedError):
-            ctx.handle_for_loop(node, lambda x: x)
+            ctx.handle_for_loop(node)
 
     def test_handle_while_loop_raises(self):
         """handle_while_loop raises NotImplementedError on a non-MCM context."""
         ctx = SimpleProgramContext()
         node = WhileLoop(while_condition=BooleanLiteral(True), block=[])
         with pytest.raises(NotImplementedError):
-            ctx.handle_while_loop(node, lambda x: x)
+            ctx.handle_while_loop(node)
+
+    def test_set_visitor_raises(self):
+        """set_visitor raises NotImplementedError on a non-MCM context."""
+        ctx = SimpleProgramContext()
+        with pytest.raises(NotImplementedError):
+            ctx.set_visitor(lambda x: x)
 
     def test_is_branched_returns_false(self):
         ctx = SimpleProgramContext()
@@ -905,7 +918,8 @@ class TestProgramContextBranchedEdgeCases:
             if_block=["if_stmt"],
             else_block=["else_stmt"],
         )
-        ctx.handle_branching_statement(node, mock_visit)
+        ctx.set_visitor(mock_visit)
+        ctx.handle_branching_statement(node)
         assert "else_stmt" in visited
         assert "if_stmt" not in visited
 
@@ -925,7 +939,8 @@ class TestProgramContextBranchedEdgeCases:
             if_block=["if_stmt"],
             else_block=[],
         )
-        ctx.handle_branching_statement(node, mock_visit)
+        ctx.set_visitor(mock_visit)
+        ctx.handle_branching_statement(node)
         assert visited == []
 
 

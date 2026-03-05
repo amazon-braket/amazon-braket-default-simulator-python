@@ -903,7 +903,20 @@ class AbstractProgramContext(ABC):
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
 
-    def handle_branching_statement(self, node: BranchingStatement, visit_block: Callable) -> None:
+    def set_visitor(self, visitor: Callable) -> None:
+        """Register the AST visitor callable used by control-flow handlers.
+
+        Called by the Interpreter during initialization so that
+        ``handle_branching_statement``, ``handle_for_loop``, and
+        ``handle_while_loop`` can visit child AST nodes without
+        receiving the visitor as a parameter on every call.
+
+        Args:
+            visitor (Callable): The Interpreter's ``visit`` method.
+        """
+        raise NotImplementedError
+
+    def handle_branching_statement(self, node: BranchingStatement) -> None:
         """Handle if/else branching for mid-circuit measurement contexts.
 
         Called by the Interpreter only when ``supports_midcircuit_measurement``
@@ -912,11 +925,10 @@ class AbstractProgramContext(ABC):
 
         Args:
             node (BranchingStatement): The if/else AST node.
-            visit_block (Callable): The Interpreter's visit method.
         """
         raise NotImplementedError
 
-    def handle_for_loop(self, node: ForInLoop, visit_block: Callable) -> None:
+    def handle_for_loop(self, node: ForInLoop) -> None:
         """Handle for loops for mid-circuit measurement contexts.
 
         Called by the Interpreter only when ``supports_midcircuit_measurement``
@@ -925,11 +937,10 @@ class AbstractProgramContext(ABC):
 
         Args:
             node (ForInLoop): The for-in loop AST node.
-            visit_block (Callable): The Interpreter's visit method.
         """
         raise NotImplementedError
 
-    def handle_while_loop(self, node: WhileLoop, visit_block: Callable) -> None:
+    def handle_while_loop(self, node: WhileLoop) -> None:
         """Handle while loops for mid-circuit measurement contexts.
 
         Called by the Interpreter only when ``supports_midcircuit_measurement``
@@ -938,7 +949,6 @@ class AbstractProgramContext(ABC):
 
         Args:
             node (WhileLoop): The while loop AST node.
-            visit_block (Callable): The Interpreter's visit method.
         """
         raise NotImplementedError
 
@@ -960,6 +970,7 @@ class ProgramContext(AbstractProgramContext):
         """
         super().__init__()
         self._circuit = circuit or Circuit()
+        self._visitor: Callable | None = None
 
         # Path tracking for branched simulation (MCM support)
         self._paths: list[SimulationPath] = [SimulationPath()]
@@ -1239,7 +1250,11 @@ class ProgramContext(AbstractProgramContext):
                 self._update_classical_from_measurement(mcm_target, mcm_dest)
             self._pending_mcm_targets.clear()
 
-    def handle_branching_statement(self, node: BranchingStatement, visit_block: Callable) -> None:
+    def set_visitor(self, visitor: Callable) -> None:
+        """Register the AST visitor callable used by control-flow handlers."""
+        self._visitor = visitor
+
+    def handle_branching_statement(self, node: BranchingStatement) -> None:
         """Handle if/else branching with per-path condition evaluation.
 
         Attempts to transition to branched mode first. If still not branched,
@@ -1249,16 +1264,15 @@ class ProgramContext(AbstractProgramContext):
 
         Args:
             node (BranchingStatement): The if/else AST node.
-            visit_block (Callable): The Interpreter's visit method.
         """
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            condition = cast_to(BooleanLiteral, visit_block(node.condition))
+            condition = cast_to(BooleanLiteral, self._visitor(node.condition))
             if condition.value:
-                visit_block(node.if_block)
+                self._visitor(node.if_block)
             elif node.else_block:
-                visit_block(node.else_block)
+                self._visitor(node.else_block)
             return
 
         # Evaluate condition per-path
@@ -1268,7 +1282,7 @@ class ProgramContext(AbstractProgramContext):
 
         for path_idx in saved_active:
             self._active_path_indices = [path_idx]
-            condition = cast_to(BooleanLiteral, visit_block(node.condition))
+            condition = cast_to(BooleanLiteral, self._visitor(node.condition))
             if condition.value:
                 true_paths.append(path_idx)
             else:
@@ -1284,7 +1298,7 @@ class ProgramContext(AbstractProgramContext):
                 self._active_path_indices = [path_idx]
                 self._enter_frame_for_active_paths()
                 for statement in node.if_block:
-                    visit_block(statement)
+                    self._visitor(statement)
                 surviving_paths.extend(self._active_path_indices)
                 self._exit_frame_for_active_paths()
 
@@ -1294,7 +1308,7 @@ class ProgramContext(AbstractProgramContext):
                 self._active_path_indices = [path_idx]
                 self._enter_frame_for_active_paths()
                 for statement in node.else_block:
-                    visit_block(statement)
+                    self._visitor(statement)
                 surviving_paths.extend(self._active_path_indices)
                 self._exit_frame_for_active_paths()
         elif false_paths:
@@ -1303,7 +1317,7 @@ class ProgramContext(AbstractProgramContext):
 
         self._active_path_indices = surviving_paths
 
-    def handle_for_loop(self, node: ForInLoop, visit_block: Callable) -> None:
+    def handle_for_loop(self, node: ForInLoop) -> None:
         """Handle for loops with per-path execution.
 
         Attempts to transition to branched mode first. If still not branched,
@@ -1313,13 +1327,12 @@ class ProgramContext(AbstractProgramContext):
 
         Args:
             node (ForInLoop): The for-in loop AST node.
-            visit_block (Callable): The Interpreter's visit method.
         """
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
             loop_var_name = node.identifier.name
-            index = visit_block(node.set_declaration)
+            index = self._visitor(node.set_declaration)
             index_values = (
                 [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
                 if isinstance(index, RangeDefinition)
@@ -1329,7 +1342,7 @@ class ProgramContext(AbstractProgramContext):
                 with self.enter_scope():
                     self.declare_variable(loop_var_name, node.type, i)
                     try:
-                        visit_block(deepcopy(node.block))
+                        self._visitor(deepcopy(node.block))
                     except _BreakSignal:
                         break
                     except _ContinueSignal:
@@ -1342,7 +1355,7 @@ class ProgramContext(AbstractProgramContext):
         # Evaluate the set declaration to get index values
         # Use the first active path's context for evaluation (range is the same for all paths)
         self._active_path_indices = [saved_active[0]]
-        index = visit_block(node.set_declaration)
+        index = self._visitor(node.set_declaration)
         index_values = (
             [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
             if isinstance(index, RangeDefinition)
@@ -1372,7 +1385,7 @@ class ProgramContext(AbstractProgramContext):
             # Execute loop body
             try:
                 for statement in deepcopy(node.block):
-                    visit_block(statement)
+                    self._visitor(statement)
             except _BreakSignal:
                 broken_paths.extend(self._active_path_indices)
                 looping_paths = []
@@ -1387,7 +1400,7 @@ class ProgramContext(AbstractProgramContext):
         self._active_path_indices = looping_paths + broken_paths
         self._exit_frame_for_active_paths()
 
-    def handle_while_loop(self, node: WhileLoop, visit_block: Callable) -> None:
+    def handle_while_loop(self, node: WhileLoop) -> None:
         """Handle while loops with per-path condition evaluation.
 
         Attempts to transition to branched mode first. If still not branched,
@@ -1397,14 +1410,13 @@ class ProgramContext(AbstractProgramContext):
 
         Args:
             node (WhileLoop): The while loop AST node.
-            visit_block (Callable): The Interpreter's visit method.
         """
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            while cast_to(BooleanLiteral, visit_block(node.while_condition)).value:
+            while cast_to(BooleanLiteral, self._visitor(node.while_condition)).value:
                 try:
-                    visit_block(deepcopy(node.block))
+                    self._visitor(deepcopy(node.block))
                 except _BreakSignal:
                     break
                 except _ContinueSignal:
@@ -1426,7 +1438,7 @@ class ProgramContext(AbstractProgramContext):
             still_true = []
             for path_idx in continue_paths:
                 self._active_path_indices = [path_idx]
-                condition = cast_to(BooleanLiteral, visit_block(node.while_condition))
+                condition = cast_to(BooleanLiteral, self._visitor(node.while_condition))
                 if condition.value:
                     still_true.append(path_idx)
                 else:
@@ -1440,7 +1452,7 @@ class ProgramContext(AbstractProgramContext):
             self._active_path_indices = still_true
             try:
                 for statement in deepcopy(node.block):
-                    visit_block(statement)
+                    self._visitor(statement)
             except _BreakSignal:
                 exited_paths.extend(self._active_path_indices)
                 break

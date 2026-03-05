@@ -136,6 +136,8 @@ class Interpreter:
     ):
         # context keeps track of all state
         self.context = context or ProgramContext()
+        if self.context.supports_midcircuit_measurement:
+            self.context.set_visitor(self.visit)
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
         self._warn_advanced_features = warn_advanced_features
@@ -597,7 +599,7 @@ class Interpreter:
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement:
-            self.context.handle_branching_statement(node, self.visit)
+            self.context.handle_branching_statement(node)
         else:
             condition = cast_to(BooleanLiteral, self.visit(node.condition))
             if condition.value:
@@ -609,7 +611,7 @@ class Interpreter:
     def _(self, node: ForInLoop) -> None:
         self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement:
-            self.context.handle_for_loop(node, self.visit)
+            self.context.handle_for_loop(node)
         else:
             index = self.visit(node.set_declaration)
             if isinstance(index, RangeDefinition):
@@ -632,7 +634,7 @@ class Interpreter:
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement:
-            self.context.handle_while_loop(node, self.visit)
+            self.context.handle_while_loop(node)
         else:
             while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
                 try:
