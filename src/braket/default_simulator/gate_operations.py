@@ -1311,10 +1311,6 @@ class Measure(GateOperation):
             return np.eye(2)
 
     def apply(self, state: np.ndarray) -> np.ndarray:
-        """
-        Apply measurement projection to the state vector.
-        This collapses the state and normalizes it.
-        """
         if self.result == -1:
             return state
 
@@ -1353,13 +1349,9 @@ class Reset(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        raise NotImplementedError("Reset does not havea matrix implementation")
+        raise NotImplementedError("Reset does not have a matrix implementation")
 
     def apply(self, state: np.ndarray) -> np.ndarray:
-        """
-        Apply measurement projection to the state vector.
-        This collapses the state and normalizes it.
-        """
 
         # For single qubit measurement, we need to project the appropriate amplitudes
         if len(self._targets) == 1:
@@ -1369,13 +1361,10 @@ class Reset(GateOperation):
             # Create mask for the target qubit
             mask = 1 << (n_qubits - qubit_idx - 1)  # Big-endian indexing
 
-            prob_one = 0.0
             for i in range(len(state)):
                 # Check if the qubit is in state 1
                 qubit_value = (i & mask) >> (n_qubits - qubit_idx - 1)
                 if qubit_value == 1:
-                    prob_one += abs(state[i])
-
                     zero_index = i & ~mask
 
                     # Transfer the amplitude (with proper scaling)
