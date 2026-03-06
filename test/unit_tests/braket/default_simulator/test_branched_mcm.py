@@ -25,6 +25,20 @@ that verify observable measurement outcomes via StateVectorSimulator.run_openqas
 import pytest
 from collections import Counter
 
+from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase
+from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    BooleanLiteral,
+    BranchingStatement,
+    ForInLoop,
+    Identifier,
+    IntegerLiteral,
+    IntType,
+    RangeDefinition,
+    WhileLoop,
+)
+from braket.default_simulator.openqasm.program_context import AbstractProgramContext
 from braket.default_simulator.state_vector_simulator import StateVectorSimulator
 from braket.ir.openqasm import Program as OpenQASMProgram
 
@@ -3680,3 +3694,423 @@ class TestMCMBranchedCustomUnitary:
         # b=1 → q[1]=1 (from if), then X unitary → q[1]=0 → "10"
         assert "01" in counter
         assert "10" in counter
+
+
+# ---------------------------------------------------------------------------
+# Non-MCM interpreter tests using SimpleProgramContext
+# ---------------------------------------------------------------------------
+
+
+class SimpleProgramContext(AbstractProgramContext):
+    """Minimal non-MCM context that just builds a Circuit.
+
+    Used to verify the Interpreter's generic eager-evaluation paths for
+    if/else, for, and while — the code that runs when
+    ``supports_midcircuit_measurement`` is False.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._circuit = Circuit()
+
+    @property
+    def circuit(self):
+        return self._circuit
+
+    def is_builtin_gate(self, name: str) -> bool:
+        return name in BRAKET_GATES
+
+    def add_phase_instruction(self, target, phase_value):
+        self._circuit.add_instruction(GPhase(target, phase_value))
+
+    def add_gate_instruction(self, gate_name, target, params, ctrl_modifiers, power):
+        instruction = BRAKET_GATES[gate_name](
+            target, *params, ctrl_modifiers=ctrl_modifiers, power=power
+        )
+        self._circuit.add_instruction(instruction)
+
+
+class TestAbstractContextControlFlow:
+    """Tests for AbstractProgramContext defaults via SimpleProgramContext."""
+
+    def test_handle_branching_raises(self):
+        ctx = SimpleProgramContext()
+        node = BranchingStatement(condition=BooleanLiteral(True), if_block=[], else_block=[])
+        with pytest.raises(NotImplementedError):
+            ctx.handle_branching_statement(node)
+
+    def test_handle_for_loop_raises(self):
+        ctx = SimpleProgramContext()
+        node = ForInLoop(
+            type=IntType(IntegerLiteral(32)),
+            identifier=Identifier("i"),
+            set_declaration=RangeDefinition(
+                IntegerLiteral(0), IntegerLiteral(1), IntegerLiteral(1)
+            ),
+            block=[],
+        )
+        with pytest.raises(NotImplementedError):
+            ctx.handle_for_loop(node)
+
+    def test_handle_while_loop_raises(self):
+        ctx = SimpleProgramContext()
+        node = WhileLoop(while_condition=BooleanLiteral(True), block=[])
+        with pytest.raises(NotImplementedError):
+            ctx.handle_while_loop(node)
+
+    def test_set_visitor_raises(self):
+        ctx = SimpleProgramContext()
+        with pytest.raises(NotImplementedError):
+            ctx.set_visitor(lambda x: x)
+
+    def test_is_branched_returns_false(self):
+        assert SimpleProgramContext().is_branched is False
+
+    def test_supports_midcircuit_measurement_returns_false(self):
+        assert SimpleProgramContext().supports_midcircuit_measurement is False
+
+    def test_active_paths_returns_empty(self):
+        assert SimpleProgramContext().active_paths == []
+
+
+class TestNonMCMInterpreterControlFlow:
+    """Verify the Interpreter's generic eager-evaluation paths using SimpleProgramContext.
+
+    SimpleProgramContext returns ``supports_midcircuit_measurement = False``,
+    so the Interpreter handles if/else, for, and while inline rather than
+    delegating to the context's handle_* methods.
+    """
+
+    def test_if_true(self):
+        qasm = "OPENQASM 3.0;\nqubit[1] q;\nif (true) { x q[0]; }"
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_if_false_else(self):
+        qasm = "OPENQASM 3.0;\nqubit[1] q;\nif (false) { x q[0]; } else { h q[0]; }"
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_if_false_no_else(self):
+        qasm = "OPENQASM 3.0;\nqubit[1] q;\nif (false) { x q[0]; }"
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 0
+
+    def test_for_loop_range(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] sum = 0;
+        for int[32] i in [0:2] { sum = sum + i; }
+        if (sum == 3) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_for_loop_discrete_set(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] sum = 0;
+        for int[32] i in {2, 5} { sum = sum + i; }
+        if (sum == 7) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_for_loop_break(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] count = 0;
+        for int[32] i in [0:9] {
+            count = count + 1;
+            if (count == 3) { break; }
+        }
+        if (count == 3) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_for_loop_continue(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] x_count = 0;
+        for int[32] i in [1:4] {
+            if (i % 2 == 0) { continue; }
+            x_count = x_count + 1;
+        }
+        if (x_count == 2) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_while_loop(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] n = 3;
+        while (n > 0) { n = n - 1; }
+        if (n == 0) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_while_loop_break(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] n = 0;
+        while (true) {
+            n = n + 1;
+            if (n == 5) { break; }
+        }
+        if (n == 5) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+    def test_while_loop_continue(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int[32] count = 0;
+        int[32] x_count = 0;
+        while (count < 5) {
+            count = count + 1;
+            if (count % 2 == 0) { continue; }
+            x_count = x_count + 1;
+        }
+        if (x_count == 3) { x q[0]; }
+        """
+        ctx = SimpleProgramContext()
+        Interpreter(ctx).run(qasm)
+        assert len(ctx.circuit.instructions) == 1
+
+
+class TestMCMBranchedVariableDeclaration:
+    """Cover branched declare_variable, update_value, get_value paths."""
+
+    def test_declare_and_use_variable_after_mcm(self, simulator):
+        """Variable declared inside if-block after MCM uses branched storage."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        h q[0];
+        b = measure q[0];
+        int y = 0;
+        if (b == 1) {
+            y = 42;
+        }
+        if (y == 42) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        # b=0 → y=0 → no X → "00"; b=1 → y=42 → X → "11"
+        assert "00" in counter
+        assert "11" in counter
+
+    def test_indexed_update_after_mcm(self, simulator):
+        """Array element update after MCM uses branched update_value."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        array[int[32], 2] arr = {0, 0};
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            arr[0] = 1;
+        }
+        if (arr[0] == 1) {
+            x q[1];
+        }
+        b[1] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert "00" in counter
+        assert "11" in counter
+
+    def test_get_value_reads_pre_branching_variable(self, simulator):
+        """Variable declared before MCM is readable from shared table after branching."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        int x = 7;
+        h q[0];
+        b = measure q[0];
+        if (x == 7) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        for outcome in counter:
+            assert outcome[-1] == "1"
+
+    def test_continue_in_branched_while_loop(self, simulator):
+        """Continue inside a while loop after MCM."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        int count = 0;
+        int x_count = 0;
+        x q[0];
+        b = measure q[0];
+        while (count < 4) {
+            count = count + 1;
+            if (count % 2 == 0) {
+                continue;
+            }
+            x_count = x_count + 1;
+        }
+        if (x_count == 2) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"11": 1000}
+
+
+class TestMCMSubroutineAfterBranching:
+    """Cover branched declare_variable via subroutine call after MCM."""
+
+    def test_subroutine_call_after_mcm(self, simulator):
+        """Subroutine with classical arg called after MCM triggers branched declare_variable."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+
+        def conditional_flip(int[32] flag, qubit target) {
+            if (flag == 1) {
+                x target;
+            }
+        }
+
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            conditional_flip(1, q[1]);
+        } else {
+            conditional_flip(0, q[1]);
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        # b=0 → conditional_flip(0) → no X → "00"; b=1 → conditional_flip(1) → X → "11"
+        assert "00" in counter
+        assert "11" in counter
+
+
+class TestMCMWhileLoopBreak:
+    """Cover _BreakSignal in branched while loop."""
+
+    def test_break_in_branched_while_loop(self, simulator):
+        """Break inside a while loop after MCM."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        int n = 0;
+        x q[0];
+        b = measure q[0];
+        while (true) {
+            n = n + 1;
+            if (n == 3) {
+                break;
+            }
+        }
+        if (n == 3) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"11": 1000}
+
+
+class TestNonBranchedWhileLoopContinue:
+    """Cover the non-branched BreakSignal path in ProgramContext.handle_while_loop."""
+
+    def test_while_loop_break_no_mcm(self, simulator):
+        """While loop with break, no MCM — exercises non-branched path in ProgramContext."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        bit[1] b;
+        int[32] n = 0;
+        while (true) {
+            n = n + 1;
+            if (n == 3) {
+                break;
+            }
+        }
+        if (n == 3) {
+            x q[0];
+        }
+        b[0] = measure q[0];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"1": 100}
+
+
+class TestMCMSubroutineArrayRef:
+    """Cover branched get_value via subroutine array reference after MCM."""
+
+    def test_subroutine_array_ref_after_mcm(self, simulator):
+        """Subroutine with array reference arg called after MCM hits branched get_value."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        bit result;
+        qubit[2] q;
+        array[int[32], 2] arr = {0, 0};
+
+        def set_first(mutable array[int[32], #dim = 1] a) {
+            a[0] = 42;
+        }
+
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            set_first(arr);
+        }
+        if (arr[0] == 42) {
+            x q[1];
+        }
+        result = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        # b=0 → arr[0]=0 → no X → "00"; b=1 → arr[0]=42 → X → "11"
+        assert "00" in counter
+        assert "11" in counter

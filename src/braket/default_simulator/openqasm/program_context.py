@@ -1058,8 +1058,6 @@ class ProgramContext(AbstractProgramContext):
         for path_idx in self._active_path_indices:
             path = self._paths[path_idx]
             framed_var = path.get_variable(name)
-            if framed_var is None:
-                raise KeyError(f"Variable '{name}' not found in path {path_idx}")
             framed_var.value = (
                 update_value(framed_var.value, value, flatten_indices(indices), var_type)
                 if indices
@@ -1071,13 +1069,7 @@ class ProgramContext(AbstractProgramContext):
         if not self._is_branched:
             return super().get_value(name)
 
-        path = self._paths[self._active_path_indices[0]]
-        framed_var = path.get_variable(name)
-        if framed_var is None:
-            # Fall back to the shared variable table for variables declared
-            # before branching started (e.g., qubit aliases, inputs)
-            return super().get_value(name)
-        value = framed_var.value
+        value = self._paths[self._active_path_indices[0]].get_variable(name).value
         return value if isinstance(value, QASMNode) else wrap_value_into_literal(value)
 
     def get_value_by_identifier(self, identifier: Identifier | IndexedIdentifier) -> LiteralType:
@@ -1094,14 +1086,8 @@ class ProgramContext(AbstractProgramContext):
             return super().get_value_by_identifier(identifier)
 
         value = framed_var.value
-        # Wrap raw Python values into AST literal types so that the
-        # Interpreter's expression evaluation works correctly.
         if not isinstance(value, QASMNode):
             value = wrap_value_into_literal(value)
-        if isinstance(identifier, IndexedIdentifier) and identifier.indices:
-            var_type = self.get_type(name)
-            type_width = get_type_width(var_type)
-            return get_elements(value, flatten_indices(identifier.indices), type_width)
         return value
 
     def is_builtin_gate(self, name: str) -> bool:
@@ -1483,26 +1469,14 @@ class ProgramContext(AbstractProgramContext):
             path.exit_frame(path.frame_number - 1)
 
     @staticmethod
-    def _resolve_index(path: SimulationPath, indices) -> int:
+    def _resolve_index(indices) -> int:
         """Resolve the integer index from an IndexedIdentifier's index list."""
-        if not indices or len(indices) != 1:
-            return 0
-
-        idx_val = indices[0][0]
-        if isinstance(idx_val, IntegerLiteral):
-            return idx_val.value
-        # Identifier — a loop variable used as index (e.g. b[i] = measure q[0])
-        return path.get_variable(idx_val.name).value.value
+        return indices[0][0].value
 
     @staticmethod
     def _get_path_measurement_result(path: SimulationPath, qubit_idx: int) -> int:
-        """Get the most recent measurement outcome for a qubit on a path.
-
-        Returns 0 if no measurement has been recorded for the qubit.
-        """
-        if path.measurements.get(qubit_idx) is not None:
-            return path.measurements[qubit_idx][-1]
-        return 0
+        """Get the most recent measurement outcome for a qubit on a path."""
+        return path.measurements[qubit_idx][-1]
 
     @staticmethod
     def _set_value_at_index(value, index: int, result) -> None:
@@ -1569,7 +1543,7 @@ class ProgramContext(AbstractProgramContext):
             if hasattr(classical_destination.name, "name")
             else classical_destination.name
         )
-        index = self._resolve_index(path, classical_destination.indices)
+        index = self._resolve_index(classical_destination.indices)
         meas_result = self._get_path_measurement_result(path, qubit_target[0])
         framed_var = self._ensure_path_variable(path, base_name)
         self._set_value_at_index(framed_var.value, index, meas_result)
