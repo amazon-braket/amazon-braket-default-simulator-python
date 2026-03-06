@@ -11,17 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-"""
-Comprehensive tests for mid-circuit measurements via the unified StateVectorSimulator path.
-Tests actual simulation functionality, not just attributes.
-Converted from Julia test suite in test_branched_simulator_operators_openqasm.jl
-
-This file is a faithful reproduction of the original BranchedSimulator test suite, with
-BranchedSimulator replaced by StateVectorSimulator. Tests that previously used
-BranchedInterpreter/BranchedSimulation internals have been converted to end-to-end tests
-that verify observable measurement outcomes via StateVectorSimulator.run_openqasm().
-"""
-
 import pytest
 from collections import Counter
 
