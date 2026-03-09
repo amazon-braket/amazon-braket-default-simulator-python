@@ -62,9 +62,14 @@ class Circuit:
         self.instructions.append(instruction)
         self.qubit_set |= set(instruction.targets)
 
-    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] | None = None):
+    def add_measure(
+        self,
+        target: tuple[int],
+        classical_targets: Iterable[int] | None = None,
+        allow_remeasure: bool = False,
+    ):
         for index, qubit in enumerate(target):
-            if qubit in self.measured_qubits:
+            if not allow_remeasure and qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
             self.measured_qubits.append(qubit)
             self.qubit_set.add(qubit)

@@ -38,3 +38,18 @@ def test_construct_circuit(instructions, results, num_qubits):
     assert circuit.instructions == instructions
     assert circuit.results == results
     assert circuit.num_qubits == num_qubits
+
+
+def test_add_measure_rejects_duplicate_qubit_by_default():
+    circuit = Circuit()
+    circuit.add_measure((0,), [0])
+    with pytest.raises(ValueError, match="Qubit 0 is already measured or captured."):
+        circuit.add_measure((0,), [1])
+
+
+# def test_add_measure_allows_duplicate_qubit_with_allow_remeasure():
+#     circuit = Circuit()
+#     circuit.add_measure((0,), [0], allow_remeasure=True)
+#     circuit.add_measure((0,), [1], allow_remeasure=True)
+#     assert circuit.measured_qubits == [0, 0]
+#     assert circuit.target_classical_indices == [0, 1]
