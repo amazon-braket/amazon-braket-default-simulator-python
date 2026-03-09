@@ -51,6 +51,10 @@ def cast_to(into: ClassicalType | type[LiteralType], variable: LiteralType) -> L
     if type(variable) is into:
         return variable
     if into == BooleanLiteral or isinstance(into, BoolType):
+        if isinstance(variable, ArrayLiteral):
+            if len(variable.values) == 1:
+                return BooleanLiteral(bool(variable.values[0].value))
+            return BooleanLiteral(any(v.value for v in variable.values))
         return BooleanLiteral(bool(variable.value))
     if into == IntegerLiteral:
         return IntegerLiteral(int(variable.value))
@@ -178,8 +182,50 @@ def convert_bool_array_to_string(bit_string: ArrayLiteral) -> str:
     return "".join(("1" if x.value else "0") for x in bit_string.values)
 
 
+class PendingMeasurementValue:
+    """Sentinel for a declared-but-not-yet-assigned variable.
+
+    Not ``None``, so ``is_none_like`` returns ``False`` and
+    ``is_initalized`` returns ``True`` — the variable is considered
+    initialized.  However, raises ``RuntimeError`` if any code attempts
+    to read its ``.value`` or use it in arithmetic / comparisons.  This
+    prevents silent bugs where a deferred measurement never actually
+    writes a result.
+    """
+
+    def __repr__(self):
+        return "<PendingMeasurementValue>"
+
+    @property
+    def value(self):
+        raise RuntimeError(
+            "Attempted to read a variable whose measurement result was never resolved."
+        )
+
+    # Guard against accidental use in expressions
+    def __eq__(self, other):
+        if isinstance(other, PendingMeasurementValue):
+            return True
+        raise RuntimeError(
+            "Attempted to compare a variable whose measurement result was never resolved."
+        )
+
+    def __hash__(self):
+        return id(self)
+
+    def __bool__(self):
+        raise RuntimeError(
+            "Attempted to evaluate a variable whose measurement result was never resolved."
+        )
+
+
+PENDING_MEASUREMENT = PendingMeasurementValue()
+
+
 def is_none_like(value: Any) -> bool:
     """Returns whether value is None or an Array of Nones"""
+    if isinstance(value, PendingMeasurementValue):
+        return False
     if isinstance(value, ArrayLiteral):
         return all(is_none_like(v) for v in value.values)
     return value is None

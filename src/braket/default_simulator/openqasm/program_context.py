@@ -50,6 +50,7 @@ from ._helpers.casting import (
     cast_to,
     get_identifier_name,
     is_none_like,
+    PENDING_MEASUREMENT,
     wrap_value_into_literal,
 )
 from .circuit import Circuit
@@ -1215,6 +1216,15 @@ class ProgramContext(AbstractProgramContext):
             # If branching never triggers, _flush_pending_mcm_targets will
             # register them in the circuit as normal end-of-circuit measurements.
             self._pending_mcm_targets.append((target, classical_targets, classical_destination))
+            # For plain Identifier targets (e.g. ``b = measure q[0]``), mark
+            # the variable as initialized with a placeholder so that subsequent
+            # reads don't raise a NameError before branching has occurred.
+            # IndexedIdentifier targets (e.g. ``b[i] = measure q[0]``) already
+            # have their array initialized from the declaration.
+            if isinstance(classical_destination, Identifier):
+                name = classical_destination.name
+                if not self.variable_table.is_initalized(name):
+                    self.variable_table[name] = PENDING_MEASUREMENT
         else:
             # Standard non-MCM measurement — register in circuit immediately
             self._circuit.add_measure(target, classical_targets)
