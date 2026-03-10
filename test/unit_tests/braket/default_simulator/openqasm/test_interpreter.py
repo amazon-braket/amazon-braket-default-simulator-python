@@ -24,7 +24,7 @@ from sympy import Symbol
 from braket.default_simulator import StateVectorSimulation
 from braket.default_simulator.openqasm.parser import openqasm_parser
 from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
-from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX
+from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX, Reset
 from braket.default_simulator.gate_operations import PauliY as Y
 from braket.default_simulator.gate_operations import RotX, U, Unitary
 from braket.default_simulator.noise_operations import (
@@ -106,7 +106,7 @@ def test_bool_declaration():
     assert context.get_type("initialized_int") == BoolType()
     assert context.get_type("initialized_bool") == BoolType()
 
-    assert context.get_value("uninitialized") is None
+    assert context.get_value("uninitialized") == BooleanLiteral(False)
     assert context.get_value("initialized_int") == BooleanLiteral(False)
     assert context.get_value("initialized_bool") == BooleanLiteral(True)
 
@@ -135,7 +135,7 @@ def test_int_declaration():
     assert context.get_type("neg_overflow") == IntType(IntegerLiteral(3))
     assert context.get_type("no_size") == IntType(None)
 
-    assert context.get_value("uninitialized") is None
+    assert context.get_value("uninitialized") == IntegerLiteral(0)
     assert context.get_value("pos") == IntegerLiteral(10)
     assert context.get_value("neg") == IntegerLiteral(-4)
     assert context.get_value("int_min") == IntegerLiteral(-128)
@@ -172,7 +172,7 @@ def test_uint_declaration():
     assert context.get_type("neg_overflow") == UintType(IntegerLiteral(3))
     assert context.get_type("no_size") == UintType(None)
 
-    assert context.get_value("uninitialized") is None
+    assert context.get_value("uninitialized") == IntegerLiteral(0)
     assert context.get_value("pos") == IntegerLiteral(10)
     assert context.get_value("pos_not_overflow") == IntegerLiteral(5)
     assert context.get_value("pos_overflow") == IntegerLiteral(0)
@@ -224,7 +224,7 @@ def test_float_declaration():
     assert context.get_type("precise") == FloatType(IntegerLiteral(64))
     assert context.get_type("unsized") == FloatType(None)
 
-    assert context.get_value("uninitialized") is None
+    assert context.get_value("uninitialized") == FloatLiteral(0.0)
     assert context.get_value("pos") == FloatLiteral(10)
     assert context.get_value("neg") == FloatLiteral(-4.2)
     assert context.get_value("precise") == FloatLiteral(np.pi)
@@ -530,11 +530,16 @@ def test_indexed_expression():
 def test_reset_qubit():
     qasm = """
     qubit q;
+    x q;
     reset q;
     """
-    no_reset = "Reset not supported"
-    with pytest.raises(NotImplementedError, match=no_reset):
-        Interpreter().run(qasm)
+    context = Interpreter().run(qasm)
+    # Reset should add a Reset instruction to the circuit
+    instructions = context.circuit.instructions
+    # Should have an X gate followed by a Reset
+    assert len(instructions) == 2
+    assert isinstance(instructions[1], Reset)
+    assert instructions[1].targets == (0,)
 
 
 def test_for_loop():
@@ -2205,40 +2210,37 @@ def test_measurement(qasm, expected):
     assert circuit.target_classical_indices == expected[1]
 
 
-@pytest.mark.parametrize(
-    "qasm, expected",
-    [
-        (
-            "\n".join(
-                [
-                    "bit[3] b;",
-                    "qubit[2] q;",
-                    "h q[0];",
-                    "cnot q[0], q[1];",
-                    "b[2] = measure q[1];",
-                    "b[0] = measure q[0];",
-                    "b[1] = measure q[0];",
-                ]
-            ),
-            "Qubit 0 is already measured or captured.",
-        ),
-        (
-            "\n".join(
-                [
-                    "bit[1] b;",
-                    "qubit[1] q;",
-                    "h q[0];",
-                    "b[0] = measure q[0];",
-                    "measure q;",
-                ]
-            ),
-            "Qubit 0 is already measured or captured.",
-        ),
-    ],
-)
-def test_measurement_exceptions(qasm, expected):
-    with pytest.raises(ValueError, match=expected):
-        Interpreter().build_circuit(qasm)
+def test_measure_qubit_twice_allowed():
+    """A qubit may be measured more than once into different classical bits."""
+    qasm = "\n".join(
+        [
+            "bit[3] b;",
+            "qubit[2] q;",
+            "h q[0];",
+            "cnot q[0], q[1];",
+            "b[2] = measure q[1];",
+            "b[0] = measure q[0];",
+            "b[1] = measure q[0];",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.measured_qubits == [1, 0, 0]
+    assert circuit.target_classical_indices == [2, 0, 1]
+
+
+def test_measure_qubit_twice_with_bare_measure():
+    """A qubit measured via assignment and then via bare 'measure q' should work."""
+    qasm = "\n".join(
+        [
+            "bit[1] b;",
+            "qubit[1] q;",
+            "h q[0];",
+            "b[0] = measure q[0];",
+            "measure q;",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert 0 in circuit.measured_qubits
 
 
 def test_measure_invalid_qubit():
