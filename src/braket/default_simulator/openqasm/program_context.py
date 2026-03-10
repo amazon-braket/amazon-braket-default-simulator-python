@@ -1006,7 +1006,9 @@ class ProgramContext(AbstractProgramContext):
         """
         if not self._is_branched and self._pending_mcm_targets:
             for mcm_target, mcm_classical, _mcm_dest in self._pending_mcm_targets:
-                self._circuit.add_measure(mcm_target, mcm_classical)
+                self._circuit.add_measure(
+                    mcm_target, mcm_classical, allow_remeasure=self.supports_midcircuit_measurement
+                )
             self._pending_mcm_targets.clear()
 
     @property
@@ -1201,6 +1203,7 @@ class ProgramContext(AbstractProgramContext):
                 in ``b = measure q[0]``). When provided, the measurement is
                 treated as a mid-circuit measurement candidate.
         """
+        allow_remeasure = self.supports_midcircuit_measurement
         if self._is_branched:
             if classical_destination is not None:
                 self._measure_and_branch(target)
@@ -1208,7 +1211,9 @@ class ProgramContext(AbstractProgramContext):
             else:
                 # End-of-circuit measurement in branched mode: record in circuit
                 # for qubit tracking but don't branch further
-                self._circuit.add_measure(target, classical_targets)
+                self._circuit.add_measure(
+                    target, classical_targets, allow_remeasure=allow_remeasure
+                )
         elif classical_destination is not None:
             # Potential MCM — defer registration. Don't add to circuit yet;
             # if branching triggers later the measurement is applied per-path.
@@ -1217,7 +1222,7 @@ class ProgramContext(AbstractProgramContext):
             self._pending_mcm_targets.append((target, classical_targets, classical_destination))
         else:
             # Standard non-MCM measurement — register in circuit immediately
-            self._circuit.add_measure(target, classical_targets)
+            self._circuit.add_measure(target, classical_targets, allow_remeasure=allow_remeasure)
 
     def _maybe_transition_to_branched(self) -> None:
         """Transition to branched mode if pending MCM targets exist.
