@@ -1098,6 +1098,10 @@ class ProgramContext(AbstractProgramContext):
 
     def is_initialized(self, name: str) -> bool:
         """Check whether variable is initialized, including per-path variables when branched."""
+        # If the variable has a pending MCM, flush it so the value becomes available.
+        if self._pending_mcm_targets:
+            self._flush_pending_mcm_for_variable(name)
+
         if not self._is_branched:
             return super().is_initialized(name)
 
@@ -1109,6 +1113,41 @@ class ProgramContext(AbstractProgramContext):
 
         # Fall back to shared variable table
         return super().is_initialized(name)
+
+    def _flush_pending_mcm_for_variable(self, name: str) -> None:
+        """If ``name`` matches a pending MCM's classical destination, flush it.
+
+        This handles the case where a measurement result is read in a plain
+        assignment (e.g., ``mcm[0] = __bit_1__``) rather than in control flow.
+        The matching pending measurement is branched (or added to the circuit)
+        so that the variable has a value when read.
+        """
+        remaining = []
+        for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
+            dest_name = mcm_dest.name if isinstance(mcm_dest, Identifier) else mcm_dest.name.name
+            if dest_name == name:
+                if not self._is_branched and self._shots > 0:
+                    self._is_branched = True
+                    self._initialize_paths_from_circuit()
+                    # Also flush any earlier pending measurements so the state is correct
+                    for earlier in remaining:
+                        self._measure_and_branch(earlier[0])
+                        self._update_classical_from_measurement(earlier[0], earlier[2])
+                    remaining.clear()
+                if self._is_branched:
+                    self._measure_and_branch(mcm_target)
+                    self._update_classical_from_measurement(mcm_target, mcm_dest)
+                else:
+                    # shots == 0: register as a normal measurement and set variable to 0
+                    self._circuit.add_measure(
+                        mcm_target,
+                        mcm_classical,
+                        allow_remeasure=self.supports_midcircuit_measurement,
+                    )
+                    self.update_value(mcm_dest, IntegerLiteral(value=0))
+            else:
+                remaining.append((mcm_target, mcm_classical, mcm_dest))
+        self._pending_mcm_targets = remaining
 
     def add_phase_instruction(self, target: tuple[int], phase_value: int):
         phase_instruction = GPhase(target, phase_value)
@@ -1492,28 +1531,10 @@ class ProgramContext(AbstractProgramContext):
         """
         value.values[index] = IntegerLiteral(value=result)
 
-    def _ensure_path_variable(self, path: SimulationPath, name: str) -> FramedVariable:
-        """Get or create a FramedVariable for ``name`` on the given path.
-
-        If the variable already exists on the path, returns it directly.
-        Otherwise copies the current value from the shared variable table
-        into a new FramedVariable on the path and returns that.
-        """
-        framed_var = path.get_variable(name)
-        if framed_var is not None:
-            return framed_var
-        current_val = super().get_value(name)
-        var_type = self.get_type(name)
-        is_const = self.get_const(name)
-        fv = FramedVariable(
-            name=name,
-            var_type=var_type,
-            value=current_val,
-            is_const=bool(is_const),
-            frame_number=path.frame_number,
-        )
-        path.set_variable(name, fv)
-        return fv
+    @staticmethod
+    def _ensure_path_variable(path: SimulationPath, name: str) -> FramedVariable:
+        """Get the FramedVariable for ``name`` on the given path."""
+        return path.get_variable(name)
 
     def _update_classical_from_measurement(self, qubit_target, classical_destination) -> None:
         """Update classical variables per path with measurement outcomes.
@@ -1578,17 +1599,16 @@ class ProgramContext(AbstractProgramContext):
         initial_path.shots = self._shots
 
         for name, value in self.variable_table.items():
-            if value is not None:
-                var_type = self.get_type(name)
-                is_const = self.get_const(name)
-                fv = FramedVariable(
-                    name=name,
-                    var_type=var_type,
-                    value=value,
-                    is_const=bool(is_const),
-                    frame_number=initial_path.frame_number,
-                )
-                initial_path.set_variable(name, fv)
+            var_type = self.get_type(name)
+            is_const = self.get_const(name)
+            fv = FramedVariable(
+                name=name,
+                var_type=var_type,
+                value=value,
+                is_const=bool(is_const),
+                frame_number=initial_path.frame_number,
+            )
+            initial_path.set_variable(name, fv)
 
     def _measure_and_branch(self, target: tuple[int]) -> None:
         """Compute measurement probabilities per active path, sample outcomes,

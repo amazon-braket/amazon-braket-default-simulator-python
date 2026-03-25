@@ -52,7 +52,7 @@ class Circuit:
             for result in results:
                 self.add_result(result)
 
-    def add_instruction(self, instruction: [GateOperation, KrausOperation]) -> None:
+    def add_instruction(self, instruction: GateOperation | KrausOperation) -> None:
         """
         Add instruction to the circuit.
 
