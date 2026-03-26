@@ -1149,7 +1149,66 @@ class ProgramContext(AbstractProgramContext):
                 remaining.append((mcm_target, mcm_classical, mcm_dest))
         self._pending_mcm_targets = remaining
 
+    def _flush_pending_mcm_for_qubits(self, qubits: tuple[int, ...] | list[int]) -> None:
+        """Flush any pending MCM whose target qubit overlaps with ``qubits``.
+
+        When a gate, reset, or other operation is about to be applied to a
+        qubit that has a pending (deferred) measurement, the measurement must
+        be registered first so that the instruction ordering is physically
+        correct (measure before subsequent gate).
+
+        All pending measurements up to and including the overlapping ones are
+        flushed to preserve program order.
+
+        In non-branched mode with shots > 0 this triggers a transition to
+        branched mode so the measurement is properly branched and its
+        classical variable is set.  With shots == 0 the measurement is
+        simply added to the circuit and the variable set to 0.
+        """
+        if not self._pending_mcm_targets:
+            return
+        qubit_set = set(qubits)
+
+        # Find the index of the last overlapping entry so we flush everything
+        # up to that point (preserving program order).
+        last_overlap_idx = -1
+        for i, entry in enumerate(self._pending_mcm_targets):
+            if qubit_set.intersection(entry[0]):
+                last_overlap_idx = i
+        if last_overlap_idx == -1:
+            return
+
+        to_flush = self._pending_mcm_targets[: last_overlap_idx + 1]
+        self._pending_mcm_targets = self._pending_mcm_targets[last_overlap_idx + 1 :]
+
+        if self._is_branched:
+            for mcm_target, _mcm_classical, mcm_dest in to_flush:
+                self._measure_and_branch(mcm_target)
+                self._update_classical_from_measurement(mcm_target, mcm_dest)
+        elif self._shots > 0:
+            self._is_branched = True
+            self._initialize_paths_from_circuit()
+            # Flush to_flush first (preserving program order), then any
+            # remaining pending measurements that came after the overlap.
+            for mcm_target, _mcm_classical, mcm_dest in to_flush:
+                self._measure_and_branch(mcm_target)
+                self._update_classical_from_measurement(mcm_target, mcm_dest)
+            for entry in self._pending_mcm_targets:
+                self._measure_and_branch(entry[0])
+                self._update_classical_from_measurement(entry[0], entry[2])
+            self._pending_mcm_targets = []
+        else:
+            # shots == 0: register as normal measurements and set variables to 0
+            for mcm_target, mcm_classical, mcm_dest in to_flush:
+                self._circuit.add_measure(
+                    mcm_target,
+                    mcm_classical,
+                    allow_remeasure=self.supports_midcircuit_measurement,
+                )
+                self.update_value(mcm_dest, IntegerLiteral(value=0))
+
     def add_phase_instruction(self, target: tuple[int], phase_value: int):
+        self._flush_pending_mcm_for_qubits(target)
         phase_instruction = GPhase(target, phase_value)
         if self._is_branched:
             for path in self.active_paths:
@@ -1160,6 +1219,7 @@ class ProgramContext(AbstractProgramContext):
     def add_gate_instruction(
         self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
     ):
+        self._flush_pending_mcm_for_qubits(target)
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
         )
@@ -1174,6 +1234,7 @@ class ProgramContext(AbstractProgramContext):
         unitary: np.ndarray,
         target: tuple[int, ...],
     ) -> None:
+        self._flush_pending_mcm_for_qubits(target)
         instruction = Unitary(target, unitary)
         if self._is_branched:
             for path in self.active_paths:
@@ -1208,6 +1269,7 @@ class ProgramContext(AbstractProgramContext):
         pass
 
     def add_reset(self, target: list[int]) -> None:
+        self._flush_pending_mcm_for_qubits(target)
         if self._is_branched:
             for path in self.active_paths:
                 for q in target:
@@ -1243,6 +1305,7 @@ class ProgramContext(AbstractProgramContext):
                 treated as a mid-circuit measurement candidate.
         """
         allow_remeasure = self.supports_midcircuit_measurement
+        self._flush_pending_mcm_for_qubits(target)
         if self._is_branched:
             if classical_destination is not None:
                 self._measure_and_branch(target)

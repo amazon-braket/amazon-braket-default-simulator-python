@@ -527,7 +527,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
-        """The measure is performed but the assignment is ignored"""
         qubits = self.visit(node.measure)
         targets = []
         if node.target and isinstance(node.target, IndexedIdentifier):

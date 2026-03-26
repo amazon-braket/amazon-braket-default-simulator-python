@@ -4216,3 +4216,120 @@ class TestMCMUnusedMeasurementResult:
         assert "0" in counter
         assert "1" in counter
         assert 0.2 < counter["0"] / 100 < 0.8
+
+
+class TestMCMGateAfterPendingMeasurement:
+    """Cover _flush_pending_mcm_for_qubits: gate on a qubit with a pending MCM."""
+
+    def test_gate_on_measured_qubit_before_control_flow(self, simulator):
+        """A gate applied to a qubit whose measurement is still pending must
+        see the post-measurement state, not the pre-measurement state.
+
+        Circuit: h q[0]; b = measure q[0]; x q[0]; if (b) { z q[1]; }
+
+        After h, q[0] is in superposition. The measurement collapses it.
+        Then x flips the collapsed state. The x must act on the
+        post-measurement state, so the pending measurement must be flushed
+        before the x is added to the instruction list.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        x q[0];
+        if (b == 1) {
+            z q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        assert len(result.measurements) == 1000
+        counter = Counter(["".join(m) for m in result.measurements])
+        # b should be roughly 50/50 since q[0] was in superposition
+        # Output is 2 columns (full qubit state from branched simulation)
+        assert len(counter) >= 2
+
+    def test_reset_on_measured_qubit_flushes_pending(self, simulator):
+        """A reset on a qubit with a pending measurement must flush it first."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        x q[0];
+        b = measure q[0];
+        reset q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
+        counter = Counter(["".join(m) for m in result.measurements])
+        # q[0] was |1> before measurement, so b=1 deterministically.
+        # After reset, q[0] is |0>. if (b==1) flips q[1].
+        # Output: q[0]=0 (reset), q[1]=1 (flipped) -> "01"
+        assert set(counter.keys()) == {"01"}
+
+    def test_gate_on_different_qubit_does_not_flush(self, simulator):
+        """A gate on a qubit WITHOUT a pending measurement should not flush."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        // Gate on q[1] — should NOT flush b's pending measurement
+        x q[1];
+        if (b == 1) {
+            z q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        assert len(result.measurements) == 1000
+        counter = Counter(["".join(m) for m in result.measurements])
+        # Should still work correctly — b is ~50/50
+        assert len(counter) >= 2
+
+
+class TestMCMFlushForQubitsEdgeCases:
+    """Cover edge cases in _flush_pending_mcm_for_qubits."""
+
+    def test_gate_on_pending_qubit_when_already_branched(self, simulator):
+        """When already branched via variable read, a gate on a qubit with a
+        still-pending MCM must branch that measurement before adding the gate."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit b0;
+        bit b1;
+        bit result;
+        h q[0];
+        b0 = measure q[0];
+        b1 = measure q[1];
+        // Reading b0 triggers branching; b1 stays pending
+        result = b0;
+        // Gate on q[1] should flush the still-pending b1
+        h q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        assert len(result.measurements) == 1000
+
+    def test_flush_remaining_after_overlap_with_shots(self, simulator):
+        """When shots > 0 and a gate overlaps a later pending MCM,
+        earlier pending MCMs must also be flushed for correct state.
+        Pending MCMs after the overlap are also flushed."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[4] q;
+        bit b0;
+        bit b1;
+        bit b2;
+        h q[0];
+        b0 = measure q[0];
+        b1 = measure q[1];
+        b2 = measure q[2];
+        // Gate on q[1] overlaps b1; b0 (earlier) and b2 (later) must also be flushed
+        x q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        assert len(result.measurements) == 1000
