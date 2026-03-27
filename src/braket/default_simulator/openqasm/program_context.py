@@ -21,6 +21,7 @@ import numpy as np
 from sympy import Expr
 
 from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Measure, Reset, Unitary
+from braket.default_simulator.linalg_utils import marginal_probability
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -1703,7 +1704,7 @@ class ProgramContext(AbstractProgramContext):
         state = self._get_path_state(path)
 
         # Get measurement probabilities for this qubit
-        probs = self._get_measurement_probabilities(state, qubit_idx)
+        probs = marginal_probability(np.abs(state) ** 2, targets=[qubit_idx])
 
         # Sample outcomes
         path_shots = path.shots
@@ -1763,16 +1764,3 @@ class ProgramContext(AbstractProgramContext):
         )
         sim.evolve(path.instructions)
         return sim.state_vector
-
-    @staticmethod
-    def _get_measurement_probabilities(state: np.ndarray, qubit_idx: int) -> np.ndarray:
-        n_qubits = int(np.log2(len(state)))
-        state_tensor = np.reshape(state, [2] * n_qubits)
-
-        slice_0 = np.take(state_tensor, 0, axis=qubit_idx)
-        slice_1 = np.take(state_tensor, 1, axis=qubit_idx)
-
-        prob_0 = np.sum(np.abs(slice_0) ** 2)
-        prob_1 = np.sum(np.abs(slice_1) ** 2)
-
-        return np.array([prob_0, prob_1])
