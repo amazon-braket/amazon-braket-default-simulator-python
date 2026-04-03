@@ -127,12 +127,9 @@ def test_measure_invalid_result_raises():
             Measure([0], result=bad)._base_matrix
 
 
-def test_measure_multi_qubit_noop():
-    # len(targets) != 1 — apply returns projected_state unchanged (no single-qubit branch)
-    m = Measure([0, 1], result=0)
-    state = np.array([_s2, 0, _s2, 0], dtype=complex)
-    result = m.apply(state.copy())
-    np.testing.assert_array_almost_equal(result, state)
+def test_measure_multi_qubit_raises():
+    with pytest.raises(ValueError, match="single target qubit"):
+        Measure([0, 1], result=0).apply(0.5 * np.ones(4, dtype=complex))
 
 
 def test_measure_zero_norm_state():
