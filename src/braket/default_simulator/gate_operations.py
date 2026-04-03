@@ -1347,31 +1347,31 @@ class Reset(GateOperation):
         raise NotImplementedError("Reset does not have a matrix implementation")
 
     def apply(self, state: np.ndarray) -> np.ndarray:
+        if len(self._targets) != 1:
+            raise ValueError(f"Reset only supports a single target qubit, got {len(self._targets)}.")
 
-        # For single qubit measurement, we need to project the appropriate amplitudes
-        if len(self._targets) == 1:
-            qubit_idx = self._targets[0]
-            n_qubits = int(np.log2(len(state)))
+        qubit_idx = self._targets[0]
+        n_qubits = int(np.log2(len(state)))
 
-            # Create mask for the target qubit
-            mask = 1 << (n_qubits - qubit_idx - 1)  # Big-endian indexing
+        # Create mask for the target qubit
+        mask = 1 << (n_qubits - qubit_idx - 1)  # Big-endian indexing
 
-            for i in range(len(state)):
-                # Check if the qubit is in state 1
-                qubit_value = (i & mask) >> (n_qubits - qubit_idx - 1)
-                if qubit_value == 1:
-                    zero_index = i & ~mask
+        for i in range(len(state)):
+            # Check if the qubit is in state 1
+            qubit_value = (i & mask) >> (n_qubits - qubit_idx - 1)
+            if qubit_value == 1:
+                zero_index = i & ~mask
 
-                    # Transfer the amplitude (with proper scaling)
-                    state[zero_index] += state[i]
+                # Transfer the amplitude (with proper scaling)
+                state[zero_index] += state[i]
 
-                    # Set the original amplitude to zero
-                    state[i] = 0
+                # Set the original amplitude to zero
+                state[i] = 0
 
-            # Normalize the state
-            norm = np.linalg.norm(state)
-            if norm > 0:
-                state /= norm
+        # Normalize the state
+        norm = np.linalg.norm(state)
+        if norm > 0:
+            state /= norm
 
         return state
 
