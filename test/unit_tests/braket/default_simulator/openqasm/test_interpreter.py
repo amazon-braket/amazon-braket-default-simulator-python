@@ -2590,11 +2590,6 @@ def test_alias_unsupported_raises():
         interp.visit(node)
 
 
-# ---------------------------------------------------------------------------
-# MCM delegation path coverage (interpreter lines 140, 585, 597, 621)
-# and AbstractProgramContext default properties (program_context lines 436, 446)
-# ---------------------------------------------------------------------------
-
 def _make_mcm_context():
     """Return a ProgramContext subclass whose supports_midcircuit_measurement is True."""
     from unittest.mock import MagicMock
