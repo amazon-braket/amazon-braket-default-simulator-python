@@ -135,8 +135,18 @@ def test_measure_invalid_result_raises():
             Measure([0], result=bad)._base_matrix
 
 
+def test_measure_base_matrix():
+    np.testing.assert_array_equal(Measure([0], result=0)._base_matrix, np.array([[1, 0], [0, 0]], dtype=complex))
+    np.testing.assert_array_equal(Measure([0], result=1)._base_matrix, np.array([[0, 0], [0, 1]], dtype=complex))
+
+
 def test_measure_multi_qubit_raises():
     with pytest.raises(ValueError, match="single target qubit"):
         Measure([0, 1], result=0).apply(0.5 * np.ones(4, dtype=complex))
+
+
+def test_reset_multi_qubit_raises():
+    with pytest.raises(ValueError, match="single target qubit"):
+        Reset([0, 1]).apply(0.5 * np.ones(4, dtype=complex))
 
 
