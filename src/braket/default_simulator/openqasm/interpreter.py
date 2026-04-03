@@ -56,6 +56,7 @@ from ._helpers.quantum import (
 from .circuit import Circuit
 from .parser.openqasm_ast import (
     AccessControl,
+    AliasStatement,
     ArrayLiteral,
     ArrayReferenceType,
     ArrayType,
@@ -64,15 +65,20 @@ from .parser.openqasm_ast import (
     BitstringLiteral,
     BitType,
     BooleanLiteral,
+    BoolType,
     Box,
     BranchingStatement,
+    BreakStatement,
     Cast,
     ClassicalArgument,
     ClassicalAssignment,
     ClassicalDeclaration,
+    Concatenation,
     ConstantDeclaration,
+    ContinueStatement,
     DiscreteSet,
     FloatLiteral,
+    FloatType,
     ForInLoop,
     FunctionCall,
     GateModifierName,
@@ -81,6 +87,7 @@ from .parser.openqasm_ast import (
     IndexedIdentifier,
     IndexExpression,
     IntegerLiteral,
+    IntType,
     IODeclaration,
     IOKeyword,
     Pragma,
@@ -101,11 +108,12 @@ from .parser.openqasm_ast import (
     SizeOf,
     SubroutineDefinition,
     SymbolLiteral,
+    UintType,
     UnaryExpression,
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
-from .program_context import AbstractProgramContext, ProgramContext
+from .program_context import AbstractProgramContext, ProgramContext, _BreakSignal, _ContinueSignal
 
 
 class Interpreter:
@@ -196,6 +204,12 @@ class Interpreter:
             init_value = create_empty_array(node_type.dimensions)
         elif isinstance(node_type, BitType) and node_type.size:
             init_value = create_empty_array([node_type.size])
+        elif isinstance(node_type, (IntType, UintType)):
+            init_value = IntegerLiteral(value=0)
+        elif isinstance(node_type, FloatType):
+            init_value = FloatLiteral(value=0.0)
+        elif isinstance(node_type, BoolType):
+            init_value = BooleanLiteral(value=False)
         else:
             init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
@@ -265,7 +279,7 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumReset) -> None:
-        raise NotImplementedError("Reset not supported")
+        self.context.add_reset(list(self.context.get_qubits(self.visit(node.qubits))))
 
     @visit.register
     def _(self, node: QuantumBarrier) -> None:
@@ -511,7 +525,6 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumMeasurementStatement) -> None:
-        """The measure is performed but the assignment is ignored"""
         qubits = self.visit(node.measure)
         targets = []
         if node.target and isinstance(node.target, IndexedIdentifier):
@@ -528,7 +541,8 @@ class Interpreter:
                     self._uses_advanced_language_features = True
                     targets.extend(convert_range_def_to_range(self.visit(elem)))
                 case _:
-                    targets.append(elem.value)
+                    resolved = self.visit(elem) if isinstance(elem, Identifier) else elem
+                    targets.append(resolved.value)
 
         if not len(targets):
             targets = None
@@ -566,8 +580,10 @@ class Interpreter:
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
         condition = cast_to(BooleanLiteral, self.visit(node.condition))
-        for statement in node.if_block if condition.value else node.else_block:
-            self.visit(statement)
+        if condition.value:
+            self.visit(node.if_block)
+        elif node.else_block:
+            self.visit(node.else_block)
 
     @visit.register
     def _(self, node: ForInLoop) -> None:
@@ -578,16 +594,53 @@ class Interpreter:
         # DiscreteSet
         else:
             index_values = index.values
+
+        loop_var_name = node.identifier.name
         for i in index_values:
             with self.context.enter_scope():
-                self.context.declare_variable(node.identifier.name, node.type, i)
-                self.visit(deepcopy(node.block))
+                self.context.declare_variable(loop_var_name, node.type, i)
+                try:
+                    self.visit(deepcopy(node.block))
+                except _BreakSignal:
+                    break
+                except _ContinueSignal:
+                    continue
 
     @visit.register
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
-        while cast_to(BooleanLiteral, self.visit(deepcopy(node.while_condition))).value:
-            self.visit(deepcopy(node.block))
+        while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
+            try:
+                self.visit(deepcopy(node.block))
+            except _BreakSignal:
+                break
+            except _ContinueSignal:
+                continue
+
+    @visit.register
+    def _(self, node: BreakStatement) -> None:
+        raise _BreakSignal()
+
+    @visit.register
+    def _(self, node: ContinueStatement) -> None:
+        raise _ContinueSignal()
+
+    @visit.register
+    def _(self, node: AliasStatement) -> None:
+        """Handle alias statements (let q1 = q, let combined = q1 ++ q2)."""
+        alias_name = node.target.name
+        if isinstance(node.value, Identifier):
+            # Simple alias: let q1 = q
+            self.context.qubit_mapping[alias_name] = self.context.get_qubits(node.value)
+            self.context.declare_qubit_alias(alias_name, node.value)
+        elif isinstance(node.value, Concatenation):
+            # Concatenation alias: let combined = q1 ++ q2
+            lhs_qubits = tuple(self.context.get_qubits(node.value.lhs))
+            rhs_qubits = tuple(self.context.get_qubits(node.value.rhs))
+            self.context.qubit_mapping[alias_name] = lhs_qubits + rhs_qubits
+            self.context.declare_qubit_alias(alias_name, Identifier(alias_name))
+        else:
+            raise NotImplementedError(f"Alias with {type(node.value).__name__} is not supported")
 
     @visit.register
     def _(self, node: Include) -> None:

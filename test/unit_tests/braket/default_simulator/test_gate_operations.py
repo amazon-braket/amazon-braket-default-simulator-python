@@ -12,9 +12,11 @@
 # language governing permissions and limitations under the License.
 
 import braket.ir.jaqcd as instruction
+import numpy as np
 import pytest
 
 from braket.default_simulator import gate_operations
+from braket.default_simulator.gate_operations import Measure, Reset
 from braket.default_simulator.operation_helpers import check_unitary, from_braket_instruction
 
 testdata = [
@@ -81,3 +83,94 @@ def test_gate_operation(ir_instruction, targets, operation_type):
     assert isinstance(operation_instance, operation_type)
     assert operation_instance.targets == targets
     check_unitary(operation_instance.matrix)
+
+
+# ---------------------------------------------------------------------------
+# Measure class tests
+# ---------------------------------------------------------------------------
+
+
+class TestMeasureBaseMatrix:
+    """Cover all branches of Measure._base_matrix."""
+
+    def test_identity_when_result_negative_one(self):
+        m = Measure([0], result=-1)
+        np.testing.assert_array_equal(m._base_matrix, np.eye(2))
+
+    def test_project_to_zero(self):
+        m = Measure([0], result=0)
+        expected = np.array([[1, 0], [0, 0]], dtype=complex)
+        np.testing.assert_array_equal(m._base_matrix, expected)
+
+    def test_project_to_one(self):
+        m = Measure([0], result=1)
+        expected = np.array([[0, 0], [0, 1]], dtype=complex)
+        np.testing.assert_array_equal(m._base_matrix, expected)
+
+    def test_invalid_result_returns_identity(self):
+        m = Measure([0], result=99)
+        np.testing.assert_array_equal(m._base_matrix, np.eye(2))
+
+
+class TestMeasureApply:
+    """Cover Measure.apply for single-qubit projections."""
+
+    def test_apply_no_op_when_result_unset(self):
+        m = Measure([0], result=-1)
+        state = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
+        result = m.apply(state.copy())
+        np.testing.assert_array_almost_equal(result, state)
+
+    def test_apply_project_to_zero(self):
+        m = Measure([0], result=0)
+        state = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
+        result = m.apply(state)
+        np.testing.assert_array_almost_equal(result, [1.0, 0.0])
+
+    def test_apply_project_to_one(self):
+        m = Measure([0], result=1)
+        state = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
+        result = m.apply(state)
+        np.testing.assert_array_almost_equal(result, [0.0, 1.0])
+
+    def test_apply_two_qubit_project_second_to_zero(self):
+        """Two-qubit state |00⟩+|01⟩+|10⟩+|11⟩, measure qubit 1 → 0."""
+        m = Measure([1], result=0)
+        state = 0.5 * np.ones(4, dtype=complex)
+        result = m.apply(state)
+        # Only |00⟩ and |10⟩ survive
+        expected = np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0], dtype=complex)
+        np.testing.assert_array_almost_equal(result, expected)
+
+
+# ---------------------------------------------------------------------------
+# Reset class tests
+# ---------------------------------------------------------------------------
+
+
+class TestResetApply:
+    """Cover Reset.apply for single-qubit resets."""
+
+    def test_reset_zero_state_unchanged(self):
+        r = Reset([0])
+        state = np.array([1.0, 0.0], dtype=complex)
+        result = r.apply(state.copy())
+        np.testing.assert_array_almost_equal(result, [1.0, 0.0])
+
+    def test_reset_one_state_to_zero(self):
+        r = Reset([0])
+        state = np.array([0.0, 1.0], dtype=complex)
+        result = r.apply(state)
+        np.testing.assert_array_almost_equal(result, [1.0, 0.0])
+
+    def test_reset_superposition(self):
+        r = Reset([0])
+        state = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
+        result = r.apply(state)
+        # Both amplitudes collapse to |0⟩
+        np.testing.assert_array_almost_equal(result, [1.0, 0.0])
+
+    def test_reset_base_matrix_raises(self):
+        r = Reset([0])
+        with pytest.raises(NotImplementedError):
+            _ = r._base_matrix

@@ -19,7 +19,7 @@ from typing import Any
 import numpy as np
 from sympy import Expr
 
-from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Unitary
+from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Reset, Unitary
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -850,6 +850,15 @@ class AbstractProgramContext(ABC):
                 applies to all qubits in the circuit.
         """
 
+    def add_reset(self, target: list[int]) -> None:
+        """Add a reset instruction to the circuit.
+
+        Resets the specified qubits to the |0⟩ state.
+
+        Args:
+            target (list[int]): The target qubits to reset.
+        """
+
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
 
@@ -916,3 +925,15 @@ class ProgramContext(AbstractProgramContext):
 
     def add_measure(self, target: tuple[int], classical_targets: Iterable[int] | None = None):
         self._circuit.add_measure(target, classical_targets)
+
+    def add_reset(self, target: list[int]) -> None:
+        for qubit in target:
+            self._circuit.add_instruction(Reset(targets=(qubit,)))
+
+
+class _BreakSignal(Exception):
+    """Internal signal raised when a BreakStatement is encountered during execution."""
+
+
+class _ContinueSignal(Exception):
+    """Internal signal raised when a ContinueStatement is encountered during execution."""
