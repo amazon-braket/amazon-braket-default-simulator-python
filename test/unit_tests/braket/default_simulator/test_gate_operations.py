@@ -97,13 +97,17 @@ measure_testdata = [
     (Measure([0], result=1),  np.array([_s2, _s2], dtype=complex), np.array([0.0, 1.0], dtype=complex)),
     # Two-qubit: |00⟩+|01⟩+|10⟩+|11⟩, measure qubit 1 → 0; only |00⟩ and |10⟩ survive
     (Measure([1], result=0),  0.5 * np.ones(4, dtype=complex),     np.array([_s2, 0, _s2, 0], dtype=complex)),
+    # Zero-norm after projection — state already in |0⟩, projecting to |1⟩ yields all zeros
+    (Measure([0], result=1),  np.array([1.0, 0.0], dtype=complex), np.array([0.0, 0.0], dtype=complex)),
 ]
 
 
 @pytest.mark.parametrize("operation, input_state, expected", measure_testdata)
 def test_measure_operation(operation, input_state, expected):
-    result = operation.apply(input_state.copy())
-    np.testing.assert_array_almost_equal(result, expected)
+    n_qubits = int(np.log2(len(input_state)))
+    state_tensor = input_state.copy().reshape([2] * n_qubits)
+    result = apply_operations(state_tensor, n_qubits, [operation])
+    np.testing.assert_array_almost_equal(result.flatten(), expected)
 
 
 reset_testdata = [
@@ -111,13 +115,17 @@ reset_testdata = [
     (np.array([1.0, 0.0], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
     (np.array([0.0, 1.0], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
     (np.array([_s2,  _s2], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
+    # zero-norm input — should not divide by zero
+    (np.zeros(2, dtype=complex), np.zeros(2, dtype=complex)),
 ]
 
 
 @pytest.mark.parametrize("input_state, expected", reset_testdata)
 def test_reset_operation(input_state, expected):
-    result = Reset([0]).apply(input_state.copy())
-    np.testing.assert_array_almost_equal(result, expected)
+    n_qubits = int(np.log2(len(input_state)))
+    state_tensor = input_state.copy().reshape([2] * n_qubits)
+    result = apply_operations(state_tensor, n_qubits, [Reset([0])])
+    np.testing.assert_array_almost_equal(result.flatten(), expected)
 
 
 def test_measure_invalid_result_raises():
@@ -132,32 +140,3 @@ def test_measure_multi_qubit_raises():
         Measure([0, 1], result=0).apply(0.5 * np.ones(4, dtype=complex))
 
 
-def test_measure_zero_norm_state():
-    # norm == 0 after projection — should not divide by zero
-    m = Measure([0], result=1)
-    state = np.array([1.0, 0.0], dtype=complex)  # already in |0⟩, projecting to |1⟩ → zero norm
-    result = m.apply(state.copy())
-    np.testing.assert_array_almost_equal(result, [0.0, 0.0])
-
-
-def test_reset_zero_norm_state():
-    # norm == 0 after reset — should not divide by zero
-    r = Reset([0])
-    state = np.zeros(2, dtype=complex)
-    result = r.apply(state.copy())
-    np.testing.assert_array_almost_equal(result, [0.0, 0.0])
-
-
-def test_apply_operations_with_measure():
-    # exercises the Measure/Reset branch in single_operation_strategy
-    state = np.array([_s2, _s2], dtype=complex).reshape(2)
-    ops = [Measure([0], result=0)]
-    result = apply_operations(state, 1, ops)
-    np.testing.assert_array_almost_equal(result.flatten(), [1.0, 0.0])
-
-
-def test_apply_operations_with_reset():
-    state = np.array([0.0, 1.0], dtype=complex).reshape(2)
-    ops = [Reset([0])]
-    result = apply_operations(state, 1, ops)
-    np.testing.assert_array_almost_equal(result.flatten(), [1.0, 0.0])
