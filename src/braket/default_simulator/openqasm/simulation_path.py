@@ -140,8 +140,7 @@ class SimulationPath:
         and restores the frame number.
         """
         self._variables = {
-            name: var for name, var in self._variables.items()
-            if var.frame_number <= previous_frame
+            name: var for name, var in self._variables.items() if var.frame_number <= previous_frame
         }
         self._frame_number = previous_frame
 

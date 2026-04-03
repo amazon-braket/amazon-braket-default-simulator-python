@@ -998,7 +998,9 @@ class ProgramContext(AbstractProgramContext):
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
 
-    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] | None = None, **kwargs):
+    def add_measure(
+        self, target: tuple[int], classical_targets: Iterable[int] | None = None, **kwargs
+    ):
         self._circuit.add_measure(target, classical_targets)
 
     def add_reset(self, target: list[int]) -> None:
