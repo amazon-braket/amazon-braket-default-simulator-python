@@ -92,13 +92,33 @@ _s2 = 1 / np.sqrt(2)
 
 measure_testdata = [
     # (operation, input_state, expected_output_state)
-    (Measure([0], result=-1), np.array([_s2, _s2], dtype=complex), np.array([_s2, _s2], dtype=complex)),
-    (Measure([0], result=0),  np.array([_s2, _s2], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
-    (Measure([0], result=1),  np.array([_s2, _s2], dtype=complex), np.array([0.0, 1.0], dtype=complex)),
+    (
+        Measure([0], result=-1),
+        np.array([_s2, _s2], dtype=complex),
+        np.array([_s2, _s2], dtype=complex),
+    ),
+    (
+        Measure([0], result=0),
+        np.array([_s2, _s2], dtype=complex),
+        np.array([1.0, 0.0], dtype=complex),
+    ),
+    (
+        Measure([0], result=1),
+        np.array([_s2, _s2], dtype=complex),
+        np.array([0.0, 1.0], dtype=complex),
+    ),
     # Two-qubit: |00⟩+|01⟩+|10⟩+|11⟩, measure qubit 1 → 0; only |00⟩ and |10⟩ survive
-    (Measure([1], result=0),  0.5 * np.ones(4, dtype=complex),     np.array([_s2, 0, _s2, 0], dtype=complex)),
+    (
+        Measure([1], result=0),
+        0.5 * np.ones(4, dtype=complex),
+        np.array([_s2, 0, _s2, 0], dtype=complex),
+    ),
     # Zero-norm after projection — state already in |0⟩, projecting to |1⟩ yields all zeros
-    (Measure([0], result=1),  np.array([1.0, 0.0], dtype=complex), np.array([0.0, 0.0], dtype=complex)),
+    (
+        Measure([0], result=1),
+        np.array([1.0, 0.0], dtype=complex),
+        np.array([0.0, 0.0], dtype=complex),
+    ),
 ]
 
 
@@ -114,7 +134,7 @@ reset_testdata = [
     # (input_state, expected_output_state)
     (np.array([1.0, 0.0], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
     (np.array([0.0, 1.0], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
-    (np.array([_s2,  _s2], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
+    (np.array([_s2, _s2], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
     # zero-norm input — should not divide by zero
     (np.zeros(2, dtype=complex), np.zeros(2, dtype=complex)),
 ]
@@ -141,5 +161,3 @@ def test_measure_multi_qubit_raises():
 def test_reset_multi_qubit_raises():
     with pytest.raises(ValueError, match="single target qubit"):
         Reset([0, 1]).apply(0.5 * np.ones(4, dtype=complex))
-
-

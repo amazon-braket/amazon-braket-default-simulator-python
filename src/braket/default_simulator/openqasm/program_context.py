@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import singledispatchmethod
 from typing import Any
 
@@ -430,6 +430,21 @@ class AbstractProgramContext(ABC):
     def circuit(self):
         """The circuit being built in this context."""
 
+    @property
+    def is_branched(self) -> bool:
+        """Whether mid-circuit measurement branching has occurred."""
+        return False
+
+    @property
+    def supports_midcircuit_measurement(self) -> bool:
+        """Whether this context supports mid-circuit measurement branching."""
+        return False
+
+    @property
+    def active_paths(self) -> list:
+        """The currently active simulation paths."""
+        return []
+
     def __repr__(self):
         return "\n\n".join(
             repr(x)
@@ -838,8 +853,19 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
-    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] | None = None):
-        """Add qubit targets to be measured"""
+    def add_measure(
+        self,
+        target: tuple[int],
+        classical_targets: Iterable[int] | None = None,
+        **kwargs,
+    ) -> None:
+        """Add a measurement to the circuit.
+
+        Args:
+            target (tuple[int]): The qubit indices to measure.
+            classical_targets (Iterable[int] | None): The classical bit indices
+                to write results into for the circuit's final output.
+        """
 
     def add_barrier(self, target: list[int] | None = None) -> None:
         """Abstract method to add a barrier instruction to the circuit. By defaul barrier is ignored.
@@ -861,6 +887,55 @@ class AbstractProgramContext(ABC):
 
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
+
+    def set_visitor(self, visitor: Callable) -> None:
+        """Register the AST visitor callable used by control-flow handlers.
+
+        Called by the Interpreter during initialization so that
+        ``handle_branching_statement``, ``handle_for_loop``, and
+        ``handle_while_loop`` can visit child AST nodes without
+        receiving the visitor as a parameter on every call.
+
+        Args:
+            visitor (Callable): The Interpreter's ``visit`` method.
+        """
+        raise NotImplementedError
+
+    def handle_branching_statement(self, node) -> None:
+        """Handle if/else branching for mid-circuit measurement contexts.
+
+        Called by the Interpreter only when ``supports_midcircuit_measurement``
+        is True. Subclasses that support MCM must override this to provide
+        per-path condition evaluation.
+
+        Args:
+            node: The if/else AST node.
+        """
+        raise NotImplementedError
+
+    def handle_for_loop(self, node) -> None:
+        """Handle for loops for mid-circuit measurement contexts.
+
+        Called by the Interpreter only when ``supports_midcircuit_measurement``
+        is True. Subclasses that support MCM must override this to provide
+        per-path loop execution.
+
+        Args:
+            node: The for-in loop AST node.
+        """
+        raise NotImplementedError
+
+    def handle_while_loop(self, node) -> None:
+        """Handle while loops for mid-circuit measurement contexts.
+
+        Called by the Interpreter only when ``supports_midcircuit_measurement``
+        is True. Subclasses that support MCM must override this to provide
+        per-path loop execution.
+
+        Args:
+            node: The while loop AST node.
+        """
+        raise NotImplementedError
 
 
 class ProgramContext(AbstractProgramContext):
@@ -923,7 +998,9 @@ class ProgramContext(AbstractProgramContext):
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
 
-    def add_measure(self, target: tuple[int], classical_targets: Iterable[int] | None = None):
+    def add_measure(
+        self, target: tuple[int], classical_targets: Iterable[int] | None = None, **kwargs
+    ):
         self._circuit.add_measure(target, classical_targets)
 
     def add_reset(self, target: list[int]) -> None:
