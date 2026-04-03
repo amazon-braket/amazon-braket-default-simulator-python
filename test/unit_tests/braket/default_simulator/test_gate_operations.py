@@ -18,6 +18,9 @@ import pytest
 from braket.default_simulator import gate_operations
 from braket.default_simulator.gate_operations import Measure, Reset
 from braket.default_simulator.operation_helpers import check_unitary, from_braket_instruction
+from braket.default_simulator.simulation_strategies.single_operation_strategy import (
+    apply_operations,
+)
 
 testdata = [
     (instruction.I(target=4), (4,), gate_operations.Identity),
@@ -115,3 +118,49 @@ reset_testdata = [
 def test_reset_operation(input_state, expected):
     result = Reset([0]).apply(input_state.copy())
     np.testing.assert_array_almost_equal(result, expected)
+
+
+def test_measure_invalid_result_raises():
+    # only 0 and 1 are valid results for _base_matrix; -1 (unset) and anything else should raise
+    for bad in (-1, 99):
+        with pytest.raises(ValueError, match="Invalid measurement result"):
+            Measure([0], result=bad)._base_matrix
+
+
+def test_measure_multi_qubit_noop():
+    # len(targets) != 1 — apply returns projected_state unchanged (no single-qubit branch)
+    m = Measure([0, 1], result=0)
+    state = np.array([_s2, 0, _s2, 0], dtype=complex)
+    result = m.apply(state.copy())
+    np.testing.assert_array_almost_equal(result, state)
+
+
+def test_measure_zero_norm_state():
+    # norm == 0 after projection — should not divide by zero
+    m = Measure([0], result=1)
+    state = np.array([1.0, 0.0], dtype=complex)  # already in |0⟩, projecting to |1⟩ → zero norm
+    result = m.apply(state.copy())
+    np.testing.assert_array_almost_equal(result, [0.0, 0.0])
+
+
+def test_reset_zero_norm_state():
+    # norm == 0 after reset — should not divide by zero
+    r = Reset([0])
+    state = np.zeros(2, dtype=complex)
+    result = r.apply(state.copy())
+    np.testing.assert_array_almost_equal(result, [0.0, 0.0])
+
+
+def test_apply_operations_with_measure():
+    # exercises the Measure/Reset branch in single_operation_strategy
+    state = np.array([_s2, _s2], dtype=complex).reshape(2)
+    ops = [Measure([0], result=0)]
+    result = apply_operations(state, 1, ops)
+    np.testing.assert_array_almost_equal(result.flatten(), [1.0, 0.0])
+
+
+def test_apply_operations_with_reset():
+    state = np.array([0.0, 1.0], dtype=complex).reshape(2)
+    ops = [Reset([0])]
+    result = apply_operations(state, 1, ops)
+    np.testing.assert_array_almost_equal(result.flatten(), [1.0, 0.0])
