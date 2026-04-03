@@ -136,6 +136,8 @@ class Interpreter:
     ):
         # context keeps track of all state
         self.context = context or ProgramContext()
+        if self.context.supports_midcircuit_measurement:
+            self.context.set_visitor(self.visit)
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
         self._warn_advanced_features = warn_advanced_features
@@ -579,43 +581,52 @@ class Interpreter:
     @visit.register
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
-        condition = cast_to(BooleanLiteral, self.visit(node.condition))
-        if condition.value:
-            self.visit(node.if_block)
-        elif node.else_block:
-            self.visit(node.else_block)
+        if self.context.supports_midcircuit_measurement:
+            self.context.handle_branching_statement(node)
+        else:
+            condition = cast_to(BooleanLiteral, self.visit(node.condition))
+            if condition.value:
+                self.visit(node.if_block)
+            elif node.else_block:
+                self.visit(node.else_block)
 
     @visit.register
     def _(self, node: ForInLoop) -> None:
         self._uses_advanced_language_features = True
-        index = self.visit(node.set_declaration)
-        if isinstance(index, RangeDefinition):
-            index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-        # DiscreteSet
+        if self.context.supports_midcircuit_measurement:
+            self.context.handle_for_loop(node)
         else:
-            index_values = index.values
+            index = self.visit(node.set_declaration)
+            if isinstance(index, RangeDefinition):
+                index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+            # DiscreteSet
+            else:
+                index_values = index.values
 
-        loop_var_name = node.identifier.name
-        for i in index_values:
-            with self.context.enter_scope():
-                self.context.declare_variable(loop_var_name, node.type, i)
+            loop_var_name = node.identifier.name
+            for i in index_values:
+                with self.context.enter_scope():
+                    self.context.declare_variable(loop_var_name, node.type, i)
+                    try:
+                        self.visit(deepcopy(node.block))
+                    except _BreakSignal:
+                        break
+                    except _ContinueSignal:
+                        continue
+
+    @visit.register
+    def _(self, node: WhileLoop) -> None:
+        self._uses_advanced_language_features = True
+        if self.context.supports_midcircuit_measurement:
+            self.context.handle_while_loop(node)
+        else:
+            while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
                 try:
                     self.visit(deepcopy(node.block))
                 except _BreakSignal:
                     break
                 except _ContinueSignal:
                     continue
-
-    @visit.register
-    def _(self, node: WhileLoop) -> None:
-        self._uses_advanced_language_features = True
-        while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
-            try:
-                self.visit(deepcopy(node.block))
-            except _BreakSignal:
-                break
-            except _ContinueSignal:
-                continue
 
     @visit.register
     def _(self, node: BreakStatement) -> None:
