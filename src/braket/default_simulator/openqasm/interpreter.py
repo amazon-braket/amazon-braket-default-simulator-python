@@ -136,8 +136,6 @@ class Interpreter:
     ):
         # context keeps track of all state
         self.context = context or ProgramContext()
-        if self.context.supports_midcircuit_measurement:
-            self.context.set_visitor(self.visit)
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
         self._warn_advanced_features = warn_advanced_features

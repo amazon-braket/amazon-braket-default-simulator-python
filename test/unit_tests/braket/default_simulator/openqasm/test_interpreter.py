@@ -2592,7 +2592,6 @@ def test_alias_unsupported_raises():
 
 def _make_mcm_context():
     """Return a ProgramContext subclass whose supports_midcircuit_measurement is True."""
-    from unittest.mock import MagicMock
     from braket.default_simulator.openqasm.program_context import ProgramContext
 
     class MCMContext(ProgramContext):
@@ -2600,11 +2599,8 @@ def _make_mcm_context():
         def supports_midcircuit_measurement(self) -> bool:
             return True
 
-        def set_visitor(self, visitor):
-            self._visitor = visitor
-
         def handle_branching_statement(self, node):
-            pass  # no-op — just needs to be reachable
+            pass
 
         def handle_for_loop(self, node):
             pass
@@ -2613,18 +2609,6 @@ def _make_mcm_context():
             pass
 
     return MCMContext()
-
-
-def test_mcm_context_set_visitor_called_on_init():
-    """When a context supports MCM, the interpreter registers its visitor on init."""
-    visitor_calls = []
-
-    ctx = _make_mcm_context()
-    ctx.set_visitor = lambda v: visitor_calls.append(v)
-
-    Interpreter(context=ctx)
-    assert len(visitor_calls) == 1
-    assert callable(visitor_calls[0])
 
 
 def test_mcm_branching_statement_delegates_to_context():
