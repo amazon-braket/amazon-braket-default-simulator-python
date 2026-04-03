@@ -128,16 +128,9 @@ def test_reset_operation(input_state, expected):
     np.testing.assert_array_almost_equal(result.flatten(), expected)
 
 
-def test_measure_invalid_result_raises():
-    # only 0 and 1 are valid results for _base_matrix; -1 (unset) and anything else should raise
-    for bad in (-1, 99):
-        with pytest.raises(ValueError, match="Invalid measurement result"):
-            Measure([0], result=bad)._base_matrix
-
-
-def test_measure_base_matrix():
-    np.testing.assert_array_equal(Measure([0], result=0)._base_matrix, np.array([[1, 0], [0, 0]], dtype=complex))
-    np.testing.assert_array_equal(Measure([0], result=1)._base_matrix, np.array([[0, 0], [0, 1]], dtype=complex))
+def test_measure_base_matrix_raises():
+    with pytest.raises(NotImplementedError):
+        Measure([0], result=0)._base_matrix
 
 
 def test_measure_multi_qubit_raises():

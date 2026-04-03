@@ -1295,15 +1295,7 @@ class Measure(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        """Return the projection matrix for the measurement outcome (0 or 1)."""
-        if self.result == 0:
-            # Project to |0⟩⟨0|
-            return np.array([[1, 0], [0, 0]], dtype=complex)
-        elif self.result == 1:
-            # Project to |1⟩⟨1|
-            return np.array([[0, 0], [0, 1]], dtype=complex)
-        else:
-            raise ValueError(f"Invalid measurement result: {self.result}. Must be 0 or 1.")
+        raise NotImplementedError("Measure does not have a matrix implementation")
 
     def apply(self, state: np.ndarray) -> np.ndarray:
         if self.result == -1:
