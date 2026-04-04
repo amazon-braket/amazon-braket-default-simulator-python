@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import singledispatchmethod
 from typing import Any
 
@@ -887,6 +887,19 @@ class AbstractProgramContext(ABC):
 
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
+
+    def set_visitor(self, visitor: Callable) -> None:
+        """Register the AST visitor callable used by control-flow handlers.
+
+        Called by the Interpreter during initialization so that
+        ``handle_branching_statement``, ``handle_for_loop``, and
+        ``handle_while_loop`` can visit child AST nodes without
+        receiving the visitor as a parameter on every call.
+
+        Args:
+            visitor (Callable): The Interpreter's ``visit`` method.
+        """
+        raise NotImplementedError
 
     def handle_branching_statement(self, node) -> None:
         """Handle if/else branching for mid-circuit measurement contexts.

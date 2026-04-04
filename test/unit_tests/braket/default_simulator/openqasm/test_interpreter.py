@@ -2599,6 +2599,9 @@ def _make_mcm_context():
         def supports_midcircuit_measurement(self) -> bool:
             return True
 
+        def set_visitor(self, visitor) -> None:
+            self._visitor = visitor
+
         def handle_branching_statement(self, node):
             pass
 
