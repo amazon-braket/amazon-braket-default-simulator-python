@@ -46,8 +46,10 @@ from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
 from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
+    BranchingStatement,
     ClassicalType,
     FloatLiteral,
+    ForInLoop,
     GateModifierName,
     Identifier,
     IndexedIdentifier,
@@ -57,6 +59,7 @@ from .parser.openqasm_ast import (
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
+    WhileLoop,
 )
 
 
@@ -901,7 +904,7 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
-    def handle_branching_statement(self, node) -> None:
+    def handle_branching_statement(self, node: BranchingStatement) -> None:
         """Handle if/else branching for mid-circuit measurement contexts.
 
         Called by the Interpreter only when ``supports_midcircuit_measurement``
@@ -909,11 +912,11 @@ class AbstractProgramContext(ABC):
         per-path condition evaluation.
 
         Args:
-            node: The if/else AST node.
+            node (BranchingStatement): The if/else AST node.
         """
         raise NotImplementedError
 
-    def handle_for_loop(self, node) -> None:
+    def handle_for_loop(self, node: ForInLoop) -> None:
         """Handle for loops for mid-circuit measurement contexts.
 
         Called by the Interpreter only when ``supports_midcircuit_measurement``
@@ -921,11 +924,11 @@ class AbstractProgramContext(ABC):
         per-path loop execution.
 
         Args:
-            node: The for-in loop AST node.
+            node (ForInLoop): The for-in loop AST node.
         """
         raise NotImplementedError
 
-    def handle_while_loop(self, node) -> None:
+    def handle_while_loop(self, node: WhileLoop) -> None:
         """Handle while loops for mid-circuit measurement contexts.
 
         Called by the Interpreter only when ``supports_midcircuit_measurement``
@@ -933,7 +936,7 @@ class AbstractProgramContext(ABC):
         per-path loop execution.
 
         Args:
-            node: The while loop AST node.
+            node (WhileLoop): The while loop AST node.
         """
         raise NotImplementedError
 
