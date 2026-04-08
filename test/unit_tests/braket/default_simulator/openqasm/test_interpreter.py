@@ -2464,3 +2464,124 @@ def test_barrier_visitor_mixed_with_gates():
     assert isinstance(circuit.instructions[0], Hadamard)
     assert isinstance(circuit.instructions[1], CX)
     assert isinstance(circuit.instructions[2], PauliX)
+
+
+def test_if_else_branch():
+    # exercises the else_block path in BranchingStatement
+    qasm = """
+    int[8] x = 0;
+    if (false) {
+        x = 1;
+    } else {
+        x = 2;
+    }
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("x") == IntegerLiteral(2)
+
+
+def test_for_loop_break():
+    # exercises _BreakSignal / BreakStatement
+    qasm = """
+    int[8] x = 0;
+    for int[8] i in [0:4] {
+        if (i == 2) {
+            break;
+        }
+        x += 1;
+    }
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("x") == IntegerLiteral(2)
+
+
+def test_for_loop_continue():
+    # exercises _ContinueSignal / ContinueStatement
+    qasm = """
+    int[8] x = 0;
+    for int[8] i in [0:4] {
+        if (i == 2) {
+            continue;
+        }
+        x += 1;
+    }
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("x") == IntegerLiteral(4)
+
+
+def test_while_loop_break():
+    qasm = """
+    int[8] x = 0;
+    int[8] i = 0;
+    while (i < 10) {
+        if (i == 3) {
+            break;
+        }
+        x += 1;
+        i += 1;
+    }
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("x") == IntegerLiteral(3)
+
+
+def test_while_loop_continue():
+    qasm = """
+    int[8] x = 0;
+    int[8] i = 0;
+    while (i < 5) {
+        i += 1;
+        if (i == 3) {
+            continue;
+        }
+        x += 1;
+    }
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("x") == IntegerLiteral(4)
+
+
+def test_alias_simple():
+    # exercises AliasStatement with a plain Identifier value
+    qasm = """
+    qubit[2] q;
+    let alias = q;
+    h alias[0];
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    assert len(circuit.instructions) == 1
+    assert isinstance(circuit.instructions[0], Hadamard)
+    assert circuit.instructions[0].targets == (0,)
+
+
+def test_alias_concatenation():
+    # exercises AliasStatement with a Concatenation value
+    qasm = """
+    qubit q0;
+    qubit q1;
+    let combined = q0 ++ q1;
+    h combined[0];
+    x combined[1];
+    """
+    circuit = Interpreter().build_circuit(qasm)
+    assert len(circuit.instructions) == 2
+    assert isinstance(circuit.instructions[0], Hadamard)
+    assert circuit.instructions[0].targets == (0,)
+    assert isinstance(circuit.instructions[1], PauliX)
+    assert circuit.instructions[1].targets == (1,)
+
+
+def test_alias_unsupported_raises():
+    # exercises the NotImplementedError branch in AliasStatement
+    from braket.default_simulator.openqasm.parser.openqasm_ast import (
+        AliasStatement,
+        Identifier,
+        IntegerLiteral,
+    )
+    from braket.default_simulator.openqasm.interpreter import Interpreter as _Interp
+
+    interp = _Interp()
+    node = AliasStatement(target=Identifier("a"), value=IntegerLiteral(0))
+    with pytest.raises(NotImplementedError, match="IntegerLiteral"):
+        interp.visit(node)

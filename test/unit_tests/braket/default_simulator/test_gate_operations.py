@@ -18,6 +18,9 @@ import pytest
 from braket.default_simulator import gate_operations
 from braket.default_simulator.gate_operations import Measure, Reset
 from braket.default_simulator.operation_helpers import check_unitary, from_braket_instruction
+from braket.default_simulator.simulation_strategies.single_operation_strategy import (
+    apply_operations,
+)
 
 testdata = [
     (instruction.I(target=4), (4,), gate_operations.Identity),
@@ -214,3 +217,59 @@ class TestResetApply:
         state = np.array([0, 0], dtype=complex)
         result = r.apply(state)
         np.testing.assert_array_almost_equal(result, np.array([0, 0], dtype=complex))
+
+_s2 = 1 / np.sqrt(2)
+
+measure_testdata = [
+    # (operation, input_state, expected_output_state)
+    (Measure([0], result=-1), np.array([_s2, _s2], dtype=complex), np.array([_s2, _s2], dtype=complex)),
+    (Measure([0], result=0),  np.array([_s2, _s2], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
+    (Measure([0], result=1),  np.array([_s2, _s2], dtype=complex), np.array([0.0, 1.0], dtype=complex)),
+    # Two-qubit: |00⟩+|01⟩+|10⟩+|11⟩, measure qubit 1 → 0; only |00⟩ and |10⟩ survive
+    (Measure([1], result=0),  0.5 * np.ones(4, dtype=complex),     np.array([_s2, 0, _s2, 0], dtype=complex)),
+    # Zero-norm after projection — state already in |0⟩, projecting to |1⟩ yields all zeros
+    (Measure([0], result=1),  np.array([1.0, 0.0], dtype=complex), np.array([0.0, 0.0], dtype=complex)),
+]
+
+
+@pytest.mark.parametrize("operation, input_state, expected", measure_testdata)
+def test_measure_operation(operation, input_state, expected):
+    n_qubits = int(np.log2(len(input_state)))
+    state_tensor = input_state.copy().reshape([2] * n_qubits)
+    result = apply_operations(state_tensor, n_qubits, [operation])
+    np.testing.assert_array_almost_equal(result.flatten(), expected)
+
+
+reset_testdata = [
+    # (input_state, expected_output_state)
+    (np.array([1.0, 0.0], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
+    (np.array([0.0, 1.0], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
+    (np.array([_s2,  _s2], dtype=complex), np.array([1.0, 0.0], dtype=complex)),
+    # zero-norm input — should not divide by zero
+    (np.zeros(2, dtype=complex), np.zeros(2, dtype=complex)),
+]
+
+
+@pytest.mark.parametrize("input_state, expected", reset_testdata)
+def test_reset_operation(input_state, expected):
+    n_qubits = int(np.log2(len(input_state)))
+    state_tensor = input_state.copy().reshape([2] * n_qubits)
+    result = apply_operations(state_tensor, n_qubits, [Reset([0])])
+    np.testing.assert_array_almost_equal(result.flatten(), expected)
+
+
+def test_measure_base_matrix_raises():
+    with pytest.raises(NotImplementedError):
+        Measure([0], result=0)._base_matrix
+
+
+def test_measure_multi_qubit_raises():
+    with pytest.raises(ValueError, match="single target qubit"):
+        Measure([0, 1], result=0).apply(0.5 * np.ones(4, dtype=complex))
+
+
+def test_reset_multi_qubit_raises():
+    with pytest.raises(ValueError, match="single target qubit"):
+        Reset([0, 1]).apply(0.5 * np.ones(4, dtype=complex))
+
+
