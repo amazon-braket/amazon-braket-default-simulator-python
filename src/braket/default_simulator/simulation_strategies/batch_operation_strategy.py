@@ -53,6 +53,7 @@ def apply_operations(
     # TODO: Write algorithm to determine partition size based on operations and qubit count
     partitions = [operations[i : i + batch_size] for i in range(0, len(operations), batch_size)]
 
+    # TODO: support MCM
     for partition in partitions:
         state = _contract_operations(state, qubit_count, partition)
 
