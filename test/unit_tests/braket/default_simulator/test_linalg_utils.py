@@ -15,6 +15,8 @@ import numpy as np
 import pytest
 
 from braket.default_simulator.linalg_utils import (
+    _apply_cnot_large,
+    _apply_cnot_small,
     _apply_single_qubit_gate_large,
     _apply_diagonal_gate_small,
     _apply_diagonal_gate_large,
@@ -890,4 +892,71 @@ def test_apply_diagonal_gate_large_via_single_qubit_gate():
         result_norm = np.linalg.norm(result_multi.flatten())
         assert np.isclose(original_norm, result_norm, atol=1e-7), (
             f"Norm not preserved for target {target_qubit}"
+        )
+
+
+@pytest.mark.parametrize(
+    "control, target, qubit_count",
+    [
+        (0, 1, 3),
+        (1, 0, 3),
+        (0, 2, 3),
+        (2, 0, 3),
+        (0, 2, 4),
+        (1, 3, 4),
+        (3, 5, 11),
+        (2, 4, 11),
+        (0, 10, 11),
+        (10, 0, 11),
+    ],
+)
+def test_apply_cnot_large_matches_small(control, target, qubit_count):
+    """Test that _apply_cnot_large produces the same result as _apply_cnot_small."""
+    np.random.seed(42)
+    state_flat = np.random.random(2**qubit_count) + 1j * np.random.random(2**qubit_count)
+    state_flat = state_flat / np.linalg.norm(state_flat)
+
+    state_small = state_flat.reshape([2] * qubit_count).copy()
+    state_large = state_flat.reshape([2] * qubit_count).copy()
+    out = np.zeros_like(state_small)
+
+    result_small, _ = _apply_cnot_small(state_small, control, target, out)
+    result_large, _ = _apply_cnot_large(state_large, control, target, out)
+
+    assert np.allclose(result_small, result_large, atol=1e-7), (
+        f"CNOT({control},{target}) on {qubit_count} qubits: small and large paths differ"
+    )
+
+
+def test_apply_cnot_large_ghz_tree():
+    """Test CNOT large path with log-depth GHZ tree on >10 qubits.
+
+    Regression test for non-adjacent CNOT producing incorrect state vectors.
+    """
+    n_qubits = 11
+    state = np.zeros([2] * n_qubits, dtype=complex)
+    state[tuple([0] * n_qubits)] = 1.0
+
+    # H on qubit 2
+    h = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+    out = np.zeros_like(state)
+    from braket.default_simulator.linalg_utils import _apply_single_qubit_gate_large
+    state, _ = _apply_single_qubit_gate_large(state, h, 2, out)
+
+    # CNOT(2,3), CNOT(2,4), CNOT(3,5) — tree structure
+    for ctrl, tgt in [(2, 3), (2, 4), (3, 5)]:
+        out = np.zeros_like(state)
+        state, _ = _apply_cnot_large(state, ctrl, tgt, out)
+
+    flat = state.reshape(-1)
+    probs = np.abs(flat) ** 2
+    nonzero = np.where(probs > 1e-10)[0]
+
+    # Should have exactly 2 nonzero amplitudes: |00000000000> and |00111100000>
+    assert len(nonzero) == 2
+    for idx in nonzero:
+        bits = format(idx, f"0{n_qubits}b")
+        ghz_bits = [int(bits[i]) for i in [2, 3, 4, 5]]
+        assert all(b == 0 for b in ghz_bits) or all(b == 1 for b in ghz_bits), (
+            f"GHZ qubits {ghz_bits} are not all-0 or all-1 for state |{bits}>"
         )
