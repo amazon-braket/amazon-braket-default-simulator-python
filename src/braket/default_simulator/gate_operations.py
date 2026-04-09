@@ -1302,7 +1302,9 @@ class Measure(GateOperation):
             return state
 
         if len(self._targets) != 1:
-            raise ValueError(f"Measure only supports a single target qubit, got {len(self._targets)}.")
+            raise ValueError(
+                f"Measure only supports a single target qubit, got {len(self._targets)}."
+            )
 
         # Apply projection matrix
         projected_state = state.copy()
@@ -1340,7 +1342,9 @@ class Reset(GateOperation):
 
     def apply(self, state: np.ndarray) -> np.ndarray:
         if len(self._targets) != 1:
-            raise ValueError(f"Reset only supports a single target qubit, got {len(self._targets)}.")
+            raise ValueError(
+                f"Reset only supports a single target qubit, got {len(self._targets)}."
+            )
 
         qubit_idx = self._targets[0]
         n_qubits = int(np.log2(len(state)))

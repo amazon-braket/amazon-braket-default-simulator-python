@@ -2588,3 +2588,82 @@ def test_alias_unsupported_raises():
     node = AliasStatement(target=Identifier("a"), value=IntegerLiteral(0))
     with pytest.raises(NotImplementedError, match="IntegerLiteral"):
         interp.visit(node)
+
+
+def _make_mcm_context():
+    """Return a ProgramContext subclass whose supports_midcircuit_measurement is True."""
+    from braket.default_simulator.openqasm.program_context import ProgramContext
+
+    class MCMContext(ProgramContext):
+        @property
+        def supports_midcircuit_measurement(self) -> bool:
+            return True
+
+        def set_visitor(self, visitor) -> None:
+            self._visitor = visitor
+
+        def handle_branching_statement(self, node):
+            pass
+
+        def handle_for_loop(self, node):
+            pass
+
+        def handle_while_loop(self, node):
+            pass
+
+    return MCMContext()
+
+
+def test_mcm_branching_statement_delegates_to_context():
+    """When MCM is supported, if/else branching is delegated to the context."""
+    ctx = _make_mcm_context()
+    called = []
+    ctx.handle_branching_statement = lambda node: called.append(node)
+
+    interp = Interpreter(context=ctx)
+    qasm = """
+    qubit q;
+    bit b;
+    if (b) { x q; }
+    """
+    interp.run(qasm)
+    assert len(called) == 1
+
+
+def test_mcm_for_loop_delegates_to_context():
+    """When MCM is supported, for loops are delegated to the context."""
+    ctx = _make_mcm_context()
+    called = []
+    ctx.handle_for_loop = lambda node: called.append(node)
+
+    interp = Interpreter(context=ctx)
+    qasm = """
+    for int i in [0:2] { }
+    """
+    interp.run(qasm)
+    assert len(called) == 1
+
+
+def test_mcm_while_loop_delegates_to_context():
+    """When MCM is supported, while loops are delegated to the context."""
+    ctx = _make_mcm_context()
+    called = []
+    ctx.handle_while_loop = lambda node: called.append(node)
+
+    interp = Interpreter(context=ctx)
+    qasm = """
+    int i = 0;
+    while (i < 3) { i += 1; }
+    """
+    interp.run(qasm)
+    assert len(called) == 1
+
+
+def test_abstract_program_context_default_properties():
+    """Default ProgramContext reports no branching and no MCM support."""
+    from braket.default_simulator.openqasm.program_context import ProgramContext
+
+    ctx = ProgramContext()
+    assert ctx.is_branched is False
+    assert ctx.supports_midcircuit_measurement is False
+    assert ctx.active_paths == []
