@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.36.0 (2026-04-09)
+
+### Features
+
+ * add MCM delegation pattern
+
 ## v1.35.0 (2026-04-08)
 
 ### Features
