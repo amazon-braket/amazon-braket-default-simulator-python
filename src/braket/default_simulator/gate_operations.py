@@ -1281,6 +1281,97 @@ class GPhase(GateOperation):
         return "gphase"
 
 
+class Measure(GateOperation):
+    """
+    Measurement operation that projects the state to a specific outcome.
+
+    This is used in branched simulation to apply measurement projections
+    when recalculating states from instruction sequences.
+    """
+
+    def __init__(self, targets: Sequence[int], result: int = -1):
+        super().__init__(targets=targets)
+        self.result = result  # The measurement outcome (0 or 1)
+
+    @property
+    def _base_matrix(self) -> np.ndarray:
+        raise NotImplementedError("Measure does not have a matrix implementation")
+
+    def apply(self, state: np.ndarray) -> np.ndarray:
+        if self.result == -1:
+            return state
+
+        if len(self._targets) != 1:
+            raise ValueError(
+                f"Measure only supports a single target qubit, got {len(self._targets)}."
+            )
+
+        # Apply projection matrix
+        projected_state = state.copy()
+        qubit_idx = self._targets[0]
+        n_qubits = int(np.log2(len(state)))
+
+        # Create mask for the target qubit
+        mask = 1 << (n_qubits - qubit_idx - 1)  # Big-endian indexing
+
+        # Zero out amplitudes that don't match the measurement result
+        for i in range(len(projected_state)):
+            qubit_value = (i & mask) >> (n_qubits - qubit_idx - 1)
+            if qubit_value != self.result:
+                projected_state[i] = 0
+
+        # Normalize the state
+        norm = np.linalg.norm(projected_state)
+        if norm > 0:
+            projected_state /= norm
+
+        return projected_state
+
+
+class Reset(GateOperation):
+    """
+    Reset operation that sets desired target to 0
+    """
+
+    def __init__(self, targets: Sequence[int]):
+        super().__init__(targets=targets)
+
+    @property
+    def _base_matrix(self) -> np.ndarray:
+        raise NotImplementedError("Reset does not have a matrix implementation")
+
+    def apply(self, state: np.ndarray) -> np.ndarray:
+        if len(self._targets) != 1:
+            raise ValueError(
+                f"Reset only supports a single target qubit, got {len(self._targets)}."
+            )
+
+        qubit_idx = self._targets[0]
+        n_qubits = int(np.log2(len(state)))
+
+        # Create mask for the target qubit
+        mask = 1 << (n_qubits - qubit_idx - 1)  # Big-endian indexing
+
+        for i in range(len(state)):
+            # Check if the qubit is in state 1
+            qubit_value = (i & mask) >> (n_qubits - qubit_idx - 1)
+            if qubit_value == 1:
+                zero_index = i & ~mask
+
+                # Transfer the amplitude (with proper scaling)
+                state[zero_index] += state[i]
+
+                # Set the original amplitude to zero
+                state[i] = 0
+
+        # Normalize the state
+        norm = np.linalg.norm(state)
+        if norm > 0:
+            state /= norm
+
+        return state
+
+
 BRAKET_GATES = {
     "i": Identity,
     "h": Hadamard,
