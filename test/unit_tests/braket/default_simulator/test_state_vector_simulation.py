@@ -473,3 +473,74 @@ def test_instantiation_fails_batch_size_wrong_type(batch_size):
 @pytest.mark.xfail(raises=ValueError)
 def test_instantiation_fails_batch_size_nonpositive(batch_size):
     StateVectorSimulation(4, 0, batch_size)
+
+
+_ghz_tree_ops_12q = [gate_operations.Identity([q]) for q in [0, 1, 6, 7, 8, 9, 10, 11]] + [
+    gate_operations.Hadamard([2]),
+    gate_operations.CX([2, 3]),
+    gate_operations.CX([2, 4]),
+    gate_operations.CX([3, 5]),
+]
+
+_ghz_linear_ops_12q = [gate_operations.Identity([q]) for q in [0, 1, 6, 7, 8, 9, 10, 11]] + [
+    gate_operations.Hadamard([2]),
+    gate_operations.CX([2, 3]),
+    gate_operations.CX([3, 4]),
+    gate_operations.CX([4, 5]),
+]
+
+_ghz_tree_ops_6q = [
+    gate_operations.Hadamard([2]),
+    gate_operations.CX([2, 3]),
+    gate_operations.CX([2, 4]),
+    gate_operations.CX([3, 5]),
+]
+
+
+def _expected_ghz_probabilities(qubit_count):
+    probs = np.zeros(2**qubit_count)
+    probs[0] = 0.5
+    idx = sum(1 << (qubit_count - 1 - q) for q in [2, 3, 4, 5])
+    probs[idx] = 0.5
+    return probs
+
+
+@pytest.mark.parametrize("batch_size", [1, 5, 10])
+def test_ghz_tree_with_identity_qubits(batch_size):
+    simulation = StateVectorSimulation(12, 0, batch_size)
+    simulation.evolve(_ghz_tree_ops_12q)
+    assert np.allclose(simulation.probabilities, _expected_ghz_probabilities(12))
+
+
+@pytest.mark.parametrize("batch_size", [1, 5, 10])
+def test_ghz_linear_with_identity_qubits(batch_size):
+    simulation = StateVectorSimulation(12, 0, batch_size)
+    simulation.evolve(_ghz_linear_ops_12q)
+    assert np.allclose(simulation.probabilities, _expected_ghz_probabilities(12))
+
+
+@pytest.mark.parametrize("batch_size", [1, 5, 10])
+def test_ghz_tree_without_identity_qubits(batch_size):
+    simulation = StateVectorSimulation(6, 0, batch_size)
+    simulation.evolve(_ghz_tree_ops_6q)
+    assert np.allclose(simulation.probabilities, _expected_ghz_probabilities(6))
+
+
+@pytest.mark.parametrize("batch_size", [1, 5, 10])
+def test_ghz_tree_matches_linear(batch_size):
+    sim_tree = StateVectorSimulation(12, 0, batch_size)
+    sim_tree.evolve(_ghz_tree_ops_12q)
+    sim_linear = StateVectorSimulation(12, 0, batch_size)
+    sim_linear.evolve(_ghz_linear_ops_12q)
+    assert np.allclose(sim_tree.state_vector, sim_linear.state_vector)
+
+
+@pytest.mark.parametrize("batch_size", [1, 5, 10])
+def test_ghz_tree_retrieve_samples(batch_size):
+    simulation = StateVectorSimulation(12, 10000, batch_size)
+    simulation.evolve(_ghz_tree_ops_12q)
+    counter = Counter(simulation.retrieve_samples())
+    assert counter.keys() == {0, 960}
+    assert 0.4 < counter[0] / (counter[0] + counter[960]) < 0.6
+    assert 0.4 < counter[960] / (counter[0] + counter[960]) < 0.6
+    assert counter[0] + counter[960] == 10000
