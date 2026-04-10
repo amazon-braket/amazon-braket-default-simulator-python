@@ -282,13 +282,11 @@ def _apply_cnot_large(
     target_bit_pos = n_qubits - target - 1
     control_bit_pos = n_qubits - control - 1
 
-    if control_bit_pos > target_bit_pos:
-        high_bit = control_bit_pos
-        low_bit = target_bit_pos
-    else:
-        high_bit = target_bit_pos
-        low_bit = control_bit_pos
-
+    high_bit, low_bit = (
+        (control_bit_pos, target_bit_pos)
+        if control_bit_pos > target_bit_pos
+        else (target_bit_pos, control_bit_pos)
+    )
     low_mask = (1 << low_bit) - 1
     mid_mask = (1 << (high_bit - 1)) - 1
     control_mask = 1 << control_bit_pos
