@@ -1314,6 +1314,11 @@ class Measure(GateOperation):
         if self.result == -1:
             return state
 
+        if len(self._targets) != 1:
+            raise ValueError(
+                f"Measure only supports a single target qubit, got {len(self._targets)}."
+            )
+
         # Apply projection matrix
         projected_state = state.copy()
 
@@ -1352,6 +1357,10 @@ class Reset(GateOperation):
         raise NotImplementedError("Reset does not have a matrix implementation")
 
     def apply(self, state: np.ndarray) -> np.ndarray:
+        if len(self._targets) != 1:
+            raise ValueError(
+                f"Reset only supports a single target qubit, got {len(self._targets)}."
+            )
 
         # For single qubit measurement, we need to project the appropriate amplitudes
         if len(self._targets) == 1:
