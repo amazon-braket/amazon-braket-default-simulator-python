@@ -2657,10 +2657,11 @@ def test_mcm_while_loop_delegates_to_context():
 
 
 def test_abstract_program_context_default_properties():
-    """Default ProgramContext reports no branching and no MCM support."""
+    """Default ProgramContext reports no branching but supports MCM."""
     from braket.default_simulator.openqasm.program_context import ProgramContext
 
     ctx = ProgramContext()
     assert ctx.is_branched is False
-    assert ctx.supports_midcircuit_measurement is False
-    assert ctx.active_paths == []
+    assert ctx.supports_midcircuit_measurement is True
+    # ProgramContext always starts with one initial path
+    assert len(ctx.active_paths) == 1

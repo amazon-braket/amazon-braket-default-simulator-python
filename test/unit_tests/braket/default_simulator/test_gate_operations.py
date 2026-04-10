@@ -153,13 +153,12 @@ class TestMeasureApply:
         # All zeros, norm=0, should return zeros without dividing by zero
         np.testing.assert_array_almost_equal(result, np.array([0, 0], dtype=complex))
 
-    def test_apply_multi_target_passthrough(self):
-        # Measure with 2 targets — the single-qubit branch is skipped, state returned as-is
+    def test_apply_multi_target_raises(self):
+        # Measure with 2 targets raises ValueError
         m = Measure([0, 1], result=0)
         state = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
-        result = m.apply(state)
-        # No projection applied for multi-target, just returns the copy
-        np.testing.assert_array_almost_equal(result, state)
+        with pytest.raises(ValueError, match="single target qubit"):
+            m.apply(state)
 
 
 # ---------------------------------------------------------------------------
@@ -203,13 +202,12 @@ class TestResetApply:
         result = r.apply(state)
         np.testing.assert_array_almost_equal(result, np.array([1, 0, 0, 0], dtype=complex))
 
-    def test_reset_multi_target_passthrough(self):
-        # Reset with 2 targets — the single-qubit branch is skipped
+    def test_reset_multi_target_raises(self):
+        # Reset with 2 targets raises ValueError
         r = Reset([0, 1])
         state = np.array([0, 0, 0, 1], dtype=complex)  # |11⟩
-        result = r.apply(state)
-        # No reset applied for multi-target, state returned as-is
-        np.testing.assert_array_almost_equal(result, state)
+        with pytest.raises(ValueError, match="single target qubit"):
+            r.apply(state)
 
     def test_reset_zero_norm_state(self):
         # Edge case: all-zero state — norm is 0, should not divide by zero
@@ -217,6 +215,7 @@ class TestResetApply:
         state = np.array([0, 0], dtype=complex)
         result = r.apply(state)
         np.testing.assert_array_almost_equal(result, np.array([0, 0], dtype=complex))
+
 
 _s2 = 1 / np.sqrt(2)
 
@@ -290,17 +289,11 @@ def test_measure_base_matrix():
     np.testing.assert_array_equal(mi, np.eye(2))
 
 
-def test_measure_multi_qubit_no_projection():
-    # Multi-qubit Measure.apply returns state unchanged (no projection applied)
-    state = 0.5 * np.ones(4, dtype=complex)
-    result = Measure([0, 1], result=0).apply(state)
-    np.testing.assert_array_equal(result, state)
+def test_measure_multi_qubit_raises():
+    with pytest.raises(ValueError, match="single target qubit"):
+        Measure([0, 1], result=0).apply(0.5 * np.ones(4, dtype=complex))
 
 
-def test_reset_multi_qubit_no_op():
-    # Multi-qubit Reset.apply returns state unchanged (only single-qubit supported)
-    state = 0.5 * np.ones(4, dtype=complex)
-    result = Reset([0, 1]).apply(state.copy())
-    np.testing.assert_array_equal(result, state)
-
-
+def test_reset_multi_qubit_raises():
+    with pytest.raises(ValueError, match="single target qubit"):
+        Reset([0, 1]).apply(0.5 * np.ones(4, dtype=complex))
