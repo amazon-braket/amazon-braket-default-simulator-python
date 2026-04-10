@@ -258,18 +258,29 @@ def test_reset_operation(input_state, expected):
     np.testing.assert_array_almost_equal(result.flatten(), expected)
 
 
-def test_measure_base_matrix_raises():
-    with pytest.raises(NotImplementedError):
-        Measure([0], result=0)._base_matrix
+def test_measure_base_matrix():
+    # result=0 projects to |0><0|
+    m0 = Measure([0], result=0)._base_matrix
+    np.testing.assert_array_equal(m0, np.array([[1, 0], [0, 0]], dtype=complex))
+    # result=1 projects to |1><1|
+    m1 = Measure([0], result=1)._base_matrix
+    np.testing.assert_array_equal(m1, np.array([[0, 0], [0, 1]], dtype=complex))
+    # result=-1 (unset) returns identity
+    mi = Measure([0], result=-1)._base_matrix
+    np.testing.assert_array_equal(mi, np.eye(2))
 
 
-def test_measure_multi_qubit_raises():
-    with pytest.raises(ValueError, match="single target qubit"):
-        Measure([0, 1], result=0).apply(0.5 * np.ones(4, dtype=complex))
+def test_measure_multi_qubit_no_projection():
+    # Multi-qubit Measure.apply returns state unchanged (no projection applied)
+    state = 0.5 * np.ones(4, dtype=complex)
+    result = Measure([0, 1], result=0).apply(state)
+    np.testing.assert_array_equal(result, state)
 
 
-def test_reset_multi_qubit_raises():
-    with pytest.raises(ValueError, match="single target qubit"):
-        Reset([0, 1]).apply(0.5 * np.ones(4, dtype=complex))
+def test_reset_multi_qubit_no_op():
+    # Multi-qubit Reset.apply returns state unchanged (only single-qubit supported)
+    state = 0.5 * np.ones(4, dtype=complex)
+    result = Reset([0, 1]).apply(state.copy())
+    np.testing.assert_array_equal(result, state)
 
 
