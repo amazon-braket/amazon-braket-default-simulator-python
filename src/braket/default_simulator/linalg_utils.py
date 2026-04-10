@@ -279,58 +279,33 @@ def _apply_cnot_large(
 ) -> tuple[np.ndarray, bool]:  # pragma: no cover
     """CNOT optimization path with numba."""
     n_qubits = state.ndim
-    total_size = state.size
-    iterations = total_size >> 2
-
     target_bit_pos = n_qubits - target - 1
     control_bit_pos = n_qubits - control - 1
 
-    control_stride = 1 << control_bit_pos
-    target_stride = 1 << target_bit_pos
+    high_bit, low_bit = (
+        (control_bit_pos, target_bit_pos)
+        if control_bit_pos > target_bit_pos
+        else (target_bit_pos, control_bit_pos)
+    )
+    low_mask = (1 << low_bit) - 1
+    mid_mask = (1 << (high_bit - 1)) - 1
+    control_mask = 1 << control_bit_pos
+    target_mask = 1 << target_bit_pos
 
-    if control_bit_pos > target_bit_pos:
-        larger_bit_pos = control_bit_pos
-        smaller_bit_pos = target_bit_pos
-
-        larger_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
-        smaller_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
-
-        swap_offset = target_stride
-    else:
-        larger_bit_pos = target_bit_pos
-        smaller_bit_pos = control_bit_pos
-
-        larger_jump = target_stride if target_bit_pos != n_qubits - 1 else 0
-        smaller_jump = control_stride if control_bit_pos != n_qubits - 1 else 0
-
-        swap_offset = target_stride
-
-    should_smaller_jump = smaller_jump or 1
-    should_larger_jump = larger_jump or 1
-
-    if larger_bit_pos - smaller_bit_pos >= (n_qubits - smaller_bit_pos) // 2:
-        should_larger_jump = max(should_larger_jump // 2, 1)
-
+    iterations = state.size >> 2
     state_flat = state.reshape(-1)
 
-    if larger_bit_pos - smaller_bit_pos == 1:
-        combined_jump = smaller_jump + larger_jump
-        for i in nb.prange(iterations):
-            idx0 = control_stride + i + (i // should_smaller_jump) * combined_jump
-            idx1 = idx0 + swap_offset
+    for i in nb.prange(iterations):
+        lo = i & low_mask
+        mid = (i >> low_bit) & (mid_mask >> low_bit)
+        hi = i >> (high_bit - 1)
 
-            state_flat[idx0], state_flat[idx1] = state_flat[idx1], state_flat[idx0]
-    else:
-        for i in nb.prange(iterations):
-            idx0 = (
-                control_stride
-                + i
-                + (i // should_smaller_jump) * smaller_jump
-                + (i // should_larger_jump) * larger_jump
-            )
-            idx1 = idx0 + swap_offset
+        base = lo | (mid << (low_bit + 1)) | (hi << (high_bit + 1))
 
-            state_flat[idx0], state_flat[idx1] = state_flat[idx1], state_flat[idx0]
+        idx0 = base | control_mask
+        idx1 = idx0 | target_mask
+
+        state_flat[idx0], state_flat[idx1] = state_flat[idx1], state_flat[idx0]
 
     return state, False
 
