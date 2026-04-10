@@ -941,6 +941,7 @@ def test_apply_cnot_large_ghz_tree():
     h = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
     out = np.zeros_like(state)
     from braket.default_simulator.linalg_utils import _apply_single_qubit_gate_large
+
     state, _ = _apply_single_qubit_gate_large(state, h, 2, out)
 
     # CNOT(2,3), CNOT(2,4), CNOT(3,5) — tree structure
