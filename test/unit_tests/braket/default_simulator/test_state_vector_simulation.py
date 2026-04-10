@@ -475,26 +475,19 @@ def test_instantiation_fails_batch_size_nonpositive(batch_size):
     StateVectorSimulation(4, 0, batch_size)
 
 
+_ghz_tree_ops_12q = [gate_operations.Identity([q]) for q in [0, 1, 6, 7, 8, 9, 10, 11]] + [
+    gate_operations.Hadamard([2]),
+    gate_operations.CX([2, 3]),
+    gate_operations.CX([2, 4]),
+    gate_operations.CX([3, 5]),
+]
 
-_ghz_tree_ops_12q = (
-    [gate_operations.Identity([q]) for q in [0, 1, 6, 7, 8, 9, 10, 11]]
-    + [
-        gate_operations.Hadamard([2]),
-        gate_operations.CX([2, 3]),
-        gate_operations.CX([2, 4]),
-        gate_operations.CX([3, 5]),
-    ]
-)
-
-_ghz_linear_ops_12q = (
-    [gate_operations.Identity([q]) for q in [0, 1, 6, 7, 8, 9, 10, 11]]
-    + [
-        gate_operations.Hadamard([2]),
-        gate_operations.CX([2, 3]),
-        gate_operations.CX([3, 4]),
-        gate_operations.CX([4, 5]),
-    ]
-)
+_ghz_linear_ops_12q = [gate_operations.Identity([q]) for q in [0, 1, 6, 7, 8, 9, 10, 11]] + [
+    gate_operations.Hadamard([2]),
+    gate_operations.CX([2, 3]),
+    gate_operations.CX([3, 4]),
+    gate_operations.CX([4, 5]),
+]
 
 _ghz_tree_ops_6q = [
     gate_operations.Hadamard([2]),
