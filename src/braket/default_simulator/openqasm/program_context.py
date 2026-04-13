@@ -13,13 +13,15 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
+from copy import deepcopy
 from functools import singledispatchmethod
 from typing import Any
 
 import numpy as np
 from sympy import Expr
 
-from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Reset, Unitary
+from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Measure, Reset, Unitary
+from braket.default_simulator.linalg_utils import marginal_probability
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -32,20 +34,29 @@ from braket.default_simulator.noise_operations import (
     TwoQubitDephasing,
     TwoQubitDepolarizing,
 )
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.ir.jaqcd.program_v1 import Results
 
 from ._helpers.arrays import (
     convert_discrete_set_to_list,
+    convert_range_def_to_range,
     convert_range_def_to_slice,
     flatten_indices,
     get_elements,
     get_type_width,
     update_value,
 )
-from ._helpers.casting import LiteralType, get_identifier_name, is_none_like
+from ._helpers.casting import (
+    LiteralType,
+    cast_to,
+    get_identifier_name,
+    is_none_like,
+    wrap_value_into_literal,
+)
 from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
+    BooleanLiteral,
     BranchingStatement,
     ClassicalType,
     FloatLiteral,
@@ -55,12 +66,14 @@ from .parser.openqasm_ast import (
     IndexedIdentifier,
     IndexElement,
     IntegerLiteral,
+    QASMNode,
     QuantumGateDefinition,
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
     WhileLoop,
 )
+from .simulation_path import FramedVariable, SimulationPath
 
 
 class Table:
@@ -146,8 +159,7 @@ class QubitTable(Table):
             # used for gate calls on registers, index will be IntegerLiteral
             secondary_index = identifier.indices[1][0].value
             return (target[secondary_index],)
-        else:
-            raise IndexError("Cannot index multiple dimensions for qubits.")
+        raise IndexError("Cannot index multiple dimensions for qubits.")
 
     def get_qubit_size(self, identifier: Identifier | IndexedIdentifier) -> int:
         return len(self.get_by_identifier(identifier))
@@ -444,7 +456,7 @@ class AbstractProgramContext(ABC):
         return False
 
     @property
-    def active_paths(self) -> list:
+    def active_paths(self) -> list[SimulationPath]:
         """The currently active simulation paths."""
         return []
 
@@ -867,7 +879,8 @@ class AbstractProgramContext(ABC):
         Args:
             target (tuple[int]): The qubit indices to measure.
             classical_targets (Iterable[int] | None): The classical bit indices
-                to write results into for the circuit's final output.
+                to write results into for the circuit's final output. Used by the simulation
+                infrastructure for bit-level bookkeeping.
         """
 
     def add_barrier(self, target: list[int] | None = None) -> None:
@@ -941,6 +954,14 @@ class AbstractProgramContext(ABC):
         raise NotImplementedError
 
 
+class _BreakSignal(Exception):
+    """Internal signal raised when a BreakStatement is encountered during branched execution."""
+
+
+class _ContinueSignal(Exception):
+    """Internal signal raised when a ContinueStatement is encountered during branched execution."""
+
+
 class ProgramContext(AbstractProgramContext):
     def __init__(self, circuit: Circuit | None = None):
         """
@@ -950,34 +971,277 @@ class ProgramContext(AbstractProgramContext):
         """
         super().__init__()
         self._circuit = circuit or Circuit()
+        self._visitor: Callable | None = None
+
+        # Path tracking for branched simulation (MCM support)
+        self._paths: list[SimulationPath] = [SimulationPath()]
+        self._active_path_indices: list[int] = [0]
+        self._is_branched: bool = False
+        self._shots: int = 0
+        self._batch_size: int = 1
+        self._pending_mcm_targets: list[tuple] = []
 
     @property
     def circuit(self):
+        self._flush_pending_mcm_targets()
         return self._circuit
+
+    @property
+    def is_branched(self) -> bool:
+        """Whether mid-circuit measurement branching has occurred."""
+        self._flush_pending_mcm_targets()
+        return self._is_branched
+
+    @property
+    def supports_midcircuit_measurement(self) -> bool:
+        """Whether this context supports mid-circuit measurement branching."""
+        return True
+
+    def _flush_pending_mcm_targets(self) -> None:
+        """Flush pending MCM targets to the circuit as regular measurements.
+
+        Called when interpretation is complete and branching never triggered.
+        Measurements that were deferred (because they had a classical_destination
+        but no control flow depended on them) are registered in the circuit
+        as normal end-of-circuit measurements.
+        """
+        if not self._is_branched and self._pending_mcm_targets:
+            for mcm_target, mcm_classical, _mcm_dest in self._pending_mcm_targets:
+                self._circuit.add_measure(
+                    mcm_target, mcm_classical, allow_remeasure=self.supports_midcircuit_measurement
+                )
+            self._pending_mcm_targets.clear()
+
+    @property
+    def active_paths(self) -> list[SimulationPath]:
+        """The currently active simulation paths."""
+        return [self._paths[i] for i in self._active_path_indices]
+
+    def declare_variable(
+        self,
+        name: str,
+        symbol_type: ClassicalType | type[LiteralType] | type[Identifier],
+        value: Any = None,
+        const: bool = False,
+    ) -> None:
+        """Declare variable, storing per-path when branched.
+
+        When branched, the symbol table is still updated (for type lookups),
+        but the variable value is stored as a FramedVariable on each active
+        path instead of in the shared variable table.
+        """
+        if not self._is_branched:
+            super().declare_variable(name, symbol_type, value, const)
+            return
+
+        # Symbol table is shared across paths (type info only)
+        self.symbol_table.add_symbol(name, symbol_type, const)
+        # Store value per-path as a FramedVariable
+        for path_idx in self._active_path_indices:
+            path = self._paths[path_idx]
+            path.set_variable(
+                name, FramedVariable(name, symbol_type, value, const, path.frame_number)
+            )
+
+    def update_value(self, variable: Identifier | IndexedIdentifier, value: Any) -> None:
+        """Update variable value, operating per-path when branched.
+
+        When branched, updates the variable on all active paths. Indexed
+        updates (e.g., ``arr[0] = 5``) are handled by reading the current
+        value from the path, applying the index update, and writing back.
+        """
+        if not self._is_branched:
+            super().update_value(variable, value)
+            return
+
+        name = get_identifier_name(variable)
+        var_type = self.get_type(name)
+        indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
+
+        for path_idx in self._active_path_indices:
+            path = self._paths[path_idx]
+            framed_var = path.get_variable(name)
+            framed_var.value = (
+                update_value(framed_var.value, value, flatten_indices(indices), var_type)
+                if indices
+                else value
+            )
+
+    def get_value(self, name: str) -> LiteralType:
+        """Get variable value, reading from the first active path when branched."""
+        if not self._is_branched:
+            return super().get_value(name)
+
+        value = self._paths[self._active_path_indices[0]].get_variable(name).value
+        return value if isinstance(value, QASMNode) else wrap_value_into_literal(value)
+
+    def get_value_by_identifier(self, identifier: Identifier | IndexedIdentifier) -> LiteralType:
+        """Get variable value by identifier, reading from the first active path when branched."""
+        if not self._is_branched:
+            return super().get_value_by_identifier(identifier)
+
+        name = get_identifier_name(identifier)
+        path = self._paths[self._active_path_indices[0]]
+        framed_var = path.get_variable(name)
+        if framed_var is None:
+            # Fall back to the shared variable table for variables declared
+            # before branching started
+            return super().get_value_by_identifier(identifier)
+
+        value = framed_var.value
+        if not isinstance(value, QASMNode):
+            value = wrap_value_into_literal(value)
+        return value
 
     def is_builtin_gate(self, name: str) -> bool:
         user_defined_gate = self.is_user_defined_gate(name)
         return name in BRAKET_GATES and not user_defined_gate
 
+    def is_initialized(self, name: str) -> bool:
+        """Check whether variable is initialized, including per-path variables when branched."""
+        # If the variable has a pending MCM, flush it so the value becomes available.
+        if self._pending_mcm_targets:
+            self._flush_pending_mcm_for_variable(name)
+
+        if not self._is_branched:
+            return super().is_initialized(name)
+
+        # Check per-path variables first
+        path = self._paths[self._active_path_indices[0]]
+        framed_var = path.get_variable(name)
+        if framed_var is not None:
+            return True
+
+        # Fall back to shared variable table
+        return super().is_initialized(name)
+
+    def _flush_pending_mcm_for_variable(self, name: str) -> None:
+        """If ``name`` matches a pending MCM's classical destination, flush it.
+
+        This handles the case where a measurement result is read in a plain
+        assignment (e.g., ``mcm[0] = __bit_1__``) rather than in control flow.
+        The matching pending measurement is branched (or added to the circuit)
+        so that the variable has a value when read.
+        """
+        remaining = []
+        for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
+            dest_name = mcm_dest.name if isinstance(mcm_dest, Identifier) else mcm_dest.name.name
+            if dest_name == name:
+                if not self._is_branched and self._shots > 0:
+                    self._is_branched = True
+                    self._initialize_paths_from_circuit()
+                    # Also flush any earlier pending measurements so the state is correct
+                    for earlier in remaining:
+                        self._measure_and_branch(earlier[0])
+                        self._update_classical_from_measurement(earlier[0], earlier[2])
+                    remaining.clear()
+                if self._is_branched:
+                    self._measure_and_branch(mcm_target)
+                    self._update_classical_from_measurement(mcm_target, mcm_dest)
+                else:
+                    # shots == 0: register as a normal measurement and set variable to 0
+                    self._circuit.add_measure(
+                        mcm_target,
+                        mcm_classical,
+                        allow_remeasure=self.supports_midcircuit_measurement,
+                    )
+                    self.update_value(mcm_dest, IntegerLiteral(value=0))
+            else:
+                remaining.append((mcm_target, mcm_classical, mcm_dest))
+        self._pending_mcm_targets = remaining
+
+    def _flush_pending_mcm_for_qubits(self, qubits: tuple[int, ...] | list[int]) -> None:
+        """Flush any pending MCM whose target qubit overlaps with ``qubits``.
+
+        When a gate, reset, or other operation is about to be applied to a
+        qubit that has a pending (deferred) measurement, the measurement must
+        be registered first so that the instruction ordering is physically
+        correct (measure before subsequent gate).
+
+        All pending measurements up to and including the overlapping ones are
+        flushed to preserve program order.
+
+        In non-branched mode with shots > 0 this triggers a transition to
+        branched mode so the measurement is properly branched and its
+        classical variable is set.  With shots == 0 the measurement is
+        simply added to the circuit and the variable set to 0.
+        """
+        if not self._pending_mcm_targets:
+            return
+        qubit_set = set(qubits)
+
+        # Find the index of the last overlapping entry so we flush everything
+        # up to that point (preserving program order).
+        last_overlap_idx = -1
+        for i, entry in enumerate(self._pending_mcm_targets):
+            if qubit_set.intersection(entry[0]):
+                last_overlap_idx = i
+        if last_overlap_idx == -1:
+            return
+
+        to_flush = self._pending_mcm_targets[: last_overlap_idx + 1]
+        self._pending_mcm_targets = self._pending_mcm_targets[last_overlap_idx + 1 :]
+
+        if self._is_branched:
+            for mcm_target, _mcm_classical, mcm_dest in to_flush:
+                self._measure_and_branch(mcm_target)
+                self._update_classical_from_measurement(mcm_target, mcm_dest)
+        elif self._shots > 0:
+            self._is_branched = True
+            self._initialize_paths_from_circuit()
+            # Flush to_flush first (preserving program order), then any
+            # remaining pending measurements that came after the overlap.
+            for mcm_target, _mcm_classical, mcm_dest in to_flush:
+                self._measure_and_branch(mcm_target)
+                self._update_classical_from_measurement(mcm_target, mcm_dest)
+            for entry in self._pending_mcm_targets:
+                self._measure_and_branch(entry[0])
+                self._update_classical_from_measurement(entry[0], entry[2])
+            self._pending_mcm_targets = []
+        else:
+            # shots == 0: register as normal measurements and set variables to 0
+            for mcm_target, mcm_classical, mcm_dest in to_flush:
+                self._circuit.add_measure(
+                    mcm_target,
+                    mcm_classical,
+                    allow_remeasure=self.supports_midcircuit_measurement,
+                )
+                self.update_value(mcm_dest, IntegerLiteral(value=0))
+
     def add_phase_instruction(self, target: tuple[int], phase_value: int):
+        self._flush_pending_mcm_for_qubits(target)
         phase_instruction = GPhase(target, phase_value)
-        self._circuit.add_instruction(phase_instruction)
+        if self._is_branched:
+            for path in self.active_paths:
+                path.add_instruction(phase_instruction)
+        else:
+            self._circuit.add_instruction(phase_instruction)
 
     def add_gate_instruction(
         self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
     ):
+        self._flush_pending_mcm_for_qubits(target)
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
         )
-        self._circuit.add_instruction(instruction)
+        if self._is_branched:
+            for path in self.active_paths:
+                path.add_instruction(instruction)
+        else:
+            self._circuit.add_instruction(instruction)
 
     def add_custom_unitary(
         self,
         unitary: np.ndarray,
         target: tuple[int, ...],
     ) -> None:
+        self._flush_pending_mcm_for_qubits(target)
         instruction = Unitary(target, unitary)
-        self._circuit.add_instruction(instruction)
+        if self._is_branched:
+            for path in self.active_paths:
+                path.add_instruction(instruction)
+        else:
+            self._circuit.add_instruction(instruction)
 
     def add_noise_instruction(
         self, noise_instruction: str, target: list[int], probabilities: list[float]
@@ -993,27 +1257,510 @@ class ProgramContext(AbstractProgramContext):
             "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
             "phase_damping": PhaseDamping,
         }
-        self._circuit.add_instruction(one_prob_noise_map[noise_instruction](target, *probabilities))
+        instruction = one_prob_noise_map[noise_instruction](target, *probabilities)
+        self._circuit.add_instruction(instruction)
 
     def add_kraus_instruction(self, matrices: list[np.ndarray], target: list[int]):
-        self._circuit.add_instruction(Kraus(target, matrices))
+        instruction = Kraus(target, matrices)
+        self._circuit.add_instruction(instruction)
+
+    def add_barrier(self, target: list[int] | None = None) -> None:
+        # Barriers are no-ops in simulation, but we still route them per-path
+        # for consistency. The base implementation is a no-op.
+        pass
+
+    def add_reset(self, target: list[int]) -> None:
+        self._flush_pending_mcm_for_qubits(target)
+        if self._is_branched:
+            for path in self.active_paths:
+                for q in target:
+                    path.add_instruction(Reset([q]))
+        else:
+            for q in target:
+                self._circuit.add_instruction(Reset([q]))
 
     def add_result(self, result: Results) -> None:
         self._circuit.add_result(result)
 
     def add_measure(
-        self, target: tuple[int], classical_targets: Iterable[int] | None = None, **kwargs
-    ):
-        self._circuit.add_measure(target, classical_targets)
+        self,
+        target: tuple[int],
+        classical_targets: Iterable[int] | None = None,
+        *,
+        classical_destination: Identifier | IndexedIdentifier | None = None,
+    ) -> None:
+        """Add a measurement, with optional MCM support.
 
-    def add_reset(self, target: list[int]) -> None:
-        for qubit in target:
-            self._circuit.add_instruction(Reset(targets=(qubit,)))
+        The ``classical_destination`` keyword argument is only passed by the
+        Interpreter when ``supports_midcircuit_measurement`` is True, so
+        downstream subclasses that override the two-argument base signature
+        are unaffected.
 
+        Args:
+            target (tuple[int]): The qubit indices to measure.
+            classical_targets (Iterable[int] | None): Classical bit indices for
+                the circuit's final output bookkeeping.
+            classical_destination (Identifier | IndexedIdentifier | None): The
+                AST node for the classical variable being assigned (e.g. ``b``
+                in ``b = measure q[0]``). When provided, the measurement is
+                treated as a mid-circuit measurement candidate.
+        """
+        allow_remeasure = self.supports_midcircuit_measurement
+        self._flush_pending_mcm_for_qubits(target)
+        if self._is_branched:
+            if classical_destination is not None:
+                self._measure_and_branch(target)
+                self._update_classical_from_measurement(target, classical_destination)
+            else:
+                # End-of-circuit measurement in branched mode: record in circuit
+                # for qubit tracking but don't branch further
+                self._circuit.add_measure(
+                    target, classical_targets, allow_remeasure=allow_remeasure
+                )
+        elif classical_destination is not None:
+            # Potential MCM — defer registration. Don't add to circuit yet;
+            # if branching triggers later the measurement is applied per-path.
+            # If branching never triggers, _flush_pending_mcm_targets will
+            # register them in the circuit as normal end-of-circuit measurements.
+            self._pending_mcm_targets.append((target, classical_targets, classical_destination))
+        else:
+            # Standard non-MCM measurement — register in circuit immediately
+            self._circuit.add_measure(target, classical_targets, allow_remeasure=allow_remeasure)
 
-class _BreakSignal(Exception):
-    """Internal signal raised when a BreakStatement is encountered during execution."""
+    def _maybe_transition_to_branched(self) -> None:
+        """Transition to branched mode if pending MCM targets exist.
 
+        Called at the start of control-flow handlers. If there are pending
+        mid-circuit measurements and shots > 0, this means a measurement
+        result is being used in control flow — confirming it's a true MCM.
+        Initializes paths from the circuit and retroactively applies all
+        pending measurements.
+        """
+        if not self._is_branched and self._pending_mcm_targets and self._shots > 0:
+            self._is_branched = True
+            self._initialize_paths_from_circuit()
+            for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
+                self._measure_and_branch(mcm_target)
+                self._update_classical_from_measurement(mcm_target, mcm_dest)
+            self._pending_mcm_targets.clear()
 
-class _ContinueSignal(Exception):
-    """Internal signal raised when a ContinueStatement is encountered during execution."""
+    def set_visitor(self, visitor: Callable) -> None:
+        """Register the AST visitor callable used by control-flow handlers."""
+        self._visitor = visitor
+
+    def handle_branching_statement(self, node: BranchingStatement) -> None:
+        """Handle if/else branching with per-path condition evaluation.
+
+        Attempts to transition to branched mode first. If still not branched,
+        performs eager evaluation using the shared variable table. When
+        branched, evaluates the condition for each active path independently
+        and routes paths through the appropriate block.
+
+        Args:
+            node (BranchingStatement): The if/else AST node.
+        """
+        self._maybe_transition_to_branched()
+
+        if not self._is_branched:
+            if cast_to(BooleanLiteral, self._visitor(node.condition)).value:
+                self._visitor(node.if_block)
+            elif node.else_block:
+                self._visitor(node.else_block)
+            return
+
+        # Evaluate condition per-path
+        saved_active = list(self._active_path_indices)
+        true_paths = []
+        false_paths = []
+
+        for path_idx in saved_active:
+            self._active_path_indices = [path_idx]
+            if cast_to(BooleanLiteral, self._visitor(node.condition)).value:
+                true_paths.append(path_idx)
+            else:
+                false_paths.append(path_idx)
+
+        surviving_paths = []
+
+        # Process if-block for true paths — execute per-path so that
+        # expression evaluation (e.g., ``y = x``) reads from the correct
+        # path rather than always reading from the first active path.
+        if true_paths and node.if_block:
+            for path_idx in true_paths:
+                self._active_path_indices = [path_idx]
+                self._enter_frame_for_active_paths()
+                for statement in node.if_block:
+                    self._visitor(statement)
+                surviving_paths.extend(self._active_path_indices)
+                self._exit_frame_for_active_paths()
+
+        # Process else-block for false paths
+        if false_paths and node.else_block:
+            for path_idx in false_paths:
+                self._active_path_indices = [path_idx]
+                self._enter_frame_for_active_paths()
+                for statement in node.else_block:
+                    self._visitor(statement)
+                surviving_paths.extend(self._active_path_indices)
+                self._exit_frame_for_active_paths()
+        elif false_paths:
+            # No else block — false paths survive unchanged
+            surviving_paths.extend(false_paths)
+
+        self._active_path_indices = surviving_paths
+
+    def handle_for_loop(self, node: ForInLoop) -> None:
+        """Handle for loops with per-path execution.
+
+        Attempts to transition to branched mode first. If still not branched,
+        performs eager loop unrolling using the shared variable table. When
+        branched, each active path iterates independently with its own
+        variable state.
+
+        Args:
+            node (ForInLoop): The for-in loop AST node.
+        """
+        self._maybe_transition_to_branched()
+
+        if not self._is_branched:
+            loop_var_name = node.identifier.name
+            index = self._visitor(node.set_declaration)
+            index_values = (
+                [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+                if isinstance(index, RangeDefinition)
+                else index.values
+            )
+            for i in index_values:
+                with self.enter_scope():
+                    self.declare_variable(loop_var_name, node.type, i)
+                    try:
+                        self._visitor(deepcopy(node.block))
+                    except _BreakSignal:
+                        break
+                    except _ContinueSignal:
+                        continue
+            return
+
+        loop_var_name = node.identifier.name
+        saved_active = list(self._active_path_indices)
+
+        # Evaluate the set declaration to get index values
+        # Use the first active path's context for evaluation (range is the same for all paths)
+        self._active_path_indices = [saved_active[0]]
+        index = self._visitor(node.set_declaration)
+        index_values = (
+            [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+            if isinstance(index, RangeDefinition)
+            else index.values
+        )
+
+        # Enter a new frame for all active paths
+        self._active_path_indices = saved_active
+        self._enter_frame_for_active_paths()
+
+        # Track paths that are still looping vs those that broke out
+        looping_paths = list(saved_active)
+        broken_paths = []
+
+        for i in index_values:
+            if not looping_paths:
+                break
+
+            self._active_path_indices = looping_paths
+
+            # Set loop variable for each active path
+            for path_idx in looping_paths:
+                path = self._paths[path_idx]
+                path.set_variable(
+                    loop_var_name,
+                    FramedVariable(loop_var_name, node.type, i, False, path.frame_number),
+                )
+
+            # Execute loop body
+            try:
+                for statement in deepcopy(node.block):
+                    self._visitor(statement)
+            except _BreakSignal:
+                broken_paths.extend(self._active_path_indices)
+                looping_paths = []
+                continue
+            except _ContinueSignal:
+                looping_paths = list(self._active_path_indices)
+                continue
+
+            looping_paths = list(self._active_path_indices)
+
+        # Restore all surviving paths
+        self._active_path_indices = looping_paths + broken_paths
+        self._exit_frame_for_active_paths()
+
+    def handle_while_loop(self, node: WhileLoop) -> None:
+        """Handle while loops with per-path condition evaluation.
+
+        Attempts to transition to branched mode first. If still not branched,
+        performs eager loop execution using the shared variable table. When
+        branched, each active path evaluates the while condition independently
+        and loops independently.
+
+        Args:
+            node (WhileLoop): The while loop AST node.
+        """
+        self._maybe_transition_to_branched()
+
+        if not self._is_branched:
+            while cast_to(BooleanLiteral, self._visitor(node.while_condition)).value:
+                try:
+                    self._visitor(deepcopy(node.block))
+                except _BreakSignal:
+                    break
+                except _ContinueSignal:
+                    continue
+            return
+
+        saved_active = list(self._active_path_indices)
+
+        # Enter a new frame for all active paths
+        self._enter_frame_for_active_paths()
+
+        # Paths that are still looping
+        continue_paths = list(saved_active)
+        # Paths that exited the loop (condition became false or break)
+        exited_paths = []
+
+        while True:
+            # Evaluate condition per-path
+            still_true = []
+            for path_idx in continue_paths:
+                self._active_path_indices = [path_idx]
+                if cast_to(BooleanLiteral, self._visitor(node.while_condition)).value:
+                    still_true.append(path_idx)
+                else:
+                    exited_paths.append(path_idx)
+
+            if not still_true:
+                continue_paths = []
+                break
+
+            # Execute loop body for paths where condition is true
+            self._active_path_indices = still_true
+            try:
+                for statement in deepcopy(node.block):
+                    self._visitor(statement)
+            except _BreakSignal:
+                exited_paths.extend(self._active_path_indices)
+                continue_paths = []
+                break
+            except _ContinueSignal:
+                continue_paths = list(self._active_path_indices)
+                continue
+
+            continue_paths = list(self._active_path_indices)
+
+        # Restore all surviving paths
+        self._active_path_indices = continue_paths + exited_paths
+        self._exit_frame_for_active_paths()
+
+    def _enter_frame_for_active_paths(self) -> None:
+        """Enter a new variable scope frame for all active paths."""
+        for path_idx in self._active_path_indices:
+            self._paths[path_idx].enter_frame()
+
+    def _exit_frame_for_active_paths(self) -> None:
+        """Exit the current variable scope frame for all active paths.
+
+        Removes variables declared in the current frame and restores
+        the frame number to the previous value.
+        """
+        for path_idx in self._active_path_indices:
+            path = self._paths[path_idx]
+            # exit_frame expects the previous frame number
+            path.exit_frame(path.frame_number - 1)
+
+    @staticmethod
+    def _resolve_index(indices) -> int:
+        """Resolve the integer index from an IndexedIdentifier's index list."""
+        return indices[0][0].value
+
+    @staticmethod
+    def _get_path_measurement_result(path: SimulationPath, qubit_idx: int) -> int:
+        """Get the most recent measurement outcome for a qubit on a path."""
+        return path.measurements[qubit_idx][-1]
+
+    @staticmethod
+    def _set_value_at_index(value, index: int, result) -> None:
+        """Set a measurement result at a specific index within a classical value.
+
+        Mutates ``value`` in place. The value is expected to be an
+        ArrayLiteral (or similar object with a ``.values`` list).
+        """
+        value.values[index] = IntegerLiteral(value=result)
+
+    @staticmethod
+    def _ensure_path_variable(path: SimulationPath, name: str) -> FramedVariable:
+        """Get the FramedVariable for ``name`` on the given path."""
+        return path.get_variable(name)
+
+    def _update_classical_from_measurement(self, qubit_target, classical_destination) -> None:
+        """Update classical variables per path with measurement outcomes.
+
+        After _measure_and_branch has branched paths and recorded measurement
+        outcomes, this method updates the classical variable (e.g., ``b`` in
+        ``b = measure q[0]``) for each active path based on the recorded
+        measurement result.
+
+        Args:
+            qubit_target: The qubit indices that were measured.
+            classical_destination: The AST node for the classical variable
+                being assigned (Identifier or IndexedIdentifier).
+        """
+        for path_idx in self._active_path_indices:
+            path = self._paths[path_idx]
+
+            if isinstance(classical_destination, IndexedIdentifier):
+                self._update_indexed_target(path, qubit_target, classical_destination)
+            else:
+                self._update_identifier_target(path, qubit_target, classical_destination)
+
+    def _update_indexed_target(
+        self, path: SimulationPath, qubit_target, classical_destination: IndexedIdentifier
+    ) -> None:
+        """Update a single indexed classical variable on one path.
+
+        Handles the ``b[i] = measure q[j]`` case.
+        """
+        base_name = (
+            classical_destination.name.name
+            if hasattr(classical_destination.name, "name")
+            else classical_destination.name
+        )
+        index = self._resolve_index(classical_destination.indices)
+        meas_result = self._get_path_measurement_result(path, qubit_target[0])
+        framed_var = self._ensure_path_variable(path, base_name)
+        self._set_value_at_index(framed_var.value, index, meas_result)
+
+    def _update_identifier_target(
+        self, path: SimulationPath, qubit_target, classical_destination: Identifier
+    ) -> None:
+        """Update a plain identifier classical variable on one path.
+
+        Handles the ``b = measure q[0]`` case (single-qubit MCM).
+        """
+        var_name = classical_destination.name
+        meas_result = self._get_path_measurement_result(path, qubit_target[0])
+        framed_var = self._ensure_path_variable(path, var_name)
+        framed_var.value = meas_result
+
+    def _initialize_paths_from_circuit(self) -> None:
+        """Transfer existing circuit instructions and variables to the initial SimulationPath.
+
+        Called once when the first mid-circuit measurement occurs. Copies all
+        instructions accumulated in the Circuit so far into the first path,
+        sets the path's shot allocation to the total shots, and copies all
+        existing variables from the shared variable table to the path.
+        """
+        initial_path = self._paths[0]
+        initial_path._instructions = list(self._circuit.instructions)
+        initial_path.shots = self._shots
+
+        for name, value in self.variable_table.items():
+            var_type = self.get_type(name)
+            is_const = self.get_const(name)
+            fv = FramedVariable(
+                name=name,
+                var_type=var_type,
+                value=value,
+                is_const=bool(is_const),
+                frame_number=initial_path.frame_number,
+            )
+            initial_path.set_variable(name, fv)
+
+    def _measure_and_branch(self, target: tuple[int]) -> None:
+        """Compute measurement probabilities per active path, sample outcomes,
+        and branch paths with proportional shot allocation.
+
+        For each qubit in target, for each active path:
+        1. Evolve the path's instructions through a fresh StateVectorSimulation
+           to get the current state vector.
+        2. Compute P(0) and P(1) for the measured qubit.
+        3. Sample `path.shots` outcomes from this distribution.
+        4. Split the path: one child gets shots that measured 0, the other gets
+           shots that measured 1.
+        5. If one outcome has 0 shots, don't create that branch (deterministic case).
+        6. Remove paths with 0 shots from the active set.
+        """
+        for qubit_idx in target:
+            new_active_indices = []
+            for path_idx in list(self._active_path_indices):
+                self._branch_single_qubit(path_idx, qubit_idx, new_active_indices)
+            self._active_path_indices = new_active_indices
+
+    def _branch_single_qubit(
+        self, path_idx: int, qubit_idx: int, new_active_indices: list[int]
+    ) -> None:
+        """Branch a single path on a single qubit measurement."""
+        path = self._paths[path_idx]
+
+        # Compute current state by evolving instructions through a fresh simulation
+        state = self._get_path_state(path)
+
+        # Get measurement probabilities for this qubit
+        probs = marginal_probability(np.abs(state) ** 2, targets=[qubit_idx])
+
+        # Sample outcomes
+        path_shots = path.shots
+        rng = np.random.default_rng()
+        samples = rng.choice(len(probs), size=path_shots, p=probs)
+
+        shots_for_1 = int(np.sum(samples))
+        shots_for_0 = path_shots - shots_for_1
+
+        if shots_for_1 == 0 or shots_for_0 == 0:
+            # Deterministic outcome — no branching needed
+            outcome = 0 if shots_for_1 == 0 else 1
+
+            measure_op = Measure([qubit_idx], result=outcome)
+            path.add_instruction(measure_op)
+            path.record_measurement(qubit_idx, outcome)
+
+            new_active_indices.append(path_idx)
+            return
+
+        # Non-deterministic: branch into two paths
+
+        # Path for outcome 0: update existing path in place
+        measure_op_0 = Measure([qubit_idx], result=0)
+        path.add_instruction(measure_op_0)
+        path.record_measurement(qubit_idx, 0)
+        path.shots = shots_for_0
+        new_active_indices.append(path_idx)
+
+        # Path for outcome 1: create a new branched path
+        # Branch from the state BEFORE we added the outcome-0 measure
+        # We need to copy instructions up to (but not including) the measure we just added,
+        # then add the outcome-1 measure
+        new_path = path.branch()
+        # Replace the last instruction (outcome 0 measure) with outcome 1 measure
+        new_path._instructions[-1] = Measure([qubit_idx], result=1)
+        # Fix the measurement record: the branch() copied outcome 0, replace with outcome 1
+        new_path._measurements[qubit_idx][-1] = 1
+        new_path.shots = shots_for_1
+
+        new_path_idx = len(self._paths)
+        self._paths.append(new_path)
+        new_active_indices.append(new_path_idx)
+
+    def _get_path_state(self, path: SimulationPath) -> np.ndarray:
+        # Use the total declared qubit count (from the context), not just the
+        # qubits that have appeared in instructions so far. This ensures that
+        # measurements on qubits that haven't had gates applied yet still work
+        # (they are in the |0⟩ state).
+        qubit_count = self.num_qubits
+        if self._circuit.qubit_set:
+            qubit_count = max(qubit_count, max(self._circuit.qubit_set) + 1)
+        sim = StateVectorSimulation(
+            qubit_count=qubit_count,
+            shots=path.shots,
+            batch_size=self._batch_size,
+        )
+        sim.evolve(path.instructions)
+        return sim.state_vector

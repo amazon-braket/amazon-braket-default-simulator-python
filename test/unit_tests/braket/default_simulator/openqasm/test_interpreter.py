@@ -2210,40 +2210,37 @@ def test_measurement(qasm, expected):
     assert circuit.target_classical_indices == expected[1]
 
 
-@pytest.mark.parametrize(
-    "qasm, expected",
-    [
-        (
-            "\n".join(
-                [
-                    "bit[3] b;",
-                    "qubit[2] q;",
-                    "h q[0];",
-                    "cnot q[0], q[1];",
-                    "b[2] = measure q[1];",
-                    "b[0] = measure q[0];",
-                    "b[1] = measure q[0];",
-                ]
-            ),
-            "Qubit 0 is already measured or captured.",
-        ),
-        (
-            "\n".join(
-                [
-                    "bit[1] b;",
-                    "qubit[1] q;",
-                    "h q[0];",
-                    "b[0] = measure q[0];",
-                    "measure q;",
-                ]
-            ),
-            "Qubit 0 is already measured or captured.",
-        ),
-    ],
-)
-def test_measurement_exceptions(qasm, expected):
-    with pytest.raises(ValueError, match=expected):
-        Interpreter().build_circuit(qasm)
+def test_measure_qubit_twice_allowed():
+    """A qubit may be measured more than once into different classical bits."""
+    qasm = "\n".join(
+        [
+            "bit[3] b;",
+            "qubit[2] q;",
+            "h q[0];",
+            "cnot q[0], q[1];",
+            "b[2] = measure q[1];",
+            "b[0] = measure q[0];",
+            "b[1] = measure q[0];",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.measured_qubits == [1, 0, 0]
+    assert circuit.target_classical_indices == [2, 0, 1]
+
+
+def test_measure_qubit_twice_with_bare_measure():
+    """A qubit measured via assignment and then via bare 'measure q' should work."""
+    qasm = "\n".join(
+        [
+            "bit[1] b;",
+            "qubit[1] q;",
+            "h q[0];",
+            "b[0] = measure q[0];",
+            "measure q;",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert 0 in circuit.measured_qubits
 
 
 def test_measure_invalid_qubit():
@@ -2660,10 +2657,11 @@ def test_mcm_while_loop_delegates_to_context():
 
 
 def test_abstract_program_context_default_properties():
-    """Default ProgramContext reports no branching and no MCM support."""
+    """Default ProgramContext reports no branching but supports MCM."""
     from braket.default_simulator.openqasm.program_context import ProgramContext
 
     ctx = ProgramContext()
     assert ctx.is_branched is False
-    assert ctx.supports_midcircuit_measurement is False
-    assert ctx.active_paths == []
+    assert ctx.supports_midcircuit_measurement is True
+    # ProgramContext always starts with one initial path
+    assert len(ctx.active_paths) == 1

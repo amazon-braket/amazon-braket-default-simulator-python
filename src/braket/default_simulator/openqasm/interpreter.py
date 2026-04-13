@@ -553,10 +553,26 @@ class Interpreter:
             raise ValueError(
                 f"Number of qubits ({len(qubits)}) does not match number of provided classical targets ({len(targets)})"
             )
-        self.context.add_measure(qubits, targets)
+        if node.target and self.context.supports_midcircuit_measurement:
+            self.context.add_measure(qubits, targets, classical_destination=node.target)
+        else:
+            self.context.add_measure(qubits, targets)
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
+        is_branched = getattr(self.context, "_is_branched", False)
+        if not is_branched or len(self.context._active_path_indices) <= 1:
+            self._execute_classical_assignment(node)
+        else:
+            # When multiple paths are active, evaluate the rvalue per-path
+            # so that expressions like ``y = x`` read from the correct path.
+            saved_active = list(self.context._active_path_indices)
+            for path_idx in saved_active:
+                self.context._active_path_indices = [path_idx]
+                self._execute_classical_assignment(deepcopy(node))
+            self.context._active_path_indices = saved_active
+
+    def _execute_classical_assignment(self, node: ClassicalAssignment) -> None:
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
@@ -599,7 +615,6 @@ class Interpreter:
             index = self.visit(node.set_declaration)
             if isinstance(index, RangeDefinition):
                 index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-            # DiscreteSet
             else:
                 index_values = index.values
 

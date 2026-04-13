@@ -1295,7 +1295,20 @@ class Measure(GateOperation):
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        raise NotImplementedError("Measure does not have a matrix implementation")
+        """
+        Return the projection matrix for the measurement outcome.
+        If result is -1 (unset), return identity (no projection).
+        """
+        if self.result == -1:
+            return np.eye(2)
+        elif self.result == 0:
+            # Project to |0⟩⟨0|
+            return np.array([[1, 0], [0, 0]], dtype=complex)
+        elif self.result == 1:
+            # Project to |1⟩⟨1|
+            return np.array([[0, 0], [0, 1]], dtype=complex)
+        else:
+            return np.eye(2)
 
     def apply(self, state: np.ndarray) -> np.ndarray:
         if self.result == -1:
@@ -1308,6 +1321,7 @@ class Measure(GateOperation):
 
         # Apply projection matrix
         projected_state = state.copy()
+
         qubit_idx = self._targets[0]
         n_qubits = int(np.log2(len(state)))
 
