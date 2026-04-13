@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.36.1 (2026-04-13)
+
+### Bug Fixes and Other Changes
+
+ * Correct CNot logic in for larger qubits
+
 ## v1.36.0 (2026-04-09)
 
 ### Features
