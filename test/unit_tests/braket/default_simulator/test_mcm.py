@@ -4438,7 +4438,7 @@ class TestEvaluateExpressionUnsupportedNode:
     """Cover the TypeError fallback in _evaluate_expression."""
 
     def test_sizeof_in_mcm_condition_raises(self, simulator):
-        """sizeof() in a condition after MCM hits the unsupported-node path."""
+        """sizeof() in a condition after MCM is pre-evaluated by the interpreter."""
         qasm = """
         OPENQASM 3.0;
         bit[2] b;
@@ -4448,5 +4448,25 @@ class TestEvaluateExpressionUnsupportedNode:
             x q[2];
         }
         """
-        with pytest.raises(TypeError, match="Cannot evaluate expression of type SizeOf"):
-            simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        assert len(result.measurements) == 10
+
+    def test_function_call_referencing_measurement_falls_back(self, simulator):
+        """A function call in a condition that references a measurement result
+        falls back to passing the raw AST when pre-evaluation raises NameError."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        def check(bit x) -> bit {
+            return x;
+        }
+
+        b[0] = measure q[0];
+        if (check(b[0])) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
+        assert len(result.measurements) == 100
