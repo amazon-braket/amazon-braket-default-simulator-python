@@ -19,13 +19,9 @@ from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     BooleanLiteral,
-    BranchingStatement,
-    ForInLoop,
-    Identifier,
     IntegerLiteral,
     IntType,
     RangeDefinition,
-    WhileLoop,
 )
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext
 from braket.default_simulator.state_vector_simulator import StateVectorSimulator
@@ -3721,35 +3717,26 @@ class SimpleProgramContext(AbstractProgramContext):
 class TestAbstractContextControlFlow:
     """Tests for AbstractProgramContext defaults via SimpleProgramContext."""
 
-    def test_handle_branching_raises(self):
+    def test_evaluate_condition_raises(self):
         ctx = SimpleProgramContext()
-        node = BranchingStatement(condition=BooleanLiteral(True), if_block=[], else_block=[])
         with pytest.raises(NotImplementedError):
-            ctx.handle_branching_statement(node)
+            next(ctx.evaluate_condition(BooleanLiteral(True)))
 
-    def test_handle_for_loop_raises(self):
+    def test_evaluate_for_range_raises(self):
         ctx = SimpleProgramContext()
-        node = ForInLoop(
-            type=IntType(IntegerLiteral(32)),
-            identifier=Identifier("i"),
-            set_declaration=RangeDefinition(
-                IntegerLiteral(0), IntegerLiteral(1), IntegerLiteral(1)
-            ),
-            block=[],
-        )
         with pytest.raises(NotImplementedError):
-            ctx.handle_for_loop(node)
+            next(
+                ctx.evaluate_for_range(
+                    RangeDefinition(IntegerLiteral(0), IntegerLiteral(1), IntegerLiteral(1)),
+                    "i",
+                    IntType(IntegerLiteral(32)),
+                )
+            )
 
-    def test_handle_while_loop_raises(self):
-        ctx = SimpleProgramContext()
-        node = WhileLoop(while_condition=BooleanLiteral(True), block=[])
-        with pytest.raises(NotImplementedError):
-            ctx.handle_while_loop(node)
-
-    def test_set_visitor_raises(self):
+    def test_evaluate_while_condition_raises(self):
         ctx = SimpleProgramContext()
         with pytest.raises(NotImplementedError):
-            ctx.set_visitor(lambda x: x)
+            next(ctx.evaluate_while_condition(BooleanLiteral(True)))
 
     def test_is_branched_returns_false(self):
         assert SimpleProgramContext().is_branched is False
@@ -4333,3 +4320,133 @@ class TestMCMFlushForQubitsEdgeCases:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
+
+
+class TestEvaluateExpressionFromOpenQASM:
+    """Tests for _evaluate_expression branches, driven by OpenQASM programs."""
+
+    def test_cast_in_mcm_condition(self, simulator):
+        """Cast expression evaluated inside an MCM-dependent branch."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        int[32] x = 1;
+        b = measure q[0];
+        if (bool(x)) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
+        counts = Counter(["".join(m) for m in result.measurements])
+        assert counts == {"01": 100}
+
+    def test_discrete_set_in_branched_for_loop(self, simulator):
+        """DiscreteSet evaluation in a for-loop after MCM triggers branching."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        int[32] sum = 0;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            sum = 10;
+        }
+        for int i in {1, 2, 3} {
+            sum = sum + i;
+        }
+        if (sum > 0) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
+        counts = Counter(["".join(m) for m in result.measurements])
+        for outcome in counts:
+            assert outcome[1] == "1"
+
+    def test_break_in_branched_for_loop(self, simulator):
+        """Break in a for-loop triggers GeneratorExit cleanup in the handler."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        int[32] count = 0;
+        h q[0];
+        b = measure q[0];
+        for int i in [0:10] {
+            count = count + 1;
+            if (count == 3) {
+                break;
+            }
+        }
+        if (count == 3) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
+        counts = Counter(["".join(m) for m in result.measurements])
+        for outcome in counts:
+            assert outcome[1] == "1"
+
+    def test_break_in_branched_while_loop(self, simulator):
+        """Break in a while-loop triggers GeneratorExit cleanup in the handler."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        int[32] count = 0;
+        h q[0];
+        b = measure q[0];
+        while (count < 10) {
+            count = count + 1;
+            if (count == 3) {
+                break;
+            }
+        }
+        if (count == 3) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
+        counts = Counter(["".join(m) for m in result.measurements])
+        for outcome in counts:
+            assert outcome[1] == "1"
+
+    def test_branched_for_loop_iterates_correctly(self, simulator):
+        """For-loop in branched mode iterates correctly across all paths."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        int[32] sum = 0;
+        x q[0];
+        b = measure q[0];
+        for int i in [0:3] {
+            sum = sum + 1;
+        }
+        if (b == 1) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
+        counts = Counter(["".join(m) for m in result.measurements])
+        assert counts == {"11": 100}
+
+
+class TestEvaluateExpressionUnsupportedNode:
+    """Cover the TypeError fallback in _evaluate_expression."""
+
+    def test_sizeof_in_mcm_condition_raises(self, simulator):
+        """sizeof() in a condition after MCM hits the unsupported-node path."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[3] q;
+        b[0] = measure q[0];
+        if (sizeof(b) > 0) {
+            x q[2];
+        }
+        """
+        with pytest.raises(TypeError, match="Cannot evaluate expression of type SizeOf"):
+            simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)

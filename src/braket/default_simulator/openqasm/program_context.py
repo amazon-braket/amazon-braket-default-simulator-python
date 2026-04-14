@@ -12,8 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable
-from copy import deepcopy
+from collections.abc import Iterable
 from functools import singledispatchmethod
 from typing import Any
 
@@ -53,25 +52,33 @@ from ._helpers.casting import (
     is_none_like,
     wrap_value_into_literal,
 )
+from ._helpers.functions import (
+    evaluate_binary_expression,
+    evaluate_unary_expression,
+)
 from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
+    ArrayLiteral,
+    BinaryExpression,
     BooleanLiteral,
-    BranchingStatement,
+    Cast,
     ClassicalType,
+    DiscreteSet,
     FloatLiteral,
-    ForInLoop,
     GateModifierName,
     Identifier,
     IndexedIdentifier,
     IndexElement,
+    IndexExpression,
     IntegerLiteral,
     QASMNode,
     QuantumGateDefinition,
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
-    WhileLoop,
+    SymbolLiteral,
+    UnaryExpression,
 )
 from .simulation_path import FramedVariable, SimulationPath
 
@@ -904,52 +911,58 @@ class AbstractProgramContext(ABC):
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
 
-    def set_visitor(self, visitor: Callable) -> None:
-        """Register the AST visitor callable used by control-flow handlers.
+    def evaluate_condition(self, condition):
+        """Evaluate a branching condition for mid-circuit measurement contexts.
 
-        Called by the Interpreter during initialization so that
-        ``handle_branching_statement``, ``handle_for_loop``, and
-        ``handle_while_loop`` can visit child AST nodes without
-        receiving the visitor as a parameter on every call.
+        Called by the Interpreter when ``supports_midcircuit_measurement``
+        is True. Implementations are generators that yield ``True`` (visit
+        the if-block) or ``False`` (visit the else-block) for each group
+        of simulation paths. The context manages path state between yields;
+        the Interpreter decides which block to visit based on the yielded
+        boolean.
 
         Args:
-            visitor (Callable): The Interpreter's ``visit`` method.
+            condition: The AST condition expression.
+
+        Yields:
+            bool: ``True`` to visit the if-block, ``False`` to visit the
+                else-block.
         """
         raise NotImplementedError
 
-    def handle_branching_statement(self, node: BranchingStatement) -> None:
-        """Handle if/else branching for mid-circuit measurement contexts.
+    def evaluate_for_range(self, set_declaration, loop_var: str, loop_type):
+        """Set up each iteration of a for-loop for mid-circuit measurement.
 
-        Called by the Interpreter only when ``supports_midcircuit_measurement``
-        is True. Subclasses that support MCM must override this to provide
-        per-path condition evaluation.
+        Called by the Interpreter when ``supports_midcircuit_measurement``
+        is True. Implementations are generators that yield once per loop
+        iteration after setting up the loop variable for the current
+        iteration value. The Interpreter visits the loop body after each
+        yield.
 
         Args:
-            node (BranchingStatement): The if/else AST node.
+            set_declaration: The AST range or discrete set expression.
+            loop_var (str): The loop variable name.
+            loop_type: The loop variable type.
+
+        Yields:
+            None: Signals the Interpreter to visit the loop body.
         """
         raise NotImplementedError
 
-    def handle_for_loop(self, node: ForInLoop) -> None:
-        """Handle for loops for mid-circuit measurement contexts.
+    def evaluate_while_condition(self, condition):
+        """Evaluate a while-loop condition for mid-circuit measurement.
 
-        Called by the Interpreter only when ``supports_midcircuit_measurement``
-        is True. Subclasses that support MCM must override this to provide
-        per-path loop execution.
-
-        Args:
-            node (ForInLoop): The for-in loop AST node.
-        """
-        raise NotImplementedError
-
-    def handle_while_loop(self, node: WhileLoop) -> None:
-        """Handle while loops for mid-circuit measurement contexts.
-
-        Called by the Interpreter only when ``supports_midcircuit_measurement``
-        is True. Subclasses that support MCM must override this to provide
-        per-path loop execution.
+        Called by the Interpreter when ``supports_midcircuit_measurement``
+        is True. Implementations are generators that yield ``True`` when
+        the loop should continue (at least one path has a true condition).
+        The Interpreter visits the loop body after each ``True`` yield.
+        The generator stops when no paths have a true condition.
 
         Args:
-            node (WhileLoop): The while loop AST node.
+            condition: The AST condition expression.
+
+        Yields:
+            bool: ``True`` to continue looping.
         """
         raise NotImplementedError
 
@@ -971,7 +984,6 @@ class ProgramContext(AbstractProgramContext):
         """
         super().__init__()
         self._circuit = circuit or Circuit()
-        self._visitor: Callable | None = None
 
         # Path tracking for branched simulation (MCM support)
         self._paths: list[SimulationPath] = [SimulationPath()]
@@ -1344,87 +1356,127 @@ class ProgramContext(AbstractProgramContext):
                 self._update_classical_from_measurement(mcm_target, mcm_dest)
             self._pending_mcm_targets.clear()
 
-    def set_visitor(self, visitor: Callable) -> None:
-        """Register the AST visitor callable used by control-flow handlers."""
-        self._visitor = visitor
+    def _evaluate_expression(self, expression):
+        """Lightweight expression evaluator for per-path condition evaluation.
 
-    def handle_branching_statement(self, node: BranchingStatement) -> None:
-        """Handle if/else branching with per-path condition evaluation.
-
-        Attempts to transition to branched mode first. If still not branched,
-        performs eager evaluation using the shared variable table. When
-        branched, evaluates the condition for each active path independently
-        and routes paths through the appropriate block.
+        Evaluates an AST expression to a concrete value using the current
+        active path's variable state. This replaces the need for storing
+        a reference to the Interpreter's visit method.
 
         Args:
-            node (BranchingStatement): The if/else AST node.
+            expression: The AST expression node to evaluate.
+
+        Returns:
+            LiteralType: The evaluated concrete value.
+        """
+        match expression:
+            case (
+                BooleanLiteral()
+                | IntegerLiteral()
+                | FloatLiteral()
+                | ArrayLiteral()
+                | SymbolLiteral()
+            ):
+                return expression
+            case Identifier():
+                return self.get_value_by_identifier(expression)
+            case BinaryExpression(lhs=lhs, rhs=rhs, op=op):
+                return evaluate_binary_expression(
+                    self._evaluate_expression(lhs),
+                    self._evaluate_expression(rhs),
+                    op,
+                )
+            case UnaryExpression(expression=inner, op=op):
+                return evaluate_unary_expression(self._evaluate_expression(inner), op)
+            case Cast(type=cast_type, argument=argument):
+                return cast_to(cast_type, self._evaluate_expression(argument))
+            case IndexExpression(collection=collection, index=index):
+                return get_elements(
+                    self._evaluate_expression(collection),
+                    self._evaluate_expression(index),
+                    get_type_width(self.get_type(get_identifier_name(collection))),
+                )
+            case RangeDefinition(start=start, end=end, step=step):
+                return RangeDefinition(
+                    self._evaluate_expression(start) if start else None,
+                    self._evaluate_expression(end),
+                    self._evaluate_expression(step) if step else None,
+                )
+            case DiscreteSet(values=values):
+                return DiscreteSet(values=[self._evaluate_expression(v) for v in values])
+            case list():
+                return [self._evaluate_expression(item) for item in expression]
+            case _:
+                raise TypeError(f"Cannot evaluate expression of type {type(expression).__name__}")
+
+    def evaluate_condition(self, condition):
+        """Evaluate a branching condition, yielding per-path branch decisions.
+
+        Yields ``True`` (visit if-block) or ``False`` (visit else-block)
+        for each group of simulation paths. Manages path state and frames
+        between yields.
+
+        Args:
+            condition: The AST condition expression.
+
+        Yields:
+            bool: Branch decision for the current path group.
         """
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            if cast_to(BooleanLiteral, self._visitor(node.condition)).value:
-                self._visitor(node.if_block)
-            elif node.else_block:
-                self._visitor(node.else_block)
+            yield cast_to(BooleanLiteral, self._evaluate_expression(condition)).value
             return
 
-        # Evaluate condition per-path
         saved_active = list(self._active_path_indices)
         true_paths = []
         false_paths = []
 
         for path_idx in saved_active:
             self._active_path_indices = [path_idx]
-            if cast_to(BooleanLiteral, self._visitor(node.condition)).value:
+            if cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
                 true_paths.append(path_idx)
             else:
                 false_paths.append(path_idx)
 
         surviving_paths = []
 
-        # Process if-block for true paths — execute per-path so that
-        # expression evaluation (e.g., ``y = x``) reads from the correct
-        # path rather than always reading from the first active path.
-        if true_paths and node.if_block:
+        if true_paths:
             for path_idx in true_paths:
                 self._active_path_indices = [path_idx]
                 self._enter_frame_for_active_paths()
-                for statement in node.if_block:
-                    self._visitor(statement)
+                yield True
                 surviving_paths.extend(self._active_path_indices)
                 self._exit_frame_for_active_paths()
 
-        # Process else-block for false paths
-        if false_paths and node.else_block:
+        if false_paths:
             for path_idx in false_paths:
                 self._active_path_indices = [path_idx]
                 self._enter_frame_for_active_paths()
-                for statement in node.else_block:
-                    self._visitor(statement)
+                yield False
                 surviving_paths.extend(self._active_path_indices)
                 self._exit_frame_for_active_paths()
-        elif false_paths:
-            # No else block — false paths survive unchanged
-            surviving_paths.extend(false_paths)
 
         self._active_path_indices = surviving_paths
 
-    def handle_for_loop(self, node: ForInLoop) -> None:
-        """Handle for loops with per-path execution.
+    def evaluate_for_range(self, set_declaration, loop_var: str, loop_type):
+        """Set up each for-loop iteration, yielding once per iteration.
 
-        Attempts to transition to branched mode first. If still not branched,
-        performs eager loop unrolling using the shared variable table. When
-        branched, each active path iterates independently with its own
-        variable state.
+        Evaluates the range/set, manages loop variable state and frames.
+        Yields once per iteration after setting the loop variable.
 
         Args:
-            node (ForInLoop): The for-in loop AST node.
+            set_declaration: The AST range or discrete set expression.
+            loop_var (str): The loop variable name.
+            loop_type: The loop variable type.
+
+        Yields:
+            None: Signals the Interpreter to visit the loop body.
         """
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            loop_var_name = node.identifier.name
-            index = self._visitor(node.set_declaration)
+            index = self._evaluate_expression(set_declaration)
             index_values = (
                 [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
                 if isinstance(index, RangeDefinition)
@@ -1432,107 +1484,79 @@ class ProgramContext(AbstractProgramContext):
             )
             for i in index_values:
                 with self.enter_scope():
-                    self.declare_variable(loop_var_name, node.type, i)
-                    try:
-                        self._visitor(deepcopy(node.block))
-                    except _BreakSignal:
-                        break
-                    except _ContinueSignal:
-                        continue
+                    self.declare_variable(loop_var, loop_type, i)
+                    yield
             return
 
-        loop_var_name = node.identifier.name
         saved_active = list(self._active_path_indices)
 
-        # Evaluate the set declaration to get index values
-        # Use the first active path's context for evaluation (range is the same for all paths)
         self._active_path_indices = [saved_active[0]]
-        index = self._visitor(node.set_declaration)
+        index = self._evaluate_expression(set_declaration)
         index_values = (
             [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
             if isinstance(index, RangeDefinition)
             else index.values
         )
 
-        # Enter a new frame for all active paths
         self._active_path_indices = saved_active
         self._enter_frame_for_active_paths()
 
-        # Track paths that are still looping vs those that broke out
         looping_paths = list(saved_active)
         broken_paths = []
 
         for i in index_values:
-            if not looping_paths:
-                break
-
             self._active_path_indices = looping_paths
 
-            # Set loop variable for each active path
             for path_idx in looping_paths:
                 path = self._paths[path_idx]
                 path.set_variable(
-                    loop_var_name,
-                    FramedVariable(loop_var_name, node.type, i, False, path.frame_number),
+                    loop_var,
+                    FramedVariable(loop_var, loop_type, i, False, path.frame_number),
                 )
 
-            # Execute loop body
             try:
-                for statement in deepcopy(node.block):
-                    self._visitor(statement)
-            except _BreakSignal:
-                broken_paths.extend(self._active_path_indices)
-                looping_paths = []
-                continue
-            except _ContinueSignal:
-                looping_paths = list(self._active_path_indices)
-                continue
+                yield
+            except GeneratorExit:
+                self._active_path_indices = looping_paths + broken_paths
+                self._exit_frame_for_active_paths()
+                return
 
             looping_paths = list(self._active_path_indices)
 
-        # Restore all surviving paths
         self._active_path_indices = looping_paths + broken_paths
         self._exit_frame_for_active_paths()
 
-    def handle_while_loop(self, node: WhileLoop) -> None:
-        """Handle while loops with per-path condition evaluation.
+    def evaluate_while_condition(self, condition):
+        """Evaluate a while-loop condition, yielding ``True`` per iteration.
 
-        Attempts to transition to branched mode first. If still not branched,
-        performs eager loop execution using the shared variable table. When
-        branched, each active path evaluates the while condition independently
-        and loops independently.
+        Evaluates the condition per-path each iteration. Yields ``True``
+        when at least one path has a true condition. Stops when no paths
+        remain true.
 
         Args:
-            node (WhileLoop): The while loop AST node.
+            condition: The AST condition expression.
+
+        Yields:
+            bool: ``True`` to continue looping.
         """
         self._maybe_transition_to_branched()
 
         if not self._is_branched:
-            while cast_to(BooleanLiteral, self._visitor(node.while_condition)).value:
-                try:
-                    self._visitor(deepcopy(node.block))
-                except _BreakSignal:
-                    break
-                except _ContinueSignal:
-                    continue
+            while cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
+                yield True
             return
 
         saved_active = list(self._active_path_indices)
-
-        # Enter a new frame for all active paths
         self._enter_frame_for_active_paths()
 
-        # Paths that are still looping
         continue_paths = list(saved_active)
-        # Paths that exited the loop (condition became false or break)
         exited_paths = []
 
         while True:
-            # Evaluate condition per-path
             still_true = []
             for path_idx in continue_paths:
                 self._active_path_indices = [path_idx]
-                if cast_to(BooleanLiteral, self._visitor(node.while_condition)).value:
+                if cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
                     still_true.append(path_idx)
                 else:
                     exited_paths.append(path_idx)
@@ -1541,22 +1565,16 @@ class ProgramContext(AbstractProgramContext):
                 continue_paths = []
                 break
 
-            # Execute loop body for paths where condition is true
             self._active_path_indices = still_true
             try:
-                for statement in deepcopy(node.block):
-                    self._visitor(statement)
-            except _BreakSignal:
-                exited_paths.extend(self._active_path_indices)
-                continue_paths = []
-                break
-            except _ContinueSignal:
-                continue_paths = list(self._active_path_indices)
-                continue
+                yield True
+            except GeneratorExit:
+                self._active_path_indices = still_true + exited_paths
+                self._exit_frame_for_active_paths()
+                return
 
             continue_paths = list(self._active_path_indices)
 
-        # Restore all surviving paths
         self._active_path_indices = continue_paths + exited_paths
         self._exit_frame_for_active_paths()
 

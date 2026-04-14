@@ -47,6 +47,7 @@ from braket.default_simulator.openqasm._helpers.casting import (
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    AliasStatement,
     AngleType,
     ArrayLiteral,
     ArrayType,
@@ -66,7 +67,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     SymbolLiteral,
     UintType,
 )
-from braket.default_simulator.openqasm.program_context import QubitTable
+from braket.default_simulator.openqasm.program_context import ProgramContext, QubitTable
 
 
 def test_bit_declaration():
@@ -2574,14 +2575,7 @@ def test_alias_concatenation():
 
 def test_alias_unsupported_raises():
     # exercises the NotImplementedError branch in AliasStatement
-    from braket.default_simulator.openqasm.parser.openqasm_ast import (
-        AliasStatement,
-        Identifier,
-        IntegerLiteral,
-    )
-    from braket.default_simulator.openqasm.interpreter import Interpreter as _Interp
-
-    interp = _Interp()
+    interp = Interpreter()
     node = AliasStatement(target=Identifier("a"), value=IntegerLiteral(0))
     with pytest.raises(NotImplementedError, match="IntegerLiteral"):
         interp.visit(node)
@@ -2589,24 +2583,20 @@ def test_alias_unsupported_raises():
 
 def _make_mcm_context():
     """Return a ProgramContext subclass whose supports_midcircuit_measurement is True."""
-    from braket.default_simulator.openqasm.program_context import ProgramContext
 
     class MCMContext(ProgramContext):
         @property
         def supports_midcircuit_measurement(self) -> bool:
             return True
 
-        def set_visitor(self, visitor) -> None:
-            self._visitor = visitor
+        def evaluate_condition(self, condition):
+            yield from ()
 
-        def handle_branching_statement(self, node):
-            pass
+        def evaluate_for_range(self, set_declaration, loop_var, loop_type):
+            yield from ()
 
-        def handle_for_loop(self, node):
-            pass
-
-        def handle_while_loop(self, node):
-            pass
+        def evaluate_while_condition(self, condition):
+            yield from ()
 
     return MCMContext()
 
@@ -2615,7 +2605,12 @@ def test_mcm_branching_statement_delegates_to_context():
     """When MCM is supported, if/else branching is delegated to the context."""
     ctx = _make_mcm_context()
     called = []
-    ctx.handle_branching_statement = lambda node: called.append(node)
+
+    def recording_handler(condition):
+        called.append(condition)
+        yield from ()
+
+    ctx.evaluate_condition = recording_handler
 
     interp = Interpreter(context=ctx)
     qasm = """
@@ -2631,7 +2626,12 @@ def test_mcm_for_loop_delegates_to_context():
     """When MCM is supported, for loops are delegated to the context."""
     ctx = _make_mcm_context()
     called = []
-    ctx.handle_for_loop = lambda node: called.append(node)
+
+    def recording_handler(set_declaration, loop_var, loop_type):
+        called.append((set_declaration, loop_var, loop_type))
+        yield from ()
+
+    ctx.evaluate_for_range = recording_handler
 
     interp = Interpreter(context=ctx)
     qasm = """
@@ -2645,7 +2645,12 @@ def test_mcm_while_loop_delegates_to_context():
     """When MCM is supported, while loops are delegated to the context."""
     ctx = _make_mcm_context()
     called = []
-    ctx.handle_while_loop = lambda node: called.append(node)
+
+    def recording_handler(condition):
+        called.append(condition)
+        yield from ()
+
+    ctx.evaluate_while_condition = recording_handler
 
     interp = Interpreter(context=ctx)
     qasm = """
@@ -2658,8 +2663,6 @@ def test_mcm_while_loop_delegates_to_context():
 
 def test_abstract_program_context_default_properties():
     """Default ProgramContext reports no branching but supports MCM."""
-    from braket.default_simulator.openqasm.program_context import ProgramContext
-
     ctx = ProgramContext()
     assert ctx.is_branched is False
     assert ctx.supports_midcircuit_measurement is True

@@ -136,8 +136,6 @@ class Interpreter:
     ):
         # context keeps track of all state
         self.context = context or ProgramContext()
-        if self.context.supports_midcircuit_measurement:
-            self.context.set_visitor(self.visit)
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
         self._warn_advanced_features = warn_advanced_features
@@ -598,7 +596,11 @@ class Interpreter:
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement:
-            self.context.handle_branching_statement(node)
+            for branch in self.context.evaluate_condition(node.condition):
+                if branch:
+                    self.visit(node.if_block)
+                elif node.else_block:
+                    self.visit(node.else_block)
         else:
             condition = cast_to(BooleanLiteral, self.visit(node.condition))
             if condition.value:
@@ -610,7 +612,17 @@ class Interpreter:
     def _(self, node: ForInLoop) -> None:
         self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement:
-            self.context.handle_for_loop(node)
+            gen = self.context.evaluate_for_range(
+                node.set_declaration, node.identifier.name, node.type
+            )
+            for _ in gen:
+                try:
+                    self.visit(deepcopy(node.block))
+                except _BreakSignal:
+                    gen.close()
+                    break
+                except _ContinueSignal:
+                    continue
         else:
             index = self.visit(node.set_declaration)
             if isinstance(index, RangeDefinition):
@@ -633,7 +645,15 @@ class Interpreter:
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement:
-            self.context.handle_while_loop(node)
+            gen = self.context.evaluate_while_condition(node.while_condition)
+            for _ in gen:
+                try:
+                    self.visit(deepcopy(node.block))
+                except _BreakSignal:
+                    gen.close()
+                    break
+                except _ContinueSignal:
+                    continue
         else:
             while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
                 try:
