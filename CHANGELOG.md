@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.37.0 (2026-04-14)
+
+### Features
+
+ * Classical control flow with mid circuit measurements
+
 ## v1.36.1 (2026-04-13)
 
 ### Bug Fixes and Other Changes
