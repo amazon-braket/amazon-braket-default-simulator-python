@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.37.1 (2026-04-15)
+
+### Bug Fixes and Other Changes
+
+ * Simplify MCM handling in context
+
 ## v1.37.0 (2026-04-14)
 
 ### Features
