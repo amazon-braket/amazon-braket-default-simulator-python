@@ -62,7 +62,6 @@ from .parser.openqasm_ast import (
     ArrayLiteral,
     BinaryExpression,
     BooleanLiteral,
-    Cast,
     ClassicalType,
     DiscreteSet,
     FloatLiteral,
