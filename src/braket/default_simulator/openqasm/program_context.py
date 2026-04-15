@@ -1388,8 +1388,6 @@ class ProgramContext(AbstractProgramContext):
                 )
             case UnaryExpression(expression=inner, op=op):
                 return evaluate_unary_expression(self._evaluate_expression(inner), op)
-            case Cast(type=cast_type, argument=argument):
-                return cast_to(cast_type, self._evaluate_expression(argument))
             case IndexExpression(collection=collection, index=index):
                 return get_elements(
                     self._evaluate_expression(collection),
