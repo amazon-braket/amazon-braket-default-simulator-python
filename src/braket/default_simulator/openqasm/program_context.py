@@ -1406,8 +1406,12 @@ class ProgramContext(AbstractProgramContext):
                 return DiscreteSet(values=[self._evaluate_expression(v) for v in values])
             case list():
                 return [self._evaluate_expression(item) for item in expression]
-            case _:
-                raise TypeError(f"Cannot evaluate expression of type {type(expression).__name__}")
+            # The interpreter pre-evaluates unsupported node types (e.g., FunctionCall,
+            # SizeOf) before reaching this method; this is defensive programming.
+            case _:  # pragma: no cover
+                raise TypeError(  # pragma: no cover
+                    f"Cannot evaluate expression of type {type(expression).__name__}"
+                )
 
     def evaluate_condition(self, condition):
         """Evaluate a branching condition, yielding per-path branch decisions.
