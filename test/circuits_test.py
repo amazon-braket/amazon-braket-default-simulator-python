@@ -115,6 +115,8 @@ def _assert_reference_matches_braket_exact(ops, n_qubits):
     c = Circuit()
     for gate_name, targets in ops:
         getattr(c, gate_name)(*targets)
+    for q in range(n_qubits):
+        c.i(q)
     c.probability()
     result = LocalSimulator().run(c, shots=0).result()
     measured = np.array(result.result_types[0].value)
