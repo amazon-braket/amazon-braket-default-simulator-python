@@ -600,11 +600,8 @@ class Interpreter:
             if self._condition_needs_visit(condition):
                 try:
                     condition = self.visit(condition)
-                except NameError:  # pragma: no cover
-                    raise TypeError(
-                        "Branching conditions that reference measurement results "
-                        "inside function calls are not supported."
-                    )
+                except NameError:
+                    raise TypeError("Branching condition not supported.")
             for branch in self.context.evaluate_condition(condition):
                 if branch:
                     self.visit(node.if_block)

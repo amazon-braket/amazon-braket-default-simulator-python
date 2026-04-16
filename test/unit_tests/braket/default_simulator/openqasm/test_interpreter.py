@@ -2705,3 +2705,15 @@ def test_function_call_in_branching_condition():
     simulation = StateVectorSimulation(1, 1, 1)
     simulation.evolve(circuit.instructions)
     assert np.allclose(simulation.state_vector, [1, 0])
+
+
+def test_undefined_function_in_branching_condition():
+    """An undefined function call in a branching condition should raise TypeError."""
+    qasm = """
+    qubit q;
+    if (undefined_func()) {
+        x q;
+    }
+    """
+    with pytest.raises(TypeError, match="Branching condition not supported"):
+        Interpreter().run(qasm)
