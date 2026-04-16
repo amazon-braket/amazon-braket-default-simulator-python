@@ -2668,3 +2668,52 @@ def test_abstract_program_context_default_properties():
     assert ctx.supports_midcircuit_measurement is True
     # ProgramContext always starts with one initial path
     assert len(ctx.active_paths) == 1
+
+
+def test_function_call_in_branching_condition():
+    """A FunctionCall condition should be pre-evaluated by the interpreter."""
+    qasm = """
+    const int[8] n = 4;
+    input bit[n] x;
+
+    qubit q;
+
+    def parity(bit[n] cin) -> bit {
+      bit c = false;
+      for int[8] i in [0: n - 1] {
+        c ^= cin[i];
+      }
+      return c;
+    }
+
+    if(parity(x)) {
+        x q;
+    } else {
+        i q;
+    }
+    """
+    # Odd parity input: parity("1011") == True → x gate
+    context = Interpreter().run(qasm, inputs={"x": "1011"})
+    circuit = context.circuit
+    simulation = StateVectorSimulation(1, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [0, 1])
+
+    # Even parity input: parity("1010") == False → i gate (identity)
+    context = Interpreter().run(qasm, inputs={"x": "1010"})
+    circuit = context.circuit
+    simulation = StateVectorSimulation(1, 1, 1)
+    simulation.evolve(circuit.instructions)
+    assert np.allclose(simulation.state_vector, [1, 0])
+
+
+def test_undefined_function_in_branching_condition():
+    """An undefined function call in a branching condition should raise TypeError."""
+    qasm = """
+    qubit q;
+    if (undefined_func()) {
+        x q;
+    }
+    """
+    with pytest.raises(TypeError, match="Branching condition not supported"):
+        Interpreter().run(qasm)
