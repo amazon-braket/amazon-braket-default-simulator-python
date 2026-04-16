@@ -62,7 +62,6 @@ from .parser.openqasm_ast import (
     ArrayLiteral,
     BinaryExpression,
     BooleanLiteral,
-    Cast,
     ClassicalType,
     DiscreteSet,
     FloatLiteral,
@@ -1388,8 +1387,6 @@ class ProgramContext(AbstractProgramContext):
                 )
             case UnaryExpression(expression=inner, op=op):
                 return evaluate_unary_expression(self._evaluate_expression(inner), op)
-            case Cast(type=cast_type, argument=argument):
-                return cast_to(cast_type, self._evaluate_expression(argument))
             case IndexExpression(collection=collection, index=index):
                 return get_elements(
                     self._evaluate_expression(collection),
@@ -1406,8 +1403,12 @@ class ProgramContext(AbstractProgramContext):
                 return DiscreteSet(values=[self._evaluate_expression(v) for v in values])
             case list():
                 return [self._evaluate_expression(item) for item in expression]
-            case _:
-                raise TypeError(f"Cannot evaluate expression of type {type(expression).__name__}")
+            # The interpreter pre-evaluates unsupported node types (e.g., FunctionCall,
+            # SizeOf) before reaching this method; this is defensive programming.
+            case _:  # pragma: no cover
+                raise TypeError(  # pragma: no cover
+                    f"Cannot evaluate expression of type {type(expression).__name__}"
+                )
 
     def evaluate_condition(self, condition):
         """Evaluate a branching condition, yielding per-path branch decisions.

@@ -596,7 +596,13 @@ class Interpreter:
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement:
-            for branch in self.context.evaluate_condition(node.condition):
+            condition = node.condition
+            if self._condition_needs_visit(condition):
+                try:
+                    condition = self.visit(condition)
+                except NameError:
+                    raise TypeError("Branching condition not supported.")
+            for branch in self.context.evaluate_condition(condition):
                 if branch:
                     self.visit(node.if_block)
                 elif node.else_block:
@@ -799,6 +805,29 @@ class Interpreter:
     def handle_phase(self, phase: FloatLiteral, qubits: Iterable[int] | None = None) -> None:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
+
+    @staticmethod
+    def _condition_needs_visit(condition) -> bool:
+        """Check if a branching condition contains any node that requires
+        full interpreter evaluation (e.g., FunctionCall, SizeOf).
+
+        Recursively walks the AST. Returns True if any node is not in the
+        set of types that a context's lightweight _evaluate_expression can handle.
+        """
+        _EVALUABLE = (
+            BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral,
+            Identifier, BinaryExpression, UnaryExpression, Cast,
+            RangeDefinition, DiscreteSet, IndexExpression,
+        )
+        if not isinstance(condition, QASMNode):
+            return False
+        if not isinstance(condition, _EVALUABLE):
+            return True
+        return any(
+            Interpreter._condition_needs_visit(getattr(condition, f.name))
+            for f in fields(condition)
+            if f.name != "span"
+        )
 
 
 class VerbatimBoxDelimiter(StrEnum):

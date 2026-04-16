@@ -4432,21 +4432,3 @@ class TestEvaluateExpressionFromOpenQASM:
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counts = Counter(["".join(m) for m in result.measurements])
         assert counts == {"11": 100}
-
-
-class TestEvaluateExpressionUnsupportedNode:
-    """Cover the TypeError fallback in _evaluate_expression."""
-
-    def test_sizeof_in_mcm_condition_raises(self, simulator):
-        """sizeof() in a condition after MCM hits the unsupported-node path."""
-        qasm = """
-        OPENQASM 3.0;
-        bit[2] b;
-        qubit[3] q;
-        b[0] = measure q[0];
-        if (sizeof(b) > 0) {
-            x q[2];
-        }
-        """
-        with pytest.raises(TypeError, match="Cannot evaluate expression of type SizeOf"):
-            simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
