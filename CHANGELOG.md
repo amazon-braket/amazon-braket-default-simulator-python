@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.37.3 (2026-04-20)
+
+### Bug Fixes and Other Changes
+
+ * add a circuit validation test and github action
+
 ## v1.37.2 (2026-04-16)
 
 ### Bug Fixes and Other Changes
