@@ -625,9 +625,11 @@ class Interpreter:
                 try:
                     self.visit(deepcopy(node.block))
                 except _BreakSignal:
+                    self.context.handle_loop_break()
                     gen.close()
                     break
                 except _ContinueSignal:
+                    self.context.handle_loop_continue()
                     continue
         else:
             index = self.visit(node.set_declaration)
@@ -643,8 +645,10 @@ class Interpreter:
                     try:
                         self.visit(deepcopy(node.block))
                     except _BreakSignal:
+                        self.context.handle_loop_break()
                         break
                     except _ContinueSignal:
+                        self.context.handle_loop_continue()
                         continue
 
     @visit.register
@@ -656,17 +660,21 @@ class Interpreter:
                 try:
                     self.visit(deepcopy(node.block))
                 except _BreakSignal:
+                    self.context.handle_loop_break()
                     gen.close()
                     break
                 except _ContinueSignal:
+                    self.context.handle_loop_continue()
                     continue
         else:
             while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
                 try:
                     self.visit(deepcopy(node.block))
                 except _BreakSignal:
+                    self.context.handle_loop_break()
                     break
                 except _ContinueSignal:
+                    self.context.handle_loop_continue()
                     continue
 
     @visit.register

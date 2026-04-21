@@ -965,6 +965,20 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
+    def handle_loop_continue(self):
+        """Called by the interpreter when a continue statement is encountered in a loop body.
+
+        Default behavior: no-op (continue to next iteration naturally).
+        Override to raise NotImplementedError if continue is not supported.
+        """
+
+    def handle_loop_break(self):
+        """Called by the interpreter when a break statement is encountered in a loop body.
+
+        Default behavior: no-op (break out of the loop naturally).
+        Override to raise NotImplementedError if break is not supported.
+        """
+
 
 class _BreakSignal(Exception):
     """Internal signal raised when a BreakStatement is encountered during branched execution."""
