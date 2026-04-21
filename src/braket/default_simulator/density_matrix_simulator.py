@@ -19,10 +19,49 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
 )
+from braket.ir.openqasm import Program as OpenQASMProgram
 
 
 class DensityMatrixSimulator(BaseLocalSimulator):
     DEVICE_ID = "braket_dm"
+
+    @staticmethod
+    def _remove_verbatim_box(source: str) -> str:
+        """Remove verbatim box wrappers while preserving the contents inside.
+        Uses brace counting to correctly handle nested braces within the box."""
+        result = []
+        lines = source.split("\n")
+        i = 0
+        while i < len(lines):
+            if (
+                lines[i].strip() == "#pragma braket verbatim"
+                and i + 1 < len(lines)
+                and "box" in lines[i + 1]
+            ):
+                # Skip pragma line and box{ line
+                i += 2
+                depth = 1
+                while i < len(lines) and depth > 0:
+                    for ch in lines[i]:
+                        if ch == "{":
+                            depth += 1
+                        elif ch == "}":
+                            depth -= 1
+                    if depth > 0:
+                        result.append(lines[i])
+                    i += 1
+            else:
+                result.append(lines[i])
+                i += 1
+        return "\n".join(result)
+
+    def run_openqasm(self, openqasm_ir, shots=0, *, batch_size=1):
+        if "#pragma braket verbatim" in openqasm_ir.source:
+            openqasm_ir = OpenQASMProgram.construct(
+                source=self._remove_verbatim_box(openqasm_ir.source),
+                inputs=openqasm_ir.inputs,
+            )
+        return super().run_openqasm(openqasm_ir, shots, batch_size=batch_size)
 
     def initialize_simulation(self, **kwargs) -> DensityMatrixSimulation:
         """

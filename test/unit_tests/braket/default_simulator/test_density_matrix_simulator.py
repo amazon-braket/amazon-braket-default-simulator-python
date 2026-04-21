@@ -983,3 +983,88 @@ def test_run_program_set_dm(mock_uuid):
     assert result.programResults[0].executableResults[0] == expected_program_0_executable_results
     assert result.programResults[1].executableResults[0] == expected_program_1_executable_results
     assert result.taskMetadata == expected_metadata
+
+
+def test_verbatim_box_with_noise(simulator):
+    """Test that a verbatim circuit with noise pragmas inside the box runs successfully.
+    Without the fix, this raises QASM3ParsingError: pragmas must be global."""
+    source = "\n".join([
+        "OPENQASM 3.0;",
+        "bit[2] b;",
+        "#pragma braket verbatim",
+        "box{",
+        "h $0;",
+        "#pragma braket noise depolarizing(0.01) $0",
+        "cnot $0, $1;",
+        "#pragma braket noise depolarizing(0.01) $0",
+        "#pragma braket noise depolarizing(0.01) $1",
+        "}",
+        "b[0] = measure $0;",
+        "b[1] = measure $1;",
+    ])
+    result = simulator.run(OpenQASMProgram(source=source, inputs={}), shots=100)
+    assert len(result.measurements) == 100
+    assert result.measuredQubits == [0, 1]
+
+
+def test_multiple_verbatim_boxes_with_noise(simulator):
+    """Test that multiple verbatim boxes with noise pragmas run successfully,
+    using user-written OpenQASM with whitespace variations."""
+    source = (
+        "OPENQASM 3.0;\n"
+        "bit[2] b;\n"
+        "#pragma braket verbatim\n"
+        "box {\n"
+        "  h $0;\n"
+        "  #pragma braket noise depolarizing(0.01) $0\n"
+        "}\n"
+        "#pragma braket verbatim\n"
+        "box {\n"
+        "  cnot $0, $1;\n"
+        "  #pragma braket noise depolarizing(0.01) $0\n"
+        "  #pragma braket noise depolarizing(0.01) $1\n"
+        "}\n"
+        "b[0] = measure $0;\n"
+        "b[1] = measure $1;"
+    )
+    result = simulator.run(OpenQASMProgram(source=source, inputs={}), shots=100)
+    assert len(result.measurements) == 100
+    assert result.measuredQubits == [0, 1]
+    result = simulator.run(OpenQASMProgram(source=source, inputs={}), shots=100)
+    assert len(result.measurements) == 100
+    assert result.measuredQubits == [0, 1]
+
+
+def test_noise_without_verbatim_box(simulator):
+    """Test that a noisy circuit without verbatim box still works through run_openqasm."""
+    source = "\n".join([
+        "OPENQASM 3.0;",
+        "bit[2] b;",
+        "h $0;",
+        "#pragma braket noise depolarizing(0.01) $0",
+        "cnot $0, $1;",
+        "b[0] = measure $0;",
+        "b[1] = measure $1;",
+    ])
+    result = simulator.run(OpenQASMProgram(source=source, inputs={}), shots=100)
+    assert len(result.measurements) == 100
+    assert result.measuredQubits == [0, 1]
+
+
+def test_remove_verbatim_box_with_nested_braces():
+    """Test that _remove_verbatim_box correctly handles nested braces."""
+    source = "\n".join([
+        "OPENQASM 3.0;",
+        "#pragma braket verbatim",
+        "box{",
+        "if (b == 1) {",
+        "x $0;",
+        "}",
+        "}",
+        "b[0] = measure $0;",
+    ])
+    result = DensityMatrixSimulator._remove_verbatim_box(source)
+    assert "#pragma braket verbatim" not in result
+    assert "box{" not in result
+    assert "if (b == 1) {" in result
+    assert "x $0;" in result
