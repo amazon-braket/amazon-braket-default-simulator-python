@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.38.0 (2026-04-21)
+
+### Features
+
+ * add handle_loop_continue hook for program contexts
+
 ## v1.37.3 (2026-04-20)
 
 ### Bug Fixes and Other Changes
