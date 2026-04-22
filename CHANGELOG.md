@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.38.1 (2026-04-22)
+
+### Bug Fixes and Other Changes
+
+ * strip verbatim box in DensityMatrixSimulator to allow noise pragmas
+
 ## v1.38.0 (2026-04-21)
 
 ### Features
