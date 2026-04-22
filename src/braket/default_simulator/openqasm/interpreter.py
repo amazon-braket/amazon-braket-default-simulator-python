@@ -115,6 +115,20 @@ from .parser.openqasm_ast import (
 from .parser.openqasm_parser import parse
 from .program_context import AbstractProgramContext, ProgramContext, _BreakSignal, _ContinueSignal
 
+_EVALUABLE = (
+    BooleanLiteral,
+    IntegerLiteral,
+    FloatLiteral,
+    ArrayLiteral,
+    Identifier,
+    BinaryExpression,
+    UnaryExpression,
+    Cast,
+    RangeDefinition,
+    DiscreteSet,
+    IndexExpression,
+)
+
 
 class Interpreter:
     """
@@ -196,6 +210,13 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
+        if self.context.supports_midcircuit_measurement and node.init_expression is not None:
+            for _ in self.context.iter_classical_scopes():
+                self._execute_classical_declaration(deepcopy(node))
+        else:
+            self._execute_classical_declaration(node)
+
+    def _execute_classical_declaration(self, node: ClassicalDeclaration) -> None:
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_expression = self.visit(node.init_expression)
@@ -558,17 +579,11 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
-        is_branched = getattr(self.context, "_is_branched", False)
-        if not is_branched or len(self.context._active_path_indices) <= 1:
-            self._execute_classical_assignment(node)
-        else:
-            # When multiple paths are active, evaluate the rvalue per-path
-            # so that expressions like ``y = x`` read from the correct path.
-            saved_active = list(self.context._active_path_indices)
-            for path_idx in saved_active:
-                self.context._active_path_indices = [path_idx]
+        if self.context.supports_midcircuit_measurement:
+            for _ in self.context.iter_classical_scopes():
                 self._execute_classical_assignment(deepcopy(node))
-            self.context._active_path_indices = saved_active
+        else:
+            self._execute_classical_assignment(node)
 
     def _execute_classical_assignment(self, node: ClassicalAssignment) -> None:
         lvalue_name = get_identifier_name(node.lvalue)
@@ -822,11 +837,6 @@ class Interpreter:
         Recursively walks the AST. Returns True if any node is not in the
         set of types that a context's lightweight _evaluate_expression can handle.
         """
-        _EVALUABLE = (
-            BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral,
-            Identifier, BinaryExpression, UnaryExpression, Cast,
-            RangeDefinition, DiscreteSet, IndexExpression,
-        )
         if not isinstance(condition, QASMNode):
             return False
         if not isinstance(condition, _EVALUABLE):

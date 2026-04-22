@@ -123,7 +123,6 @@ def _assert_reference_matches_braket_exact(ops, n_qubits):
     np.testing.assert_allclose(measured, expected, atol=1e-10)
 
 
-
 def _random_layered_circuit(rng, n_qubits, n_layers, gate_set=None):
     gate_set = gate_set or ONE_QUBIT_GATES + TWO_QUBIT_GATES
     ops = []
@@ -334,12 +333,23 @@ def _staircase_cz(n_qubits):
 
 
 class TestRandomLayeredCircuits:
-    @pytest.mark.parametrize("n_qubits,n_layers", [
-        (3, 3), (3, 6), (3, 10),
-        (5, 3), (5, 6), (5, 10),
-        (8, 3), (8, 6), (8, 10),
-        (11, 3), (11, 6), (11, 10),
-    ])
+    @pytest.mark.parametrize(
+        "n_qubits,n_layers",
+        [
+            (3, 3),
+            (3, 6),
+            (3, 10),
+            (5, 3),
+            (5, 6),
+            (5, 10),
+            (8, 3),
+            (8, 6),
+            (8, 10),
+            (11, 3),
+            (11, 6),
+            (11, 10),
+        ],
+    )
     def test_random_layered(self, n_qubits, n_layers):
         rng = np.random.RandomState(42)
         ops = _random_layered_circuit(rng, n_qubits, n_layers)
@@ -353,32 +363,38 @@ class TestRandomLayeredCircuits:
 
 
 class TestGHZCircuits:
-    @pytest.mark.parametrize("n_qubits,ghz_start,n_ghz,use_tree", [
-        (8, 0, 4, True),
-        (8, 3, 4, True),
-        (11, 2, 4, True),
-        (11, 2, 4, False),
-        (6, 0, 6, True),
-        (6, 0, 6, False),
-        (10, 0, 10, True),
-        (10, 0, 10, False),
-        (12, 2, 8, True),
-        (12, 4, 6, False),
-    ])
+    @pytest.mark.parametrize(
+        "n_qubits,ghz_start,n_ghz,use_tree",
+        [
+            (8, 0, 4, True),
+            (8, 3, 4, True),
+            (11, 2, 4, True),
+            (11, 2, 4, False),
+            (6, 0, 6, True),
+            (6, 0, 6, False),
+            (10, 0, 10, True),
+            (10, 0, 10, False),
+            (12, 2, 8, True),
+            (12, 4, 6, False),
+        ],
+    )
     def test_ghz(self, n_qubits, ghz_start, n_ghz, use_tree):
         ops = _ghz_circuit(n_qubits, ghz_start, n_ghz, use_tree)
         _assert_distributions_close(ops, n_qubits)
 
 
 class TestSparseQubitCircuits:
-    @pytest.mark.parametrize("indices", [
-        [0, 3, 7],
-        [1, 5, 9, 10],
-        [0, 2, 4, 6, 8],
-        [0, 11],
-        [3, 7, 11],
-        [0, 4, 8, 12],
-    ])
+    @pytest.mark.parametrize(
+        "indices",
+        [
+            [0, 3, 7],
+            [1, 5, 9, 10],
+            [0, 2, 4, 6, 8],
+            [0, 11],
+            [3, 7, 11],
+            [0, 4, 8, 12],
+        ],
+    )
     def test_sparse(self, indices):
         rng = np.random.RandomState(42)
         ops, n_qubits = _sparse_qubit_circuit(rng, indices, 4)
@@ -402,22 +418,27 @@ class TestThreeQubitGates:
     def test_three_qubit_gates(self, n_qubits):
         rng = np.random.RandomState(42)
         ops = _random_layered_circuit(
-            rng, n_qubits, 3,
+            rng,
+            n_qubits,
+            3,
             gate_set=ONE_QUBIT_GATES + TWO_QUBIT_GATES + THREE_QUBIT_GATES,
         )
         _assert_distributions_close(ops, n_qubits)
 
 
 class TestBellPairs:
-    @pytest.mark.parametrize("q0,q1,n_qubits", [
-        (0, 1, 2),
-        (0, 1, 6),
-        (0, 5, 6),
-        (2, 4, 8),
-        (0, 7, 8),
-        (3, 9, 10),
-        (0, 11, 12),
-    ])
+    @pytest.mark.parametrize(
+        "q0,q1,n_qubits",
+        [
+            (0, 1, 2),
+            (0, 1, 6),
+            (0, 5, 6),
+            (2, 4, 8),
+            (0, 7, 8),
+            (3, 9, 10),
+            (0, 11, 12),
+        ],
+    )
     def test_bell(self, q0, q1, n_qubits):
         ops = _bell_pair(q0, q1, n_qubits)
         _assert_distributions_close(ops, n_qubits)
@@ -429,11 +450,14 @@ class TestQFTCircuits:
         ops = _qft_circuit(n_qubits)
         _assert_distributions_close(ops, n_qubits)
 
-    @pytest.mark.parametrize("targets,n_qubits", [
-        ([1, 2, 3], 6),
-        ([0, 2, 4], 6),
-        ([2, 3, 4, 5], 8),
-    ])
+    @pytest.mark.parametrize(
+        "targets,n_qubits",
+        [
+            ([1, 2, 3], 6),
+            ([0, 2, 4], 6),
+            ([2, 3, 4, 5], 8),
+        ],
+    )
     def test_qft_partial_register(self, targets, n_qubits):
         ops = _qft_circuit(n_qubits, targets)
         _assert_distributions_close(ops, n_qubits)
@@ -445,22 +469,38 @@ class TestQFTCircuits:
 
 
 class TestGroverCircuits:
-    @pytest.mark.parametrize("n_qubits,marked", [
-        (2, 0), (2, 1), (2, 2), (2, 3),
-        (3, 0), (3, 5), (3, 7),
-    ])
+    @pytest.mark.parametrize(
+        "n_qubits,marked",
+        [
+            (2, 0),
+            (2, 1),
+            (2, 2),
+            (2, 3),
+            (3, 0),
+            (3, 5),
+            (3, 7),
+        ],
+    )
     def test_grover(self, n_qubits, marked):
         ops = _grover_oracle_diffuser(n_qubits, marked)
         _assert_distributions_close(ops, n_qubits)
 
 
 class TestSwapNetwork:
-    @pytest.mark.parametrize("n_qubits,rounds", [
-        (4, 1), (4, 2), (4, 3),
-        (6, 1), (6, 2),
-        (8, 1), (8, 2),
-        (5, 1), (5, 2),
-    ])
+    @pytest.mark.parametrize(
+        "n_qubits,rounds",
+        [
+            (4, 1),
+            (4, 2),
+            (4, 3),
+            (6, 1),
+            (6, 2),
+            (8, 1),
+            (8, 2),
+            (5, 1),
+            (5, 2),
+        ],
+    )
     def test_swap_network(self, n_qubits, rounds):
         ops = _swap_network(n_qubits, rounds)
         _assert_distributions_close(ops, n_qubits)
@@ -472,13 +512,22 @@ class TestSwapNetwork:
 
 
 class TestRepeatedGate:
-    @pytest.mark.parametrize("gate,n_qubits,reps", [
-        ("h", 4, 1), ("h", 4, 2), ("h", 4, 3),
-        ("x", 6, 1), ("x", 6, 2),
-        ("s", 4, 1), ("s", 4, 4),
-        ("t", 5, 1), ("t", 5, 8),
-        ("z", 3, 1), ("z", 3, 2),
-    ])
+    @pytest.mark.parametrize(
+        "gate,n_qubits,reps",
+        [
+            ("h", 4, 1),
+            ("h", 4, 2),
+            ("h", 4, 3),
+            ("x", 6, 1),
+            ("x", 6, 2),
+            ("s", 4, 1),
+            ("s", 4, 4),
+            ("t", 5, 1),
+            ("t", 5, 8),
+            ("z", 3, 1),
+            ("z", 3, 2),
+        ],
+    )
     def test_repeated(self, gate, n_qubits, reps):
         ops = _repeated_gate_circuit(gate, n_qubits, reps)
         _assert_distributions_close(ops, n_qubits)
@@ -499,24 +548,41 @@ class TestWStateApprox:
 
 
 class TestCheckerboardCircuit:
-    @pytest.mark.parametrize("n_qubits,n_layers", [
-        (4, 2), (4, 4), (4, 6),
-        (6, 2), (6, 4),
-        (8, 2), (8, 3),
-    ])
+    @pytest.mark.parametrize(
+        "n_qubits,n_layers",
+        [
+            (4, 2),
+            (4, 4),
+            (4, 6),
+            (6, 2),
+            (6, 4),
+            (8, 2),
+            (8, 3),
+        ],
+    )
     def test_checkerboard(self, n_qubits, n_layers):
         ops = _checkerboard_circuit(n_qubits, n_layers)
         _assert_distributions_close(ops, n_qubits)
 
 
 class TestLongRangeCNOT:
-    @pytest.mark.parametrize("n_qubits,stride", [
-        (4, 2), (4, 3),
-        (6, 2), (6, 3), (6, 4),
-        (8, 2), (8, 3), (8, 4),
-        (10, 3), (10, 5),
-        (12, 4), (12, 6),
-    ])
+    @pytest.mark.parametrize(
+        "n_qubits,stride",
+        [
+            (4, 2),
+            (4, 3),
+            (6, 2),
+            (6, 3),
+            (6, 4),
+            (8, 2),
+            (8, 3),
+            (8, 4),
+            (10, 3),
+            (10, 5),
+            (12, 4),
+            (12, 6),
+        ],
+    )
     def test_long_range(self, n_qubits, stride):
         ops = _long_range_cnot_circuit(n_qubits, stride)
         _assert_distributions_close(ops, n_qubits)
@@ -548,11 +614,18 @@ class TestIdentitySandwich:
 
 
 class TestAlternatingBasis:
-    @pytest.mark.parametrize("n_qubits,n_layers", [
-        (4, 1), (4, 2), (4, 3),
-        (6, 1), (6, 2),
-        (8, 1), (8, 2),
-    ])
+    @pytest.mark.parametrize(
+        "n_qubits,n_layers",
+        [
+            (4, 1),
+            (4, 2),
+            (4, 3),
+            (6, 1),
+            (6, 2),
+            (8, 1),
+            (8, 2),
+        ],
+    )
     def test_alternating(self, n_qubits, n_layers):
         ops = _alternating_basis_circuit(n_qubits, n_layers)
         _assert_distributions_close(ops, n_qubits)
@@ -629,10 +702,18 @@ class TestDeterministicOutputs:
         expected[-1] = 1.0
         _assert_exact_probabilities(ops, n_qubits, expected)
 
-    @pytest.mark.parametrize("q,n_qubits", [
-        (0, 4), (1, 4), (2, 4), (3, 4),
-        (0, 8), (4, 8), (7, 8),
-    ])
+    @pytest.mark.parametrize(
+        "q,n_qubits",
+        [
+            (0, 4),
+            (1, 4),
+            (2, 4),
+            (3, 4),
+            (0, 8),
+            (4, 8),
+            (7, 8),
+        ],
+    )
     def test_x_on_single_qubit(self, q, n_qubits):
         ops = [("x", [q])]
         expected = np.zeros(2**n_qubits)
@@ -646,20 +727,34 @@ class TestDeterministicOutputs:
         expected[0] = 1.0
         _assert_exact_probabilities(ops, n_qubits, expected)
 
-    @pytest.mark.parametrize("ctrl,tgt,n_qubits", [
-        (0, 1, 2), (0, 1, 4), (2, 3, 4), (0, 3, 4),
-        (0, 1, 8), (3, 7, 8),
-    ])
+    @pytest.mark.parametrize(
+        "ctrl,tgt,n_qubits",
+        [
+            (0, 1, 2),
+            (0, 1, 4),
+            (2, 3, 4),
+            (0, 3, 4),
+            (0, 1, 8),
+            (3, 7, 8),
+        ],
+    )
     def test_cnot_on_zero_state_unchanged(self, ctrl, tgt, n_qubits):
         ops = [("cnot", [ctrl, tgt])]
         expected = np.zeros(2**n_qubits)
         expected[0] = 1.0
         _assert_exact_probabilities(ops, n_qubits, expected)
 
-    @pytest.mark.parametrize("ctrl,tgt,n_qubits", [
-        (0, 1, 2), (0, 1, 4), (2, 3, 4), (0, 3, 4),
-        (0, 1, 8), (3, 7, 8),
-    ])
+    @pytest.mark.parametrize(
+        "ctrl,tgt,n_qubits",
+        [
+            (0, 1, 2),
+            (0, 1, 4),
+            (2, 3, 4),
+            (0, 3, 4),
+            (0, 1, 8),
+            (3, 7, 8),
+        ],
+    )
     def test_cnot_flips_target_when_control_set(self, ctrl, tgt, n_qubits):
         ops = [("x", [ctrl]), ("cnot", [ctrl, tgt])]
         expected = np.zeros(2**n_qubits)
@@ -670,12 +765,18 @@ class TestDeterministicOutputs:
 
 
 class TestGateCancellation:
-    @pytest.mark.parametrize("gate,n_qubits", [
-        ("h", 4), ("h", 8),
-        ("x", 4), ("x", 8),
-        ("z", 4), ("z", 8),
-        ("y", 4),
-    ])
+    @pytest.mark.parametrize(
+        "gate,n_qubits",
+        [
+            ("h", 4),
+            ("h", 8),
+            ("x", 4),
+            ("x", 8),
+            ("z", 4),
+            ("z", 8),
+            ("y", 4),
+        ],
+    )
     def test_self_inverse_cancels(self, gate, n_qubits):
         ops = [(gate, [q]) for q in range(n_qubits)]
         ops += [(gate, [q]) for q in range(n_qubits)]
@@ -707,9 +808,15 @@ class TestGateCancellation:
             atol=1e-12,
         )
 
-    @pytest.mark.parametrize("ctrl,tgt,n_qubits", [
-        (0, 1, 2), (0, 1, 6), (2, 5, 6), (0, 5, 6),
-    ])
+    @pytest.mark.parametrize(
+        "ctrl,tgt,n_qubits",
+        [
+            (0, 1, 2),
+            (0, 1, 6),
+            (2, 5, 6),
+            (0, 5, 6),
+        ],
+    )
     def test_cnot_self_inverse(self, ctrl, tgt, n_qubits):
         ops = [("h", [q]) for q in range(n_qubits)]
         ops += [("cnot", [ctrl, tgt]), ("cnot", [ctrl, tgt])]
@@ -720,9 +827,14 @@ class TestGateCancellation:
             atol=1e-12,
         )
 
-    @pytest.mark.parametrize("q0,q1,n_qubits", [
-        (0, 1, 2), (0, 1, 6), (2, 5, 6),
-    ])
+    @pytest.mark.parametrize(
+        "q0,q1,n_qubits",
+        [
+            (0, 1, 2),
+            (0, 1, 6),
+            (2, 5, 6),
+        ],
+    )
     def test_swap_self_inverse(self, q0, q1, n_qubits):
         ops = [("h", [q]) for q in range(n_qubits)]
         ops += [("swap", [q0, q1]), ("swap", [q0, q1])]
@@ -736,16 +848,24 @@ class TestGateCancellation:
 
 class TestIsolated2QubitGates:
     @pytest.mark.parametrize("gate", TWO_QUBIT_GATES)
-    @pytest.mark.parametrize("q0,q1,n_qubits", [
-        (0, 1, 2),
-        (0, 1, 6), (0, 5, 6), (2, 4, 6), (3, 5, 6),
-        (0, 1, 8), (0, 7, 8), (3, 6, 8), (1, 6, 8),
-    ])
+    @pytest.mark.parametrize(
+        "q0,q1,n_qubits",
+        [
+            (0, 1, 2),
+            (0, 1, 6),
+            (0, 5, 6),
+            (2, 4, 6),
+            (3, 5, 6),
+            (0, 1, 8),
+            (0, 7, 8),
+            (3, 6, 8),
+            (1, 6, 8),
+        ],
+    )
     def test_isolated_gate(self, gate, q0, q1, n_qubits):
         ops = [("h", [q]) for q in range(n_qubits)]
         ops.append((gate, [q0, q1]))
         _assert_distributions_close(ops, n_qubits)
-
 
 
 class TestCNOTAllPairsStress:
@@ -762,7 +882,9 @@ class TestCNOTAllPairsStress:
                 expected[ctrl_bit | tgt_bit] = 1.0
                 actual = _reference_probabilities(ops, n_qubits)
                 np.testing.assert_allclose(
-                    actual, expected, atol=1e-12,
+                    actual,
+                    expected,
+                    atol=1e-12,
                     err_msg=f"cnot({ctrl},{tgt}) on {n_qubits}q",
                 )
 
@@ -810,11 +932,23 @@ class TestReversedQubitOrdering:
             ops = [("h", [ctrl]), ("cnot", [ctrl, tgt])]
             _assert_reference_matches_braket_exact(ops, n_qubits)
 
-    @pytest.mark.parametrize("ctrl,tgt,n_qubits", [
-        (1, 0, 2), (3, 0, 4), (5, 0, 6), (7, 0, 8),
-        (5, 2, 6), (7, 3, 8), (6, 1, 8), (4, 2, 6),
-        (3, 1, 6), (7, 4, 8), (11, 2, 12), (9, 3, 12),
-    ])
+    @pytest.mark.parametrize(
+        "ctrl,tgt,n_qubits",
+        [
+            (1, 0, 2),
+            (3, 0, 4),
+            (5, 0, 6),
+            (7, 0, 8),
+            (5, 2, 6),
+            (7, 3, 8),
+            (6, 1, 8),
+            (4, 2, 6),
+            (3, 1, 6),
+            (7, 4, 8),
+            (11, 2, 12),
+            (9, 3, 12),
+        ],
+    )
     def test_reversed_pair_exact(self, ctrl, tgt, n_qubits):
         ops = [("h", [ctrl]), ("cnot", [ctrl, tgt])]
         _assert_reference_matches_braket_exact(ops, n_qubits)
@@ -831,32 +965,38 @@ class TestReversedQubitOrdering:
 
 
 class TestCSwapCircuits:
-    @pytest.mark.parametrize("ctrl,t0,t1,n_qubits", [
-        (0, 1, 2, 3),
-        (0, 1, 2, 6),
-        (0, 2, 4, 6),
-        (1, 3, 5, 6),
-        (0, 1, 2, 8),
-        (0, 3, 7, 8),
-        (2, 4, 6, 8),
-        (7, 3, 1, 8),
-    ])
+    @pytest.mark.parametrize(
+        "ctrl,t0,t1,n_qubits",
+        [
+            (0, 1, 2, 3),
+            (0, 1, 2, 6),
+            (0, 2, 4, 6),
+            (1, 3, 5, 6),
+            (0, 1, 2, 8),
+            (0, 3, 7, 8),
+            (2, 4, 6, 8),
+            (7, 3, 1, 8),
+        ],
+    )
     def test_cswap_control_off(self, ctrl, t0, t1, n_qubits):
         ops = [("x", [t0]), ("cswap", [ctrl, t0, t1])]
         expected = np.zeros(2**n_qubits)
         expected[1 << (n_qubits - 1 - t0)] = 1.0
         _assert_exact_probabilities(ops, n_qubits, expected)
 
-    @pytest.mark.parametrize("ctrl,t0,t1,n_qubits", [
-        (0, 1, 2, 3),
-        (0, 1, 2, 6),
-        (0, 2, 4, 6),
-        (1, 3, 5, 6),
-        (0, 1, 2, 8),
-        (0, 3, 7, 8),
-        (2, 4, 6, 8),
-        (7, 3, 1, 8),
-    ])
+    @pytest.mark.parametrize(
+        "ctrl,t0,t1,n_qubits",
+        [
+            (0, 1, 2, 3),
+            (0, 1, 2, 6),
+            (0, 2, 4, 6),
+            (1, 3, 5, 6),
+            (0, 1, 2, 8),
+            (0, 3, 7, 8),
+            (2, 4, 6, 8),
+            (7, 3, 1, 8),
+        ],
+    )
     def test_cswap_control_on(self, ctrl, t0, t1, n_qubits):
         ops = [("x", [ctrl]), ("x", [t0]), ("cswap", [ctrl, t0, t1])]
         expected = np.zeros(2**n_qubits)
@@ -865,16 +1005,27 @@ class TestCSwapCircuits:
         expected[ctrl_bit | t1_bit] = 1.0
         _assert_exact_probabilities(ops, n_qubits, expected)
 
-    @pytest.mark.parametrize("ctrl,t0,t1,n_qubits", [
-        (0, 1, 2, 3), (0, 1, 2, 6), (0, 3, 7, 8), (2, 4, 6, 8),
-    ])
+    @pytest.mark.parametrize(
+        "ctrl,t0,t1,n_qubits",
+        [
+            (0, 1, 2, 3),
+            (0, 1, 2, 6),
+            (0, 3, 7, 8),
+            (2, 4, 6, 8),
+        ],
+    )
     def test_cswap_braket_exact(self, ctrl, t0, t1, n_qubits):
         ops = [("x", [ctrl]), ("x", [t0]), ("cswap", [ctrl, t0, t1])]
         _assert_reference_matches_braket_exact(ops, n_qubits)
 
-    @pytest.mark.parametrize("ctrl,t0,t1,n_qubits", [
-        (0, 1, 2, 3), (0, 1, 2, 6), (0, 3, 7, 8),
-    ])
+    @pytest.mark.parametrize(
+        "ctrl,t0,t1,n_qubits",
+        [
+            (0, 1, 2, 3),
+            (0, 1, 2, 6),
+            (0, 3, 7, 8),
+        ],
+    )
     def test_cswap_self_inverse(self, ctrl, t0, t1, n_qubits):
         ops = [("h", [q]) for q in range(n_qubits)]
         ops += [("cswap", [ctrl, t0, t1]), ("cswap", [ctrl, t0, t1])]

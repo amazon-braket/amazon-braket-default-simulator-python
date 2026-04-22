@@ -965,6 +965,22 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
+    def iter_classical_scopes(self):
+        """Set up iterations for classical expression evaluation in MCM contexts.
+
+        Called by the Interpreter when ``supports_midcircuit_measurement``
+        is True around operations that evaluate classical expressions
+        which may depend on mid-circuit measurement results (classical
+        assignments, variable declarations with initializers, etc.).
+        Implementations are generators that yield once for each scope in
+        which the expression should be independently evaluated (e.g.,
+        once per active simulation path).
+
+        Yields:
+            None: Signals the Interpreter to evaluate the expression once.
+        """
+        raise NotImplementedError
+
     def handle_loop_continue(self):
         """Called by the interpreter when a continue statement is encountered in a loop body.
 
@@ -1423,6 +1439,26 @@ class ProgramContext(AbstractProgramContext):
                 raise TypeError(  # pragma: no cover
                     f"Cannot evaluate expression of type {type(expression).__name__}"
                 )
+
+    def iter_classical_scopes(self):
+        """Yield once per active path for classical expression evaluation.
+
+        When multiple paths are active, yields once per path after setting
+        it as the sole active path, so that expression evaluation reads
+        from that path's variable state. Restores all paths after iteration.
+
+        Yields:
+            None: Signals the Interpreter to evaluate the expression.
+        """
+        if not self._is_branched or len(self._active_path_indices) <= 1:
+            yield
+            return
+
+        saved_active = list(self._active_path_indices)
+        for path_idx in saved_active:
+            self._active_path_indices = [path_idx]
+            yield
+        self._active_path_indices = saved_active
 
     def evaluate_condition(self, condition):
         """Evaluate a branching condition, yielding per-path branch decisions.
