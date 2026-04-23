@@ -62,6 +62,7 @@ from .parser.openqasm_ast import (
     ArrayLiteral,
     BinaryExpression,
     BooleanLiteral,
+    Cast,
     ClassicalType,
     DiscreteSet,
     FloatLiteral,
@@ -965,7 +966,7 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
-    def iter_classical_scopes(self):
+    def iter_classical_scopes(self, expression):
         """Set up iterations for classical expression evaluation in MCM contexts.
 
         Called by the Interpreter when ``supports_midcircuit_measurement``
@@ -975,6 +976,11 @@ class AbstractProgramContext(ABC):
         Implementations are generators that yield once for each scope in
         which the expression should be independently evaluated (e.g.,
         once per active simulation path).
+
+        Args:
+            expression: The AST expression being evaluated. Subclasses
+                may use it to flush pending side effects (e.g., mid-circuit
+                measurements) referenced by the expression before iteration.
 
         Yields:
             None: Signals the Interpreter to evaluate the expression once.
@@ -1440,25 +1446,61 @@ class ProgramContext(AbstractProgramContext):
                     f"Cannot evaluate expression of type {type(expression).__name__}"
                 )
 
-    def iter_classical_scopes(self):
+    def iter_classical_scopes(self, expression):
         """Yield once per active path for classical expression evaluation.
 
-        When multiple paths are active, yields once per path after setting
-        it as the sole active path, so that expression evaluation reads
-        from that path's variable state. Restores all paths after iteration.
+        Before iteration, flushes any pending mid-circuit measurements
+        referenced by ``expression`` so that branching happens before the
+        iteration count is decided. When multiple paths are active, yields
+        once per path after setting it as the sole active path, so that
+        expression evaluation reads from that path's variable state.
+        Restores all paths after iteration.
+
+        Args:
+            expression: The AST expression being evaluated. Any identifiers
+                it references that match pending MCMs will be flushed
+                before iteration.
 
         Yields:
             None: Signals the Interpreter to evaluate the expression.
         """
+        for name in self._referenced_identifiers(expression):
+            self._flush_pending_mcm_for_variable(name)
+
         if not self._is_branched or len(self._active_path_indices) <= 1:
             yield
             return
 
         saved_active = list(self._active_path_indices)
         for path_idx in saved_active:
-            self._active_path_indices = [path_idx]
+            self._focus_on_path(path_idx)
             yield
         self._active_path_indices = saved_active
+
+    @staticmethod
+    def _referenced_identifiers(expression) -> set[str]:
+        """Collect identifier names referenced in an AST expression."""
+        match expression:
+            case Identifier(name=name):
+                return {name}
+            case BinaryExpression(lhs=lhs, rhs=rhs):
+                return ProgramContext._referenced_identifiers(
+                    lhs
+                ) | ProgramContext._referenced_identifiers(rhs)
+            case UnaryExpression(expression=inner):
+                return ProgramContext._referenced_identifiers(inner)
+            case Cast(argument=argument):
+                return ProgramContext._referenced_identifiers(argument)
+            case IndexExpression(collection=collection, index=index):
+                return ProgramContext._referenced_identifiers(
+                    collection
+                ) | ProgramContext._referenced_identifiers(index)
+            case list():
+                return set().union(
+                    *(ProgramContext._referenced_identifiers(item) for item in expression)
+                )
+            case _:
+                return set()
 
     def evaluate_condition(self, condition):
         """Evaluate a branching condition, yielding per-path branch decisions.
@@ -1484,7 +1526,7 @@ class ProgramContext(AbstractProgramContext):
         false_paths = []
 
         for path_idx in saved_active:
-            self._active_path_indices = [path_idx]
+            self._focus_on_path(path_idx)
             if cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
                 true_paths.append(path_idx)
             else:
@@ -1494,7 +1536,7 @@ class ProgramContext(AbstractProgramContext):
 
         if true_paths:
             for path_idx in true_paths:
-                self._active_path_indices = [path_idx]
+                self._focus_on_path(path_idx)
                 self._enter_frame_for_active_paths()
                 yield True
                 surviving_paths.extend(self._active_path_indices)
@@ -1502,7 +1544,7 @@ class ProgramContext(AbstractProgramContext):
 
         if false_paths:
             for path_idx in false_paths:
-                self._active_path_indices = [path_idx]
+                self._focus_on_path(path_idx)
                 self._enter_frame_for_active_paths()
                 yield False
                 surviving_paths.extend(self._active_path_indices)
@@ -1541,7 +1583,7 @@ class ProgramContext(AbstractProgramContext):
 
         saved_active = list(self._active_path_indices)
 
-        self._active_path_indices = [saved_active[0]]
+        self._focus_on_path(saved_active[0])
         index = self._evaluate_expression(set_declaration)
         index_values = (
             [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
@@ -1606,7 +1648,7 @@ class ProgramContext(AbstractProgramContext):
         while True:
             still_true = []
             for path_idx in continue_paths:
-                self._active_path_indices = [path_idx]
+                self._focus_on_path(path_idx)
                 if cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
                     still_true.append(path_idx)
                 else:
@@ -1633,6 +1675,15 @@ class ProgramContext(AbstractProgramContext):
         """Enter a new variable scope frame for all active paths."""
         for path_idx in self._active_path_indices:
             self._paths[path_idx].enter_frame()
+
+    def _focus_on_path(self, path_idx: int) -> None:
+        """Temporarily narrow execution to a single simulation path.
+
+        Subsequent reads and writes of classical state will affect only
+        this path, which is essential for per-path expression evaluation
+        and variable updates.
+        """
+        self._active_path_indices = [path_idx]
 
     def _exit_frame_for_active_paths(self) -> None:
         """Exit the current variable scope frame for all active paths.

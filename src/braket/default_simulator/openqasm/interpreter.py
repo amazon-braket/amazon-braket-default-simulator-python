@@ -211,7 +211,7 @@ class Interpreter:
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
         if self.context.supports_midcircuit_measurement and node.init_expression is not None:
-            for _ in self.context.iter_classical_scopes():
+            for _ in self.context.iter_classical_scopes(node.init_expression):
                 self._execute_classical_declaration(deepcopy(node))
         else:
             self._execute_classical_declaration(node)
@@ -219,20 +219,21 @@ class Interpreter:
     def _execute_classical_declaration(self, node: ClassicalDeclaration) -> None:
         node_type = self.visit(node.type)
         if node.init_expression is not None:
-            init_expression = self.visit(node.init_expression)
-            init_value = cast_to(node.type, init_expression)
-        elif isinstance(node_type, ArrayType):
-            init_value = create_empty_array(node_type.dimensions)
-        elif isinstance(node_type, BitType) and node_type.size:
-            init_value = create_empty_array([node_type.size])
-        elif isinstance(node_type, (IntType, UintType)):
-            init_value = IntegerLiteral(value=0)
-        elif isinstance(node_type, FloatType):
-            init_value = FloatLiteral(value=0.0)
-        elif isinstance(node_type, BoolType):
-            init_value = BooleanLiteral(value=False)
+            init_value = cast_to(node.type, self.visit(node.init_expression))
         else:
-            init_value = None
+            match node_type:
+                case ArrayType():
+                    init_value = create_empty_array(node_type.dimensions)
+                case BitType() if node_type.size:
+                    init_value = create_empty_array([node_type.size])
+                case IntType() | UintType():
+                    init_value = IntegerLiteral(value=0)
+                case FloatType():
+                    init_value = FloatLiteral(value=0.0)
+                case BoolType():
+                    init_value = BooleanLiteral(value=False)
+                case _:
+                    init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
 
     @visit.register
@@ -580,7 +581,7 @@ class Interpreter:
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
         if self.context.supports_midcircuit_measurement:
-            for _ in self.context.iter_classical_scopes():
+            for _ in self.context.iter_classical_scopes(node.rvalue):
                 self._execute_classical_assignment(deepcopy(node))
         else:
             self._execute_classical_assignment(node)

@@ -4095,21 +4095,53 @@ class TestMCMVariableReadWithoutControlFlow:
     """Cover the case where a measurement result is read in a plain assignment."""
 
     def test_measure_result_assigned_without_if(self, simulator):
-        """Reading a measurement result in a plain assignment should not crash."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[3] __qubits__;
-        bit[1] mcm;
-        bit __bit_1__;
-        __bit_1__ = measure __qubits__[1];
-        mcm[0] = __bit_1__;
+        """Reading a nondeterministic measurement result in a plain assignment
+        should propagate per-path values correctly.
+
+        Verifies that using an intermediate variable ``y = b`` produces the
+        same state as using the measurement result directly in a condition.
         """
-        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
-        assert len(result.measurements) == 100
-        counter = Counter(["".join(m) for m in result.measurements])
-        # __qubits__[1] is |0>, so __bit_1__ is always 0, mcm[0] is always 0
-        for outcome in counter:
-            assert all(c == "0" for c in outcome)
+        direct_qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        """
+        indirect_qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        bit y;
+        h q[0];
+        b = measure q[0];
+        y = b;
+        if (y == 1) {
+            x q[1];
+        }
+        """
+        direct = Counter(
+            "".join(m)
+            for m in simulator.run_openqasm(
+                OpenQASMProgram(source=direct_qasm, inputs={}), shots=2000
+            ).measurements
+        )
+        indirect = Counter(
+            "".join(m)
+            for m in simulator.run_openqasm(
+                OpenQASMProgram(source=indirect_qasm, inputs={}), shots=2000
+            ).measurements
+        )
+        # Both should produce '00' and '11' in roughly equal proportions.
+        # The bug manifests as the indirect version producing '00' and '10'
+        # (q[1] never flipped) because the per-path assignment y = b is broken.
+        assert set(direct.keys()) == {"00", "11"}
+        assert set(indirect.keys()) == {"00", "11"}, (
+            f"Expected {{'00', '11'}} for indirect, got {set(indirect.keys())}"
+        )
 
 
 class TestMCMFlushPendingEdgeCases:
