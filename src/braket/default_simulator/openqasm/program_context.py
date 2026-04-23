@@ -13,6 +13,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from dataclasses import fields
 from functools import singledispatchmethod
 from typing import Any
 
@@ -62,7 +63,6 @@ from .parser.openqasm_ast import (
     ArrayLiteral,
     BinaryExpression,
     BooleanLiteral,
-    Cast,
     ClassicalType,
     DiscreteSet,
     FloatLiteral,
@@ -446,6 +446,7 @@ class AbstractProgramContext(ABC):
         self.inputs = {}
         self.num_qubits = 0
         self.in_verbatim_box = False
+        self._mcm_dependent_vars: set[str] = set()
 
     @property
     @abstractmethod
@@ -911,6 +912,72 @@ class AbstractProgramContext(ABC):
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
 
+    def is_mcm_dependent(self, expression) -> bool:
+        """Whether an expression depends on any mid-circuit measurement result.
+
+        An expression is MCM-dependent when it references a classical
+        variable that was (directly or transitively) produced by a
+        mid-circuit measurement. Subclasses populate ``_mcm_dependent_vars``
+        (typically via ``track_mcm_dependency`` or when a measurement is
+        recorded) so this check simply asks whether any referenced
+        identifier is a known MCM-dependent variable.
+
+        Used by the Interpreter to decide whether control flow and
+        classical assignments need per-path evaluation. Expressions that
+        are not MCM-dependent are evaluated once and eagerly, matching
+        non-MCM behavior.
+
+        Args:
+            expression: The AST expression to check.
+
+        Returns:
+            bool: True if the expression depends on an MCM result.
+        """
+        return bool(self._referenced_identifiers(expression) & self._mcm_dependent_vars)
+
+    def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
+        """Propagate MCM-dependency through a classical assignment.
+
+        If the rvalue references any MCM-dependent variable, the lvalue
+        becomes MCM-dependent. Otherwise, any previous MCM-dependency on
+        the lvalue is cleared. Subclasses that track per-path state (e.g.,
+        branched execution) should override this to extend the criterion.
+
+        Args:
+            lvalue_name: The name of the variable being assigned.
+            rvalue: The AST expression being evaluated as the rvalue.
+        """
+        if self.is_mcm_dependent(rvalue):
+            self._mcm_dependent_vars.add(lvalue_name)
+        else:
+            self._mcm_dependent_vars.discard(lvalue_name)
+
+    @staticmethod
+    def _referenced_identifiers(expression) -> set[str]:
+        """Collect identifier names referenced anywhere in an AST expression.
+
+        Recursively walks the AST, descending into unknown node types so that
+        identifiers nested inside nodes like ``FunctionCall`` or ``SizeOf``
+        are still discovered.
+        """
+        match expression:
+            case Identifier(name=name):
+                return {name}
+            case list():
+                return set().union(
+                    *(AbstractProgramContext._referenced_identifiers(item) for item in expression)
+                )
+            case QASMNode():
+                return set().union(
+                    *(
+                        AbstractProgramContext._referenced_identifiers(getattr(expression, f.name))
+                        for f in fields(expression)
+                        if f.name != "span"
+                    )
+                )
+            case _:
+                return set()
+
     def evaluate_condition(self, condition):
         """Evaluate a branching condition for mid-circuit measurement contexts.
 
@@ -1354,6 +1421,8 @@ class ProgramContext(AbstractProgramContext):
         """
         allow_remeasure = self.supports_midcircuit_measurement
         self._flush_pending_mcm_for_qubits(target)
+        if classical_destination is not None:
+            self._mcm_dependent_vars.add(get_identifier_name(classical_destination))
         if self._is_branched:
             if classical_destination is not None:
                 self._measure_and_branch(target)
@@ -1390,6 +1459,18 @@ class ProgramContext(AbstractProgramContext):
                 self._measure_and_branch(mcm_target)
                 self._update_classical_from_measurement(mcm_target, mcm_dest)
             self._pending_mcm_targets.clear()
+
+    def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
+        """Extend the base implementation with branched-subset detection.
+
+        The lvalue becomes MCM-dependent if the base criterion holds or
+        execution has branched into a subset of paths (making the
+        assignment per-path).
+        """
+        if self._is_branched and len(self._active_path_indices) < len(self._paths):
+            self._mcm_dependent_vars.add(lvalue_name)
+        else:
+            super().track_mcm_dependency(lvalue_name, rvalue)
 
     def _evaluate_expression(self, expression):
         """Lightweight expression evaluator for per-path condition evaluation.
@@ -1477,37 +1558,16 @@ class ProgramContext(AbstractProgramContext):
             yield
         self._active_path_indices = saved_active
 
-    @staticmethod
-    def _referenced_identifiers(expression) -> set[str]:
-        """Collect identifier names referenced in an AST expression."""
-        match expression:
-            case Identifier(name=name):
-                return {name}
-            case BinaryExpression(lhs=lhs, rhs=rhs):
-                return ProgramContext._referenced_identifiers(
-                    lhs
-                ) | ProgramContext._referenced_identifiers(rhs)
-            case UnaryExpression(expression=inner):
-                return ProgramContext._referenced_identifiers(inner)
-            case Cast(argument=argument):
-                return ProgramContext._referenced_identifiers(argument)
-            case IndexExpression(collection=collection, index=index):
-                return ProgramContext._referenced_identifiers(
-                    collection
-                ) | ProgramContext._referenced_identifiers(index)
-            case list():
-                return set().union(
-                    *(ProgramContext._referenced_identifiers(item) for item in expression)
-                )
-            case _:
-                return set()
-
     def evaluate_condition(self, condition):
         """Evaluate a branching condition, yielding per-path branch decisions.
 
         Yields ``True`` (visit if-block) or ``False`` (visit else-block)
         for each group of simulation paths. Manages path state and frames
         between yields.
+
+        Only called by the Interpreter when the condition is MCM-dependent,
+        which implies either an active branched state or a pending MCM that
+        will transition to branched on entry.
 
         Args:
             condition: The AST condition expression.
@@ -1516,10 +1576,6 @@ class ProgramContext(AbstractProgramContext):
             bool: Branch decision for the current path group.
         """
         self._maybe_transition_to_branched()
-
-        if not self._is_branched:
-            yield cast_to(BooleanLiteral, self._evaluate_expression(condition)).value
-            return
 
         saved_active = list(self._active_path_indices)
         true_paths = []
@@ -1558,6 +1614,10 @@ class ProgramContext(AbstractProgramContext):
         Evaluates the range/set, manages loop variable state and frames.
         Yields once per iteration after setting the loop variable.
 
+        Only called by the Interpreter when the range/set is MCM-dependent,
+        which implies either an active branched state or a pending MCM that
+        will transition to branched on entry.
+
         Args:
             set_declaration: The AST range or discrete set expression.
             loop_var (str): The loop variable name.
@@ -1567,19 +1627,6 @@ class ProgramContext(AbstractProgramContext):
             None: Signals the Interpreter to visit the loop body.
         """
         self._maybe_transition_to_branched()
-
-        if not self._is_branched:
-            index = self._evaluate_expression(set_declaration)
-            index_values = (
-                [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-                if isinstance(index, RangeDefinition)
-                else index.values
-            )
-            for i in index_values:
-                with self.enter_scope():
-                    self.declare_variable(loop_var, loop_type, i)
-                    yield
-            return
 
         saved_active = list(self._active_path_indices)
 
@@ -1626,6 +1673,10 @@ class ProgramContext(AbstractProgramContext):
         when at least one path has a true condition. Stops when no paths
         remain true.
 
+        Only called by the Interpreter when the condition is MCM-dependent,
+        which implies either an active branched state or a pending MCM that
+        will transition to branched on entry.
+
         Args:
             condition: The AST condition expression.
 
@@ -1633,11 +1684,6 @@ class ProgramContext(AbstractProgramContext):
             bool: ``True`` to continue looping.
         """
         self._maybe_transition_to_branched()
-
-        if not self._is_branched:
-            while cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
-                yield True
-            return
 
         saved_active = list(self._active_path_indices)
         self._enter_frame_for_active_paths()

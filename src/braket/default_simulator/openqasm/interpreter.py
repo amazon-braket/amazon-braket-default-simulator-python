@@ -210,7 +210,11 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
-        if self.context.supports_midcircuit_measurement and node.init_expression is not None:
+        if (
+            self.context.supports_midcircuit_measurement
+            and node.init_expression is not None
+            and self.context.is_mcm_dependent(node.init_expression)
+        ):
             for _ in self.context.iter_classical_scopes(node.init_expression):
                 self._execute_classical_declaration(deepcopy(node))
         else:
@@ -235,6 +239,8 @@ class Interpreter:
                 case _:
                     init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
+        if node.init_expression is not None:
+            self.context.track_mcm_dependency(node.identifier.name, node.init_expression)
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
@@ -580,7 +586,9 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
-        if self.context.supports_midcircuit_measurement:
+        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+            node.rvalue
+        ):
             for _ in self.context.iter_classical_scopes(node.rvalue):
                 self._execute_classical_assignment(deepcopy(node))
         else:
@@ -603,6 +611,7 @@ class Interpreter:
         else:
             rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)
+        self.context.track_mcm_dependency(lvalue_name, node.rvalue)
 
     @visit.register
     def _(self, node: BitstringLiteral) -> ArrayLiteral:
@@ -611,7 +620,9 @@ class Interpreter:
     @visit.register
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement:
+        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+            node.condition
+        ):
             condition = node.condition
             if self._condition_needs_visit(condition):
                 try:
@@ -633,7 +644,9 @@ class Interpreter:
     @visit.register
     def _(self, node: ForInLoop) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement:
+        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+            node.set_declaration
+        ):
             gen = self.context.evaluate_for_range(
                 node.set_declaration, node.identifier.name, node.type
             )
@@ -670,7 +683,9 @@ class Interpreter:
     @visit.register
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement:
+        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+            node.while_condition
+        ):
             gen = self.context.evaluate_while_condition(node.while_condition)
             for _ in gen:
                 try:
@@ -796,6 +811,9 @@ class Interpreter:
                         identifier = arg_passed
                     reference_value = self.context.get_value(arg_defined.name.name)
                     self.context.update_value(identifier, reference_value)
+                    self.context.track_mcm_dependency(
+                        get_identifier_name(identifier), reference_value
+                    )
 
             return return_value
 

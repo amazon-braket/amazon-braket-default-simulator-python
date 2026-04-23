@@ -2616,6 +2616,7 @@ def test_mcm_branching_statement_delegates_to_context():
     qasm = """
     qubit q;
     bit b;
+    b = measure q;
     if (b) { x q; }
     """
     interp.run(qasm)
@@ -2635,7 +2636,10 @@ def test_mcm_for_loop_delegates_to_context():
 
     interp = Interpreter(context=ctx)
     qasm = """
-    for int i in [0:2] { }
+    qubit q;
+    bit b;
+    b = measure q;
+    for int i in [0:b + 2] { }
     """
     interp.run(qasm)
     assert len(called) == 1
@@ -2654,8 +2658,11 @@ def test_mcm_while_loop_delegates_to_context():
 
     interp = Interpreter(context=ctx)
     qasm = """
+    qubit q;
+    bit b;
+    b = measure q;
     int i = 0;
-    while (i < 3) { i += 1; }
+    while (i < b + 3) { i += 1; }
     """
     interp.run(qasm)
     assert len(called) == 1
@@ -2708,12 +2715,12 @@ def test_function_call_in_branching_condition():
 
 
 def test_undefined_function_in_branching_condition():
-    """An undefined function call in a branching condition should raise TypeError."""
+    """An undefined function call in a branching condition should raise NameError."""
     qasm = """
     qubit q;
     if (undefined_func()) {
         x q;
     }
     """
-    with pytest.raises(TypeError, match="Branching condition not supported"):
+    with pytest.raises(NameError, match="Subroutine undefined_func is not defined"):
         Interpreter().run(qasm)

@@ -2833,6 +2833,7 @@ class TestUnifiedMCMEdgeCases:
         qasm = """
         OPENQASM 3.0;
         bit b;
+        bit[2] c;
         qubit[2] q;
         int count = 0;
         h q[0];
@@ -2843,6 +2844,7 @@ class TestUnifiedMCMEdgeCases:
                 x q[1];
             }
         }
+        c = measure q;
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
@@ -3388,13 +3390,13 @@ class TestMCMClassicalVariableBranching:
         h q[0];
         b = measure q[0];
         // x was declared before branching — should be readable from shared table
-        if (x == 7) {
+        if (x + b == 7 || x + b == 8) {
             x q[1];
         }
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
-        # x=7 is always true → q[1] always gets X
+        # x=7 → condition always true → q[1] always gets X
         for outcome in counter:
             assert outcome[-1] == "1"
 
@@ -3412,21 +3414,21 @@ class TestMCMWhileLoopContinue:
         int x_count = 0;
         x q[0];
         b = measure q[0];
-        while (count < 4) {
+        while (count < b + 4) {
             count = count + 1;
             if (count % 2 == 0) {
                 continue;
             }
             x_count = x_count + 1;
         }
-        // x_count should be 2 (iterations 1 and 3)
-        if (x_count == 2) {
+        // x_count should be 3 (iterations 1, 3, 5 since b=1)
+        if (x_count == 3) {
             x q[1];
         }
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
-        # x_count=2 → X on q[1], b=1 always → "11"
+        # x_count=3 → X on q[1], b=1 always → "11"
         assert counter == {"11": 1000}
 
 
@@ -3442,11 +3444,11 @@ class TestMCMForLoopDiscreteSet:
         int sum = 0;
         x q[0];
         b = measure q[0];
-        for int i in {1, 3, 5} {
+        for int i in {1 + b, 3, 5} {
             sum = sum + i;
         }
-        // sum should be 9
-        if (sum == 9) {
+        // sum should be 10 (since b=1)
+        if (sum == 10) {
             x q[1];
         }
         """
@@ -4143,6 +4145,28 @@ class TestMCMVariableReadWithoutControlFlow:
             f"Expected {{'00', '11'}} for indirect, got {set(indirect.keys())}"
         )
 
+    def test_mcm_dependent_declaration(self, simulator):
+        """Declaring a variable with an MCM-dependent initializer should
+        propagate per-path values correctly."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        int y = b + 0;
+        if (y == 1) {
+            x q[1];
+        }
+        """
+        counts = Counter(
+            "".join(m)
+            for m in simulator.run_openqasm(
+                OpenQASMProgram(source=qasm, inputs={}), shots=1000
+            ).measurements
+        )
+        assert set(counts.keys()) == {"00", "11"}
+
 
 class TestMCMFlushPendingEdgeCases:
     """Cover edge cases in _flush_pending_mcm_for_variable."""
@@ -4363,15 +4387,45 @@ class TestEvaluateExpressionFromOpenQASM:
         OPENQASM 3.0;
         bit b;
         qubit[2] q;
-        int[32] x = 1;
         b = measure q[0];
-        if (bool(x)) {
+        if (bool(b + 1)) {
             x q[1];
         }
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counts = Counter(["".join(m) for m in result.measurements])
         assert counts == {"01": 100}
+
+    def test_unary_in_mcm_condition(self, simulator):
+        """Unary expression evaluated inside an MCM-dependent branch."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        h q[0];
+        b = measure q[0];
+        if (!(b == 1)) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter(["".join(m) for m in result.measurements])
+        # !(b == 1) is True when b=0 → q[1] gets X → "01"; when b=1 → "10"
+        assert set(counts.keys()) == {"01", "10"}
+
+    def test_undefined_function_in_mcm_condition(self, simulator):
+        """An undefined function in an MCM-dependent condition raises TypeError."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        b = measure q[0];
+        if (undefined_func() && b == 1) {
+            x q[1];
+        }
+        """
+        with pytest.raises(TypeError, match="Branching condition not supported"):
+            simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
 
     def test_discrete_set_in_branched_for_loop(self, simulator):
         """DiscreteSet evaluation in a for-loop after MCM triggers branching."""
@@ -4406,13 +4460,38 @@ class TestEvaluateExpressionFromOpenQASM:
         int[32] count = 0;
         h q[0];
         b = measure q[0];
-        for int i in [0:10] {
+        for int i in [0:b + 10] {
             count = count + 1;
             if (count == 3) {
                 break;
             }
         }
         if (count == 3) {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
+        counts = Counter(["".join(m) for m in result.measurements])
+        for outcome in counts:
+            assert outcome[1] == "1"
+
+    def test_continue_in_branched_for_loop(self, simulator):
+        """Continue in a branched for-loop skips the rest of the iteration."""
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        int[32] count = 0;
+        h q[0];
+        b = measure q[0];
+        for int i in [0:b + 3] {
+            if (i % 2 == 0) {
+                continue;
+            }
+            count = count + 1;
+        }
+        // count iterations where i is odd in [0, b+3]
+        if (count > 0) {
             x q[1];
         }
         """
@@ -4430,7 +4509,7 @@ class TestEvaluateExpressionFromOpenQASM:
         int[32] count = 0;
         h q[0];
         b = measure q[0];
-        while (count < 10) {
+        while (count < b + 10) {
             count = count + 1;
             if (count == 3) {
                 break;
