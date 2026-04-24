@@ -446,7 +446,7 @@ class AbstractProgramContext(ABC):
         self.inputs = {}
         self.num_qubits = 0
         self.in_verbatim_box = False
-        self._mcm_dependent_vars: set[str] = set()
+        self._mcm_dependent_scopes: list[set[str]] = [set()]
 
     @property
     @abstractmethod
@@ -546,12 +546,14 @@ class AbstractProgramContext(ABC):
         self.symbol_table.push_scope()
         self.variable_table.push_scope()
         self.gate_table.push_scope()
+        self._mcm_dependent_scopes.append(set())
 
     def pop_scope(self) -> None:
         """Exit current scope"""
         self.symbol_table.pop_scope()
         self.variable_table.pop_scope()
         self.gate_table.pop_scope()
+        self._mcm_dependent_scopes.pop()
 
     @property
     def in_global_scope(self):
@@ -915,12 +917,13 @@ class AbstractProgramContext(ABC):
     def is_mcm_dependent(self, expression) -> bool:
         """Whether an expression depends on any mid-circuit measurement result.
 
-        An expression is MCM-dependent when it references a classical
-        variable that was (directly or transitively) produced by a
-        mid-circuit measurement. Subclasses populate ``_mcm_dependent_vars``
-        (typically via ``track_mcm_dependency`` or when a measurement is
-        recorded) so this check simply asks whether any referenced
-        identifier is a known MCM-dependent variable.
+        An expression is MCM-dependent when any identifier it references
+        resolves (via lexical scoping) to a variable that was produced by
+        a mid-circuit measurement. Subclasses populate
+        ``_mcm_dependent_scopes`` (typically via ``track_mcm_dependency``
+        or when a measurement is recorded) so this check walks each
+        referenced identifier's scope stack and stops at the scope where
+        the name is declared.
 
         Used by the Interpreter to decide whether control flow and
         classical assignments need per-path evaluation. Expressions that
@@ -933,24 +936,59 @@ class AbstractProgramContext(ABC):
         Returns:
             bool: True if the expression depends on an MCM result.
         """
-        return bool(self._referenced_identifiers(expression) & self._mcm_dependent_vars)
+        return any(
+            self._is_name_mcm_dependent(name) for name in self._referenced_identifiers(expression)
+        )
+
+    def _is_name_mcm_dependent(self, name: str) -> bool:
+        """Whether ``name`` resolves to an MCM-dependent variable.
+
+        Walks scopes from innermost to outermost. Returns True iff the
+        scope that first contains the declared variable also has it in
+        its MCM-dependency set. This prevents outer-scope MCM variables
+        from leaking through inner-scope variables that shadow them.
+        """
+        for symbol_scope, mcm_scope in zip(
+            reversed(self.symbol_table._scopes),
+            reversed(self._mcm_dependent_scopes),
+        ):
+            if name in symbol_scope:
+                return name in mcm_scope
+        return False
 
     def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
         """Propagate MCM-dependency through a classical assignment.
 
         If the rvalue references any MCM-dependent variable, the lvalue
-        becomes MCM-dependent. Otherwise, any previous MCM-dependency on
-        the lvalue is cleared. Subclasses that track per-path state (e.g.,
-        branched execution) should override this to extend the criterion.
+        becomes MCM-dependent (recorded in the scope where the variable
+        was declared). Otherwise, any previous MCM-dependency on the
+        lvalue is cleared from its declaration scope. Subclasses that
+        track per-path state (e.g., branched execution) should override
+        this to extend the criterion.
 
         Args:
             lvalue_name: The name of the variable being assigned.
             rvalue: The AST expression being evaluated as the rvalue.
         """
+        mcm_scope = self._scope_for_variable(lvalue_name)
         if self.is_mcm_dependent(rvalue):
-            self._mcm_dependent_vars.add(lvalue_name)
+            mcm_scope.add(lvalue_name)
         else:
-            self._mcm_dependent_vars.discard(lvalue_name)
+            mcm_scope.discard(lvalue_name)
+
+    def _scope_for_variable(self, name: str) -> set[str]:
+        """Return the MCM-dependency scope matching the declaration scope of ``name``.
+
+        ``name`` must refer to an already-declared variable; all call sites
+        in the Interpreter invoke this only after ``declare_variable``.
+        """
+        for symbol_scope, mcm_scope in zip(
+            reversed(self.symbol_table._scopes),
+            reversed(self._mcm_dependent_scopes),
+        ):
+            if name in symbol_scope:
+                return mcm_scope
+        raise ValueError(f"No scope found for variable {name}")  # pragma: no cover
 
     @staticmethod
     def _referenced_identifiers(expression) -> set[str]:
@@ -1422,7 +1460,8 @@ class ProgramContext(AbstractProgramContext):
         allow_remeasure = self.supports_midcircuit_measurement
         self._flush_pending_mcm_for_qubits(target)
         if classical_destination is not None:
-            self._mcm_dependent_vars.add(get_identifier_name(classical_destination))
+            dest_name = get_identifier_name(classical_destination)
+            self._scope_for_variable(dest_name).add(dest_name)
         if self._is_branched:
             if classical_destination is not None:
                 self._measure_and_branch(target)
@@ -1468,7 +1507,7 @@ class ProgramContext(AbstractProgramContext):
         assignment per-path).
         """
         if self._is_branched and len(self._active_path_indices) < len(self._paths):
-            self._mcm_dependent_vars.add(lvalue_name)
+            self._scope_for_variable(lvalue_name).add(lvalue_name)
         else:
             super().track_mcm_dependency(lvalue_name, rvalue)
 

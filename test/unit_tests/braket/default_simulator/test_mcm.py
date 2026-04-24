@@ -4167,6 +4167,35 @@ class TestMCMVariableReadWithoutControlFlow:
         )
         assert set(counts.keys()) == {"00", "11"}
 
+    def test_mcm_dependency_respects_scope_shadowing(self, simulator):
+        """A variable shadowed in an inner scope does not inherit outer MCM-dependency.
+
+        After a measurement on outer ``b``, calling a subroutine whose parameter
+        is also named ``b`` must not treat the parameter as MCM-dependent.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+
+        def helper(int[32] b) -> int[32] {
+            return b + 1;
+        }
+
+        h q[0];
+        b = measure q[0];
+        int y = helper(3);
+        if (y == 4) {
+            x q[1];
+        }
+        """
+        # Interpreter-level: the assignment ``int y = helper(3)`` must not be
+        # flagged MCM-dependent despite the inner parameter sharing the name
+        # ``b``. If the scope tracking were wrong, ``y`` would end up in
+        # ``_mcm_dependent_scopes`` and alter downstream behavior.
+        ctx = simulator._parse_program_with_shots(OpenQASMProgram(source=qasm, inputs={}), 100)
+        assert not any("y" in scope for scope in ctx._mcm_dependent_scopes)
+
 
 class TestMCMFlushPendingEdgeCases:
     """Cover edge cases in _flush_pending_mcm_for_variable."""
