@@ -4592,3 +4592,117 @@ class TestEvaluateExpressionFromOpenQASM:
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counts = Counter(["".join(m) for m in result.measurements])
         assert counts == {"11": 100}
+
+
+class TestClassicalControlGates:
+    """Tests for the ``measure_ff`` / ``cc_prx`` experimental classical-control gates."""
+
+    def test_measure_ff_and_cc_prx_match_explicit_form(self, simulator):
+        """``measure_ff(k) q; cc_prx(a1, a2, k) q2`` matches the equivalent
+        explicit ``b = measure q; if (b==1) { prx(a1, a2) q2; }``."""
+        experimental_qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        h q[0];
+        measure_ff(0) q[0];
+        cc_prx(3.141592653589793, 0.0, 0) q[1];
+        """
+        explicit_qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            prx(3.141592653589793, 0.0) q[1];
+        }
+        """
+        experimental = Counter(
+            "".join(m)
+            for m in simulator.run_openqasm(
+                OpenQASMProgram(source=experimental_qasm, inputs={}), shots=2000
+            ).measurements
+        )
+        explicit = Counter(
+            "".join(m)
+            for m in simulator.run_openqasm(
+                OpenQASMProgram(source=explicit_qasm, inputs={}), shots=2000
+            ).measurements
+        )
+        assert set(experimental.keys()) == {"00", "11"}
+        assert set(explicit.keys()) == {"00", "11"}
+
+    def test_cc_prx_without_branch(self, simulator):
+        """With the measured qubit deterministically ``|0>``, ``cc_prx`` never fires."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        measure_ff(0) q[0];
+        cc_prx(3.141592653589793, 0.0, 0) q[1];
+        """
+        counts = Counter(
+            "".join(m)
+            for m in simulator.run_openqasm(
+                OpenQASMProgram(source=qasm, inputs={}), shots=100
+            ).measurements
+        )
+        assert counts == {"00": 100}
+
+    def test_cc_prx_always_fires(self, simulator):
+        """With the measured qubit deterministically ``|1>``, ``cc_prx`` always fires."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        x q[0];
+        measure_ff(0) q[0];
+        cc_prx(3.141592653589793, 0.0, 0) q[1];
+        """
+        counts = Counter(
+            "".join(m)
+            for m in simulator.run_openqasm(
+                OpenQASMProgram(source=qasm, inputs={}), shots=100
+            ).measurements
+        )
+        assert counts == {"11": 100}
+
+    def test_independent_feedback_keys(self, simulator):
+        """Multiple independent feedback keys each drive their own conditional."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[4] q;
+        h q[0];
+        h q[1];
+        measure_ff(0) q[0];
+        measure_ff(1) q[1];
+        cc_prx(3.141592653589793, 0.0, 0) q[2];
+        cc_prx(3.141592653589793, 0.0, 1) q[3];
+        """
+        counts = Counter(
+            "".join(m)
+            for m in simulator.run_openqasm(
+                OpenQASMProgram(source=qasm, inputs={}), shots=1000
+            ).measurements
+        )
+        # q[2] mirrors q[0], q[3] mirrors q[1]; all four combinations appear.
+        assert set(counts.keys()) == {"0000", "0101", "1010", "1111"}
+
+
+class TestClassicalControlGatesUnsupported:
+    """measure_ff requires an MCM-capable context."""
+
+    def test_measure_ff_requires_mcm_context(self):
+        from braket.default_simulator.openqasm.interpreter import Interpreter
+        from braket.default_simulator.openqasm.program_context import ProgramContext
+
+        class NonMCMContext(ProgramContext):
+            @property
+            def supports_midcircuit_measurement(self) -> bool:
+                return False
+
+        qasm = """
+        OPENQASM 3.0;
+        qubit q;
+        measure_ff(0) q;
+        """
+        with pytest.raises(NotImplementedError, match="measure_ff"):
+            Interpreter(context=NonMCMContext()).run(qasm)
