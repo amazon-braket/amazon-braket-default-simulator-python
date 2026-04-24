@@ -4138,8 +4138,6 @@ class TestMCMVariableReadWithoutControlFlow:
             ).measurements
         )
         # Both should produce '00' and '11' in roughly equal proportions.
-        # The bug manifests as the indirect version producing '00' and '10'
-        # (q[1] never flipped) because the per-path assignment y = b is broken.
         assert set(direct.keys()) == {"00", "11"}
         assert set(indirect.keys()) == {"00", "11"}, (
             f"Expected {{'00', '11'}} for indirect, got {set(indirect.keys())}"
@@ -4528,6 +4526,28 @@ class TestEvaluateExpressionFromOpenQASM:
         counts = Counter(["".join(m) for m in result.measurements])
         for outcome in counts:
             assert outcome[1] == "1"
+
+    def test_for_loop_range_differs_per_path(self, simulator):
+        """For-loop range evaluated per path: different paths, different iteration counts.
+
+        ``for int i in [1:b]`` iterates 0 times when b=0 and once (i=1) when b=1,
+        so q[1] is flipped only on the b=1 paths.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        bit b;
+        qubit[2] q;
+        h q[0];
+        b = measure q[0];
+        for int i in [1:b] {
+            x q[1];
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter(["".join(m) for m in result.measurements])
+        # b=0 → 0 iterations → q[1]=0 → "00"; b=1 → 1 iteration → q[1]=1 → "11"
+        assert set(counts.keys()) == {"00", "11"}
+        assert 0.4 < counts["00"] / 1000 < 0.6
 
     def test_break_in_branched_while_loop(self, simulator):
         """Break in a while-loop triggers GeneratorExit cleanup in the handler."""

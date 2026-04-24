@@ -1650,8 +1650,10 @@ class ProgramContext(AbstractProgramContext):
     def evaluate_for_range(self, set_declaration, loop_var: str, loop_type):
         """Set up each for-loop iteration, yielding once per iteration.
 
-        Evaluates the range/set, manages loop variable state and frames.
-        Yields once per iteration after setting the loop variable.
+        Evaluates the range/set per-path (different paths may see different
+        values because MCM results can differ). Yields once per iteration
+        step, with the active-path set narrowed to exactly those paths
+        that still have a value for the current step.
 
         Only called by the Interpreter when the range/set is MCM-dependent,
         which implies either an active branched state or a pending MCM that
@@ -1669,40 +1671,61 @@ class ProgramContext(AbstractProgramContext):
 
         saved_active = list(self._active_path_indices)
 
-        self._focus_on_path(saved_active[0])
-        index = self._evaluate_expression(set_declaration)
-        index_values = (
-            [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-            if isinstance(index, RangeDefinition)
-            else index.values
-        )
+        per_path_values: dict[int, list] = {}
+        for path_idx in saved_active:
+            self._focus_on_path(path_idx)
+            index = self._evaluate_expression(set_declaration)
+            per_path_values[path_idx] = (
+                [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+                if isinstance(index, RangeDefinition)
+                else list(index.values)
+            )
 
         self._active_path_indices = saved_active
         self._enter_frame_for_active_paths()
 
         looping_paths = list(saved_active)
         broken_paths = []
+        finished_paths = []
+        step = 0
 
-        for i in index_values:
-            self._active_path_indices = looping_paths
+        while True:
+            step_paths = []
+            newly_finished = []
+            for idx in looping_paths:
+                if step < len(per_path_values[idx]):
+                    step_paths.append(idx)
+                else:
+                    newly_finished.append(idx)
+            finished_paths.extend(newly_finished)
+            if not step_paths:
+                break
+            self._active_path_indices = step_paths
 
-            for path_idx in looping_paths:
+            for path_idx in step_paths:
                 path = self._paths[path_idx]
                 path.set_variable(
                     loop_var,
-                    FramedVariable(loop_var, loop_type, i, False, path.frame_number),
+                    FramedVariable(
+                        loop_var,
+                        loop_type,
+                        per_path_values[path_idx][step],
+                        False,
+                        path.frame_number,
+                    ),
                 )
 
             try:
                 yield
             except GeneratorExit:
-                self._active_path_indices = looping_paths + broken_paths
+                self._active_path_indices = looping_paths + broken_paths + finished_paths
                 self._exit_frame_for_active_paths()
                 return
 
             looping_paths = list(self._active_path_indices)
+            step += 1
 
-        self._active_path_indices = looping_paths + broken_paths
+        self._active_path_indices = broken_paths + finished_paths
         self._exit_frame_for_active_paths()
 
     def evaluate_while_condition(self, condition):
