@@ -115,6 +115,20 @@ from .parser.openqasm_ast import (
 from .parser.openqasm_parser import parse
 from .program_context import AbstractProgramContext, ProgramContext, _BreakSignal, _ContinueSignal
 
+_EVALUABLE = (
+    BooleanLiteral,
+    IntegerLiteral,
+    FloatLiteral,
+    ArrayLiteral,
+    Identifier,
+    BinaryExpression,
+    UnaryExpression,
+    Cast,
+    RangeDefinition,
+    DiscreteSet,
+    IndexExpression,
+)
+
 
 class Interpreter:
     """
@@ -196,23 +210,37 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
+        if (
+            self.context.supports_midcircuit_measurement
+            and node.init_expression is not None
+            and self.context.is_mcm_dependent(node.init_expression)
+        ):
+            for _ in self.context.iter_classical_scopes(node.init_expression):
+                self._execute_classical_declaration(deepcopy(node))
+        else:
+            self._execute_classical_declaration(node)
+
+    def _execute_classical_declaration(self, node: ClassicalDeclaration) -> None:
         node_type = self.visit(node.type)
         if node.init_expression is not None:
-            init_expression = self.visit(node.init_expression)
-            init_value = cast_to(node.type, init_expression)
-        elif isinstance(node_type, ArrayType):
-            init_value = create_empty_array(node_type.dimensions)
-        elif isinstance(node_type, BitType) and node_type.size:
-            init_value = create_empty_array([node_type.size])
-        elif isinstance(node_type, (IntType, UintType)):
-            init_value = IntegerLiteral(value=0)
-        elif isinstance(node_type, FloatType):
-            init_value = FloatLiteral(value=0.0)
-        elif isinstance(node_type, BoolType):
-            init_value = BooleanLiteral(value=False)
+            init_value = cast_to(node.type, self.visit(node.init_expression))
         else:
-            init_value = None
+            match node_type:
+                case ArrayType():
+                    init_value = create_empty_array(node_type.dimensions)
+                case BitType() if node_type.size:
+                    init_value = create_empty_array([node_type.size])
+                case IntType() | UintType():
+                    init_value = IntegerLiteral(value=0)
+                case FloatType():
+                    init_value = FloatLiteral(value=0.0)
+                case BoolType():
+                    init_value = BooleanLiteral(value=False)
+                case _:
+                    init_value = None
         self.context.declare_variable(node.identifier.name, node_type, init_value)
+        if node.init_expression is not None:
+            self.context.track_mcm_dependency(node.identifier.name, node.init_expression)
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
@@ -558,17 +586,13 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
-        is_branched = getattr(self.context, "_is_branched", False)
-        if not is_branched or len(self.context._active_path_indices) <= 1:
-            self._execute_classical_assignment(node)
-        else:
-            # When multiple paths are active, evaluate the rvalue per-path
-            # so that expressions like ``y = x`` read from the correct path.
-            saved_active = list(self.context._active_path_indices)
-            for path_idx in saved_active:
-                self.context._active_path_indices = [path_idx]
+        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+            node.rvalue
+        ):
+            for _ in self.context.iter_classical_scopes(node.rvalue):
                 self._execute_classical_assignment(deepcopy(node))
-            self.context._active_path_indices = saved_active
+        else:
+            self._execute_classical_assignment(node)
 
     def _execute_classical_assignment(self, node: ClassicalAssignment) -> None:
         lvalue_name = get_identifier_name(node.lvalue)
@@ -587,6 +611,7 @@ class Interpreter:
         else:
             rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)
+        self.context.track_mcm_dependency(lvalue_name, node.rvalue)
 
     @visit.register
     def _(self, node: BitstringLiteral) -> ArrayLiteral:
@@ -595,7 +620,9 @@ class Interpreter:
     @visit.register
     def _(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement:
+        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+            node.condition
+        ):
             condition = node.condition
             if self._condition_needs_visit(condition):
                 try:
@@ -617,7 +644,9 @@ class Interpreter:
     @visit.register
     def _(self, node: ForInLoop) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement:
+        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+            node.set_declaration
+        ):
             gen = self.context.evaluate_for_range(
                 node.set_declaration, node.identifier.name, node.type
             )
@@ -654,7 +683,9 @@ class Interpreter:
     @visit.register
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement:
+        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+            node.while_condition
+        ):
             gen = self.context.evaluate_while_condition(node.while_condition)
             for _ in gen:
                 try:
@@ -780,6 +811,9 @@ class Interpreter:
                         identifier = arg_passed
                     reference_value = self.context.get_value(arg_defined.name.name)
                     self.context.update_value(identifier, reference_value)
+                    self.context.track_mcm_dependency(
+                        get_identifier_name(identifier), reference_value
+                    )
 
             return return_value
 
@@ -822,11 +856,6 @@ class Interpreter:
         Recursively walks the AST. Returns True if any node is not in the
         set of types that a context's lightweight _evaluate_expression can handle.
         """
-        _EVALUABLE = (
-            BooleanLiteral, IntegerLiteral, FloatLiteral, ArrayLiteral,
-            Identifier, BinaryExpression, UnaryExpression, Cast,
-            RangeDefinition, DiscreteSet, IndexExpression,
-        )
         if not isinstance(condition, QASMNode):
             return False
         if not isinstance(condition, _EVALUABLE):

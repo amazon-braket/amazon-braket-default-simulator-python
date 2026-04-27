@@ -13,6 +13,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from dataclasses import fields
 from functools import singledispatchmethod
 from typing import Any
 
@@ -445,6 +446,7 @@ class AbstractProgramContext(ABC):
         self.inputs = {}
         self.num_qubits = 0
         self.in_verbatim_box = False
+        self._mcm_dependent_scopes: list[set[str]] = [set()]
 
     @property
     @abstractmethod
@@ -544,12 +546,14 @@ class AbstractProgramContext(ABC):
         self.symbol_table.push_scope()
         self.variable_table.push_scope()
         self.gate_table.push_scope()
+        self._mcm_dependent_scopes.append(set())
 
     def pop_scope(self) -> None:
         """Exit current scope"""
         self.symbol_table.pop_scope()
         self.variable_table.pop_scope()
         self.gate_table.pop_scope()
+        self._mcm_dependent_scopes.pop()
 
     @property
     def in_global_scope(self):
@@ -910,6 +914,108 @@ class AbstractProgramContext(ABC):
     def add_verbatim_marker(self, marker) -> None:
         """Add verbatim markers"""
 
+    def is_mcm_dependent(self, expression) -> bool:
+        """Whether an expression depends on any mid-circuit measurement result.
+
+        An expression is MCM-dependent when any identifier it references
+        resolves (via lexical scoping) to a variable that was produced by
+        a mid-circuit measurement. Subclasses populate
+        ``_mcm_dependent_scopes`` (typically via ``track_mcm_dependency``
+        or when a measurement is recorded) so this check walks each
+        referenced identifier's scope stack and stops at the scope where
+        the name is declared.
+
+        Used by the Interpreter to decide whether control flow and
+        classical assignments need per-path evaluation. Expressions that
+        are not MCM-dependent are evaluated once and eagerly, matching
+        non-MCM behavior.
+
+        Args:
+            expression: The AST expression to check.
+
+        Returns:
+            bool: True if the expression depends on an MCM result.
+        """
+        return any(
+            self._is_name_mcm_dependent(name) for name in self._referenced_identifiers(expression)
+        )
+
+    def _is_name_mcm_dependent(self, name: str) -> bool:
+        """Whether ``name`` resolves to an MCM-dependent variable.
+
+        Walks scopes from innermost to outermost. Returns True iff the
+        scope that first contains the declared variable also has it in
+        its MCM-dependency set. This prevents outer-scope MCM variables
+        from leaking through inner-scope variables that shadow them.
+        """
+        for symbol_scope, mcm_scope in zip(
+            reversed(self.symbol_table._scopes),
+            reversed(self._mcm_dependent_scopes),
+        ):
+            if name in symbol_scope:
+                return name in mcm_scope
+        return False
+
+    def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
+        """Propagate MCM-dependency through a classical assignment.
+
+        If the rvalue references any MCM-dependent variable, the lvalue
+        becomes MCM-dependent (recorded in the scope where the variable
+        was declared). Otherwise, any previous MCM-dependency on the
+        lvalue is cleared from its declaration scope. Subclasses that
+        track per-path state (e.g., branched execution) should override
+        this to extend the criterion.
+
+        Args:
+            lvalue_name: The name of the variable being assigned.
+            rvalue: The AST expression being evaluated as the rvalue.
+        """
+        mcm_scope = self._scope_for_variable(lvalue_name)
+        if self.is_mcm_dependent(rvalue):
+            mcm_scope.add(lvalue_name)
+        else:
+            mcm_scope.discard(lvalue_name)
+
+    def _scope_for_variable(self, name: str) -> set[str]:
+        """Return the MCM-dependency scope matching the declaration scope of ``name``.
+
+        ``name`` must refer to an already-declared variable; all call sites
+        in the Interpreter invoke this only after ``declare_variable``.
+        """
+        for symbol_scope, mcm_scope in zip(
+            reversed(self.symbol_table._scopes),
+            reversed(self._mcm_dependent_scopes),
+        ):
+            if name in symbol_scope:
+                return mcm_scope
+        raise ValueError(f"No scope found for variable {name}")  # pragma: no cover
+
+    @staticmethod
+    def _referenced_identifiers(expression) -> set[str]:
+        """Collect identifier names referenced anywhere in an AST expression.
+
+        Recursively walks the AST, descending into unknown node types so that
+        identifiers nested inside nodes like ``FunctionCall`` or ``SizeOf``
+        are still discovered.
+        """
+        match expression:
+            case Identifier(name=name):
+                return {name}
+            case list():
+                return set().union(
+                    *(AbstractProgramContext._referenced_identifiers(item) for item in expression)
+                )
+            case QASMNode():
+                return set().union(
+                    *(
+                        AbstractProgramContext._referenced_identifiers(getattr(expression, f.name))
+                        for f in fields(expression)
+                        if f.name != "span"
+                    )
+                )
+            case _:
+                return set()
+
     def evaluate_condition(self, condition):
         """Evaluate a branching condition for mid-circuit measurement contexts.
 
@@ -962,6 +1068,27 @@ class AbstractProgramContext(ABC):
 
         Yields:
             bool: ``True`` to continue looping.
+        """
+        raise NotImplementedError
+
+    def iter_classical_scopes(self, expression):
+        """Set up iterations for classical expression evaluation in MCM contexts.
+
+        Called by the Interpreter when ``supports_midcircuit_measurement``
+        is True around operations that evaluate classical expressions
+        which may depend on mid-circuit measurement results (classical
+        assignments, variable declarations with initializers, etc.).
+        Implementations are generators that yield once for each scope in
+        which the expression should be independently evaluated (e.g.,
+        once per active simulation path).
+
+        Args:
+            expression: The AST expression being evaluated. Subclasses
+                may use it to flush pending side effects (e.g., mid-circuit
+                measurements) referenced by the expression before iteration.
+
+        Yields:
+            None: Signals the Interpreter to evaluate the expression once.
         """
         raise NotImplementedError
 
@@ -1332,6 +1459,9 @@ class ProgramContext(AbstractProgramContext):
         """
         allow_remeasure = self.supports_midcircuit_measurement
         self._flush_pending_mcm_for_qubits(target)
+        if classical_destination is not None:
+            dest_name = get_identifier_name(classical_destination)
+            self._scope_for_variable(dest_name).add(dest_name)
         if self._is_branched:
             if classical_destination is not None:
                 self._measure_and_branch(target)
@@ -1368,6 +1498,18 @@ class ProgramContext(AbstractProgramContext):
                 self._measure_and_branch(mcm_target)
                 self._update_classical_from_measurement(mcm_target, mcm_dest)
             self._pending_mcm_targets.clear()
+
+    def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
+        """Extend the base implementation with branched-subset detection.
+
+        The lvalue becomes MCM-dependent if the base criterion holds or
+        execution has branched into a subset of paths (making the
+        assignment per-path).
+        """
+        if self._is_branched and len(self._active_path_indices) < len(self._paths):
+            self._scope_for_variable(lvalue_name).add(lvalue_name)
+        else:
+            super().track_mcm_dependency(lvalue_name, rvalue)
 
     def _evaluate_expression(self, expression):
         """Lightweight expression evaluator for per-path condition evaluation.
@@ -1424,12 +1566,47 @@ class ProgramContext(AbstractProgramContext):
                     f"Cannot evaluate expression of type {type(expression).__name__}"
                 )
 
+    def iter_classical_scopes(self, expression):
+        """Yield once per active path for classical expression evaluation.
+
+        Before iteration, flushes any pending mid-circuit measurements
+        referenced by ``expression`` so that branching happens before the
+        iteration count is decided. When multiple paths are active, yields
+        once per path after setting it as the sole active path, so that
+        expression evaluation reads from that path's variable state.
+        Restores all paths after iteration.
+
+        Args:
+            expression: The AST expression being evaluated. Any identifiers
+                it references that match pending MCMs will be flushed
+                before iteration.
+
+        Yields:
+            None: Signals the Interpreter to evaluate the expression.
+        """
+        for name in self._referenced_identifiers(expression):
+            self._flush_pending_mcm_for_variable(name)
+
+        if not self._is_branched or len(self._active_path_indices) <= 1:
+            yield
+            return
+
+        saved_active = list(self._active_path_indices)
+        for path_idx in saved_active:
+            self._focus_on_path(path_idx)
+            yield
+        self._active_path_indices = saved_active
+
     def evaluate_condition(self, condition):
         """Evaluate a branching condition, yielding per-path branch decisions.
 
         Yields ``True`` (visit if-block) or ``False`` (visit else-block)
         for each group of simulation paths. Manages path state and frames
         between yields.
+
+        Only called by the Interpreter when the condition is MCM-dependent,
+        which implies either an active branched state or a pending MCM that
+        will transition to branched on entry.
 
         Args:
             condition: The AST condition expression.
@@ -1439,16 +1616,12 @@ class ProgramContext(AbstractProgramContext):
         """
         self._maybe_transition_to_branched()
 
-        if not self._is_branched:
-            yield cast_to(BooleanLiteral, self._evaluate_expression(condition)).value
-            return
-
         saved_active = list(self._active_path_indices)
         true_paths = []
         false_paths = []
 
         for path_idx in saved_active:
-            self._active_path_indices = [path_idx]
+            self._focus_on_path(path_idx)
             if cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
                 true_paths.append(path_idx)
             else:
@@ -1458,7 +1631,7 @@ class ProgramContext(AbstractProgramContext):
 
         if true_paths:
             for path_idx in true_paths:
-                self._active_path_indices = [path_idx]
+                self._focus_on_path(path_idx)
                 self._enter_frame_for_active_paths()
                 yield True
                 surviving_paths.extend(self._active_path_indices)
@@ -1466,7 +1639,7 @@ class ProgramContext(AbstractProgramContext):
 
         if false_paths:
             for path_idx in false_paths:
-                self._active_path_indices = [path_idx]
+                self._focus_on_path(path_idx)
                 self._enter_frame_for_active_paths()
                 yield False
                 surviving_paths.extend(self._active_path_indices)
@@ -1477,8 +1650,14 @@ class ProgramContext(AbstractProgramContext):
     def evaluate_for_range(self, set_declaration, loop_var: str, loop_type):
         """Set up each for-loop iteration, yielding once per iteration.
 
-        Evaluates the range/set, manages loop variable state and frames.
-        Yields once per iteration after setting the loop variable.
+        Evaluates the range/set per-path (different paths may see different
+        values because MCM results can differ). Yields once per iteration
+        step, with the active-path set narrowed to exactly those paths
+        that still have a value for the current step.
+
+        Only called by the Interpreter when the range/set is MCM-dependent,
+        which implies either an active branched state or a pending MCM that
+        will transition to branched on entry.
 
         Args:
             set_declaration: The AST range or discrete set expression.
@@ -1490,55 +1669,81 @@ class ProgramContext(AbstractProgramContext):
         """
         self._maybe_transition_to_branched()
 
-        if not self._is_branched:
-            index = self._evaluate_expression(set_declaration)
-            index_values = (
-                [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-                if isinstance(index, RangeDefinition)
-                else index.values
-            )
-            for i in index_values:
-                with self.enter_scope():
-                    self.declare_variable(loop_var, loop_type, i)
-                    yield
-            return
-
         saved_active = list(self._active_path_indices)
 
-        self._active_path_indices = [saved_active[0]]
-        index = self._evaluate_expression(set_declaration)
-        index_values = (
-            [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-            if isinstance(index, RangeDefinition)
-            else index.values
-        )
+        # Evaluate the range/set once per path so each path gets its own
+        # iteration values. MCM-dependent expressions can produce different
+        # values on different paths (e.g., [0:b+3] where b differs per path).
+        per_path_values: dict[int, list] = {}
+        for path_idx in saved_active:
+            self._focus_on_path(path_idx)
+            index = self._evaluate_expression(set_declaration)
+            per_path_values[path_idx] = (
+                [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+                if isinstance(index, RangeDefinition)
+                else list(index.values)
+            )
 
+        # Enter a new frame on all paths so the loop variable is scoped
+        # to this for-loop and cleaned up on exit.
         self._active_path_indices = saved_active
         self._enter_frame_for_active_paths()
 
         looping_paths = list(saved_active)
         broken_paths = []
+        finished_paths = []
+        step = 0
 
-        for i in index_values:
-            self._active_path_indices = looping_paths
+        # Step through iterations in lockstep. At each step, only paths that
+        # still have a value at that index participate; paths whose value
+        # list is exhausted move to `finished_paths`. Loop exits when no
+        # paths have a value for the current step.
+        while True:
+            # Partition currently-looping paths into those that still have
+            # an iteration value at `step` and those that have just finished.
+            step_paths = []
+            newly_finished = []
+            for idx in looping_paths:
+                if step < len(per_path_values[idx]):
+                    step_paths.append(idx)
+                else:
+                    newly_finished.append(idx)
+            finished_paths.extend(newly_finished)
+            if not step_paths:
+                break
 
-            for path_idx in looping_paths:
+            # Narrow execution to only paths still iterating, and set each
+            # path's loop variable to its own value for this step.
+            self._active_path_indices = step_paths
+            for path_idx in step_paths:
                 path = self._paths[path_idx]
                 path.set_variable(
                     loop_var,
-                    FramedVariable(loop_var, loop_type, i, False, path.frame_number),
+                    FramedVariable(
+                        loop_var,
+                        loop_type,
+                        per_path_values[path_idx][step],
+                        False,
+                        path.frame_number,
+                    ),
                 )
 
+            # Hand control back to the interpreter to execute the loop body.
+            # On break (GeneratorExit), restore all paths and exit the frame.
             try:
                 yield
             except GeneratorExit:
-                self._active_path_indices = looping_paths + broken_paths
+                self._active_path_indices = looping_paths + broken_paths + finished_paths
                 self._exit_frame_for_active_paths()
                 return
 
+            # The body may have further narrowed the active set (e.g., via
+            # inner branching); continue iterating only with surviving paths.
             looping_paths = list(self._active_path_indices)
+            step += 1
 
-        self._active_path_indices = looping_paths + broken_paths
+        # All paths have completed the loop. Restore them and exit the frame.
+        self._active_path_indices = broken_paths + finished_paths
         self._exit_frame_for_active_paths()
 
     def evaluate_while_condition(self, condition):
@@ -1548,6 +1753,10 @@ class ProgramContext(AbstractProgramContext):
         when at least one path has a true condition. Stops when no paths
         remain true.
 
+        Only called by the Interpreter when the condition is MCM-dependent,
+        which implies either an active branched state or a pending MCM that
+        will transition to branched on entry.
+
         Args:
             condition: The AST condition expression.
 
@@ -1555,11 +1764,6 @@ class ProgramContext(AbstractProgramContext):
             bool: ``True`` to continue looping.
         """
         self._maybe_transition_to_branched()
-
-        if not self._is_branched:
-            while cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
-                yield True
-            return
 
         saved_active = list(self._active_path_indices)
         self._enter_frame_for_active_paths()
@@ -1570,7 +1774,7 @@ class ProgramContext(AbstractProgramContext):
         while True:
             still_true = []
             for path_idx in continue_paths:
-                self._active_path_indices = [path_idx]
+                self._focus_on_path(path_idx)
                 if cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
                     still_true.append(path_idx)
                 else:
@@ -1597,6 +1801,15 @@ class ProgramContext(AbstractProgramContext):
         """Enter a new variable scope frame for all active paths."""
         for path_idx in self._active_path_indices:
             self._paths[path_idx].enter_frame()
+
+    def _focus_on_path(self, path_idx: int) -> None:
+        """Temporarily narrow execution to a single simulation path.
+
+        Subsequent reads and writes of classical state will affect only
+        this path, which is essential for per-path expression evaluation
+        and variable updates.
+        """
+        self._active_path_indices = [path_idx]
 
     def _exit_frame_for_active_paths(self) -> None:
         """Exit the current variable scope frame for all active paths.
