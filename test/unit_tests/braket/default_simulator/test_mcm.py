@@ -4686,23 +4686,12 @@ class TestClassicalControlGates:
         # q[2] mirrors q[0], q[3] mirrors q[1]; all four combinations appear.
         assert set(counts.keys()) == {"0000", "0101", "1010", "1111"}
 
-
-class TestClassicalControlGatesUnsupported:
-    """measure_ff requires an MCM-capable context."""
-
-    def test_measure_ff_requires_mcm_context(self):
-        from braket.default_simulator.openqasm.interpreter import Interpreter
-        from braket.default_simulator.openqasm.program_context import ProgramContext
-
-        class NonMCMContext(ProgramContext):
-            @property
-            def supports_midcircuit_measurement(self) -> bool:
-                return False
-
+    def test_cc_prx_with_unmeasured_feedback_key_raises(self, simulator):
+        """``cc_prx`` on a feedback key without a prior ``measure_ff`` is a user error."""
         qasm = """
         OPENQASM 3.0;
-        qubit q;
-        measure_ff(0) q;
+        qubit[2] q;
+        cc_prx(3.141592653589793, 0.0, 7) q[0];
         """
-        with pytest.raises(NotImplementedError, match="measure_ff"):
-            Interpreter(context=NonMCMContext()).run(qasm)
+        with pytest.raises(ValueError, match="cc_prx references feedback key 7 but no measure_ff"):
+            simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)

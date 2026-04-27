@@ -62,7 +62,6 @@ from .parser.openqasm_ast import (
     ArrayType,
     AssignmentOperator,
     BinaryExpression,
-    BinaryOperator,
     BitstringLiteral,
     BitType,
     BooleanLiteral,
@@ -129,7 +128,6 @@ _EVALUABLE = (
     DiscreteSet,
     IndexExpression,
 )
-_BINARY_EQUALS = getattr(BinaryOperator, "==")
 
 
 class Interpreter:
@@ -433,9 +431,6 @@ class Interpreter:
     @visit.register
     def _(self, node: QuantumGate) -> None:
         gate_name = node.name.name
-        if gate_name in _CLASSICAL_CONTROL_GATES:
-            _CLASSICAL_CONTROL_GATES[gate_name](self, node)
-            return
         arguments = self.visit(node.arguments)
         modifiers = self.visit(node.modifiers)
         if self.context.in_global_scope and modifiers:
@@ -853,51 +848,6 @@ class Interpreter:
         """Add quantum phase operation to the circuit"""
         self.context.add_phase(phase, qubits)
 
-    def _handle_measure_ff(self, node: QuantumGate) -> None:
-        """Translate ``measure_ff(key) q`` into the equivalent mid-circuit measurement.
-
-        Equivalent to ``<ff_bit> = measure q;`` where ``<ff_bit>`` is a
-        synthetic bit variable keyed by the integer feedback key. The same
-        variable is read back by ``cc_prx`` on the same key. Requires a
-        context that supports mid-circuit measurement.
-        """
-        if not self.context.supports_midcircuit_measurement:
-            raise NotImplementedError(
-                "measure_ff requires a context that supports mid-circuit measurement."
-            )
-        (feedback_key_arg,) = node.arguments
-        feedback_key = self.visit(feedback_key_arg).value
-        ff_var = _feedback_key_identifier(feedback_key)
-        try:
-            self.context.get_type(ff_var.name)
-        except KeyError:
-            self.context.declare_variable(ff_var.name, BitType(size=None))
-        qubits = self.context.get_qubits(self.visit(node.qubits[0]))
-        self.context.add_measure(qubits, classical_destination=ff_var)
-
-    def _handle_cc_prx(self, node: QuantumGate) -> None:
-        """Translate ``cc_prx(a1, a2, key) q`` into ``if (<ff_bit> == 1) { prx(a1, a2) q; }``.
-
-        Constructs the synthetic branching statement and visits it, which
-        routes through the standard mid-circuit-measurement control-flow
-        path for the branch.
-        """
-        angle_1, angle_2, feedback_key_arg = node.arguments
-        feedback_key = self.visit(feedback_key_arg).value
-        ff_var = _feedback_key_identifier(feedback_key)
-        condition = BinaryExpression(
-            op=_BINARY_EQUALS,
-            lhs=ff_var,
-            rhs=IntegerLiteral(1),
-        )
-        prx_call = QuantumGate(
-            modifiers=[],
-            name=Identifier(name="prx"),
-            arguments=[angle_1, angle_2],
-            qubits=list(node.qubits),
-        )
-        self.visit(BranchingStatement(condition=condition, if_block=[prx_call], else_block=[]))
-
     @staticmethod
     def _condition_needs_visit(condition) -> bool:
         """Check if a branching condition contains any node that requires
@@ -920,19 +870,3 @@ class Interpreter:
 class VerbatimBoxDelimiter(StrEnum):
     START_VERBATIM = "StartVerbatim"
     END_VERBATIM = "EndVerbatim"
-
-
-_CLASSICAL_CONTROL_GATES = {
-    "measure_ff": Interpreter._handle_measure_ff,
-    "cc_prx": Interpreter._handle_cc_prx,
-}
-
-
-def _feedback_key_identifier(feedback_key: int) -> Identifier:
-    """Return the synthetic bit-variable Identifier used for a feedback key.
-
-    ``measure_ff(key)`` writes its result into this variable and
-    ``cc_prx(..., key)`` reads from it. The name namespace is unlikely to
-    collide with user variables.
-    """
-    return Identifier(name=f"__ff_{int(feedback_key)}__")
