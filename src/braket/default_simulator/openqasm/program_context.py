@@ -1671,6 +1671,9 @@ class ProgramContext(AbstractProgramContext):
 
         saved_active = list(self._active_path_indices)
 
+        # Evaluate the range/set once per path so each path gets its own
+        # iteration values. MCM-dependent expressions can produce different
+        # values on different paths (e.g., [0:b+3] where b differs per path).
         per_path_values: dict[int, list] = {}
         for path_idx in saved_active:
             self._focus_on_path(path_idx)
@@ -1681,6 +1684,8 @@ class ProgramContext(AbstractProgramContext):
                 else list(index.values)
             )
 
+        # Enter a new frame on all paths so the loop variable is scoped
+        # to this for-loop and cleaned up on exit.
         self._active_path_indices = saved_active
         self._enter_frame_for_active_paths()
 
@@ -1689,7 +1694,13 @@ class ProgramContext(AbstractProgramContext):
         finished_paths = []
         step = 0
 
+        # Step through iterations in lockstep. At each step, only paths that
+        # still have a value at that index participate; paths whose value
+        # list is exhausted move to `finished_paths`. Loop exits when no
+        # paths have a value for the current step.
         while True:
+            # Partition currently-looping paths into those that still have
+            # an iteration value at `step` and those that have just finished.
             step_paths = []
             newly_finished = []
             for idx in looping_paths:
@@ -1700,8 +1711,10 @@ class ProgramContext(AbstractProgramContext):
             finished_paths.extend(newly_finished)
             if not step_paths:
                 break
-            self._active_path_indices = step_paths
 
+            # Narrow execution to only paths still iterating, and set each
+            # path's loop variable to its own value for this step.
+            self._active_path_indices = step_paths
             for path_idx in step_paths:
                 path = self._paths[path_idx]
                 path.set_variable(
@@ -1715,6 +1728,8 @@ class ProgramContext(AbstractProgramContext):
                     ),
                 )
 
+            # Hand control back to the interpreter to execute the loop body.
+            # On break (GeneratorExit), restore all paths and exit the frame.
             try:
                 yield
             except GeneratorExit:
@@ -1722,9 +1737,12 @@ class ProgramContext(AbstractProgramContext):
                 self._exit_frame_for_active_paths()
                 return
 
+            # The body may have further narrowed the active set (e.g., via
+            # inner branching); continue iterating only with surviving paths.
             looping_paths = list(self._active_path_indices)
             step += 1
 
+        # All paths have completed the loop. Restore them and exit the frame.
         self._active_path_indices = broken_paths + finished_paths
         self._exit_frame_for_active_paths()
 
