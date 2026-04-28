@@ -4,6 +4,8 @@ Compares shot-based results from LocalSimulator against a numpy reference
 statevector simulator for various circuit patterns.
 """
 
+from math import pi
+
 import numpy as np
 import pytest
 from braket.circuits import Circuit
@@ -22,6 +24,7 @@ from braket.default_simulator.gate_operations import (
     T,
 )
 from braket.devices import LocalSimulator
+from braket.experimental_capabilities import EnableExperimentalCapability
 
 GATE_MATRICES = {
     "h": Hadamard._matrix,
@@ -1035,3 +1038,66 @@ class TestCSwapCircuits:
             _reference_probabilities(ref, n_qubits),
             atol=1e-12,
         )
+
+
+class TestClassicalControlGates:
+    """End-to-end tests for the IQM experimental ``measure_ff`` / ``cc_prx`` gates
+    against ``LocalSimulator``. Follows the patterns shown in the Braket
+    Dynamic Circuits notebook."""
+
+    def _run(self, circuit, shots):
+        return LocalSimulator().run(circuit, shots=shots).result().measurement_counts
+
+    def test_measure_ff_cc_prx_feedforward(self):
+        """Classical feedforward: after measuring q[0], conditionally flip q[1].
+        Equivalent to a CNOT on the 50/50 state created by ``h q[0]``.
+        """
+        with EnableExperimentalCapability():
+            circuit = Circuit()
+            circuit.h(0)
+            circuit.measure_ff(0, 0)
+            circuit.cc_prx(1, pi, 0.0, 0)
+        counts = self._run(circuit, shots=SHOTS)
+        assert set(counts.keys()) == {"00", "11"}
+        assert abs(counts["00"] / SHOTS - 0.5) < ATOL
+        assert abs(counts["11"] / SHOTS - 0.5) < ATOL
+
+    def test_active_qubit_reset(self):
+        """Active qubit reset from the notebook: prepare |1>, measure, then
+        conditionally rotate back to |0>. The qubit should always end in |0>."""
+        with EnableExperimentalCapability():
+            circuit = Circuit()
+            circuit.x(0)
+            circuit.measure_ff(0, 0)
+            circuit.cc_prx(0, pi, 0.0, 0)
+        counts = self._run(circuit, shots=SHOTS)
+        assert counts == {"0": SHOTS}
+
+    def test_active_qubit_reset_on_superposition(self):
+        """Reset of a superposition state: ``h`` puts q[0] in ``|+>``; the
+        measure+feedforward pair collapses it to a known state and rotates
+        back, so all shots should read ``|0>``."""
+        with EnableExperimentalCapability():
+            circuit = Circuit()
+            circuit.h(0)
+            circuit.measure_ff(0, 0)
+            circuit.cc_prx(0, pi, 0.0, 0)
+        counts = self._run(circuit, shots=SHOTS)
+        assert counts == {"0": SHOTS}
+
+    def test_independent_feedback_keys(self):
+        """Two independent feedback keys drive two independent conditionals,
+        yielding all four combinations of the measured qubits."""
+        with EnableExperimentalCapability():
+            circuit = Circuit()
+            circuit.h(0)
+            circuit.h(1)
+            circuit.measure_ff(0, 0)
+            circuit.measure_ff(1, 1)
+            circuit.cc_prx(2, pi, 0.0, 0)
+            circuit.cc_prx(3, pi, 0.0, 1)
+        counts = self._run(circuit, shots=SHOTS)
+        # q[2] mirrors q[0], q[3] mirrors q[1].
+        assert set(counts.keys()) == {"0000", "0101", "1010", "1111"}
+        for key in counts:
+            assert abs(counts[key] / SHOTS - 0.25) < ATOL
