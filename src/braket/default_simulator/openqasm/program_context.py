@@ -62,6 +62,8 @@ from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ArrayLiteral,
     BinaryExpression,
+    BinaryOperator,
+    BitType,
     BooleanLiteral,
     ClassicalType,
     DiscreteSet,
@@ -1255,6 +1257,8 @@ class ProgramContext(AbstractProgramContext):
         return value
 
     def is_builtin_gate(self, name: str) -> bool:
+        if name in _CLASSICAL_CONTROL_GATES:
+            return True
         user_defined_gate = self.is_user_defined_gate(name)
         return name in BRAKET_GATES and not user_defined_gate
 
@@ -1381,6 +1385,9 @@ class ProgramContext(AbstractProgramContext):
     def add_gate_instruction(
         self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
     ):
+        if gate_name in _CLASSICAL_CONTROL_GATES:
+            _CLASSICAL_CONTROL_GATES[gate_name](self, target, params)
+            return
         self._flush_pending_mcm_for_qubits(target)
         instruction = BRAKET_GATES[gate_name](
             target, *params, ctrl_modifiers=ctrl_modifiers, power=power
@@ -1390,6 +1397,51 @@ class ProgramContext(AbstractProgramContext):
                 path.add_instruction(instruction)
         else:
             self._circuit.add_instruction(instruction)
+
+    def _handle_measure_ff(self, target: tuple[int, ...], params) -> None:
+        """Translate ``measure_ff(key) q`` into a classical-destination measurement.
+
+        The feedback key comes in via ``params``; we allocate (on first use)
+        a synthetic bit variable ``__ff_<key>__`` and then delegate to
+        ``add_measure`` so the measurement flows through the normal
+        mid-circuit-measurement pipeline.
+        """
+        feedback_key = int(params[0])
+        ff_var = _feedback_key_identifier(feedback_key)
+        try:
+            self.get_type(ff_var.name)
+        except KeyError:
+            self.declare_variable(ff_var.name, BitType(size=None))
+        self.add_measure(target, classical_destination=ff_var)
+
+    def _handle_cc_prx(self, target: tuple[int, ...], params) -> None:
+        """Translate ``cc_prx(a1, a2, key) q`` into a classically-conditioned ``prx``.
+
+        Uses ``evaluate_condition`` (the same control-flow hook used for
+        ``if`` statements) to apply ``prx(a1, a2) q`` only on the paths
+        whose ``__ff_<key>__`` bit is ``1``.
+        """
+        angle_1, angle_2, feedback_key = params[0], params[1], int(params[2])
+        ff_var = _feedback_key_identifier(feedback_key)
+        try:
+            self.get_type(ff_var.name)
+        except KeyError as exc:
+            raise ValueError(
+                f"cc_prx references feedback key {feedback_key} but no measure_ff "
+                f"has been recorded for that key."
+            ) from exc
+        condition = BinaryExpression(
+            op=_BINARY_EQUALS,
+            lhs=ff_var,
+            rhs=IntegerLiteral(1),
+        )
+        for branch in self.evaluate_condition(condition):
+            if branch:
+                instruction = BRAKET_GATES["prx"](
+                    target, angle_1, angle_2, ctrl_modifiers=[], power=1
+                )
+                for path in self.active_paths:
+                    path.add_instruction(instruction)
 
     def add_custom_unitary(
         self,
@@ -2030,3 +2082,22 @@ class ProgramContext(AbstractProgramContext):
         )
         sim.evolve(path.instructions)
         return sim.state_vector
+
+
+_BINARY_EQUALS = getattr(BinaryOperator, "==")
+
+
+def _feedback_key_identifier(feedback_key: int) -> Identifier:
+    """Return the synthetic bit-variable Identifier used for a feedback key.
+
+    ``measure_ff(key)`` writes its result into this variable and
+    ``cc_prx(..., key)`` reads from it. The name namespace is unlikely to
+    collide with user variables.
+    """
+    return Identifier(name=f"__ff_{int(feedback_key)}__")
+
+
+_CLASSICAL_CONTROL_GATES = {
+    "measure_ff": ProgramContext._handle_measure_ff,
+    "cc_prx": ProgramContext._handle_cc_prx,
+}
