@@ -4898,11 +4898,38 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "    x q[2];\n"
             "}"
         )
-        Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
+        assert Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
+
+    def test_flat_context_unrolls_non_mcm_if_statements(self):
+        """Non-MCM ``if`` statements are replaced by the taken branch only:
+        the true branch's body for the true-condition if, the else body for
+        the false-condition if. Both appear in their source order."""
+        assert (
+            Interpreter(context=FlatProgramContext())
+            .run(
+                (
+                    "OPENQASM 3.0;\n"
+                    "qubit[2] q;\n"
+                    "int x = 7;\n"
+                    "if (x == 7) {\n"
+                    "    h q[0];\n"
+                    "} else {\n"
+                    "    x q[0];\n"
+                    "}\n"
+                    "if (x == 5) {\n"
+                    "    h q[1];\n"
+                    "} else {\n"
+                    "    x q[1];\n"
+                    "}"
+                )
+            )
+            .circuit
+            == "OPENQASM 3.0;\nqubit[2] q;\nint x = 7;\nh q[0];\nx q[1];"
+        )
 
     def test_flat_context_unrolls_non_mcm_for_loop(self):
         """A for-loop with a compile-time constant range is unrolled inline."""
-        Interpreter(context=FlatProgramContext()).run(
+        assert Interpreter(context=FlatProgramContext()).run(
             ("OPENQASM 3.0;\nqubit[1] q;\nfor int i in [0:2] {\n    h q[0];\n}")
         ).circuit == (
             "OPENQASM 3.0;\n"
@@ -4927,11 +4954,11 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "    h q[1];\n"
             "}"
         )
-        Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
+        assert Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
 
     def test_flat_context_unrolls_non_mcm_while_loop(self):
         """A while-loop with a compile-time constant condition is unrolled inline."""
-        Interpreter(context=FlatProgramContext()).run(
+        assert Interpreter(context=FlatProgramContext()).run(
             (
                 "OPENQASM 3.0;\n"
                 "qubit[1] q;\n"
@@ -4959,4 +4986,4 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "    c[0] = measure q[0];\n"
             "}"
         )
-        Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
+        assert Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
