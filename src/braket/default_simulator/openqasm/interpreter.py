@@ -597,8 +597,8 @@ class Interpreter:
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
-        rvalue = (
-            self.visit(node.rvalue)
+        rvalue = self.visit(
+            node.rvalue
             if node.op == getattr(AssignmentOperator, "=")
             else self.visit(
                 BinaryExpression(
