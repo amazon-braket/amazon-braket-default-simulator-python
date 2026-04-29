@@ -3817,7 +3817,7 @@ class FlatProgramContext(AbstractProgramContext):
         self._lines.append("    " * self._indent + line)
 
     def _render_target(self, target) -> str:
-        # TODO: Add support for named registers in targets in AbstractProgramContext
+        # TODO: Support named target registers in AbstractProgramContext
         return ", ".join(f"q[{q}]" for q in target)
 
     @staticmethod
@@ -3837,7 +3837,7 @@ class FlatProgramContext(AbstractProgramContext):
             case FloatType(size=size):
                 arr = "" if size is None else f"[{FlatProgramContext._render_expression(size)}]"
                 return f"float{arr}"
-        raise NotImplementedError(f"Unsupported type {type_node!r}")
+        raise NotImplementedError(f"Unsupported type {type_node}")
 
     @staticmethod
     def _render_expression(expr) -> str:
@@ -3868,7 +3868,7 @@ class FlatProgramContext(AbstractProgramContext):
                 return f"[{left}{middle}{right}]"
             case DiscreteSet(values=values):
                 return "{" + ", ".join(render(v) for v in values) + "}"
-        raise NotImplementedError(f"Unsupported expression {expr!r}")
+        raise NotImplementedError(f"Unsupported expression {expr}")
 
     @staticmethod
     def _is_default_initializer(value) -> bool:
