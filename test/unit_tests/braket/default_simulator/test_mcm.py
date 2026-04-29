@@ -3844,7 +3844,7 @@ class FlatProgramContext(AbstractProgramContext):
         render = FlatProgramContext._render_expression
         match expr:
             case BooleanLiteral(value=value):
-                return "true" if value else "false"
+                return str(value).lower()
             case IntegerLiteral(value=value) | FloatLiteral(value=value):
                 return str(value)
             case Identifier(name=name):
