@@ -919,25 +919,18 @@ class AbstractProgramContext(ABC):
     def is_mcm_dependent(self, expression) -> bool:
         """Whether an expression depends on any mid-circuit measurement result.
 
-        The default returns ``True`` so that any subclass overriding
-        ``supports_midcircuit_measurement = True`` routes control flow
-        and classical operations through its MCM-aware handlers
-        (``evaluate_condition``, ``evaluate_for_range``,
-        ``evaluate_while_condition``, ``iter_classical_scopes``). This
-        matches the pre-tracking semantics where any MCM-capable context
-        handled every occurrence.
+        An expression is MCM-dependent when any identifier it references
+        resolves (via lexical scoping) to a variable that was produced by
+        a mid-circuit measurement. Subclasses populate
+        ``_mcm_dependent_scopes`` (typically via ``track_mcm_dependency``
+        or when a measurement is recorded) so this check walks each
+        referenced identifier's scope stack and stops at the scope where
+        the name is declared.
 
-        Subclasses that implement MCM dependency tracking (by populating
-        ``_mcm_dependent_scopes`` via ``track_mcm_dependency`` and on
-        measurement) should override this to return a real check, e.g.::
-
-            return any(
-                self._is_name_mcm_dependent(name)
-                for name in self._referenced_identifiers(expression)
-            )
-
-        Doing so skips per-path evaluation for expressions that provably
-        do not depend on any MCM result.
+        Used by the Interpreter to decide whether control flow and
+        classical assignments need per-path evaluation. Expressions that
+        are not MCM-dependent are evaluated once and eagerly, matching
+        non-MCM behavior.
 
         Args:
             expression: The AST expression to check.
@@ -945,7 +938,9 @@ class AbstractProgramContext(ABC):
         Returns:
             bool: True if the expression depends on an MCM result.
         """
-        return True
+        return any(
+            self._is_name_mcm_dependent(name) for name in self._referenced_identifiers(expression)
+        )
 
     def _is_name_mcm_dependent(self, name: str) -> bool:
         """Whether ``name`` resolves to an MCM-dependent variable.
@@ -1088,10 +1083,6 @@ class AbstractProgramContext(ABC):
         Implementations are generators that yield once for each scope in
         which the expression should be independently evaluated (e.g.,
         once per active simulation path).
-
-        The default yields once, matching non-branched behavior (the
-        expression is evaluated a single time). Subclasses that track
-        per-path state should override to yield once per active path.
 
         Args:
             expression: The AST expression being evaluated. Subclasses
@@ -1559,17 +1550,6 @@ class ProgramContext(AbstractProgramContext):
                 self._measure_and_branch(mcm_target)
                 self._update_classical_from_measurement(mcm_target, mcm_dest)
             self._pending_mcm_targets.clear()
-
-    def is_mcm_dependent(self, expression) -> bool:
-        """Return True iff any identifier referenced in ``expression``
-        resolves (via lexical scoping) to a variable flagged as
-        MCM-dependent in ``_mcm_dependent_scopes``. Enables the
-        Interpreter to skip per-path evaluation for expressions that
-        provably do not depend on any mid-circuit measurement result.
-        """
-        return any(
-            self._is_name_mcm_dependent(name) for name in self._referenced_identifiers(expression)
-        )
 
     def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
         """Extend the base implementation with branched-subset detection.

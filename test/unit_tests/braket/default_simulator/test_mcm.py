@@ -3749,8 +3749,9 @@ class TestAbstractContextControlFlow:
     def test_active_paths_returns_empty(self):
         assert SimpleProgramContext().active_paths == []
 
-    def test_is_mcm_dependent_defaults_to_true(self):
-        assert SimpleProgramContext().is_mcm_dependent(BooleanLiteral(True)) is True
+    def test_is_mcm_dependent_defaults_to_false_for_non_mcm_context(self):
+        # No measurements tracked → not MCM-dependent.
+        assert SimpleProgramContext().is_mcm_dependent(BooleanLiteral(True)) is False
 
     def test_iter_classical_scopes_yields_once(self):
         assert list(SimpleProgramContext().iter_classical_scopes(BooleanLiteral(True))) == [None]
