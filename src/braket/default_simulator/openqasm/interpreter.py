@@ -609,9 +609,7 @@ class Interpreter:
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
-        elif isinstance(rvalue, SymbolLiteral):
-            pass
-        else:
+        elif not isinstance(rvalue, SymbolLiteral):
             rvalue = cast_to(self.context.get_type(lvalue.name), rvalue)
         self.context.update_value(lvalue, rvalue)
         self.context.track_mcm_dependency(lvalue_name, node.rvalue)
