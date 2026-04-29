@@ -3730,16 +3730,17 @@ class SimpleProgramContext(AbstractProgramContext):
 
 def _render_type(type_node) -> str:
     """Render a ClassicalType AST node as OpenQASM source."""
-    if isinstance(type_node, BitType):
-        return "bit" if type_node.size is None else f"bit[{_render_expression(type_node.size)}]"
-    if isinstance(type_node, BoolType):
-        return "bool"
-    if isinstance(type_node, IntType):
-        return "int" if type_node.size is None else f"int[{_render_expression(type_node.size)}]"
-    if isinstance(type_node, UintType):
-        return "uint" if type_node.size is None else f"uint[{_render_expression(type_node.size)}]"
-    if isinstance(type_node, FloatType):
-        return "float" if type_node.size is None else f"float[{_render_expression(type_node.size)}]"
+    match type_node:
+        case BoolType():
+            return "bool"
+        case BitType(size=size):
+            return "bit" if size is None else f"bit[{_render_expression(size)}]"
+        case IntType(size=size):
+            return "int" if size is None else f"int[{_render_expression(size)}]"
+        case UintType(size=size):
+            return "uint" if size is None else f"uint[{_render_expression(size)}]"
+        case FloatType(size=size):
+            return "float" if size is None else f"float[{_render_expression(size)}]"
     raise NotImplementedError(f"FlatProgramContext cannot render type {type_node!r}")
 
 
@@ -4897,22 +4898,13 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "    x q[2];\n"
             "}"
         )
-        context = FlatProgramContext()
-        Interpreter(context=context).run(qasm)
-        assert context.circuit == qasm
+        Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
 
     def test_flat_context_unrolls_non_mcm_for_loop(self):
         """A for-loop with a compile-time constant range is unrolled inline."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        for int i in [0:2] {
-            h q[0];
-        }
-        """
-        context = FlatProgramContext()
-        Interpreter(context=context).run(qasm)
-        expected = (
+        Interpreter(context=FlatProgramContext()).run(
+            ("OPENQASM 3.0;\nqubit[1] q;\nfor int i in [0:2] {\n    h q[0];\n}")
+        ).circuit == (
             "OPENQASM 3.0;\n"
             "qubit[1] q;\n"
             "int i = 0;\n"
@@ -4922,7 +4914,6 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "int i = 2;\n"
             "h q[0];"
         )
-        assert context.circuit == expected
 
     def test_flat_context_preserves_mcm_for_loop(self):
         """A for-loop whose range depends on a measurement result is emitted verbatim."""
@@ -4936,25 +4927,21 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "    h q[1];\n"
             "}"
         )
-        context = FlatProgramContext()
-        Interpreter(context=context).run(qasm)
-        assert context.circuit == qasm
+        Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
 
     def test_flat_context_unrolls_non_mcm_while_loop(self):
         """A while-loop with a compile-time constant condition is unrolled inline."""
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        int i = 0;
-        while (i < 2) {
-            h q[0];
-            i = i + 1;
-        }
-        """
-        context = FlatProgramContext()
-        Interpreter(context=context).run(qasm)
-        expected = "OPENQASM 3.0;\nqubit[1] q;\nint i = 0;\nh q[0];\ni = 1;\nh q[0];\ni = 2;"
-        assert context.circuit == expected
+        Interpreter(context=FlatProgramContext()).run(
+            (
+                "OPENQASM 3.0;\n"
+                "qubit[1] q;\n"
+                "int i = 0;\n"
+                "while (i < 2) {\n"
+                "    h q[0];\n"
+                "    i = i + 1;\n"
+                "}"
+            )
+        ).circuit == ("OPENQASM 3.0;\nqubit[1] q;\nint i = 0;\nh q[0];\ni = 1;\nh q[0];\ni = 2;")
 
     def test_flat_context_preserves_mcm_while_loop(self):
         """A while-loop whose condition depends on a measurement result is emitted verbatim.
@@ -4972,6 +4959,4 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "    c[0] = measure q[0];\n"
             "}"
         )
-        context = FlatProgramContext()
-        Interpreter(context=context).run(qasm)
-        assert context.circuit == qasm
+        Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
