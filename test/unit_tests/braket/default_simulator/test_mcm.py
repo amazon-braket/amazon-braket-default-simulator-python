@@ -4920,7 +4920,7 @@ class TestMCMDependencyTrackingOnAbstractContext:
                 "    x q[1];\n"
                 "}"
             )
-        ).circuit == ("OPENQASM 3.0;\nqubit[2] q;\nint x = 7;\nh q[0];\nx q[1];")
+        ).circuit == "OPENQASM 3.0;\nqubit[2] q;\nint x = 7;\nh q[0];\nx q[1];"
 
     def test_flat_context_unrolls_non_mcm_for_loop(self):
         """A for-loop with a compile-time constant range is unrolled inline."""
@@ -4963,7 +4963,7 @@ class TestMCMDependencyTrackingOnAbstractContext:
                 "    i = i + 1;\n"
                 "}"
             )
-        ).circuit == ("OPENQASM 3.0;\nqubit[1] q;\nint i = 0;\nh q[0];\ni = 1;\nh q[0];\ni = 2;")
+        ).circuit == "OPENQASM 3.0;\nqubit[1] q;\nint i = 0;\nh q[0];\ni = 1;\nh q[0];\ni = 2;"
 
     def test_flat_context_preserves_mcm_while_loop(self):
         """A while-loop whose condition depends on a measurement result is emitted verbatim.
