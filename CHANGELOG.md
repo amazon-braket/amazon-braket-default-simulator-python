@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.39.0 (2026-04-29)
+
+### Features
+
+ * Support IQM classical control gates
+
+### Bug Fixes and Other Changes
+
+ * Implementation-independent MCM check
+ * Proper handling of classical assignments and pure classical control
+
 ## v1.38.1 (2026-04-22)
 
 ### Bug Fixes and Other Changes
