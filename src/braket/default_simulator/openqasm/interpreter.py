@@ -247,13 +247,11 @@ class Interpreter:
         if node.io_identifier == IOKeyword.output:
             raise NotImplementedError("Output not supported")
         else:  # IOKeyword.input:
-            if node.identifier.name not in self.context.inputs:
-                # previously raised a NameError
-                init_value = wrap_value_into_literal(Symbol(node.identifier.name))
-                node_type = SymbolLiteral
-            else:
-                init_value = wrap_value_into_literal(self.context.inputs[node.identifier.name])
-                node_type = node.type
+            init_value, node_type = (
+                (wrap_value_into_literal(self.context.inputs[node.identifier.name]), node.type)
+                if node.identifier.name in self.context.inputs
+                else (wrap_value_into_literal(Symbol(node.identifier.name)), SymbolLiteral)
+            )
             declaration = ClassicalDeclaration(node_type, node.identifier, init_value)
             self.visit(declaration)
 
@@ -599,11 +597,15 @@ class Interpreter:
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
-        if node.op == getattr(AssignmentOperator, "="):
-            rvalue = self.visit(node.rvalue)
-        else:
-            op = get_operator_of_assignment_operator(node.op)
-            rvalue = self.visit(BinaryExpression(op, node.lvalue, node.rvalue))
+        rvalue = (
+            self.visit(node.rvalue)
+            if node.op == getattr(AssignmentOperator, "=")
+            else self.visit(
+                BinaryExpression(
+                    get_operator_of_assignment_operator(node.op), node.lvalue, node.rvalue
+                )
+            )
+        )
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
@@ -663,10 +665,11 @@ class Interpreter:
                     continue
         else:
             index = self.visit(node.set_declaration)
-            if isinstance(index, RangeDefinition):
-                index_values = [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
-            else:
-                index_values = index.values
+            index_values = (
+                [IntegerLiteral(x) for x in convert_range_def_to_range(index)]
+                if isinstance(index, RangeDefinition)
+                else index.values
+            )
 
             loop_var_name = node.identifier.name
             for i in index_values:
