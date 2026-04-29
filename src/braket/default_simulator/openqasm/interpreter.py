@@ -581,6 +581,7 @@ class Interpreter:
             )
         if node.target and self.context.supports_midcircuit_measurement:
             self.context.add_measure(qubits, targets, classical_destination=node.target)
+            self.context.mark_mcm_dependent(get_identifier_name(node.target))
         else:
             self.context.add_measure(qubits, targets)
 

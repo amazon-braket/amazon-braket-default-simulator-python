@@ -15,6 +15,7 @@ jobs:
         dependent:
           - amazon-braket-sdk-python
           - amazon-braket-pennylane-plugin-python
+          - qiskit-braket-provider
 
     steps:
       - uses: actions/checkout@v6
@@ -32,10 +33,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install --upgrade git+https://github.com/aws/amazon-braket-schemas-python@main
+          pip install --upgrade git+https://github.com/amazon-braket/amazon-braket-schemas-python@main
           pip install -e .
           cd ..
-          git clone https://github.com/aws/${{ matrix.dependent }}.git
+          git clone https://github.com/amazon-braket/${{ matrix.dependent }}.git
           cd ${{ matrix.dependent }}
           # Update the amazon-braket-default-simulator dependency to reference the current commit
           python ${GITHUB_WORKSPACE}/.github/scripts/update_dependency.py

@@ -4695,3 +4695,68 @@ class TestClassicalControlGates:
         """
         with pytest.raises(ValueError, match="cc_prx references feedback key 7 but no measure_ff"):
             simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
+
+
+class TestMCMDependencyTrackingOnAbstractContext:
+    """MCM-dependency tracking should work for any AbstractProgramContext
+    subclass that supports MCM — not just ``ProgramContext``. A translator
+    that wants to emit ``if (c == 1) {...}`` unchanged still needs the
+    dependency tracking so the Interpreter routes through the MCM path
+    instead of eagerly evaluating the uninitialized classical variable.
+    """
+
+    def test_translator_with_if_after_measure(self):
+        from braket.default_simulator.openqasm.circuit import Circuit
+        from braket.default_simulator.openqasm.interpreter import Interpreter
+        from braket.default_simulator.openqasm.program_context import AbstractProgramContext
+
+        class NoopMCMContext(AbstractProgramContext):
+            """MCM-capable context that stubs out every side-effecting hook."""
+
+            def __init__(self):
+                super().__init__()
+                self._circuit = Circuit()
+
+            @property
+            def circuit(self):
+                return self._circuit
+
+            @property
+            def supports_midcircuit_measurement(self) -> bool:
+                return True
+
+            def is_builtin_gate(self, name: str) -> bool:
+                return name in BRAKET_GATES
+
+            def add_phase_instruction(self, target, phase_value):
+                pass
+
+            def add_gate_instruction(self, gate_name, target, params, ctrl_modifiers, power):
+                pass
+
+            def add_measure(self, target, classical_targets=None, **kwargs):
+                pass
+
+            def evaluate_condition(self, condition):
+                # Translator doesn't care about per-path evaluation; it just
+                # wants both branches visited so it can emit the unchanged
+                # if/else. This mirrors what a QASM-to-QASM translator does.
+                yield True
+                yield False
+
+            def iter_classical_scopes(self, expression):
+                yield
+
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[2] c;
+        c[0] = measure q[0];
+        if (c[0] == 1) {
+            h q[1];
+        } else {
+            x q[2];
+        }
+        """
+        # Should not raise ``Identifier 'c' is not initialized``.
+        Interpreter(context=NoopMCMContext()).run(qasm)

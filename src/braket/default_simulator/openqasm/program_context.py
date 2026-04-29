@@ -978,6 +978,14 @@ class AbstractProgramContext(ABC):
         else:
             mcm_scope.discard(lvalue_name)
 
+    def mark_mcm_dependent(self, name: str) -> None:
+        """Unconditionally mark ``name`` as MCM-dependent in its declaration scope.
+
+        Called by the Interpreter when a variable is assigned a value that
+        is inherently MCM-dependent (e.g. the result of ``measure``).
+        """
+        self._scope_for_variable(name).add(name)
+
     def _scope_for_variable(self, name: str) -> set[str]:
         """Return the MCM-dependency scope matching the declaration scope of ``name``.
 
@@ -1511,9 +1519,6 @@ class ProgramContext(AbstractProgramContext):
         """
         allow_remeasure = self.supports_midcircuit_measurement
         self._flush_pending_mcm_for_qubits(target)
-        if classical_destination is not None:
-            dest_name = get_identifier_name(classical_destination)
-            self._scope_for_variable(dest_name).add(dest_name)
         if self._is_branched:
             if classical_destination is not None:
                 self._measure_and_branch(target)

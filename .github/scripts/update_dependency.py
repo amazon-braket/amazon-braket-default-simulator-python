@@ -25,10 +25,15 @@ from pathlib import Path
 package = "amazon-braket-default-simulator"
 path = Path.cwd().parent.resolve()
 
-for line in fileinput.input("setup.py", inplace=True):
-    # Update the amazon-braket-default-simulator dependency in setup.py to use the local path. This
-    # would help catch conflicts during the installation process.
-    replaced_line = (
-        line if package not in line else f'"{package} @ file://{path}/{package}-python",\n'
-    )
-    print(replaced_line, end="")
+# Different files use different syntax for declaring dependencies.
+dependency_files = {
+    "setup.py": f'"{package} @ file://{path}/{package}-python",\n',
+    "requirements.txt": f"{package} @ file://{path}/{package}-python\n",
+}
+
+for dep_file, replacement in dependency_files.items():
+    if not Path(dep_file).exists():
+        continue
+    for line in fileinput.input(dep_file, inplace=True):
+        replaced_line = line if package not in line else replacement
+        print(replaced_line, end="")
