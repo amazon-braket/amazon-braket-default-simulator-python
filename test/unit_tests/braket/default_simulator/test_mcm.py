@@ -3845,6 +3845,7 @@ class FlatProgramContext(AbstractProgramContext):
         super().update_value(variable, value)
         self._emit(f"{_render_expression(variable)} = {_render_expression(value)};")
 
+    def add_phase_instruction(self, target, phase_value):
         self._emit(f"gphase({phase_value});")
 
     def add_gate_instruction(self, gate_name, target, params, ctrl_modifiers, power):
