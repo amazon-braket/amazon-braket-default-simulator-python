@@ -3729,22 +3729,14 @@ class SimpleProgramContext(AbstractProgramContext):
 
 
 class FlatProgramContext(AbstractProgramContext):
-    """Translator context: emit OpenQASM mirroring the input.
-
-    Pure classical control flow (``if (x == 7) {...}``, ``for int i in [0:3]``)
-    is unrolled by the Interpreter's default path and emerges as a flat
-    sequence of gate/measurement lines. MCM-dependent control flow
-    (``if (c == 1) {...}`` after ``c = measure q``) is preserved verbatim
-    because ``supports_midcircuit_measurement`` is ``True`` and the
-    interpreter routes those statements through ``evaluate_condition``,
-    where we emit the surrounding ``if``/``else`` braces around the visits
-    of the two branches.
+    """
+    Translates an OpenQASM program into the same OpenQASM program, but with purely classical control
+    flow statements fully evaluated; loops are unrolled and unused branches eliminated.
     """
 
-    def __init__(self, qubit_register_name: str = "q"):
+    def __init__(self):
         super().__init__()
-        self._qubit_register_name = qubit_register_name
-        self._lines: list[str] = ["OPENQASM 3.0;"]
+        self._lines = ["OPENQASM 3.0;"]
         self._indent = 0
 
     @property
@@ -3755,104 +3747,8 @@ class FlatProgramContext(AbstractProgramContext):
     def supports_midcircuit_measurement(self) -> bool:
         return True
 
-    @staticmethod
-    def _render_type(type_node) -> str:
-        """Render a ClassicalType AST node as OpenQASM source."""
-        match type_node:
-            case BoolType():
-                return "bool"
-            case BitType(size=size):
-                return (
-                    "bit" if size is None else f"bit[{FlatProgramContext._render_expression(size)}]"
-                )
-            case IntType(size=size):
-                return (
-                    "int" if size is None else f"int[{FlatProgramContext._render_expression(size)}]"
-                )
-            case UintType(size=size):
-                return (
-                    "uint"
-                    if size is None
-                    else f"uint[{FlatProgramContext._render_expression(size)}]"
-                )
-            case FloatType(size=size):
-                return (
-                    "float"
-                    if size is None
-                    else f"float[{FlatProgramContext._render_expression(size)}]"
-                )
-        raise NotImplementedError(f"FlatProgramContext cannot render type {type_node!r}")
-
-    @staticmethod
-    def _render_expression(expr) -> str:
-        """Render an AST expression node as OpenQASM source."""
-        render = FlatProgramContext._render_expression
-        match expr:
-            case BooleanLiteral(value=value):
-                return "true" if value else "false"
-            case IntegerLiteral(value=value) | FloatLiteral(value=value):
-                return str(value)
-            case Identifier(name=name):
-                return name
-            case IndexedIdentifier(name=name, indices=indices):
-                parts = ["[" + ", ".join(render(e) for e in group) + "]" for group in indices]
-                return render(name) + "".join(parts)
-            case IndexExpression(collection=collection, index=index):
-                return f"{render(collection)}[{', '.join(render(e) for e in index)}]"
-            case BinaryExpression(op=op, lhs=lhs, rhs=rhs):
-                return f"{render(lhs)} {op.name} {render(rhs)}"
-            case UnaryExpression(op=op, expression=inner):
-                return f"{op.name}{render(inner)}"
-            case ArrayLiteral(values=values):
-                return "{" + ", ".join(render(v) for v in values) + "}"
-            case RangeDefinition(start=start, end=end, step=step):
-                parts = [
-                    render(start) if start is not None else "",
-                    render(end) if end is not None else "",
-                ]
-                if step is not None:
-                    parts.insert(1, render(step))
-                return "[" + ":".join(parts) + "]"
-            case DiscreteSet(values=values):
-                return "{" + ", ".join(render(v) for v in values) + "}"
-        raise NotImplementedError(f"FlatProgramContext cannot render expression {expr!r}")
-
-    @staticmethod
-    def _is_default_initializer(value) -> bool:
-        """Recognize implicit default initializers we don't need to emit."""
-        if value is None:
-            return True
-        if isinstance(value, ArrayLiteral):
-            return all(FlatProgramContext._is_default_initializer(item) for item in value.values)
-        return False
-
-    def _emit(self, line: str) -> None:
-        self._lines.append("    " * self._indent + line)
-
-    def _render_target(self, target) -> str:
-        if len(target) == 1:
-            return f"{self._qubit_register_name}[{target[0]}]"
-        return ", ".join(f"{self._qubit_register_name}[{q}]" for q in target)
-
     def is_builtin_gate(self, name: str) -> bool:
         return name in BRAKET_GATES
-
-    def add_qubits(self, name: str, num_qubits: int | None = 1) -> None:
-        super().add_qubits(name, num_qubits)
-        self._emit(f"qubit[{num_qubits}] {name};")
-
-    def declare_variable(self, name, symbol_type, value=None, const=False):
-        super().declare_variable(name, symbol_type, value, const)
-        prefix = "const " if const else ""
-        type_str = self._render_type(symbol_type)
-        if self._is_default_initializer(value):
-            self._emit(f"{prefix}{type_str} {name};")
-        else:
-            self._emit(f"{prefix}{type_str} {name} = {self._render_expression(value)};")
-
-    def update_value(self, variable, value):
-        super().update_value(variable, value)
-        self._emit(f"{self._render_expression(variable)} = {self._render_expression(value)};")
 
     def add_phase_instruction(self, target, phase_value):
         self._emit(f"gphase({phase_value});")
@@ -3862,27 +3758,25 @@ class FlatProgramContext(AbstractProgramContext):
         self._emit(f"{gate_name}{args} {self._render_target(target)};")
 
     def add_measure(self, target, classical_targets=None, *, classical_destination=None, **kwargs):
-        target_str = self._render_target(target)
-        if classical_destination is not None:
-            self._emit(f"{self._render_expression(classical_destination)} = measure {target_str};")
-        else:
-            self._emit(f"measure {target_str};")
+        lhs = (
+            ""
+            if classical_destination is None
+            else f"{self._render_expression(classical_destination)} = "
+        )
+        self._emit(f"{lhs}measure {self._render_target(target)};")
 
     def evaluate_condition(self, condition):
-        """Emit ``if (cond) { ... } else { ... }`` around the interpreter's
-        visits of the two branches."""
         self._emit(f"if ({self._render_expression(condition)}) {{")
         self._indent += 1
         yield True
         self._indent -= 1
-        self._emit("} else {")
+        self._emit("} else {")  # Assume there's an else statement for simplicity
         self._indent += 1
         yield False
         self._indent -= 1
         self._emit("}")
 
     def evaluate_for_range(self, set_declaration, loop_var, loop_type):
-        """Emit ``for <type> <var> in <range> { ... }`` around the visit of the body."""
         self._emit(
             f"for {self._render_type(loop_type)} {loop_var} in "
             f"{self._render_expression(set_declaration)} {{"
@@ -3893,7 +3787,6 @@ class FlatProgramContext(AbstractProgramContext):
         self._emit("}")
 
     def evaluate_while_condition(self, condition):
-        """Emit ``while (cond) { ... }`` around the visit of the body."""
         self._emit(f"while ({self._render_expression(condition)}) {{")
         self._indent += 1
         yield
@@ -3902,6 +3795,88 @@ class FlatProgramContext(AbstractProgramContext):
 
     def iter_classical_scopes(self, expression):
         yield
+
+    # We don't need to subclass the three following public methods for functional equivalence;
+    # we do it here only to simplify verbatim reproduction of the input program
+
+    def add_qubits(self, name: str, num_qubits: int | None = 1) -> None:
+        super().add_qubits(name, num_qubits)
+        self._emit(f"qubit[{num_qubits}] {name};")
+
+    def declare_variable(self, name, symbol_type, value=None, const=False):
+        super().declare_variable(name, symbol_type, value, const)
+        prefix = "const " if const else ""
+        rhs = "" if self._is_default_initializer(value) else f" = {self._render_expression(value)}"
+        self._emit(f"{prefix}{self._render_type(symbol_type)} {name}{rhs};")
+
+    def update_value(self, variable, value):
+        super().update_value(variable, value)
+        self._emit(f"{self._render_expression(variable)} = {self._render_expression(value)};")
+
+    def _emit(self, line: str) -> None:
+        self._lines.append("    " * self._indent + line)
+
+    def _render_target(self, target) -> str:
+        # TODO: Add support for named registers in targets in AbstractProgramContext
+        return ", ".join(f"q[{q}]" for q in target)
+
+    @staticmethod
+    def _render_type(type_node) -> str:
+        match type_node:
+            case BoolType():
+                return "bool"
+            case BitType(size=size):
+                arr = "" if size is None else f"[{FlatProgramContext._render_expression(size)}]"
+                return f"bit{arr}"
+            case IntType(size=size):
+                arr = "" if size is None else f"[{FlatProgramContext._render_expression(size)}]"
+                return f"int{arr}"
+            case UintType(size=size):
+                arr = "" if size is None else f"[{FlatProgramContext._render_expression(size)}]"
+                return f"uint{arr}"
+            case FloatType(size=size):
+                arr = "" if size is None else f"[{FlatProgramContext._render_expression(size)}]"
+                return f"float{arr}"
+        raise NotImplementedError(f"Unsupported type {type_node!r}")
+
+    @staticmethod
+    def _render_expression(expr) -> str:
+        render = FlatProgramContext._render_expression
+        match expr:
+            case BooleanLiteral(value=value):
+                return "true" if value else "false"
+            case IntegerLiteral(value=value) | FloatLiteral(value=value):
+                return str(value)
+            case Identifier(name=name):
+                return name
+            case IndexedIdentifier(name=name, indices=indices):
+                return render(name) + "".join(
+                    ["[" + ", ".join(render(e) for e in group) + "]" for group in indices]
+                )
+            case IndexExpression(collection=collection, index=index):
+                return f"{render(collection)}[{', '.join(render(e) for e in index)}]"
+            case BinaryExpression(op=op, lhs=lhs, rhs=rhs):
+                return f"{render(lhs)} {op.name} {render(rhs)}"
+            case UnaryExpression(op=op, expression=inner):
+                return f"{op.name}{render(inner)}"
+            case ArrayLiteral(values=values):
+                return "{" + ", ".join(render(v) for v in values) + "}"
+            case RangeDefinition(start=start, end=end, step=step):
+                left = "" if start is None else render(start)
+                middle = ":" if step is None else f":{render(step)}:"
+                right = "" if end is None else render(end)
+                return f"[{left}{middle}{right}]"
+            case DiscreteSet(values=values):
+                return "{" + ", ".join(render(v) for v in values) + "}"
+        raise NotImplementedError(f"Unsupported expression {expr!r}")
+
+    @staticmethod
+    def _is_default_initializer(value) -> bool:
+        if value is None:
+            return True
+        if isinstance(value, ArrayLiteral):
+            return all(FlatProgramContext._is_default_initializer(item) for item in value.values)
+        return False
 
 
 class TestAbstractContextControlFlow:
