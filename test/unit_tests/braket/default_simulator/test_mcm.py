@@ -18,10 +18,22 @@ from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    ArrayLiteral,
+    BinaryExpression,
+    BitType,
+    BoolType,
     BooleanLiteral,
+    DiscreteSet,
+    FloatLiteral,
+    FloatType,
+    Identifier,
+    IndexExpression,
+    IndexedIdentifier,
     IntegerLiteral,
     IntType,
     RangeDefinition,
+    UintType,
+    UnaryExpression,
 )
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext
 from braket.default_simulator.state_vector_simulator import StateVectorSimulator
@@ -3716,6 +3728,171 @@ class SimpleProgramContext(AbstractProgramContext):
         self._circuit.add_instruction(instruction)
 
 
+def _render_type(type_node) -> str:
+    """Render a ClassicalType AST node as OpenQASM source."""
+    if isinstance(type_node, BitType):
+        return "bit" if type_node.size is None else f"bit[{_render_expression(type_node.size)}]"
+    if isinstance(type_node, BoolType):
+        return "bool"
+    if isinstance(type_node, IntType):
+        return "int" if type_node.size is None else f"int[{_render_expression(type_node.size)}]"
+    if isinstance(type_node, UintType):
+        return "uint" if type_node.size is None else f"uint[{_render_expression(type_node.size)}]"
+    if isinstance(type_node, FloatType):
+        return "float" if type_node.size is None else f"float[{_render_expression(type_node.size)}]"
+    raise NotImplementedError(f"FlatProgramContext cannot render type {type_node!r}")
+
+
+def _render_expression(expr) -> str:
+    """Render an AST expression node as OpenQASM source."""
+    match expr:
+        case BooleanLiteral(value=value):
+            return "true" if value else "false"
+        case IntegerLiteral(value=value) | FloatLiteral(value=value):
+            return str(value)
+        case Identifier(name=name):
+            return name
+        case IndexedIdentifier(name=name, indices=indices):
+            parts = [
+                "[" + ", ".join(_render_expression(e) for e in group) + "]" for group in indices
+            ]
+            return _render_expression(name) + "".join(parts)
+        case IndexExpression(collection=collection, index=index):
+            return (
+                f"{_render_expression(collection)}"
+                f"[{', '.join(_render_expression(e) for e in index)}]"
+            )
+        case BinaryExpression(op=op, lhs=lhs, rhs=rhs):
+            return f"{_render_expression(lhs)} {op.name} {_render_expression(rhs)}"
+        case UnaryExpression(op=op, expression=inner):
+            return f"{op.name}{_render_expression(inner)}"
+        case ArrayLiteral(values=values):
+            return "{" + ", ".join(_render_expression(v) for v in values) + "}"
+        case RangeDefinition(start=start, end=end, step=step):
+            parts = [
+                _render_expression(start) if start is not None else "",
+                _render_expression(end) if end is not None else "",
+            ]
+            if step is not None:
+                parts.insert(1, _render_expression(step))
+            return "[" + ":".join(parts) + "]"
+        case DiscreteSet(values=values):
+            return "{" + ", ".join(_render_expression(v) for v in values) + "}"
+    raise NotImplementedError(f"FlatProgramContext cannot render expression {expr!r}")
+
+
+def _is_default_initializer(value) -> bool:
+    """Recognize implicit default initializers we don't need to emit."""
+    if value is None:
+        return True
+    if isinstance(value, ArrayLiteral):
+        return all(_is_default_initializer(item) for item in value.values)
+    return False
+
+
+class FlatProgramContext(AbstractProgramContext):
+    """Translator context: emit OpenQASM mirroring the input.
+
+    Pure classical control flow (``if (x == 7) {...}``, ``for int i in [0:3]``)
+    is unrolled by the Interpreter's default path and emerges as a flat
+    sequence of gate/measurement lines. MCM-dependent control flow
+    (``if (c == 1) {...}`` after ``c = measure q``) is preserved verbatim
+    because ``supports_midcircuit_measurement`` is ``True`` and the
+    interpreter routes those statements through ``evaluate_condition``,
+    where we emit the surrounding ``if``/``else`` braces around the visits
+    of the two branches.
+    """
+
+    def __init__(self, qubit_register_name: str = "q"):
+        super().__init__()
+        self._qubit_register_name = qubit_register_name
+        self._lines: list[str] = ["OPENQASM 3.0;"]
+        self._indent = 0
+
+    @property
+    def circuit(self) -> str:
+        return "\n".join(self._lines)
+
+    @property
+    def supports_midcircuit_measurement(self) -> bool:
+        return True
+
+    def _emit(self, line: str) -> None:
+        self._lines.append("    " * self._indent + line)
+
+    def _render_target(self, target) -> str:
+        if len(target) == 1:
+            return f"{self._qubit_register_name}[{target[0]}]"
+        return ", ".join(f"{self._qubit_register_name}[{q}]" for q in target)
+
+    def is_builtin_gate(self, name: str) -> bool:
+        return name in BRAKET_GATES
+
+    def add_qubits(self, name: str, num_qubits: int | None = 1) -> None:
+        super().add_qubits(name, num_qubits)
+        self._emit(f"qubit[{num_qubits}] {name};")
+
+    def declare_variable(self, name, symbol_type, value=None, const=False):
+        super().declare_variable(name, symbol_type, value, const)
+        prefix = "const " if const else ""
+        type_str = _render_type(symbol_type)
+        if _is_default_initializer(value):
+            self._emit(f"{prefix}{type_str} {name};")
+        else:
+            self._emit(f"{prefix}{type_str} {name} = {_render_expression(value)};")
+
+    def update_value(self, variable, value):
+        super().update_value(variable, value)
+        self._emit(f"{_render_expression(variable)} = {_render_expression(value)};")
+
+        self._emit(f"gphase({phase_value});")
+
+    def add_gate_instruction(self, gate_name, target, params, ctrl_modifiers, power):
+        args = f"({', '.join(str(p) for p in params)})" if len(params) else ""
+        self._emit(f"{gate_name}{args} {self._render_target(target)};")
+
+    def add_measure(self, target, classical_targets=None, *, classical_destination=None, **kwargs):
+        target_str = self._render_target(target)
+        if classical_destination is not None:
+            self._emit(f"{_render_expression(classical_destination)} = measure {target_str};")
+        else:
+            self._emit(f"measure {target_str};")
+
+    def evaluate_condition(self, condition):
+        """Emit ``if (cond) { ... } else { ... }`` around the interpreter's
+        visits of the two branches."""
+        self._emit(f"if ({_render_expression(condition)}) {{")
+        self._indent += 1
+        yield True
+        self._indent -= 1
+        self._emit("} else {")
+        self._indent += 1
+        yield False
+        self._indent -= 1
+        self._emit("}")
+
+    def evaluate_for_range(self, set_declaration, loop_var, loop_type):
+        """Emit ``for <type> <var> in <range> { ... }`` around the visit of the body."""
+        self._emit(
+            f"for {_render_type(loop_type)} {loop_var} in {_render_expression(set_declaration)} {{"
+        )
+        self._indent += 1
+        yield
+        self._indent -= 1
+        self._emit("}")
+
+    def evaluate_while_condition(self, condition):
+        """Emit ``while (cond) { ... }`` around the visit of the body."""
+        self._emit(f"while ({_render_expression(condition)}) {{")
+        self._indent += 1
+        yield
+        self._indent -= 1
+        self._emit("}")
+
+    def iter_classical_scopes(self, expression):
+        yield
+
+
 class TestAbstractContextControlFlow:
     """Tests for AbstractProgramContext defaults via SimpleProgramContext."""
 
@@ -4700,63 +4877,100 @@ class TestClassicalControlGates:
 class TestMCMDependencyTrackingOnAbstractContext:
     """MCM-dependency tracking should work for any AbstractProgramContext
     subclass that supports MCM — not just ``ProgramContext``. A translator
-    that wants to emit ``if (c == 1) {...}`` unchanged still needs the
-    dependency tracking so the Interpreter routes through the MCM path
-    instead of eagerly evaluating the uninitialized classical variable.
+    that emits the unchanged ``if (c == 1) {...}`` still relies on the
+    tracking so the Interpreter routes through the MCM path instead of
+    eagerly evaluating the uninitialized classical variable.
     """
 
-    def test_translator_with_if_after_measure(self):
-        from braket.default_simulator.openqasm.circuit import Circuit
-        from braket.default_simulator.openqasm.interpreter import Interpreter
-        from braket.default_simulator.openqasm.program_context import AbstractProgramContext
+    def test_flat_context_emits_if_else_after_measure(self):
+        """``FlatProgramContext`` preserves MCM-dependent if/else statements
+        verbatim while unrolling purely classical control flow."""
+        qasm = (
+            "OPENQASM 3.0;\n"
+            "qubit[3] q;\n"
+            "bit[2] c;\n"
+            "c[0] = measure q[0];\n"
+            "if (c[0] == 1) {\n"
+            "    h q[1];\n"
+            "} else {\n"
+            "    x q[2];\n"
+            "}"
+        )
+        context = FlatProgramContext()
+        Interpreter(context=context).run(qasm)
+        assert context.circuit == qasm
 
-        class NoopMCMContext(AbstractProgramContext):
-            """MCM-capable context that stubs out every side-effecting hook."""
-
-            def __init__(self):
-                super().__init__()
-                self._circuit = Circuit()
-
-            @property
-            def circuit(self):
-                return self._circuit
-
-            @property
-            def supports_midcircuit_measurement(self) -> bool:
-                return True
-
-            def is_builtin_gate(self, name: str) -> bool:
-                return name in BRAKET_GATES
-
-            def add_phase_instruction(self, target, phase_value):
-                pass
-
-            def add_gate_instruction(self, gate_name, target, params, ctrl_modifiers, power):
-                pass
-
-            def add_measure(self, target, classical_targets=None, **kwargs):
-                pass
-
-            def evaluate_condition(self, condition):
-                # Translator doesn't care about per-path evaluation; it just
-                # wants both branches visited so it can emit the unchanged
-                # if/else. This mirrors what a QASM-to-QASM translator does.
-                yield True
-                yield False
-
-            def iter_classical_scopes(self, expression):
-                yield
-
+    def test_flat_context_unrolls_non_mcm_for_loop(self):
+        """A for-loop with a compile-time constant range is unrolled inline."""
         qasm = """
         OPENQASM 3.0;
-        qubit[3] q;
-        bit[2] c;
-        c[0] = measure q[0];
-        if (c[0] == 1) {
-            h q[1];
-        } else {
-            x q[2];
+        qubit[1] q;
+        for int i in [0:2] {
+            h q[0];
         }
         """
-        # Should not raise ``Identifier 'c' is not initialized``.
-        Interpreter(context=NoopMCMContext()).run(qasm)
+        context = FlatProgramContext()
+        Interpreter(context=context).run(qasm)
+        expected = (
+            "OPENQASM 3.0;\n"
+            "qubit[1] q;\n"
+            "int i = 0;\n"
+            "h q[0];\n"
+            "int i = 1;\n"
+            "h q[0];\n"
+            "int i = 2;\n"
+            "h q[0];"
+        )
+        assert context.circuit == expected
+
+    def test_flat_context_preserves_mcm_for_loop(self):
+        """A for-loop whose range depends on a measurement result is emitted verbatim."""
+        qasm = (
+            "OPENQASM 3.0;\n"
+            "qubit[2] q;\n"
+            "bit[1] c;\n"
+            "c[0] = measure q[0];\n"
+            "h q[1];\n"
+            "for int i in [0:c[0]] {\n"
+            "    h q[1];\n"
+            "}"
+        )
+        context = FlatProgramContext()
+        Interpreter(context=context).run(qasm)
+        assert context.circuit == qasm
+
+    def test_flat_context_unrolls_non_mcm_while_loop(self):
+        """A while-loop with a compile-time constant condition is unrolled inline."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        int i = 0;
+        while (i < 2) {
+            h q[0];
+            i = i + 1;
+        }
+        """
+        context = FlatProgramContext()
+        Interpreter(context=context).run(qasm)
+        expected = "OPENQASM 3.0;\nqubit[1] q;\nint i = 0;\nh q[0];\ni = 1;\nh q[0];\ni = 2;"
+        assert context.circuit == expected
+
+    def test_flat_context_preserves_mcm_while_loop(self):
+        """A while-loop whose condition depends on a measurement result is emitted verbatim.
+
+        The loop re-measures the same qubit after an ``h`` each iteration and
+        terminates when the outcome is ``1`` — a classic flip-until-1 pattern.
+        """
+        qasm = (
+            "OPENQASM 3.0;\n"
+            "qubit[1] q;\n"
+            "bit[1] c;\n"
+            "c[0] = measure q[0];\n"
+            "while (c[0] == 0) {\n"
+            "    h q[0];\n"
+            "    c[0] = measure q[0];\n"
+            "}"
+        )
+        context = FlatProgramContext()
+        Interpreter(context=context).run(qasm)
+        assert context.circuit == qasm
