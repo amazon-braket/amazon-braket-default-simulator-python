@@ -921,11 +921,12 @@ class AbstractProgramContext(ABC):
 
         An expression is MCM-dependent when any identifier it references
         resolves (via lexical scoping) to a variable that was produced by
-        a mid-circuit measurement. Subclasses populate
-        ``_mcm_dependent_scopes`` (typically via ``track_mcm_dependency``
-        or when a measurement is recorded) so this check walks each
-        referenced identifier's scope stack and stops at the scope where
-        the name is declared.
+        a mid-circuit measurement. ``_mcm_dependent_scopes`` is populated
+        by ``mark_mcm_dependent`` (for measurement destinations) and
+        ``track_mcm_dependency`` (for classical assignments that transfer
+        MCM-dependency from the rvalue to the lvalue); this check walks
+        each referenced identifier's scope stack and stops at the scope
+        where the name is declared.
 
         Used by the Interpreter to decide whether control flow and
         classical assignments need per-path evaluation. Expressions that
