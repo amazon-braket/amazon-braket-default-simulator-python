@@ -921,11 +921,12 @@ class AbstractProgramContext(ABC):
 
         An expression is MCM-dependent when any identifier it references
         resolves (via lexical scoping) to a variable that was produced by
-        a mid-circuit measurement. Subclasses populate
-        ``_mcm_dependent_scopes`` (typically via ``track_mcm_dependency``
-        or when a measurement is recorded) so this check walks each
-        referenced identifier's scope stack and stops at the scope where
-        the name is declared.
+        a mid-circuit measurement. ``_mcm_dependent_scopes`` is populated
+        by ``mark_mcm_dependent`` (for measurement destinations) and
+        ``track_mcm_dependency`` (for classical assignments that transfer
+        MCM-dependency from the rvalue to the lvalue); this check walks
+        each referenced identifier's scope stack and stops at the scope
+        where the name is declared.
 
         Used by the Interpreter to decide whether control flow and
         classical assignments need per-path evaluation. Expressions that
@@ -977,6 +978,14 @@ class AbstractProgramContext(ABC):
             mcm_scope.add(lvalue_name)
         else:
             mcm_scope.discard(lvalue_name)
+
+    def mark_mcm_dependent(self, name: str) -> None:
+        """Unconditionally mark ``name`` as MCM-dependent in its declaration scope.
+
+        Called by the Interpreter when a variable is assigned a value that
+        is inherently MCM-dependent (e.g. the result of ``measure``).
+        """
+        self._scope_for_variable(name).add(name)
 
     def _scope_for_variable(self, name: str) -> set[str]:
         """Return the MCM-dependency scope matching the declaration scope of ``name``.
@@ -1511,9 +1520,6 @@ class ProgramContext(AbstractProgramContext):
         """
         allow_remeasure = self.supports_midcircuit_measurement
         self._flush_pending_mcm_for_qubits(target)
-        if classical_destination is not None:
-            dest_name = get_identifier_name(classical_destination)
-            self._scope_for_variable(dest_name).add(dest_name)
         if self._is_branched:
             if classical_destination is not None:
                 self._measure_and_branch(target)
