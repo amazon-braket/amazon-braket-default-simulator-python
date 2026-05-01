@@ -3284,6 +3284,39 @@ class TestMCMAsymmetricMeasurement:
         assert counter == {"00": 1000}
 
 
+class TestMCMNonContiguousClassicalIndices:
+    """MCMs that write non-contiguous classical indices."""
+
+    def test_minimal_unassigned_low_bit_stays_zero(self, simulator):
+        """Untouched ``q[0]`` stays 0 when only ``c[1]`` is assigned."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] c;
+        h q[1];
+        c[1] = measure q[1];
+        if (c[1]) { x q[1]; }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"00": 2000}
+
+    def test_if_branch_preserves_captured_bit_position(self, simulator):
+        """``if (c[N])`` keeps the captured value at ``q[N]``'s position."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[3] c;
+        h q[1];
+        c[1] = measure q[1];
+        if (c[1]) { x q[2]; }
+        c[2] = measure q[2];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert set(counter) == {"000", "011"}
+
+
 class TestMCMBranchedInstructionRouting:
     """Cover branched-mode instruction routing (add_*_instruction, add_measure, etc.)."""
 

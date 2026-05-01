@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from copy import copy
 from dataclasses import fields
 from functools import singledispatchmethod
 from typing import TYPE_CHECKING, Any
@@ -1970,7 +1971,7 @@ class ProgramContext(AbstractProgramContext):
         existing variables from the shared variable table to the path.
         """
         initial_path = self._paths[0]
-        initial_path._instructions = list(self._circuit.instructions)
+        initial_path._instructions = [copy(ins) for ins in self._circuit.instructions]
         initial_path.shots = self._shots
 
         for name, value in self.variable_table.items():
