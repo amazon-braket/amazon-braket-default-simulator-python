@@ -4398,6 +4398,27 @@ class TestMCMFlushPendingEdgeCases:
         # Should not crash; measurement registered as normal circuit measurement
         assert ctx.circuit is not None
 
+    def test_branching_without_simulator_raises(self):
+        """A ``ProgramContext`` built without a simulator raises a clear error
+        if branching actually triggers a probability calculation."""
+        from braket.default_simulator.openqasm.interpreter import Interpreter
+        from braket.default_simulator.openqasm.program_context import ProgramContext
+
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        """
+        ctx = ProgramContext()
+        ctx._shots = 100  # force branching when the MCM-dependent ``if`` fires
+        with pytest.raises(RuntimeError, match="no simulator"):
+            Interpreter(ctx).run(qasm)
+
     def test_flush_when_already_branched(self, simulator):
         """Reading a pending MCM variable when already branched from an earlier MCM."""
         qasm = """
