@@ -81,11 +81,6 @@ def _evolve_path_and_sample(
     shots: int,
     batch_size: int,
 ):
-    """Worker: evolve ``instructions`` through ``simulator.initialize_simulation``
-    and return the path's samples.
-
-    Defined at module scope so it's picklable and can run in a process pool.
-    """
     sim = simulator.initialize_simulation(
         qubit_count=qubit_count, shots=shots, batch_size=batch_size
     )
@@ -152,14 +147,6 @@ class OpenQASMSimulator(BraketSimulator, ABC):
 
 
 class BaseLocalSimulator(OpenQASMSimulator):
-    @property
-    def parallelize_paths(self) -> bool:
-        """Whether to run independent simulation paths (e.g. branches of a
-        mid-circuit measurement) in parallel. Off by default because for
-        small/short paths the pool overhead dominates; simulators that
-        routinely handle large branched workloads can override this."""
-        return False
-
     def run(
         self, circuit_ir: OpenQASMProgram | ProgramSet | JaqcdProgram, *args, **kwargs
     ) -> GateModelTaskResult | ProgramSetTaskResult:
@@ -190,6 +177,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
         elif isinstance(circuit_ir, ProgramSet):
             return self.run_program_set(circuit_ir, *args, **kwargs)
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
+
+    @property
+    def parallelize_paths(self) -> bool:
+        """bool: Whether to run path simulations in parallel."""
+        return False
 
     def create_program_context(self) -> AbstractProgramContext:
         return ProgramContext(simulator=self)
