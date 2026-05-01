@@ -74,20 +74,6 @@ _NOISE_INSTRUCTIONS = frozenset(
 )
 
 
-def _evolve_path_and_sample(
-    simulator: "BaseLocalSimulator",
-    instructions,
-    qubit_count: int,
-    shots: int,
-    batch_size: int,
-):
-    sim = simulator.initialize_simulation(
-        qubit_count=qubit_count, shots=shots, batch_size=batch_size
-    )
-    sim.evolve(instructions)
-    return sim.retrieve_samples()
-
-
 class OpenQASMSimulator(BraketSimulator, ABC):
     """An abstract simulator that runs an OpenQASM 3 program.
 
@@ -1030,3 +1016,17 @@ class BaseLocalSimulator(OpenQASMSimulator):
             )
 
         return self._create_results_obj(results, circuit_ir, simulation)
+
+
+def _evolve_path_and_sample(
+    simulator: BaseLocalSimulator,
+    instructions,
+    qubit_count: int,
+    shots: int,
+    batch_size: int,
+):
+    sim = simulator.initialize_simulation(
+        qubit_count=qubit_count, shots=shots, batch_size=batch_size
+    )
+    sim.evolve(instructions)
+    return sim.retrieve_samples()
