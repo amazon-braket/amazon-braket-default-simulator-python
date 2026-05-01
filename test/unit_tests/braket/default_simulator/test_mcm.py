@@ -3299,7 +3299,7 @@ class TestMCMNonContiguousClassicalIndices:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
         counter = Counter(["".join(m) for m in result.measurements])
-        assert counter == {"00": 2000}, f"Expected {{'00': 2000}}, got {dict(counter)}"
+        assert counter == {"00": 2000}
 
     def test_if_branch_preserves_captured_bit_position(self, simulator):
         """``if (c[N])`` keeps the captured value at ``q[N]``'s position."""
@@ -3314,7 +3314,7 @@ class TestMCMNonContiguousClassicalIndices:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
         counter = Counter(["".join(m) for m in result.measurements])
-        assert set(counter) == {"000", "011"}, f"Expected {{'000', '011'}}, got {dict(counter)}"
+        assert set(counter) == {"000", "011"}
 
 
 class TestMCMBranchedInstructionRouting:
