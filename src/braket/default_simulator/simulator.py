@@ -15,6 +15,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import numpy as np
@@ -71,6 +72,25 @@ _NOISE_INSTRUCTIONS = frozenset(
         "two_qubit_depolarizing",
     ]
 )
+
+
+def _evolve_path_and_sample(
+    simulator: "BaseLocalSimulator",
+    instructions,
+    qubit_count: int,
+    shots: int,
+    batch_size: int,
+):
+    """Worker: evolve ``instructions`` through ``simulator.initialize_simulation``
+    and return the path's samples.
+
+    Defined at module scope so it's picklable and can run in a process pool.
+    """
+    sim = simulator.initialize_simulation(
+        qubit_count=qubit_count, shots=shots, batch_size=batch_size
+    )
+    sim.evolve(instructions)
+    return sim.retrieve_samples()
 
 
 class OpenQASMSimulator(BraketSimulator, ABC):
@@ -132,6 +152,14 @@ class OpenQASMSimulator(BraketSimulator, ABC):
 
 
 class BaseLocalSimulator(OpenQASMSimulator):
+    @property
+    def parallelize_paths(self) -> bool:
+        """Whether to run independent simulation paths (e.g. branches of a
+        mid-circuit measurement) in parallel. Off by default because for
+        small/short paths the pool overhead dominates; simulators that
+        routinely handle large branched workloads can override this."""
+        return False
+
     def run(
         self, circuit_ir: OpenQASMProgram | ProgramSet | JaqcdProgram, *args, **kwargs
     ) -> GateModelTaskResult | ProgramSetTaskResult:
@@ -878,14 +906,29 @@ class BaseLocalSimulator(OpenQASMSimulator):
         if circuit.qubit_set:
             sim_qubit_count = max(sim_qubit_count, max(circuit.qubit_set) + 1)
 
-        # Aggregate samples across all active paths
+        paths = list(context.active_paths)
+        if self.parallelize_paths and len(paths) > 1:
+            with ThreadPoolExecutor() as pool:
+                per_path_samples = list(
+                    pool.map(
+                        _evolve_path_and_sample,
+                        [self] * len(paths),
+                        [path.instructions for path in paths],
+                        [sim_qubit_count] * len(paths),
+                        [path.shots for path in paths],
+                        [batch_size] * len(paths),
+                    )
+                )
+        else:
+            per_path_samples = [
+                _evolve_path_and_sample(
+                    self, path.instructions, sim_qubit_count, path.shots, batch_size
+                )
+                for path in paths
+            ]
         all_samples = []
-        for path in context.active_paths:
-            sim = self.initialize_simulation(
-                qubit_count=sim_qubit_count, shots=path.shots, batch_size=batch_size
-            )
-            sim.evolve(path.instructions)
-            all_samples.extend(sim.retrieve_samples())
+        for samples in per_path_samples:
+            all_samples.extend(samples)
 
         # Build measurements in the same format as _formatted_measurements
         measurements = [

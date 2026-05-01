@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields
 from functools import singledispatchmethod
 from typing import TYPE_CHECKING, Any
@@ -1989,30 +1990,42 @@ class ProgramContext(AbstractProgramContext):
         """Sample outcomes per active path and branch with proportional shot
         allocation.
 
-        For each qubit in target, for each active path:
-        1. Ask the subclass-supplied ``_get_qubit_samples`` for
-           ``path.shots`` sampled bit outcomes of the qubit on this path.
-        2. Split the path: one child gets shots that measured 0, the other
-           gets shots that measured 1.
+        For each qubit in target:
+        1. Ask the subclass-supplied ``_get_qubit_samples`` for ``path.shots``
+           sampled bit outcomes of the qubit on each active path. When the
+           simulator opts in via ``parallelize_paths`` these per-path
+           samplings are fanned out to a thread pool.
+        2. For each path, split it: one child gets shots that measured 0, the
+           other gets shots that measured 1.
         3. If one outcome has 0 shots, don't create that branch (deterministic
            case).
         4. Remove paths with 0 shots from the active set.
         """
         for qubit_idx in target:
+            saved_active = list(self._active_path_indices)
+            per_path_samples = self._collect_qubit_samples(saved_active, qubit_idx)
             new_active_indices = []
-            for path_idx in list(self._active_path_indices):
-                self._branch_single_qubit(path_idx, qubit_idx, new_active_indices)
+            for path_idx, qubit_samples in zip(saved_active, per_path_samples):
+                self._branch_single_qubit(path_idx, qubit_idx, qubit_samples, new_active_indices)
             self._active_path_indices = new_active_indices
 
+    def _collect_qubit_samples(self, path_indices: list[int], qubit_idx: int) -> list[np.ndarray]:
+        paths = [self._paths[idx] for idx in path_indices]
+        if self._simulator is not None and self._simulator.parallelize_paths and len(paths) > 1:
+            with ThreadPoolExecutor() as pool:
+                return list(pool.map(lambda path: self._get_qubit_samples(path, qubit_idx), paths))
+        return [self._get_qubit_samples(path, qubit_idx) for path in paths]
+
     def _branch_single_qubit(
-        self, path_idx: int, qubit_idx: int, new_active_indices: list[int]
+        self,
+        path_idx: int,
+        qubit_idx: int,
+        qubit_samples: np.ndarray,
+        new_active_indices: list[int],
     ) -> None:
         """Branch a single path on a single qubit measurement."""
         path = self._paths[path_idx]
 
-        # Defer to the concrete simulator to sample the target qubit's bit for
-        # each of ``path.shots`` shots; then the shot-split is just a tally.
-        qubit_samples = self._get_qubit_samples(path, qubit_idx)
         path_shots = path.shots
         shots_for_1 = int(np.sum(qubit_samples))
         shots_for_0 = path_shots - shots_for_1

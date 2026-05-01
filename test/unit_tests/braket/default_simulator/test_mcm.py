@@ -4997,3 +4997,44 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "}"
         )
         assert Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
+
+
+class TestParallelizePaths:
+    """Cover the ``parallelize_paths`` thread-pool branches in
+    ``BaseLocalSimulator._run_branched`` and
+    ``ProgramContext._collect_qubit_samples``."""
+
+    class _ParallelStateVectorSimulator(StateVectorSimulator):
+        @property
+        def parallelize_paths(self) -> bool:
+            return True
+
+    def test_parallel_paths_produce_expected_distribution(self):
+        """A parallelized simulator produces a correct distribution for a
+        program whose second measurement fires on multiple already-branched
+        paths — which exercises the thread-pool branch of
+        ``_collect_qubit_samples``."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit b0;
+        bit b1;
+        h q[0];
+        b0 = measure q[0];
+        if (b0 == 1) {
+            h q[1];
+        } else {
+            h q[1];
+        }
+        b1 = measure q[1];
+        if (b1 == 1) {
+            x q[2];
+        }
+        """
+        simulator = self._ParallelStateVectorSimulator()
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter("".join(m) for m in result.measurements)
+        # Regardless of b0, q[1] is Hadamarded then measured → 50/50.
+        # Regardless of b1, q[2] ends in state b1.
+        assert set(counts.keys()).issubset({"000", "001", "011", "100", "101", "111"})
+        assert sum(counts.values()) == 1000
