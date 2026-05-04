@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.39.1 (2026-05-04)
+
+### Bug Fixes and Other Changes
+
+ * shallow-copy circuit instructions into initial branched path
+ * Delegate branch calculation to correct simulator
+
 ## v1.39.0 (2026-04-29)
 
 ### Features
