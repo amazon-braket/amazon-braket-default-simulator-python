@@ -68,6 +68,9 @@ class StateVectorSimulation(Simulation):
         self._state_vector = StateVectorSimulation._apply_operations(
             self._state_vector, self._qubit_count, operations, self._batch_size
         )
+        for op in operations:
+            print(f"{op.__class__.__name__} {op.targets}")
+        print("\n")
 
     def apply_observables(self, observables: list[Observable]) -> None:
         """Applies the diagonalizing matrices of the given observables

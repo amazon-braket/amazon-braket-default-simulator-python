@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from braket.default_simulator.gate_operations import Measure, Reset
+from braket.default_simulator.gate_operations import Projection, Reset
 from braket.default_simulator.linalg_utils import QuantumGateDispatcher, multiply_matrix
 from braket.default_simulator.operation import GateOperation
 
@@ -36,8 +36,8 @@ def apply_operations(
 
     dispatcher = QuantumGateDispatcher(state.ndim)
     for op in operations:
-        if isinstance(op, (Measure, Reset)):
-            # Reshape to 1D for Measure.apply, then back to tensor form
+        if isinstance(op, (Projection, Reset)):
+            # Reshape to 1D for the op's apply, then back to tensor form
             result_1d = np.reshape(result, 2 ** len(result.shape))
             result_1d = op.apply(result_1d)  # type: ignore
             result = np.reshape(result_1d, result.shape)
