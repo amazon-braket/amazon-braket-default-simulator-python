@@ -1284,7 +1284,7 @@ class GPhase(GateOperation):
 class Projection(GateOperation):
     """
     Post-selected projector onto a single qubit's ``|outcome⟩`` subspace,
-    with renormalization.
+    with normalization.
 
     Used by branched simulation: when a mid-circuit measurement forks a
     path, each branch records its known outcome and replays the path's
