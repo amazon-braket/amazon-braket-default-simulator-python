@@ -24,7 +24,13 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from sympy import Expr
 
-from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Measure, Reset, Unitary
+from braket.default_simulator.gate_operations import (
+    BRAKET_GATES,
+    GPhase,
+    Projection,
+    Reset,
+    Unitary,
+)
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -2035,8 +2041,7 @@ class ProgramContext(AbstractProgramContext):
             # Deterministic outcome — no branching needed
             outcome = 0 if shots_for_1 == 0 else 1
 
-            measure_op = Measure([qubit_idx], result=outcome)
-            path.add_instruction(measure_op)
+            path.add_instruction(Projection([qubit_idx], outcome=outcome))
             path.record_measurement(qubit_idx, outcome)
 
             new_active_indices.append(path_idx)
@@ -2045,20 +2050,15 @@ class ProgramContext(AbstractProgramContext):
         # Non-deterministic: branch into two paths
 
         # Path for outcome 0: update existing path in place
-        measure_op_0 = Measure([qubit_idx], result=0)
-        path.add_instruction(measure_op_0)
+        path.add_instruction(Projection([qubit_idx], outcome=0))
         path.record_measurement(qubit_idx, 0)
         path.shots = shots_for_0
         new_active_indices.append(path_idx)
 
-        # Path for outcome 1: create a new branched path
-        # Branch from the state BEFORE we added the outcome-0 measure
-        # We need to copy instructions up to (but not including) the measure we just added,
-        # then add the outcome-1 measure
+        # Path for outcome 1: create a new branched path by copying the
+        # outcome-0 path and overriding the trailing projection/measurement.
         new_path = path.branch()
-        # Replace the last instruction (outcome 0 measure) with outcome 1 measure
-        new_path._instructions[-1] = Measure([qubit_idx], result=1)
-        # Fix the measurement record: the branch() copied outcome 0, replace with outcome 1
+        new_path._instructions[-1] = Projection([qubit_idx], outcome=1)
         new_path._measurements[qubit_idx][-1] = 1
         new_path.shots = shots_for_1
 

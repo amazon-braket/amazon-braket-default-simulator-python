@@ -1281,64 +1281,51 @@ class GPhase(GateOperation):
         return "gphase"
 
 
-class Measure(GateOperation):
+class Projection(GateOperation):
     """
-    Measurement operation that projects the state to a specific outcome.
+    Post-selected projector onto a single qubit's ``|outcome⟩`` subspace,
+    with normalization.
 
-    This is used in branched simulation to apply measurement projections
-    when recalculating states from instruction sequences.
+    Used by branched simulation: when a mid-circuit measurement forks a
+    path, each branch records its known outcome and replays the path's
+    instructions on a fresh simulation. Applying this op at replay time
+    reproduces the correct post-measurement state for the branch, including
+    the effect on qubits that were entangled with the measured one.
     """
 
-    def __init__(self, targets: Sequence[int], result: int = -1):
+    def __init__(self, targets: Sequence[int], outcome: int):
         super().__init__(targets=targets)
-        self.result = result  # The measurement outcome (0 or 1)
+        if outcome not in (0, 1):
+            raise ValueError(f"Projection outcome must be 0 or 1, got {outcome}.")
+        self.outcome = outcome
 
     @property
     def _base_matrix(self) -> np.ndarray:
-        """
-        Return the projection matrix for the measurement outcome.
-        If result is -1 (unset), return identity (no projection).
-        """
-        if self.result == -1:
-            return np.eye(2)
-        elif self.result == 0:
-            # Project to |0⟩⟨0|
+        """The 2x2 projector onto |outcome⟩⟨outcome|."""
+        if self.outcome == 0:
             return np.array([[1, 0], [0, 0]], dtype=complex)
-        elif self.result == 1:
-            # Project to |1⟩⟨1|
-            return np.array([[0, 0], [0, 1]], dtype=complex)
-        else:
-            return np.eye(2)
+        return np.array([[0, 0], [0, 1]], dtype=complex)
 
     def apply(self, state: np.ndarray) -> np.ndarray:
-        if self.result == -1:
-            return state
-
         if len(self._targets) != 1:
             raise ValueError(
-                f"Measure only supports a single target qubit, got {len(self._targets)}."
+                f"Projection only supports a single target qubit, got {len(self._targets)}."
             )
 
-        # Apply projection matrix
         projected_state = state.copy()
-
         qubit_idx = self._targets[0]
         n_qubits = int(np.log2(len(state)))
-
-        # Create mask for the target qubit
         mask = 1 << (n_qubits - qubit_idx - 1)  # Big-endian indexing
 
-        # Zero out amplitudes that don't match the measurement result
+        # Zero out amplitudes inconsistent with the recorded outcome.
         for i in range(len(projected_state)):
             qubit_value = (i & mask) >> (n_qubits - qubit_idx - 1)
-            if qubit_value != self.result:
+            if qubit_value != self.outcome:
                 projected_state[i] = 0
 
-        # Normalize the state
         norm = np.linalg.norm(projected_state)
         if norm > 0:
             projected_state /= norm
-
         return projected_state
 
 
