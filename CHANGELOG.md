@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.39.2 (2026-05-11)
+
+### Bug Fixes and Other Changes
+
+ * Rename `Measure` to `Projection`
+
 ## v1.39.1 (2026-05-04)
 
 ### Bug Fixes and Other Changes
