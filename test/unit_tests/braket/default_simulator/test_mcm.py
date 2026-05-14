@@ -3284,6 +3284,39 @@ class TestMCMAsymmetricMeasurement:
         assert counter == {"00": 1000}
 
 
+class TestMCMNonContiguousClassicalIndices:
+    """MCMs that write non-contiguous classical indices."""
+
+    def test_minimal_unassigned_low_bit_stays_zero(self, simulator):
+        """Untouched ``q[0]`` stays 0 when only ``c[1]`` is assigned."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] c;
+        h q[1];
+        c[1] = measure q[1];
+        if (c[1]) { x q[1]; }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert counter == {"00": 2000}
+
+    def test_if_branch_preserves_captured_bit_position(self, simulator):
+        """``if (c[N])`` keeps the captured value at ``q[N]``'s position."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[3] c;
+        h q[1];
+        c[1] = measure q[1];
+        if (c[1]) { x q[2]; }
+        c[2] = measure q[2];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert set(counter) == {"000", "011"}
+
+
 class TestMCMBranchedInstructionRouting:
     """Cover branched-mode instruction routing (add_*_instruction, add_measure, etc.)."""
 
@@ -4397,6 +4430,27 @@ class TestMCMFlushPendingEdgeCases:
         Interpreter(ctx).run(qasm)
         # Should not crash; measurement registered as normal circuit measurement
         assert ctx.circuit is not None
+
+    def test_branching_without_simulator_raises(self):
+        """A ``ProgramContext`` built without a simulator raises a clear error
+        if branching actually triggers a probability calculation."""
+        from braket.default_simulator.openqasm.interpreter import Interpreter
+        from braket.default_simulator.openqasm.program_context import ProgramContext
+
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        """
+        ctx = ProgramContext()
+        ctx._shots = 100  # force branching when the MCM-dependent ``if`` fires
+        with pytest.raises(RuntimeError, match="no simulator"):
+            Interpreter(ctx).run(qasm)
 
     def test_flush_when_already_branched(self, simulator):
         """Reading a pending MCM variable when already branched from an earlier MCM."""

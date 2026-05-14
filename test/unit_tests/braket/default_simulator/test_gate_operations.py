@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from braket.default_simulator import gate_operations
-from braket.default_simulator.gate_operations import Measure, Reset
+from braket.default_simulator.gate_operations import Projection, Reset
 from braket.default_simulator.operation_helpers import check_unitary, from_braket_instruction
 from braket.default_simulator.simulation_strategies.single_operation_strategy import (
     apply_operations,
@@ -93,69 +93,59 @@ def test_gate_operation(ir_instruction, targets, operation_type):
 # ---------------------------------------------------------------------------
 
 
-class TestMeasureBaseMatrix:
-    """Cover all branches of Measure._base_matrix."""
-
-    def test_identity_when_result_negative_one(self):
-        m = Measure([0], result=-1)
-        np.testing.assert_array_equal(m._base_matrix, np.eye(2))
+class TestProjectionBaseMatrix:
+    """Cover all branches of Projection._base_matrix."""
 
     def test_project_to_zero(self):
-        m = Measure([0], result=0)
+        m = Projection([0], outcome=0)
         expected = np.array([[1, 0], [0, 0]], dtype=complex)
         np.testing.assert_array_equal(m._base_matrix, expected)
 
     def test_project_to_one(self):
-        m = Measure([0], result=1)
+        m = Projection([0], outcome=1)
         expected = np.array([[0, 0], [0, 1]], dtype=complex)
         np.testing.assert_array_equal(m._base_matrix, expected)
 
-    def test_invalid_result_returns_identity(self):
-        m = Measure([0], result=99)
-        np.testing.assert_array_equal(m._base_matrix, np.eye(2))
+    def test_invalid_outcome_raises(self):
+        with pytest.raises(ValueError, match="outcome must be 0 or 1"):
+            Projection([0], outcome=99)
 
 
-class TestMeasureApply:
-    """Cover Measure.apply() projection and normalization."""
-
-    def test_apply_no_op_when_unset(self):
-        m = Measure([0], result=-1)
-        state = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
-        result = m.apply(state)
-        np.testing.assert_array_almost_equal(result, state)
+class TestProjectionApply:
+    """Cover Projection.apply() projection and normalization."""
 
     def test_apply_project_to_zero(self):
         # |+⟩ = (|0⟩ + |1⟩)/√2  →  project to |0⟩  →  |0⟩
-        m = Measure([0], result=0)
+        m = Projection([0], outcome=0)
         state = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
         result = m.apply(state)
         np.testing.assert_array_almost_equal(result, np.array([1, 0], dtype=complex))
 
     def test_apply_project_to_one(self):
         # |+⟩ = (|0⟩ + |1⟩)/√2  →  project to |1⟩  →  |1⟩
-        m = Measure([0], result=1)
+        m = Projection([0], outcome=1)
         state = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
         result = m.apply(state)
         np.testing.assert_array_almost_equal(result, np.array([0, 1], dtype=complex))
 
     def test_apply_two_qubit_state(self):
-        # Bell state (|00⟩ + |11⟩)/√2, measure qubit 0 → 0 → collapses to |00⟩
-        m = Measure([0], result=0)
+        # Bell state (|00⟩ + |11⟩)/√2, project qubit 0 → 0 → collapses to |00⟩
+        m = Projection([0], outcome=0)
         state = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
         result = m.apply(state)
         np.testing.assert_array_almost_equal(result, np.array([1, 0, 0, 0], dtype=complex))
 
     def test_apply_zero_norm_state(self):
         # Edge case: state already zero in the projected subspace
-        m = Measure([0], result=0)
+        m = Projection([0], outcome=0)
         state = np.array([0, 1], dtype=complex)  # |1⟩
         result = m.apply(state)
         # All zeros, norm=0, should return zeros without dividing by zero
         np.testing.assert_array_almost_equal(result, np.array([0, 0], dtype=complex))
 
     def test_apply_multi_target_raises(self):
-        # Measure with 2 targets raises ValueError
-        m = Measure([0, 1], result=0)
+        # Projection with 2 targets raises ValueError
+        m = Projection([0, 1], outcome=0)
         state = np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], dtype=complex)
         with pytest.raises(ValueError, match="single target qubit"):
             m.apply(state)
@@ -219,40 +209,35 @@ class TestResetApply:
 
 _s2 = 1 / np.sqrt(2)
 
-measure_testdata = [
+projection_testdata = [
     # (operation, input_state, expected_output_state)
     (
-        Measure([0], result=-1),
-        np.array([_s2, _s2], dtype=complex),
-        np.array([_s2, _s2], dtype=complex),
-    ),
-    (
-        Measure([0], result=0),
+        Projection([0], outcome=0),
         np.array([_s2, _s2], dtype=complex),
         np.array([1.0, 0.0], dtype=complex),
     ),
     (
-        Measure([0], result=1),
+        Projection([0], outcome=1),
         np.array([_s2, _s2], dtype=complex),
         np.array([0.0, 1.0], dtype=complex),
     ),
-    # Two-qubit: |00⟩+|01⟩+|10⟩+|11⟩, measure qubit 1 → 0; only |00⟩ and |10⟩ survive
+    # Two-qubit: |00⟩+|01⟩+|10⟩+|11⟩, project qubit 1 → 0; only |00⟩ and |10⟩ survive
     (
-        Measure([1], result=0),
+        Projection([1], outcome=0),
         0.5 * np.ones(4, dtype=complex),
         np.array([_s2, 0, _s2, 0], dtype=complex),
     ),
     # Zero-norm after projection — state already in |0⟩, projecting to |1⟩ yields all zeros
     (
-        Measure([0], result=1),
+        Projection([0], outcome=1),
         np.array([1.0, 0.0], dtype=complex),
         np.array([0.0, 0.0], dtype=complex),
     ),
 ]
 
 
-@pytest.mark.parametrize("operation, input_state, expected", measure_testdata)
-def test_measure_operation(operation, input_state, expected):
+@pytest.mark.parametrize("operation, input_state, expected", projection_testdata)
+def test_projection_operation(operation, input_state, expected):
     n_qubits = int(np.log2(len(input_state)))
     state_tensor = input_state.copy().reshape([2] * n_qubits)
     result = apply_operations(state_tensor, n_qubits, [operation])
@@ -277,21 +262,18 @@ def test_reset_operation(input_state, expected):
     np.testing.assert_array_almost_equal(result.flatten(), expected)
 
 
-def test_measure_base_matrix():
-    # result=0 projects to |0><0|
-    m0 = Measure([0], result=0)._base_matrix
+def test_projection_base_matrix():
+    # outcome=0 projects to |0><0|
+    m0 = Projection([0], outcome=0)._base_matrix
     np.testing.assert_array_equal(m0, np.array([[1, 0], [0, 0]], dtype=complex))
-    # result=1 projects to |1><1|
-    m1 = Measure([0], result=1)._base_matrix
+    # outcome=1 projects to |1><1|
+    m1 = Projection([0], outcome=1)._base_matrix
     np.testing.assert_array_equal(m1, np.array([[0, 0], [0, 1]], dtype=complex))
-    # result=-1 (unset) returns identity
-    mi = Measure([0], result=-1)._base_matrix
-    np.testing.assert_array_equal(mi, np.eye(2))
 
 
-def test_measure_multi_qubit_raises():
+def test_projection_multi_qubit_raises():
     with pytest.raises(ValueError, match="single target qubit"):
-        Measure([0, 1], result=0).apply(0.5 * np.ones(4, dtype=complex))
+        Projection([0, 1], outcome=0).apply(0.5 * np.ones(4, dtype=complex))
 
 
 def test_reset_multi_qubit_raises():

@@ -11,17 +11,25 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from copy import copy
 from dataclasses import fields
 from functools import singledispatchmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from sympy import Expr
 
-from braket.default_simulator.gate_operations import BRAKET_GATES, GPhase, Measure, Reset, Unitary
-from braket.default_simulator.linalg_utils import marginal_probability
+from braket.default_simulator.gate_operations import (
+    BRAKET_GATES,
+    GPhase,
+    Projection,
+    Reset,
+    Unitary,
+)
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -34,7 +42,6 @@ from braket.default_simulator.noise_operations import (
     TwoQubitDephasing,
     TwoQubitDepolarizing,
 )
-from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 from braket.ir.jaqcd.program_v1 import Results
 
 from ._helpers.arrays import (
@@ -83,6 +90,9 @@ from .parser.openqasm_ast import (
     UnaryExpression,
 )
 from .simulation_path import FramedVariable, SimulationPath
+
+if TYPE_CHECKING:  # pragma: no cover
+    from braket.default_simulator.simulator import BaseLocalSimulator
 
 
 class Table:
@@ -412,10 +422,10 @@ class SubroutineTable(ScopedTable):
 
 class ScopeManager:
     """
-    Allows ProgramContext to manage scope with `with` keyword.
+    Allows AbstractProgramContext subclasses to manage scope with the `with` keyword.
     """
 
-    def __init__(self, context: "ProgramContext"):
+    def __init__(self, context: AbstractProgramContext):
         self.context = context
 
     def __enter__(self):
@@ -498,7 +508,7 @@ class AbstractProgramContext(ABC):
     def declare_variable(
         self,
         name: str,
-        symbol_type: ClassicalType | type[LiteralType] | type[Identifier],
+        symbol_type: type[LiteralType | Identifier] | ClassicalType,
         value: Any = None,
         const: bool = False,
     ) -> None:
@@ -1127,14 +1137,18 @@ class _ContinueSignal(Exception):
 
 
 class ProgramContext(AbstractProgramContext):
-    def __init__(self, circuit: Circuit | None = None):
+    def __init__(self, circuit: Circuit | None = None, simulator: BaseLocalSimulator | None = None):
         """
         Args:
             circuit (Circuit | None): A partially-built circuit to continue building with this
                 context. Default: None.
+            simulator (BaseLocalSimulator | None): The `BaseLocalSimulator` responsible for
+                computing measurement probabilities when branching occurs. Default: None, in which
+                case branching will raise at measurement time.
         """
         super().__init__()
         self._circuit = circuit or Circuit()
+        self._simulator = simulator
 
         # Path tracking for branched simulation (MCM support)
         self._paths: list[SimulationPath] = [SimulationPath()]
@@ -1183,7 +1197,7 @@ class ProgramContext(AbstractProgramContext):
     def declare_variable(
         self,
         name: str,
-        symbol_type: ClassicalType | type[LiteralType] | type[Identifier],
+        symbol_type: type[LiteralType | Identifier] | ClassicalType,
         value: Any = None,
         const: bool = False,
     ) -> None:
@@ -1963,7 +1977,7 @@ class ProgramContext(AbstractProgramContext):
         existing variables from the shared variable table to the path.
         """
         initial_path = self._paths[0]
-        initial_path._instructions = list(self._circuit.instructions)
+        initial_path._instructions = [copy(ins) for ins in self._circuit.instructions]
         initial_path.shots = self._shots
 
         for name, value in self.variable_table.items():
@@ -1979,18 +1993,17 @@ class ProgramContext(AbstractProgramContext):
             initial_path.set_variable(name, fv)
 
     def _measure_and_branch(self, target: tuple[int]) -> None:
-        """Compute measurement probabilities per active path, sample outcomes,
-        and branch paths with proportional shot allocation.
+        """Sample outcomes per active path and branch with proportional shot
+        allocation.
 
         For each qubit in target, for each active path:
-        1. Evolve the path's instructions through a fresh StateVectorSimulation
-           to get the current state vector.
-        2. Compute P(0) and P(1) for the measured qubit.
-        3. Sample `path.shots` outcomes from this distribution.
-        4. Split the path: one child gets shots that measured 0, the other gets
-           shots that measured 1.
-        5. If one outcome has 0 shots, don't create that branch (deterministic case).
-        6. Remove paths with 0 shots from the active set.
+        1. Ask the subclass-supplied ``_get_qubit_samples`` for
+           ``path.shots`` sampled bit outcomes of the qubit on this path.
+        2. Split the path: one child gets shots that measured 0, the other
+           gets shots that measured 1.
+        3. If one outcome has 0 shots, don't create that branch (deterministic
+           case).
+        4. Remove paths with 0 shots from the active set.
         """
         for qubit_idx in target:
             new_active_indices = []
@@ -2004,26 +2017,18 @@ class ProgramContext(AbstractProgramContext):
         """Branch a single path on a single qubit measurement."""
         path = self._paths[path_idx]
 
-        # Compute current state by evolving instructions through a fresh simulation
-        state = self._get_path_state(path)
-
-        # Get measurement probabilities for this qubit
-        probs = marginal_probability(np.abs(state) ** 2, targets=[qubit_idx])
-
-        # Sample outcomes
+        # Defer to the concrete simulator to sample the target qubit's bit for
+        # each of ``path.shots`` shots; then the shot-split is just a tally.
+        qubit_samples = self._get_qubit_samples(path, qubit_idx)
         path_shots = path.shots
-        rng = np.random.default_rng()
-        samples = rng.choice(len(probs), size=path_shots, p=probs)
-
-        shots_for_1 = int(np.sum(samples))
+        shots_for_1 = int(np.sum(qubit_samples))
         shots_for_0 = path_shots - shots_for_1
 
         if shots_for_1 == 0 or shots_for_0 == 0:
             # Deterministic outcome — no branching needed
             outcome = 0 if shots_for_1 == 0 else 1
 
-            measure_op = Measure([qubit_idx], result=outcome)
-            path.add_instruction(measure_op)
+            path.add_instruction(Projection([qubit_idx], outcome=outcome))
             path.record_measurement(qubit_idx, outcome)
 
             new_active_indices.append(path_idx)
@@ -2032,20 +2037,15 @@ class ProgramContext(AbstractProgramContext):
         # Non-deterministic: branch into two paths
 
         # Path for outcome 0: update existing path in place
-        measure_op_0 = Measure([qubit_idx], result=0)
-        path.add_instruction(measure_op_0)
+        path.add_instruction(Projection([qubit_idx], outcome=0))
         path.record_measurement(qubit_idx, 0)
         path.shots = shots_for_0
         new_active_indices.append(path_idx)
 
-        # Path for outcome 1: create a new branched path
-        # Branch from the state BEFORE we added the outcome-0 measure
-        # We need to copy instructions up to (but not including) the measure we just added,
-        # then add the outcome-1 measure
+        # Path for outcome 1: create a new branched path by copying the
+        # outcome-0 path and overriding the trailing projection/measurement.
         new_path = path.branch()
-        # Replace the last instruction (outcome 0 measure) with outcome 1 measure
-        new_path._instructions[-1] = Measure([qubit_idx], result=1)
-        # Fix the measurement record: the branch() copied outcome 0, replace with outcome 1
+        new_path._instructions[-1] = Projection([qubit_idx], outcome=1)
         new_path._measurements[qubit_idx][-1] = 1
         new_path.shots = shots_for_1
 
@@ -2053,7 +2053,13 @@ class ProgramContext(AbstractProgramContext):
         self._paths.append(new_path)
         new_active_indices.append(new_path_idx)
 
-    def _get_path_state(self, path: SimulationPath) -> np.ndarray:
+    def _get_qubit_samples(self, path: SimulationPath, qubit_idx: int) -> np.ndarray:
+        if self._simulator is None:
+            raise RuntimeError(
+                "ProgramContext has no simulator to sample measurement outcomes. "
+                "Construct it via ``BaseLocalSimulator.create_program_context`` or pass "
+                "``simulator=...`` to provide one."
+            )
         # Use the total declared qubit count (from the context), not just the
         # qubits that have appeared in instructions so far. This ensures that
         # measurements on qubits that haven't had gates applied yet still work
@@ -2061,13 +2067,12 @@ class ProgramContext(AbstractProgramContext):
         qubit_count = self.num_qubits
         if self._circuit.qubit_set:
             qubit_count = max(qubit_count, max(self._circuit.qubit_set) + 1)
-        sim = StateVectorSimulation(
-            qubit_count=qubit_count,
-            shots=path.shots,
-            batch_size=self._batch_size,
+        sim = self._simulator.initialize_simulation(
+            qubit_count=qubit_count, shots=path.shots, batch_size=self._batch_size
         )
         sim.evolve(path.instructions)
-        return sim.state_vector
+        samples = np.asarray(sim.retrieve_samples())
+        return (samples >> (qubit_count - 1 - qubit_idx)) & 1
 
 
 _BINARY_EQUALS = getattr(BinaryOperator, "==")

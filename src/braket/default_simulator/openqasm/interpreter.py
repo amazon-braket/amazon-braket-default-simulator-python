@@ -113,7 +113,12 @@ from .parser.openqasm_ast import (
     WhileLoop,
 )
 from .parser.openqasm_parser import parse
-from .program_context import AbstractProgramContext, ProgramContext, _BreakSignal, _ContinueSignal
+from .program_context import (
+    AbstractProgramContext,
+    ProgramContext,
+    _BreakSignal,
+    _ContinueSignal,
+)
 
 _EVALUABLE = (
     BooleanLiteral,
