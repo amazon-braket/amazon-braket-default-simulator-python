@@ -1311,12 +1311,10 @@ class ProgramContext(AbstractProgramContext):
                     self._initialize_paths_from_circuit()
                     # Also flush any earlier pending measurements so the state is correct
                     for earlier in remaining:
-                        self._measure_and_branch(earlier[0])
-                        self._update_classical_from_measurement(earlier[0], earlier[2])
+                        self._branch_measurement(earlier[0], earlier[1], earlier[2])
                     remaining.clear()
                 if self._is_branched:
-                    self._measure_and_branch(mcm_target)
-                    self._update_classical_from_measurement(mcm_target, mcm_dest)
+                    self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
                 else:
                     # shots == 0: register as a normal measurement and set variable to 0
                     self._circuit.add_measure(
@@ -1362,20 +1360,17 @@ class ProgramContext(AbstractProgramContext):
         self._pending_mcm_targets = self._pending_mcm_targets[last_overlap_idx + 1 :]
 
         if self._is_branched:
-            for mcm_target, _mcm_classical, mcm_dest in to_flush:
-                self._measure_and_branch(mcm_target)
-                self._update_classical_from_measurement(mcm_target, mcm_dest)
+            for mcm_target, mcm_classical, mcm_dest in to_flush:
+                self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
         elif self._shots > 0:
             self._is_branched = True
             self._initialize_paths_from_circuit()
             # Flush to_flush first (preserving program order), then any
             # remaining pending measurements that came after the overlap.
-            for mcm_target, _mcm_classical, mcm_dest in to_flush:
-                self._measure_and_branch(mcm_target)
-                self._update_classical_from_measurement(mcm_target, mcm_dest)
+            for mcm_target, mcm_classical, mcm_dest in to_flush:
+                self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
             for entry in self._pending_mcm_targets:
-                self._measure_and_branch(entry[0])
-                self._update_classical_from_measurement(entry[0], entry[2])
+                self._branch_measurement(entry[0], entry[1], entry[2])
             self._pending_mcm_targets = []
         else:
             # shots == 0: register as normal measurements and set variables to 0
@@ -1536,8 +1531,7 @@ class ProgramContext(AbstractProgramContext):
         self._flush_pending_mcm_for_qubits(target)
         if self._is_branched:
             if classical_destination is not None:
-                self._measure_and_branch(target)
-                self._update_classical_from_measurement(target, classical_destination)
+                self._branch_measurement(target, classical_targets, classical_destination)
             else:
                 # End-of-circuit measurement in branched mode: record in circuit
                 # for qubit tracking but don't branch further
@@ -1567,8 +1561,7 @@ class ProgramContext(AbstractProgramContext):
             self._is_branched = True
             self._initialize_paths_from_circuit()
             for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
-                self._measure_and_branch(mcm_target)
-                self._update_classical_from_measurement(mcm_target, mcm_dest)
+                self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
             self._pending_mcm_targets.clear()
 
     def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
@@ -1991,6 +1984,21 @@ class ProgramContext(AbstractProgramContext):
                 frame_number=initial_path.frame_number,
             )
             initial_path.set_variable(name, fv)
+
+    def _branch_measurement(
+        self,
+        target: tuple[int, ...],
+        classical_targets,
+        classical_destination,
+    ) -> None:
+        self._measure_and_branch(target)
+        self._update_classical_from_measurement(target, classical_destination)
+        if classical_targets is not None:
+            self._circuit.add_measure(
+                target,
+                classical_targets,
+                allow_remeasure=self.supports_midcircuit_measurement,
+            )
 
     def _measure_and_branch(self, target: tuple[int]) -> None:
         """Sample outcomes per active path and branch with proportional shot

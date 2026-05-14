@@ -15,6 +15,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from copy import copy
 from typing import Any
 
 import numpy as np
@@ -26,7 +27,7 @@ from braket.default_simulator.openqasm.program_context import (
     AbstractProgramContext,
     ProgramContext,
 )
-from braket.default_simulator.operation import Observable, Operation
+from braket.default_simulator.operation import GateOperation, Observable, Operation
 from braket.default_simulator.operation_helpers import from_braket_instruction
 from braket.default_simulator.result_types import (
     ResultType,
@@ -856,8 +857,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
             GateModelTaskResult: Aggregated result across all paths.
         """
         circuit = context.circuit
-        qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
-        qubit_count = circuit.num_qubits
+        path_qubit_set = set()
+        for path in context.active_paths:
+            for ins in path.instructions:
+                path_qubit_set.update(ins.targets)
+        full_qubit_set = circuit.qubit_set | path_qubit_set | set(range(context.num_qubits))
+        qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(full_qubit_set)
+        qubit_count = len(qubit_map)
+        BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
 
         # Determine measured qubits from the circuit
         classical_bit_positions = {b: i for i, b in enumerate(circuit.target_classical_indices)}
@@ -869,34 +876,22 @@ class BaseLocalSimulator(OpenQASMSimulator):
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
 
-        # For path simulation, we need enough qubits to cover all qubit indices
-        # referenced in the instructions (handles noncontiguous qubit indices).
-        # Use the context's num_qubits (total declared qubits) to ensure all
-        # qubits are accounted for, even those without explicit gate operations.
-        sim_qubit_count = qubit_count
-        sim_qubit_count = max(sim_qubit_count, context.num_qubits)
-        if circuit.qubit_set:
-            sim_qubit_count = max(sim_qubit_count, max(circuit.qubit_set) + 1)
-
-        # Aggregate samples across all active paths
         all_samples = []
         for path in context.active_paths:
             sim = self.initialize_simulation(
-                qubit_count=sim_qubit_count, shots=path.shots, batch_size=batch_size
+                qubit_count=qubit_count, shots=path.shots, batch_size=batch_size
             )
-            sim.evolve(path.instructions)
+            sim.evolve(_remap_instructions(path.instructions, qubit_map))
             all_samples.extend(sim.retrieve_samples())
 
         # Build measurements in the same format as _formatted_measurements
         measurements = [
-            list("{number:0{width}b}".format(number=sample, width=sim_qubit_count))[
-                -sim_qubit_count:
-            ]
+            list("{number:0{width}b}".format(number=sample, width=qubit_count))[-qubit_count:]
             for sample in all_samples
         ]
         if mapped_measured_qubits is not None and mapped_measured_qubits != []:
             mapped_arr = np.array(mapped_measured_qubits)
-            in_circuit_mask = mapped_arr < sim_qubit_count
+            in_circuit_mask = mapped_arr < qubit_count
             qubits_in_circuit = mapped_arr[in_circuit_mask]
             qubits_not_in_circuit = mapped_arr[~in_circuit_mask]
             measurements_array = np.array(measurements)
@@ -995,3 +990,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
             )
 
         return self._create_results_obj(results, circuit_ir, simulation)
+
+
+def _remap_instructions(
+    instructions: list[GateOperation], qubit_map: dict[int, int]
+) -> list[GateOperation]:
+    remapped = []
+    for ins in instructions:
+        new = copy(ins)
+        new._targets = tuple(qubit_map[q] for q in ins.targets)
+        remapped.append(new)
+    return remapped
