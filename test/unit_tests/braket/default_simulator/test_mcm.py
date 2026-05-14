@@ -36,6 +36,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     UnaryExpression,
 )
 from braket.default_simulator.openqasm.program_context import AbstractProgramContext
+from braket.default_simulator.density_matrix_simulator import DensityMatrixSimulator
 from braket.default_simulator.state_vector_simulator import StateVectorSimulator
 from braket.ir.openqasm import Program as OpenQASMProgram
 
@@ -5030,3 +5031,113 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "}"
         )
         assert Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
+
+
+
+class TestDensityMatrixSimulatorBranching:
+    """Branching MCM coverage for ``DensityMatrixSimulator``.
+
+    The state-vector tests in :class:`TestStateVectorSimulatorOperatorsOpenQASM`
+    drive the bulk of branching behavior; these tests verify that the same
+    programs produce statistically equivalent results when the simulator is
+    swapped out for the density-matrix backend, which goes through
+    :meth:`DensityMatrixSimulation._apply_projection` (and, for resets, the
+    Kraus channel path) on each branched replay.
+    """
+
+    SHOTS = 4000
+    ATOL = 0.06  # generous tolerance for shot-noise across both simulators
+
+    def _counts(self, simulator, qasm):
+        result = simulator.run(OpenQASMProgram(source=qasm), shots=self.SHOTS)
+        return Counter("".join(m) for m in result.measurements)
+
+    def _assert_distributions_match(self, qasm, expected_keys=None):
+        """Run ``qasm`` on both simulators and assert the histograms agree
+        within shot noise, optionally checking the support set explicitly."""
+        sv_counts = self._counts(StateVectorSimulator(), qasm)
+        dm_counts = self._counts(DensityMatrixSimulator(), qasm)
+        if expected_keys is not None:
+            assert set(dm_counts) <= set(expected_keys)
+            assert set(sv_counts) <= set(expected_keys)
+        keys = set(sv_counts) | set(dm_counts)
+        for key in keys:
+            sv_freq = sv_counts.get(key, 0) / self.SHOTS
+            dm_freq = dm_counts.get(key, 0) / self.SHOTS
+            assert abs(sv_freq - dm_freq) < self.ATOL, (
+                f"DM/SV disagree on outcome {key!r}: sv={sv_freq:.3f}, dm={dm_freq:.3f}"
+            )
+
+    def test_repeated_mcm_with_classical_feedforward(self):
+        """The original failure case: two MCMs on the same qubit with a
+        classical-feedforward conditional in between."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 0) {
+            x q[0];
+        }
+        b[1] = measure q[0];
+        if (b[0] == b[1]) {
+            x q[1];
+        }
+        """
+        # After the conditional, q[0] is always |1>. b[1] is always 1, so q[1]
+        # only flips when b[0]==1: "10" and "11" each ~50%.
+        self._assert_distributions_match(qasm, expected_keys={"10", "11"})
+
+    def test_bell_pair_mcm_decoupling(self):
+        """Bell-state MCM: measuring one half of an entangled pair must
+        propagate the projection through the entanglement so the conditional
+        flip leaves the partner deterministic."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        cnot q[0], q[1];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            x q[1];
+        }
+        """
+        # q[1] is always |0> (Bell-correlated, then flipped iff b[0]==1):
+        # outcomes "00" and "10" each ~50%.
+        self._assert_distributions_match(qasm, expected_keys={"00", "10"})
+
+    def test_three_path_branch_with_nested_conditionals(self):
+        """Reuses the 3.2 conditional-logic shape from the SV-sim suite to
+        exercise multiple sequential branches under the DM backend."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[3] q;
+        h q[0];
+        h q[1];
+        b[0] = measure q[0];
+        if (b[0] == 0) {
+            h q[1];
+        }
+        b[1] = measure q[1];
+        """
+        self._assert_distributions_match(qasm)
+
+    def test_branched_reset(self):
+        """A ``reset`` after a branched measurement exercises the Kraus channel
+        path (``_apply_reset``) on each replayed path."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[1] b;
+        qubit[2] q;
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            x q[1];
+        }
+        reset q[0];
+        """
+        # q[0] is always |0> after the reset; q[1] flips iff b[0]==1 → 50/50.
+        self._assert_distributions_match(qasm, expected_keys={"00", "01"})
