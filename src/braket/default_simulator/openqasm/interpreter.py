@@ -602,6 +602,13 @@ class Interpreter:
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
+        if (
+            self.context.supports_midcircuit_measurement
+            and not self.context.active_paths
+            and self.context.is_mcm_dependent(node.rvalue)
+        ):
+            self.context.track_mcm_dependency(lvalue_name, node.rvalue)
+            return
         rvalue = self.visit(
             node.rvalue
             if node.op == getattr(AssignmentOperator, "=")
