@@ -4976,3 +4976,26 @@ class TestMCMDependencyTrackingOnAbstractContext:
             "}"
         )
         assert Interpreter(context=FlatProgramContext()).run(qasm).circuit == qasm
+
+    def test_flat_context_mcm_propagation_through_assignment(self):
+        """MCM dependency propagates through classical assignment without crashing.
+
+        When a measurement result is assigned to an intermediate variable and then
+        used in a condition, the interpreter should skip rvalue evaluation (since
+        non-simulating contexts have no runtime values) and just propagate the
+        MCM-dependency so the condition is correctly routed to evaluate_condition.
+        """
+        qasm = (
+            "OPENQASM 3.0;\n"
+            "qubit[2] q;\n"
+            "bit mcm;\n"
+            "bit tmp;\n"
+            "tmp = measure q[0];\n"
+            "mcm = tmp;\n"
+            "if (mcm == 1) {\n"
+            "    x q[1];\n"
+            "}"
+        )
+        result = Interpreter(context=FlatProgramContext()).run(qasm).circuit
+        assert "if (mcm == 1)" in result
+        assert "x q[1]" in result
