@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.39.3 (2026-05-15)
+
+### Bug Fixes and Other Changes
+
+ * fix(interpreter): Skip rvalue evaluation for MCM-dependent assignments in non-simulating contexts
+
 ## v1.39.2 (2026-05-11)
 
 ### Bug Fixes and Other Changes
