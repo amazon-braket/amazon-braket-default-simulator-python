@@ -2068,19 +2068,22 @@ class ProgramContext(AbstractProgramContext):
                 "Construct it via ``BaseLocalSimulator.create_program_context`` or pass "
                 "``simulator=...`` to provide one."
             )
-        # Use the total declared qubit count (from the context), not just the
-        # qubits that have appeared in instructions so far. This ensures that
-        # measurements on qubits that haven't had gates applied yet still work
-        # (they are in the |0⟩ state).
-        qubit_count = self.num_qubits
-        if self._circuit.qubit_set:
-            qubit_count = max(qubit_count, max(self._circuit.qubit_set) + 1)
+        # Build a contiguous qubit map covering only the qubits this path actually touches
+        used = {qubit_idx}
+        for ins in path.instructions:
+            used.update(ins.targets)
+        qubit_map = {q: i for i, q in enumerate(sorted(used))}
         sim = self._simulator.initialize_simulation(
-            qubit_count=qubit_count, shots=path.shots, batch_size=self._batch_size
+            qubit_count=len(qubit_map), shots=path.shots, batch_size=self._batch_size
         )
-        sim.evolve(path.instructions)
+        remapped = []
+        for ins in path.instructions:
+            new_ins = copy(ins)
+            new_ins._targets = tuple(qubit_map[q] for q in ins.targets)
+            remapped.append(new_ins)
+        sim.evolve(remapped)
         samples = np.asarray(sim.retrieve_samples())
-        return (samples >> (qubit_count - 1 - qubit_idx)) & 1
+        return (samples >> (qubit_count - 1 - qubit_map[qubit_idx])) & 1
 
 
 _BINARY_EQUALS = getattr(BinaryOperator, "==")

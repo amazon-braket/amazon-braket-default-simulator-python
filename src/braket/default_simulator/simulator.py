@@ -861,7 +861,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
         for path in context.active_paths:
             for ins in path.instructions:
                 path_qubit_set.update(ins.targets)
-        full_qubit_set = circuit.qubit_set | path_qubit_set | set(range(context.num_qubits))
+        full_qubit_set = circuit.qubit_set | path_qubit_set
+        if not circuit.measured_qubits:
+            full_qubit_set |= set(range(context.num_qubits))
         qubit_map = BaseLocalSimulator._contiguous_qubit_mapping(full_qubit_set)
         qubit_count = len(qubit_map)
         BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)

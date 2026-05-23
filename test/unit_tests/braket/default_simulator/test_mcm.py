@@ -5149,3 +5149,27 @@ class TestDensityMatrixSimulatorBranching:
         """
         # q[0] is always |0> after the reset; q[1] flips iff b[0]==1 → 50/50.
         self._assert_distributions_match(qasm, expected_keys={"00", "01"})
+
+    def test_sparse_qubit_register_does_not_blow_up(self):
+        """Regression: an SDK-emitted ``qubit[N]`` declaration that only
+        touches a couple of high-index qubits used to send the density-matrix
+        simulator into an OOM. ``ProgramContext._get_qubit_samples`` now
+        builds a per-call qubit map covering only the qubits the path
+        actually touches, so the DM allocation scales with the number of
+        active qubits rather than ``N``.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[18] q;
+        h q[13];
+        b[0] = measure q[13];
+        if (b[0] == 1) {
+            prx(3.141592653589793, 0.0) q[17];
+        }
+        b[0] = measure q[13];
+        b[1] = measure q[17];
+        """
+        # Mirrors a verbatim ``measure_ff(q[13], 0); cc_prx(q[17], pi, 0, 0)``
+        # emission: q[17] flips iff b[0]==1 → outcomes "00" and "11" each ~50%.
+        self._assert_distributions_match(qasm, expected_keys={"00", "11"})
