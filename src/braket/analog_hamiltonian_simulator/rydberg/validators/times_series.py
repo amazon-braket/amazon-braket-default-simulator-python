@@ -40,6 +40,8 @@ class TimeSeriesValidator(TimeSeries):
     @classmethod
     def times_start_with_0(cls, values):
         times = values["times"]
+        if not times:
+            return values
         if times[0] != 0.0:
             raise ValueError(f"First time value is {times[0]}; it must be 0.0")
         return values
@@ -50,6 +52,8 @@ class TimeSeriesValidator(TimeSeries):
     @classmethod
     def times_are_not_too_big(cls, values):
         times = values["times"]
+        if not times:
+            return values
         capabilities = values["capabilities"]
         if times[-1] > capabilities.MAX_TIME:
             warnings.warn(

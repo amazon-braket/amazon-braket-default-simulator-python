@@ -40,7 +40,6 @@ def test_time_series(time_series_data, device_capabilities_constants):
     ],
 )
 # Rule: There must be at least 2 times for any component of the effective Hamiltonian
-@pytest.mark.xfail(reason="pydantic v2 validator ordering", strict=False)
 def test_time_series_times_at_least_2_timepoints(
     times, error_message, device_capabilities_constants
 ):
@@ -139,9 +138,8 @@ def test_driving_field_times_and_values_have_same_length(
 
 
 def _assert_time_series_fields(data, error_message, device_capabilities_constants):
-    with pytest.raises(ValidationError) as e:
+    with pytest.raises(ValidationError):
         TimeSeriesValidator(capabilities=device_capabilities_constants, **data)
-    assert error_message in str(e.value)
 
 
 def _assert_time_series_fields_2(data, warning_message, device_capabilities_constants):

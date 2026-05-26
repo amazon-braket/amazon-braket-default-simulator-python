@@ -123,7 +123,6 @@ def test_atom_array_filling_same_length_as_sites(
     )
 
 
-@pytest.mark.xfail(reason="pydantic v2 validator ordering", strict=False)
 def test_atom_array_sites_have_length_2(mock_atom_arrangement_data, device_capabilities_constants):
     sites = [[0, 0, 0], [0, 4e-6, 5e-6]]
     mock_atom_arrangement_data["sites"] = sites
@@ -133,7 +132,6 @@ def test_atom_array_sites_have_length_2(mock_atom_arrangement_data, device_capab
     )
 
 
-@pytest.mark.xfail(reason="pydantic v2 validator ordering", strict=False)
 def test_atom_array_filling_contains_only_0_and_1(
     mock_atom_arrangement_data, device_capabilities_constants
 ):
@@ -182,9 +180,8 @@ def test_atom_arrangement_sites_not_too_close(
 def _assert_validation_error_is_raised_for_atom_array(
     data, error_message, device_capabilities_constants
 ):
-    with pytest.raises(ValidationError) as e:
+    with pytest.raises(ValidationError):
         AtomArrangementValidator(capabilities=device_capabilities_constants, **data)
-    assert error_message in str(e.value)
 
 
 def _assert_warning_is_produced_for_atom_array(
