@@ -13,7 +13,7 @@
 
 import warnings
 
-from pydantic.v1.class_validators import root_validator
+from pydantic import model_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
@@ -25,7 +25,8 @@ class TimeSeriesValidator(TimeSeries):
     capabilities: CapabilitiesConstants
 
     # must have at least 2 time values
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def at_least_2_timepoints(cls, values):
         times = values["times"]
         length = len(times)
@@ -35,7 +36,8 @@ class TimeSeriesValidator(TimeSeries):
         return values
 
     # the first times entry should be 0
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def times_start_with_0(cls, values):
         times = values["times"]
         if times[0] != 0.0:
@@ -44,7 +46,8 @@ class TimeSeriesValidator(TimeSeries):
 
     # The duration of the program should be below MAX_TIME
     # If not, a warning message will be issue to remind the user that the SI units are used here.
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def times_are_not_too_big(cls, values):
         times = values["times"]
         capabilities = values["capabilities"]
@@ -57,7 +60,8 @@ class TimeSeriesValidator(TimeSeries):
         return values
 
     # The time array must be sorted in ascending order
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def times_must_be_ascendingly_sorted(cls, values):
         times = values["times"]
         for i in range(len(times) - 1):
@@ -69,8 +73,11 @@ class TimeSeriesValidator(TimeSeries):
         return values
 
     # Check that the times and the values have the same length
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def check_times_and_values_have_same_length(cls, values):
+        if "times" not in values or "values" not in values:
+            return values
         len_times = len(values["times"])
         len_values = len(values["values"])
         if len_values != len_times:

@@ -14,7 +14,7 @@
 import sys
 
 import numpy as np
-from pydantic.v1 import create_model  # This is temporary for defining properties below
+from pydantic import create_model
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import (
     RYDBERG_INTERACTION_COEF,

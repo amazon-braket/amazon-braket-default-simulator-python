@@ -15,7 +15,7 @@ from copy import deepcopy
 from functools import reduce
 from operator import iadd
 
-from pydantic.v1 import root_validator
+from pydantic import model_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import _get_coefs
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
@@ -31,7 +31,8 @@ class ProgramValidator(Program):
     capabilities: CapabilitiesConstants
 
     # The pattern of the shifting field must have the same length as the lattice_sites
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def local_detuning_pattern_has_the_same_length_as_atom_array_sites(cls, values):
         num_sites = len(values["setup"]["ahs_register"]["sites"])
         for idx, local_detuning in enumerate(values["hamiltonian"]["localDetuning"]):
@@ -45,7 +46,8 @@ class ProgramValidator(Program):
 
     # If there is local detuning, the net value of detuning for each atom
     # should not exceed a max detuning value
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def net_detuning_must_not_exceed_max_net_detuning(cls, values):
         capabilities = values["capabilities"]  # device_capabilities
 

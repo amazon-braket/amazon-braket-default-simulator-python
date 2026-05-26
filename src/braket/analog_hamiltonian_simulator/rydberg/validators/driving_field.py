@@ -11,7 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from pydantic.v1 import root_validator
+from pydantic import model_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
@@ -26,7 +26,8 @@ class DrivingFieldValidator(DrivingField):
     capabilities: CapabilitiesConstants
 
     # The last time point given in each of these `times` arrays must be equal.
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def sequences_have_the_same_end_time(cls, values):
         fields = {"amplitude", "phase", "detuning"}
         end_times = []
@@ -40,14 +41,16 @@ class DrivingFieldValidator(DrivingField):
             )
         return values
 
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def amplitude_pattern_is_uniform(cls, values):
         amplitude = values["amplitude"]
         if amplitude["pattern"] != "uniform":
             raise ValueError('Pattern of amplitude must be "uniform"')
         return values
 
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def amplitude_values_within_range(cls, values):
         amplitude = values["amplitude"]
         capabilities = values["capabilities"]
@@ -61,7 +64,8 @@ class DrivingFieldValidator(DrivingField):
 
     # Validators for phase
 
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def phase_pattern_is_uniform(cls, values):
         phase = values["phase"]
         if phase["pattern"] != "uniform":
@@ -70,14 +74,16 @@ class DrivingFieldValidator(DrivingField):
 
     # Validators for detuning
 
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def detuning_pattern_is_uniform(cls, values):
         detuning = values["detuning"]
         if detuning["pattern"] != "uniform":
             raise ValueError('Pattern of detuning must be "uniform"')
         return values
 
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def detuning_values_within_range(cls, values):
         detuning = values["detuning"]
         capabilities = values["capabilities"]
