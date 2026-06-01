@@ -138,6 +138,15 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """
         Simulate a program using either OpenQASM or Jaqcd.
 
+        .. deprecated:: 1.39.4
+            Submitting a ``JaqcdProgram`` to a local simulator is deprecated
+            and emits a ``UserWarning``. Submit an ``OpenQASMProgram`` (or a
+            ``ProgramSet``) instead. Amazon Braket service devices no longer
+            accept JAQCD program submissions; see MCM-150287739. Local
+            simulators continue to accept JAQCD programs in this release so
+            historical notebooks keep working during the migration window;
+            JAQCD support will be removed in a future release.
+
         Args:
             circuit_ir (OpenQASMProgram | ProgramSet | JaqcdProgram): Program
                 specification.
@@ -161,6 +170,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
             return self.run_openqasm(circuit_ir, *args, **kwargs)
         elif isinstance(circuit_ir, ProgramSet):
             return self.run_program_set(circuit_ir, *args, **kwargs)
+        if isinstance(circuit_ir, JaqcdProgram):
+            warnings.warn(
+                "Submitting JaqcdProgram to LocalSimulator is deprecated and "
+                "will be removed in a future release. Submit OpenQASMProgram "
+                "instead. Amazon Braket service devices no longer accept "
+                "JAQCD program submissions. See MCM-150287739.",
+                stacklevel=2,
+            )
         return self.run_jaqcd(circuit_ir, *args, **kwargs)
 
     def create_program_context(self) -> AbstractProgramContext:
