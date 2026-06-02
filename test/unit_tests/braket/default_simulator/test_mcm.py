@@ -4202,7 +4202,7 @@ class TestMCMSubroutineAfterBranching:
 
 
 class TestMCMWhileLoopBreak:
-    """Cover _BreakSignal in branched while loop."""
+    """Cover BreakSignal in branched while loop."""
 
     def test_break_in_branched_while_loop(self, simulator):
         """Break inside a while loop after MCM."""
