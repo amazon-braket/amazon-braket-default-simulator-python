@@ -2073,8 +2073,9 @@ class ProgramContext(AbstractProgramContext):
         for ins in path.instructions:
             used.update(ins.targets)
         qubit_map = {q: i for i, q in enumerate(sorted(used))}
+        qubit_count = len(qubit_map)
         sim = self._simulator.initialize_simulation(
-            qubit_count=len(qubit_map), shots=path.shots, batch_size=self._batch_size
+            qubit_count=qubit_count, shots=path.shots, batch_size=self._batch_size
         )
         remapped = []
         for ins in path.instructions:
