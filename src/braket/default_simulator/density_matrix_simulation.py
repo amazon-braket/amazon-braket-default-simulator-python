@@ -13,6 +13,7 @@
 
 import numpy as np
 
+from braket.default_simulator.gate_operations import Projection, Reset
 from braket.default_simulator.linalg_utils import (
     QuantumGateDispatcher,
     controlled_matrix,
@@ -154,7 +155,15 @@ class DensityMatrixSimulation(Simulation):
         work_buffer2 = np.zeros_like(result, dtype=complex)
 
         for operation in operations:
-            if isinstance(operation, (GateOperation, Observable)):
+            if isinstance(operation, Projection):
+                result, temp = DensityMatrixSimulation._apply_projection(
+                    result, temp, qubit_count, operation, dispatcher
+                )
+            elif isinstance(operation, Reset):
+                result, temp = DensityMatrixSimulation._apply_reset(
+                    result, temp, work_buffer1, work_buffer2, qubit_count, operation, dispatcher
+                )
+            elif isinstance(operation, (GateOperation, Observable)):
                 targets = operation.targets
                 num_ctrl = len(operation.control_state)
                 # Extract gate_type if available
@@ -182,6 +191,54 @@ class DensityMatrixSimulation(Simulation):
                 )
         result.shape = original_shape
         return result
+
+    @staticmethod
+    def _apply_projection(
+        result: np.ndarray,
+        temp: np.ndarray,
+        qubit_count: int,
+        operation: Projection,
+        dispatcher: QuantumGateDispatcher,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        result, temp = DensityMatrixSimulation._apply_gate(
+            result,
+            temp,
+            qubit_count,
+            operation._base_matrix,
+            operation.targets,
+            (),
+            (),
+            dispatcher,
+            None,
+        )
+        indices = list(range(qubit_count))
+        norm = float(np.real(np.einsum(result, indices + indices)))
+        result /= norm
+        return result, temp
+
+    @staticmethod
+    def _apply_reset(
+        result: np.ndarray,
+        temp: np.ndarray,
+        work_buffer1: np.ndarray,
+        work_buffer2: np.ndarray,
+        qubit_count: int,
+        operation: Reset,
+        dispatcher: QuantumGateDispatcher,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return DensityMatrixSimulation._apply_kraus(
+            result,
+            temp,
+            work_buffer1,
+            work_buffer2,
+            qubit_count,
+            [
+                np.array([[1, 0], [0, 0]], dtype=complex),
+                np.array([[0, 1], [0, 0]], dtype=complex),
+            ],
+            operation.targets,
+            dispatcher,
+        )
 
     @staticmethod
     def _apply_gate(
