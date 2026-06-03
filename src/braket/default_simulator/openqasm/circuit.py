@@ -69,15 +69,20 @@ class Circuit:
         allow_remeasure: bool = False,
     ):
         for index, qubit in enumerate(target):
-            if not allow_remeasure and qubit in self.measured_qubits:
-                raise ValueError(f"Qubit {qubit} is already measured or captured.")
-            self.measured_qubits.append(qubit)
-            self.qubit_set.add(qubit)
-            self.target_classical_indices.append(
+            classical_index = (
                 classical_targets[index]
                 if classical_targets
                 else max(index, len(self.target_classical_indices))
             )
+            if allow_remeasure and classical_index in self.target_classical_indices:
+                self.measured_qubits[self.target_classical_indices.index(classical_index)] = qubit
+                self.qubit_set.add(qubit)
+                continue
+            if not allow_remeasure and qubit in self.measured_qubits:
+                raise ValueError(f"Qubit {qubit} is already measured or captured.")
+            self.measured_qubits.append(qubit)
+            self.qubit_set.add(qubit)
+            self.target_classical_indices.append(classical_index)
 
     def add_result(self, result: Results) -> None:
         """

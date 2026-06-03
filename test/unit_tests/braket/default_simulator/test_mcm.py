@@ -143,7 +143,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """4.1 Classical variable manipulation with branching"""
         qasm_source = """
         OPENQASM 3.0;
-        bit[2] b;
+        bit[3] b;
         qubit[3] q;
         int[32] count = 0;
 
@@ -166,6 +166,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         if (count == 2){
             x q[2];
         }
+        b[2] = measure q[2];
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
@@ -2618,7 +2619,7 @@ class TestUnifiedMCMBasic:
         """Multiple MCMs with conditional logic."""
         qasm = """
         OPENQASM 3.0;
-        bit[2] b;
+        bit[3] b;
         qubit[2] q;
         h q[0];
         b[0] = measure q[0];
@@ -2629,16 +2630,17 @@ class TestUnifiedMCMBasic:
         if (b[0] == b[1]) {
             x q[1];
         }
+        b[2] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
+        # First two columns mirror q[0] (always 1 after the conditional flip);
+        # the third column samples q[1] and is 1 only when b[0]==1.
         counter = Counter(["".join(m) for m in result.measurements])
-        # After first measure: if 0 -> X makes it 1, if 1 -> stays 1
-        # Second measure always 1. b[0]==b[1] only when b[0]==1 (50%)
-        assert "11" in counter
-        assert "10" in counter
-        assert 400 < counter["11"] < 600
-        assert 400 < counter["10"] < 600
+        assert "111" in counter
+        assert "110" in counter
+        assert 400 < counter["111"] < 600
+        assert 400 < counter["110"] < 600
 
     def test_complex_conditional_logic(self, simulator):
         """Complex conditional with if/else blocks."""
@@ -2722,7 +2724,7 @@ class TestUnifiedMCMTeleportation:
         """Quantum teleportation protocol using MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit[2] b;
+        bit[3] b;
         qubit[3] q;
 
         // Prepare state to teleport: |1> on q[0]
@@ -2745,6 +2747,7 @@ class TestUnifiedMCMTeleportation:
         if (b[0] == 1) {
             z q[2];
         }
+        b[2] = measure q[2];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
@@ -3297,6 +3300,7 @@ class TestMCMNonContiguousClassicalIndices:
         h q[1];
         c[1] = measure q[1];
         if (c[1]) { x q[1]; }
+        c[0] = measure q[0];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3312,6 +3316,7 @@ class TestMCMNonContiguousClassicalIndices:
         c[1] = measure q[1];
         if (c[1]) { x q[2]; }
         c[2] = measure q[2];
+        c[0] = measure q[0];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3511,7 +3516,7 @@ class TestMCMBranchedElseBlock:
         qasm = """
         OPENQASM 3.0;
         bit b;
-        bit[2] result;
+        bit[3] result;
         qubit[3] q;
         h q[0];
         b = measure q[0];
@@ -3520,8 +3525,9 @@ class TestMCMBranchedElseBlock:
         } else {
             x q[2];
         }
-        result[0] = measure q[1];
-        result[1] = measure q[2];
+        result[0] = measure q[0];
+        result[1] = measure q[1];
+        result[2] = measure q[2];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -5125,6 +5131,7 @@ class TestDensityMatrixSimulatorBranching:
         if (b[0] == 1) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         # q[1] is always |0> (Bell-correlated, then flipped iff b[0]==1):
         # outcomes "00" and "10" each ~50%.
@@ -5152,7 +5159,7 @@ class TestDensityMatrixSimulatorBranching:
         path (``_apply_reset``) on each replayed path."""
         qasm = """
         OPENQASM 3.0;
-        bit[1] b;
+        bit[2] b;
         qubit[2] q;
         h q[0];
         b[0] = measure q[0];
@@ -5160,6 +5167,32 @@ class TestDensityMatrixSimulatorBranching:
             x q[1];
         }
         reset q[0];
+        b[0] = measure q[0];
+        b[1] = measure q[1];
         """
         # q[0] is always |0> after the reset; q[1] flips iff b[0]==1 → 50/50.
         self._assert_distributions_match(qasm, expected_keys={"00", "01"})
+
+    def test_sparse_qubit_register_does_not_blow_up(self):
+        """Regression: an SDK-emitted ``qubit[N]`` declaration that only
+        touches a couple of high-index qubits used to send the density-matrix
+        simulator into an OOM. ``ProgramContext._get_qubit_samples`` now
+        builds a per-call qubit map covering only the qubits the path
+        actually touches, so the DM allocation scales with the number of
+        active qubits rather than ``N``.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[18] q;
+        h q[13];
+        b[0] = measure q[13];
+        if (b[0] == 1) {
+            prx(3.141592653589793, 0.0) q[17];
+        }
+        b[0] = measure q[13];
+        b[1] = measure q[17];
+        """
+        # Mirrors a verbatim ``measure_ff(q[13], 0); cc_prx(q[17], pi, 0, 0)``
+        # emission: q[17] flips iff b[0]==1 → outcomes "00" and "11" each ~50%.
+        self._assert_distributions_match(qasm, expected_keys={"00", "11"})
