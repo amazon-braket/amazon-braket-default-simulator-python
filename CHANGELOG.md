@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.39.4 (2026-06-04)
+
+### Bug Fixes and Other Changes
+
+ * Correct qubit count for MCM with noncontiguous qubits
+ * Handle Projection and Reset in DensityMatrixSimulation
+
 ## v1.39.3 (2026-05-15)
 
 ### Bug Fixes and Other Changes
