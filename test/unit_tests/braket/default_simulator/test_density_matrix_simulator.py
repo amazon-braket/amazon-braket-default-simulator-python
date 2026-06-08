@@ -1074,3 +1074,115 @@ def test_remove_verbatim_box_with_nested_braces():
     assert "box{" not in result
     assert "if (b == 1) {" in result
     assert "x $0;" in result
+
+
+class TestDensityMatrixSimulatorBranchedRun:
+    """End-to-end coverage for the Kraus-native branched density-matrix run.
+
+    These tests exercise the ``DensityMatrixSimulator`` overrides wired in for the
+    Kraus-native MCM path: ``create_program_context`` (which returns a
+    ``DensityMatrixProgramContext``) and ``_run_branched`` (which forms
+    ``ρ_total = Σ ρ_sub`` and draws all shots in a single pass). They assert that a
+    branched program returns measurements in the same format and column ordering as
+    the single-path density-matrix output, reports ``measured_qubits`` as the original
+    physical identifiers, and produces exactly the requested number of shots.
+    """
+
+    def test_create_program_context_returns_density_matrix_context(self):
+        """``create_program_context`` returns a ``DensityMatrixProgramContext`` so the
+        Kraus-native MCM path is used (Req 13.1)."""
+        from braket.default_simulator.openqasm.density_matrix_program_context import (
+            DensityMatrixProgramContext,
+        )
+
+        context = DensityMatrixSimulator().create_program_context()
+        assert isinstance(context, DensityMatrixProgramContext)
+
+    def test_branched_run_shot_count_format_and_measured_qubits(self):
+        """A branched Bell-pair MCM program returns the requested shot count, a
+        two-column measurement matrix, original physical ``measuredQubits``, and only
+        the physically reachable outcomes (Req 2.2, 2.3, 2.4)."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        cnot q[0], q[1];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            x q[1];
+        }
+        b[1] = measure q[1];
+        """
+        shots = 2000
+        result = DensityMatrixSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+
+        # Requested shot count drawn in a single final pass.
+        assert len(result.measurements) == shots
+        assert result.taskMetadata.shots == shots
+        # Same format/column ordering as single-path DM output: one column per
+        # recorded measurement, reported against original physical identifiers.
+        assert result.measuredQubits == [0, 1]
+        assert all(len(m) == 2 for m in result.measurements)
+        assert all(bit in ("0", "1") for m in result.measurements for bit in m)
+
+        # q[1] is Bell-correlated with q[0] then flipped iff b[0]==1, so it is always
+        # |0>; only "00" and "10" are reachable (~50/50).
+        counts = Counter("".join(m) for m in result.measurements)
+        assert set(counts) <= {"00", "10"}
+        for key in ("00", "10"):
+            assert 0.4 < counts.get(key, 0) / shots < 0.6
+
+    def test_branched_run_reports_noncontiguous_physical_identifiers(self):
+        """A branched program touching only sparse, high-index qubits reports the
+        original physical qubit identifiers and selects exactly those columns,
+        consistent with current measured-qubit selection behavior (Req 2.4, 8.3)."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[18] q;
+        h q[13];
+        b[0] = measure q[13];
+        if (b[0] == 1) {
+            prx(3.141592653589793, 0.0) q[17];
+        }
+        b[0] = measure q[13];
+        b[1] = measure q[17];
+        """
+        shots = 2000
+        result = DensityMatrixSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+
+        assert len(result.measurements) == shots
+        # Original physical identifiers, not the contiguous matrix axes.
+        assert result.measuredQubits == [13, 17]
+        assert all(len(m) == 2 for m in result.measurements)
+
+        # q[17] flips iff b[0]==1, so the two recorded columns are perfectly
+        # correlated: only "00" and "11" are reachable (~50/50).
+        counts = Counter("".join(m) for m in result.measurements)
+        assert set(counts) <= {"00", "11"}
+        for key in ("00", "11"):
+            assert 0.4 < counts.get(key, 0) / shots < 0.6
+
+    def test_branched_run_uses_kraus_native_path(self):
+        """Parsing a measurement-conditioned program with shots > 0 transitions the
+        density-matrix context to branched mode, routing the run through the
+        overridden ``_run_branched`` rather than the single-path aggregation."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            x q[1];
+        }
+        b[1] = measure q[1];
+        """
+        simulator = DensityMatrixSimulator()
+        context = simulator._parse_program_with_shots(OpenQASMProgram(source=qasm), 100)
+        assert context.is_branched
+        # ρ_total is the exact mixed state with unit trace.
+        rho_total = context.total_density_matrix()
+        assert rho_total is not None
+        assert np.isclose(np.real(np.trace(rho_total)), 1.0)

@@ -16,6 +16,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+import numpy as np
+
 from braket.default_simulator.operation import GateOperation
 
 
@@ -161,3 +163,43 @@ class SimulationPath:
         if qubit_idx not in self._measurements:
             self._measurements[qubit_idx] = []
         self._measurements[qubit_idx].append(outcome)
+
+
+class SubEnsemble(SimulationPath):
+    """A classically-tagged, unnormalized density matrix sub-ensemble.
+
+    The trace of the density matrix equals the joint probability of the classical measurement bits
+    recorded in this sub-ensemble's tag. The inherited ``instructions``/``shots`` fields are unused
+    on the density matrix path.
+    """
+
+    def __init__(
+        self,
+        density_matrix: np.ndarray | None = None,
+        variables: dict[str, FramedVariable] | None = None,
+        measurements: dict[int, list[int]] | None = None,
+        frame_number: int = 0,
+    ):
+        super().__init__(
+            variables=variables,
+            measurements=measurements,
+            frame_number=frame_number,
+        )
+        self.density_matrix = density_matrix
+
+    @property
+    def trace(self) -> float:
+        """The trace of the density matrix.
+
+        Equals the joint probability of the classical measurement bits in
+        this sub-ensemble's tag.
+        """
+        return float(np.real(np.trace(self.density_matrix)))
+
+    def branch(self) -> SubEnsemble:
+        return SubEnsemble(
+            density_matrix=self.density_matrix.copy(),
+            variables=deepcopy(self._variables),
+            measurements=deepcopy(self._measurements),
+            frame_number=self._frame_number,
+        )

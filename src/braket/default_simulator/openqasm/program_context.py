@@ -1174,6 +1174,9 @@ class ProgramContext(AbstractProgramContext):
         """Whether this context supports mid-circuit measurement branching."""
         return True
 
+    def _should_branch_on_mcm(self) -> bool:
+        return self._shots > 0
+
     def _flush_pending_mcm_targets(self) -> None:
         """Flush pending MCM targets to the circuit as regular measurements.
 
@@ -1306,7 +1309,7 @@ class ProgramContext(AbstractProgramContext):
         for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
             dest_name = mcm_dest.name if isinstance(mcm_dest, Identifier) else mcm_dest.name.name
             if dest_name == name:
-                if not self._is_branched and self._shots > 0:
+                if not self._is_branched and self._should_branch_on_mcm():
                     self._is_branched = True
                     self._initialize_paths_from_circuit()
                     # Also flush any earlier pending measurements so the state is correct
@@ -1362,7 +1365,7 @@ class ProgramContext(AbstractProgramContext):
         if self._is_branched:
             for mcm_target, mcm_classical, mcm_dest in to_flush:
                 self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
-        elif self._shots > 0:
+        elif self._should_branch_on_mcm():
             self._is_branched = True
             self._initialize_paths_from_circuit()
             # Flush to_flush first (preserving program order), then any
@@ -1557,7 +1560,7 @@ class ProgramContext(AbstractProgramContext):
         Initializes paths from the circuit and retroactively applies all
         pending measurements.
         """
-        if not self._is_branched and self._pending_mcm_targets and self._shots > 0:
+        if not self._is_branched and self._pending_mcm_targets and self._should_branch_on_mcm():
             self._is_branched = True
             self._initialize_paths_from_circuit()
             for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
