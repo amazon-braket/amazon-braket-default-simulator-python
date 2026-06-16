@@ -122,7 +122,11 @@ def test_simulator_run_bell_pair(bell_ir, batch_size, caplog):
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=StateVectorSimulator.DEVICE_ID, shots=shots_count
+        id=result.taskMetadata.id,
+        deviceId=StateVectorSimulator.DEVICE_ID,
+        shots=shots_count,
+        createdAt=result.taskMetadata.createdAt,
+        endedAt=result.taskMetadata.endedAt,
     )
     assert result.additionalMetadata == AdditionalMetadata(action=bell_ir)
     assert not caplog.text
@@ -1014,7 +1018,11 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, batch_si
     assert result.resultTypes[1].type == expected_expectation
     assert np.allclose(result.resultTypes[1].value, 0 if targets else [0, 0])
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=StateVectorSimulator.DEVICE_ID, shots=0
+        id=result.taskMetadata.id,
+        deviceId=StateVectorSimulator.DEVICE_ID,
+        shots=0,
+        createdAt=result.taskMetadata.createdAt,
+        endedAt=result.taskMetadata.endedAt,
     )
     assert result.additionalMetadata == AdditionalMetadata(action=ir)
     assert not caplog.text
@@ -1593,6 +1601,8 @@ def test_run_program_set(mock_uuid, qasm_all_one, qasm_all_zero):
             ProgramMetadata(executables=[ProgramSetExecutableResultMetadata()]),
             ProgramMetadata(executables=[ProgramSetExecutableResultMetadata()]),
         ],
+        createdAt=result.taskMetadata.createdAt,
+        endedAt=result.taskMetadata.endedAt,
     )
     expected_program_0_executable_results = ProgramSetExecutableResult(
         inputsIndex=0,
@@ -1642,6 +1652,8 @@ def test_program_set_parametric(mock_uuid):
                 ]
             )
         ],
+        createdAt=result.taskMetadata.createdAt,
+        endedAt=result.taskMetadata.endedAt,
     )
     expected_program_executable_0_results = ProgramSetExecutableResult(
         inputsIndex=0,

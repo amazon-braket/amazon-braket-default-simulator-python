@@ -11,6 +11,8 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import re
+
 import numpy as np
 import pytest
 from braket.ir.ahs.program_v1 import Program
@@ -26,6 +28,8 @@ from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers impor
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_unit_converter import (
     convert_unit,
 )
+
+_TIMESTAMP_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 
 device = RydbergAtomSimulator()
 
@@ -148,6 +152,26 @@ def test_success_run(program, rydberg_interaction_coef, blockade_radius):
 def test_success_run_without_args(program):
     result = device.run(program, shots=100)
     assert isinstance(result, AnalogHamiltonianSimulationTaskResult)
+
+
+@pytest.mark.parametrize(
+    "program",
+    [
+        (program_full),
+        (empty_program),
+        (program_only_localDetuning),
+        (program_only_drivingFields),
+    ],
+)
+def test_task_metadata_timestamps(program):
+    result = device.run(program, shots=100)
+    created_at = result.taskMetadata.createdAt
+    ended_at = result.taskMetadata.endedAt
+    assert created_at is not None
+    assert ended_at is not None
+    assert _TIMESTAMP_REGEX.match(created_at)
+    assert _TIMESTAMP_REGEX.match(ended_at)
+    assert ended_at >= created_at
 
 
 @pytest.mark.parametrize(

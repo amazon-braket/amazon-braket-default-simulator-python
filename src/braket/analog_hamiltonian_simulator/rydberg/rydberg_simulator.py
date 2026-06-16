@@ -100,6 +100,8 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             AnalogHamiltonianSimulationTaskResult: The result of the simulation
         """
 
+        created_at = self._timestamp()
+
         # Validate the given program against the capabilities
         validate_program(program, capabilities_constants())
 
@@ -170,14 +172,16 @@ class RydbergAtomSimulator(BaseLocalSimulator):
                 dist,
                 self.atomArray.filling,
                 self.configurations,
-                self._task_metadata(shots),
+                self._task_metadata(shots, created_at),
             )
 
-    def _task_metadata(self, shots: int) -> TaskMetadata:
+    def _task_metadata(self, shots: int, created_at: str) -> TaskMetadata:
         return TaskMetadata(
             id="rydberg",
             shots=shots,
             deviceId="rydbergLocalSimulator",
+            createdAt=created_at,
+            endedAt=self._timestamp(),
         )
 
     @property
