@@ -16,6 +16,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from copy import copy
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -264,11 +265,16 @@ class BaseLocalSimulator(OpenQASMSimulator):
             for index in range(len(results))
         ]
 
+    @staticmethod
+    def _timestamp() -> str:
+        return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
     def _create_results_obj(
         self,
         results: list[dict[str, Any]],
         openqasm_ir: OpenQASMProgram,
         simulation: Simulation,
+        created_at: str,
         measured_qubits: list[int] | None = None,
         mapped_measured_qubits: list[int] | None = None,
     ) -> GateModelTaskResult:
@@ -277,6 +283,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 id=str(uuid.uuid4()),
                 shots=simulation.shots,
                 deviceId=self.DEVICE_ID,
+                createdAt=created_at,
+                endedAt=self._timestamp(),
             ),
             additionalMetadata=AdditionalMetadata(
                 action=openqasm_ir,
@@ -685,6 +693,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             ProgramSetTaskResult: Result of the program set simulation.
         """
 
+        created_at = self._timestamp()
         if shots == 0:
             raise ValueError(
                 "Shots must not be zero. Result types are not supported with program set."
@@ -712,6 +721,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 successfulShots=shots,
                 programMetadata=program_metadata,
                 totalFailedExecutables=0,
+                createdAt=created_at,
+                endedAt=self._timestamp(),
             ),
         )
 
@@ -741,6 +752,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
+        created_at = self._timestamp()
         # Parse the program. When shots > 0, use _parse_program_with_shots so
         # that ProgramContext._shots is set and mid-circuit measurements can
         # trigger path branching during interpretation.
@@ -751,7 +763,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         if context.is_branched:
             # Multi-path execution for programs with mid-circuit measurements
-            return self._run_branched(context, openqasm_ir, shots, batch_size)
+            return self._run_branched(context, openqasm_ir, shots, batch_size, created_at)
 
         # Single-path execution (current behavior, unchanged)
         circuit = context.circuit
@@ -803,7 +815,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
             simulation.evolve(circuit.basis_rotation_instructions)
 
         return self._create_results_obj(
-            results, openqasm_ir, simulation, measured_qubits, mapped_measured_qubits
+            results,
+            openqasm_ir,
+            simulation,
+            created_at,
+            measured_qubits,
+            mapped_measured_qubits,
         )
 
     def _parse_program_with_shots(
@@ -839,6 +856,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         openqasm_ir: OpenQASMProgram,
         shots: int,
         batch_size: int,
+        created_at: str,
     ) -> GateModelTaskResult:
         """Execute a branched (multi-path) simulation and aggregate results.
 
@@ -852,6 +870,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             openqasm_ir: The original OpenQASM program IR.
             shots: Total number of shots.
             batch_size: Batch size for simulation.
+            created_at: The ISO-8601/RFC3339 timestamp of when the task was created.
 
         Returns:
             GateModelTaskResult: Aggregated result across all paths.
@@ -905,6 +924,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 id=str(uuid.uuid4()),
                 shots=shots,
                 deviceId=self.DEVICE_ID,
+                createdAt=created_at,
+                endedAt=self._timestamp(),
             ),
             additionalMetadata=AdditionalMetadata(
                 action=openqasm_ir,
@@ -942,6 +963,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 as a result type when shots=0. Or, if StateVector and Amplitude result types
                 are requested when shots>0.
         """
+        created_at = self._timestamp()
         if qubit_count is not None:
             warnings.warn(
                 f"qubit_count is deprecated for {type(self).__name__} and can be set to None"
@@ -991,7 +1013,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 simulation,
             )
 
-        return self._create_results_obj(results, circuit_ir, simulation)
+        return self._create_results_obj(results, circuit_ir, simulation, created_at=created_at)
 
 
 def _remap_instructions(

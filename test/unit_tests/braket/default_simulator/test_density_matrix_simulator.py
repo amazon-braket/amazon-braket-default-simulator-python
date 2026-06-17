@@ -136,7 +136,11 @@ def test_simulator_run_noisy_circuit(noisy_circuit_2_qubit, caplog, simulator):
     assert 0.0 < counter["10"] / (counter["10"] + counter["11"]) < 0.2
     assert 0.8 < counter["11"] / (counter["10"] + counter["11"]) < 1.0
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=shots_count
+        id=result.taskMetadata.id,
+        deviceId=DensityMatrixSimulator.DEVICE_ID,
+        shots=shots_count,
+        createdAt=result.taskMetadata.createdAt,
+        endedAt=result.taskMetadata.endedAt,
     )
     assert result.additionalMetadata == AdditionalMetadata(action=noisy_circuit_2_qubit)
     assert not caplog.text
@@ -157,7 +161,11 @@ def test_simulator_run_bell_pair(bell_ir, caplog, simulator):
     assert 0.4 < counter["00"] / (counter["00"] + counter["11"]) < 0.6
     assert 0.4 < counter["11"] / (counter["00"] + counter["11"]) < 0.6
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=shots_count
+        id=result.taskMetadata.id,
+        deviceId=DensityMatrixSimulator.DEVICE_ID,
+        shots=shots_count,
+        createdAt=result.taskMetadata.createdAt,
+        endedAt=result.taskMetadata.endedAt,
     )
     assert result.additionalMetadata == AdditionalMetadata(action=bell_ir)
     assert not caplog.text
@@ -661,7 +669,11 @@ def test_simulator_bell_pair_result_types(bell_ir_with_result, targets, caplog, 
     assert result.resultTypes[0].type == expected_expectation
     assert np.allclose(result.resultTypes[0].value, 0 if targets else [0, 0])
     assert result.taskMetadata == TaskMetadata(
-        id=result.taskMetadata.id, deviceId=DensityMatrixSimulator.DEVICE_ID, shots=0
+        id=result.taskMetadata.id,
+        deviceId=DensityMatrixSimulator.DEVICE_ID,
+        shots=0,
+        createdAt=result.taskMetadata.createdAt,
+        endedAt=result.taskMetadata.endedAt,
     )
     assert result.additionalMetadata == AdditionalMetadata(action=ir)
     assert not caplog.text
@@ -969,6 +981,8 @@ def test_run_program_set_dm(mock_uuid):
             ProgramMetadata(executables=[ProgramSetExecutableResultMetadata()]),
             ProgramMetadata(executables=[ProgramSetExecutableResultMetadata()]),
         ],
+        createdAt=result.taskMetadata.createdAt,
+        endedAt=result.taskMetadata.endedAt,
     )
     expected_program_0_executable_results = ProgramSetExecutableResult(
         inputsIndex=0,
