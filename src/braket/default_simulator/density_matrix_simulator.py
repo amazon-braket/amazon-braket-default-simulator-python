@@ -40,6 +40,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
         openqasm_ir: OpenQASMProgram,
         shots: int,
         batch_size: int,
+        created_at: str,
     ) -> GateModelTaskResult:
         context._merge_subensembles()
 
@@ -50,7 +51,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
 
         if not shots:
             results = self._analytical_results_from_total(context, openqasm_ir, simulation, m)
-            return self._create_results_obj(results, openqasm_ir, simulation)
+            return self._create_results_obj(results, openqasm_ir, simulation, created_at)
 
         circuit = context.circuit
         classical_bit_positions = {b: i for i, b in enumerate(circuit.target_classical_indices)}
@@ -64,7 +65,7 @@ class DensityMatrixSimulator(BaseLocalSimulator):
         )
 
         return self._create_results_obj(
-            [], openqasm_ir, simulation, measured_qubits, mapped_measured_qubits
+            [], openqasm_ir, simulation, created_at, measured_qubits, mapped_measured_qubits
         )
 
     def _analytical_results_from_total(
