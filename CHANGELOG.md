@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.39.5 (2026-06-22)
+
+### Bug Fixes and Other Changes
+
+ * Add timestamps to task metadata
+
 ## v1.39.4 (2026-06-04)
 
 ### Bug Fixes and Other Changes
