@@ -1132,8 +1132,14 @@ class _BreakSignal(Exception):
     """Internal signal raised when a BreakStatement is encountered during branched execution."""
 
 
+BreakSignal = _BreakSignal
+
+
 class _ContinueSignal(Exception):
     """Internal signal raised when a ContinueStatement is encountered during branched execution."""
+
+
+ContinueSignal = _ContinueSignal
 
 
 class ProgramContext(AbstractProgramContext):
