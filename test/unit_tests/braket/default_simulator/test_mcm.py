@@ -2634,13 +2634,12 @@ class TestUnifiedMCMBasic:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
-        # First two columns mirror q[0] (always 1 after the conditional flip);
-        # the third column samples q[1] and is 1 only when b[0]==1.
+        # 50% b[0]=0 → no q[1] flip → "010"; 50% b[0]=1 → q[1] flip → "111".
         counter = Counter(["".join(m) for m in result.measurements])
+        assert "010" in counter
         assert "111" in counter
-        assert "110" in counter
+        assert 400 < counter["010"] < 600
         assert 400 < counter["111"] < 600
-        assert 400 < counter["110"] < 600
 
     def test_complex_conditional_logic(self, simulator):
         """Complex conditional with if/else blocks."""
@@ -3292,7 +3291,7 @@ class TestMCMNonContiguousClassicalIndices:
     """MCMs that write non-contiguous classical indices."""
 
     def test_minimal_unassigned_low_bit_stays_zero(self, simulator):
-        """Untouched ``q[0]`` stays 0 when only ``c[1]`` is assigned."""
+        """``c[1]`` preserves its 50/50 MCM outcome; ``q[0]`` never touched."""
         qasm = """
         OPENQASM 3.0;
         qubit[2] q;
@@ -3304,7 +3303,7 @@ class TestMCMNonContiguousClassicalIndices:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
         counter = Counter(["".join(m) for m in result.measurements])
-        assert counter == {"00": 2000}
+        assert set(counter) == {"00", "01"}, counter
 
     def test_if_branch_preserves_captured_bit_position(self, simulator):
         """``if (c[N])`` keeps the captured value at ``q[N]``'s position."""
@@ -5113,9 +5112,8 @@ class TestDensityMatrixSimulatorBranching:
             x q[1];
         }
         """
-        # After the conditional, q[0] is always |1>. b[1] is always 1, so q[1]
-        # only flips when b[0]==1: "10" and "11" each ~50%.
-        self._assert_distributions_match(qasm, expected_keys={"10", "11"})
+        # b[0] captures the 50/50 MCM outcome; b[1] always 1: "01" and "11".
+        self._assert_distributions_match(qasm, expected_keys={"01", "11"})
 
     def test_bell_pair_mcm_decoupling(self):
         """Bell-state MCM: measuring one half of an entangled pair must
@@ -5196,3 +5194,22 @@ class TestDensityMatrixSimulatorBranching:
         # Mirrors a verbatim ``measure_ff(q[13], 0); cc_prx(q[17], pi, 0, 0)``
         # emission: q[17] flips iff b[0]==1 → outcomes "00" and "11" each ~50%.
         self._assert_distributions_match(qasm, expected_keys={"00", "11"})
+
+
+class TestBranchedResultRepeatedMeasurements:
+    """Repeated MCMs on the same qubit must report their historical outcomes."""
+
+    def test_repeated_measurement_of_same_qubit_reports_history(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        bit[2] c;
+        x q[0];
+        c[0] = measure q[0];
+        reset q[0];
+        c[1] = measure q[0];
+        if (c[0]) { }
+        """
+        result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
+        keys = {"".join(m) for m in result.measurements}
+        assert keys == {"10"}, keys
