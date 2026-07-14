@@ -1258,14 +1258,12 @@ class ProgramContext(AbstractProgramContext):
             return super().get_value_by_identifier(identifier)
 
         name = get_identifier_name(identifier)
-        if self._bound_in_inner_scope(name):
-            return super().get_value_by_identifier(identifier)
-
         path = self._paths[self._active_path_indices[0]]
         framed_var = path.get_variable(name)
-        if framed_var is None:
-            # Fall back to the shared variable table for variables declared
-            # before branching started
+        # Fall back to the shared variable table for variables declared before
+        # branching started and for identifiers shadowed by an inner scope
+        # (e.g. gate-expansion qubit aliases).
+        if framed_var is None or self._bound_in_inner_scope(name):
             return super().get_value_by_identifier(identifier)
 
         value = framed_var.value
@@ -1288,16 +1286,13 @@ class ProgramContext(AbstractProgramContext):
         if not self._is_branched:
             return super().is_initialized(name)
 
-        if self._bound_in_inner_scope(name):
-            return super().is_initialized(name)
-
-        # Check per-path variables first
+        # Inner-scope bindings (e.g. gate-expansion qubit aliases) shadow the
+        # per-path outer variable of the same name; defer to the scoped
+        # variable-table lookup in super.
         path = self._paths[self._active_path_indices[0]]
         framed_var = path.get_variable(name)
-        if framed_var is not None:
+        if framed_var is not None and not self._bound_in_inner_scope(name):
             return True
-
-        # Fall back to shared variable table
         return super().is_initialized(name)
 
     def _bound_in_inner_scope(self, name: str) -> bool:
