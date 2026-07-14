@@ -1258,6 +1258,9 @@ class ProgramContext(AbstractProgramContext):
             return super().get_value_by_identifier(identifier)
 
         name = get_identifier_name(identifier)
+        if self._bound_in_inner_scope(name):
+            return super().get_value_by_identifier(identifier)
+
         path = self._paths[self._active_path_indices[0]]
         framed_var = path.get_variable(name)
         if framed_var is None:
@@ -1285,6 +1288,9 @@ class ProgramContext(AbstractProgramContext):
         if not self._is_branched:
             return super().is_initialized(name)
 
+        if self._bound_in_inner_scope(name):
+            return super().is_initialized(name)
+
         # Check per-path variables first
         path = self._paths[self._active_path_indices[0]]
         framed_var = path.get_variable(name)
@@ -1293,6 +1299,10 @@ class ProgramContext(AbstractProgramContext):
 
         # Fall back to shared variable table
         return super().is_initialized(name)
+
+    def _bound_in_inner_scope(self, name: str) -> bool:
+        """Whether ``name`` is bound in a non-global variable-table scope."""
+        return any(name in scope for scope in self.variable_table._scopes[1:])
 
     def _flush_pending_mcm_for_variable(self, name: str) -> None:
         """If ``name`` matches a pending MCM's classical destination, flush it.

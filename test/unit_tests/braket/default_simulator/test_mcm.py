@@ -5196,3 +5196,24 @@ class TestDensityMatrixSimulatorBranching:
         # Mirrors a verbatim ``measure_ff(q[13], 0); cc_prx(q[17], pi, 0, 0)``
         # emission: q[17] flips iff b[0]==1 → outcomes "00" and "11" each ~50%.
         self._assert_distributions_match(qasm, expected_keys={"00", "11"})
+
+
+class TestBranchedInnerScopeShadowing:
+    """Inner-scope bindings (e.g. qubit aliases from `declare_qubit_alias`)
+    must shadow outer-scope per-path classical variables of the same name."""
+
+    def test_qubit_alias_shadows_outer_classical_variable(self):
+        # `rx`'s qubit parameter is `a`; the outer `float a` must not leak
+        # into the gate body's identifier resolution when branched.
+        qasm = """
+        OPENQASM 3;
+        gate rx(theta) a { U(theta, -1.5707963267948966, 1.5707963267948966) a; }
+        qubit[1] q;
+        bit c;
+        float a = 3.14159265;
+        c = measure q[0];
+        if (c == false) { }
+        rx(a) q[0];
+        """
+        result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=10)
+        assert len(result.measurements) == 10
