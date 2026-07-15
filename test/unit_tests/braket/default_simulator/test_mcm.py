@@ -353,9 +353,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
 
         assert len(result.measurements) == 1000
 
-    @pytest.mark.xfail(
-        reason="Interpreter gap: branched condition BinaryExpression not fully resolved"
-    )
     def test_5_2_for_loop_operations_with_branching(self):
         """5.2 For loop operations - using execute_with_branching to test variables"""
         qasm_source = """
@@ -2788,6 +2785,77 @@ class TestUnifiedMCMClassicalVariables:
         # If b==1: x becomes 1, flip q[1] -> |11>
         assert set(counter.keys()) == {"00", "11"}
         assert 0.4 < counter["00"] / 1000 < 0.6
+
+    @pytest.mark.parametrize(
+        "declaration, destination",
+        [
+            ("", "b[0]"),
+            ("const int k = 0;", "b[k]"),
+            ("int k = 0;", "b[k]"),
+        ],
+    )
+    def test_branched_measurement_into_indexed_destination(
+        self, simulator, declaration, destination
+    ):
+        """A measurement destination index may be any expression the interpreter resolves,
+        not only a literal. Branching must use the resolved index."""
+        qasm = f"""
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+        {declaration}
+
+        x q[0];
+        {destination} = measure q[0];
+
+        if (b[0] == 1) {{
+            x q[1];
+        }}
+        b[1] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        # q[0] is deterministically |1>, so the branch always fires and flips q[1].
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"11": 10})
+
+    def test_branched_measurement_into_loop_variable_index(self, simulator):
+        """The loop variable is out of scope once branching replays a deferred measurement,
+        so the destination index has to have been resolved before the loop exits."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        x q[0];
+        for int i in [0:0] {
+            b[i] = measure q[i];
+        }
+
+        if (b[0] == 1) {
+            x q[1];
+        }
+        b[1] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"11": 10})
+
+    def test_branched_measurement_into_range_destination(self, simulator):
+        """A range destination writes one bit per measured qubit."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[3] b;
+
+        x q[0];
+        b[0:1] = measure q[0:1];
+
+        if (b[0] == 1) {
+            x q[2];
+        }
+        b[2] = measure q[2];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        # q[0]=1 and q[1]=0 are written through the range; the branch then flips q[2].
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"101": 10})
 
 
 class TestUnifiedMCMEdgeCases:
