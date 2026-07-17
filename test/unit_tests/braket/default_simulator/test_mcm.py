@@ -5213,3 +5213,27 @@ class TestBranchedResultRepeatedMeasurements:
         result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
         keys = {"".join(m) for m in result.measurements}
         assert keys == {"10"}, keys
+
+
+class TestBranchedResultShotIndexing:
+    """The per-path overlay must map each path's outcomes to that path's shot slice."""
+
+    def test_asymmetric_path_shot_counts_preserve_alignment(self, simulator):
+        # Bare ``measure q[1]`` bypasses ``_mcm_outcomes``, so that column
+        # falls through to the per-shot sample. Combined with the overlaid
+        # ``c[0]``, a misaligned ``shot_offset`` shows up as ``"01"``/``"10"``
+        # outcomes; a path-slice swap flips the 25/75 ratio.
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[1] c;
+        ry(2.0943951023931953) q[0];  // 2π/3 → P(|1>) = 0.75
+        c[0] = measure q[0];
+        if (c[0]) x q[1];
+        measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=4000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert set(counter) == {"00", "11"}, counter
+        assert 800 < counter["00"] < 1200, counter
+        assert 2800 < counter["11"] < 3200, counter
