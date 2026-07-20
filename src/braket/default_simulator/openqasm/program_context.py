@@ -1999,6 +1999,11 @@ class ProgramContext(AbstractProgramContext):
                 classical_targets,
                 allow_remeasure=self.supports_midcircuit_measurement,
             )
+            classical_targets_list = list(classical_targets)
+            for path_idx in self._active_path_indices:
+                path = self._paths[path_idx]
+                for qubit_idx, classical_idx in zip(target, classical_targets_list):
+                    path._mcm_outcomes[classical_idx] = path._measurements[qubit_idx][-1]
 
     def _measure_and_branch(self, target: tuple[int]) -> None:
         """Sample outcomes per active path and branch with proportional shot
