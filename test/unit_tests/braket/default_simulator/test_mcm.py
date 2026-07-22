@@ -5433,6 +5433,24 @@ class TestDensityMatrixSimulatorBranching:
         probs = self._analytical(qasm)[0].value
         assert np.allclose(probs, [0.0, 1.0])
 
+    def test_single_shot_skips_subensembles_with_zero_allocated_shots(self):
+        """With shots=1 and two surviving branches, exactly one branch draws the
+        shot; the other is allocated zero shots and skipped without emitting rows."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] c;
+        qubit[2] q;
+        h q[0];
+        c[0] = measure q[0];
+        if (c[0] == 1) {
+            x q[1];
+        }
+        c[1] = measure q[1];
+        """
+        result = DensityMatrixSimulator().run(OpenQASMProgram(source=qasm), shots=1)
+        assert len(result.measurements) == 1
+        assert "".join(result.measurements[0]) in {"00", "11"}
+
     def test_repeat_until_success_terminates_with_shots(self):
         """A probabilistic while loop terminates and samples correctly on both backends.
 
