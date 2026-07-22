@@ -13,7 +13,7 @@
 
 import warnings
 
-from pydantic.v1.class_validators import root_validator
+from pydantic import model_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
@@ -24,28 +24,38 @@ from braket.ir.ahs.time_series import TimeSeries
 class TimeSeriesValidator(TimeSeries):
     capabilities: CapabilitiesConstants
 
+    # The checks are combined into a single "before" validator so they run in the order
+    # below; the length check must run first because later checks index into ``times``.
+    @model_validator(mode="before")
+    @classmethod
+    def validate_time_series(cls, values):
+        cls.at_least_2_timepoints(values)
+        cls.times_start_with_0(values)
+        cls.times_are_not_too_big(values)
+        cls.times_must_be_ascendingly_sorted(values)
+        cls.check_times_and_values_have_same_length(values)
+        return values
+
     # must have at least 2 time values
-    @root_validator(pre=True, skip_on_failure=True)
-    def at_least_2_timepoints(cls, values):
+    @staticmethod
+    def at_least_2_timepoints(values):
         times = values["times"]
         length = len(times)
         min_length = 2
         if length < min_length:
             raise ValueError(f"Length of times must be at least {min_length}; it is {length}")
-        return values
 
     # the first times entry should be 0
-    @root_validator(pre=True, skip_on_failure=True)
-    def times_start_with_0(cls, values):
+    @staticmethod
+    def times_start_with_0(values):
         times = values["times"]
         if times[0] != 0.0:
             raise ValueError(f"First time value is {times[0]}; it must be 0.0")
-        return values
 
     # The duration of the program should be below MAX_TIME
     # If not, a warning message will be issue to remind the user that the SI units are used here.
-    @root_validator(pre=True, skip_on_failure=True)
-    def times_are_not_too_big(cls, values):
+    @staticmethod
+    def times_are_not_too_big(values):
         times = values["times"]
         capabilities = values["capabilities"]
         if times[-1] > capabilities.MAX_TIME:
@@ -54,11 +64,10 @@ class TimeSeriesValidator(TimeSeries):
                 f"({capabilities.MAX_TIME} seconds). "
                 "The time points should be specified in SI units."
             )
-        return values
 
     # The time array must be sorted in ascending order
-    @root_validator(pre=True, skip_on_failure=True)
-    def times_must_be_ascendingly_sorted(cls, values):
+    @staticmethod
+    def times_must_be_ascendingly_sorted(values):
         times = values["times"]
         for i in range(len(times) - 1):
             if times[i] >= times[i + 1]:
@@ -66,11 +75,10 @@ class TimeSeriesValidator(TimeSeries):
                     f"Time point {i} ({times[i]}) and time point {i + 1} ({times[i + 1]}) "
                     "must be monotonically increasing."
                 )
-        return values
 
     # Check that the times and the values have the same length
-    @root_validator(pre=True, skip_on_failure=True)
-    def check_times_and_values_have_same_length(cls, values):
+    @staticmethod
+    def check_times_and_values_have_same_length(values):
         len_times = len(values["times"])
         len_values = len(values["values"])
         if len_values != len_times:
@@ -78,4 +86,3 @@ class TimeSeriesValidator(TimeSeries):
                 f"The sample times (length: {len_times}) and the values (length: {len_values}) "
                 "must have the same length."
             )
-        return values

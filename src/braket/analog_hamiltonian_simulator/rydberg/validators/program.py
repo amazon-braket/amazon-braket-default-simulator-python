@@ -15,7 +15,7 @@ from copy import deepcopy
 from functools import reduce
 from operator import iadd
 
-from pydantic.v1 import root_validator
+from pydantic import model_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.rydberg_simulator_helpers import _get_coefs
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
@@ -30,9 +30,16 @@ from braket.ir.ahs.program_v1 import Program
 class ProgramValidator(Program):
     capabilities: CapabilitiesConstants
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_program(cls, values):
+        cls.local_detuning_pattern_has_the_same_length_as_atom_array_sites(values)
+        cls.net_detuning_must_not_exceed_max_net_detuning(values)
+        return values
+
     # The pattern of the shifting field must have the same length as the lattice_sites
-    @root_validator(pre=True, skip_on_failure=True)
-    def local_detuning_pattern_has_the_same_length_as_atom_array_sites(cls, values):
+    @staticmethod
+    def local_detuning_pattern_has_the_same_length_as_atom_array_sites(values):
         num_sites = len(values["setup"]["ahs_register"]["sites"])
         for idx, local_detuning in enumerate(values["hamiltonian"]["localDetuning"]):
             pattern_size = len(local_detuning["magnitude"]["pattern"])
@@ -41,18 +48,17 @@ class ProgramValidator(Program):
                     f"The length of pattern ({pattern_size}) of local detuning {idx} must equal "
                     f"the number of atom array sites ({num_sites})."
                 )
-        return values
 
     # If there is local detuning, the net value of detuning for each atom
     # should not exceed a max detuning value
-    @root_validator(pre=True, skip_on_failure=True)
-    def net_detuning_must_not_exceed_max_net_detuning(cls, values):
+    @staticmethod
+    def net_detuning_must_not_exceed_max_net_detuning(values):
         capabilities = values["capabilities"]  # device_capabilities
 
         # Extract the program and the fields
         program = deepcopy(values)
         del program["capabilities"]
-        program = Program.parse_obj(program)
+        program = Program.model_validate(program)
         driving_fields = program.hamiltonian.drivingFields
         local_detuning = program.hamiltonian.localDetuning
 
@@ -60,7 +66,7 @@ class ProgramValidator(Program):
         # because there are separate validators to validate
         # the global driving fields in the program
         if not len(local_detuning):
-            return values
+            return
 
         detuning_times = [
             local_detune.magnitude.time_series.times for local_detune in local_detuning
@@ -89,5 +95,3 @@ class ProgramValidator(Program):
             local_detuning_coefs,
             capabilities,
         )
-
-        return values

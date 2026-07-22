@@ -14,7 +14,7 @@
 import sys
 
 import numpy as np
-from pydantic.v1 import create_model  # This is temporary for defining properties below
+from pydantic import create_model  # This is temporary for defining properties below
 
 from braket.analog_hamiltonian_simulator.rydberg.constants import (
     RYDBERG_INTERACTION_COEF,
@@ -206,11 +206,14 @@ class RydbergAtomSimulator(BaseLocalSimulator):
             "action": {"braket.ir.ahs.program": {}},
         }
 
+        # Pydantic v2's create_model requires each field to be annotated; provide
+        # (type, default) tuples derived from the property values.
+        field_definitions = {key: (type(value), value) for key, value in properties.items()}
         RydbergSimulatorDeviceCapabilities = create_model(
-            "RydbergSimulatorDeviceCapabilities", **properties
+            "RydbergSimulatorDeviceCapabilities", **field_definitions
         )
 
-        return RydbergSimulatorDeviceCapabilities.parse_obj(properties)
+        return RydbergSimulatorDeviceCapabilities.model_validate(properties)
 
     def initialize_simulation(self, **kwargs) -> Simulation:
         """

@@ -42,24 +42,26 @@ def validate_program(program: Program, device_capabilities: CapabilitiesConstant
         device_capabilities (CapabilitiesConstants): The capability constants for the simulator
     """
 
-    ProgramValidator(capabilities=device_capabilities, **program.dict())
-    AtomArrangementValidator(capabilities=device_capabilities, **program.setup.ahs_register.dict())
-    HamiltonianValidator(**program.hamiltonian.dict())
+    ProgramValidator(capabilities=device_capabilities, **program.model_dump())
+    AtomArrangementValidator(
+        capabilities=device_capabilities, **program.setup.ahs_register.model_dump()
+    )
+    HamiltonianValidator(**program.hamiltonian.model_dump())
     for d_fields in program.hamiltonian.drivingFields:
-        DrivingFieldValidator(capabilities=device_capabilities, **d_fields.dict())
+        DrivingFieldValidator(capabilities=device_capabilities, **d_fields.model_dump())
         amplitude = d_fields.amplitude
         phase = d_fields.phase
         detuning = d_fields.detuning
-        PhysicalFieldValidator(**amplitude.dict())
-        TimeSeriesValidator(capabilities=device_capabilities, **amplitude.time_series.dict())
+        PhysicalFieldValidator(**amplitude.model_dump())
+        TimeSeriesValidator(capabilities=device_capabilities, **amplitude.time_series.model_dump())
 
-        PhysicalFieldValidator(**phase.dict())
-        TimeSeriesValidator(capabilities=device_capabilities, **phase.time_series.dict())
+        PhysicalFieldValidator(**phase.model_dump())
+        TimeSeriesValidator(capabilities=device_capabilities, **phase.time_series.model_dump())
 
-        PhysicalFieldValidator(**detuning.dict())
-        TimeSeriesValidator(capabilities=device_capabilities, **detuning.time_series.dict())
+        PhysicalFieldValidator(**detuning.model_dump())
+        TimeSeriesValidator(capabilities=device_capabilities, **detuning.time_series.model_dump())
     for s_fields in program.hamiltonian.localDetuning:
-        LocalDetuningValidator(capabilities=device_capabilities, **s_fields.dict())
+        LocalDetuningValidator(capabilities=device_capabilities, **s_fields.model_dump())
         magnitude = s_fields.magnitude
-        PhysicalFieldValidator(**magnitude.dict())
-        TimeSeriesValidator(capabilities=device_capabilities, **magnitude.time_series.dict())
+        PhysicalFieldValidator(**magnitude.model_dump())
+        TimeSeriesValidator(capabilities=device_capabilities, **magnitude.time_series.model_dump())
