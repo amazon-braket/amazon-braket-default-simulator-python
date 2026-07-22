@@ -265,6 +265,10 @@ class DensityMatrixProgramContext(ProgramContext):
             sub.density_matrix, qubit_count, axis, 1
         )
 
+        if p0 + p1 <= self._TOL:
+            sub.density_matrix = None
+            return
+
         if p1 <= self._TOL:
             sub.density_matrix = rho0
             sub.record_measurement(qubit_idx, 0)

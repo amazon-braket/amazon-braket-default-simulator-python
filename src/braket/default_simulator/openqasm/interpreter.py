@@ -697,9 +697,18 @@ class Interpreter:
     @visit.register
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
-            node.while_condition
-        ):
+        if self.context.supports_midcircuit_measurement:
+            while not self.context.is_mcm_dependent(node.while_condition):
+                if not cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
+                    return
+                try:
+                    self.visit(deepcopy(node.block))
+                except _BreakSignal:
+                    self.context.handle_loop_break()
+                    return
+                except _ContinueSignal:
+                    self.context.handle_loop_continue()
+                    continue
             gen = self.context.evaluate_while_condition(node.while_condition)
             for _ in gen:
                 try:

@@ -5391,3 +5391,64 @@ class TestDensityMatrixSimulatorBranching:
         """
         probs = self._analytical(qasm)[0].value
         assert np.allclose(probs, [0.45, 0.05, 0.05, 0.45])
+
+    # --- Probabilistic while loops (repeat-until-success) terminate ---
+    # Regression: two interacting bugs used to make this hang. (1) The interpreter
+    # checked is_mcm_dependent(condition) only once at loop entry, so a condition
+    # variable initialized from a literal (``done = 0``) ran the loop in the plain
+    # arm, reading the condition off a single path and re-measuring exited branches.
+    # (2) Once branched, the exact engine's continuing branch halves in trace each
+    # pass; below the tolerance the split recorded a deterministic 0 forever instead
+    # of dropping the negligible sub-ensemble.
+
+    RUS_QASM = """
+    OPENQASM 3.0;
+    qubit q;
+    bit done;
+    bit b;
+    done = 0;
+    while (done == 0) {
+        reset q;
+        h q;
+        done = measure q;
+    }
+    b = measure q;
+    """
+
+    def test_repeat_until_success_terminates_analytical(self):
+        """A probabilistic while loop terminates at shots == 0 with the exact state.
+
+        The loop exits only when the measurement returns 1, so rho_total is
+        exactly |1><1| (up to the branch-drop tolerance).
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit q;
+        bit done;
+        done = 0;
+        while (done == 0) {
+            reset q;
+            h q;
+            done = measure q;
+        }
+        #pragma braket result probability
+        """
+        probs = self._analytical(qasm)[0].value
+        assert np.allclose(probs, [0.0, 1.0])
+
+    def test_repeat_until_success_terminates_with_shots(self):
+        """A probabilistic while loop terminates and samples correctly on both backends.
+
+        After the loop, q is deterministically |1>, so every shot records
+        done == 1 and b == 1.
+        """
+        for simulator in (StateVectorSimulator(), DensityMatrixSimulator()):
+            result = simulator.run(OpenQASMProgram(source=self.RUS_QASM), shots=100)
+            counts = Counter("".join(m) for m in result.measurements)
+            # SV and DM report different measured-column sets for the loop-internal
+            # bit (a known difference), so assert every recorded bit is 1 rather
+            # than pinning the exact column count.
+            assert len(result.measurements) == 100, f"{type(simulator).__name__}: {counts}"
+            assert all(set(key) == {"1"} for key in counts), (
+                f"{type(simulator).__name__}: {counts}"
+            )
