@@ -182,11 +182,13 @@ class SubEnsemble(SimulationPath):
         variables: dict[str, FramedVariable] | None = None,
         measurements: dict[int, list[int]] | None = None,
         frame_number: int = 0,
+        mcm_outcomes: dict[int, int] | None = None,
     ):
         super().__init__(
             variables=variables,
             measurements=measurements,
             frame_number=frame_number,
+            mcm_outcomes=mcm_outcomes,
         )
         self.density_matrix = density_matrix
 
@@ -205,4 +207,5 @@ class SubEnsemble(SimulationPath):
             variables=deepcopy(self._variables),
             measurements=deepcopy(self._measurements),
             frame_number=self._frame_number,
+            mcm_outcomes=dict(self._mcm_outcomes),
         )

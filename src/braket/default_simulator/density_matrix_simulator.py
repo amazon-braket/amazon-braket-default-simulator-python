@@ -12,6 +12,9 @@
 # language governing permissions and limitations under the License.
 
 import sys
+import uuid
+
+import numpy as np
 
 from braket.default_simulator import DensityMatrixSimulation
 from braket.default_simulator.openqasm.density_matrix_program_context import (
@@ -25,7 +28,7 @@ from braket.device_schema.simulators import (
     GateModelSimulatorDeviceParameters,
 )
 from braket.ir.openqasm import Program as OpenQASMProgram
-from braket.task_result import GateModelTaskResult
+from braket.task_result import AdditionalMetadata, GateModelTaskResult, TaskMetadata
 
 
 class DensityMatrixSimulator(BaseLocalSimulator):
@@ -46,26 +49,59 @@ class DensityMatrixSimulator(BaseLocalSimulator):
 
         qubit_axis, m = context.active_qubit_axis_map()
 
-        simulation = DensityMatrixSimulation(qubit_count=m, shots=shots)
-        simulation._density_matrix = context.total_density_matrix()
-
         if not shots:
+            simulation = DensityMatrixSimulation(qubit_count=m, shots=shots)
+            simulation._density_matrix = context.total_density_matrix()
             results = self._analytical_results_from_total(context, openqasm_ir, simulation, m)
             return self._create_results_obj(results, openqasm_ir, simulation, created_at)
 
         circuit = context.circuit
+        sorted_classical_indices = sorted(circuit.target_classical_indices)
         classical_bit_positions = {b: i for i, b in enumerate(circuit.target_classical_indices)}
         measured_qubits = [
-            circuit.measured_qubits[classical_bit_positions[i]]
-            for i in sorted(circuit.target_classical_indices)
+            circuit.measured_qubits[classical_bit_positions[i]] for i in sorted_classical_indices
         ]
 
         mapped_measured_qubits = (
             [qubit_axis.get(q, m) for q in measured_qubits] if measured_qubits else None
         )
 
-        return self._create_results_obj(
-            [], openqasm_ir, simulation, created_at, measured_qubits, mapped_measured_qubits
+        subensembles = [
+            context._paths[i]
+            for i in context._active_path_indices
+            if getattr(context._paths[i], "density_matrix", None) is not None
+        ]
+        weights = np.array([sub.trace for sub in subensembles])
+        shot_counts = np.random.multinomial(shots, weights / weights.sum())
+
+        measurements: list[list[str]] = []
+        for sub, count in zip(subensembles, shot_counts):
+            if not count:
+                continue
+            sub_simulation = DensityMatrixSimulation(qubit_count=m, shots=int(count))
+            sub_simulation._density_matrix = sub.density_matrix / sub.trace
+            rows = self._formatted_measurements(sub_simulation, mapped_measured_qubits)
+            if sub._mcm_outcomes:
+                for row in rows:
+                    for col, classical_idx in enumerate(sorted_classical_indices):
+                        if classical_idx in sub._mcm_outcomes:
+                            row[col] = str(sub._mcm_outcomes[classical_idx])
+            measurements.extend(rows)
+
+        return GateModelTaskResult.construct(
+            taskMetadata=TaskMetadata(
+                id=str(uuid.uuid4()),
+                shots=shots,
+                deviceId=self.DEVICE_ID,
+                createdAt=created_at,
+                endedAt=self._timestamp(),
+            ),
+            additionalMetadata=AdditionalMetadata(
+                action=openqasm_ir,
+            ),
+            resultTypes=[],
+            measurements=measurements,
+            measuredQubits=(measured_qubits or list(range(m))),
         )
 
     def _analytical_results_from_total(

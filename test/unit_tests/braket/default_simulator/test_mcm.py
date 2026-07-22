@@ -5389,47 +5389,6 @@ class TestDensityMatrixSimulatorBranching:
         probs = self._analytical(qasm)[0].value
         assert np.allclose(probs, [0.45, 0.05, 0.05, 0.45])
 
-class TestBranchedResultRepeatedMeasurements:
-    """Repeated MCMs on the same qubit must report their historical outcomes."""
-
-    def test_repeated_measurement_of_same_qubit_reports_history(self):
-        qasm = """
-        OPENQASM 3.0;
-        qubit[1] q;
-        bit[2] c;
-        x q[0];
-        c[0] = measure q[0];
-        reset q[0];
-        c[1] = measure q[0];
-        if (c[0]) { }
-        """
-        result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
-        keys = {"".join(m) for m in result.measurements}
-        assert keys == {"10"}, keys
-
-
-class TestBranchedResultShotIndexing:
-    """The per-path overlay must map each path's outcomes to that path's shot slice."""
-
-    def test_asymmetric_path_shot_counts_preserve_alignment(self, simulator):
-        # Verifies that measurements explicitly assigned to a classical register and
-        # also end-of-circuit measurements are returned in the expected order.
-        # Circuit returns anti-correlated c[0] and c[1] with asymmetric probabilities.
-        qasm = """
-        OPENQASM 3.0;
-        qubit[2] q;
-        bit[1] c;
-        ry(2.0943951023931953) q[0];  // 2π/3 → P(|1>) = 0.75
-        c[0] = measure q[0];
-        if (c[0] == 0) x q[1];
-        measure q[1];
-        """
-        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=4000)
-        counter = Counter(["".join(m) for m in result.measurements])
-        assert set(counter) == {"01", "10"}, counter
-        assert 800 < counter["01"] < 1200, counter
-        assert 2800 < counter["10"] < 3200, counter
-
     # --- Probabilistic while loops (repeat-until-success) terminate ---
     # Regression: two interacting bugs used to make this hang. (1) The interpreter
     # checked is_mcm_dependent(condition) only once at loop entry, so a condition
@@ -5487,6 +5446,46 @@ class TestBranchedResultShotIndexing:
             # bit (a known difference), so assert every recorded bit is 1 rather
             # than pinning the exact column count.
             assert len(result.measurements) == 100, f"{type(simulator).__name__}: {counts}"
-            assert all(set(key) == {"1"} for key in counts), (
-                f"{type(simulator).__name__}: {counts}"
-            )
+            assert all(set(key) == {"1"} for key in counts), f"{type(simulator).__name__}: {counts}"
+
+
+class TestBranchedResultRepeatedMeasurements:
+    """Repeated MCMs on the same qubit must report their historical outcomes."""
+
+    def test_repeated_measurement_of_same_qubit_reports_history(self):
+        qasm = """
+        OPENQASM 3.0;
+        qubit[1] q;
+        bit[2] c;
+        x q[0];
+        c[0] = measure q[0];
+        reset q[0];
+        c[1] = measure q[0];
+        if (c[0]) { }
+        """
+        result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
+        keys = {"".join(m) for m in result.measurements}
+        assert keys == {"10"}, keys
+
+
+class TestBranchedResultShotIndexing:
+    """The per-path overlay must map each path's outcomes to that path's shot slice."""
+
+    def test_asymmetric_path_shot_counts_preserve_alignment(self, simulator):
+        # Verifies that measurements explicitly assigned to a classical register and
+        # also end-of-circuit measurements are returned in the expected order.
+        # Circuit returns anti-correlated c[0] and c[1] with asymmetric probabilities.
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[1] c;
+        ry(2.0943951023931953) q[0];  // 2π/3 → P(|1>) = 0.75
+        c[0] = measure q[0];
+        if (c[0] == 0) x q[1];
+        measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=4000)
+        counter = Counter(["".join(m) for m in result.measurements])
+        assert set(counter) == {"01", "10"}, counter
+        assert 800 < counter["01"] < 1200, counter
+        assert 2800 < counter["10"] < 3200, counter

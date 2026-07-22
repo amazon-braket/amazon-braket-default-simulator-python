@@ -182,9 +182,15 @@ class DensityMatrixProgramContext(ProgramContext):
                 return ("repr", repr(value))
 
     def _subensemble_signature(self, sub: SubEnsemble) -> frozenset:
-        return frozenset(
+        signature = {
             (name, self._normalize_value(var.value)) for name, var in sub.variables.items()
-        )
+        }
+        if self._shots > 0:
+            signature.update(
+                ("__mcm__", classical_idx, outcome)
+                for classical_idx, outcome in sub._mcm_outcomes.items()
+            )
+        return frozenset(signature)
 
     def _merge_subensembles(self) -> None:
         if not self._is_branched or len(self._active_path_indices) <= 1:
