@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from braket.default_simulator.gate_operations import Projection, Reset
+from braket.default_simulator.gate_operations import Reset
 from braket.default_simulator.linalg_utils import (
     QuantumGateDispatcher,
     controlled_matrix,
@@ -128,6 +128,81 @@ class DensityMatrixSimulation(Simulation):
         return np.where((np.abs(diag) >= tol) & (diag >= 0), diag, 0.0)
 
     @staticmethod
+    def project_unnormalized(
+        rho: np.ndarray,
+        qubit_count: int,
+        qubit_axis: int,
+        outcome: int,
+    ) -> tuple[np.ndarray, float]:
+        r"""Project a density matrix onto a single qubit's ``|outcome\rangle`` subspace
+        **without** renormalization.
+
+        Computes :math:`P_b \rho P_b` where :math:`P_b` is the single-qubit computational basis
+        projector ``|outcome \rangle\langle outcome|`` acting on the qubit at ``qubit_axis``.
+
+        This method never divides by the trace, so the returned matrix stays unnormalized
+        and a plain sum of sub-ensembles reconstructs the total density matrix.
+        The returned trace is the exact Branch_Probability of the measurement outcome.
+
+        Args:
+            rho (np.ndarray): The density matrix to project, of shape
+                ``(2**qubit_count, 2**qubit_count)``.
+            qubit_count (int): The number of qubits in ``rho``.
+            qubit_axis (int): The big-endian axis of the measured qubit.
+            outcome (int): The measured bit value, either 0 or 1.
+
+        Returns:
+            tuple[np.ndarray, float]: A tuple containing:
+                - The unnormalized projected density matrix :math:`P_b \rho P_b`.
+                - ``tr(P_b \rho P_b)``, the exact Branch_Probability.
+        """
+        projector = (
+            np.array([[1, 0], [0, 0]], dtype=complex)
+            if outcome == 0
+            else np.array([[0, 0], [0, 1]], dtype=complex)
+        )
+        dispatcher = QuantumGateDispatcher(rho.size)
+        original_shape = rho.shape
+        result = rho.copy()
+        result.shape = [2] * 2 * qubit_count
+        temp = np.zeros_like(result, dtype=complex)
+        result, _ = DensityMatrixSimulation._apply_gate(
+            result,
+            temp,
+            qubit_count,
+            projector,
+            (qubit_axis,),
+            (),
+            (),
+            dispatcher,
+            None,
+        )
+        indices = list(range(qubit_count))
+        probability = float(np.real(np.einsum(result, indices + indices)))
+        result = np.ascontiguousarray(result).reshape(original_shape)
+        return result, probability
+
+    @staticmethod
+    def expand_with_ancilla(rho: np.ndarray, num_new: int) -> np.ndarray:
+        r"""Append ``num_new`` fresh ``|0\rangle`` qubits to a density matrix.
+
+        Args:
+            rho (np.ndarray): The existing density matrix. Not modified.
+            num_new (int): The number of fresh ``|0\rangle`` qubits to append. If not positive,
+                ``rho`` is returned unchanged.
+
+        Returns:
+            np.ndarray: The expanded density matrix ``rho \otimes |0 \rangle\langle 0|``
+            of dimension ``2**num_new`` times larger per side.
+        """
+        if num_new <= 0:
+            return rho
+        dim = 2**num_new
+        zero_projector = np.zeros((dim, dim), dtype=complex)
+        zero_projector[0, 0] = 1
+        return np.kron(rho, zero_projector)
+
+    @staticmethod
     def _apply_operations(
         state: np.ndarray,
         qubit_count: int,
@@ -155,11 +230,7 @@ class DensityMatrixSimulation(Simulation):
         work_buffer2 = np.zeros_like(result, dtype=complex)
 
         for operation in operations:
-            if isinstance(operation, Projection):
-                result, temp = DensityMatrixSimulation._apply_projection(
-                    result, temp, qubit_count, operation, dispatcher
-                )
-            elif isinstance(operation, Reset):
+            if isinstance(operation, Reset):
                 result, temp = DensityMatrixSimulation._apply_reset(
                     result, temp, work_buffer1, work_buffer2, qubit_count, operation, dispatcher
                 )
@@ -191,30 +262,6 @@ class DensityMatrixSimulation(Simulation):
                 )
         result.shape = original_shape
         return result
-
-    @staticmethod
-    def _apply_projection(
-        result: np.ndarray,
-        temp: np.ndarray,
-        qubit_count: int,
-        operation: Projection,
-        dispatcher: QuantumGateDispatcher,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        result, temp = DensityMatrixSimulation._apply_gate(
-            result,
-            temp,
-            qubit_count,
-            operation._base_matrix,
-            operation.targets,
-            (),
-            (),
-            dispatcher,
-            None,
-        )
-        indices = list(range(qubit_count))
-        norm = float(np.real(np.einsum(result, indices + indices)))
-        result /= norm
-        return result, temp
 
     @staticmethod
     def _apply_reset(

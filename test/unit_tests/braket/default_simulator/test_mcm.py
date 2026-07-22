@@ -11,6 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+import numpy as np
 import pytest
 from collections import Counter
 
@@ -42,7 +43,7 @@ from braket.ir.openqasm import Program as OpenQASMProgram
 
 
 class TestStateVectorSimulatorOperatorsOpenQASM:
-    def test_3_2_complex_conditional_logic(self):
+    def test_3_2_complex_conditional_logic(self, simulator):
         """3.2 Complex conditional logic"""
         qasm_source = """
         OPENQASM 3.0;
@@ -77,7 +78,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Complex logic analysis:
@@ -95,7 +95,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             f"Expected {expected_outcomes}, got {set(counter.keys())}"
         )
 
-    def test_3_3_multiple_measurements_and_branching_paths(self):
+    def test_3_3_multiple_measurements_and_branching_paths(self, simulator):
         """3.3 Multiple measurements and branching paths"""
         qasm_source = """
         OPENQASM 3.0;
@@ -122,7 +122,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Should see all four possible measurement combinations for first two qubits
@@ -139,7 +138,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             ratio = counter[outcome] / total
             assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
 
-    def test_4_1_classical_variable_manipulation_with_branching(self):
+    def test_4_1_classical_variable_manipulation_with_branching(self, simulator):
         """4.1 Classical variable manipulation with branching"""
         qasm_source = """
         OPENQASM 3.0;
@@ -170,7 +169,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         counter = Counter(["".join(m) for m in result.measurements])
@@ -186,7 +184,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         # count=2 path: ~25%
         assert 0.15 < counter["111"] / total < 0.35
 
-    def test_4_2_additional_data_types_and_operations_with_branching(self):
+    def test_4_2_additional_data_types_and_operations_with_branching(self, simulator):
         """4.2 Additional data types and operations with branching"""
         qasm_source = """
         OPENQASM 3.0;
@@ -215,7 +213,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         counter = Counter(["".join(m) for m in result.measurements])
@@ -323,7 +320,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 1000
 
-    def test_5_1_loop_dependent_on_measurement_results_with_branching(self):
+    def test_5_1_loop_dependent_on_measurement_results_with_branching(self, simulator):
         """5.1 Loop dependent on measurement results with branching.
 
         While loop with compound condition (b == 0 && count <= 3) and MCM inside.
@@ -348,7 +345,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         assert len(result.measurements) == 1000
@@ -475,7 +471,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.27 < ratio_01 < 0.47, f"Expected ~0.375 for |01⟩, got {ratio_01}"
         assert 0.05 < ratio_00 < 0.2, f"Expected ~0.125 for |00⟩, got {ratio_00}"
 
-    def test_5_4_array_operations_and_indexing(self):
+    def test_5_4_array_operations_and_indexing(self, simulator):
         """5.4 Array Operations and Indexing"""
         qasm_source = """
         OPENQASM 3.0;
@@ -497,7 +493,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Array operations analysis:
@@ -522,7 +517,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             ratio = counter[outcome] / total
             assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
 
-    def test_6_2_quantum_phase_estimation(self):
+    def test_6_2_quantum_phase_estimation(self, simulator):
         """6.2 Quantum Phase Estimation — exercises nested for-loops with negative step."""
         qasm_source = """
         OPENQASM 3.0;
@@ -552,7 +547,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         counter = Counter(["".join(m) for m in result.measurements])
@@ -561,7 +555,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         for outcome in counter:
             assert len(outcome) == 3
 
-    def test_6_3_dynamic_circuit_features(self):
+    def test_6_3_dynamic_circuit_features(self, simulator):
         """6.3 Dynamic Circuit Features"""
         qasm_source = """
         OPENQASM 3.0;
@@ -587,7 +581,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Dynamic circuit features analysis:
@@ -613,7 +606,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             ratio = counter[outcome] / total
             assert 0.05 < ratio < 0.95, f"Unexpected probability {ratio} for outcome {outcome}"
 
-    def test_6_4_quantum_fourier_transform(self):
+    def test_6_4_quantum_fourier_transform(self, simulator):
         """6.4 Quantum Fourier Transform"""
         qasm_source = """
         OPENQASM 3.0;
@@ -639,7 +632,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         counter = Counter(["".join(m) for m in result.measurements])
@@ -690,7 +682,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 1000
 
-    def test_7_2_custom_gates_with_control_flow(self):
+    def test_7_2_custom_gates_with_control_flow(self, simulator):
         """7.2 Custom Gates with Control Flow"""
         qasm_source = """
         OPENQASM 3.0;
@@ -728,7 +720,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Verify simulation completed successfully
@@ -740,7 +731,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 1000
 
-    def test_8_1_maximum_recursion(self):
+    def test_8_1_maximum_recursion(self, simulator):
         """8.1 Maximum Recursion"""
         qasm_source = """
         OPENQASM 3.0;
@@ -765,7 +756,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Maximum recursion analysis:
@@ -799,7 +789,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             f"Expected '10' to be very rare (<2%), got {counter}"
         )
 
-    def test_9_1_basic_gate_modifiers(self):
+    def test_9_1_basic_gate_modifiers(self, simulator):
         """9.1 Basic gate modifiers"""
         qasm_source = """
         OPENQASM 3.0;
@@ -818,7 +808,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Basic gate modifiers analysis:
@@ -843,7 +832,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         ratio_q1_one = outcomes_with_q1_one / total
         assert ratio_q1_one > 0.9, f"Expected >90% to have q[1]=1, got {ratio_q1_one}"
 
-    def test_9_2_control_modifiers(self):
+    def test_9_2_control_modifiers(self, simulator):
         """9.2 Control modifiers"""
         qasm_source = """
         OPENQASM 3.0;
@@ -866,7 +855,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Control modifiers analysis:
@@ -893,7 +881,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.4 < ratio_110 < 0.6, f"Expected ~0.5 for |100⟩, got {ratio_110}"
         assert 0.4 < ratio_111 < 0.6, f"Expected ~0.5 for |111⟩, got {ratio_111}"
 
-    def test_9_3_negative_control_modifiers(self):
+    def test_9_3_negative_control_modifiers(self, simulator):
         """9.3 Negative control modifiers"""
         qasm_source = """
         OPENQASM 3.0;
@@ -912,7 +900,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Verify that negative control modifiers work
@@ -930,7 +917,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         for outcome in counter.keys():
             assert outcome in valid_outcomes, f"Unexpected outcome: {outcome}"
 
-    def test_9_4_multiple_modifiers(self):
+    def test_9_4_multiple_modifiers(self, simulator):
         """9.4 Multiple modifiers"""
         qasm_source = """
         OPENQASM 3.0;
@@ -950,7 +937,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Multiple modifiers analysis:
@@ -976,7 +962,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.4 < ratio_00 < 0.6, f"Expected ~0.5 for |00⟩, got {ratio_00}"
         assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |11⟩, got {ratio_11}"
 
-    def test_9_5_gphase_gate(self):
+    def test_9_5_gphase_gate(self, simulator):
         """9.5 GPhase gate"""
         qasm_source = """
         OPENQASM 3.0;
@@ -999,7 +985,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # GPhase gate analysis:
@@ -1021,7 +1006,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             ratio = counter[outcome] / total
             assert 0.15 < ratio < 0.35, f"Expected ~0.25 for {outcome}, got {ratio}"
 
-    def test_9_6_power_modifiers_with_parametric_angles(self):
+    def test_9_6_power_modifiers_with_parametric_angles(self, simulator):
         """9.6 Power modifiers with parametric angles"""
         qasm_source = """
         OPENQASM 3.0;
@@ -1037,7 +1022,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Power modifiers with parametric angles analysis:
@@ -1064,7 +1048,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
                 f"Expected both outcomes to have significant probability, got {ratio} for {outcome}"
             )
 
-    def test_10_1_local_scope_blocks_inherit_variables(self):
+    def test_10_1_local_scope_blocks_inherit_variables(self, simulator):
         """10.1 Local scope blocks inherit variables"""
         qasm_source = """
         OPENQASM 3.0;
@@ -1093,7 +1077,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Local scope blocks analysis:
@@ -1118,7 +1101,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.4 < ratio_0 < 0.6, f"Expected ~0.5 for |0⟩, got {ratio_0}"
         assert 0.4 < ratio_1 < 0.6, f"Expected ~0.5 for |1⟩, got {ratio_1}"
 
-    def test_10_2_for_loop_iteration_variable_lifetime(self):
+    def test_10_2_for_loop_iteration_variable_lifetime(self, simulator):
         """10.2 For loop iteration variable lifetime"""
         qasm_source = """
         OPENQASM 3.0;
@@ -1141,7 +1124,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # For loop iteration variable lifetime analysis:
@@ -1227,7 +1209,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         for outcome in counter:
             assert all(bit in "01" for bit in outcome), f"Invalid bits in outcome {outcome}"
 
-    def test_11_2_gphase(self):
+    def test_11_2_gphase(self, simulator):
         """11.2 GPhase"""
         qasm_source = """
         qubit[2] qs;
@@ -1253,7 +1235,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # GPhase operations analysis:
@@ -1282,7 +1263,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.3 < ratio_00 < 0.7, f"Expected ~0.5 for |00⟩, got {ratio_00}"
         assert 0.3 < ratio_11 < 0.7, f"Expected ~0.5 for |11⟩, got {ratio_11}"
 
-    def test_11_3_gate_def_with_argument_manipulation(self):
+    def test_11_3_gate_def_with_argument_manipulation(self, simulator):
         """11.3 Gate def with argument manipulation"""
         qasm_source = """
         qubit[2] __qubits__;
@@ -1295,7 +1276,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # Gate def with argument manipulation analysis:
@@ -1324,7 +1304,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
                 f"Expected both outcomes to have significant probability, got {ratio} for {outcome}"
             )
 
-    def test_11_4_physical_qubits(self):
+    def test_11_4_physical_qubits(self, simulator):
         """11.4 Physical qubits"""
         qasm_source = """
         h $0;
@@ -1332,7 +1312,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # Physical qubits analysis:
@@ -1399,7 +1378,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 100, f"Expected 100 measurements, got {total}"
 
-    def test_11_9_global_gate_control(self):
+    def test_11_9_global_gate_control(self, simulator):
         """11.9 Global gate control"""
         qasm_source = """
         qubit q1;
@@ -1411,7 +1390,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # Global gate control analysis:
@@ -1433,7 +1411,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             ratio = counter[outcome] / total
             assert 0.05 < ratio < 0.45, f"Expected ~0.25 for {outcome}, got {ratio}"
 
-    def test_11_10_power_modifiers(self):
+    def test_11_10_power_modifiers(self, simulator):
         """11.10 Power modifiers"""
         # Test sqrt(Z) = S
         qasm_source_z = """
@@ -1446,7 +1424,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program_z = OpenQASMProgram(source=qasm_source_z, inputs={})
-        simulator = StateVectorSimulator()
         result_z = simulator.run_openqasm(program_z, shots=100)
 
         # Create a reference circuit with S gate
@@ -1585,7 +1562,15 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert counter["11111"] == total, f"Expected all measurements to be |11111⟩, got {counter}"
 
     def test_11_12_gate_control(self):
-        """11.12 Gate control"""
+        """11.12 Gate control.
+
+        State-vector only: this is a 5-qubit gate-modifier program with no
+        mid-circuit measurement, so it adds no density-matrix MCM coverage, and
+        the density matrix backend currently hits a pre-existing numba
+        contiguity limitation (``reshape() supports contiguous array only``) in
+        the >=5-qubit gate path, unrelated to this MCM work.
+        """
+        simulator = StateVectorSimulator()
         qasm_source = """
         const int[8] two = 2;
         gate x a { U(π, 0, π) a; }
@@ -1625,7 +1610,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # Gate control analysis:
@@ -1658,7 +1642,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert counter["11111"] == total, f"Expected all measurements to be |11111⟩, got {counter}"
 
-    def test_11_13_gate_inverses(self):
+    def test_11_13_gate_inverses(self, simulator):
         """11.13 Gate inverses"""
         qasm_source = """
         gate rand_u_1 a { U(1, 2, 3) a; }
@@ -1711,7 +1695,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # Gate inverses analysis:
@@ -1735,7 +1718,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert counter["0"] == total, f"Expected all measurements to be |0⟩, got {counter}"
 
-    def test_11_14_gate_on_qubit_registers(self):
+    def test_11_14_gate_on_qubit_registers(self, simulator):
         """11.14 Gate on qubit registers"""
         qasm_source = """
         qubit[3] qs;
@@ -1748,7 +1731,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # Gate on qubit registers analysis:
@@ -1775,7 +1757,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.3 < ratio_1010 < 0.7, f"Expected ~0.5 for |1010⟩, got {ratio_1010}"
         assert 0.3 < ratio_1011 < 0.7, f"Expected ~0.5 for |1011⟩, got {ratio_1011}"
 
-    def test_11_15_rotation_parameter_expressions(self):
+    def test_11_15_rotation_parameter_expressions(self, simulator):
         """11.15 Rotation parameter expressions"""
         qasm_source_pi = """
         OPENQASM 3.0;
@@ -1784,7 +1766,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program_pi = OpenQASMProgram(source=qasm_source_pi, inputs={})
-        simulator = StateVectorSimulator()
         result_pi = simulator.run_openqasm(program_pi, shots=100)
 
         # Rotation parameter expressions analysis:
@@ -1833,7 +1814,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
                 f"Expected both outcomes to have significant probability, got {ratio} for {outcome}"
             )
 
-    def test_12_1_aliasing_of_qubit_registers(self):
+    def test_12_1_aliasing_of_qubit_registers(self, simulator):
         """12.1 Aliasing of qubit registers"""
         qasm_source = """
         OPENQASM 3.0;
@@ -1850,7 +1831,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # Aliasing of qubit registers analysis:
@@ -1878,7 +1858,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.3 < ratio_0101 < 0.7, f"Expected ~0.5 for |0101⟩, got {ratio_0101}"
         assert 0.3 < ratio_1111 < 0.7, f"Expected ~0.5 for |1111⟩, got {ratio_1111}"
 
-    def test_12_2_aliasing_with_concatenation(self):
+    def test_12_2_aliasing_with_concatenation(self, simulator):
         """12.2 Aliasing with concatenation"""
         qasm_source = """
         OPENQASM 3.0;
@@ -1895,7 +1875,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         # Aliasing with concatenation analysis:
@@ -1924,7 +1903,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.3 < ratio_010 < 0.7, f"Expected ~0.5 for |010⟩, got {ratio_010}"
         assert 0.3 < ratio_111 < 0.7, f"Expected ~0.5 for |111⟩, got {ratio_111}"
 
-    def test_13_1_early_return_in_subroutine(self):
+    def test_13_1_early_return_in_subroutine(self, simulator):
         """13.1 Early return in subroutine"""
         qasm_source = """
         OPENQASM 3.0;
@@ -1955,7 +1934,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Early return in subroutine analysis:
@@ -1989,7 +1967,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         for outcome in counter.keys():
             assert outcome in valid_outcomes
 
-    def test_14_1_break_statement_in_loop(self):
+    def test_14_1_break_statement_in_loop(self, simulator):
         """14.1 Break statement in loop"""
         qasm_source = """
         OPENQASM 3.0;
@@ -2018,7 +1996,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Break statement in loop analysis:
@@ -2046,7 +2023,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.4 < ratio_01 < 0.6, f"Expected ~0.5 for |01⟩, got {ratio_01}"
         assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |11⟩, got {ratio_11}"
 
-    def test_14_2_continue_statement_in_loop(self):
+    def test_14_2_continue_statement_in_loop(self, simulator):
         """14.2 Continue statement in loop"""
         qasm_source = """
         OPENQASM 3.0;
@@ -2079,7 +2056,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         # Continue statement in loop analysis:
@@ -2110,7 +2086,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         assert 0.4 < ratio_10 < 0.6, f"Expected ~0.5 for |10⟩, got {ratio_10}"
         assert 0.4 < ratio_11 < 0.6, f"Expected ~0.5 for |11⟩, got {ratio_11}"
 
-    def test_15_1_binary_assignment_operators_basic(self):
+    def test_15_1_binary_assignment_operators_basic(self, simulator):
         """15.1 Basic binary assignment operators (+=, -=, *=, /=)"""
         qasm_source = """
         OPENQASM 3.0;
@@ -2139,7 +2115,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         counter = Counter(["".join(m) for m in result.measurements])
@@ -2239,7 +2214,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 100
 
-    def test_16_3_accessing_nonexistent_variable_error(self):
+    def test_16_3_accessing_nonexistent_variable_error(self, simulator):
         """16.3 Test accessing a variable with a name that doesn't exist in the circuit (should throw an error)"""
         qasm_source = """
         OPENQASM 3.0;
@@ -2257,13 +2232,12 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
 
         # This should raise a KeyError for nonexistent variable
         with pytest.raises(KeyError):
             simulator.run_openqasm(program, shots=100)
 
-    def test_16_4_array_and_qubit_register_out_of_bounds_error(self):
+    def test_16_4_array_and_qubit_register_out_of_bounds_error(self, simulator):
         """16.4 Test accessing an array/bitstring and a qubit register out of bounds (should throw an error)"""
 
         # Test array out of bounds
@@ -2283,7 +2257,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program_array = OpenQASMProgram(source=qasm_source_array, inputs={})
-        simulator = StateVectorSimulator()
 
         # This should raise an IndexError for array out of bounds
         with pytest.raises(IndexError):
@@ -2346,7 +2319,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 100
 
-    def test_17_1_nonexistent_qubit_variable_error(self):
+    def test_17_1_nonexistent_qubit_variable_error(self, simulator):
         """17.1 Test accessing a qubit with a name that doesn't exist (should throw an error)"""
         qasm_source = """
         OPENQASM 3.0;
@@ -2360,13 +2333,12 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
 
         # This should raise a KeyError for nonexistent qubit
         with pytest.raises(KeyError):
             simulator.run_openqasm(program, shots=100)
 
-    def test_17_2_nonexistent_function_error(self):
+    def test_17_2_nonexistent_function_error(self, simulator):
         """17.2 Test calling a function that doesn't exist (should throw an error)"""
         qasm_source = """
         OPENQASM 3.0;
@@ -2382,13 +2354,12 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
 
         # This should raise a NameError for nonexistent function
         with pytest.raises(NameError, match="Subroutine nonexistent_function is not defined"):
             simulator.run_openqasm(program, shots=100)
 
-    def test_17_3_all_paths_end_in_else_block(self):
+    def test_17_3_all_paths_end_in_else_block(self, simulator):
         """17.3 All paths end in the else block"""
         qasm_source = """
         OPENQASM 3.0;
@@ -2410,14 +2381,13 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=100)
 
         counter = Counter(["".join(m) for m in result.measurements])
         # always_false=0, so else block runs: x q[1] → q[1]=1, q[0] untouched
         assert counter == {"1": 100}
 
-    def test_17_4_continue_statements_in_while_loops(self):
+    def test_17_4_continue_statements_in_while_loops(self, simulator):
         """17.4 Continue statements in while loops"""
         qasm_source = """
         OPENQASM 3.0;
@@ -2444,7 +2414,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         counter = Counter(["".join(m) for m in result.measurements])
@@ -2453,7 +2422,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert 0.4 < counter["10"] / total < 0.6
 
-    def test_17_5_empty_return_statements(self):
+    def test_17_5_empty_return_statements(self, simulator):
         """17.5 Empty return statements in subroutines.
 
         Exercises subroutine definition with early return. The subroutine
@@ -2481,7 +2450,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
         result = simulator.run_openqasm(program, shots=1000)
 
         assert len(result.measurements) == 1000
@@ -2540,7 +2508,7 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         total = sum(counter.values())
         assert total == 100
 
-    def test_18_1_simulation_zero_shots(self):
+    def test_18_1_simulation_zero_shots(self, simulator):
         """18.1 Simulation with 0 or negative shots should raise ValueError."""
         qasm_source = """
         OPENQASM 3.0;
@@ -2548,7 +2516,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         """
 
         program = OpenQASMProgram(source=qasm_source, inputs={})
-        simulator = StateVectorSimulator()
 
         with pytest.raises(ValueError):
             simulator.run_openqasm(program, shots=0)
@@ -2557,9 +2524,9 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
             simulator.run_openqasm(program, shots=-100)
 
 
-@pytest.fixture
-def simulator():
-    return StateVectorSimulator()
+@pytest.fixture(params=[StateVectorSimulator, DensityMatrixSimulator], ids=["sv", "dm"])
+def simulator(request):
+    return request.param()
 
 
 class TestUnifiedMCMBasic:
@@ -2803,8 +2770,11 @@ class TestUnifiedMCMEdgeCases:
         counter = Counter(["".join(m) for m in result.measurements])
         assert counter == {"0": 100}
 
-    def test_deterministic_measurement(self, simulator):
+    def test_deterministic_measurement(self):
         """Measurement of |0> should always give 0 (no branching needed)."""
+        # SV-only: SV/DM differ in measured-column reporting for partially-measured
+        # programs (SV pads to the register; DM reports only measured qubits).
+        simulator = StateVectorSimulator()
         qasm = """
         OPENQASM 3.0;
         bit b;
@@ -3269,8 +3239,11 @@ class TestMCMAsymmetricMeasurement:
         counter = Counter(["".join(m) for m in result.measurements])
         assert counter == {"10": 1000}
 
-    def test_measure_only_in_if_branch_z(self, simulator):
+    def test_measure_only_in_if_branch_z(self):
         """X q[0] → b=1 → measure q[1] only in if block."""
+        # SV-only: SV/DM differ in measured-column reporting for partially-measured
+        # programs (SV pads to the register; DM reports only measured qubits).
+        simulator = StateVectorSimulator()
         qasm = """
         OPENQASM 3.0;
         bit b;
@@ -4458,8 +4431,11 @@ class TestMCMFlushPendingEdgeCases:
         with pytest.raises(RuntimeError, match="no simulator"):
             Interpreter(ctx).run(qasm)
 
-    def test_flush_when_already_branched(self, simulator):
+    def test_flush_when_already_branched(self):
         """Reading a pending MCM variable when already branched from an earlier MCM."""
+        # SV-only: this asserts a fixed (SV) measured-column ordering via outcome[1];
+        # SV and DM differ in how recorded classical-bit columns are assembled.
+        simulator = StateVectorSimulator()
         qasm = """
         OPENQASM 3.0;
         qubit[3] q;
@@ -4855,8 +4831,11 @@ class TestClassicalControlGates:
         assert set(experimental.keys()) == {"00", "11"}
         assert set(explicit.keys()) == {"00", "11"}
 
-    def test_cc_prx_without_branch(self, simulator):
+    def test_cc_prx_without_branch(self):
         """With the measured qubit deterministically ``|0>``, ``cc_prx`` never fires."""
+        # SV-only: SV/DM differ in measured-column reporting for partially-measured
+        # programs (SV pads to the register; DM reports only measured qubits).
+        simulator = StateVectorSimulator()
         qasm = """
         OPENQASM 3.0;
         qubit[2] q;
@@ -5067,9 +5046,9 @@ class TestDensityMatrixSimulatorBranching:
     The state-vector tests in :class:`TestStateVectorSimulatorOperatorsOpenQASM`
     drive the bulk of branching behavior; these tests verify that the same
     programs produce statistically equivalent results when the simulator is
-    swapped out for the density-matrix backend, which goes through
-    :meth:`DensityMatrixSimulation._apply_projection` (and, for resets, the
-    Kraus channel path) on each branched replay.
+    swapped out for the density-matrix backend, which branches via exact Kraus
+    splits (:meth:`DensityMatrixSimulation.project_unnormalized`) and draws all
+    shots once from the combined total density matrix.
     """
 
     SHOTS = 4000
@@ -5194,6 +5173,298 @@ class TestDensityMatrixSimulatorBranching:
         # Mirrors a verbatim ``measure_ff(q[13], 0); cc_prx(q[17], pi, 0, 0)``
         # emission: q[17] flips iff b[0]==1 → outcomes "00" and "11" each ~50%.
         self._assert_distributions_match(qasm, expected_keys={"00", "11"})
+
+    # (Req 10.1, 10.2, 10.3): feedforward gates must apply per sub-ensemble on the DM
+    # density matrix, and a cc_prx on an unrecorded feedback key must raise.
+
+    def test_feedforward_applies_per_sub_ensemble(self):
+        """``measure_ff``/``cc_prx`` apply per sub-ensemble on the DM path (Req 10.1, 10.2).
+
+        The experimental ``measure_ff(k) q; cc_prx(a1,a2,k) q2`` form must produce the same
+        per-branch behavior as the explicit ``b = measure q; if (b==1) prx(a1,a2) q2``,
+        and both must agree with the state vector simulator within shot noise. This guards
+        the DM-specific ``cc_prx`` application path (the conditioned ``prx`` is applied to
+        each selected sub-ensemble's density matrix rather than appended to an unused
+        instruction list).
+        """
+        experimental = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] c;
+        h q[0];
+        measure_ff(0) q[0];
+        cc_prx(3.141592653589793, 0.0, 0) q[1];
+        c[0] = measure q[0];
+        c[1] = measure q[1];
+        """
+        explicit = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] c;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            prx(3.141592653589793, 0.0) q[1];
+        }
+        c[0] = measure q[0];
+        c[1] = measure q[1];
+        """
+        # q[1] mirrors q[0] (cc_prx is a pi x-rotation when the feedback bit is 1):
+        # outcomes "00" and "11" each ~50%.
+        self._assert_distributions_match(experimental, expected_keys={"00", "11"})
+        self._assert_distributions_match(explicit, expected_keys={"00", "11"})
+
+    def test_feedforward_independent_keys_apply_per_sub_ensemble(self):
+        """Independent feedback keys each drive their own conditional per sub-ensemble.
+
+        Validates Req 10.1, 10.2: two ``measure_ff`` keys steer two ``cc_prx`` gates, so
+        q[2] mirrors q[0] and q[3] mirrors q[1]; the DM histogram matches SV within noise.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[4] q;
+        bit[4] c;
+        h q[0];
+        h q[1];
+        measure_ff(0) q[0];
+        measure_ff(1) q[1];
+        cc_prx(3.141592653589793, 0.0, 0) q[2];
+        cc_prx(3.141592653589793, 0.0, 1) q[3];
+        c[0] = measure q[0];
+        c[1] = measure q[1];
+        c[2] = measure q[2];
+        c[3] = measure q[3];
+        """
+        self._assert_distributions_match(qasm, expected_keys={"0000", "0101", "1010", "1111"})
+
+    def test_cc_prx_with_unmeasured_feedback_key_raises(self):
+        """A ``cc_prx`` on a feedback key with no prior ``measure_ff`` raises (Req 10.3).
+
+        The inherited handler raises a ``ValueError`` identifying the missing key; this
+        confirms the density-matrix simulator surfaces the same error naming that key.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        cc_prx(3.141592653589793, 0.0, 7) q[0];
+        """
+        with pytest.raises(ValueError, match="cc_prx references feedback key 7 but no measure_ff"):
+            DensityMatrixSimulator().run_openqasm(
+                OpenQASMProgram(source=qasm, inputs={}), shots=100
+            )
+
+    # --- Analytical readout (shots == 0) from the branched total density matrix ---
+    # A measurement-conditioned program branches at every shot count (the DM context's
+    # _should_branch_on_mcm override returns True), so shots == 0 routes through
+    # _run_branched and reads the requested result types directly off the exact
+    # rho_total via _analytical_results_from_total (no sampling).
+
+    @staticmethod
+    def _analytical(qasm):
+        return DensityMatrixSimulator().run(OpenQASMProgram(source=qasm)).resultTypes
+
+    def test_analytical_density_matrix_from_branched_total(self):
+        """shots == 0 DensityMatrix equals the exact branched rho_total.
+
+        ``h; measure; if(b==1) x`` yields the classical mixture
+        0.5|00><00| + 0.5|11><11|, read off rho_total with no sampling.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        #pragma braket result density_matrix
+        """
+        dm = self._analytical(qasm)[0].value
+        expected = np.zeros((4, 4), dtype=complex)
+        expected[0, 0] = 0.5
+        expected[3, 3] = 0.5
+        assert np.allclose(dm, expected)
+
+    def test_analytical_probability_from_branched_total(self):
+        """shots == 0 Probability equals the real diagonal of rho_total."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        #pragma braket result probability
+        """
+        probs = self._analytical(qasm)[0].value
+        assert np.allclose(probs, [0.5, 0.0, 0.0, 0.5])
+
+    def test_analytical_expectation_and_variance_from_branched_total(self):
+        """shots == 0 Expectation/Variance use the direct trace on rho_total.
+
+        For 0.5|00><00| + 0.5|11><11| and observable Z on q[0]:
+        <Z> = Tr(Z rho) = 0, Var = Tr(Z^2 rho) - <Z>^2 = 1.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        #pragma braket result expectation z(q[0])
+        #pragma braket result variance z(q[0])
+        """
+        results = self._analytical(qasm)
+        assert np.isclose(results[0].value, 0.0)
+        assert np.isclose(results[1].value, 1.0)
+
+    def test_analytical_subset_result_type_reports_against_physical_qubit(self):
+        """A subset result type at shots == 0 reports against the original physical qubit.
+
+        ``measure, then correct`` re-converges q[0] to |0> on both branches, so
+        rho_total reduces to |0><0| on q[0]; the targeted Z expectation is +1.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[0];
+        }
+        #pragma braket result expectation z(q[0])
+        """
+        results = self._analytical(qasm)
+        assert np.isclose(results[0].value, 1.0)
+
+    def test_branched_noise_instruction_applies_per_sub_ensemble(self):
+        """A noise channel after an MCM branch applies per sub-ensemble (covers the
+        branched ``add_noise_instruction`` path).
+
+        ``h; measure; if(b==1) x q[1]`` gives 0.5|0>+0.5|1> on q[1]; a bit_flip(0.1)
+        on q[1] then yields exact probabilities [0.45, 0.05, 0.05, 0.45] at shots == 0.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        #pragma braket noise bit_flip(0.1) q[1]
+        #pragma braket result probability
+        """
+        probs = self._analytical(qasm)[0].value
+        assert np.allclose(probs, [0.45, 0.05, 0.05, 0.45])
+
+    def test_branched_kraus_instruction_applies_per_sub_ensemble(self):
+        """A Kraus channel after an MCM branch applies per sub-ensemble (covers the
+        branched ``add_kraus_instruction`` path).
+
+        The bit-flip Kraus set ``[sqrt(0.9) I, sqrt(0.1) X]`` on q[1] reproduces the
+        bit_flip(0.1) probabilities [0.45, 0.05, 0.05, 0.45] at shots == 0.
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit b;
+        h q[0];
+        b = measure q[0];
+        if (b == 1) {
+            x q[1];
+        }
+        #pragma braket noise kraus([[0.9486832980505138, 0], [0, 0.9486832980505138]], [[0, 0.31622776601683794], [0.31622776601683794, 0]]) q[1]
+        #pragma braket result probability
+        """
+        probs = self._analytical(qasm)[0].value
+        assert np.allclose(probs, [0.45, 0.05, 0.05, 0.45])
+
+    # --- Probabilistic while loops (repeat-until-success) terminate ---
+    # Regression: two interacting bugs used to make this hang. (1) The interpreter
+    # checked is_mcm_dependent(condition) only once at loop entry, so a condition
+    # variable initialized from a literal (``done = 0``) ran the loop in the plain
+    # arm, reading the condition off a single path and re-measuring exited branches.
+    # (2) Once branched, the exact engine's continuing branch halves in trace each
+    # pass; below the tolerance the split recorded a deterministic 0 forever instead
+    # of dropping the negligible sub-ensemble.
+
+    RUS_QASM = """
+    OPENQASM 3.0;
+    qubit q;
+    bit done;
+    bit b;
+    done = 0;
+    while (done == 0) {
+        reset q;
+        h q;
+        done = measure q;
+    }
+    b = measure q;
+    """
+
+    def test_repeat_until_success_terminates_analytical(self):
+        """A probabilistic while loop terminates at shots == 0 with the exact state.
+
+        The loop exits only when the measurement returns 1, so rho_total is
+        exactly |1><1| (up to the branch-drop tolerance).
+        """
+        qasm = """
+        OPENQASM 3.0;
+        qubit q;
+        bit done;
+        done = 0;
+        while (done == 0) {
+            reset q;
+            h q;
+            done = measure q;
+        }
+        #pragma braket result probability
+        """
+        probs = self._analytical(qasm)[0].value
+        assert np.allclose(probs, [0.0, 1.0])
+
+    def test_single_shot_skips_subensembles_with_zero_allocated_shots(self):
+        """With shots=1 and two surviving branches, exactly one branch draws the
+        shot; the other is allocated zero shots and skipped without emitting rows."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] c;
+        qubit[2] q;
+        h q[0];
+        c[0] = measure q[0];
+        if (c[0] == 1) {
+            x q[1];
+        }
+        c[1] = measure q[1];
+        """
+        result = DensityMatrixSimulator().run(OpenQASMProgram(source=qasm), shots=1)
+        assert len(result.measurements) == 1
+        assert "".join(result.measurements[0]) in {"00", "11"}
+
+    def test_repeat_until_success_terminates_with_shots(self):
+        """A probabilistic while loop terminates and samples correctly on both backends.
+
+        After the loop, q is deterministically |1>, so every shot records
+        done == 1 and b == 1.
+        """
+        for simulator in (StateVectorSimulator(), DensityMatrixSimulator()):
+            result = simulator.run(OpenQASMProgram(source=self.RUS_QASM), shots=100)
+            counts = Counter("".join(m) for m in result.measurements)
+            # SV and DM report different measured-column sets for the loop-internal
+            # bit (a known difference), so assert every recorded bit is 1 rather
+            # than pinning the exact column count.
+            assert len(result.measurements) == 100, f"{type(simulator).__name__}: {counts}"
+            assert all(set(key) == {"1"} for key in counts), f"{type(simulator).__name__}: {counts}"
 
 
 class TestBranchedResultRepeatedMeasurements:
