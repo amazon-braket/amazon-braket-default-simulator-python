@@ -76,12 +76,14 @@ class SimulationPath:
         variables: dict[str, FramedVariable] | None = None,
         measurements: dict[int, list[int]] | None = None,
         frame_number: int = 0,
+        mcm_outcomes: dict[int, int] | None = None,
     ):
         self._instructions = instructions if instructions is not None else []
         self._shots = shots
         self._variables = variables if variables is not None else {}
         self._measurements = measurements if measurements is not None else {}
         self._frame_number = frame_number
+        self._mcm_outcomes = mcm_outcomes if mcm_outcomes is not None else {}
 
     @property
     def instructions(self) -> list[GateOperation]:
@@ -124,6 +126,7 @@ class SimulationPath:
             variables=deepcopy(self._variables),
             measurements=deepcopy(self._measurements),
             frame_number=self._frame_number,
+            mcm_outcomes=dict(self._mcm_outcomes),
         )
 
     def enter_frame(self) -> int:

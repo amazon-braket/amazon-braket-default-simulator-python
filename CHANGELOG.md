@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.39.6 (2026-07-20)
+
+### Bug Fixes and Other Changes
+
+ * Report per-measurement history for repeated MCMs on same qubit
+
 ## v1.39.5 (2026-06-22)
 
 ### Bug Fixes and Other Changes
