@@ -15,7 +15,7 @@ import warnings
 from decimal import Decimal
 
 import numpy as np
-from pydantic.v1.class_validators import root_validator
+from pydantic import model_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
@@ -34,17 +34,24 @@ def _euclidean_distance(
 class AtomArrangementValidator(AtomArrangement):
     capabilities: CapabilitiesConstants
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_atom_arrangement(cls, values):
+        cls.sites_have_length_2(values)
+        cls.sites_fit_in_bounding_box(values)
+        cls.filling_contains_only_0_and_1(values)
+        cls.filling_same_length_as_sites(values)
+        cls.sites_not_too_close(values)
+        return values
+
     # Each site has two coordinates (minItems=maxItems=2)
-    @root_validator(pre=True, skip_on_failure=True)
-    def sites_have_length_2(cls, values: dict) -> dict:
+    @staticmethod
+    def sites_have_length_2(values: dict) -> None:
         """
         Validate that the sites in the atom arrangement have only two coordinates
 
         Args:
             values (Dict): The site and capability constants
-
-        Returns:
-            Dict: The validated sites
         """
         sites = values["sites"]
         capabilities = values["capabilities"]
@@ -54,13 +61,12 @@ class AtomArrangementValidator(AtomArrangement):
                     f"Site {index}({site}) has length {len(site)}; it must be "
                     f"{capabilities.DIMENSIONS}."
                 )
-        return values
 
     # All lattice sites should fit within a (BOUNDING_BOX_SIZE_X) x (BOUNDING_BOX_SIZE_Y)
     # bounding box. If not, a warning message will issue to remind the user that the SI
     # units are used here.
-    @root_validator(pre=True, skip_on_failure=True)
-    def sites_fit_in_bounding_box(cls, values):
+    @staticmethod
+    def sites_fit_in_bounding_box(values):
         sites = values["sites"]
         if sites:
             capabilities = values["capabilities"]
@@ -85,20 +91,17 @@ class AtomArrangementValidator(AtomArrangement):
                         "The coordinates of the atoms should be specified in SI units."
                     )
 
-        return values
-
     #  Filling has only integers which are either 0 or 1
-    @root_validator(pre=True, skip_on_failure=True)
-    def filling_contains_only_0_and_1(cls, values):
+    @staticmethod
+    def filling_contains_only_0_and_1(values):
         filling = values["filling"]
         for idx, f in enumerate(filling):
             if f not in {0, 1}:
                 raise ValueError(f"Invalid value at {idx} (value: {f}). Only 0 and 1 are allowed.")
-        return values
 
     # Filling must have the same length as `lattice_sites`.
-    @root_validator(pre=True, skip_on_failure=True)
-    def filling_same_length_as_sites(cls, values):
+    @staticmethod
+    def filling_same_length_as_sites(values):
         filling = values["filling"]
         expected_length = len(values["sites"])
         length = len(filling)
@@ -106,11 +109,10 @@ class AtomArrangementValidator(AtomArrangement):
             raise ValueError(
                 f"Filling length ({length}) does not match sites length ({expected_length})"
             )
-        return values
 
     # Two lattice sites cannot be closer (in terms of Euclidean distance) than MIN_DISTANCE
-    @root_validator(pre=True, skip_on_failure=True)
-    def sites_not_too_close(cls, values):
+    @staticmethod
+    def sites_not_too_close(values):
         sites = values["sites"]
         capabilities = values["capabilities"]
         for index_1, site_1 in enumerate(sites):
@@ -123,4 +125,3 @@ class AtomArrangementValidator(AtomArrangement):
                         f"than the typical scale ({capabilities.MIN_DISTANCE} meters). "
                         "The coordinates of the sites should be specified in SI units."
                     )
-        return values
