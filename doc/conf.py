@@ -1,12 +1,11 @@
 """Sphinx configuration."""
 
 import datetime
-
-import pkg_resources
+from importlib.metadata import version as pkg_version
 
 # Sphinx configuration below.
 project = "amazon-braket-default-simulator"
-version = pkg_resources.require(project)[0].version
+version = pkg_version(project)
 release = version
 copyright = "{}, Amazon.com".format(datetime.datetime.now().year)
 
