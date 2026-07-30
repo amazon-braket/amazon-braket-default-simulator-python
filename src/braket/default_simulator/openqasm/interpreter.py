@@ -135,7 +135,7 @@ _EVALUABLE = (
 )
 
 
-_MAX_LOOP_ITERATIONS = 100_000
+_MAX_LOOP_ITERATIONS = 1_000
 
 
 class Interpreter:
