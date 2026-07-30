@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.39.7 (2026-07-30)
+
+### Bug Fixes and Other Changes
+
+ * inner-scope shadowing during branched identifier lookup
+ * remove setuptools pin and pkg_resources usage
+
 ## v1.39.6 (2026-07-20)
 
 ### Bug Fixes and Other Changes

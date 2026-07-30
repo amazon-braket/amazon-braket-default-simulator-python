@@ -45,6 +45,7 @@ from braket.default_simulator.openqasm._helpers.casting import (
     convert_string_to_bool_array,
 )
 from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm import interpreter as interp_module
 from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AliasStatement,
@@ -2724,3 +2725,42 @@ def test_undefined_function_in_branching_condition():
     """
     with pytest.raises(NameError, match="Subroutine undefined_func is not defined"):
         Interpreter().run(qasm)
+
+
+def test_infinite_while_loop_raises(monkeypatch):
+    """Static while loop that never terminates raises RuntimeError."""
+    monkeypatch.setattr(interp_module, "_MAX_LOOP_ITERATIONS", 10)
+    qasm = """
+    int[8] x = 1;
+    while (x > 0) {
+        x += 1;
+    }
+    """
+    with pytest.raises(RuntimeError, match="While loop exceeded .* iterations"):
+        Interpreter().run(qasm)
+
+
+def test_while_loop_within_limit_succeeds(monkeypatch):
+    """Static while loop that terminates within the limit works normally."""
+    monkeypatch.setattr(interp_module, "_MAX_LOOP_ITERATIONS", 10)
+    qasm = """
+    int[8] i = 0;
+    while (i < 5) {
+        i += 1;
+    }
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("i") == IntegerLiteral(5)
+
+
+def test_while_loop_no_limit_when_constant_is_zero(monkeypatch):
+    """Setting _MAX_LOOP_ITERATIONS to 0 disables the iteration limit."""
+    monkeypatch.setattr(interp_module, "_MAX_LOOP_ITERATIONS", 0)
+    qasm = """
+    int[8] i = 0;
+    while (i < 20) {
+        i += 1;
+    }
+    """
+    context = Interpreter().run(qasm)
+    assert context.get_value("i") == IntegerLiteral(20)
