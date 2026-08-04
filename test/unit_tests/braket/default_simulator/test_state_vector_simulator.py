@@ -603,18 +603,32 @@ def test_result_types_analytic():
     assert np.allclose(result_types[17].value, 0)
 
 
-def test_invalid_standard_observable_target():
+def test_standard_observable_broadcast_over_register():
     qasm = """
     qubit[2] qs;
+    i qs;
     #pragma braket result variance x(qs)
     """
     simulator = StateVectorSimulator()
-    program = OpenQASMProgram(source=qasm)
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=0)
 
-    must_be_one_qubit = "Standard observable target must be exactly 1 qubit."
+    assert len(result.resultTypes) == 1
+    assert result.resultTypes[0].type == Variance(observable=["x"], targets=None)
+    assert np.allclose(result.resultTypes[0].value, [1.0, 1.0])
 
-    with pytest.raises(ValueError, match=must_be_one_qubit):
-        simulator.run(program, shots=0)
+
+def test_standard_observable_broadcast_over_register_end_to_end():
+    qasm = """
+    qubit[2] q;
+    h q;
+    #pragma braket result expectation h(q)
+    """
+    simulator = StateVectorSimulator()
+    result = simulator.run(OpenQASMProgram(source=qasm), shots=0)
+
+    assert len(result.resultTypes) == 1
+    assert result.resultTypes[0].type == Expectation(observable=["h"], targets=None)
+    assert np.allclose(result.resultTypes[0].value, [1 / np.sqrt(2), 1 / np.sqrt(2)])
 
 
 @pytest.mark.parametrize("shots", (0, 10))
