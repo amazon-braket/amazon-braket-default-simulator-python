@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.39.8 (2026-07-31)
+
+### Bug Fixes and Other Changes
+
+ * reduce max loop iterations from 100k to 1k
+ * cap static while-loop unrolling to prevent infinite loops
+
 ## v1.39.7 (2026-07-30)
 
 ### Bug Fixes and Other Changes
