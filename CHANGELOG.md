@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.39.9 (2026-08-06)
+
+### Bug Fixes and Other Changes
+
+ * broadcast bare-register operand in standard-observable result-type pragma
+
 ## v1.39.8 (2026-07-31)
 
 ### Bug Fixes and Other Changes
