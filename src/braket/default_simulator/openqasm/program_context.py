@@ -729,7 +729,7 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def is_builtin_gate(self, name: str) -> bool:
         """
-        Abstract method to check if the gate with the given name is currently in scope as a built-in Braket gate.
+        Check if the gate with the given name is currently in scope as a built-in Braket gate.
         Args:
             name (str): name of the built-in Braket gate to be checked
         Returns:
@@ -766,10 +766,19 @@ class AbstractProgramContext(ABC):
 
     def add_result(self, result: Results) -> None:
         """
-        Abstract method to add result type to the circuit
+        Add result type to the circuit
 
         Args:
             result (Results): The result object representing the measurement results
+        """
+        raise NotImplementedError
+
+    def add_output_declaration(self, name: str, var_type: ClassicalType) -> None:
+        """Add an output variable
+
+        Args:
+            name (str): The declared output variable name.
+            var_type (ClassicalType): The evaluated declared type.
         """
         raise NotImplementedError
 
@@ -786,7 +795,7 @@ class AbstractProgramContext(ABC):
     @abstractmethod
     def add_phase_instruction(self, target, phase_value):
         """
-        Abstract method to add phase instruction to the circuit
+        Add phase instruction to the circuit
 
         Args:
             target (int or list[int]): The target qubit or qubits to which the phase instruction is applied
@@ -844,7 +853,7 @@ class AbstractProgramContext(ABC):
     def add_gate_instruction(
         self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
     ):
-        """Abstract method to add Braket gate to the circuit.
+        """Add Braket gate to the circuit.
         Args:
             gate_name (str): name of the built-in Braket gate.
             target (tuple[int]): control_qubits + target_qubits.
@@ -861,7 +870,7 @@ class AbstractProgramContext(ABC):
         unitary: np.ndarray,
         target: tuple[int, ...],
     ) -> None:
-        """Abstract method to add a custom Unitary instruction to the circuit
+        """Add a custom Unitary instruction to the circuit
         Args:
             unitary (np.ndarray): unitary matrix
             target (tuple[int, ...]): control_qubits + target_qubits
@@ -871,7 +880,7 @@ class AbstractProgramContext(ABC):
     def add_noise_instruction(
         self, noise_instruction: str, target: list[int], probabilities: list[float]
     ):
-        """Abstract method to add a noise instruction to the circuit
+        """Add a noise instruction to the circuit
 
         Args:
             noise_instruction (str): The name of the noise operation
@@ -882,7 +891,7 @@ class AbstractProgramContext(ABC):
         raise NotImplementedError
 
     def add_kraus_instruction(self, matrices: list[np.ndarray], target: list[int]):
-        """Abstract method to add a Kraus instruction to the circuit
+        """Add a Kraus instruction to the circuit
 
         Args:
             matrices (list[ndarray]): The matrices defining the Kraus operation
@@ -906,7 +915,7 @@ class AbstractProgramContext(ABC):
         """
 
     def add_barrier(self, target: list[int] | None = None) -> None:
-        """Abstract method to add a barrier instruction to the circuit. By defaul barrier is ignored.
+        """Add a barrier instruction to the circuit. By defaul barrier is ignored.
         Barriers act as no-ops in simulation.
 
         Args:
