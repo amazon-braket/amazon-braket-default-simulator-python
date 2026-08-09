@@ -68,31 +68,39 @@ from .circuit import Circuit
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ArrayLiteral,
+    ArrayType,
     BinaryExpression,
     BinaryOperator,
     BitType,
     BooleanLiteral,
+    BoolType,
     ClassicalType,
     DiscreteSet,
     FloatLiteral,
+    FloatType,
     GateModifierName,
     Identifier,
     IndexedIdentifier,
     IndexElement,
     IndexExpression,
     IntegerLiteral,
+    IntType,
     QASMNode,
     QuantumGateDefinition,
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
     SymbolLiteral,
+    UintType,
     UnaryExpression,
 )
 from .simulation_path import FramedVariable, SimulationPath
 
 if TYPE_CHECKING:  # pragma: no cover
     from braket.default_simulator.simulator import BaseLocalSimulator
+
+
+_SUPPORTED_OUTPUT_TYPES = (BoolType, IntType, UintType, FloatType, BitType)
 
 
 class Table:
@@ -1166,6 +1174,8 @@ class ProgramContext(AbstractProgramContext):
         self._shots: int = 0
         self._batch_size: int = 1
         self._pending_mcm_targets: list[tuple] = []
+        self._output_variables: dict[str, ClassicalType] = {}
+        self._output_bindings: dict[str, dict[int | None, int]] = {}
 
     @property
     def circuit(self):
@@ -1192,16 +1202,71 @@ class ProgramContext(AbstractProgramContext):
         as normal end-of-circuit measurements.
         """
         if not self._is_branched and self._pending_mcm_targets:
-            for mcm_target, mcm_classical, _mcm_dest in self._pending_mcm_targets:
-                self._circuit.add_measure(
+            for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
+                assigned_indices = self._circuit.add_measure(
                     mcm_target, mcm_classical, allow_remeasure=self.supports_midcircuit_measurement
                 )
+                self._record_output_binding(mcm_dest, assigned_indices)
             self._pending_mcm_targets.clear()
 
     @property
     def active_paths(self) -> list[SimulationPath]:
         """The currently active simulation paths."""
         return [self._paths[i] for i in self._active_path_indices]
+
+    def add_output_declaration(self, name: str, var_type: ClassicalType) -> None:
+        """Record an OpenQASM ``output`` declaration for the simulation result flow.
+
+        Args:
+            name (str): The declared output variable name.
+            var_type (ClassicalType): The evaluated declared type.
+
+        Raises:
+            NotImplementedError: If the declared type has no mapping to a schema
+                output value (supported types: ``bool``, ``int``, ``uint``,
+                ``float``, ``bit``, and arrays of those).
+        """
+        base_type = var_type.base_type if isinstance(var_type, ArrayType) else var_type
+        if not isinstance(base_type, _SUPPORTED_OUTPUT_TYPES):
+            raise NotImplementedError(
+                f"Output variables of type {type(base_type).__name__} are not supported."
+            )
+        self._output_variables[name] = var_type
+
+    @property
+    def output_variables(self) -> dict[str, ClassicalType]:
+        """Declared output variables, in declaration order."""
+        return dict(self._output_variables)
+
+    @property
+    def output_bindings(self) -> dict[str, dict[int | None, int]]:
+        """Map of output variable name to {element index -> classical measurement index}.
+
+        A ``None`` element index denotes a scalar bit.
+        """
+        return {name: dict(bindings) for name, bindings in self._output_bindings.items()}
+
+    def _record_output_binding(
+        self,
+        classical_destination: Identifier | IndexedIdentifier | None,
+        assigned_indices: list[int],
+    ) -> None:
+        if classical_destination is None or not assigned_indices:
+            return
+        name = get_identifier_name(classical_destination)
+        if name not in self._output_variables:
+            return
+        bindings = self._output_bindings.setdefault(name, {})
+        if isinstance(classical_destination, IndexedIdentifier):
+            for classical_idx in assigned_indices:
+                bindings[classical_idx] = classical_idx
+        else:
+            var_type = self.get_type(name)
+            if isinstance(var_type, BitType) and var_type.size is None:
+                bindings[None] = assigned_indices[0]
+            else:
+                for element, classical_idx in enumerate(assigned_indices):
+                    bindings[element] = classical_idx
 
     def declare_variable(
         self,
@@ -1331,11 +1396,12 @@ class ProgramContext(AbstractProgramContext):
                     self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
                 else:
                     # shots == 0: register as a normal measurement and set variable to 0
-                    self._circuit.add_measure(
+                    assigned_indices = self._circuit.add_measure(
                         mcm_target,
                         mcm_classical,
                         allow_remeasure=self.supports_midcircuit_measurement,
                     )
+                    self._record_output_binding(mcm_dest, assigned_indices)
                     self.update_value(mcm_dest, IntegerLiteral(value=0))
             else:
                 remaining.append((mcm_target, mcm_classical, mcm_dest))
@@ -1389,11 +1455,12 @@ class ProgramContext(AbstractProgramContext):
         else:
             # shots == 0: register as normal measurements and set variables to 0
             for mcm_target, mcm_classical, mcm_dest in to_flush:
-                self._circuit.add_measure(
+                assigned_indices = self._circuit.add_measure(
                     mcm_target,
                     mcm_classical,
                     allow_remeasure=self.supports_midcircuit_measurement,
                 )
+                self._record_output_binding(mcm_dest, assigned_indices)
                 self.update_value(mcm_dest, IntegerLiteral(value=0))
 
     def add_phase_instruction(self, target: tuple[int], phase_value: int):
@@ -2008,11 +2075,12 @@ class ProgramContext(AbstractProgramContext):
         self._measure_and_branch(target)
         self._update_classical_from_measurement(target, classical_destination)
         if classical_targets is not None:
-            self._circuit.add_measure(
+            assigned_indices = self._circuit.add_measure(
                 target,
                 classical_targets,
                 allow_remeasure=self.supports_midcircuit_measurement,
             )
+            self._record_output_binding(classical_destination, assigned_indices)
             classical_targets_list = list(classical_targets)
             for path_idx in self._active_path_indices:
                 path = self._paths[path_idx]
