@@ -2483,7 +2483,7 @@ def test_if_else_branch():
 
 
 def test_for_loop_break():
-    # exercises _BreakSignal / BreakStatement
+    # exercises BreakSignal / BreakStatement
     qasm = """
     int[8] x = 0;
     for int[8] i in [0:4] {
@@ -2498,7 +2498,7 @@ def test_for_loop_break():
 
 
 def test_for_loop_continue():
-    # exercises _ContinueSignal / ContinueStatement
+    # exercises ContinueSignal / ContinueStatement
     qasm = """
     int[8] x = 0;
     for int[8] i in [0:4] {
