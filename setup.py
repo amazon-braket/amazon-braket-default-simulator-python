@@ -38,7 +38,7 @@ setup(
         "scipy",
         "sympy",
         "antlr4-python3-runtime==4.13.2",
-        "amazon-braket-schemas>=1.26.1",
+        "amazon-braket-schemas>=1.30.0",
     ],
     entry_points={
         "braket.simulators": [
