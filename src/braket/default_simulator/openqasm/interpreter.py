@@ -135,6 +135,9 @@ _EVALUABLE = (
 )
 
 
+_MAX_LOOP_ITERATIONS = 1_000
+
+
 class Interpreter:
     """
     The interpreter is responsible for visiting the AST of an OpenQASM program, as created
@@ -712,7 +715,14 @@ class Interpreter:
                     self.context.handle_loop_continue()
                     continue
         else:
+            iterations = 0
             while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
+                iterations += 1
+                if _MAX_LOOP_ITERATIONS > 0 and iterations > _MAX_LOOP_ITERATIONS:
+                    raise RuntimeError(
+                        f"While loop exceeded {_MAX_LOOP_ITERATIONS} iterations "
+                        f"during static unrolling. The loop condition may never become false."
+                    )
                 try:
                     self.visit(deepcopy(node.block))
                 except _BreakSignal:

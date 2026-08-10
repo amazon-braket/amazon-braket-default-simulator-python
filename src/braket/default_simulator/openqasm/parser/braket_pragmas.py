@@ -100,12 +100,14 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
     def visitStandardObservableIdentifier(
         self,
         ctx: BraketPragmasParser.StandardObservableIdentifierContext,
-    ) -> tuple[tuple[str], int]:
+    ) -> tuple[tuple[str], tuple[int] | None]:
         observable = ctx.standardObservableName().getText()
         target_tuple = self.visit(ctx.gateOperand())
-        if len(target_tuple) != 1:
-            raise ValueError("Standard observable target must be exactly 1 qubit.")
-        return (observable,), target_tuple
+        if len(target_tuple) == 1:
+            return (observable,), target_tuple
+        # Bare register operand (e.g. `expectation h(q)` with `qubit[N] q;`)
+        # broadcasts across the register, same as `h q;` / `barrier q;`.
+        return (observable,), None
 
     def visitStandardObservableAll(
         self,

@@ -917,6 +917,17 @@ class BaseLocalSimulator(OpenQASMSimulator):
             qubits_not_in_circuit = mapped_arr[~in_circuit_mask]
             measurements_array = np.array(measurements)
             selected = measurements_array[:, qubits_in_circuit]
+            # Overlay per-classical-bit MCM outcomes over the final-state
+            # samples so repeat measurements aren't reported as the qubit's
+            # final resampled state.
+            shot_offset = 0
+            for path in context.active_paths:
+                mcm_outcomes = path._mcm_outcomes
+                for shot_idx in range(shot_offset, shot_offset + path.shots):
+                    for col, classical_idx in enumerate(sorted(circuit.target_classical_indices)):
+                        if classical_idx in mcm_outcomes:
+                            selected[shot_idx, col] = str(mcm_outcomes[classical_idx])
+                shot_offset += path.shots
             measurements = np.pad(selected, ((0, 0), (0, len(qubits_not_in_circuit)))).tolist()
 
         return GateModelTaskResult.construct(

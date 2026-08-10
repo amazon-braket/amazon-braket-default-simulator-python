@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.39.9 (2026-08-06)
+
+### Bug Fixes and Other Changes
+
+ * broadcast bare-register operand in standard-observable result-type pragma
+
+## v1.39.8 (2026-07-31)
+
+### Bug Fixes and Other Changes
+
+ * reduce max loop iterations from 100k to 1k
+ * cap static while-loop unrolling to prevent infinite loops
+
+## v1.39.7 (2026-07-30)
+
+### Bug Fixes and Other Changes
+
+ * inner-scope shadowing during branched identifier lookup
+ * remove setuptools pin and pkg_resources usage
+
+## v1.39.6 (2026-07-20)
+
+### Bug Fixes and Other Changes
+
+ * Report per-measurement history for repeated MCMs on same qubit
+
 ## v1.39.5 (2026-06-22)
 
 ### Bug Fixes and Other Changes
