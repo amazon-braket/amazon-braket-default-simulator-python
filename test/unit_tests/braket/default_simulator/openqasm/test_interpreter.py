@@ -1476,7 +1476,26 @@ def test_output_conflicts_with_input():
     input int x;
     output int x;
     """
-    with pytest.raises(NameError, match="'x' is already declared as an input variable"):
+    with pytest.raises(NameError, match="Duplicate input variable declaration 'x'"):
+        Interpreter(_OutputRecordingContext()).run(qasm)
+
+
+def test_input_conflicts_with_output():
+    qasm = """
+    output int x;
+    input int x;
+    """
+    context = _OutputRecordingContext()
+    with pytest.raises(NameError, match="Duplicate output variable declaration 'x'"):
+        Interpreter(context).run(qasm)
+
+
+def test_duplicate_input_declaration():
+    qasm = """
+    input int x;
+    input int x;
+    """
+    with pytest.raises(NameError, match="Duplicate input variable declaration 'x'"):
         Interpreter(_OutputRecordingContext()).run(qasm)
 
 

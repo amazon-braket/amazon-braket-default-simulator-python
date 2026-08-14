@@ -256,25 +256,28 @@ class Interpreter:
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
+        name = node.identifier.name
+        self._check_io_name_available(name)
         if node.io_identifier == IOKeyword.output:
-            name = node.identifier.name
-            if name in self._input_names:
-                raise NameError(f"Variable '{name}' is already declared as an input variable.")
-            if name in self._output_names:
-                raise NameError(f"Duplicate output variable declaration '{name}'.")
             self._output_names.add(name)
             declaration = ClassicalDeclaration(node.type, node.identifier, None)
             self.visit(declaration)
             self.context.add_output_declaration(name, self.context.get_type(name))
         else:  # IOKeyword.input:
-            self._input_names.add(node.identifier.name)
+            self._input_names.add(name)
             init_value, node_type = (
-                (wrap_value_into_literal(self.context.inputs[node.identifier.name]), node.type)
-                if node.identifier.name in self.context.inputs
-                else (wrap_value_into_literal(Symbol(node.identifier.name)), SymbolLiteral)
+                (wrap_value_into_literal(self.context.inputs[name]), node.type)
+                if name in self.context.inputs
+                else (wrap_value_into_literal(Symbol(name)), SymbolLiteral)
             )
             declaration = ClassicalDeclaration(node_type, node.identifier, init_value)
             self.visit(declaration)
+
+    def _check_io_name_available(self, name: str) -> None:
+        if name in self._input_names:
+            raise NameError(f"Duplicate input variable declaration '{name}'.")
+        if name in self._output_names:
+            raise NameError(f"Duplicate output variable declaration '{name}'.")
 
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
