@@ -18,6 +18,7 @@ import pytest
 
 from braket.default_simulator import gate_operations, noise_operations, observables
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
+from braket.default_simulator.linalg_utils import partial_trace
 
 sx = np.array([[0, 1], [1, 0]], dtype=complex)
 si = np.array([[1, 0], [0, 1]], dtype=complex)
@@ -520,3 +521,149 @@ def test_toffoli_gate():
         prob_7 = counter[7] / total_shots
         assert abs(prob_2 - 0.5) < 0.1
         assert abs(prob_7 - 0.5) < 0.1
+
+
+# ---------------------------------------------------------------------------
+# Kraus-native MCM helpers: project_unnormalized and expand_with_ancilla
+# ---------------------------------------------------------------------------
+
+
+def _density_matrix_after(qubit_count, operations):
+    """Helper: evolve |0...0> under the given operations and return the density matrix."""
+    simulation = DensityMatrixSimulation(qubit_count, 0)
+    simulation.evolve(operations)
+    return simulation.density_matrix
+
+
+def test_project_unnormalized_superposition_traces_are_analytic_probabilities():
+    """H|0> -> measure: both outcomes have probability 0.5 (Req 1.2, 15.1)."""
+    rho = _density_matrix_after(1, [gate_operations.Hadamard([0])])
+
+    rho0, p0 = DensityMatrixSimulation.project_unnormalized(rho, 1, 0, 0)
+    rho1, p1 = DensityMatrixSimulation.project_unnormalized(rho, 1, 0, 1)
+
+    assert np.isclose(p0, 0.5, atol=1e-12)
+    assert np.isclose(p1, 0.5, atol=1e-12)
+
+    # P_b rho P_b is the unnormalized projected matrix (trace == probability).
+    expected_rho0 = np.array([[0.5, 0], [0, 0]], dtype=complex)
+    expected_rho1 = np.array([[0, 0], [0, 0.5]], dtype=complex)
+    assert np.allclose(rho0, expected_rho0, atol=1e-12)
+    assert np.allclose(rho1, expected_rho1, atol=1e-12)
+    # Trace of the returned matrix equals the reported probability (no renormalization).
+    assert np.isclose(np.real(np.trace(rho0)), p0, atol=1e-12)
+    assert np.isclose(np.real(np.trace(rho1)), p1, atol=1e-12)
+
+
+def test_project_unnormalized_bell_partner_is_deterministic():
+    """For a Bell pair, measuring one qubit's partner outcome is deterministic given
+    the first measurement (Req 1.2, 15.1).
+
+    Project qubit 0 of the Bell state onto |0>; the resulting (unnormalized) matrix
+    then has the partner qubit 1 deterministically in |0> as well.
+    """
+    bell = _density_matrix_after(2, [gate_operations.Hadamard([0]), gate_operations.CX([0, 1])])
+
+    # Probabilities of measuring qubit 0.
+    rho_q0_0, p0 = DensityMatrixSimulation.project_unnormalized(bell, 2, 0, 0)
+    rho_q0_1, p1 = DensityMatrixSimulation.project_unnormalized(bell, 2, 0, 1)
+    assert np.isclose(p0, 0.5, atol=1e-12)
+    assert np.isclose(p1, 0.5, atol=1e-12)
+
+    # Given qubit 0 == 0, measuring qubit 1 is deterministic: P(q1==1) == 0.
+    _, p1_given_q0_0_is_one = DensityMatrixSimulation.project_unnormalized(rho_q0_0, 2, 1, 1)
+    _, p1_given_q0_0_is_zero = DensityMatrixSimulation.project_unnormalized(rho_q0_0, 2, 1, 0)
+    assert np.isclose(p1_given_q0_0_is_one, 0.0, atol=1e-12)
+    assert np.isclose(p1_given_q0_0_is_zero, 0.5, atol=1e-12)
+
+    # Given qubit 0 == 1, measuring qubit 1 is deterministically 1.
+    _, p1_given_q0_1_is_one = DensityMatrixSimulation.project_unnormalized(rho_q0_1, 2, 1, 1)
+    _, p1_given_q0_1_is_zero = DensityMatrixSimulation.project_unnormalized(rho_q0_1, 2, 1, 0)
+    assert np.isclose(p1_given_q0_1_is_one, 0.5, atol=1e-12)
+    assert np.isclose(p1_given_q0_1_is_zero, 0.0, atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    "qubit_count, operations, qubit_axis",
+    [
+        (1, [gate_operations.Hadamard([0])], 0),
+        (1, [gate_operations.RotX([0], np.pi / 3)], 0),
+        (2, [gate_operations.Hadamard([0]), gate_operations.CX([0, 1])], 0),
+        (2, [gate_operations.Hadamard([0]), gate_operations.CX([0, 1])], 1),
+        (3, [gate_operations.Hadamard([0]), gate_operations.Hadamard([1])], 2),
+    ],
+)
+def test_project_unnormalized_split_conserves_parent_trace(qubit_count, operations, qubit_axis):
+    """p0 + p1 == trace(rho) within tolerance (Req 15.4)."""
+    rho = _density_matrix_after(qubit_count, operations)
+    parent_trace = float(np.real(np.trace(rho)))
+
+    _, p0 = DensityMatrixSimulation.project_unnormalized(rho, qubit_count, qubit_axis, 0)
+    _, p1 = DensityMatrixSimulation.project_unnormalized(rho, qubit_count, qubit_axis, 1)
+
+    assert np.isclose(p0 + p1, parent_trace, atol=1e-12)
+
+
+def test_project_unnormalized_does_not_mutate_input():
+    """project_unnormalized must not modify the input density matrix."""
+    rho = _density_matrix_after(1, [gate_operations.Hadamard([0])])
+    rho_copy = rho.copy()
+    DensityMatrixSimulation.project_unnormalized(rho, 1, 0, 0)
+    assert np.allclose(rho, rho_copy, atol=1e-15)
+
+
+def test_expand_with_ancilla_appends_zero_and_preserves_marginals():
+    """rho ⊗ |0><0| keeps existing-qubit marginals and adds a |0> qubit (Req 8.1)."""
+    rho = _density_matrix_after(1, [gate_operations.Hadamard([0])])
+
+    expanded = DensityMatrixSimulation.expand_with_ancilla(rho, 1)
+
+    assert expanded.shape == (4, 4)
+    # Trace is preserved.
+    assert np.isclose(np.real(np.trace(expanded)), np.real(np.trace(rho)), atol=1e-12)
+
+    # The new (least-significant) qubit is in |0>: reduced density matrix == |0><0|.
+    reshaped = np.reshape(expanded, [2] * 2 * 2)
+    new_qubit_marginal = partial_trace(reshaped, [1])
+    assert np.allclose(new_qubit_marginal, np.array([[1, 0], [0, 0]], dtype=complex), atol=1e-12)
+
+    # The existing qubit's marginal is unchanged.
+    existing_qubit_marginal = partial_trace(reshaped, [0])
+    assert np.allclose(existing_qubit_marginal, rho, atol=1e-12)
+
+
+def test_expand_with_ancilla_matches_explicit_evolution():
+    """Expanding a 1-qubit state with an ancilla equals evolving the same gate on a
+    2-qubit |00> register (the ancilla axis is least-significant)."""
+    rho_1q = _density_matrix_after(1, [gate_operations.Hadamard([0])])
+    expanded = DensityMatrixSimulation.expand_with_ancilla(rho_1q, 1)
+
+    rho_2q = _density_matrix_after(2, [gate_operations.Hadamard([0])])
+    assert np.allclose(expanded, rho_2q, atol=1e-12)
+
+
+def test_expand_with_ancilla_multiple_qubits():
+    """Appending multiple ancillas grows the dimension by 2 per qubit and adds |0...0>."""
+    rho = _density_matrix_after(1, [gate_operations.Hadamard([0])])
+
+    expanded = DensityMatrixSimulation.expand_with_ancilla(rho, 2)
+
+    assert expanded.shape == (8, 8)
+    assert np.isclose(np.real(np.trace(expanded)), np.real(np.trace(rho)), atol=1e-12)
+    # Both ancillas in |0>.
+    reshaped = np.reshape(expanded, [2] * 2 * 3)
+    assert np.allclose(partial_trace(reshaped, [0]), rho, atol=1e-12)
+    assert np.allclose(
+        partial_trace(reshaped, [1]), np.array([[1, 0], [0, 0]], dtype=complex), atol=1e-12
+    )
+    assert np.allclose(
+        partial_trace(reshaped, [2]), np.array([[1, 0], [0, 0]], dtype=complex), atol=1e-12
+    )
+
+
+@pytest.mark.parametrize("num_new", [0, -1])
+def test_expand_with_ancilla_noop_for_nonpositive(num_new):
+    """expand_with_ancilla returns rho unchanged when num_new <= 0."""
+    rho = _density_matrix_after(1, [gate_operations.Hadamard([0])])
+    result = DensityMatrixSimulation.expand_with_ancilla(rho, num_new)
+    assert result is rho
