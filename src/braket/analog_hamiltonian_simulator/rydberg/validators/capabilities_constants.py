@@ -13,8 +13,7 @@
 
 from decimal import Decimal
 
-from pydantic import PositiveInt
-from pydantic.v1.main import BaseModel
+from pydantic import BaseModel, PositiveInt
 
 
 class CapabilitiesConstants(BaseModel):

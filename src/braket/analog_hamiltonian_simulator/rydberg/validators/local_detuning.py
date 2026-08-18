@@ -11,7 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from pydantic.v1.class_validators import root_validator
+from pydantic import model_validator
 
 from braket.analog_hamiltonian_simulator.rydberg.validators.capabilities_constants import (
     CapabilitiesConstants,
@@ -25,16 +25,26 @@ from braket.ir.ahs.local_detuning import LocalDetuning
 class LocalDetuningValidator(LocalDetuning):
     capabilities: CapabilitiesConstants
 
-    @root_validator(pre=True, skip_on_failure=True)
-    def magnitude_pattern_is_not_uniform(cls, values):
+    @model_validator(mode="before")
+    @classmethod
+    def validate_local_detuning(cls, values):
+        cls.magnitude_pattern_is_not_uniform(values)
+        cls.magnitude_pattern_within_bounds(values)
+        cls.magnitude_values_within_range(values)
+        return values
+
+    @staticmethod
+    def magnitude_pattern_is_not_uniform(values):
         magnitude = values["magnitude"]
         pattern = magnitude["pattern"]
         if isinstance(pattern, str):
-            raise TypeError(f"Pattern of local detuning must not be a string - {pattern}")
-        return values
+            # Raise ValueError (not TypeError) so Pydantic v2 wraps it in a ValidationError.
+            raise ValueError(  # noqa: TRY004
+                f"Pattern of local detuning must not be a string - {pattern}"
+            )
 
-    @root_validator(pre=True, skip_on_failure=True)
-    def magnitude_pattern_within_bounds(cls, values):
+    @staticmethod
+    def magnitude_pattern_within_bounds(values):
         magnitude = values["magnitude"]
         capabilities = values["capabilities"]
         pattern = magnitude["pattern"]
@@ -47,10 +57,9 @@ class LocalDetuningValidator(LocalDetuning):
                     f"{capabilities.MAGNITUDE_PATTERN_VALUE_MIN} and "
                     f"{capabilities.MAGNITUDE_PATTERN_VALUE_MAX} (inclusive)."
                 )
-        return values
 
-    @root_validator(pre=True, skip_on_failure=True)
-    def magnitude_values_within_range(cls, values):
+    @staticmethod
+    def magnitude_values_within_range(values):
         magnitude = values["magnitude"]
         capabilities = values["capabilities"]
         magnitude_values = magnitude["time_series"]["values"]
@@ -60,4 +69,3 @@ class LocalDetuningValidator(LocalDetuning):
             capabilities.LOCAL_MAGNITUDE_SEQUENCE_VALUE_MAX,
             "magnitude",
         )
-        return values
