@@ -1457,8 +1457,12 @@ class ProgramContext(AbstractProgramContext):
         return super().is_initialized(name)
 
     def _bound_in_inner_scope(self, name: str) -> bool:
-        """Whether ``name`` is bound in a non-global variable-table scope."""
-        return any(name in scope for scope in self.variable_table._scopes[1:])
+        """Whether ``name`` is bound to a value in a non-global variable-table scope."""
+        return any(
+            not is_none_like(scope[name])
+            for scope in self.variable_table._scopes[1:]
+            if name in scope
+        )
 
     def _flush_pending_mcm_for_variable(self, name: str) -> None:
         """If ``name`` resolves to a pending MCM's destination register, flush it.
