@@ -1370,8 +1370,12 @@ class ProgramContext(AbstractProgramContext):
         return super().is_initialized(name)
 
     def _bound_in_inner_scope(self, name: str) -> bool:
-        """Whether ``name`` is bound in a non-global variable-table scope."""
-        return any(name in scope for scope in self.variable_table._scopes[1:])
+        """Whether ``name`` is bound to a value in a non-global variable-table scope."""
+        return any(
+            not is_none_like(scope[name])
+            for scope in self.variable_table._scopes[1:]
+            if name in scope
+        )
 
     def _flush_pending_mcm_for_variable(self, name: str) -> None:
         """If ``name`` matches a pending MCM's classical destination, flush it.
@@ -1979,13 +1983,17 @@ class ProgramContext(AbstractProgramContext):
         return path.measurements[qubit_idx][-1]
 
     @staticmethod
-    def _set_value_at_index(value, index: int, result) -> None:
+    def _set_value_at_index(value, index: int, result, var_type: ClassicalType = None) -> None:
         """Set a measurement result at a specific index within a classical value.
 
         Mutates ``value`` in place. The value is expected to be an
         ArrayLiteral (or similar object with a ``.values`` list).
         """
-        value.values[index] = IntegerLiteral(value=result)
+        base_type = var_type.base_type if isinstance(var_type, ArrayType) else var_type
+        if isinstance(base_type, BitType):
+            value.values[index] = BooleanLiteral(value=bool(result))
+        else:
+            value.values[index] = IntegerLiteral(value=result)
 
     @staticmethod
     def _ensure_path_variable(path: SimulationPath, name: str) -> FramedVariable:
@@ -2028,19 +2036,31 @@ class ProgramContext(AbstractProgramContext):
         index = self._resolve_index(classical_destination.indices)
         meas_result = self._get_path_measurement_result(path, qubit_target[0])
         framed_var = self._ensure_path_variable(path, base_name)
-        self._set_value_at_index(framed_var.value, index, meas_result)
+        self._set_value_at_index(framed_var.value, index, meas_result, framed_var.var_type)
 
     def _update_identifier_target(
         self, path: SimulationPath, qubit_target, classical_destination: Identifier
     ) -> None:
         """Update a plain identifier classical variable on one path.
 
-        Handles the ``b = measure q[0]`` case (single-qubit MCM).
+        Handles ``b = measure q[0]`` and whole-register ``c = measure q``.
         """
         var_name = classical_destination.name
-        meas_result = self._get_path_measurement_result(path, qubit_target[0])
         framed_var = self._ensure_path_variable(path, var_name)
-        framed_var.value = meas_result
+        var_type = framed_var.var_type
+        base_type = var_type.base_type if isinstance(var_type, ArrayType) else var_type
+        is_sized_register = (
+            isinstance(base_type, BitType) and base_type.size is not None
+        ) or isinstance(var_type, ArrayType)
+        if is_sized_register and len(qubit_target) > 1:
+            framed_var.value = ArrayLiteral(
+                [
+                    BooleanLiteral(value=bool(self._get_path_measurement_result(path, qubit)))
+                    for qubit in qubit_target
+                ]
+            )
+            return
+        framed_var.value = self._get_path_measurement_result(path, qubit_target[0])
 
     def _initialize_paths_from_circuit(self) -> None:
         """Transfer existing circuit instructions and variables to the initial SimulationPath.
