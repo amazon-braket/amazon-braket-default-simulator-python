@@ -28,6 +28,7 @@ from braket.ir.jaqcd.program_v1 import Results
 from .generated.BraketPragmasLexer import BraketPragmasLexer
 from .generated.BraketPragmasParser import BraketPragmasParser
 from .generated.BraketPragmasParserVisitor import BraketPragmasParserVisitor
+from .openqasm_ast import Identifier
 from .openqasm_parser import parse
 
 
@@ -136,9 +137,17 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         return (converted,), target
 
     def visitGateOperand(self, ctx: BraketPragmasParser.GateOperandContext) -> tuple[int]:
-        """Handle both indexedIdentifier (q[0]) and HardwareQubit ($0) in pragmas."""
+        """Handle both indexedIdentifier (q[0]) and HardwareQubit ($0) in pragmas.
+
+        Both branches delegate to ``qubit_table.get_by_identifier`` so context
+        subclasses can translate qubit references (e.g. mapping device labels
+        to interpreter indices for consumers that carry a topology-aware
+        physical-qubit map). The default ``QubitTable`` treats ``$N`` as
+        ``(N,)`` so behavior is unchanged for callers using the base table.
+        """
         if ctx.HardwareQubit():
-            return (int(ctx.HardwareQubit().getText()[1:]),)
+            identifier = Identifier(name=ctx.HardwareQubit().getText())
+            return self.qubit_table.get_by_identifier(identifier)
         return self.visit(ctx.indexedIdentifier())
 
     def visitIndexedIdentifier(
