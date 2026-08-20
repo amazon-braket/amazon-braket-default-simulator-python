@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.40.1 (2026-08-20)
+
+### Bug Fixes and Other Changes
+
+ * route pragma HardwareQubit references through qubit_table
+
 ## v1.40.0 (2026-08-14)
 
 ### Features
