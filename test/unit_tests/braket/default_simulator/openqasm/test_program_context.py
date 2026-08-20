@@ -15,11 +15,15 @@ import pytest
 
 from braket.default_simulator import gate_operations
 from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    AngleType,
+    ArrayType,
     BooleanLiteral,
     BoolType,
     FloatLiteral,
     FloatType,
+    Identifier,
     IntegerLiteral,
     IntType,
 )
@@ -173,3 +177,77 @@ def test_add_barrier_is_noop():
 
     # Circuit should remain unchanged
     assert len(context.circuit.instructions) == initial_instruction_count
+
+
+def run_output_program(qasm):
+    """Interpret a program and flush pending measurements into the circuit."""
+    context = Interpreter().run(qasm)
+    _ = context.circuit  # trigger pending-MCM flush (records output bindings)
+    return context
+
+
+def test_unsupported_output_type():
+    with pytest.raises(NotImplementedError, match="type AngleType are not supported"):
+        Interpreter().run("OPENQASM 3.0;\noutput angle[4] theta;")
+
+
+def test_unsupported_output_array_base_type():
+    context = ProgramContext()
+    with pytest.raises(NotImplementedError, match="type AngleType are not supported"):
+        context.add_output_declaration("a", ArrayType(AngleType(), [IntegerLiteral(2)]))
+
+
+def test_output_binding_whole_register():
+    context = run_output_program(
+        """
+        OPENQASM 3.0;
+        output bit[2] c;
+        qubit[2] q;
+        c = measure q;
+        """
+    )
+    assert context.output_bindings == {"c": {0: 0, 1: 1}}
+
+
+def test_output_binding_scalar_bit():
+    context = run_output_program(
+        """
+        OPENQASM 3.0;
+        output bit b;
+        qubit q;
+        b = measure q;
+        """
+    )
+    assert context.output_bindings == {"b": {None: 0}}
+
+
+def test_output_binding_indexed_destination():
+    context = run_output_program(
+        """
+        OPENQASM 3.0;
+        output bit[2] c;
+        qubit[2] q;
+        c[1] = measure q[0];
+        """
+    )
+    assert context.output_bindings == {"c": {1: 1}}
+
+
+def test_output_binding_non_output_destination_ignored():
+    context = run_output_program(
+        """
+        OPENQASM 3.0;
+        output int x;
+        bit[2] c;
+        qubit[2] q;
+        c = measure q;
+        """
+    )
+    assert context.output_bindings == {}
+
+
+def test_record_output_binding_early_returns():
+    context = ProgramContext()
+    context._record_output_binding(None, [0])
+    context._record_output_binding(Identifier(name="b"), [])
+    assert context.output_bindings == {}
