@@ -366,67 +366,75 @@ class TestSimulatorOutputs:
 
 class TestRegisterMeasurement:
     def test_indexed_measure_into_bit_register(self):
-        # Each element is written individually, then the register is copied to
-        # the output variable.
         shots = 8
         qasm = """
         OPENQASM 3.0;
-        output bit[2] o;
+        output bit[2] out;
         qubit[2] q;
         bit[2] c = "00";
         x q[1];
         c[0] = measure q[0];
         c[1] = measure q[1];
-        o = c;
+        out = c;
         """
         result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
-        assert result.outputs == [{"o": [0, 1]}] * shots
+        assert result.outputs == [{"out": [0, 1]}] * shots
         for row, output in zip(result.measurements, result.outputs):
-            assert output["o"] == [int(bit) for bit in row]
+            assert output["out"] == [int(bit) for bit in row]
 
-    def test_whole_register_measure_in_declaration(self):
-        # `bit[n] c = measure q;` declares and measures in one statement.
+    def test_indexed_measure_into_output_register(self):
         shots = 8
         qasm = """
         OPENQASM 3.0;
-        output bit[2] o;
+        output bit[2] out;
+        qubit[2] q;
+        x q[1];
+        out[0] = measure q[0];
+        out[1] = measure q[1];
+        """
+        result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+        assert result.outputs == [{"out": [0, 1]}] * shots
+        for row, output in zip(result.measurements, result.outputs):
+            assert output["out"] == [int(bit) for bit in row]
+
+    def test_whole_register_measure_in_declaration(self):
+        shots = 8
+        qasm = """
+        OPENQASM 3.0;
+        output bit[2] out;
         qubit[2] q;
         x q[0];
         bit[2] c = measure q;
-        o = c;
+        out = c;
         """
         result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
-        assert result.outputs == [{"o": [1, 0]}] * shots
+        assert result.outputs == [{"out": [1, 0]}] * shots
         for row, output in zip(result.measurements, result.outputs):
-            assert output["o"] == [int(bit) for bit in row]
+            assert output["out"] == [int(bit) for bit in row]
 
-    def test_whole_register_measure_correlated(self):
-        # A Bell pair keeps the two elements equal on every shot.
+    def test_whole_register_measure_into_output_register(self):
         shots = 40
         qasm = """
         OPENQASM 3.0;
-        output bit[2] o;
+        output bit[2] out;
         qubit[2] q;
         h q[0];
         cnot q[0], q[1];
-        bit[2] c = measure q;
-        o = c;
+        out = measure q;
         """
         result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
         assert len(result.outputs) == shots
-        observed = Counter(tuple(output["o"]) for output in result.outputs)
+        observed = Counter(tuple(output["out"]) for output in result.outputs)
         assert set(observed) <= {(0, 0), (1, 1)}
         for row, output in zip(result.measurements, result.outputs):
-            assert output["o"] == [int(bit) for bit in row]
+            assert output["out"] == [int(bit) for bit in row]
 
     def test_measurement_read_in_loop_scope(self):
-        # A bit declared inside the loop body is assigned by measurement and
-        # read in the same iteration.
         shots = 8
         qasm = """
         OPENQASM 3.0;
-        output bit[2] o;
-        o = "00";
+        output bit[2] out;
+        out = "00";
         qubit[1] q;
         bit c = 0;
         for int i in [0:1] {
@@ -434,38 +442,61 @@ class TestRegisterMeasurement:
             bit m;
             m = measure q[0];
             c = m;
-            o[i] = c;
+            out[i] = c;
             reset q[0];
         }
         """
         result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
-        assert result.outputs == [{"o": [1, 1]}] * shots
+        assert result.outputs == [{"out": [1, 1]}] * shots
 
     def test_indexed_measure_into_int_array(self):
-        # Non-bit destinations keep integer elements.
         shots = 4
         qasm = """
         OPENQASM 3.0;
-        output int[8] o;
-        qubit[1] q;
+        output array[int[8], 2] out;
+        qubit[2] q;
         array[int[8], 2] a = {0, 0};
         x q[0];
         a[0] = measure q[0];
-        o = a[0];
+        a[1] = measure q[1];
+        out = a;
         """
         result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
-        assert result.outputs == [{"o": 1}] * shots
+        assert result.outputs == [{"out": [1, 0]}] * shots
 
     def test_whole_register_measure_into_int_array(self):
         shots = 4
         qasm = """
         OPENQASM 3.0;
-        output int[8] o;
+        output array[int[8], 2] out;
         qubit[2] q;
-        array[int[8], 2] a = {0, 0};
         x q[1];
-        a = measure q;
-        o = a[1];
+        array[int[8], 2] a = measure q;
+        out = a;
         """
         result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
-        assert result.outputs == [{"o": 1}] * shots
+        assert result.outputs == [{"out": [0, 1]}] * shots
+
+    def test_bit_register_size_mismatch(self):
+        qasm = """
+        OPENQASM 3.0;
+        output bit[3] out;
+        qubit[2] q;
+        out = measure q;
+        """
+        with pytest.raises(
+            ValueError, match=r"\(2\) does not match size of classical register 'out' \(3\)"
+        ):
+            StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=2)
+
+    def test_int_array_size_mismatch(self):
+        qasm = """
+        OPENQASM 3.0;
+        output array[int[8], 3] out;
+        qubit[2] q;
+        out = measure q;
+        """
+        with pytest.raises(
+            ValueError, match=r"\(2\) does not match size of classical register 'out' \(3\)"
+        ):
+            StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=2)

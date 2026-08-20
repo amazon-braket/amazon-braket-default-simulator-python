@@ -235,7 +235,6 @@ class Interpreter:
     def _execute_classical_declaration(self, node: ClassicalDeclaration) -> None:
         node_type = self.visit(node.type)
         if isinstance(node.init_expression, QuantumMeasurement):
-            # Visiting a QuantumMeasurement yields qubit targets, not a value.
             self.context.declare_variable(
                 node.identifier.name, node_type, self._empty_init_value(node_type)
             )
@@ -615,11 +614,27 @@ class Interpreter:
             raise ValueError(
                 f"Number of qubits ({len(qubits)}) does not match number of provided classical targets ({len(targets)})"
             )
+        if node.target and not isinstance(node.target, IndexedIdentifier):
+            target_name = get_identifier_name(node.target)
+            register_size = self._declared_register_size(self.context.get_type(target_name))
+            if register_size is not None and register_size != len(qubits):
+                raise ValueError(
+                    f"Number of qubits ({len(qubits)}) does not match size of classical "
+                    f"register '{target_name}' ({register_size})"
+                )
         if node.target and self.context.supports_midcircuit_measurement:
             self.context.add_measure(qubits, targets, classical_destination=node.target)
             self.context.mark_mcm_dependent(get_identifier_name(node.target))
         else:
             self.context.add_measure(qubits, targets)
+
+    @staticmethod
+    def _declared_register_size(var_type) -> int | None:
+        if isinstance(var_type, ArrayType):
+            return var_type.dimensions[0].value
+        if isinstance(var_type, BitType) and var_type.size is not None:
+            return var_type.size.value
+        return None
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
