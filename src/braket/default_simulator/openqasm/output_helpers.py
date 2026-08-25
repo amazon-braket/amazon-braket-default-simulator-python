@@ -158,9 +158,13 @@ def compute_outputs_branched(
     for path in context.active_paths:
         base_values = {name: _path_base_value(context, path, name) for name in output_variables}
         for shot_idx in range(shot_offset, shot_offset + path.shots):
-            row = measurements[shot_idx] if shot_idx < len(measurements) else None
+            if shot_idx >= len(measurements):
+                raise ValueError("Context contains more shot results than measurements")
+            row = measurements[shot_idx]
             outputs.append(
-                compute_shot_output(output_variables, base_values, bindings, row, classical_idx_columns)
+                compute_shot_output(
+                    output_variables, base_values, bindings, row, classical_idx_columns
+                )
             )
         shot_offset += path.shots
     return outputs

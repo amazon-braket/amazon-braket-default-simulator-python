@@ -348,17 +348,64 @@ class TestSimulatorOutputs:
         observed = Counter(output["m"] for output in result.outputs)
         assert set(observed) <= {0, 1}
 
-    def test_compute_outputs_branched_without_measurement_rows(self):
-        # Rows beyond the measurements list are skipped (no bits to apply): outputs
-        # come from each path's classical state alone.
+    def test_compute_outputs_branched_requires_a_row_per_shot(self):
+        # A shot without a measurement row means the caller mis-built the rows;
+        # fail loudly rather than silently reporting base values.
         shots = 5
         context = StateVectorSimulator()._parse_program_with_shots(
             OpenQASMProgram(source=BRANCHED_QASM, inputs={}), shots
         )
         assert context.is_branched
-        outputs = compute_outputs_branched(context, [])
-        assert len(outputs) == shots
-        for output in outputs:
-            assert output["f"] == 2.5
-            assert output["m"] in (0, 1)
-            assert output["count"] == (1 if output["m"] else 2)
+        with pytest.raises(ValueError, match="more shot results than measurements"):
+            compute_outputs_branched(context, [])
+
+
+WHOLE_REGISTER_BRANCHED_QASM = """
+OPENQASM 3.0;
+output bit[2] c;
+qubit[2] q;
+h q[0];
+c = measure q;
+if (c[0]) { x q[1]; }
+"""
+
+
+class TestBranchedWholeRegisterMeasurement:
+    """A whole-register plain destination (``c = measure q``) in branched mode
+    must populate every register element per path, not a bare scalar."""
+
+    def test_register_elements_reported_per_path(self):
+        shots = 40
+        result = StateVectorSimulator().run(
+            OpenQASMProgram(source=WHOLE_REGISTER_BRANCHED_QASM), shots=shots
+        )
+        assert len(result.outputs) == shots
+        for output in result.outputs:
+            # Both elements are defined ints, and q[1] measured |0> every shot.
+            assert output["c"][1] == 0
+            assert output["c"][0] in (0, 1)
+            assert all(type(bit) is int for bit in output["c"])
+
+    def test_conditioned_gate_follows_the_measured_register_element(self):
+        shots = 40
+        result = StateVectorSimulator().run(
+            OpenQASMProgram(source=WHOLE_REGISTER_BRANCHED_QASM), shots=shots
+        )
+        # q[1] is flipped exactly on the paths where c[0] measured 1, so the
+        # final-state bit for q[1] tracks c[0].
+        for row, output in zip(result.measurements, result.outputs):
+            assert int(row[1]) == output["c"][0]
+
+    def test_register_size_larger_than_measured_qubits_leaves_none(self):
+        source = """
+        OPENQASM 3.0;
+        output bit[3] c;
+        qubit[2] q;
+        h q[0];
+        c[0] = measure q[0];
+        if (c[0]) { x q[1]; }
+        c[1] = measure q[1];
+        """
+        result = StateVectorSimulator().run(OpenQASMProgram(source=source), shots=10)
+        for output in result.outputs:
+            assert output["c"][2] is None

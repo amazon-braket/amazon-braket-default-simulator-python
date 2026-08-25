@@ -66,3 +66,12 @@ def test_add_measure_returns_indices_on_remeasure():
     assert circuit.add_measure((1,), [0], allow_remeasure=True) == [0]
     assert circuit.measured_qubits == [1]
     assert circuit.target_classical_indices == [0]
+
+
+def test_add_measure_rejects_duplicate_classical_index_by_default():
+    """Without remeasure, reusing a classical index would silently produce a
+    duplicated column, so it is rejected."""
+    circuit = Circuit()
+    circuit.add_measure((0,), [0])
+    with pytest.raises(ValueError, match="Classical bit 0 is already assigned"):
+        circuit.add_measure((1,), [0])
