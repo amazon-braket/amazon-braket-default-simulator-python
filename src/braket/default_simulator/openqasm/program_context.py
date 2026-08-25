@@ -103,6 +103,22 @@ if TYPE_CHECKING:  # pragma: no cover
 _SUPPORTED_OUTPUT_TYPES = (BoolType, IntType, UintType, FloatType, BitType)
 
 
+def _register_size(var_type: ClassicalType | None) -> int | None:
+    """Number of elements of a register or array type, or ``None`` if scalar.
+
+    Args:
+        var_type (ClassicalType | None): The declared type of a classical variable.
+
+    Returns:
+        int | None: The declared element count, or ``None`` for scalar types.
+    """
+    if isinstance(var_type, BitType) and var_type.size is not None:
+        return var_type.size.value
+    if isinstance(var_type, ArrayType) and var_type.dimensions:
+        return var_type.dimensions[0].value
+    return None
+
+
 class Table:
     """
     Utility class for storing and displaying items.
@@ -1176,6 +1192,11 @@ class ProgramContext(AbstractProgramContext):
         self._pending_mcm_targets: list[tuple] = []
         self._output_variables: dict[str, ClassicalType] = {}
         self._output_bindings: dict[str, dict[int | None, int]] = {}
+        # (variable name, element) -> global classical measurement index, and
+        # its inverse. Register element indices are variable-relative, so two
+        # variables can both name element 0; these maps keep them distinct.
+        self._classical_index_map: dict[tuple[str, int | None], int] = {}
+        self._classical_index_owners: dict[int, tuple[str, int | None]] = {}
 
     @property
     def circuit(self):
@@ -1203,10 +1224,7 @@ class ProgramContext(AbstractProgramContext):
         """
         if not self._is_branched and self._pending_mcm_targets:
             for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
-                assigned_indices = self._circuit.add_measure(
-                    mcm_target, mcm_classical, allow_remeasure=self.supports_midcircuit_measurement
-                )
-                self._record_output_binding(mcm_dest, assigned_indices)
+                self._register_circuit_measurement(mcm_target, mcm_classical, mcm_dest)
             self._pending_mcm_targets.clear()
 
     @property
@@ -1246,27 +1264,149 @@ class ProgramContext(AbstractProgramContext):
         """
         return {name: dict(bindings) for name, bindings in self._output_bindings.items()}
 
+    def _register_circuit_measurement(
+        self,
+        target: tuple[int, ...],
+        classical_targets: Iterable[int] | None,
+        classical_destination: Identifier | IndexedIdentifier | None,
+    ) -> list[int]:
+        """Register a measurement in the circuit and record its bookkeeping.
+
+        Args:
+            target (tuple[int, ...]): The qubit indices being measured.
+            classical_targets (Iterable[int] | None): Explicitly requested
+                classical indices, or ``None`` to auto-assign.
+            classical_destination (Identifier | IndexedIdentifier | None): The
+                AST node for the classical variable being assigned.
+
+        Returns:
+            list[int]: The classical indices assigned, one per measured qubit.
+        """
+        elements = self._destination_elements(classical_destination, classical_targets, target)
+        resolved = self._resolve_classical_indices(
+            classical_destination, classical_targets, target, elements
+        )
+        assigned_indices = self._circuit.add_measure(
+            target, resolved, allow_remeasure=self.supports_midcircuit_measurement
+        )
+        self._record_output_binding(classical_destination, elements, assigned_indices)
+        return assigned_indices
+
+    def _destination_elements(
+        self,
+        classical_destination: Identifier | IndexedIdentifier | None,
+        classical_targets: Iterable[int] | None,
+        target: tuple[int, ...],
+    ) -> list[int | None]:
+        """The destination element each measured qubit is written into.
+
+        Args:
+            classical_destination (Identifier | IndexedIdentifier | None): The
+                classical variable being assigned.
+            classical_targets (Iterable[int] | None): Element indices resolved
+                by the Interpreter for an indexed destination.
+            target (tuple[int, ...]): The qubit indices being measured.
+
+        Returns:
+            list[int | None]: One element per measured qubit; ``None`` denotes a
+            scalar destination.
+        """
+        if classical_destination is None:
+            return [None] * len(target)
+        if isinstance(classical_destination, IndexedIdentifier) and classical_targets is not None:
+            return list(classical_targets)
+        name = get_identifier_name(classical_destination)
+        if _register_size(self._declared_type(name)) is None and len(target) == 1:
+            return [None]
+        return list(range(len(target)))
+
+    def _resolve_classical_indices(
+        self,
+        classical_destination: Identifier | IndexedIdentifier | None,
+        classical_targets: Iterable[int] | None,
+        target: tuple[int, ...],
+        elements: list[int | None],
+    ) -> list[int] | None:
+        """Map a measurement's destination elements to global classical indices.
+
+        Element indices are relative to their register, so ``a[0]`` and ``b[0]``
+        are different bits. Each ``(variable, element)`` pair gets its own
+        global index: the requested index when it is still free, otherwise the
+        next free one. Remeasuring an element reuses its existing index.
+
+        Args:
+            classical_destination (Identifier | IndexedIdentifier | None): The
+                classical variable being assigned.
+            classical_targets (Iterable[int] | None): The indices requested by
+                the program, if any.
+            target (tuple[int, ...]): The qubit indices being measured.
+            elements (list[int | None]): The destination element per qubit.
+
+        Returns:
+            list[int] | None: The global classical indices, or ``None`` when
+            there is no destination and no requested indices.
+        """
+        if classical_destination is None:
+            return list(classical_targets) if classical_targets is not None else None
+        name = get_identifier_name(classical_destination)
+        requested = (
+            list(classical_targets) if classical_targets is not None else [None] * len(target)
+        )
+        return [
+            self._classical_index_for(name, element, preferred)
+            for element, preferred in zip(elements, requested)
+        ]
+
+    def _classical_index_for(self, name: str, element: int | None, preferred: int | None) -> int:
+        """Global classical index for one destination element, allocating if new."""
+        key = (name, element)
+        if key in self._classical_index_map:
+            return self._classical_index_map[key]
+        if preferred is not None and preferred not in self._classical_index_owners:
+            index = preferred
+        else:
+            index = self._next_free_classical_index()
+        self._classical_index_map[key] = index
+        self._classical_index_owners[index] = key
+        return index
+
+    def _next_free_classical_index(self) -> int:
+        """The lowest classical index not already owned or used by the circuit."""
+        used = set(self._classical_index_owners) | set(self._circuit.target_classical_indices)
+        index = 0
+        while index in used:
+            index += 1
+        return index
+
+    def _declared_type(self, name: str) -> ClassicalType | None:
+        """The declared type of ``name``, or ``None`` if it is not in scope."""
+        try:
+            return self.get_type(name)
+        except KeyError:
+            return None
+
     def _record_output_binding(
         self,
         classical_destination: Identifier | IndexedIdentifier | None,
+        elements: list[int | None],
         assigned_indices: list[int],
     ) -> None:
+        """Associate an output variable's elements with their classical indices.
+
+        Args:
+            classical_destination (Identifier | IndexedIdentifier | None): The
+                classical variable being assigned.
+            elements (list[int | None]): The destination element per qubit.
+            assigned_indices (list[int]): The classical indices assigned.
+        """
         if classical_destination is None or not assigned_indices:
             return
         name = get_identifier_name(classical_destination)
         if name not in self._output_variables:
             return
         bindings = self._output_bindings.setdefault(name, {})
-        if isinstance(classical_destination, IndexedIdentifier):
-            for classical_idx in assigned_indices:
-                bindings[classical_idx] = classical_idx
-        else:
-            var_type = self.get_type(name)
-            if isinstance(var_type, BitType) and var_type.size is None:
-                bindings[None] = assigned_indices[0]
-            else:
-                for element, classical_idx in enumerate(assigned_indices):
-                    bindings[element] = classical_idx
+        for element, classical_idx in zip(elements, assigned_indices):
+            bindings[element] = classical_idx
 
     def declare_variable(
         self,
@@ -1396,12 +1536,7 @@ class ProgramContext(AbstractProgramContext):
                     self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
                 else:
                     # shots == 0: register as a normal measurement and set variable to 0
-                    assigned_indices = self._circuit.add_measure(
-                        mcm_target,
-                        mcm_classical,
-                        allow_remeasure=self.supports_midcircuit_measurement,
-                    )
-                    self._record_output_binding(mcm_dest, assigned_indices)
+                    self._register_circuit_measurement(mcm_target, mcm_classical, mcm_dest)
                     self.update_value(mcm_dest, IntegerLiteral(value=0))
             else:
                 remaining.append((mcm_target, mcm_classical, mcm_dest))
@@ -1455,12 +1590,7 @@ class ProgramContext(AbstractProgramContext):
         else:
             # shots == 0: register as normal measurements and set variables to 0
             for mcm_target, mcm_classical, mcm_dest in to_flush:
-                assigned_indices = self._circuit.add_measure(
-                    mcm_target,
-                    mcm_classical,
-                    allow_remeasure=self.supports_midcircuit_measurement,
-                )
-                self._record_output_binding(mcm_dest, assigned_indices)
+                self._register_circuit_measurement(mcm_target, mcm_classical, mcm_dest)
                 self.update_value(mcm_dest, IntegerLiteral(value=0))
 
     def add_phase_instruction(self, target: tuple[int], phase_value: int):
@@ -2035,12 +2165,22 @@ class ProgramContext(AbstractProgramContext):
     ) -> None:
         """Update a plain identifier classical variable on one path.
 
-        Handles the ``b = measure q[0]`` case (single-qubit MCM).
+        Handles the scalar ``b = measure q[0]`` case and the whole-register
+        ``c = measure q`` case, where each measured qubit's outcome is written
+        into the corresponding register element.
         """
         var_name = classical_destination.name
-        meas_result = self._get_path_measurement_result(path, qubit_target[0])
         framed_var = self._ensure_path_variable(path, var_name)
-        framed_var.value = meas_result
+        register_size = _register_size(framed_var.var_type)
+        if register_size is None:
+            framed_var.value = self._get_path_measurement_result(path, qubit_target[0])
+            return
+        if not hasattr(framed_var.value, "values"):
+            framed_var.value = ArrayLiteral(values=[None] * register_size)
+        for element, qubit_idx in enumerate(qubit_target):
+            self._set_value_at_index(
+                framed_var.value, element, self._get_path_measurement_result(path, qubit_idx)
+            )
 
     def _initialize_paths_from_circuit(self) -> None:
         """Transfer existing circuit instructions and variables to the initial SimulationPath.
@@ -2075,16 +2215,12 @@ class ProgramContext(AbstractProgramContext):
         self._measure_and_branch(target)
         self._update_classical_from_measurement(target, classical_destination)
         if classical_targets is not None:
-            assigned_indices = self._circuit.add_measure(
-                target,
-                classical_targets,
-                allow_remeasure=self.supports_midcircuit_measurement,
+            assigned_indices = self._register_circuit_measurement(
+                target, classical_targets, classical_destination
             )
-            self._record_output_binding(classical_destination, assigned_indices)
-            classical_targets_list = list(classical_targets)
             for path_idx in self._active_path_indices:
                 path = self._paths[path_idx]
-                for qubit_idx, classical_idx in zip(target, classical_targets_list):
+                for qubit_idx, classical_idx in zip(target, assigned_indices):
                     path._mcm_outcomes[classical_idx] = path._measurements[qubit_idx][-1]
 
     def _measure_and_branch(self, target: tuple[int]) -> None:

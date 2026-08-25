@@ -95,6 +95,8 @@ class Circuit:
                 continue
             if not allow_remeasure and qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
+            if not allow_remeasure and classical_index in self.target_classical_indices:
+                raise ValueError(f"Classical bit {classical_index} is already assigned.")
             self.measured_qubits.append(qubit)
             self.qubit_set.add(qubit)
             self.target_classical_indices.append(classical_index)
