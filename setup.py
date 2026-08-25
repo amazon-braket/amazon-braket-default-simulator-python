@@ -36,10 +36,9 @@ setup(
         "opt_einsum",
         "pydantic>2",
         "scipy",
-        "setuptools==81.0.0",  # pin until https://github.com/pypa/setuptools/issues/5174 is fixed
         "sympy",
         "antlr4-python3-runtime==4.13.2",
-        "amazon-braket-schemas>=1.26.1",
+        "amazon-braket-schemas>=1.30.0",
     ],
     entry_points={
         "braket.simulators": [
