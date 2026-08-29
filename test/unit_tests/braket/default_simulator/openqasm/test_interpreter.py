@@ -1447,13 +1447,65 @@ def test_input(in_int):
     )
 
 
+class _OutputRecordingContext(ProgramContext):
+    """ProgramContext subclass recording declarations delivered through the
+    ``add_output_declaration`` extension interface."""
+
+    def __init__(self):
+        super().__init__()
+        self.output_declarations = []
+
+    def add_output_declaration(self, name, var_type):
+        self.output_declarations.append((name, var_type))
+
+
 def test_output():
     qasm = """
     output int[8] out_int;
     """
-    output_not_supported = "Output not supported"
-    with pytest.raises(NotImplementedError, match=output_not_supported):
-        Interpreter().run(qasm)
+    context = _OutputRecordingContext()
+    Interpreter(context).run(qasm)
+    # Declared like an initializer-less ClassicalDeclaration (default-initialized)
+    assert context.get_value("out_int") == IntegerLiteral(0)
+    # Delegated through the extension interface with the evaluated declared type
+    assert context.output_declarations == [("out_int", IntType(IntegerLiteral(8)))]
+
+
+def test_output_conflicts_with_input():
+    qasm = """
+    input int x;
+    output int x;
+    """
+    with pytest.raises(NameError, match="Duplicate input variable declaration 'x'"):
+        Interpreter(_OutputRecordingContext()).run(qasm)
+
+
+def test_input_conflicts_with_output():
+    qasm = """
+    output int x;
+    input int x;
+    """
+    context = _OutputRecordingContext()
+    with pytest.raises(NameError, match="Duplicate output variable declaration 'x'"):
+        Interpreter(context).run(qasm)
+
+
+def test_duplicate_input_declaration():
+    qasm = """
+    input int x;
+    input int x;
+    """
+    with pytest.raises(NameError, match="Duplicate input variable declaration 'x'"):
+        Interpreter(_OutputRecordingContext()).run(qasm)
+
+
+def test_duplicate_output_declaration():
+    qasm = """
+    output int x;
+    output int x;
+    """
+    with pytest.raises(NameError, match="Duplicate output variable declaration 'x'"):
+        Interpreter(_OutputRecordingContext()).run(qasm)
 
 
 def test_missing_input():

@@ -161,6 +161,8 @@ class Interpreter:
         self.logger = logger or getLogger(__name__)
         self._uses_advanced_language_features = False
         self._warn_advanced_features = warn_advanced_features
+        self._input_names: set[str] = set()
+        self._output_names: set[str] = set()
 
     def build_circuit(
         self, source: str, inputs: dict[str, io_type] | None = None, is_file: bool = False
@@ -180,6 +182,8 @@ class Interpreter:
                 source = f.read()
 
         self._uses_advanced_language_features = False
+        self._input_names = set()
+        self._output_names = set()
         self.visit(parse(source))
         if self._warn_advanced_features and self._uses_advanced_language_features:
             self.logger.warning(
@@ -252,16 +256,28 @@ class Interpreter:
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
+        name = node.identifier.name
+        self._check_io_name_available(name)
         if node.io_identifier == IOKeyword.output:
-            raise NotImplementedError("Output not supported")
+            self._output_names.add(name)
+            declaration = ClassicalDeclaration(node.type, node.identifier, None)
+            self.visit(declaration)
+            self.context.add_output_declaration(name, self.context.get_type(name))
         else:  # IOKeyword.input:
+            self._input_names.add(name)
             init_value, node_type = (
-                (wrap_value_into_literal(self.context.inputs[node.identifier.name]), node.type)
-                if node.identifier.name in self.context.inputs
-                else (wrap_value_into_literal(Symbol(node.identifier.name)), SymbolLiteral)
+                (wrap_value_into_literal(self.context.inputs[name]), node.type)
+                if name in self.context.inputs
+                else (wrap_value_into_literal(Symbol(name)), SymbolLiteral)
             )
             declaration = ClassicalDeclaration(node_type, node.identifier, init_value)
             self.visit(declaration)
+
+    def _check_io_name_available(self, name: str) -> None:
+        if name in self._input_names:
+            raise NameError(f"Duplicate input variable declaration '{name}'.")
+        if name in self._output_names:
+            raise NameError(f"Duplicate output variable declaration '{name}'.")
 
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
