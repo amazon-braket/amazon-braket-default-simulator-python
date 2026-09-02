@@ -11,14 +11,15 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-from pydantic.v1.class_validators import root_validator
+from pydantic import model_validator
 
 from braket.ir.ahs.physical_field import PhysicalField
 
 
 class PhysicalFieldValidator(PhysicalField):
     # Pattern, if string, must be "uniform"
-    @root_validator(pre=True, skip_on_failure=True)
+    @model_validator(mode="before")
+    @classmethod
     def pattern_str(cls, values):
         pattern = values["pattern"]
         if isinstance(pattern, str) and pattern != "uniform":
