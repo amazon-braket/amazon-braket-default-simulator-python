@@ -67,22 +67,40 @@ class Circuit:
         target: tuple[int],
         classical_targets: Iterable[int] | None = None,
         allow_remeasure: bool = False,
-    ):
+    ) -> list[int]:
+        """
+        Add measurements to the circuit.
+
+        Args:
+            target (tuple[int]): Qubits to measure.
+            classical_targets (Iterable[int] | None): Classical indices to store
+                measurement results in. If `None`, indices are assigned sequentially.
+                Default: None.
+            allow_remeasure (bool): Whether to allow remeasuring a qubit. Default: False.
+
+        Returns:
+            list[int]: The classical indices assigned for each measured qubit.
+        """
+        assigned_indices = []
         for index, qubit in enumerate(target):
             classical_index = (
                 classical_targets[index]
                 if classical_targets
                 else max(index, len(self.target_classical_indices))
             )
+            assigned_indices.append(classical_index)
             if allow_remeasure and classical_index in self.target_classical_indices:
                 self.measured_qubits[self.target_classical_indices.index(classical_index)] = qubit
                 self.qubit_set.add(qubit)
                 continue
             if not allow_remeasure and qubit in self.measured_qubits:
                 raise ValueError(f"Qubit {qubit} is already measured or captured.")
+            if not allow_remeasure and classical_index in self.target_classical_indices:
+                raise ValueError(f"Classical bit {classical_index} is already assigned.")
             self.measured_qubits.append(qubit)
             self.qubit_set.add(qubit)
             self.target_classical_indices.append(classical_index)
+        return assigned_indices
 
     def add_result(self, result: Results) -> None:
         """
