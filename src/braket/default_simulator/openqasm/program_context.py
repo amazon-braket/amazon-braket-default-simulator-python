@@ -853,15 +853,15 @@ class AbstractProgramContext(ABC):
     def add_gate_instruction(
         self, gate_name: str, target: tuple[int, ...], params, ctrl_modifiers: list[int], power: int
     ):
-        """Add Braket gate to the circuit.
+        r"""Add Braket gate to the circuit.
         Args:
             gate_name (str): name of the built-in Braket gate.
             target (tuple[int]): control_qubits + target_qubits.
             ctrl_modifiers (list[int]): Quantum state on which to control the
                 operation. Must be a binary sequence of same length as number of qubits in
                 `control-qubits` in target. For example "0101", [0, 1, 0, 1], 5 all represent
-                controlling on qubits 0 and 2 being in the \\|0⟩ state and qubits 1 and 3 being
-                in the \\|1⟩ state.
+                controlling on qubits 0 and 2 being in the \|0⟩ state and qubits 1 and 3 being
+                in the \|1⟩ state.
             power(float): Integer or fractional power to raise the gate to.
         """
 

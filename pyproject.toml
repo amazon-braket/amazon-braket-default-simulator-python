@@ -6,5 +6,5 @@ lint.isort = { known-first-party = [
 ] }
 lint.extend-select = ["I", "UP", "PERF"]
 lint.preview = true
-lint.ignore = ["UP045", "UP007"]
+lint.ignore = ["UP045", "UP007", "B027"]
 lint.exclude = ["src/braket/default_simulator/openqasm/parser/generated*.py"] # Don't lint generated files
