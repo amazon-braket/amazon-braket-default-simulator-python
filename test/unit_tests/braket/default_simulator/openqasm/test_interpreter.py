@@ -11,9 +11,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import os
 import re
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -1159,9 +1157,9 @@ def test_if():
     assert convert_bool_array_to_string(context.get_value("m")) == "101"
 
 
-def test_include_stdgates():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        os.chdir(temp_dir)
+def test_include_stdgates(tmp_path, monkeypatch):
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         Path("stdgates.inc").touch()
         with open("stdgates.inc", "w", encoding="utf-8") as f:
             f.write(
@@ -1283,7 +1281,6 @@ gate u3(θ, φ, λ) q { gphase(-(φ+λ)/2); U(θ, φ, λ) q; }
             "u2",
             "u3",
         }.issubset(context.gate_table.current_scope.keys())
-        os.chdir("..")
 
 
 def test_adder():

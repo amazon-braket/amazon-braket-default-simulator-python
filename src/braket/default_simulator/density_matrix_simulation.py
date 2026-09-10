@@ -252,10 +252,10 @@ class DensityMatrixSimulation(Simulation):
         dispatcher: QuantumGateDispatcher,
         gate_type: str | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Apply a unitary gate matrix U to a density matrix \rho according to:
+        r"""Apply a unitary gate matrix U to a density matrix \rho according to:
 
             .. math::
-                \rho \rightarrow U \rho U^{\\dagger}
+                \rho \rightarrow U \rho U^{\dagger}
 
         This represents the quantum evolution of a density matrix under a unitary
         operation, where the gate is applied on the left and its Hermitian conjugate
@@ -328,10 +328,10 @@ class DensityMatrixSimulation(Simulation):
         targets: tuple[int, ...],
         dispatcher: QuantumGateDispatcher,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Apply a list of matrices {E_i} to a density matrix D according to:
+        r"""Apply a list of matrices {E_i} to a density matrix D according to:
 
             .. math::
-                D \rightarrow \\sum_i E_i D E_i^{\\dagger}
+                D \rightarrow \sum_i E_i D E_i^{\dagger}
 
         This version uses pre-allocated buffers for memory-efficient computation,
         avoiding repeated memory allocations during the Kraus operation loop.

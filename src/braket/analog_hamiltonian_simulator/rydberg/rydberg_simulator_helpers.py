@@ -444,7 +444,7 @@ def sample_state(state: np.ndarray, shots: int) -> np.ndarray:
 
     weights = (np.abs(state) ** 2).flatten()
     weights /= sum(weights)
-    return np.random.multinomial(shots, weights)
+    return np.random.multinomial(shots, weights)  # noqa: NPY002
 
 
 def _print_progress_bar(num_time_points: int, index_time: int, start_time: float) -> None:

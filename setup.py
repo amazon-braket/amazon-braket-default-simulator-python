@@ -56,7 +56,7 @@ setup(
         "test": [
             "pre-commit",
             "pylint",
-            "pytest==7.4.4",
+            "pytest",
             "pytest-benchmark",
             "pytest-cov",
             # https://github.com/pytest-dev/pytest-rerunfailures/issues/302
