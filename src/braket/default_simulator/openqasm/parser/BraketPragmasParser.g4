@@ -79,7 +79,17 @@ observableResultType
     ;
 
 observable
-    : standardObservable
+    : (MINUS? (DecimalIntegerLiteral | FloatLiteral) ASTERISK)?
+      (standardObservable | tensorProductObservable | hermitianObservable)
+      (PLUS | MINUS)
+      (MINUS? (DecimalIntegerLiteral | FloatLiteral) ASTERISK)?
+      (standardObservable | tensorProductObservable | hermitianObservable)
+      (
+        (PLUS | MINUS)
+        (MINUS? (DecimalIntegerLiteral | FloatLiteral) ASTERISK)?
+        (standardObservable | tensorProductObservable | hermitianObservable)
+      )*
+    | standardObservable
     | tensorProductObservable
     | hermitianObservable
     ;
@@ -90,7 +100,8 @@ standardObservable
     ;
 
 tensorProductObservable
-    : (standardObservable | hermitianObservable) AT observable
+    : (standardObservable | hermitianObservable) AT
+      (standardObservable | tensorProductObservable | hermitianObservable)
     ;
 
 hermitianObservable

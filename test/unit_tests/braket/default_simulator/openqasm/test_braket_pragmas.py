@@ -4,6 +4,9 @@ Regression tests for the routing of ``$N`` (HardwareQubit) references through
 ``QubitTable.get_by_identifier`` in ``visitGateOperand``. This ensures every
 pragma path (multi-target, standard observable, tensor-product observable) is
 subclass-observable so custom contexts can translate device labels.
+
+Also verifies that Sum observables are rejected instead of being truncated to
+their first term.
 """
 
 import pytest
@@ -95,3 +98,20 @@ def test_default_qubit_table_unchanged_behavior():
     """The default QubitTable resolves ``$N`` to ``(N,)``, so targets are ints."""
     result = parse_braket_pragma("braket result expectation z($9)", QubitTable())
     assert result.targets == [9]
+
+
+@pytest.mark.parametrize("result_type", ["expectation", "variance", "sample"])
+@pytest.mark.parametrize(
+    "observable",
+    [
+        "x($0) + z($0)",
+        "x($0) @ x($1) + z($0) @ z($1)",
+        "2 * x($0) - 3 * z($0)",
+    ],
+)
+def test_sum_observable_is_rejected(result_type, observable):
+    with pytest.raises(TypeError, match="Sum observables are not supported"):
+        parse_braket_pragma(
+            f"braket result {result_type} {observable}",
+            QubitTable(),
+        )
