@@ -216,7 +216,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             if not results:
                 raise ValueError("Result types must be specified in the IR when shots=0")
             for rt in results:
-                if rt.type in ["sample"]:
+                if rt.type == "sample":
                     raise ValueError("sample can only be specified when shots>0")
                 if rt.type == "amplitude":
                     BaseLocalSimulator._validate_amplitude_states(rt.states, qubit_count)

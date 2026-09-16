@@ -38,7 +38,7 @@ class TimeSeriesValidator(TimeSeries):
     @root_validator(pre=True, skip_on_failure=True)
     def times_start_with_0(cls, values):
         times = values["times"]
-        if times[0] != 0.0:
+        if times[0] != 0.0:  # noqa: RUF069
             raise ValueError(f"First time value is {times[0]}; it must be 0.0")
         return values
 

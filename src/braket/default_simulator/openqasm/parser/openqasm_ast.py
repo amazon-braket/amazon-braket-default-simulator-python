@@ -450,14 +450,14 @@ class IndexExpression(Expression):
 
 @dataclass
 class IndexedIdentifier(QASMNode):
-    """An indentifier with index operators, such that it can be used as an
+    r"""An identifier with index operators, such that it can be used as an
     lvalue.  The list of indices is subsequent index brackets, so in::
 
         a[{1, 2, 3}][0:1, 0:1]
 
     the list of indices will have two elements.  The first will be a
     :class:`.DiscreteSet`, and the second will be a list of two
-    :class:`.RangeDefinition`\\ s.
+    :class:`.RangeDefinition`\ s.
     """
 
     name: Identifier

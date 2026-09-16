@@ -149,14 +149,18 @@ class QASMNodeVisitor(qasm3ParserVisitor):
     @contextmanager
     def _push_context(self, ctx: ParserRuleContext):
         self._contexts.append([ctx])
-        yield
-        self._contexts.pop()
+        try:
+            yield
+        finally:
+            self._contexts.pop()
 
     @contextmanager
     def _push_scope(self, ctx: ParserRuleContext):
         self._contexts[-1].append(ctx)
-        yield
-        self._contexts[-1].pop()
+        try:
+            yield
+        finally:
+            self._contexts[-1].pop()
 
     def _current_context(self):
         return self._contexts[-1]
