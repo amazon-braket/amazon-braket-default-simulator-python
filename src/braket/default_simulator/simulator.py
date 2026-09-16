@@ -24,6 +24,10 @@ import numpy as np
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.output_helpers import (
+    compute_outputs_branched,
+    compute_outputs_single_path,
+)
 from braket.default_simulator.openqasm.program_context import (
     AbstractProgramContext,
     ProgramContext,
@@ -277,7 +281,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
         created_at: str,
         measured_qubits: list[int] | None = None,
         mapped_measured_qubits: list[int] | None = None,
+        measurements: list[list[str]] | None = None,
+        outputs: list[dict[str, Any]] | None = None,
     ) -> GateModelTaskResult:
+        if measurements is None:
+            measurements = self._formatted_measurements(simulation, mapped_measured_qubits)
         return GateModelTaskResult.construct(
             taskMetadata=TaskMetadata(
                 id=str(uuid.uuid4()),
@@ -290,8 +298,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 action=openqasm_ir,
             ),
             resultTypes=results,
-            measurements=self._formatted_measurements(simulation, mapped_measured_qubits),
+            measurements=measurements,
             measuredQubits=(measured_qubits or list(range(simulation.qubit_count))),
+            outputs=outputs,
         )
 
     @staticmethod
@@ -814,6 +823,13 @@ class BaseLocalSimulator(OpenQASMSimulator):
         elif circuit.basis_rotation_instructions:
             simulation.evolve(circuit.basis_rotation_instructions)
 
+        measurements = None
+        outputs = None
+        if shots:
+            measurements = self._formatted_measurements(simulation, mapped_measured_qubits)
+            if getattr(context, "output_variables", None):
+                outputs = compute_outputs_single_path(context, measurements)
+
         return self._create_results_obj(
             results,
             openqasm_ir,
@@ -821,6 +837,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
             created_at,
             measured_qubits,
             mapped_measured_qubits,
+            measurements=measurements,
+            outputs=outputs,
         )
 
     def _parse_program_with_shots(
@@ -930,6 +948,10 @@ class BaseLocalSimulator(OpenQASMSimulator):
                 shot_offset += path.shots
             measurements = np.pad(selected, ((0, 0), (0, len(qubits_not_in_circuit)))).tolist()
 
+        outputs = None
+        if getattr(context, "output_variables", None):
+            outputs = compute_outputs_branched(context, measurements)
+
         return GateModelTaskResult.construct(
             taskMetadata=TaskMetadata(
                 id=str(uuid.uuid4()),
@@ -944,6 +966,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             resultTypes=[],
             measurements=measurements,
             measuredQubits=(measured_qubits or list(range(qubit_count))),
+            outputs=outputs,
         )
 
     def run_jaqcd(
