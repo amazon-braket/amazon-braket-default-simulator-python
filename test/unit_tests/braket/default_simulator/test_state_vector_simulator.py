@@ -1201,6 +1201,23 @@ def test_simulator_valid_observables_qasm(result_types, expected, caplog):
     assert not caplog.text
 
 
+@pytest.mark.parametrize("shots", [0, 10])
+def test_simulator_rejects_sum_observable_qasm(shots):
+    prog = OpenQASMProgram(
+        source="""
+        qubit[2] q;
+        h q[0];
+        rx(0.5) q[1];
+        cnot q[0], q[1];
+        ry(0.5) q[0];
+        #pragma braket result expectation x(q[0]) @ x(q[1]) + z(q[0]) @ z(q[1])
+        """
+    )
+
+    with pytest.raises(TypeError, match="Sum observables are not supported"):
+        StateVectorSimulator().run(prog, shots=shots)
+
+
 def test_observable_hash_tensor_product():
     matrix = np.eye(4)
     obs = observables.TensorProduct(
