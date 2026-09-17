@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.40.2 (2026-09-17)
+
+### Bug Fixes and Other Changes
+
+ * resolve measurement destination index before branching
+
 ## v1.40.1.post0 (2026-09-02)
 
 ### Documentation Changes
