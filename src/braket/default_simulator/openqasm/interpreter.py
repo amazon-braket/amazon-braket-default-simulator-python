@@ -716,9 +716,21 @@ class Interpreter:
     @visit.register
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
-            node.while_condition
-        ):
+        if self.context.supports_midcircuit_measurement:
+            iterations = 0
+            while not self.context.is_mcm_dependent(node.while_condition):
+                if not cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
+                    return
+                iterations += 1
+                self._check_loop_iterations(iterations)
+                try:
+                    self.visit(deepcopy(node.block))
+                except _BreakSignal:
+                    self.context.handle_loop_break()
+                    return
+                except _ContinueSignal:
+                    self.context.handle_loop_continue()
+                    continue
             gen = self.context.evaluate_while_condition(node.while_condition)
             for _ in gen:
                 try:
@@ -734,11 +746,7 @@ class Interpreter:
             iterations = 0
             while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
                 iterations += 1
-                if _MAX_LOOP_ITERATIONS > 0 and iterations > _MAX_LOOP_ITERATIONS:
-                    raise RuntimeError(
-                        f"While loop exceeded {_MAX_LOOP_ITERATIONS} iterations "
-                        f"during static unrolling. The loop condition may never become false."
-                    )
+                self._check_loop_iterations(iterations)
                 try:
                     self.visit(deepcopy(node.block))
                 except _BreakSignal:
@@ -747,6 +755,14 @@ class Interpreter:
                 except _ContinueSignal:
                     self.context.handle_loop_continue()
                     continue
+
+    @staticmethod
+    def _check_loop_iterations(iterations: int) -> None:
+        if 0 < _MAX_LOOP_ITERATIONS < iterations:
+            raise RuntimeError(
+                f"While loop exceeded {_MAX_LOOP_ITERATIONS} iterations "
+                f"during static unrolling. The loop condition may never become false."
+            )
 
     @visit.register
     def _(self, node: BreakStatement) -> None:

@@ -13,7 +13,13 @@
 
 from unittest.mock import MagicMock
 
-from braket.default_simulator.openqasm.simulation_path import FramedVariable, SimulationPath
+import numpy as np
+
+from braket.default_simulator.openqasm.simulation_path import (
+    FramedVariable,
+    SimulationPath,
+    SubEnsemble,
+)
 
 
 class TestFramedVariable:
@@ -168,3 +174,120 @@ class TestSimulationPath:
 
         path.exit_frame(frame0)
         assert set(path.variables.keys()) == {"a"}
+
+
+class TestSubEnsemble:
+    @staticmethod
+    def _single_qubit_dm(p0: float) -> np.ndarray:
+        """Diagonal single-qubit density matrix with population p0 in |0>."""
+        return np.array([[p0, 0.0], [0.0, 1.0 - p0]], dtype=complex)
+
+    def test_default_init(self):
+        sub = SubEnsemble()
+        assert sub.density_matrix is None
+        assert sub.variables == {}
+        assert sub.measurements == {}
+        assert sub.frame_number == 0
+
+    def test_is_simulation_path(self):
+        """SubEnsemble retains the inherited SimulationPath interface."""
+        sub = SubEnsemble(density_matrix=self._single_qubit_dm(0.5))
+        assert isinstance(sub, SimulationPath)
+
+    def test_init_with_classical_state(self):
+        var = FramedVariable("x", int, 5, False, 0)
+        sub = SubEnsemble(
+            density_matrix=self._single_qubit_dm(0.25),
+            variables={"x": var},
+            measurements={0: [1]},
+            frame_number=2,
+        )
+        assert sub.variables["x"].value == 5
+        assert sub.measurements == {0: [1]}
+        assert sub.frame_number == 2
+
+    def test_trace_reflects_matrix(self):
+        """Validates: Requirements 1.5 - trace equals the matrix trace."""
+        sub = SubEnsemble(density_matrix=self._single_qubit_dm(0.5))
+        assert np.isclose(sub.trace, 1.0)
+
+    def test_trace_of_unnormalized_matrix(self):
+        """Validates: Requirements 1.5 - trace of an unnormalized branch."""
+        # An unnormalized branch with trace 0.3 (joint probability of its tag).
+        sub = SubEnsemble(density_matrix=np.array([[0.3, 0.0], [0.0, 0.0]], dtype=complex))
+        assert np.isclose(sub.trace, 0.3)
+
+    def test_trace_is_real_float(self):
+        """Trace is returned as a real Python float even for complex matrices."""
+        rho = np.array([[0.5, 0.2j], [-0.2j, 0.5]], dtype=complex)
+        sub = SubEnsemble(density_matrix=rho)
+        assert isinstance(sub.trace, float)
+        assert np.isclose(sub.trace, 1.0)
+
+    def test_branch_yields_independent_matrix(self):
+        """Validates: Requirements 1.5 - branch copies the density matrix."""
+        rho = self._single_qubit_dm(0.5)
+        parent = SubEnsemble(density_matrix=rho)
+        child = parent.branch()
+
+        assert isinstance(child, SubEnsemble)
+        assert np.allclose(child.density_matrix, parent.density_matrix)
+
+        # Mutating the child matrix must not affect the parent.
+        child.density_matrix[0, 0] = 0.9
+        assert parent.density_matrix[0, 0] == 0.5
+        # The original source array is also untouched (branch copies).
+        assert rho[0, 0] == 0.5
+
+    def test_branch_yields_independent_classical_state(self):
+        """Validates: Requirements 9.6, 9.7 - branch deep-copies classical state."""
+        var = FramedVariable("x", int, 10, False, 0)
+        parent = SubEnsemble(
+            density_matrix=self._single_qubit_dm(0.5),
+            variables={"x": var},
+            measurements={0: [1]},
+            frame_number=1,
+        )
+        child = parent.branch()
+
+        assert child.variables["x"].value == 10
+        assert child.measurements == {0: [1]}
+        assert child.frame_number == 1
+
+        # Modifying child classical state does not affect parent.
+        child.variables["x"].value = 99
+        child.record_measurement(0, 0)
+        child.set_variable("y", FramedVariable("y", int, 7, False, 1))
+
+        assert parent.variables["x"].value == 10
+        assert parent.measurements == {0: [1]}
+        assert "y" not in parent.variables
+
+    def test_branch_preserves_trace(self):
+        """A branched copy has the same trace as its parent."""
+        sub = SubEnsemble(density_matrix=np.array([[0.4, 0.0], [0.0, 0.0]], dtype=complex))
+        child = sub.branch()
+        assert np.isclose(child.trace, sub.trace)
+
+    def test_inherited_frame_scoping(self):
+        """Validates: Requirements 9.7 - inherited frame scoping still works."""
+        sub = SubEnsemble(density_matrix=self._single_qubit_dm(0.5))
+        sub.set_variable("outer", FramedVariable("outer", int, 1, False, 0))
+
+        prev = sub.enter_frame()
+        assert sub.frame_number == 1
+        sub.set_variable("inner", FramedVariable("inner", int, 2, False, 1))
+        assert "inner" in sub.variables
+
+        sub.exit_frame(prev)
+        assert "outer" in sub.variables
+        assert "inner" not in sub.variables
+        assert sub.frame_number == 0
+
+    def test_inherited_record_measurement(self):
+        """Validates: Requirements 9.6 - inherited measurement recording works."""
+        sub = SubEnsemble(density_matrix=self._single_qubit_dm(0.5))
+        sub.record_measurement(0, 1)
+        sub.record_measurement(0, 0)
+        sub.record_measurement(2, 1)
+        assert sub.measurements == {0: [1, 0], 2: [1]}
