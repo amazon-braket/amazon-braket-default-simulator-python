@@ -129,6 +129,10 @@ def test_measured_registers_skips_unmeasured():
 
 
 def test_validate_rejects_two_declared_registers():
+    """Measurements into two declared registers cannot be reported as one bit string.
+
+    Remove once per register results are reported through the ``output`` field.
+    """
     circuit = Circuit()
     c = circuit.declare_register("c", 2)
     d = circuit.declare_register("d", 2)
@@ -139,6 +143,10 @@ def test_validate_rejects_two_declared_registers():
 
 
 def test_validate_rejects_declared_plus_anonymous():
+    """A declared register plus destination-less measurements is also two registers.
+
+    Remove once per register results are reported through the ``output`` field.
+    """
     circuit = Circuit()
     c = circuit.declare_register("c", 1)
     circuit.add_measure((0,), c)
