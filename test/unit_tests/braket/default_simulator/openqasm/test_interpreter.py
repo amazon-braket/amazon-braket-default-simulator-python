@@ -13,6 +13,7 @@
 
 import re
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 import pytest
@@ -20,11 +21,17 @@ import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.openqasm.parser import openqasm_parser
-from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
-from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX, Reset
+from braket.default_simulator.gate_operations import (
+    CX,
+    GPhase,
+    Hadamard,
+    PauliX,
+    Reset,
+    RotX,
+    U,
+    Unitary,
+)
 from braket.default_simulator.gate_operations import PauliY as Y
-from braket.default_simulator.gate_operations import RotX, U, Unitary
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -38,13 +45,14 @@ from braket.default_simulator.noise_operations import (
     TwoQubitDepolarizing,
 )
 from braket.default_simulator.observables import Hermitian, PauliY
+from braket.default_simulator.openqasm import interpreter as interp_module
 from braket.default_simulator.openqasm._helpers.casting import (
     convert_bool_array_to_string,
     convert_string_to_bool_array,
 )
 from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm import interpreter as interp_module
-from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.interpreter import Interpreter, VerbatimBoxDelimiter
+from braket.default_simulator.openqasm.parser import openqasm_parser
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AliasStatement,
     AngleType,
@@ -2142,10 +2150,18 @@ def test_basis_rotation_hermitian():
     ]
 
 
+class Slot(NamedTuple):
+    """One measurement column: which register element reports which qubit."""
+
+    register: str | None
+    element: int
+    qubit: int
+
+
 def _slots(circuit):
-    """(register name, element, qubit) for each measurement column."""
     return [
-        (register.name, element, qubit) for register, element, qubit in circuit.measurement_slots
+        Slot(register.name, element, qubit)
+        for register, element, qubit in circuit.measurement_slots
     ]
 
 
@@ -2162,7 +2178,7 @@ def _slots(circuit):
                     "b[0] = measure q[0];",
                 ]
             ),
-            [("b", 0, 0)],
+            [Slot(register="b", element=0, qubit=0)],
         ),
         (
             "\n".join(
@@ -2172,7 +2188,11 @@ def _slots(circuit):
                     "b = measure q;",
                 ]
             ),
-            [("b", 0, 0), ("b", 1, 1), ("b", 2, 2)],
+            [
+                Slot(register="b", element=0, qubit=0),
+                Slot(register="b", element=1, qubit=1),
+                Slot(register="b", element=2, qubit=2),
+            ],
         ),
         (
             "\n".join(
@@ -2184,7 +2204,7 @@ def _slots(circuit):
                     "b[0:1] = measure q[0:1];",
                 ]
             ),
-            [("b", 0, 0), ("b", 1, 1)],
+            [Slot(register="b", element=0, qubit=0), Slot(register="b", element=1, qubit=1)],
         ),
         (
             "\n".join(
@@ -2199,7 +2219,11 @@ def _slots(circuit):
                     "b[1] = measure q[2];",
                 ]
             ),
-            [("b", 0, 0), ("b", 1, 2), ("b", 2, 1)],
+            [
+                Slot(register="b", element=0, qubit=0),
+                Slot(register="b", element=1, qubit=2),
+                Slot(register="b", element=2, qubit=1),
+            ],
         ),
         (
             "\n".join(
@@ -2212,7 +2236,7 @@ def _slots(circuit):
                     "b[{2, 1}] = measure q[{0, 2}];",
                 ]
             ),
-            [("b", 1, 2), ("b", 2, 0)],
+            [Slot(register="b", element=1, qubit=2), Slot(register="b", element=2, qubit=0)],
         ),
         (
             "\n".join(
@@ -2223,7 +2247,7 @@ def _slots(circuit):
                     "b[0] = measure $0;",
                 ]
             ),
-            [("b", 0, 0)],
+            [Slot(register="b", element=0, qubit=0)],
         ),
         (
             "\n".join(
@@ -2234,7 +2258,11 @@ def _slots(circuit):
                     "}",
                 ]
             ),
-            [(None, 0, 0), (None, 1, 1), (None, 2, 2)],
+            [
+                Slot(register=None, element=0, qubit=0),
+                Slot(register=None, element=1, qubit=1),
+                Slot(register=None, element=2, qubit=2),
+            ],
         ),
         (
             "\n".join(
@@ -2248,7 +2276,7 @@ def _slots(circuit):
                     "measure q[0];",
                 ]
             ),
-            [(None, 0, 1), (None, 1, 0)],
+            [Slot(register=None, element=0, qubit=1), Slot(register=None, element=1, qubit=0)],
         ),
         (
             "\n".join(
@@ -2258,7 +2286,7 @@ def _slots(circuit):
                     "b[0] = measure q[1:5];",
                 ]
             ),
-            [("b", 0, 1)],
+            [Slot(register="b", element=0, qubit=1)],
         ),
         (
             "\n".join(
@@ -2268,7 +2296,7 @@ def _slots(circuit):
                     "b = measure q[1];",
                 ]
             ),
-            [("b", 0, 1)],
+            [Slot(register="b", element=0, qubit=1)],
         ),
     ],
 )
@@ -2292,7 +2320,11 @@ def test_measure_qubit_twice_allowed():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [("b", 0, 0), ("b", 1, 0), ("b", 2, 1)]
+    assert _slots(circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=1, qubit=0),
+        Slot(register="b", element=2, qubit=1),
+    ]
     assert circuit.measured_qubits == [0, 0, 1]
 
 
@@ -2309,7 +2341,10 @@ def test_measure_into_distinct_registers_does_not_alias():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [("c", 1, 0), ("d", 1, 1)]
+    assert _slots(circuit) == [
+        Slot(register="c", element=1, qubit=0),
+        Slot(register="d", element=1, qubit=1),
+    ]
     with pytest.raises(ValueError, match="single classical register.*`c`, `d`"):
         circuit.validate_single_measured_register()
 
@@ -2325,7 +2360,10 @@ def test_measure_into_two_scalar_bits_rejected():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [("a", 0, 0), ("b", 0, 1)]
+    assert _slots(circuit) == [
+        Slot(register="a", element=0, qubit=0),
+        Slot(register="b", element=0, qubit=1),
+    ]
     with pytest.raises(ValueError, match="`a`, `b`"):
         circuit.validate_single_measured_register()
 
@@ -2340,7 +2378,10 @@ def test_measure_into_register_and_without_destination_rejected():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [("b", 0, 0), (None, 0, 1)]
+    assert _slots(circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register=None, element=0, qubit=1),
+    ]
     with pytest.raises(ValueError, match="`b`, measurements without a destination"):
         circuit.validate_single_measured_register()
 
@@ -2371,7 +2412,7 @@ def test_remeasure_into_scalar_bit_keeps_last_only():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [("b", 0, 1)]
+    assert _slots(circuit) == [Slot(register="b", element=0, qubit=1)]
     assert circuit.qubit_set == {0, 1}
 
 
@@ -2384,7 +2425,7 @@ def test_explicit_index_is_register_relative():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [("c", 3, 0)]
+    assert _slots(circuit) == [Slot(register="c", element=3, qubit=0)]
     assert circuit.measured_qubits == [0]
 
 
@@ -2426,7 +2467,10 @@ def test_shadowed_bit_gets_its_own_register():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [("b", 0, 0), ("b", 0, 1)]
+    assert _slots(circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=0, qubit=1),
+    ]
     outer, inner = circuit.classical_registers
     assert outer is not inner
     with pytest.raises(ValueError, match="`b`, `b`"):

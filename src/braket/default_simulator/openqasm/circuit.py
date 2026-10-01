@@ -25,18 +25,7 @@ from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 
 class ClassicalRegister:
-    """A named classical bit register that measurements are recorded into.
-
-    Each element tracks the qubit whose measurement was last written into it
-    (its *source*), or ``None`` if the element has never been the destination
-    of a measurement. The anonymous register (``name is None``) collects
-    measurements that have no classical destination (``measure q;``) and grows
-    on demand.
-
-    Registers compare and hash by identity so that two declarations of the
-    same name (for example, a shadowing ``bit b`` in an inner scope) are
-    distinct registers.
-    """
+    """A named classical bit register that measurements are recorded into."""
 
     def __init__(self, name: str | None, size: int, order: int):
         self.name = name
@@ -55,8 +44,8 @@ class ClassicalRegister:
     def bind(self, element: int, qubit: int) -> None:
         """Record ``qubit`` as the measurement source of ``element``.
 
-        Binding an element that already has a source replaces it: the register
-        element holds the most recent measurement.
+        Simulator samples qubits at the end of the circuit, so registers must
+        know mapping to retrieve the measurement results.
         """
         if not 0 <= element < self.size:
             raise IndexError(
@@ -70,7 +59,11 @@ class ClassicalRegister:
         self.sources[element] = None
 
     def grow(self, count: int) -> None:
-        """Append ``count`` unbound elements to the register."""
+        """Append ``count`` unbound elements to the register.
+
+        Only the anonymous register grows: it has no declared size and gains one
+        element per qubit each time a destination-less ``measure`` is recorded.
+        """
         self.sources.extend([None] * count)
 
     def __repr__(self) -> str:
@@ -185,12 +178,7 @@ class Circuit:
 
     @property
     def measurement_slots(self) -> list[tuple[ClassicalRegister, int, int]]:
-        """``(register, element, qubit)`` for every measured register element.
-
-        This is the canonical column order of the simulator's ``measurements``
-        output: registers in declaration order, elements in index order,
-        skipping elements without a measurement source.
-        """
+        """``(register, element, qubit)`` for every measured register element."""
         return [
             (register, element, qubit)
             for register in self.classical_registers
@@ -211,12 +199,7 @@ class Circuit:
     def validate_single_measured_register(self) -> None:
         """Reject programs whose measurements span more than one register.
 
-        The task result's ``measurements`` field is one bit string per shot, which
-        can only represent the contents of a single classical register. Until
-        per-register results are reported through the ``output`` field, programs
-        that measure into several registers (two declared registers, or a declared
-        register together with destination-less ``measure`` statements) are
-        rejected rather than concatenated into an ambiguous bit string.
+        This validation will be removed once `output` is supported.
 
         Raises:
             ValueError: If measurements were recorded into more than one register.

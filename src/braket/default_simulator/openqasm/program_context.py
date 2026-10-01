@@ -935,9 +935,10 @@ class AbstractProgramContext(ABC):
         Args:
             target (tuple[int]): The qubit indices to measure.
             classical_targets (Iterable[int] | None): The element indices within the
-                destination bit register that each measured qubit is written to, as
-                resolved by the Interpreter. ``None`` when the destination is a whole
-                register or a scalar bit, or when there is no destination.
+                destination bit register that each measured qubit is written to.
+                ``None`` when the destination is a whole register or a scalar bit,
+                or when there is no destination. For interpreter that supports multiple
+                classical registers, the name of the register is another arg.
         """
 
     def add_barrier(self, target: list[int] | None = None) -> None:
@@ -1229,14 +1230,9 @@ class ProgramContext(AbstractProgramContext):
 
         Called when something in the program needs a deferred measurement to have
         happened: its result is read, control flow depends on it, or its qubit is
-        operated on. With ``shots > 0`` this transitions to branched execution
-        (initialising the paths from the circuit built so far) and branches each
-        measurement, so that all classical variables carry per-path values. With
-        ``shots == 0`` there is nothing to sample; the measurements are recorded in
-        the circuit and their destination bits set to 0.
-
-        Every pending entry is applied, not just the one that triggered the call,
-        because all of them precede the current statement in program order.
+        operated on. Every pending entry is applied, not just the one that
+        triggered the call, because all of them precede the current statement in
+        program order.
         """
         if not self._pending_mcm_targets:
             return
@@ -1299,11 +1295,6 @@ class ProgramContext(AbstractProgramContext):
     def update_value(self, variable: Identifier | IndexedIdentifier, value: Any) -> None:
         """Update variable value, operating per-path when branched.
 
-        A classical write to a bit register element that holds a measurement
-        releases that measurement (see ``_release_measurements``), so a
-        measurement source on an element always means "last written by a
-        measurement".
-
         When branched, updates the variable on all active paths. Indexed
         updates (e.g., ``arr[0] = 5``) are handled by reading the current
         value from the path, applying the index update, and writing back.
@@ -1329,14 +1320,9 @@ class ProgramContext(AbstractProgramContext):
     def _release_measurements(self, variable: Identifier | IndexedIdentifier) -> None:
         """Release measurements held by bit register elements about to be overwritten.
 
-        Only used before branching. A measurement into an element that is then
-        classically assigned no longer determines that element's value, so the
-        element loses its measurement source and is not reported as a column. This
-        applies both to measurements already recorded in the circuit and to
-        deferred (pending) ones; a pending measurement whose every destination is
-        overwritten is dropped entirely, since with no branching it would only be
-        sampled from the final state. In branched mode the per-path register
-        outcomes are the source of truth and the shared circuit is left alone.
+        A measurement into an element that is then classically assigned no longer
+        determines that element's value, so the element loses its measurement source
+        and is not reported as a column.
 
         Args:
             variable (Identifier | IndexedIdentifier): The assignment target.

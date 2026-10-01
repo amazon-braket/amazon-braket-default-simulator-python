@@ -68,11 +68,6 @@ class SimulationPath:
     classical variable state, measurement outcomes, and scope frame number.
     When a mid-circuit measurement causes branching, paths are deep-copied
     so that each branch evolves independently.
-
-    ``mcm_outcomes`` holds, per classical register element, the outcome of the
-    mid-circuit measurement last written into it on this path. Unlike the
-    classical variables it survives scope exit and classical overwrites, so it
-    is what the simulator reports in ``measurements``.
     """
 
     def __init__(
