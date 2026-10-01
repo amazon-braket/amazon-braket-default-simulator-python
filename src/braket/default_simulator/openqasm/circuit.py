@@ -77,12 +77,6 @@ class Circuit:
     braket.default_simulator.state_vector_simulator.StateVectorSimulator, for example.
     Our simulator module takes in a circuit specification that satisfies the interface
     implemented by this class.
-
-    Measurements are recorded into classical registers (see ``ClassicalRegister``).
-    The columns of the simulator's per-shot bit string are given by
-    ``measurement_slots``: registers in declaration order, elements in index order,
-    skipping elements that were never measured into. Reporting is currently limited
-    to a single measured register (see ``validate_single_measured_register``).
     """
 
     def __init__(
