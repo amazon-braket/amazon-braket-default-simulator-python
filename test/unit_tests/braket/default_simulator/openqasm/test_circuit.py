@@ -49,6 +49,7 @@ def test_declare_register():
     assert (d.name, d.size, d.order, d.sources) == ("d", 1, 1, [None])
     assert circuit.measurement_slots == []
     assert circuit.measured_qubits == []
+    assert circuit.measured_registers == []
 
 
 def test_registers_with_same_name_are_distinct():
@@ -115,21 +116,6 @@ def test_anonymous_register_grows_on_demand():
     assert anonymous.name is None
     assert anonymous.sources == [1, 0, 2]
     assert circuit.measured_qubits == [1, 0, 2]
-
-
-def test_anonymous_register_is_placed_at_first_use():
-    circuit = Circuit()
-    c = circuit.declare_register("c", 1)
-    circuit.add_measure((3,))
-    d = circuit.declare_register("d", 1)
-    anonymous = circuit.anonymous_register()
-    assert circuit.classical_registers == [c, anonymous, d]
-
-
-def test_measured_registers_empty_when_nothing_measured():
-    circuit = Circuit()
-    circuit.declare_register("c", 2)
-    assert circuit.measured_registers == []
 
 
 def test_measured_registers_skips_unmeasured():

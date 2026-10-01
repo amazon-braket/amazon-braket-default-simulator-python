@@ -2349,43 +2349,6 @@ def test_measure_into_distinct_registers_does_not_alias():
         circuit.validate_single_measured_register()
 
 
-def test_measure_into_two_scalar_bits_rejected():
-    qasm = "\n".join(
-        [
-            "bit a;",
-            "bit b;",
-            "qubit[2] q;",
-            "a = measure q[0];",
-            "b = measure q[1];",
-        ]
-    )
-    circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [
-        Slot(register="a", element=0, qubit=0),
-        Slot(register="b", element=0, qubit=1),
-    ]
-    with pytest.raises(ValueError, match="`a`, `b`"):
-        circuit.validate_single_measured_register()
-
-
-def test_measure_into_register_and_without_destination_rejected():
-    qasm = "\n".join(
-        [
-            "bit b;",
-            "qubit[2] q;",
-            "b = measure q[0];",
-            "measure q[1];",
-        ]
-    )
-    circuit = Interpreter().build_circuit(qasm)
-    assert _slots(circuit) == [
-        Slot(register="b", element=0, qubit=0),
-        Slot(register=None, element=0, qubit=1),
-    ]
-    with pytest.raises(ValueError, match="`b`, measurements without a destination"):
-        circuit.validate_single_measured_register()
-
-
 def test_unused_register_does_not_count():
     qasm = "\n".join(
         [

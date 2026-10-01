@@ -2614,12 +2614,7 @@ class TestUnifiedMCMBasic:
         assert 0.4 < counter["00"] / 1000 < 0.6
 
     def test_scalar_bit_mcm_reports_only_the_measured_qubit(self, simulator):
-        """A scalar ``bit`` destination is a one-element register and one column.
-
-        Previously a scalar destination was never recorded in the circuit when the
-        program branched, so ``measurements`` fell back to every qubit and reported
-        the unmeasured ``q[1]`` as if it had been measured.
-        """
+        """A scalar ``bit`` destination is a one-element register and one column."""
         qasm = """
         OPENQASM 3.0;
         bit b;

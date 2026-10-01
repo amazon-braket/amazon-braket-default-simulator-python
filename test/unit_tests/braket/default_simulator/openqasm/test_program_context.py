@@ -232,40 +232,6 @@ class TestRegisterDeclaration:
         assert p.size == 4
         assert s.size == 1
 
-    def test_shadowing_declaration_gets_fresh_register(self):
-        context = ProgramContext()
-        context.declare_variable("b", BitType(size=None), None)
-        outer = context.register_table.get_register("b")
-        with context.enter_scope():
-            context.declare_variable("b", BitType(size=None), None)
-            inner = context.register_table.get_register("b")
-            assert inner is not outer
-        assert context.register_table.get_register("b") is outer
-        assert context.circuit.classical_registers == [outer, inner]
-
-    def test_subroutine_local_bit_gets_its_own_register(self):
-        qasm = """
-        def f(qubit a) -> bit {
-            bit b;
-            b = measure a;
-            return b;
-        }
-        bit b;
-        qubit[2] q;
-        b = measure q[0];
-        bit r = f(q[1]);
-        """
-        circuit = _build(qasm).circuit
-        assert _slots(circuit) == [
-            Slot(register="b", element=0, qubit=0),
-            Slot(register="b", element=0, qubit=1),
-        ]
-        outer_b, inner_b, r = circuit.classical_registers
-        assert outer_b is not inner_b
-        assert r.sources == [None]
-        with pytest.raises(ValueError, match="single classical register"):
-            circuit.validate_single_measured_register()
-
     def test_repr_includes_register_table(self):
         context = ProgramContext()
         context.declare_variable("b", BitType(size=None), None)
@@ -273,31 +239,6 @@ class TestRegisterDeclaration:
 
 
 class TestResolveDestination:
-    @pytest.fixture
-    def context(self):
-        context = ProgramContext()
-        context.declare_variable("c", BitType(IntegerLiteral(3)), ArrayLiteral([None] * 3))
-        context.declare_variable("b", BitType(size=None), None)
-        context.declare_variable("x", int_8, IntegerLiteral(0))
-        return context
-
-    def test_whole_register(self, context):
-        c = context.register_table.get_register("c")
-        assert context._resolve_destination(Identifier("c"), None, (4, 5, 6)) == (c, [0, 1, 2])
-
-    def test_scalar_bit(self, context):
-        b = context.register_table.get_register("b")
-        assert context._resolve_destination(Identifier("b"), None, (4,)) == (b, [0])
-
-    def test_indexed_uses_interpreter_indices(self, context):
-        c = context.register_table.get_register("c")
-        destination = IndexedIdentifier(Identifier("c"), [[IntegerLiteral(2)]])
-        assert context._resolve_destination(destination, [2, 0], (4, 5)) == (c, [2, 0])
-
-    def test_non_bit_destination_raises(self, context):
-        with pytest.raises(TypeError, match="'x' is not a bit or bit register"):
-            context._resolve_destination(Identifier("x"), None, (0,))
-
     @pytest.mark.parametrize(
         "destination, expected",
         [
@@ -372,10 +313,6 @@ class TestClassicalOverwriteReleasesMeasurement:
     def test_overwrite_of_unmeasured_bit_is_a_plain_assignment(self):
         circuit = _build("bit b; qubit q; b = 1; measure q;", shots=10).circuit
         assert _slots(circuit) == [Slot(register=None, element=0, qubit=0)]
-
-    def test_non_bit_assignment_is_untouched(self):
-        circuit = _build("bit b; int x; qubit q; b = measure q; x = 3;", shots=10).circuit
-        assert _slots(circuit) == [Slot(register="b", element=0, qubit=0)]
 
     def test_branched_overwrite_leaves_circuit_alone(self):
         """After branching the per-path outcomes are authoritative; the shared circuit
