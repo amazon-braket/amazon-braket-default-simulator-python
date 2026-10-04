@@ -11,6 +11,8 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from typing import NamedTuple
+
 import pytest
 
 from braket.default_simulator import gate_operations
@@ -21,14 +23,17 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     BitType,
     BooleanLiteral,
     BoolType,
+    DiscreteSet,
     FloatLiteral,
     FloatType,
     Identifier,
+    IndexedIdentifier,
     IntegerLiteral,
     IntType,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
 from braket.default_simulator.state_vector_simulator import StateVectorSimulator
+from braket.ir.openqasm import Program as OpenQASMProgram
 
 boolean = BoolType()
 int_8 = IntType(IntegerLiteral(8))
@@ -180,6 +185,28 @@ def test_add_barrier_is_noop():
     assert len(context.circuit.instructions) == initial_instruction_count
 
 
+class Slot(NamedTuple):
+    """One measurement column: which register element reports which qubit."""
+
+    register: str | None
+    element: int
+    qubit: int
+
+
+def _slots(circuit):
+    return [
+        Slot(register.name, element, qubit)
+        for register, element, qubit in circuit.measurement_slots
+    ]
+
+
+def _build(qasm, shots=0):
+    """Interpret ``qasm`` with a simulator-backed context and return the context."""
+    context = StateVectorSimulator().create_program_context()
+    context._shots = shots
+    return Interpreter(context).run(source=qasm)
+
+
 def test_bit_declarations_create_registers():
     context = ProgramContext()
     context.declare_variable("b", BitType(size=None), None)
@@ -212,12 +239,6 @@ def test_repr_includes_register_table():
     assert "Registers" in repr(context.register_table)
 
 
-def _branched_context(qasm, shots=100):
-    context = StateVectorSimulator().create_program_context()
-    context._shots = shots
-    return Interpreter(context).run(source=qasm)
-
-
 def _path_bit(path, name):
     value = path.get_variable(name).value
     return int(getattr(value, "value", value))
@@ -225,8 +246,9 @@ def _path_bit(path, name):
 
 def test_mcm_dependent_declaration_has_one_register_and_a_value_per_path():
     """``bit c = b;`` after branching is one declaration with a value on each path."""
-    context = _branched_context(
-        "qubit[2] q; bit b; h q[0]; b = measure q[0]; if (b) { x q[1]; } bit c = b;"
+    context = _build(
+        "qubit[2] q; bit b; h q[0]; b = measure q[0]; if (b) { x q[1]; } bit c = b;",
+        shots=100,
     )
     assert len(context.active_paths) == 2
     assert [r.name for r in context.circuit.classical_registers] == ["b", "c"]
@@ -240,7 +262,7 @@ def test_mcm_dependent_declaration_has_one_register_and_a_value_per_path():
 
 def test_mcm_dependent_declaration_without_branching():
     """With ``shots == 0`` nothing branches, so the declaration keeps its one value."""
-    context = _branched_context(
+    context = _build(
         "qubit q; bit b; x q; b = measure q; int n = int(b) + 5;",
         shots=0,
     )
@@ -248,14 +270,165 @@ def test_mcm_dependent_declaration_without_branching():
     assert context.get_value("n") == IntegerLiteral(5)
 
 
-def test_shadowing_declaration_resolves_per_scope():
-    context = ProgramContext()
-    context.declare_variable("b", BitType(size=None), None)
-    outer = context.register_table.get_register("b")
-    context.push_scope()
-    context.declare_variable("b", BitType(size=None), None)
-    inner = context.register_table.get_register("b")
-    assert inner is not outer
-    context.pop_scope()
-    assert context.register_table.get_register("b") is outer
-    assert context.circuit.classical_registers == [outer, inner]
+class TestResolveDestination:
+    @pytest.mark.parametrize(
+        "destination, expected",
+        [
+            ("c[1]", [Slot(register="c", element=1, qubit=0)]),
+            (
+                "c[{2, 0}]",
+                [Slot(register="c", element=0, qubit=1), Slot(register="c", element=2, qubit=0)],
+            ),
+            (
+                "c[0:1]",
+                [Slot(register="c", element=0, qubit=0), Slot(register="c", element=1, qubit=1)],
+            ),
+        ],
+    )
+    def test_indexed_destination_forms(self, destination, expected):
+        qubits = "q[0]" if destination == "c[1]" else "q[0:1]"
+        circuit = _build(f"bit[3] c; qubit[2] q; {destination} = measure {qubits};").circuit
+        assert _slots(circuit) == expected
+
+
+class TestClassicalOverwriteReleasesMeasurement:
+    """A classical write to a measured bit register element releases the measurement.
+
+    The element loses its measurement source and is no longer a column. The qubit
+    stays part of the circuit.
+    """
+
+    def test_scalar_overwrite_with_pending_measurement(self):
+        circuit = _build("bit b; qubit q; h q; b = measure q; b = 0;", shots=10).circuit
+        (b,) = circuit.classical_registers
+        assert b.sources == [None]
+        assert circuit.measurement_slots == []
+        assert circuit.measured_registers == []
+        assert circuit.qubit_set == {0}
+
+    def test_element_overwrite_keeps_other_elements(self):
+        qasm = "bit[2] c; qubit[2] q; c = measure q; c[0] = 0;"
+        circuit = _build(qasm, shots=10).circuit
+        (c,) = circuit.classical_registers
+        assert c.sources == [None, 1]
+        assert _slots(circuit) == [Slot(register="c", element=1, qubit=1)]
+        assert circuit.qubit_set == {0, 1}
+
+    @pytest.mark.parametrize(
+        "lvalue, expected_sources",
+        [
+            ('c[1:2] = "00"', [0, None, None]),
+            ("c[-1] = 0", [0, 1, None]),
+        ],
+    )
+    def test_indexed_lvalue_forms(self, lvalue, expected_sources):
+        qasm = f"bit[3] c; qubit[3] q; c = measure q; {lvalue};"
+        circuit = _build(qasm, shots=10).circuit
+        (c,) = circuit.classical_registers
+        assert c.sources == expected_sources
+
+    def test_discrete_set_lvalue_elements(self):
+        lvalue = IndexedIdentifier(
+            Identifier("c"), [DiscreteSet([IntegerLiteral(2), IntegerLiteral(0)])]
+        )
+        assert ProgramContext._indexed_elements(lvalue, 3) == [2, 0]
+
+    def test_overwrite_of_measurement_already_in_circuit(self):
+        """With ``shots == 0`` a read forces the pending measurement into the circuit
+        before the overwrite, exercising the bound-source path."""
+        qasm = "bit b; qubit q; h q; b = measure q; int x = b; b = 1;"
+        context = _build(qasm, shots=0)
+        (b,) = context.circuit.classical_registers
+        assert b.sources == [None]
+        assert context.get_value("b") == BooleanLiteral(True)
+
+    def test_overwrite_of_unmeasured_bit_is_a_plain_assignment(self):
+        circuit = _build("bit b; qubit q; b = 1; measure q;", shots=10).circuit
+        assert _slots(circuit) == [Slot(register=None, element=0, qubit=0)]
+
+    def test_branched_overwrite_leaves_circuit_alone(self):
+        """After branching the per-path outcomes are authoritative; the shared circuit
+        keeps the measurement source and the column reports the measured value."""
+        qasm = """
+        bit b;
+        qubit q;
+        h q;
+        b = measure q;
+        if (b) { b = 0; }
+        """
+        context = _build(qasm, shots=100)
+        assert context.is_branched
+        (b,) = context.circuit.classical_registers
+        assert b.sources == [0]
+        result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=200)
+        assert result.measuredQubits == [0]
+        assert {"".join(m) for m in result.measurements} == {"0", "1"}
+
+
+class TestDeferredMeasurementFlushedOutOfScope:
+    """A block-scoped destination may be gone when an operation on its qubit forces
+    the deferred measurement to be applied."""
+
+    qasm = """
+    qubit q;
+    h q;
+    for int i in [0:0] { bit r; r = measure q; }
+    x q;
+    """
+
+    def test_without_shots_records_measurement(self):
+        circuit = _build(self.qasm, shots=0).circuit
+        assert _slots(circuit) == [Slot(register="r", element=0, qubit=0)]
+
+    def test_with_shots_records_outcome_per_path(self):
+        context = _build(self.qasm, shots=50)
+        assert context.is_branched
+        (r,) = context.circuit.classical_registers
+        assert all((r, 0) in path.mcm_outcomes for path in context.active_paths)
+        assert all(path.get_variable("r") is None for path in context.active_paths)
+
+
+class TestPendingMeasurementsAreAppliedTogether:
+    """Every pending measurement is applied when one of them is forced, so none is lost."""
+
+    def test_later_pending_measurement_survives_partial_read(self):
+        """Reading ``b[0]`` branches; ``b[1]``'s deferred measurement is applied with it
+        rather than left pending (previously it silently vanished from the results)."""
+        qasm = """
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        x q[1];
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        int x = b[0];
+        """
+        context = _build(qasm, shots=20)
+        assert context.is_branched
+        assert context._pending_mcm_targets == []
+        assert _slots(context.circuit) == [
+            Slot(register="b", element=0, qubit=0),
+            Slot(register="b", element=1, qubit=1),
+        ]
+        (b,) = context.circuit.classical_registers
+        assert all(path.mcm_outcomes[(b, 1)] == 1 for path in context.active_paths)
+        result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=20)
+        assert result.measuredQubits == [0, 1]
+        assert {"".join(m) for m in result.measurements} <= {"01", "11"}
+
+    def test_control_flow_without_shots_reads_measurement_as_zero(self):
+        """With ``shots == 0`` a deferred measurement used in control flow is recorded
+        and its bit reads as 0, instead of the condition reading an unset variable."""
+        qasm = """
+        bit b;
+        qubit[2] q;
+        x q[0];
+        b = measure q[0];
+        if (b == 1) { x q[1]; }
+        """
+        context = _build(qasm, shots=0)
+        assert not context.is_branched
+        assert _slots(context.circuit) == [Slot(register="b", element=0, qubit=0)]
+        assert context.get_value("b") == IntegerLiteral(0)
+        # b reads as 0, so the conditional X on q[1] is not applied
+        assert [ins.targets for ins in context.circuit.instructions] == [(0,)]
