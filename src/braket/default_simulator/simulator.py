@@ -765,15 +765,12 @@ class BaseLocalSimulator(OpenQASMSimulator):
             # Multi-path execution for programs with mid-circuit measurements
             return self._run_branched(context, openqasm_ir, shots, batch_size, created_at)
 
-        # Single-path execution (current behavior, unchanged)
+        # Single-path execution
         circuit = context.circuit
+        circuit.validate_single_measured_register()
         qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
         qubit_count = circuit.num_qubits
-        classical_bit_positions = {b: i for i, b in enumerate(circuit.target_classical_indices)}
-        measured_qubits = [
-            circuit.measured_qubits[classical_bit_positions[i]]
-            for i in sorted(circuit.target_classical_indices)
-        ]
+        measured_qubits = circuit.measured_qubits
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
@@ -876,6 +873,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
             GateModelTaskResult: Aggregated result across all paths.
         """
         circuit = context.circuit
+        circuit.validate_single_measured_register()
         path_qubit_set = set()
         for path in context.active_paths:
             for ins in path.instructions:
@@ -887,12 +885,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
         qubit_count = len(qubit_map)
         BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
 
-        # Determine measured qubits from the circuit
-        classical_bit_positions = {b: i for i, b in enumerate(circuit.target_classical_indices)}
-        measured_qubits = [
-            circuit.measured_qubits[classical_bit_positions[i]]
-            for i in sorted(circuit.target_classical_indices)
-        ]
+        # One column per measured register element, in index order
+        slots = circuit.measurement_slots
+        measured_qubits = [qubit for _, _, qubit in slots]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
@@ -917,16 +912,16 @@ class BaseLocalSimulator(OpenQASMSimulator):
             qubits_not_in_circuit = mapped_arr[~in_circuit_mask]
             measurements_array = np.array(measurements)
             selected = measurements_array[:, qubits_in_circuit]
-            # Overlay per-classical-bit MCM outcomes over the final-state
-            # samples so repeat measurements aren't reported as the qubit's
-            # final resampled state.
+            # Columns whose register element was written by a mid-circuit
+            # measurement on a path take that path's recorded outcome, so a
+            # qubit that evolved after being measured isn't reported as its
+            # final resampled state. Other columns keep the final-state sample.
             shot_offset = 0
             for path in context.active_paths:
-                mcm_outcomes = path._mcm_outcomes
-                for shot_idx in range(shot_offset, shot_offset + path.shots):
-                    for col, classical_idx in enumerate(sorted(circuit.target_classical_indices)):
-                        if classical_idx in mcm_outcomes:
-                            selected[shot_idx, col] = str(mcm_outcomes[classical_idx])
+                for col, (register, element, _) in enumerate(slots):
+                    outcome = path.mcm_outcomes.get((register, element))
+                    if outcome is not None:
+                        selected[shot_offset : shot_offset + path.shots, col] = str(outcome)
                 shot_offset += path.shots
             measurements = np.pad(selected, ((0, 0), (0, len(qubits_not_in_circuit)))).tolist()
 

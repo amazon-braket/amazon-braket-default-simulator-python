@@ -49,6 +49,7 @@ def test_declare_register():
     assert (d.name, d.size, d.order, d.sources) == ("d", 1, 1, [None])
     assert circuit.measurement_slots == []
     assert circuit.measured_qubits == []
+    assert circuit.measured_registers == []
 
 
 def test_registers_with_same_name_are_distinct():
@@ -139,50 +140,41 @@ def test_anonymous_register_grows_on_demand():
     assert circuit.measured_qubits == [1, 0, 2]
 
 
-def test_add_measure_by_index_rejects_duplicate_qubit_by_default():
+def test_measured_registers_skips_unmeasured():
     circuit = Circuit()
-    circuit.add_measure_by_index((0,), [0])
-    with pytest.raises(ValueError, match="Qubit 0 is already measured or captured."):
-        circuit.add_measure_by_index((0,), [1])
+    circuit.declare_register("unused", 2)
+    c = circuit.declare_register("c", 2)
+    circuit.add_measure((1,), c, [1])
+    assert circuit.measured_registers == [c]
+    assert circuit.measured_qubits == [1]
+    circuit.validate_single_measured_register()
 
 
-def test_add_measure_by_index_binds_elements_of_anonymous_register():
-    """Explicit indices address elements of the anonymous register; the derived
-    columns come out in index order."""
+def test_validate_rejects_two_declared_registers():
+    """Measurements into two declared registers cannot be reported as one bit string.
+
+    Remove once per register results are reported through the ``output`` field.
+    """
     circuit = Circuit()
-    circuit.add_measure_by_index((5, 7), [2, 0], allow_remeasure=True)
-    (anonymous,) = circuit.classical_registers
-    assert anonymous is circuit.anonymous_register()
-    assert anonymous.sources == [7, None, 5]
-    assert circuit.measured_qubits == [7, 5]
-    assert circuit.target_classical_indices == [0, 2]
-    assert circuit.qubit_set == {5, 7}
+    c = circuit.declare_register("c", 2)
+    d = circuit.declare_register("d", 2)
+    circuit.add_measure((0,), c, [1])
+    circuit.add_measure((1,), d, [1])
+    with pytest.raises(ValueError, match="recorded into 2: `c`, `d`"):
+        circuit.validate_single_measured_register()
 
 
-def test_add_measure_by_index_appends_after_bound_elements():
+def test_validate_rejects_declared_plus_anonymous():
+    """A declared register plus destination-less measurements is also two registers.
+
+    Remove once per register results are reported through the ``output`` field.
+    """
     circuit = Circuit()
-    circuit.add_measure_by_index((3,), [0], allow_remeasure=True)
-    circuit.add_measure_by_index((1, 2), allow_remeasure=True)
-    assert circuit.anonymous_register().sources == [3, 1, 2]
-    assert circuit.target_classical_indices == [0, 1, 2]
-
-
-def test_add_measure_by_index_remeasure_replaces_source():
-    circuit = Circuit()
-    circuit.add_measure_by_index((0,), [1], allow_remeasure=True)
-    circuit.add_measure_by_index((4,), [1], allow_remeasure=True)
-    assert circuit.anonymous_register().sources == [None, 4]
-    assert circuit.measured_qubits == [4]
-    assert circuit.target_classical_indices == [1]
-
-
-def test_add_measure_by_index_sparse_then_append_fills_next_bound_count():
-    """With elements {0, 2} bound, the next bare measurement takes index 2 and
-    replaces it, matching the flat-index bookkeeping it stands in for."""
-    circuit = Circuit()
-    circuit.add_measure_by_index((0, 1), [0, 2], allow_remeasure=True)
-    circuit.add_measure_by_index((5,), allow_remeasure=True)
-    assert circuit.anonymous_register().sources == [0, None, 5]
+    c = circuit.declare_register("c", 1)
+    circuit.add_measure((0,), c)
+    circuit.add_measure((1,))
+    with pytest.raises(ValueError, match="`c`, measurements without a destination"):
+        circuit.validate_single_measured_register()
 
 
 def test_clear_measurement():

@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -35,6 +35,11 @@ class ClassicalRegister:
     @property
     def size(self) -> int:
         return len(self.sources)
+
+    @property
+    def measured(self) -> bool:
+        """Whether any element holds a measurement."""
+        return any(source is not None for source in self.sources)
 
     def bind(self, element: int, qubit: int) -> None:
         """Record ``qubit`` as the measurement source of ``element``.
@@ -186,50 +191,32 @@ class Circuit:
         """The measured qubit of each measurement slot, in ``measurement_slots`` order."""
         return [qubit for _, _, qubit in self.measurement_slots]
 
-    def add_measure_by_index(
-        self,
-        target: tuple[int, ...],
-        classical_targets: Iterable[int] | None = None,
-        allow_remeasure: bool = False,
-    ) -> None:
-        """Record a measurement by flat classical index into the anonymous register.
-
-        Temporary entry point for callers that still address measurements by a
-        program-wide classical index. It is removed once measurements are routed
-        through declared registers via ``add_measure``.
-
-        Args:
-            target (tuple[int, ...]): The qubits measured, in order.
-            classical_targets (Iterable[int] | None): The classical index of each
-                qubit. ``None`` appends one new index per qubit after the indices
-                already in use.
-            allow_remeasure (bool): Whether a qubit that is already measured into a
-                register element may be measured again (replacing the source of the
-                requested index).
-        """
-        register = self.anonymous_register()
-        classical_targets = list(classical_targets) if classical_targets else None
-        for index, qubit in enumerate(target):
-            if not allow_remeasure and qubit in self.measured_qubits:
-                raise ValueError(f"Qubit {qubit} is already measured or captured.")
-            element = (
-                classical_targets[index]
-                if classical_targets
-                else max(index, sum(source is not None for source in register.sources))
-            )
-            if element >= register.size:
-                register.grow(element + 1 - register.size)
-            register.bind(element, qubit)
-            self.qubit_set.add(qubit)
-
     @property
-    def target_classical_indices(self) -> list[int]:
-        """The classical index of each measurement slot, in ``measurement_slots`` order.
+    def measured_registers(self) -> list[ClassicalRegister]:
+        """The registers holding at least one measurement, in declaration order."""
+        return [register for register in self.classical_registers if register.measured]
 
-        Temporary companion of ``add_measure_by_index``: with a single anonymous
-        register the element index is the classical index. Removed with it.
+    def validate_single_measured_register(self) -> None:
+        """Reject programs whose measurements span more than one register.
+
+        This validation will be removed once `output` is supported.
+
+        Raises:
+            ValueError: If measurements were recorded into more than one register.
         """
-        return [element for _, element, _ in self.measurement_slots]
+        measured = self.measured_registers
+        if len(measured) > 1:
+            names = ", ".join(
+                f"`{register.name}`"
+                if register.name is not None
+                else "measurements without a destination"
+                for register in measured
+            )
+            raise ValueError(
+                "Measurement results can only be reported for a single classical register, "
+                f"but measurements were recorded into {len(measured)}: {names}. "
+                "Declare one bit register and measure into it."
+            )
 
     def add_result(self, result: Results) -> None:
         """
