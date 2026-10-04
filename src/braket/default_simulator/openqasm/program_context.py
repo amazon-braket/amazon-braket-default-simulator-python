@@ -64,7 +64,7 @@ from ._helpers.functions import (
     evaluate_binary_expression,
     evaluate_unary_expression,
 )
-from .circuit import Circuit
+from .circuit import Circuit, ClassicalRegister
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ArrayLiteral,
@@ -390,6 +390,28 @@ class VariableTable(ScopedTable):
         return not is_none_like(self[name])
 
 
+class RegisterTable(ScopedTable):
+    """
+    Scoped table mapping bit variable names to their ``ClassicalRegister`` handles.
+
+    Every ``bit`` declaration creates a fresh register, so a shadowing declaration in an
+    inner scope resolves to a different register than the outer one.
+    """
+
+    def __init__(self):
+        super().__init__("Registers")
+
+    def add_register(self, name: str, register: ClassicalRegister) -> None:
+        self.current_scope[name] = register
+
+    def get_register(self, name: str) -> ClassicalRegister | None:
+        """The register ``name`` resolves to, or ``None`` if it is not a bit variable."""
+        try:
+            return self[name]
+        except KeyError:
+            return None
+
+
 class GateTable(ScopedTable):
     """
     Scoped table to implement gates.
@@ -441,6 +463,7 @@ class AbstractProgramContext(ABC):
 
     Symbol table - symbols in scope
     Variable table - variable values
+    Register table - classical register handles for bit variables
     Gate table - gate definitions
     Subroutine table - subroutine definitions
     Qubit mapping - mapping from logical qubits to qubit indices
@@ -451,6 +474,7 @@ class AbstractProgramContext(ABC):
     def __init__(self):
         self.symbol_table = SymbolTable()
         self.variable_table = VariableTable()
+        self.register_table = RegisterTable()
         self.gate_table = GateTable()
         self.subroutine_table = SubroutineTable()
         self.qubit_mapping = QubitTable()
@@ -557,6 +581,7 @@ class AbstractProgramContext(ABC):
         """Enter a new scope"""
         self.symbol_table.push_scope()
         self.variable_table.push_scope()
+        self.register_table.push_scope()
         self.gate_table.push_scope()
         self._mcm_dependent_scopes.append(set())
 
@@ -564,6 +589,7 @@ class AbstractProgramContext(ABC):
         """Exit current scope"""
         self.symbol_table.pop_scope()
         self.variable_table.pop_scope()
+        self.register_table.pop_scope()
         self.gate_table.pop_scope()
         self._mcm_dependent_scopes.pop()
 
@@ -1193,7 +1219,7 @@ class ProgramContext(AbstractProgramContext):
         """
         if not self._is_branched and self._pending_mcm_targets:
             for mcm_target, mcm_classical, _mcm_dest in self._pending_mcm_targets:
-                self._circuit.add_measure(
+                self._circuit.add_measure_by_index(
                     mcm_target, mcm_classical, allow_remeasure=self.supports_midcircuit_measurement
                 )
             self._pending_mcm_targets.clear()
@@ -1212,10 +1238,25 @@ class ProgramContext(AbstractProgramContext):
     ) -> None:
         """Declare variable, storing per-path when branched.
 
-        When branched, the symbol table is still updated (for type lookups),
-        but the variable value is stored as a FramedVariable on each active
-        path instead of in the shared variable table.
+        A ``bit`` declaration additionally creates a fresh classical register in
+        the circuit and records the handle in ``register_table`` for the current
+        scope. When branched, the symbol table is still updated (for type
+        lookups), but the variable value is stored as a FramedVariable on each
+        active path instead of in the shared variable table.
         """
+        self._store_variable(name, symbol_type, value, const)
+        if isinstance(symbol_type, BitType):
+            size = _bit_register_size(symbol_type, value)
+            self.register_table.add_register(name, self._circuit.declare_register(name, size))
+
+    def _store_variable(
+        self,
+        name: str,
+        symbol_type: type[LiteralType | Identifier] | ClassicalType,
+        value: Any,
+        const: bool,
+    ) -> None:
+        """Add the symbol and its value, per path when branched."""
         if not self._is_branched:
             super().declare_variable(name, symbol_type, value, const)
             return
@@ -1331,7 +1372,7 @@ class ProgramContext(AbstractProgramContext):
                     self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
                 else:
                     # shots == 0: register as a normal measurement and set variable to 0
-                    self._circuit.add_measure(
+                    self._circuit.add_measure_by_index(
                         mcm_target,
                         mcm_classical,
                         allow_remeasure=self.supports_midcircuit_measurement,
@@ -1389,7 +1430,7 @@ class ProgramContext(AbstractProgramContext):
         else:
             # shots == 0: register as normal measurements and set variables to 0
             for mcm_target, mcm_classical, mcm_dest in to_flush:
-                self._circuit.add_measure(
+                self._circuit.add_measure_by_index(
                     mcm_target,
                     mcm_classical,
                     allow_remeasure=self.supports_midcircuit_measurement,
@@ -1434,7 +1475,10 @@ class ProgramContext(AbstractProgramContext):
         try:
             self.get_type(ff_var.name)
         except KeyError:
-            self.declare_variable(ff_var.name, BitType(size=None))
+            # The feedback bit is not a program-level register, so it gets a detached
+            # register that is never part of the circuit's measurement columns.
+            self._store_variable(ff_var.name, BitType(size=None), None, False)
+            self.register_table.add_register(ff_var.name, ClassicalRegister(ff_var.name, 1, -1))
         self.add_measure(target, classical_destination=ff_var)
 
     def _handle_cc_prx(self, target: tuple[int, ...], params) -> None:
@@ -1549,7 +1593,7 @@ class ProgramContext(AbstractProgramContext):
             else:
                 # End-of-circuit measurement in branched mode: record in circuit
                 # for qubit tracking but don't branch further
-                self._circuit.add_measure(
+                self._circuit.add_measure_by_index(
                     target, classical_targets, allow_remeasure=allow_remeasure
                 )
         elif classical_destination is not None:
@@ -1560,7 +1604,9 @@ class ProgramContext(AbstractProgramContext):
             self._pending_mcm_targets.append((target, classical_targets, classical_destination))
         else:
             # Standard non-MCM measurement — register in circuit immediately
-            self._circuit.add_measure(target, classical_targets, allow_remeasure=allow_remeasure)
+            self._circuit.add_measure_by_index(
+                target, classical_targets, allow_remeasure=allow_remeasure
+            )
 
     def _maybe_transition_to_branched(self) -> None:
         """Transition to branched mode if pending MCM targets exist.
@@ -2012,7 +2058,7 @@ class ProgramContext(AbstractProgramContext):
         self._measure_and_branch(target)
         self._update_classical_from_measurement(target, classical_destination, classical_targets)
         if classical_targets is not None:
-            self._circuit.add_measure(
+            self._circuit.add_measure_by_index(
                 target,
                 classical_targets,
                 allow_remeasure=self.supports_midcircuit_measurement,
@@ -2111,6 +2157,20 @@ class ProgramContext(AbstractProgramContext):
 
 
 _BINARY_EQUALS = getattr(BinaryOperator, "==")
+
+
+def _bit_register_size(bit_type: BitType, value: Any) -> int:
+    """Number of elements of a ``bit`` variable.
+
+    Sized declarations carry an evaluated ``IntegerLiteral`` size. Subroutine
+    parameters keep their unevaluated type, so fall back to the width of the
+    value passed in. An unsized ``bit`` is a register of size 1.
+    """
+    if isinstance(bit_type.size, IntegerLiteral):
+        return bit_type.size.value
+    if isinstance(value, ArrayLiteral):
+        return len(value.values)
+    return 1
 
 
 def _feedback_key_identifier(feedback_key: int) -> Identifier:

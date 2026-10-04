@@ -16,10 +16,13 @@ import pytest
 from braket.default_simulator import gate_operations
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    ArrayLiteral,
+    BitType,
     BooleanLiteral,
     BoolType,
     FloatLiteral,
     FloatType,
+    Identifier,
     IntegerLiteral,
     IntType,
 )
@@ -173,3 +176,46 @@ def test_add_barrier_is_noop():
 
     # Circuit should remain unchanged
     assert len(context.circuit.instructions) == initial_instruction_count
+
+
+class TestRegisterDeclaration:
+    def test_bit_declarations_create_registers(self):
+        context = ProgramContext()
+        context.declare_variable("b", BitType(size=None), None)
+        context.declare_variable("c", BitType(IntegerLiteral(3)), ArrayLiteral([None] * 3))
+        context.declare_variable("x", int_8, IntegerLiteral(0))
+        b, c = context.circuit.classical_registers
+        assert (b.name, b.size) == ("b", 1)
+        assert (c.name, c.size) == ("c", 3)
+        assert context.register_table.get_register("b") is b
+        assert context.register_table.get_register("c") is c
+        assert context.register_table.get_register("x") is None
+        assert context.register_table.get_register("undeclared") is None
+
+    def test_unevaluated_size_falls_back_to_value_width(self):
+        """Subroutine parameters keep their unevaluated type; size comes from the value."""
+        context = ProgramContext()
+        context.declare_variable(
+            "p", BitType(Identifier("n")), ArrayLiteral([BooleanLiteral(False)] * 4)
+        )
+        context.declare_variable("s", BitType(Identifier("n")), BooleanLiteral(True))
+        p, s = context.circuit.classical_registers
+        assert p.size == 4
+        assert s.size == 1
+
+    def test_repr_includes_register_table(self):
+        context = ProgramContext()
+        context.declare_variable("b", BitType(size=None), None)
+        assert "Registers" in repr(context.register_table)
+
+    def test_shadowing_declaration_resolves_per_scope(self):
+        context = ProgramContext()
+        context.declare_variable("b", BitType(size=None), None)
+        outer = context.register_table.get_register("b")
+        context.push_scope()
+        context.declare_variable("b", BitType(size=None), None)
+        inner = context.register_table.get_register("b")
+        assert inner is not outer
+        context.pop_scope()
+        assert context.register_table.get_register("b") is outer
+        assert context.circuit.classical_registers == [outer, inner]

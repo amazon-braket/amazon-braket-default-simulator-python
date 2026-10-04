@@ -20,11 +20,17 @@ import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.openqasm.parser import openqasm_parser
-from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
-from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX, Reset
+from braket.default_simulator.gate_operations import (
+    CX,
+    GPhase,
+    Hadamard,
+    PauliX,
+    Reset,
+    RotX,
+    U,
+    Unitary,
+)
 from braket.default_simulator.gate_operations import PauliY as Y
-from braket.default_simulator.gate_operations import RotX, U, Unitary
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -38,13 +44,14 @@ from braket.default_simulator.noise_operations import (
     TwoQubitDepolarizing,
 )
 from braket.default_simulator.observables import Hermitian, PauliY
+from braket.default_simulator.openqasm import interpreter as interp_module
 from braket.default_simulator.openqasm._helpers.casting import (
     convert_bool_array_to_string,
     convert_string_to_bool_array,
 )
 from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm import interpreter as interp_module
-from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.interpreter import Interpreter, VerbatimBoxDelimiter
+from braket.default_simulator.openqasm.parser import openqasm_parser
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AliasStatement,
     AngleType,
@@ -2192,12 +2199,12 @@ def test_basis_rotation_hermitian():
                     "b[1] = measure q[2];",
                 ]
             ),
-            ([0, 1, 2], [0, 2, 1]),
+            ([0, 2, 1], [0, 1, 2]),
         ),
         (
             "\n".join(
                 [
-                    "bit[1] b;",
+                    "bit[3] b;",
                     "qubit[3] q;",
                     "h q[0];",
                     "h q[1];",
@@ -2205,7 +2212,7 @@ def test_basis_rotation_hermitian():
                     "b[{2, 1}] = measure q[{0, 2}];",
                 ]
             ),
-            ([0, 2], [2, 1]),
+            ([2, 0], [1, 2]),
         ),
         (
             "\n".join(
@@ -2253,9 +2260,21 @@ def test_basis_rotation_hermitian():
             ),
             ([1], [0]),
         ),
+        (
+            "\n".join(
+                [
+                    "bit b;",
+                    "qubit[2] q;",
+                    "b = measure q[1];",
+                ]
+            ),
+            ([1], [0]),
+        ),
     ],
 )
 def test_measurement(qasm, expected):
+    """``expected`` is ``(measured_qubits, target_classical_indices)``, one entry per
+    result column in classical index order."""
     circuit = Interpreter().build_circuit(qasm)
     assert circuit.measured_qubits == expected[0]
     assert circuit.target_classical_indices == expected[1]
@@ -2275,8 +2294,8 @@ def test_measure_qubit_twice_allowed():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert circuit.measured_qubits == [1, 0, 0]
-    assert circuit.target_classical_indices == [2, 0, 1]
+    assert circuit.measured_qubits == [0, 0, 1]
+    assert circuit.target_classical_indices == [0, 1, 2]
 
 
 def test_measure_qubit_twice_with_bare_measure():
