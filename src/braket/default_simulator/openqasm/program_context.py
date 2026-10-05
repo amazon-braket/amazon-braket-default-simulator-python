@@ -1192,8 +1192,6 @@ class ProgramContext(AbstractProgramContext):
         self._is_branched: bool = False
         self._shots: int = 0
         self._batch_size: int = 1
-        # Deferred measurements with a classical destination, in program order.
-        # Each entry is (target qubits, destination register, destination elements).
         self._pending_mcm_targets: list[_PendingMeasurement] = []
 
     @property
