@@ -178,7 +178,7 @@ class Circuit:
 
     @property
     def measured_qubits(self) -> list[int]:
-        """The measured qubit of each column, in ``measurement_slots`` order."""
+        """The measured qubit of each measurement slot, in ``measurement_slots`` order."""
         return [qubit for _, _, qubit in self.measurement_slots]
 
     def add_measure_by_index(
@@ -189,8 +189,8 @@ class Circuit:
     ) -> None:
         """Record a measurement by flat classical index into the anonymous register.
 
-        Temporary entry point for callers that still address measurement columns by
-        a program-wide classical index. It is removed once measurements are routed
+        Temporary entry point for callers that still address measurements by a
+        program-wide classical index. It is removed once measurements are routed
         through declared registers via ``add_measure``.
 
         Args:
@@ -198,8 +198,9 @@ class Circuit:
             classical_targets (Iterable[int] | None): The classical index of each
                 qubit. ``None`` appends one new index per qubit after the indices
                 already in use.
-            allow_remeasure (bool): Whether a qubit that already sources a column may
-                be measured again (replacing the source of the requested index).
+            allow_remeasure (bool): Whether a qubit that is already measured into a
+                register element may be measured again (replacing the source of the
+                requested index).
         """
         register = self.anonymous_register()
         classical_targets = list(classical_targets) if classical_targets else None
@@ -218,7 +219,7 @@ class Circuit:
 
     @property
     def target_classical_indices(self) -> list[int]:
-        """The classical index of each column, in ``measurement_slots`` order.
+        """The classical index of each measurement slot, in ``measurement_slots`` order.
 
         Temporary companion of ``add_measure_by_index``: with a single anonymous
         register the element index is the classical index. Removed with it.

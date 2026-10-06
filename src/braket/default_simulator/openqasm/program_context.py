@@ -1476,7 +1476,7 @@ class ProgramContext(AbstractProgramContext):
             self.get_type(ff_var.name)
         except KeyError:
             # The feedback bit is not a program-level register, so it gets a detached
-            # register that is never part of the circuit's measurement columns.
+            # register that never contributes a measurement slot.
             self._store_variable(ff_var.name, BitType(size=None), None, False)
             self.register_table.add_register(ff_var.name, ClassicalRegister(ff_var.name, 1, -1))
         self.add_measure(target, classical_destination=ff_var)
