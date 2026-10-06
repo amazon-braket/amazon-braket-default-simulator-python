@@ -1346,7 +1346,7 @@ class ProgramContext(AbstractProgramContext):
                 continue
             kept = [
                 (qubit, register_index)
-                for qubit, register_index in zip(target, entry_register_indices)
+                for qubit, register_index in zip(target, entry_register_indices, strict=True)
                 if register_index not in released_indices
             ]
             if kept:
@@ -2018,7 +2018,7 @@ class ProgramContext(AbstractProgramContext):
         for path_idx in self._active_path_indices:
             path = self._paths[path_idx]
             framed_var = path.get_variable(register.name) if in_scope else None
-            for qubit_idx, slot in zip(target, bound):
+            for qubit_idx, slot in zip(target, bound, strict=True):
                 outcome = path.measurements[qubit_idx][-1]
                 path.mcm_outcomes[slot] = outcome
                 if framed_var is not None:
