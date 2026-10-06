@@ -2151,7 +2151,7 @@ def test_basis_rotation_hermitian():
 
 
 class Slot(NamedTuple):
-    """One measurement column: which register element reports which qubit."""
+    """One measurement slot: which register element reports which qubit."""
 
     register: str | None
     element: int
@@ -2366,8 +2366,8 @@ def test_unused_register_does_not_count():
 
 
 def test_remeasure_into_scalar_bit_keeps_last_only():
-    """Measuring twice into the same bit replaces its source; the earlier measurement
-    is applied to the state but is not a column."""
+    """Measuring twice into the same bit replaces its source. The earlier measurement
+    is applied to the state but is not a measurement slot."""
     qasm = "\n".join(
         [
             "bit b;",
