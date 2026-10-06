@@ -2614,7 +2614,7 @@ class TestUnifiedMCMBasic:
         assert 0.4 < counter["00"] / 1000 < 0.6
 
     def test_scalar_bit_mcm_reports_only_the_measured_qubit(self, simulator):
-        """A scalar ``bit`` destination is a one-element register and one column."""
+        """A scalar ``bit`` destination is a one-element register and one measurement slot."""
         qasm = """
         OPENQASM 3.0;
         bit b;
@@ -3365,7 +3365,7 @@ class TestMCMAsymmetricMeasurement:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
-        # b[0] is deterministically 0, so b[1] is never measured and has no column
+        # b[0] is deterministically 0, so b[1] is never measured and has no measurement slot
         assert counter == {"0": 1000}
 
 
@@ -4554,7 +4554,7 @@ class TestMCMFlushPendingEdgeCases:
         # Verify we get both b[0]=0 and b[0]=1 branches
         assert len(counter) >= 1
         for outcome in counter:
-            # b[1] (middle column) is always '0' since q[1] is never modified
+            # b[1] (the middle bit of each shot) is always '0' since q[1] is never modified
             assert outcome[1] == "0"
 
 
@@ -4609,7 +4609,7 @@ class TestMCMGateAfterPendingMeasurement:
         assert len(result.measurements) == 1000
         counter = Counter(["".join(m) for m in result.measurements])
         # b should be roughly 50/50 since q[0] was in superposition
-        # Output is 2 columns (full qubit state from branched simulation)
+        # Only b is measured, so each shot reports one bit
         assert len(counter) >= 2
 
     def test_reset_on_measured_qubit_flushes_pending(self, simulator):
