@@ -2204,7 +2204,7 @@ def test_basis_rotation_hermitian():
         (
             "\n".join(
                 [
-                    "bit[3] b;",
+                    "bit[1] b;",
                     "qubit[3] q;",
                     "h q[0];",
                     "h q[1];",
