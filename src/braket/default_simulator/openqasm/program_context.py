@@ -1320,7 +1320,7 @@ class ProgramContext(AbstractProgramContext):
 
         A measurement into an element that is then classically assigned no longer
         determines that element's value, so the element loses its measurement source
-        and is not reported as a column.
+        and is no longer a measurement slot, so it is not reported in ``measurements``.
 
         Args:
             variable (Identifier | IndexedIdentifier): The assignment target.
@@ -1357,7 +1357,7 @@ class ProgramContext(AbstractProgramContext):
                         [register_index for _, register_index in kept],
                     )
                 )
-            # the measured qubits remain part of the circuit even if no column reports them
+            # the measured qubits remain part of the circuit even if no slot reports them
             self._circuit.qubit_set.update(target)
         self._pending_mcm_targets = pending
 

@@ -885,7 +885,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         qubit_count = len(qubit_map)
         BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
 
-        # One column per measured register element, in index order
+        # One result bit per measurement slot, in slot order
         slots = circuit.measurement_slots
         measured_qubits = [qubit for _, _, qubit in slots]
         mapped_measured_qubits = (
@@ -912,16 +912,17 @@ class BaseLocalSimulator(OpenQASMSimulator):
             qubits_not_in_circuit = mapped_arr[~in_circuit_mask]
             measurements_array = np.array(measurements)
             selected = measurements_array[:, qubits_in_circuit]
-            # Columns whose register element was written by a mid-circuit
+            # Slots whose register element was written by a mid-circuit
             # measurement on a path take that path's recorded outcome, so a
             # qubit that evolved after being measured isn't reported as its
-            # final resampled state. Other columns keep the final-state sample.
+            # final resampled state. Other slots keep the final-state sample.
             shot_offset = 0
             for path in context.active_paths:
-                for col, (register, element, _) in enumerate(slots):
-                    outcome = path.mcm_outcomes.get((register, element))
+                for slot_index, (register, register_index, _) in enumerate(slots):
+                    outcome = path.mcm_outcomes.get((register, register_index))
                     if outcome is not None:
-                        selected[shot_offset : shot_offset + path.shots, col] = str(outcome)
+                        path_shots = slice(shot_offset, shot_offset + path.shots)
+                        selected[path_shots, slot_index] = str(outcome)
                 shot_offset += path.shots
             measurements = np.pad(selected, ((0, 0), (0, len(qubits_not_in_circuit)))).tolist()
 
