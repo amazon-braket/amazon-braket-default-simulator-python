@@ -71,6 +71,28 @@ def test_add_measure_into_register_elements():
     assert circuit.measured_qubits == [7, 5]
 
 
+@pytest.mark.parametrize(
+    "target, register_indices",
+    [
+        ((0, 1), [0]),
+        ((0,), [0, 1]),
+        ((0, 1), []),
+    ],
+)
+def test_add_measure_rejects_register_indices_length_mismatch(target, register_indices):
+    """Each measured qubit needs exactly one destination index. A mismatch raises
+    instead of silently dropping qubits, and nothing is recorded."""
+    circuit = Circuit()
+    c = circuit.declare_register("c", 3)
+    with pytest.raises(
+        ValueError,
+        match=f"got {len(register_indices)} register indices for {len(target)} qubits",
+    ):
+        circuit.add_measure(target, c, register_indices)
+    assert c.sources == [None, None, None]
+    assert circuit.qubit_set == set()
+
+
 def test_add_measure_whole_register_defaults_to_leading_elements():
     circuit = Circuit()
     c = circuit.declare_register("c", 3)

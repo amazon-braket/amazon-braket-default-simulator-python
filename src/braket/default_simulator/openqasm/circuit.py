@@ -155,6 +155,11 @@ class Circuit:
             register_indices = range(first, first + len(target))
         elif register_indices is None:
             register_indices = range(len(target))
+        elif len(register_indices) != len(target):
+            raise ValueError(
+                "Expected one register index per measured qubit, but got "
+                f"{len(register_indices)} register indices for {len(target)} qubits."
+            )
         bound = []
         for qubit, register_index in zip(target, register_indices):
             register.bind(register_index, qubit)
