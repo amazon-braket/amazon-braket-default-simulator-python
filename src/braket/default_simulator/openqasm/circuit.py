@@ -131,7 +131,7 @@ class Circuit:
         self,
         target: tuple[int, ...],
         register: ClassicalRegister | None = None,
-        elements: Sequence[int] | None = None,
+        register_indices: Sequence[int] | None = None,
     ) -> list[tuple[ClassicalRegister, int]]:
         """Record the measurement of ``target`` into a classical register.
 
@@ -139,26 +139,27 @@ class Circuit:
             target (tuple[int, ...]): The qubits measured, in order.
             register (ClassicalRegister | None): The destination register. ``None``
                 appends one new element per qubit to the anonymous register.
-            elements (Sequence[int] | None): The destination element per qubit.
-                Defaults to ``range(len(target))``, i.e. the whole register.
-                Ignored when ``register`` is ``None``.
+            register_indices (Sequence[int] | None): The destination index within
+                ``register`` for each qubit, aligned with ``target``. Defaults to
+                ``range(len(target))``, i.e. the whole register. Ignored when
+                ``register`` is ``None``.
 
         Returns:
-            list[tuple[ClassicalRegister, int]]: The ``(register, element)`` each
-            qubit was bound to, in ``target`` order.
+            list[tuple[ClassicalRegister, int]]: The ``(register, register_index)``
+            each qubit was bound to, in ``target`` order.
         """
         if register is None:
             register = self.anonymous_register()
             first = register.size
             register.grow(len(target))
-            elements = range(first, first + len(target))
-        elif elements is None:
-            elements = range(len(target))
+            register_indices = range(first, first + len(target))
+        elif register_indices is None:
+            register_indices = range(len(target))
         bound = []
-        for qubit, element in zip(target, elements):
-            register.bind(element, qubit)
+        for qubit, register_index in zip(target, register_indices):
+            register.bind(register_index, qubit)
             self.qubit_set.add(qubit)
-            bound.append((register, element))
+            bound.append((register, register_index))
         return bound
 
     def clear_measurement(self, register: ClassicalRegister, element: int) -> None:
