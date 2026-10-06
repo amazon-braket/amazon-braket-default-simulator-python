@@ -1329,24 +1329,34 @@ class ProgramContext(AbstractProgramContext):
         register = self.register_table.get_register(name)
         if register is None:
             return
-        elements = set(
+        released_indices = set(
             self._indexed_elements(variable, register.size)
             if isinstance(variable, IndexedIdentifier)
             else range(register.size)
         )
 
-        for element in elements:
-            if register.sources[element] is not None:
-                self._circuit.clear_measurement(register, element)
+        for register_index in released_indices:
+            if register.sources[register_index] is not None:
+                self._circuit.clear_measurement(register, register_index)
 
         pending = []
-        for target, entry_register, entry_elements in self._pending_mcm_targets:
+        for target, entry_register, entry_register_indices in self._pending_mcm_targets:
             if entry_register is not register:
-                pending.append((target, entry_register, entry_elements))
+                pending.append((target, entry_register, entry_register_indices))
                 continue
-            kept = [(q, e) for q, e in zip(target, entry_elements) if e not in elements]
+            kept = [
+                (qubit, register_index)
+                for qubit, register_index in zip(target, entry_register_indices)
+                if register_index not in released_indices
+            ]
             if kept:
-                pending.append((tuple(q for q, _ in kept), register, [e for _, e in kept]))
+                pending.append(
+                    (
+                        tuple(qubit for qubit, _ in kept),
+                        register,
+                        [register_index for _, register_index in kept],
+                    )
+                )
             # the measured qubits remain part of the circuit even if no column reports them
             self._circuit.qubit_set.update(target)
         self._pending_mcm_targets = pending
@@ -1435,14 +1445,14 @@ class ProgramContext(AbstractProgramContext):
         There is nothing to sample, so the measurement is recorded in the circuit and
         the destination bits are set to 0 so that the program can keep reading them.
         """
-        target, register, elements = entry
-        bound = self._circuit.add_measure(target, register, elements)
+        target, register, register_indices = entry
+        bound = self._circuit.add_measure(target, register, register_indices)
         # The destination may have gone out of scope (or be shadowed) by the time an
         # operation on the qubit forces the flush; then there is no variable to set.
         if self.register_table.get_register(register.name) is register:
             value = self.variable_table.get_value(register.name)
-            for _, element in bound:
-                value = _with_bit(value, element, 0)
+            for _, register_index in bound:
+                value = _with_bit(value, register_index, 0)
             self.variable_table[register.name] = value
 
     def _flush_pending_mcm_for_qubits(self, qubits: tuple[int, ...] | list[int]) -> None:
@@ -1612,17 +1622,17 @@ class ProgramContext(AbstractProgramContext):
             # register. It never branches, even in branched mode.
             self._circuit.add_measure(target)
             return
-        register, elements = self._resolve_destination(
+        register, register_indices = self._resolve_destination(
             classical_destination, classical_targets, target
         )
         if self._is_branched:
-            self._branch_measurement(target, register, elements)
+            self._branch_measurement(target, register, register_indices)
         else:
             # Potential MCM: defer registration. Don't add to circuit yet;
             # if branching triggers later the measurement is applied per-path.
             # If branching never triggers, _flush_pending_mcm_targets will
             # register them in the circuit as normal end-of-circuit measurements.
-            self._pending_mcm_targets.append((target, register, elements))
+            self._pending_mcm_targets.append((target, register, register_indices))
 
     def _resolve_destination(
         self,
@@ -1630,12 +1640,12 @@ class ProgramContext(AbstractProgramContext):
         classical_targets: Iterable[int] | None,
         target: tuple[int, ...],
     ) -> tuple[ClassicalRegister, list[int]]:
-        """Resolve a measurement destination to a register handle and elements.
+        """Resolve a measurement destination to a register and indices within it.
 
         Args:
             classical_destination (Identifier | IndexedIdentifier): The destination
                 variable in the program.
-            classical_targets (Iterable[int] | None): Element indices resolved by the
+            classical_targets (Iterable[int] | None): Register indices resolved by the
                 Interpreter for an indexed destination, or ``None`` for a whole
                 register or scalar bit.
             target (tuple[int, ...]): The measured qubits, used to size a whole
@@ -1643,16 +1653,17 @@ class ProgramContext(AbstractProgramContext):
 
         Returns:
             tuple[ClassicalRegister, list[int]]: The register the name resolves to in
-            the current scope and the destination element per measured qubit.
+            the current scope and the destination index within it for each measured
+            qubit, aligned with ``target``.
         """
         name = get_identifier_name(classical_destination)
         register = self.register_table.get_register(name)
         if register is None:
             raise TypeError(f"Measurement destination '{name}' is not a bit or bit register.")
-        elements = (
+        register_indices = (
             list(classical_targets) if classical_targets is not None else list(range(len(target)))
         )
-        return register, elements
+        return register, register_indices
 
     def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
         """Extend the base implementation with branched-subset detection.
@@ -2041,7 +2052,7 @@ class ProgramContext(AbstractProgramContext):
         self,
         target: tuple[int, ...],
         register: ClassicalRegister,
-        elements: list[int],
+        register_indices: list[int],
     ) -> None:
         """Apply a measurement with a classical destination in branched mode.
 
@@ -2050,7 +2061,7 @@ class ProgramContext(AbstractProgramContext):
         outcomes (see ``_record_measurement_outcomes``).
         """
         self._measure_and_branch(target)
-        bound = self._circuit.add_measure(target, register, elements)
+        bound = self._circuit.add_measure(target, register, register_indices)
         self._record_measurement_outcomes(target, register, bound)
 
     def _measure_and_branch(self, target: tuple[int]) -> None:
@@ -2142,7 +2153,7 @@ class ProgramContext(AbstractProgramContext):
 
 _BINARY_EQUALS = getattr(BinaryOperator, "==")
 
-# (target qubits, destination register, destination element per qubit)
+# (target qubits, destination register, destination register index per qubit)
 _PendingMeasurement = tuple[tuple[int, ...], ClassicalRegister, list[int]]
 
 
