@@ -15,6 +15,7 @@ import pytest
 
 from braket.default_simulator import gate_operations
 from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     ArrayLiteral,
     BitType,
@@ -27,6 +28,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     IntType,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
+from braket.default_simulator.state_vector_simulator import StateVectorSimulator
 
 boolean = BoolType()
 int_8 = IntType(IntegerLiteral(8))
@@ -208,6 +210,56 @@ def test_repr_includes_register_table():
     context = ProgramContext()
     context.declare_variable("b", BitType(size=None), None)
     assert "Registers" in repr(context.register_table)
+
+
+def _branched_context(qasm, shots=100):
+    context = StateVectorSimulator().create_program_context()
+    context._shots = shots
+    return Interpreter(context).run(source=qasm)
+
+
+def _path_bit(path, name):
+    value = path.get_variable(name).value
+    return int(getattr(value, "value", value))
+
+
+def test_mcm_dependent_declaration_has_one_register_and_a_value_per_path():
+    """``bit c = b;`` after branching is one declaration with a value on each path."""
+    context = _branched_context(
+        "qubit[2] q; bit b; h q[0]; b = measure q[0]; if (b) { x q[1]; } bit c = b;"
+    )
+    assert len(context.active_paths) == 2
+    assert [r.name for r in context.circuit.classical_registers] == ["b", "c"]
+    c = context.circuit.classical_registers[1]
+    assert context.register_table.get_register("c") is c
+
+    for path in context.active_paths:
+        assert _path_bit(path, "c") == _path_bit(path, "b")
+    assert {_path_bit(path, "c") for path in context.active_paths} == {0, 1}
+
+
+def test_mcm_dependent_declaration_initializer_sees_outer_variable():
+    """The initializer is evaluated before the declaration, so ``bit b = b;`` in an
+    inner scope reads the outer ``b`` on each path."""
+    context = _branched_context(
+        "qubit q; bit b; bit seen; h q; b = measure q; if (b) { x q; } "
+        "for int i in [0:0] { bit b = b; seen = b; }"
+    )
+    assert len(context.active_paths) == 2
+    assert [r.name for r in context.circuit.classical_registers] == ["b", "seen", "b"]
+    for path in context.active_paths:
+        assert _path_bit(path, "seen") == _path_bit(path, "b")
+    assert {_path_bit(path, "seen") for path in context.active_paths} == {0, 1}
+
+
+def test_loop_declarations_still_create_one_register_per_iteration():
+    """Paths are alternatives within a shot, so a declaration replayed per path has one
+    register. Loop iterations run one after another within a shot, so each iteration
+    declares a new variable and gets its own register."""
+    context = _branched_context(
+        "qubit q; bit b; h q; b = measure q; if (b) { x q; } for int i in [0:2] { bit r; }"
+    )
+    assert [r.name for r in context.circuit.classical_registers] == ["b", "r", "r", "r"]
 
 
 def test_shadowing_declaration_resolves_per_scope():
