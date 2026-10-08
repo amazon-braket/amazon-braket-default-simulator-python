@@ -15,15 +15,20 @@ import pytest
 
 from braket.default_simulator import gate_operations
 from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    ArrayLiteral,
+    BitType,
     BooleanLiteral,
     BoolType,
     FloatLiteral,
     FloatType,
+    Identifier,
     IntegerLiteral,
     IntType,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
+from braket.default_simulator.state_vector_simulator import StateVectorSimulator
 
 boolean = BoolType()
 int_8 = IntType(IntegerLiteral(8))
@@ -173,3 +178,84 @@ def test_add_barrier_is_noop():
 
     # Circuit should remain unchanged
     assert len(context.circuit.instructions) == initial_instruction_count
+
+
+def test_bit_declarations_create_registers():
+    context = ProgramContext()
+    context.declare_variable("b", BitType(size=None), None)
+    context.declare_variable("c", BitType(IntegerLiteral(3)), ArrayLiteral([None] * 3))
+    context.declare_variable("x", int_8, IntegerLiteral(0))
+    b, c = context.circuit.classical_registers
+    assert (b.name, b.size) == ("b", 1)
+    assert (c.name, c.size) == ("c", 3)
+    assert context.register_table.get_register("b") is b
+    assert context.register_table.get_register("c") is c
+    assert context.register_table.get_register("x") is None
+    assert context.register_table.get_register("undeclared") is None
+
+
+def test_unevaluated_size_falls_back_to_value_width():
+    """Subroutine parameters keep their unevaluated type. The size comes from the value."""
+    context = ProgramContext()
+    context.declare_variable(
+        "p", BitType(Identifier("n")), ArrayLiteral([BooleanLiteral(False)] * 4)
+    )
+    context.declare_variable("s", BitType(Identifier("n")), BooleanLiteral(True))
+    p, s = context.circuit.classical_registers
+    assert p.size == 4
+    assert s.size == 1
+
+
+def test_repr_includes_register_table():
+    context = ProgramContext()
+    context.declare_variable("b", BitType(size=None), None)
+    assert "Registers" in repr(context.register_table)
+
+
+def _branched_context(qasm, shots=100):
+    context = StateVectorSimulator().create_program_context()
+    context._shots = shots
+    return Interpreter(context).run(source=qasm)
+
+
+def _path_bit(path, name):
+    value = path.get_variable(name).value
+    return int(getattr(value, "value", value))
+
+
+def test_mcm_dependent_declaration_has_one_register_and_a_value_per_path():
+    """``bit c = b;`` after branching is one declaration with a value on each path."""
+    context = _branched_context(
+        "qubit[2] q; bit b; h q[0]; b = measure q[0]; if (b) { x q[1]; } bit c = b;"
+    )
+    assert len(context.active_paths) == 2
+    assert [r.name for r in context.circuit.classical_registers] == ["b", "c"]
+    c = context.circuit.classical_registers[1]
+    assert context.register_table.get_register("c") is c
+
+    for path in context.active_paths:
+        assert _path_bit(path, "c") == _path_bit(path, "b")
+    assert {_path_bit(path, "c") for path in context.active_paths} == {0, 1}
+
+
+def test_mcm_dependent_declaration_without_branching():
+    """With ``shots == 0`` nothing branches, so the declaration keeps its one value."""
+    context = _branched_context(
+        "qubit q; bit b; x q; b = measure q; int n = int(b) + 5;",
+        shots=0,
+    )
+    assert not context.is_branched
+    assert context.get_value("n") == IntegerLiteral(5)
+
+
+def test_shadowing_declaration_resolves_per_scope():
+    context = ProgramContext()
+    context.declare_variable("b", BitType(size=None), None)
+    outer = context.register_table.get_register("b")
+    context.push_scope()
+    context.declare_variable("b", BitType(size=None), None)
+    inner = context.register_table.get_register("b")
+    assert inner is not outer
+    context.pop_scope()
+    assert context.register_table.get_register("b") is outer
+    assert context.circuit.classical_registers == [outer, inner]

@@ -227,10 +227,36 @@ class Interpreter:
             and node.init_expression is not None
             and self.context.is_mcm_dependent(node.init_expression)
         ):
-            for _ in self.context.iter_classical_scopes(node.init_expression):
-                self._execute_classical_declaration(deepcopy(node))
+            self._execute_mcm_dependent_declaration(node)
         else:
             self._execute_classical_declaration(node)
+
+    def _execute_mcm_dependent_declaration(self, node: ClassicalDeclaration) -> None:
+        """Declare a variable whose initializer depends on a mid-circuit measurement.
+
+        The symbol (and, for ``bit``, its classical register) is shared by all paths,
+        so it is declared once. Only the initializer is evaluated per path, and each
+        path is assigned its own value. The initializer is evaluated before the
+        declaration so that it still sees any outer variable of the same name.
+        """
+        name = node.identifier.name
+        node_type = self.visit(node.type)
+        values = [
+            cast_to(node.type, self.visit(deepcopy(node.init_expression)))
+            for _ in self.context.iter_classical_scopes(node.init_expression)
+        ]
+        self.context.declare_variable(name, node_type, values[0])
+        # declare_variable gave every path values[0]; revisit the paths in the
+        # same order and give each one the value computed for it.
+        if len(values) > 1:
+            target = Identifier(name)
+            for value, _ in zip(
+                values, self.context.iter_classical_scopes(node.init_expression), strict=True
+            ):
+                self.context.update_value(target, value)
+        # The initializer was checked to be MCM-dependent before the declaration.
+        # Re-checking it now would resolve a shadowed name to the new variable.
+        self.context.mark_mcm_dependent(name)
 
     def _execute_classical_declaration(self, node: ClassicalDeclaration) -> None:
         node_type = self.visit(node.type)
