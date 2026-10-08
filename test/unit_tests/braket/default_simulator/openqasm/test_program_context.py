@@ -368,27 +368,29 @@ def test_branched_overwrite_leaves_circuit_alone():
     assert {"".join(m) for m in result.measurements} == {"0", "1"}
 
 
-# A block-scoped destination may be gone when an operation on its qubit forces
-# the deferred measurement to be applied.
-_DEFERRED_OUT_OF_SCOPE_QASM = """
+# A deferred measurement may be forced while its destination is shadowed, here by a
+# subroutine's local ``bit b`` when the subroutine applies a gate to the qubit.
+_SHADOWED_DEFERRED_QASM = """
+def flip(qubit r) { bit b; x r; }
 qubit q;
+bit b;
 h q;
-for int i in [0:0] { bit r; r = measure q; }
-x q;
+b = measure q;
+flip(q);
 """
 
 
-def test_out_of_scope_deferred_measurement_without_shots():
-    circuit = _build(_DEFERRED_OUT_OF_SCOPE_QASM, shots=0).circuit
-    assert _slots(circuit) == [Slot(register="r", element=0, qubit=0)]
+def test_shadowed_deferred_measurement_without_shots():
+    circuit = _build(_SHADOWED_DEFERRED_QASM, shots=0).circuit
+    assert _slots(circuit) == [Slot(register="b", element=0, qubit=0)]
 
 
-def test_out_of_scope_deferred_measurement_with_shots():
-    context = _build(_DEFERRED_OUT_OF_SCOPE_QASM, shots=50)
+def test_shadowed_deferred_measurement_with_shots():
+    context = _build(_SHADOWED_DEFERRED_QASM, shots=50)
     assert context.is_branched
-    (r,) = context.circuit.classical_registers
-    assert all((r, 0) in path.mcm_outcomes for path in context.active_paths)
-    assert all(path.get_variable("r") is None for path in context.active_paths)
+    outer, inner = context.circuit.classical_registers
+    assert inner.sources == [None]
+    assert all((outer, 0) in path.mcm_outcomes for path in context.active_paths)
 
 
 # Every pending measurement is applied when one of them is forced, so none is lost.
