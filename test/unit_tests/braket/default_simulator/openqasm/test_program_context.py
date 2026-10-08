@@ -252,6 +252,16 @@ def test_mcm_dependent_declaration_initializer_sees_outer_variable():
     assert {_path_bit(path, "seen") for path in context.active_paths} == {0, 1}
 
 
+def test_mcm_dependent_declaration_without_branching():
+    """With ``shots == 0`` nothing branches, so the declaration keeps its one value."""
+    context = _branched_context(
+        "qubit q; bit b; x q; b = measure q; int n = int(b) + 5;",
+        shots=0,
+    )
+    assert not context.is_branched
+    assert context.get_value("n") == IntegerLiteral(5)
+
+
 def test_loop_declarations_still_create_one_register_per_iteration():
     """Paths are alternatives within a shot, so a declaration replayed per path has one
     register. Loop iterations run one after another within a shot, so each iteration
