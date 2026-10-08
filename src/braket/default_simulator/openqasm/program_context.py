@@ -58,7 +58,6 @@ from ._helpers.casting import (
     cast_to,
     get_identifier_name,
     is_none_like,
-    wrap_value_into_literal,
 )
 from ._helpers.functions import (
     evaluate_binary_expression,
@@ -935,9 +934,11 @@ class AbstractProgramContext(ABC):
 
         Args:
             target (tuple[int]): The qubit indices to measure.
-            classical_targets (Iterable[int] | None): The classical bit indices
-                to write results into for the circuit's final output. Used by the simulation
-                infrastructure for bit-level bookkeeping.
+            classical_targets (Iterable[int] | None): The element indices within the
+                destination bit register that each measured qubit is written to.
+                ``None`` when the destination is a whole register or a scalar bit,
+                or when there is no destination. For interpreter that supports multiple
+                classical registers, the name of the register is another arg.
         """
 
     def add_barrier(self, target: list[int] | None = None) -> None:
@@ -1191,7 +1192,7 @@ class ProgramContext(AbstractProgramContext):
         self._is_branched: bool = False
         self._shots: int = 0
         self._batch_size: int = 1
-        self._pending_mcm_targets: list[tuple] = []
+        self._pending_mcm_targets: list[_PendingMeasurement] = []
 
     @property
     def circuit(self):
@@ -1210,19 +1211,38 @@ class ProgramContext(AbstractProgramContext):
         return True
 
     def _flush_pending_mcm_targets(self) -> None:
-        """Flush pending MCM targets to the circuit as regular measurements.
+        """Register pending measurements as end-of-circuit measurements.
 
-        Called when interpretation is complete and branching never triggered.
-        Measurements that were deferred (because they had a classical_destination
-        but no control flow depended on them) are registered in the circuit
-        as normal end-of-circuit measurements.
+        Called when interpretation is complete. Measurements that were deferred
+        (because they had a classical destination but nothing forced them to be
+        applied) never affected control flow, so they are plain measurements of
+        the final state. Once execution has branched nothing is ever pending (see
+        ``_apply_pending_mcm_targets``).
         """
-        if not self._is_branched and self._pending_mcm_targets:
-            for mcm_target, mcm_classical, _mcm_dest in self._pending_mcm_targets:
-                self._circuit.add_measure_by_index(
-                    mcm_target, mcm_classical, allow_remeasure=self.supports_midcircuit_measurement
-                )
-            self._pending_mcm_targets.clear()
+        pending, self._pending_mcm_targets = self._pending_mcm_targets, []
+        for entry in pending:
+            self._circuit.add_measure(*entry)
+
+    def _apply_pending_mcm_targets(self) -> None:
+        """Apply every pending measurement now, in program order.
+
+        Called when something in the program needs a deferred measurement to have
+        happened: its result is read, control flow depends on it, or its qubit is
+        operated on. Every pending entry is applied, not just the one that
+        triggered the call, because all of them precede the current statement in
+        program order.
+        """
+        if not self._pending_mcm_targets:
+            return
+        if not self._is_branched and self._shots > 0:
+            self._is_branched = True
+            self._initialize_paths_from_circuit()
+        pending, self._pending_mcm_targets = self._pending_mcm_targets, []
+        for entry in pending:
+            if self._is_branched:
+                self._branch_measurement(*entry)
+            else:
+                self._apply_pending_without_shots(entry)
 
     @property
     def active_paths(self) -> list[SimulationPath]:
@@ -1278,6 +1298,7 @@ class ProgramContext(AbstractProgramContext):
         value from the path, applying the index update, and writing back.
         """
         if not self._is_branched:
+            self._release_measurements(variable)
             super().update_value(variable, value)
             return
 
@@ -1294,13 +1315,70 @@ class ProgramContext(AbstractProgramContext):
                 else value
             )
 
+    def _release_measurements(self, variable: Identifier | IndexedIdentifier) -> None:
+        """Release measurements held by bit register elements about to be overwritten.
+
+        A measurement into an element that is then classically assigned no longer
+        determines that element's value. The element loses its measurement source
+        and is no longer a measurement slot, so it is not reported in ``measurements``.
+
+        Args:
+            variable (Identifier | IndexedIdentifier): The assignment target.
+        """
+        name = get_identifier_name(variable)
+        register = self.register_table.get_register(name)
+        if register is None:
+            return
+        released_indices = set(
+            self._indexed_elements(variable, register.size)
+            if isinstance(variable, IndexedIdentifier)
+            else range(register.size)
+        )
+
+        for register_index in released_indices:
+            if register.sources[register_index] is not None:
+                self._circuit.clear_measurement(register, register_index)
+
+        pending = []
+        for target, entry_register, entry_register_indices in self._pending_mcm_targets:
+            if entry_register is not register:
+                pending.append((target, entry_register, entry_register_indices))
+                continue
+            pairs = list(zip(target, entry_register_indices, strict=True))
+            kept = [(qubit, index) for qubit, index in pairs if index not in released_indices]
+            released = tuple(qubit for qubit, index in pairs if index in released_indices)
+            if kept:
+                pending.append(
+                    (
+                        tuple(qubit for qubit, _ in kept),
+                        register,
+                        [register_index for _, register_index in kept],
+                    )
+                )
+            if released:
+                detached = ClassicalRegister(None, len(released), -1)
+                pending.append((released, detached, list(range(len(released)))))
+            # the measured qubits remain part of the circuit even if no slot reports them
+            self._circuit.qubit_set.update(target)
+        self._pending_mcm_targets = pending
+
+    @staticmethod
+    def _indexed_elements(variable: IndexedIdentifier, size: int) -> list[int]:
+        """The register elements selected by an indexed bit register lvalue."""
+        match flatten_indices(variable.indices)[0]:
+            case DiscreteSet() as discrete_set:
+                return convert_discrete_set_to_list(discrete_set)
+            case RangeDefinition() as range_definition:
+                return list(range(size)[convert_range_def_to_slice(range_definition)])
+            case index:
+                return [range(size)[index.value]]
+
     def get_value(self, name: str) -> LiteralType:
         """Get variable value, reading from the first active path when branched."""
         if not self._is_branched:
             return super().get_value(name)
 
-        value = self._paths[self._active_path_indices[0]].get_variable(name).value
-        return value if isinstance(value, QASMNode) else wrap_value_into_literal(value)
+        return self._paths[self._active_path_indices[0]].get_variable(name).value
 
     def get_value_by_identifier(self, identifier: Identifier | IndexedIdentifier) -> LiteralType:
         """Get variable value by identifier, reading from the first active path when branched."""
@@ -1316,10 +1394,7 @@ class ProgramContext(AbstractProgramContext):
         if framed_var is None or self._bound_in_inner_scope(name):
             return super().get_value_by_identifier(identifier)
 
-        value = framed_var.value
-        if not isinstance(value, QASMNode):
-            value = wrap_value_into_literal(value)
-        return value
+        return framed_var.value
 
     def is_builtin_gate(self, name: str) -> bool:
         if name in _CLASSICAL_CONTROL_GATES:
@@ -1350,92 +1425,48 @@ class ProgramContext(AbstractProgramContext):
         return any(name in scope for scope in self.variable_table._scopes[1:])
 
     def _flush_pending_mcm_for_variable(self, name: str) -> None:
-        """If ``name`` matches a pending MCM's classical destination, flush it.
+        """If ``name`` resolves to a pending MCM's destination register, flush it.
 
         This handles the case where a measurement result is read in a plain
         assignment (e.g., ``mcm[0] = __bit_1__``) rather than in control flow.
         The matching pending measurement is branched (or added to the circuit)
-        so that the variable has a value when read.
+        so that the variable has a value when read. Because matching is by
+        register handle, a shadowing declaration of the same name never flushes
+        the outer variable's measurement.
         """
-        remaining = []
-        for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
-            dest_name = mcm_dest.name if isinstance(mcm_dest, Identifier) else mcm_dest.name.name
-            if dest_name == name:
-                if not self._is_branched and self._shots > 0:
-                    self._is_branched = True
-                    self._initialize_paths_from_circuit()
-                    # Also flush any earlier pending measurements so the state is correct
-                    for earlier in remaining:
-                        self._branch_measurement(earlier[0], earlier[1], earlier[2])
-                    remaining.clear()
-                if self._is_branched:
-                    self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
-                else:
-                    # shots == 0: register as a normal measurement and set variable to 0
-                    self._circuit.add_measure_by_index(
-                        mcm_target,
-                        mcm_classical,
-                        allow_remeasure=self.supports_midcircuit_measurement,
-                    )
-                    self.update_value(mcm_dest, IntegerLiteral(value=0))
-            else:
-                remaining.append((mcm_target, mcm_classical, mcm_dest))
-        self._pending_mcm_targets = remaining
+        register = self.register_table.get_register(name)
+        if register is not None and any(
+            entry[1] is register for entry in self._pending_mcm_targets
+        ):
+            self._apply_pending_mcm_targets()
+
+    def _apply_pending_without_shots(self, entry: _PendingMeasurement) -> None:
+        """Register a deferred measurement when ``shots == 0``.
+
+        There is nothing to sample, so the measurement is recorded in the circuit and
+        the destination bits are set to 0 so that the program can keep reading them.
+        """
+        target, register, register_indices = entry
+        bound = self._circuit.add_measure(target, register, register_indices)
+        # The destination may have gone out of scope (or be shadowed) by the time an
+        # operation on the qubit forces the flush; then there is no variable to set.
+        if self.register_table.get_register(register.name) is register:
+            value = self.variable_table.get_value(register.name)
+            for _, register_index in bound:
+                value = _with_bit(value, register_index, 0)
+            self.variable_table[register.name] = value
 
     def _flush_pending_mcm_for_qubits(self, qubits: tuple[int, ...] | list[int]) -> None:
-        """Flush any pending MCM whose target qubit overlaps with ``qubits``.
+        """Apply pending measurements if any of them targets one of ``qubits``.
 
-        When a gate, reset, or other operation is about to be applied to a
-        qubit that has a pending (deferred) measurement, the measurement must
-        be registered first so that the instruction ordering is physically
-        correct (measure before subsequent gate).
-
-        All pending measurements up to and including the overlapping ones are
-        flushed to preserve program order.
-
-        In non-branched mode with shots > 0 this triggers a transition to
-        branched mode so the measurement is properly branched and its
-        classical variable is set.  With shots == 0 the measurement is
-        simply added to the circuit and the variable set to 0.
+        When a gate, reset, or other operation is about to be applied to a qubit
+        that has a pending (deferred) measurement, the measurement must be applied
+        first so that the instruction ordering is physically correct (measure
+        before subsequent gate). See ``_apply_pending_mcm_targets``.
         """
-        if not self._pending_mcm_targets:
-            return
         qubit_set = set(qubits)
-
-        # Find the index of the last overlapping entry so we flush everything
-        # up to that point (preserving program order).
-        last_overlap_idx = -1
-        for i, entry in enumerate(self._pending_mcm_targets):
-            if qubit_set.intersection(entry[0]):
-                last_overlap_idx = i
-        if last_overlap_idx == -1:
-            return
-
-        to_flush = self._pending_mcm_targets[: last_overlap_idx + 1]
-        self._pending_mcm_targets = self._pending_mcm_targets[last_overlap_idx + 1 :]
-
-        if self._is_branched:
-            for mcm_target, mcm_classical, mcm_dest in to_flush:
-                self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
-        elif self._shots > 0:
-            self._is_branched = True
-            self._initialize_paths_from_circuit()
-            # Flush to_flush first (preserving program order), then any
-            # remaining pending measurements that came after the overlap.
-            for mcm_target, mcm_classical, mcm_dest in to_flush:
-                self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
-            for entry in self._pending_mcm_targets:
-                self._branch_measurement(entry[0], entry[1], entry[2])
-            self._pending_mcm_targets = []
-        else:
-            # shots == 0: register as normal measurements and set variables to 0
-            for mcm_target, mcm_classical, mcm_dest in to_flush:
-                self._circuit.add_measure_by_index(
-                    mcm_target,
-                    mcm_classical,
-                    allow_remeasure=self.supports_midcircuit_measurement,
-                )
-                self.update_value(mcm_dest, IntegerLiteral(value=0))
+        if any(qubit_set.intersection(entry[0]) for entry in self._pending_mcm_targets):
+            self._apply_pending_mcm_targets()
 
     def add_phase_instruction(self, target: tuple[int], phase_value: int):
         self._flush_pending_mcm_for_qubits(target)
@@ -1578,51 +1609,62 @@ class ProgramContext(AbstractProgramContext):
 
         Args:
             target (tuple[int]): The qubit indices to measure.
-            classical_targets (Iterable[int] | None): Classical bit indices for
-                the circuit's final output bookkeeping.
+            classical_targets (Iterable[int] | None): Element indices within the
+                destination register, one per qubit, as resolved by the
+                Interpreter. ``None`` means the whole register.
             classical_destination (Identifier | IndexedIdentifier | None): The
                 AST node for the classical variable being assigned (e.g. ``b``
                 in ``b = measure q[0]``). When provided, the measurement is
                 treated as a mid-circuit measurement candidate.
         """
-        allow_remeasure = self.supports_midcircuit_measurement
         self._flush_pending_mcm_for_qubits(target)
+        if classical_destination is None:
+            # No destination: an end-of-circuit measurement into the anonymous
+            # register. It never branches, even in branched mode.
+            self._circuit.add_measure(target)
+            return
+        register, register_indices = self._resolve_destination(
+            classical_destination, classical_targets, target
+        )
         if self._is_branched:
-            if classical_destination is not None:
-                self._branch_measurement(target, classical_targets, classical_destination)
-            else:
-                # End-of-circuit measurement in branched mode: record in circuit
-                # for qubit tracking but don't branch further
-                self._circuit.add_measure_by_index(
-                    target, classical_targets, allow_remeasure=allow_remeasure
-                )
-        elif classical_destination is not None:
-            # Potential MCM — defer registration. Don't add to circuit yet;
+            self._branch_measurement(target, register, register_indices)
+        else:
+            # Potential MCM: defer registration. Don't add to circuit yet;
             # if branching triggers later the measurement is applied per-path.
             # If branching never triggers, _flush_pending_mcm_targets will
             # register them in the circuit as normal end-of-circuit measurements.
-            self._pending_mcm_targets.append((target, classical_targets, classical_destination))
-        else:
-            # Standard non-MCM measurement — register in circuit immediately
-            self._circuit.add_measure_by_index(
-                target, classical_targets, allow_remeasure=allow_remeasure
-            )
+            self._pending_mcm_targets.append((target, register, register_indices))
 
-    def _maybe_transition_to_branched(self) -> None:
-        """Transition to branched mode if pending MCM targets exist.
+    def _resolve_destination(
+        self,
+        classical_destination: Identifier | IndexedIdentifier,
+        classical_targets: Iterable[int] | None,
+        target: tuple[int, ...],
+    ) -> tuple[ClassicalRegister, list[int]]:
+        """Resolve a measurement destination to a register and indices within it.
 
-        Called at the start of control-flow handlers. If there are pending
-        mid-circuit measurements and shots > 0, this means a measurement
-        result is being used in control flow — confirming it's a true MCM.
-        Initializes paths from the circuit and retroactively applies all
-        pending measurements.
+        Args:
+            classical_destination (Identifier | IndexedIdentifier): The destination
+                variable in the program.
+            classical_targets (Iterable[int] | None): Register indices resolved by the
+                Interpreter for an indexed destination, or ``None`` for a whole
+                register or scalar bit.
+            target (tuple[int, ...]): The measured qubits, used to size a whole
+                register destination.
+
+        Returns:
+            tuple[ClassicalRegister, list[int]]: The register the name resolves to in
+            the current scope and the destination index within it for each measured
+            qubit, aligned with ``target``.
         """
-        if not self._is_branched and self._pending_mcm_targets and self._shots > 0:
-            self._is_branched = True
-            self._initialize_paths_from_circuit()
-            for mcm_target, mcm_classical, mcm_dest in self._pending_mcm_targets:
-                self._branch_measurement(mcm_target, mcm_classical, mcm_dest)
-            self._pending_mcm_targets.clear()
+        name = get_identifier_name(classical_destination)
+        register = self.register_table.get_register(name)
+        if register is None:
+            raise TypeError(f"Measurement destination '{name}' is not a bit or bit register.")
+        register_indices = (
+            list(classical_targets) if classical_targets is not None else list(range(len(target)))
+        )
+        return register, register_indices
 
     def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
         """Extend the base implementation with branched-subset detection.
@@ -1731,7 +1773,8 @@ class ProgramContext(AbstractProgramContext):
 
         Only called by the Interpreter when the condition is MCM-dependent,
         which implies either an active branched state or a pending MCM that
-        will transition to branched on entry.
+        is applied on entry (branching when ``shots > 0``, see
+        ``_apply_pending_mcm_targets``).
 
         Args:
             condition: The AST condition expression.
@@ -1739,7 +1782,7 @@ class ProgramContext(AbstractProgramContext):
         Yields:
             bool: Branch decision for the current path group.
         """
-        self._maybe_transition_to_branched()
+        self._apply_pending_mcm_targets()
 
         saved_active = list(self._active_path_indices)
         true_paths = []
@@ -1782,7 +1825,8 @@ class ProgramContext(AbstractProgramContext):
 
         Only called by the Interpreter when the range/set is MCM-dependent,
         which implies either an active branched state or a pending MCM that
-        will transition to branched on entry.
+        is applied on entry (branching when ``shots > 0``, see
+        ``_apply_pending_mcm_targets``).
 
         Args:
             set_declaration: The AST range or discrete set expression.
@@ -1792,7 +1836,7 @@ class ProgramContext(AbstractProgramContext):
         Yields:
             None: Signals the Interpreter to visit the loop body.
         """
-        self._maybe_transition_to_branched()
+        self._apply_pending_mcm_targets()
 
         saved_active = list(self._active_path_indices)
 
@@ -1880,7 +1924,8 @@ class ProgramContext(AbstractProgramContext):
 
         Only called by the Interpreter when the condition is MCM-dependent,
         which implies either an active branched state or a pending MCM that
-        will transition to branched on entry.
+        is applied on entry (branching when ``shots > 0``, see
+        ``_apply_pending_mcm_targets``).
 
         Args:
             condition: The AST condition expression.
@@ -1888,7 +1933,7 @@ class ProgramContext(AbstractProgramContext):
         Yields:
             bool: ``True`` to continue looping.
         """
-        self._maybe_transition_to_branched()
+        self._apply_pending_mcm_targets()
 
         saved_active = list(self._active_path_indices)
         self._enter_frame_for_active_paths()
@@ -1947,83 +1992,38 @@ class ProgramContext(AbstractProgramContext):
             # exit_frame expects the previous frame number
             path.exit_frame(path.frame_number - 1)
 
-    @staticmethod
-    def _get_path_measurement_result(path: SimulationPath, qubit_idx: int) -> int:
-        """Get the most recent measurement outcome for a qubit on a path."""
-        return path.measurements[qubit_idx][-1]
-
-    @staticmethod
-    def _set_value_at_index(value, index: int, result) -> None:
-        """Set a measurement result at a specific index within a classical value.
-
-        Mutates ``value`` in place. The value is expected to be an
-        ArrayLiteral (or similar object with a ``.values`` list).
-        """
-        value.values[index] = IntegerLiteral(value=result)
-
-    @staticmethod
-    def _ensure_path_variable(path: SimulationPath, name: str) -> FramedVariable:
-        """Get the FramedVariable for ``name`` on the given path."""
-        return path.get_variable(name)
-
-    def _update_classical_from_measurement(
-        self, qubit_target, classical_destination, classical_targets=None
+    def _record_measurement_outcomes(
+        self,
+        target: tuple[int, ...],
+        register: ClassicalRegister,
+        bound: list[tuple[ClassicalRegister, int]],
     ) -> None:
-        """Update classical variables per path with measurement outcomes.
+        """Record the outcomes of a just-branched measurement on every active path.
 
-        After _measure_and_branch has branched paths and recorded measurement
-        outcomes, this method updates the classical variable (e.g., ``b`` in
-        ``b = measure q[0]``) for each active path based on the recorded
-        measurement result.
+        After ``_measure_and_branch`` has branched paths and recorded per-qubit
+        outcomes, each path stores the outcome under the ``(register, element)``
+        it was bound to (this is what the simulator reports in ``measurements``),
+        and the classical variable (e.g. ``b`` in ``b = measure q[0]``) is updated
+        so the program can read it.
 
         Args:
-            qubit_target: The qubit indices that were measured.
-            classical_destination: The AST node for the classical variable
-                being assigned (Identifier or IndexedIdentifier).
+            target (tuple[int, ...]): The measured qubits.
+            register (ClassicalRegister): The destination register.
+            bound (list[tuple[ClassicalRegister, int]]): The ``(register, element)``
+                each qubit was bound to, as returned by ``Circuit.add_measure``.
         """
+        # A deferred measurement may be flushed after its destination went out of
+        # scope (or was shadowed); the outcome is still recorded for ``measurements``
+        # but there is no program variable left to update.
+        in_scope = self.register_table.get_register(register.name) is register
         for path_idx in self._active_path_indices:
             path = self._paths[path_idx]
-
-            if isinstance(classical_destination, IndexedIdentifier):
-                self._update_indexed_target(
-                    path, qubit_target, classical_destination, classical_targets
-                )
-            else:
-                self._update_identifier_target(path, qubit_target, classical_destination)
-
-    def _update_indexed_target(
-        self,
-        path: SimulationPath,
-        qubit_target,
-        classical_destination: IndexedIdentifier,
-        classical_targets: Iterable[int],
-    ) -> None:
-        """Update an indexed classical variable on one path.
-
-        Handles the ``b[i] = measure q[j]`` case. ``classical_targets`` holds the destination
-        indices already resolved by the interpreter, one per measured qubit.
-        """
-        base_name = (
-            classical_destination.name.name
-            if hasattr(classical_destination.name, "name")
-            else classical_destination.name
-        )
-        framed_var = self._ensure_path_variable(path, base_name)
-        for qubit_idx, index in zip(qubit_target, classical_targets):
-            meas_result = self._get_path_measurement_result(path, qubit_idx)
-            self._set_value_at_index(framed_var.value, index, meas_result)
-
-    def _update_identifier_target(
-        self, path: SimulationPath, qubit_target, classical_destination: Identifier
-    ) -> None:
-        """Update a plain identifier classical variable on one path.
-
-        Handles the ``b = measure q[0]`` case (single-qubit MCM).
-        """
-        var_name = classical_destination.name
-        meas_result = self._get_path_measurement_result(path, qubit_target[0])
-        framed_var = self._ensure_path_variable(path, var_name)
-        framed_var.value = meas_result
+            framed_var = path.get_variable(register.name) if in_scope else None
+            for qubit_idx, slot in zip(target, bound, strict=True):
+                outcome = path.measurements[qubit_idx][-1]
+                path.mcm_outcomes[slot] = outcome
+                if framed_var is not None:
+                    framed_var.value = _with_bit(framed_var.value, slot[1], outcome)
 
     def _initialize_paths_from_circuit(self) -> None:
         """Transfer existing circuit instructions and variables to the initial SimulationPath.
@@ -2052,22 +2052,18 @@ class ProgramContext(AbstractProgramContext):
     def _branch_measurement(
         self,
         target: tuple[int, ...],
-        classical_targets,
-        classical_destination,
+        register: ClassicalRegister,
+        register_indices: list[int],
     ) -> None:
+        """Apply a measurement with a classical destination in branched mode.
+
+        Samples and branches every active path on each measured qubit, records the
+        measurement in the circuit's register model, and stores the per-path
+        outcomes (see ``_record_measurement_outcomes``).
+        """
         self._measure_and_branch(target)
-        self._update_classical_from_measurement(target, classical_destination, classical_targets)
-        if classical_targets is not None:
-            self._circuit.add_measure_by_index(
-                target,
-                classical_targets,
-                allow_remeasure=self.supports_midcircuit_measurement,
-            )
-            classical_targets_list = list(classical_targets)
-            for path_idx in self._active_path_indices:
-                path = self._paths[path_idx]
-                for qubit_idx, classical_idx in zip(target, classical_targets_list):
-                    path._mcm_outcomes[classical_idx] = path._measurements[qubit_idx][-1]
+        bound = self._circuit.add_measure(target, register, register_indices)
+        self._record_measurement_outcomes(target, register, bound)
 
     def _measure_and_branch(self, target: tuple[int]) -> None:
         """Sample outcomes per active path and branch with proportional shot
@@ -2158,6 +2154,9 @@ class ProgramContext(AbstractProgramContext):
 
 _BINARY_EQUALS = getattr(BinaryOperator, "==")
 
+# (target qubits, destination register, destination register index per qubit)
+_PendingMeasurement = tuple[tuple[int, ...], ClassicalRegister, list[int]]
+
 
 def _bit_register_size(bit_type: BitType, value: Any) -> int:
     """Number of elements of a ``bit`` variable.
@@ -2171,6 +2170,18 @@ def _bit_register_size(bit_type: BitType, value: Any) -> int:
     if isinstance(value, ArrayLiteral):
         return len(value.values)
     return 1
+
+
+def _with_bit(value: Any, element: int, bit: int) -> Any:
+    """Return ``value`` with register element ``element`` set to ``bit``.
+
+    A sized bit register is an ``ArrayLiteral`` and is updated in place; a scalar
+    ``bit`` (a register of size 1) is replaced by the new literal.
+    """
+    if isinstance(value, ArrayLiteral):
+        value.values[element] = IntegerLiteral(value=bit)
+        return value
+    return IntegerLiteral(value=bit)
 
 
 def _feedback_key_identifier(feedback_key: int) -> Identifier:
