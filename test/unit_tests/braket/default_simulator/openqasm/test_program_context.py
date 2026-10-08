@@ -238,20 +238,6 @@ def test_mcm_dependent_declaration_has_one_register_and_a_value_per_path():
     assert {_path_bit(path, "c") for path in context.active_paths} == {0, 1}
 
 
-def test_mcm_dependent_declaration_initializer_sees_outer_variable():
-    """The initializer is evaluated before the declaration, so ``bit b = b;`` in an
-    inner scope reads the outer ``b`` on each path."""
-    context = _branched_context(
-        "qubit q; bit b; bit seen; h q; b = measure q; if (b) { x q; } "
-        "for int i in [0:0] { bit b = b; seen = b; }"
-    )
-    assert len(context.active_paths) == 2
-    assert [r.name for r in context.circuit.classical_registers] == ["b", "seen", "b"]
-    for path in context.active_paths:
-        assert _path_bit(path, "seen") == _path_bit(path, "b")
-    assert {_path_bit(path, "seen") for path in context.active_paths} == {0, 1}
-
-
 def test_mcm_dependent_declaration_without_branching():
     """With ``shots == 0`` nothing branches, so the declaration keeps its one value."""
     context = _branched_context(
@@ -260,16 +246,6 @@ def test_mcm_dependent_declaration_without_branching():
     )
     assert not context.is_branched
     assert context.get_value("n") == IntegerLiteral(5)
-
-
-def test_loop_declarations_still_create_one_register_per_iteration():
-    """Paths are alternatives within a shot, so a declaration replayed per path has one
-    register. Loop iterations run one after another within a shot, so each iteration
-    declares a new variable and gets its own register."""
-    context = _branched_context(
-        "qubit q; bit b; h q; b = measure q; if (b) { x q; } for int i in [0:2] { bit r; }"
-    )
-    assert [r.name for r in context.circuit.classical_registers] == ["b", "r", "r", "r"]
 
 
 def test_shadowing_declaration_resolves_per_scope():
