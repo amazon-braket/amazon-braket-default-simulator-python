@@ -1319,7 +1319,7 @@ class ProgramContext(AbstractProgramContext):
         """Release measurements held by bit register elements about to be overwritten.
 
         A measurement into an element that is then classically assigned no longer
-        determines that element's value, so the element loses its measurement source
+        determines that element's value. The element loses its measurement source
         and is no longer a measurement slot, so it is not reported in ``measurements``.
 
         Args:
@@ -1344,11 +1344,9 @@ class ProgramContext(AbstractProgramContext):
             if entry_register is not register:
                 pending.append((target, entry_register, entry_register_indices))
                 continue
-            kept = [
-                (qubit, register_index)
-                for qubit, register_index in zip(target, entry_register_indices, strict=True)
-                if register_index not in released_indices
-            ]
+            pairs = list(zip(target, entry_register_indices, strict=True))
+            kept = [(qubit, index) for qubit, index in pairs if index not in released_indices]
+            released = tuple(qubit for qubit, index in pairs if index in released_indices)
             if kept:
                 pending.append(
                     (
@@ -1357,6 +1355,9 @@ class ProgramContext(AbstractProgramContext):
                         [register_index for _, register_index in kept],
                     )
                 )
+            if released:
+                detached = ClassicalRegister(None, len(released), -1)
+                pending.append((released, detached, list(range(len(released)))))
             # the measured qubits remain part of the circuit even if no slot reports them
             self._circuit.qubit_set.update(target)
         self._pending_mcm_targets = pending

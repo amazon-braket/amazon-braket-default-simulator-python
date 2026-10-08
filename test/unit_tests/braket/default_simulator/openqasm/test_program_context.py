@@ -349,6 +349,47 @@ def test_overwrite_of_unmeasured_bit_is_a_plain_assignment():
     assert _slots(circuit) == [Slot(register=None, element=0, qubit=0)]
 
 
+def test_released_pending_measurement_still_projects_its_qubit():
+    """Releasing drops the slot, not the measurement: the qubit collapses before the
+    second ``h``, so ``b[1]`` is random instead of always 0."""
+    qasm = """
+    bit[2] b;
+    qubit q;
+    h q;
+    b[0] = measure q;
+    b[0] = 0;
+    h q;
+    b[1] = measure q;
+    """
+    context = _build(qasm, shots=100)
+    assert context.is_branched
+    assert _slots(context.circuit) == [Slot(register="b", element=1, qubit=0)]
+
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=200)
+    assert result.measuredQubits == [0]
+    assert {"".join(m) for m in result.measurements} == {"0", "1"}
+
+
+def test_released_measurement_applied_later_keeps_overwritten_value():
+    """Applying a released measurement, here forced by reading ``c[1]``, branches on
+    its qubit but does not write its outcome back into the overwritten element."""
+    qasm = """
+    bit[2] c;
+    qubit[2] q;
+    h q[0];
+    x q[1];
+    c[0] = measure q[0];
+    c[1] = measure q[1];
+    c[0] = 0;
+    if (c[1]) { x q[0]; }
+    """
+    context = _build(qasm, shots=100)
+    assert len(context.active_paths) == 2
+    for path in context.active_paths:
+        assert [bit.value for bit in path.get_variable("c").value.values] == [0, 1]
+    assert _slots(context.circuit) == [Slot(register="c", element=1, qubit=1)]
+
+
 def test_branched_overwrite_leaves_circuit_alone():
     """After branching, the per-path outcomes are authoritative. The shared circuit
     keeps the measurement source and the slot reports the measured value."""
