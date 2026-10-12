@@ -138,6 +138,14 @@ def multiply_matrix(
 
     control_state = control_state or (1,) * len(controls)
 
+    if dispatcher.use_large and len(targets) <= 2:
+        np.copyto(out, state)
+        _apply_controlled_gate_large(state, matrix, targets, controls, control_state, out)
+        if return_swap_info:
+            return out, True
+        else:
+            return out
+
     ctrl_slices = [_NO_CONTROL_SLICE] * len(state.shape)
     for i, state_val in zip(controls, control_state):
         ctrl_slices[i] = _NEG_CONTROL_SLICE if state_val == 0 else _CONTROL_SLICE
@@ -148,30 +156,39 @@ def multiply_matrix(
     _, swap = _multiply_matrix(
         state[ctrl_tuple], matrix, targets, out[ctrl_tuple], dispatcher, gate_type
     )
+    result = out if swap else state
 
     if return_swap_info:
-        return out, swap
+        return result, swap
     else:
-        return out
+        return result
+
+
+def _target_slices(n_qubits: int, target: int) -> tuple[tuple, tuple]:
+    """Index tuples selecting the |0⟩ and |1⟩ halves of the target qubit.
+
+    Unlike reshaping, indexing returns views even when the state is a non-contiguous
+    slice of a larger array, so writes always reach the underlying buffer.
+    """
+    slice_list = [_NO_CONTROL_SLICE] * n_qubits
+    slice_list[target] = 0
+    slice_0 = tuple(slice_list)
+    slice_list[target] = 1
+    return slice_0, tuple(slice_list)
 
 
 def _apply_single_qubit_gate_small(
     state: np.ndarray, matrix: np.ndarray, target: int, out: np.ndarray
 ) -> tuple[np.ndarray, bool]:
     """Applies single gates using array slicing."""
-    shape = state.shape
-    before_size = int(np.prod(shape[:target]))
-    after_size = int(np.prod(shape[target + 1 :]))
+    slice_0, slice_1 = _target_slices(state.ndim, target)
 
-    state_reshaped = state.reshape(before_size, 2, after_size)
-    out_reshaped = out.reshape(before_size, 2, after_size)
-
-    state_0 = state_reshaped[:, 0, :]
-    state_1 = state_reshaped[:, 1, :]
+    state_0 = state[slice_0]
+    state_1 = state[slice_1]
 
     a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
-    out_reshaped[:, 0, :] = a * state_0 + b * state_1
-    out_reshaped[:, 1, :] = c * state_0 + d * state_1
+    out[slice_0] = a * state_0 + b * state_1
+    out[slice_1] = c * state_0 + d * state_1
 
     return out, True
 
@@ -218,18 +235,10 @@ def _apply_diagonal_gate_small(
     """
     a, d = matrix[0, 0], matrix[1, 1]
 
-    shape = state.shape
-    before_size = int(np.prod(shape[:target]))
-    after_size = int(np.prod(shape[target + 1 :]))
+    slice_0, slice_1 = _target_slices(state.ndim, target)
 
-    state_reshaped = state.reshape(before_size, 2, after_size)
-    out_reshaped = out.reshape(before_size, 2, after_size)
-
-    state_0 = state_reshaped[:, 0, :]
-    state_1 = state_reshaped[:, 1, :]
-
-    out_reshaped[:, 0, :] = a * state_0
-    out_reshaped[:, 1, :] = d * state_1
+    out[slice_0] = a * state[slice_0]
+    out[slice_1] = d * state[slice_1]
 
     return out, True
 
@@ -519,6 +528,141 @@ def _apply_two_qubit_gate_large(
     return out, True
 
 
+@nb.njit(cache=True, nogil=True, inline="always")
+def _insert_zero_bits(index: int, sorted_positions: np.ndarray) -> int:  # pragma: no cover
+    """Inserts a 0 bit into `index` at each of the given bit positions, in ascending order."""
+    for pos in sorted_positions:
+        lower_mask = (np.int64(1) << pos) - 1
+        index = (index & lower_mask) | ((index & ~lower_mask) << 1)
+    return index
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_controlled_single_qubit_gate_large(  # pragma: no cover
+    state: np.ndarray,
+    matrix: np.ndarray,
+    target_bit: int,
+    fixed_positions: np.ndarray,
+    control_value: int,
+    out: np.ndarray,
+) -> tuple[np.ndarray, bool]:
+    """Applies a controlled single-qubit gate to the full state using bit masking.
+
+    Only amplitudes whose control bits match `control_value` are written, so `out` must
+    already hold a copy of `state`.
+    """
+    a, b, c, d = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+    target_mask = np.int64(1) << target_bit
+    iterations = state.size >> len(fixed_positions)
+
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+
+    for i in nb.prange(iterations):
+        idx0 = _insert_zero_bits(np.int64(i), fixed_positions) | control_value
+        idx1 = idx0 | target_mask
+
+        s0, s1 = state_flat[idx0], state_flat[idx1]
+
+        out_flat[idx0] = a * s0 + b * s1
+        out_flat[idx1] = c * s0 + d * s1
+
+    return out, True
+
+
+@nb.njit(parallel=True, fastmath=True, cache=True, nogil=True)
+def _apply_controlled_two_qubit_gate_large(  # pragma: no cover
+    state: np.ndarray,
+    matrix: np.ndarray,
+    target0_bit: int,
+    target1_bit: int,
+    fixed_positions: np.ndarray,
+    control_value: int,
+    out: np.ndarray,
+) -> tuple[np.ndarray, bool]:
+    """Applies a controlled two-qubit gate to the full state using bit masking.
+
+    Only amplitudes whose control bits match `control_value` are written, so `out` must
+    already hold a copy of `state`.
+    """
+    mask_0 = np.int64(1) << target0_bit
+    mask_1 = np.int64(1) << target1_bit
+    mask_both = mask_0 | mask_1
+    iterations = state.size >> len(fixed_positions)
+
+    state_flat = state.reshape(-1)
+    out_flat = out.reshape(-1)
+
+    for i in nb.prange(iterations):
+        idx = _insert_zero_bits(np.int64(i), fixed_positions) | control_value
+
+        s0 = state_flat[idx]
+        s1 = state_flat[idx | mask_1]
+        s2 = state_flat[idx | mask_0]
+        s3 = state_flat[idx | mask_both]
+
+        out_flat[idx] = (
+            matrix[0, 0] * s0 + matrix[0, 1] * s1 + matrix[0, 2] * s2 + matrix[0, 3] * s3
+        )
+        out_flat[idx | mask_1] = (
+            matrix[1, 0] * s0 + matrix[1, 1] * s1 + matrix[1, 2] * s2 + matrix[1, 3] * s3
+        )
+        out_flat[idx | mask_0] = (
+            matrix[2, 0] * s0 + matrix[2, 1] * s1 + matrix[2, 2] * s2 + matrix[2, 3] * s3
+        )
+        out_flat[idx | mask_both] = (
+            matrix[3, 0] * s0 + matrix[3, 1] * s1 + matrix[3, 2] * s2 + matrix[3, 3] * s3
+        )
+
+    return out, True
+
+
+def _apply_controlled_gate_large(
+    state: np.ndarray,
+    matrix: np.ndarray,
+    targets: tuple[int, ...],
+    controls: tuple[int, ...],
+    control_state: tuple[int, ...],
+    out: np.ndarray,
+) -> tuple[np.ndarray, bool]:
+    """Applies a controlled one- or two-qubit gate to the full state.
+
+    The large kernels index the flattened state by bit position, so they must run on the
+    whole contiguous state rather than on a control slice of it.
+
+    Args:
+        state (np.ndarray): The state to multiply the matrix by.
+        matrix (np.ndarray): The uncontrolled matrix to apply to the targets.
+        targets (tuple[int, ...]): The one or two target qubits.
+        controls (tuple[int, ...]): The control qubits.
+        control_state (tuple[int, ...]): The basis state of the controls to apply the gate on.
+        out (np.ndarray): Output array, already holding a copy of `state`.
+
+    Returns:
+        tuple[np.ndarray, bool]: The output array and True, since the result is in `out`.
+    """
+    n_qubits = state.ndim
+    bits = [n_qubits - 1 - qubit for qubit in targets]
+    fixed_positions = np.array(
+        sorted(bits + [n_qubits - 1 - control for control in controls]), dtype=np.int64
+    )
+    control_value = np.int64(
+        sum(
+            1 << (n_qubits - 1 - control)
+            for control, value in zip(controls, control_state)
+            if value
+        )
+    )
+    matrix = np.ascontiguousarray(matrix, dtype=complex)
+    if len(targets) == 1:
+        return _apply_controlled_single_qubit_gate_large(
+            state, matrix, bits[0], fixed_positions, control_value, out
+        )
+    return _apply_controlled_two_qubit_gate_large(
+        state, matrix, bits[0], bits[1], fixed_positions, control_value, out
+    )
+
+
 def _apply_two_qubit_gate_small(
     state: np.ndarray,
     matrix: np.ndarray,
@@ -671,8 +815,9 @@ def controlled_matrix(matrix: np.ndarray, control_state: tuple[int, ...]) -> np.
 
         .. math:: C_0(U_n) := U_n \oplus I_n
 
-    The control state is read from left to right, with each control bit doubling the size of the
-    matrix. The output matrix will have rank `2**len(ctrl_state)` times that of the input matrix.
+    The control state is read from left to right, with the first control acting on the most
+    significant qubit, and each control bit doubling the size of the matrix. The output matrix
+    will have rank `2**len(ctrl_state)` times that of the input matrix.
 
     Args:
         matrix (np.ndarray): The matrix to control
@@ -683,7 +828,7 @@ def controlled_matrix(matrix: np.ndarray, control_state: tuple[int, ...]) -> np.
         np.ndarray: The controlled form of the matrix
     """
     new_matrix = matrix
-    for state in control_state:
+    for state in reversed(control_state):
         identity = np.eye(len(new_matrix))
         new_matrix = block_diag(identity, new_matrix) if state else block_diag(new_matrix, identity)
     return new_matrix
