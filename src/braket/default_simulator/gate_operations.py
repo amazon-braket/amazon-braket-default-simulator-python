@@ -208,8 +208,8 @@ class CX(GateOperation):
         return CX._matrix
 
     @property
-    def gate_type(self) -> str:
-        return "cx"
+    def gate_type(self) -> str | None:
+        return "cx" if self._power % 2 == 1 else None
 
 
 @_from_braket_instruction.register(braket_instruction.CNot)
@@ -694,8 +694,8 @@ class Swap(GateOperation):
         return Swap._matrix
 
     @property
-    def gate_type(self) -> str:
-        return "swap"
+    def gate_type(self) -> str | None:
+        return "swap" if self._power % 2 == 1 else None
 
 
 @_from_braket_instruction.register(braket_instruction.Swap)
