@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.41.0 (2026-10-12)
+
+### Features
+
+ * Add classical register model and register table
+
 ## v1.40.2 (2026-09-17)
 
 ### Bug Fixes and Other Changes
