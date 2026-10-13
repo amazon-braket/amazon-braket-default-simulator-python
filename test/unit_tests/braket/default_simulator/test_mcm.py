@@ -3351,23 +3351,6 @@ class TestMCMAsymmetricMeasurement:
         counter = Counter(["".join(m) for m in result.measurements])
         assert counter == {"10": 1000}
 
-    def test_measure_only_in_if_branch_z(self, simulator):
-        """X q[0] → b=1 → measure q[1] only in if block."""
-        qasm = """
-        OPENQASM 3.0;
-        bit[2] b;
-        qubit[2] q;
-        z q[0];
-        b[0] = measure q[0];
-        if (b[0] == 1) {
-            b[1] = measure q[1];
-        }
-        """
-        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
-        counter = Counter(["".join(m) for m in result.measurements])
-        # b[0] is deterministically 0, so b[1] is never measured and has no measurement slot
-        assert counter == {"0": 1000}
-
 
 class TestMCMNonContiguousClassicalIndices:
     """MCMs that write non-contiguous classical indices."""

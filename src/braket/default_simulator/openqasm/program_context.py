@@ -1297,8 +1297,8 @@ class ProgramContext(AbstractProgramContext):
         updates (e.g., ``arr[0] = 5``) are handled by reading the current
         value from the path, applying the index update, and writing back.
         """
+        self._flush_pending_mcm_for_variable(get_identifier_name(variable))
         if not self._is_branched:
-            self._release_measurements(variable)
             super().update_value(variable, value)
             return
 
@@ -1314,64 +1314,6 @@ class ProgramContext(AbstractProgramContext):
                 if indices
                 else value
             )
-
-    def _release_measurements(self, variable: Identifier | IndexedIdentifier) -> None:
-        """Release measurements held by bit register elements about to be overwritten.
-
-        A measurement into an element that is then classically assigned no longer
-        determines that element's value. The element loses its measurement source
-        and is no longer a measurement slot, so it is not reported in ``measurements``.
-
-        Args:
-            variable (Identifier | IndexedIdentifier): The assignment target.
-        """
-        name = get_identifier_name(variable)
-        register = self.register_table.get_register(name)
-        if register is None:
-            return
-        released_indices = set(
-            self._indexed_elements(variable, register.size)
-            if isinstance(variable, IndexedIdentifier)
-            else range(register.size)
-        )
-
-        for register_index in released_indices:
-            if register.sources[register_index] is not None:
-                self._circuit.clear_measurement(register, register_index)
-
-        pending = []
-        for target, entry_register, entry_register_indices in self._pending_mcm_targets:
-            if entry_register is not register:
-                pending.append((target, entry_register, entry_register_indices))
-                continue
-            pairs = list(zip(target, entry_register_indices, strict=True))
-            kept = [(qubit, index) for qubit, index in pairs if index not in released_indices]
-            released = tuple(qubit for qubit, index in pairs if index in released_indices)
-            if kept:
-                pending.append(
-                    (
-                        tuple(qubit for qubit, _ in kept),
-                        register,
-                        [register_index for _, register_index in kept],
-                    )
-                )
-            if released:
-                detached = ClassicalRegister(None, len(released), -1)
-                pending.append((released, detached, list(range(len(released)))))
-            # the measured qubits remain part of the circuit even if no slot reports them
-            self._circuit.qubit_set.update(target)
-        self._pending_mcm_targets = pending
-
-    @staticmethod
-    def _indexed_elements(variable: IndexedIdentifier, size: int) -> list[int]:
-        """The register elements selected by an indexed bit register lvalue."""
-        match flatten_indices(variable.indices)[0]:
-            case DiscreteSet() as discrete_set:
-                return convert_discrete_set_to_list(discrete_set)
-            case RangeDefinition() as range_definition:
-                return list(range(size)[convert_range_def_to_slice(range_definition)])
-            case index:
-                return [range(size)[index.value]]
 
     def get_value(self, name: str) -> LiteralType:
         """Get variable value, reading from the first active path when branched."""
