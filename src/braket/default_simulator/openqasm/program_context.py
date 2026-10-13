@@ -400,7 +400,14 @@ class RegisterTable(ScopedTable):
     def __init__(self):
         super().__init__("Registers")
 
-    def add_register(self, name: str, register: ClassicalRegister) -> None:
+    def add_register(self, name: str, register: ClassicalRegister | None) -> None:
+        """Record what ``name`` refers to in the current scope.
+
+        ``None`` records a non-bit variable, so it hides a bit of the same name
+        declared in an outer scope.
+
+        TODO: Handle non-bit types explicitly instead of the ``None`` placeholder.
+        """
         self.current_scope[name] = register
 
     def get_register(self, name: str) -> ClassicalRegister | None:
@@ -1260,7 +1267,8 @@ class ProgramContext(AbstractProgramContext):
 
         A ``bit`` declaration additionally creates a fresh classical register in
         the circuit and records the handle in ``register_table`` for the current
-        scope. When branched, the symbol table is still updated (for type
+        scope. Any other declaration records ``None`` there, so a non-bit variable
+        that shadows an outer bit is not mistaken for it. When branched, the symbol table is still updated (for type
         lookups), but the variable value is stored as a FramedVariable on each
         active path instead of in the shared variable table.
         """
@@ -1268,6 +1276,8 @@ class ProgramContext(AbstractProgramContext):
         if isinstance(symbol_type, BitType):
             size = _bit_register_size(symbol_type, value)
             self.register_table.add_register(name, self._circuit.declare_register(name, size))
+        else:
+            self.register_table.add_register(name, None)
 
     def _store_variable(
         self,

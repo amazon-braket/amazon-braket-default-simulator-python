@@ -378,6 +378,32 @@ def test_branched_overwrite_leaves_circuit_alone():
     assert {"".join(m) for m in result.measurements} == {"0", "1"}
 
 
+def test_non_bit_local_hides_outer_bit():
+    """A local ``int b`` shadows the outer ``bit[2] b``. Writing it is a plain int
+    write, so it does not apply the outer measurement or branch. After the loop
+    ``b`` is the outer register again."""
+    qasm = """
+    bit[2] b;
+    qubit[2] q;
+    x q[0];
+    b[0] = measure q[0];
+    for int i in [0:0] {
+        int b = 1;
+        b = 2;
+    }
+    b[1] = measure q[1];
+    """
+    context = _build(qasm, shots=10)
+    assert not context.is_branched
+    assert _slots(context.circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=1, qubit=1),
+    ]
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=20)
+    assert result.measuredQubits == [0, 1]
+    assert {"".join(m) for m in result.measurements} == {"10"}
+
+
 # A deferred measurement may be forced while its destination is shadowed, here by a
 # subroutine's local ``bit b`` when the subroutine applies a gate to the qubit.
 _SHADOWED_DEFERRED_QASM = """
