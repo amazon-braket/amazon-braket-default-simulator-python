@@ -177,17 +177,6 @@ def test_validate_rejects_declared_plus_anonymous():
         circuit.validate_single_measured_register()
 
 
-def test_clear_measurement():
-    circuit = Circuit()
-    c = circuit.declare_register("c", 2)
-    circuit.add_measure((0, 1), c)
-    circuit.clear_measurement(c, 0)
-    assert c.sources == [None, 1]
-    assert circuit.measurement_slots == [(c, 1, 1)]
-    # the qubit stays part of the circuit
-    assert circuit.qubit_set == {0, 1}
-
-
 def test_measurement_slots_follow_declaration_then_element_order():
     circuit = Circuit()
     c = circuit.declare_register("c", 2)

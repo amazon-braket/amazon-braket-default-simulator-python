@@ -944,8 +944,9 @@ class AbstractProgramContext(ABC):
             classical_targets (Iterable[int] | None): The element indices within the
                 destination bit register that each measured qubit is written to.
                 ``None`` when the destination is a whole register or a scalar bit,
-                or when there is no destination. For interpreter that supports multiple
-                classical registers, the name of the register is another arg.
+                or when there is no destination. Contexts that support multiple
+                classical registers receive the destination variable as the
+                ``classical_destination`` keyword argument.
         """
 
     def add_barrier(self, target: list[int] | None = None) -> None:
@@ -1268,9 +1269,10 @@ class ProgramContext(AbstractProgramContext):
         A ``bit`` declaration additionally creates a fresh classical register in
         the circuit and records the handle in ``register_table`` for the current
         scope. Any other declaration records ``None`` there, so a non-bit variable
-        that shadows an outer bit is not mistaken for it. When branched, the symbol table is still updated (for type
-        lookups), but the variable value is stored as a FramedVariable on each
-        active path instead of in the shared variable table.
+        that shadows an outer bit is not mistaken for it. When branched, the symbol
+        table is still updated (for type lookups), but the variable value is stored
+        as a FramedVariable on each active path instead of in the shared variable
+        table.
         """
         self._store_variable(name, symbol_type, value, const)
         if isinstance(symbol_type, BitType):

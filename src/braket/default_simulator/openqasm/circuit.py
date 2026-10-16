@@ -54,10 +54,6 @@ class ClassicalRegister:
             )
         self.sources[element] = qubit
 
-    def clear(self, element: int) -> None:
-        """Remove the measurement source of ``element``."""
-        self.sources[element] = None
-
     def grow(self, count: int) -> None:
         """Append ``count`` unbound elements to the register.
 
@@ -171,10 +167,6 @@ class Circuit:
             self.qubit_set.add(qubit)
             bound.append((register, register_index))
         return bound
-
-    def clear_measurement(self, register: ClassicalRegister, element: int) -> None:
-        """Remove the measurement source of a register element."""
-        register.clear(element)
 
     @property
     def measurement_slots(self) -> list[tuple[ClassicalRegister, int, int]]:
