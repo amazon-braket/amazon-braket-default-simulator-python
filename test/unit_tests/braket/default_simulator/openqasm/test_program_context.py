@@ -294,34 +294,54 @@ def _path_bits(context, name):
     ]
 
 
-@pytest.mark.parametrize(
-    "conditional, expected",
-    [
-        ("", "10"),
-        ("if (b[0]) { x q[1]; }", "11"),
-    ],
-)
-def test_overwrite_reports_measured_outcome_with_or_without_branching(conditional, expected):
-    """The overwrite is handled the same whether or not the program already branched."""
-    qasm = f"""
-    bit[2] b;
-    qubit[2] q;
-    x q[0];
-    b[0] = measure q[0];
-    {conditional}
-    b[1] = measure q[1];
-    b[0] = 0;
-    """
+def test_overwrite_does_not_apply_the_pending_measurement():
+    """Writing ``b[0]`` after ``b = measure q`` neither branches nor reports the
+    written value; it only changes the program variable."""
+    qasm = "bit[2] b; qubit[2] q; h q; b = measure q; b[0] = 0;"
     context = _build(qasm, shots=10)
-    assert context.is_branched
+    assert not context.is_branched
+    assert context.get_value("b").values[0].value == 0
     assert _slots(context.circuit) == [
         Slot(register="b", element=0, qubit=0),
         Slot(register="b", element=1, qubit=1),
     ]
-    assert _path_bits(context, "b") == [[0, int(expected[1])]]
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=200)
+    assert result.measuredQubits == [0, 1]
+    assert {"".join(m) for m in result.measurements} == {"00", "01", "10", "11"}
+
+
+def test_overwrite_survives_measurement_applied_later():
+    """When the deferred measurement is applied afterwards (here by ``if (b[0])``),
+    the outcome is not written back, so the program reads the written 0."""
+    qasm = """
+    bit[2] b;
+    qubit[2] q;
+    x q[0];
+    b[0] = measure q[0];
+    b[0] = 0;
+    if (b[0]) { x q[1]; }
+    b[1] = measure q[1];
+    """
+    context = _build(qasm, shots=10)
+    assert context.is_branched
+    assert _path_bits(context, "b") == [[0, 0]]
     result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=20)
     assert result.measuredQubits == [0, 1]
-    assert {"".join(m) for m in result.measurements} == {expected}
+    # measurements reports the measured 1 for b[0], not the written 0
+    assert {"".join(m) for m in result.measurements} == {"10"}
+
+
+@pytest.mark.parametrize(
+    "lvalue, expected",
+    [
+        ('c[0:1] = "00"', [0, 0, 1]),
+        ("c[-1] = 0", [1, 1, 0]),
+    ],
+)
+def test_overwrite_indexed_lvalue_forms(lvalue, expected):
+    qasm = f"bit[3] c; qubit[3] q; x q; c = measure q; {lvalue}; int x = c[0];"
+    context = _build(qasm, shots=10)
+    assert _path_bits(context, "c") == [expected]
 
 
 def test_overwrite_keeps_measurement_projection():
@@ -347,11 +367,16 @@ def test_overwrite_keeps_measurement_projection():
 
 
 def test_overwrite_without_shots():
-    """With ``shots == 0`` the pending measurement is recorded before the write."""
-    context = _build("bit b; qubit q; h q; b = measure q; b = 1;", shots=0)
+    """With ``shots == 0`` a forced flush sets unwritten bits to 0 and leaves the
+    written bit alone."""
+    qasm = "bit[2] b; qubit[2] q; h q; b = measure q; b[0] = 1; int x = b[1];"
+    context = _build(qasm, shots=0)
     assert not context.is_branched
-    assert _slots(context.circuit) == [Slot(register="b", element=0, qubit=0)]
-    assert context.get_value("b") == BooleanLiteral(True)
+    assert [bit.value for bit in context.get_value("b").values] == [1, 0]
+    assert _slots(context.circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=1, qubit=1),
+    ]
 
 
 def test_overwrite_of_unmeasured_bit_is_a_plain_assignment():
