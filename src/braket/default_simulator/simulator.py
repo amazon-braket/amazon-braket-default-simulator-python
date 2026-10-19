@@ -766,7 +766,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
             context = self.parse_program(openqasm_ir)
 
         # A program with outputs reports them, so its measurements may span registers
-        if not getattr(context, "output_variables", None):
+        has_outputs = bool(getattr(context, "output_variables", None))
+        if not has_outputs:
             context.circuit.validate_single_measured_register()
 
         if context.is_branched:
@@ -778,7 +779,9 @@ class BaseLocalSimulator(OpenQASMSimulator):
         circuit = context.circuit
         qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
         qubit_count = circuit.num_qubits
-        measured_qubits = [qubit for _, _, qubit in circuit.reported_measurement_slots()]
+        # With outputs every slot is sampled, so the outputs can read any register
+        slots = circuit.measurement_slots if has_outputs else circuit.reported_measurement_slots()
+        measured_qubits = [qubit for _, _, qubit in slots]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
@@ -909,7 +912,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
         BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
 
         # One result bit per measurement slot, in slot order
-        slots = circuit.reported_measurement_slots()
+        slots = (
+            circuit.measurement_slots
+            if getattr(context, "output_variables", None)
+            else circuit.reported_measurement_slots()
+        )
         measured_qubits = [qubit for _, _, qubit in slots]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
