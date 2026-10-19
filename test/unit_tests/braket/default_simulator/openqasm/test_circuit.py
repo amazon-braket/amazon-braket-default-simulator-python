@@ -147,34 +147,40 @@ def test_measured_registers_skips_unmeasured():
     circuit.add_measure((1,), c, [1])
     assert circuit.measured_registers == [c]
     assert circuit.measured_qubits == [1]
+    assert circuit.reported_measurement_slots() == [(c, 1, 1)]
     circuit.validate_single_measured_register()
 
 
-def test_validate_rejects_two_declared_registers():
-    """Measurements into two declared registers cannot be reported as one bit string.
-
-    Remove once per register results are reported through the ``output`` field.
-    """
+def test_validate_rejects_two_named_registers():
     circuit = Circuit()
     c = circuit.declare_register("c", 2)
     d = circuit.declare_register("d", 2)
-    circuit.add_measure((0,), c, [1])
     circuit.add_measure((1,), d, [1])
-    with pytest.raises(ValueError, match="recorded into 2: `c`, `d`"):
+    circuit.add_measure((0,), c, [1])
+    assert circuit.reported_measurement_slots() == [(c, 1, 0), (d, 1, 1)]
+    with pytest.raises(ValueError, match="recorded into 2 classical registers: `c`, `d`"):
         circuit.validate_single_measured_register()
 
 
-def test_validate_rejects_declared_plus_anonymous():
-    """A declared register plus destination-less measurements is also two registers.
-
-    Remove once per register results are reported through the ``output`` field.
-    """
+def test_reported_slots_ignore_anonymous_when_named_is_measured():
     circuit = Circuit()
     c = circuit.declare_register("c", 1)
     circuit.add_measure((0,), c)
     circuit.add_measure((1,))
-    with pytest.raises(ValueError, match="`c`, measurements without a destination"):
-        circuit.validate_single_measured_register()
+    assert circuit.reported_measurement_slots() == [(c, 0, 0)]
+    circuit.validate_single_measured_register()
+
+
+def test_reported_slots_use_anonymous_without_named_measurements():
+    circuit = Circuit()
+    circuit.declare_register("unused", 1)
+    circuit.add_measure((1, 0))
+    anonymous = circuit.anonymous_register()
+    assert circuit.reported_measurement_slots() == [(anonymous, 0, 1), (anonymous, 1, 0)]
+
+
+def test_reported_slots_empty_without_measurements():
+    assert Circuit().reported_measurement_slots() == []
 
 
 def test_measurement_slots_follow_declaration_then_element_order():
