@@ -189,8 +189,7 @@ class Circuit:
         return [register for register in self.classical_registers if register.measured]
 
     def reported_measurement_slots(self) -> list[tuple[ClassicalRegister, int, int]]:
-        """The ``measurement_slots`` of the measured named registers, or of the
-        measurements without a destination when no named register is measured."""
+        """The slots reported as ``measurements`` for a program without outputs."""
         slots = self.measurement_slots
         named = [slot for slot in slots if slot[0] is not self._anonymous_register]
         return named or slots
