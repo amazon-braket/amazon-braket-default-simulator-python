@@ -117,6 +117,11 @@ class BraketPragmaNodeVisitor(BraketPragmasParserVisitor):
         observable = ctx.standardObservableName().getText()
         return (observable,), None
 
+    def visitObservable(self, ctx: BraketPragmasParser.ObservableContext):
+        if ctx.PLUS() or ctx.MINUS():
+            raise TypeError("Sum observables are not supported.")
+        return self.visitChildren(ctx)
+
     def visitTensorProductObservable(
         self, ctx: BraketPragmasParser.TensorProductObservableContext
     ) -> tuple[tuple[str], tuple[int]]:
