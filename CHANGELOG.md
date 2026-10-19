@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.41.1 (2026-10-19)
+
+### Bug Fixes and Other Changes
+
+ * Record measurements into named classical registers
+
 ## v1.41.0 (2026-10-12)
 
 ### Features
