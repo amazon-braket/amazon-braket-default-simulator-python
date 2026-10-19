@@ -188,26 +188,31 @@ class Circuit:
         """The registers holding at least one measurement, in declaration order."""
         return [register for register in self.classical_registers if register.measured]
 
-    def validate_single_measured_register(self) -> None:
-        """Reject programs whose measurements span more than one register.
+    def reported_measurement_slots(self) -> list[tuple[ClassicalRegister, int, int]]:
+        """The ``measurement_slots`` of the measured named registers, or of the
+        measurements without a destination when no named register is measured."""
+        slots = self.measurement_slots
+        named = [slot for slot in slots if slot[0] is not self._anonymous_register]
+        return named or slots
 
-        This validation will be removed once `output` is supported.
+    def validate_single_measured_register(self) -> None:
+        """Reject programs without outputs whose measurements span more than one
+        named register. Measurements without a destination do not count.
 
         Raises:
-            ValueError: If measurements were recorded into more than one register.
+            ValueError: If measurements were recorded into more than one named register.
         """
-        measured = self.measured_registers
+        measured = [
+            register
+            for register in self.measured_registers
+            if register is not self._anonymous_register
+        ]
         if len(measured) > 1:
-            names = ", ".join(
-                f"`{register.name}`"
-                if register.name is not None
-                else "measurements without a destination"
-                for register in measured
-            )
+            names = ", ".join(f"`{register.name}`" for register in measured)
             raise ValueError(
-                "Measurement results can only be reported for a single classical register, "
-                f"but measurements were recorded into {len(measured)}: {names}. "
-                "Declare one bit register and measure into it."
+                f"Measurements were recorded into {len(measured)} classical registers: "
+                f"{names}. Measure into a single register, or declare the values to "
+                "return with `output`, e.g. `output bit[2] c;`."
             )
 
     def add_result(self, result: Results) -> None:

@@ -2356,8 +2356,8 @@ def test_measure_qubit_twice_allowed():
 
 
 def test_measure_into_distinct_registers_does_not_alias():
-    """``c[1]`` and ``d[1]`` are distinct register elements, so the result cannot be
-    reported as a single bit string.
+    """``c[1]`` and ``d[1]`` are distinct register elements, so without ``output``
+    declarations the result cannot be reported as a single bit string.
     """
     qasm = "\n".join(
         [
@@ -2373,8 +2373,8 @@ def test_measure_into_distinct_registers_does_not_alias():
         Slot(register="c", element=1, qubit=0),
         Slot(register="d", element=1, qubit=1),
     ]
-    # single register restriction; remove once ``output`` reports per register results
-    with pytest.raises(ValueError, match="single classical register.*`c`, `d`"):
+    # rejected by the simulator unless the program declares ``output`` variables
+    with pytest.raises(ValueError, match="2 classical registers: `c`, `d`"):
         circuit.validate_single_measured_register()
 
 
@@ -2465,7 +2465,7 @@ def test_shadowed_bit_gets_its_own_register():
     ]
     outer, inner = circuit.classical_registers
     assert outer is not inner
-    # single register restriction; remove once ``output`` reports per register results
+    # rejected by the simulator unless the program declares ``output`` variables
     with pytest.raises(ValueError, match="`b`, `b`"):
         circuit.validate_single_measured_register()
 

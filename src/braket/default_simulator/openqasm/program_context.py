@@ -67,31 +67,38 @@ from .circuit import Circuit, ClassicalRegister
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ArrayLiteral,
+    ArrayType,
     BinaryExpression,
     BinaryOperator,
     BitType,
     BooleanLiteral,
+    BoolType,
     ClassicalType,
     DiscreteSet,
     FloatLiteral,
+    FloatType,
     GateModifierName,
     Identifier,
     IndexedIdentifier,
     IndexElement,
     IndexExpression,
     IntegerLiteral,
+    IntType,
     QASMNode,
     QuantumGateDefinition,
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
     SymbolLiteral,
+    UintType,
     UnaryExpression,
 )
 from .simulation_path import FramedVariable, SimulationPath
 
 if TYPE_CHECKING:  # pragma: no cover
     from braket.default_simulator.simulator import BaseLocalSimulator
+
+_SUPPORTED_OUTPUT_TYPES = (BoolType, IntType, UintType, FloatType, BitType)
 
 
 class Table:
@@ -1201,6 +1208,8 @@ class ProgramContext(AbstractProgramContext):
         self._shots: int = 0
         self._batch_size: int = 1
         self._pending_mcm_targets: list[_PendingMeasurement] = []
+        self._overwritten_measurements: set[tuple[ClassicalRegister, int]] = set()
+        self._output_variables: dict[str, ClassicalType] = {}
 
     @property
     def circuit(self):
@@ -1228,8 +1237,22 @@ class ProgramContext(AbstractProgramContext):
         ``_apply_pending_mcm_targets``).
         """
         pending, self._pending_mcm_targets = self._pending_mcm_targets, []
-        for target, register, register_indices, _ in pending:
-            self._circuit.add_measure(target, register, register_indices)
+        for target, register, register_indices, overwritten in pending:
+            # A later measurement into the same element rebinds it, so the last
+            # entry decides whether the element's measurement was overwritten.
+            for slot in self._circuit.add_measure(target, register, register_indices):
+                if slot[1] in overwritten:
+                    self._overwritten_measurements.add(slot)
+                else:
+                    self._overwritten_measurements.discard(slot)
+
+    @property
+    def overwritten_measurements(self) -> set[tuple[ClassicalRegister, int]]:
+        """Measured ``(register, element)`` pairs classically written after the
+        measurement. The program value stands for them, not the measured bit.
+        Only populated for measurements that were never applied mid-circuit."""
+        self._flush_pending_mcm_targets()
+        return set(self._overwritten_measurements)
 
     def _apply_pending_mcm_targets(self) -> None:
         """Apply every pending measurement now, in program order.
@@ -1256,6 +1279,30 @@ class ProgramContext(AbstractProgramContext):
     def active_paths(self) -> list[SimulationPath]:
         """The currently active simulation paths."""
         return [self._paths[i] for i in self._active_path_indices]
+
+    def add_output_declaration(self, name: str, var_type: ClassicalType) -> None:
+        """Record an OpenQASM ``output`` declaration for the simulation result flow.
+
+        Args:
+            name (str): The declared output variable name.
+            var_type (ClassicalType): The evaluated declared type.
+
+        Raises:
+            NotImplementedError: If the declared type has no mapping to a schema
+                output value (supported types: ``bool``, ``int``, ``uint``,
+                ``float``, ``bit``, and arrays of those).
+        """
+        base_type = var_type.base_type if isinstance(var_type, ArrayType) else var_type
+        if not isinstance(base_type, _SUPPORTED_OUTPUT_TYPES):
+            raise NotImplementedError(
+                f"Output variables of type {type(base_type).__name__} are not supported."
+            )
+        self._output_variables[name] = var_type
+
+    @property
+    def output_variables(self) -> dict[str, ClassicalType]:
+        """Declared output variables, in declaration order."""
+        return dict(self._output_variables)
 
     def declare_variable(
         self,
@@ -1309,7 +1356,7 @@ class ProgramContext(AbstractProgramContext):
         updates (e.g., ``arr[0] = 5``) are handled by reading the current
         value from the path, applying the index update, and writing back.
         A classical write does not depend on a pending measurement, so it
-        does not apply it, guarded by ``_mark_overwritten``. 
+        does not apply it, guarded by ``_mark_overwritten``.
         """
         if not self._is_branched:
             self._mark_overwritten(variable)
