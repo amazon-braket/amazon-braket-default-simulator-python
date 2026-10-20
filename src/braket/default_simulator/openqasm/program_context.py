@@ -67,7 +67,6 @@ from .circuit import Circuit, ClassicalRegister
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ArrayLiteral,
-    ArrayType,
     BinaryExpression,
     BinaryOperator,
     BitType,
@@ -1295,12 +1294,11 @@ class ProgramContext(AbstractProgramContext):
         Raises:
             NotImplementedError: If the declared type has no mapping to a schema
                 output value (supported types: ``bool``, ``int``, ``uint``,
-                ``float``, ``bit``, and arrays of those).
+                ``float`` and ``bit``).
         """
-        base_type = var_type.base_type if isinstance(var_type, ArrayType) else var_type
-        if not isinstance(base_type, _SUPPORTED_OUTPUT_TYPES):
+        if not isinstance(var_type, _SUPPORTED_OUTPUT_TYPES):
             raise NotImplementedError(
-                f"Output variables of type {type(base_type).__name__} are not supported."
+                f"Output variables of type {type(var_type).__name__} are not supported."
             )
         self._output_variables[name] = var_type
 

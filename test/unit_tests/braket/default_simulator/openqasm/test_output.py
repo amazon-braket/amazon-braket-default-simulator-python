@@ -30,7 +30,6 @@ from braket.default_simulator.openqasm.output_helpers import (
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AngleType,
     ArrayLiteral,
-    ArrayType,
     BitType,
     BooleanLiteral,
     BoolType,
@@ -112,23 +111,6 @@ def test_convert_bit_register_from_raw_list_and_tuple():
     assert convert_output_value((1, 0, 1), bit3) == [1, 0, 1]
 
 
-def test_convert_one_dimensional_array():
-    var_type = ArrayType(FloatType(), [IntegerLiteral(2)])
-    value = ArrayLiteral(values=[FloatLiteral(0.5), FloatLiteral(1.5)])
-    assert convert_output_value(value, var_type) == [0.5, 1.5]
-
-
-def test_convert_nested_array():
-    var_type = ArrayType(IntType(), [IntegerLiteral(2), IntegerLiteral(2)])
-    value = ArrayLiteral(
-        values=[
-            ArrayLiteral(values=[IntegerLiteral(1), IntegerLiteral(2)]),
-            ArrayLiteral(values=[IntegerLiteral(3), IntegerLiteral(4)]),
-        ]
-    )
-    assert convert_output_value(value, var_type) == [[1, 2], [3, 4]]
-
-
 def test_convert_unconvertible_scalar_raises():
     with pytest.raises(TypeError, match="Cannot convert value 'abc' of output variable 'x'"):
         convert_output_value("abc", IntType(), "x")
@@ -142,8 +124,6 @@ def test_convert_unsupported_scalar_type_raises():
 def test_convert_unconvertible_list_raises():
     with pytest.raises(TypeError, match="to a list"):
         convert_output_value(5, BitType(size=IntegerLiteral(2)), "c")
-    with pytest.raises(TypeError, match="to a list"):
-        convert_output_value(5, ArrayType(IntType(), [IntegerLiteral(2)]), "a")
 
 
 def test_single_path_outputs_follow_measurement_rows():

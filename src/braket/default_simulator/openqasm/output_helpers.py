@@ -23,7 +23,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 from .parser.openqasm_ast import (
     ArrayLiteral,
-    ArrayType,
     BitType,
     BooleanLiteral,
     BoolType,
@@ -62,13 +61,6 @@ def convert_output_value(
         return None
     if isinstance(var_type, BitType) and var_type.size is not None:
         return _convert_elements(value, BitType(), name)
-    if isinstance(var_type, ArrayType):
-        element_type = (
-            var_type.base_type
-            if len(var_type.dimensions) <= 1
-            else ArrayType(var_type.base_type, var_type.dimensions[1:])
-        )
-        return _convert_elements(value, element_type, name)
     return _convert_scalar(value, var_type, name)
 
 
