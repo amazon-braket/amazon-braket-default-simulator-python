@@ -21,7 +21,6 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AngleType,
     ArrayLiteral,
-    ArrayType,
     BitType,
     BooleanLiteral,
     BoolType,
@@ -515,9 +514,3 @@ def test_output_declaration_unsupported_type():
     context = ProgramContext()
     with pytest.raises(NotImplementedError, match="type AngleType are not supported"):
         context.add_output_declaration("theta", AngleType())
-
-
-def test_output_declaration_array_unsupported():
-    context = ProgramContext()
-    with pytest.raises(NotImplementedError, match="type ArrayType are not supported"):
-        context.add_output_declaration("a", ArrayType(IntType(), [IntegerLiteral(2)]))

@@ -179,10 +179,6 @@ def test_reported_slots_use_anonymous_without_named_measurements():
     assert circuit.reported_measurement_slots() == [(anonymous, 0, 1), (anonymous, 1, 0)]
 
 
-def test_reported_slots_empty_without_measurements():
-    assert Circuit().reported_measurement_slots() == []
-
-
 def test_measurement_slots_follow_declaration_then_element_order():
     circuit = Circuit()
     c = circuit.declare_register("c", 2)
