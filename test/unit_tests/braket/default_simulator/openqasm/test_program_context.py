@@ -517,7 +517,7 @@ def test_output_declaration_unsupported_type():
         context.add_output_declaration("theta", AngleType())
 
 
-def test_output_declaration_unsupported_array_base_type():
+def test_output_declaration_array_unsupported():
     context = ProgramContext()
-    with pytest.raises(NotImplementedError, match="type AngleType are not supported"):
-        context.add_output_declaration("a", ArrayType(AngleType(), [IntegerLiteral(2)]))
+    with pytest.raises(NotImplementedError, match="type ArrayType are not supported"):
+        context.add_output_declaration("a", ArrayType(IntType(), [IntegerLiteral(2)]))
