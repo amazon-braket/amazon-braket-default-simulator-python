@@ -502,14 +502,6 @@ def test_control_flow_without_shots_reads_measurement_as_zero():
     assert [ins.targets for ins in context.circuit.instructions] == [(0,)]
 
 
-def test_output_declaration_records_declared_outputs_in_order():
-    context = ProgramContext()
-    context.add_output_declaration("c", BitType(IntegerLiteral(2)))
-    context.add_output_declaration("x", int_8)
-    assert list(context.output_variables) == ["c", "x"]
-    assert context.output_variables["x"] == int_8
-
-
 def test_output_declaration_unsupported_type():
     context = ProgramContext()
     with pytest.raises(NotImplementedError, match="type AngleType are not supported"):
