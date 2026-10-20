@@ -13,12 +13,12 @@
 
 from __future__ import annotations
 
+from itertools import repeat
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 if TYPE_CHECKING:  # pragma: no cover
-    from .circuit import ClassicalRegister
     from .program_context import ProgramContext
 
 from .parser.openqasm_ast import (
@@ -88,24 +88,34 @@ def compute_outputs_single_path(
     Returns:
         list[dict[str, OutputValue]]: One output dictionary per measurement row.
     """
-    output_variables = context.output_variables
     overwritten = context.overwritten_measurements
     columns = {
         (register, element): column
         for column, (register, element, _) in enumerate(context.circuit.measurement_slots)
         if (register, element) not in overwritten
     }
-    outputs = []
-    for row in measurements:
-        shot = {}
-        for name, var_type in output_variables.items():
-            value = context.get_value(name)
-            register = context.register_table.get_register(name)
-            if register is not None:
-                value = _with_measured_bits(value, var_type, register, columns, row)
-            shot[name] = convert_output_value(value, var_type, name)
-        outputs.append(shot)
-    return outputs
+    rows = np.asarray(measurements, dtype=np.int8)
+    per_output = []
+    for name, var_type in context.output_variables.items():
+        # Converted once: the program value, which also covers unmeasured elements
+        value = convert_output_value(context.get_value(name), var_type, name)
+        register = context.register_table.get_register(name)
+        measured = (
+            []
+            if register is None
+            else [
+                (element, columns[(register, element)])
+                for element in range(register.size)
+                if (register, element) in columns
+            ]
+        )
+        per_output.append(
+            _measured_values(value, var_type, measured, rows)
+            if measured
+            else repeat(value, len(measurements))
+        )
+    names = list(context.output_variables)
+    return [dict(zip(names, shot)) for shot in zip(*per_output)]
 
 
 def compute_outputs_branched(context: ProgramContext) -> list[dict[str, OutputValue]]:
@@ -131,24 +141,39 @@ def compute_outputs_branched(context: ProgramContext) -> list[dict[str, OutputVa
     return outputs
 
 
-def _with_measured_bits(
-    value: Any,
+def _measured_values(
+    value: OutputValue,
     var_type: ClassicalType,
-    register: ClassicalRegister,
-    columns: dict[tuple[ClassicalRegister, int], int],
-    row: list[str],
-) -> Any:
-    """Return ``value`` with every measured element of ``register`` read from ``row``.
+    measured: list[tuple[int, int]],
+    rows: np.ndarray,
+) -> list[OutputValue]:
+    """Per-shot values of a bit register, with each measured element read from ``rows``.
 
-    A sized ``bit[n]`` is stored as an ``ArrayLiteral``; an unsized ``bit`` is a
-    register of size 1 stored as a scalar.
+    Args:
+        value (OutputValue): The converted program value of the register. Its
+            unmeasured elements are reported as is.
+        var_type (ClassicalType): The declared type. An unsized ``bit`` is a
+            register of size 1 reported as a scalar.
+        measured (list[tuple[int, int]]): ``(element, column)`` for each measured
+            element, in element order.
+        rows (np.ndarray): The measurement rows, one row per shot.
+
+    Returns:
+        list[OutputValue]: One value per shot.
     """
-    bits = list(value.values) if isinstance(value, ArrayLiteral) else [value]
-    for element in range(register.size):
-        column = columns.get((register, element))
-        if column is not None:
-            bits[element] = int(row[column])
-    return bits if var_type.size is not None else bits[0]
+    elements, cols = zip(*measured)
+    bits = rows[:, list(cols)].tolist()
+    if var_type.size is None:
+        return [shot_bits[0] for shot_bits in bits]
+    if len(elements) == len(value):
+        return bits
+    values = []
+    for shot_bits in bits:
+        full = list(value)
+        for element, bit in zip(elements, shot_bits):
+            full[element] = bit
+        values.append(full)
+    return values
 
 
 def _convert_scalar(value: Any, var_type: ClassicalType, name: str) -> bool | int | float:
