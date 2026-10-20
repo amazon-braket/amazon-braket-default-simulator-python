@@ -70,7 +70,7 @@ def compute_outputs_single_path(
     """Compute per-shot output dictionaries for the single-path flow.
 
     Measured register elements are read from the shot's measurement row (columns
-    in ``circuit.measurement_slots`` order) unless classically overwritten later.
+    in ``circuit.reported_measurement_slots()`` order) unless classically overwritten later.
 
     Args:
         context (ProgramContext): The program context after interpretation.
@@ -83,7 +83,9 @@ def compute_outputs_single_path(
     overwritten = context.overwritten_measurements
     columns = {
         (register, element): column
-        for column, (register, element, _) in enumerate(context.circuit.measurement_slots)
+        for column, (register, element, _) in enumerate(
+            context.circuit.reported_measurement_slots()
+        )
         if (register, element) not in overwritten
     }
     rows = np.asarray(measurements, dtype=np.int8)

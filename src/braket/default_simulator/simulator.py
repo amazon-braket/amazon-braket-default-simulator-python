@@ -772,18 +772,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
 
         if context.is_branched:
             # Multi-path execution for programs with mid-circuit measurements
-            result = self._run_branched(
-                context, openqasm_ir, shots, batch_size, created_at, has_outputs
-            )
+            result = self._run_branched(context, openqasm_ir, shots, batch_size, created_at)
             return self._with_outputs(context, result, has_outputs)
 
         # Single-path execution
         circuit = context.circuit
         qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
         qubit_count = circuit.num_qubits
-        # With outputs every slot is sampled, so the outputs can read any register
-        slots = circuit.measurement_slots if has_outputs else circuit.reported_measurement_slots()
-        measured_qubits = [qubit for _, _, qubit in slots]
+        measured_qubits = [qubit for _, _, qubit in circuit.reported_measurement_slots()]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
@@ -883,7 +879,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
         shots: int,
         batch_size: int,
         created_at: str,
-        has_outputs: bool,
     ) -> GateModelTaskResult:
         """Execute a branched (multi-path) simulation and aggregate results.
 
@@ -898,8 +893,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
             shots: Total number of shots.
             batch_size: Batch size for simulation.
             created_at: The ISO-8601/RFC3339 timestamp of when the task was created.
-            has_outputs: Whether the program declares ``output`` variables. If so,
-                every measurement slot is sampled so the outputs can read any register.
 
         Returns:
             GateModelTaskResult: Aggregated result across all paths.
@@ -917,7 +910,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
 
         # One result bit per measurement slot, in slot order
-        slots = circuit.measurement_slots if has_outputs else circuit.reported_measurement_slots()
+        slots = circuit.reported_measurement_slots()
         measured_qubits = [qubit for _, _, qubit in slots]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
