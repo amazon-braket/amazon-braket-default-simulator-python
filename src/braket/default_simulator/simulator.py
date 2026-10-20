@@ -766,14 +766,16 @@ class BaseLocalSimulator(OpenQASMSimulator):
             context = self.parse_program(openqasm_ir)
 
         # A program with outputs reports them, so its measurements may span registers
-        has_outputs = bool(getattr(context, "output_variables", None))
+        has_outputs = bool(context.output_variables)
         if not has_outputs:
             context.circuit.validate_single_measured_register()
 
         if context.is_branched:
             # Multi-path execution for programs with mid-circuit measurements
-            result = self._run_branched(context, openqasm_ir, shots, batch_size, created_at)
-            return self._with_outputs(context, result)
+            result = self._run_branched(
+                context, openqasm_ir, shots, batch_size, created_at, has_outputs
+            )
+            return self._with_outputs(context, result, has_outputs)
 
         # Single-path execution
         circuit = context.circuit
@@ -830,14 +832,14 @@ class BaseLocalSimulator(OpenQASMSimulator):
             measured_qubits,
             mapped_measured_qubits,
         )
-        return self._with_outputs(context, result)
+        return self._with_outputs(context, result, has_outputs)
 
     @staticmethod
     def _with_outputs(
-        context: AbstractProgramContext, result: GateModelTaskResult
+        context: AbstractProgramContext, result: GateModelTaskResult, has_outputs: bool
     ) -> GateModelTaskResult:
         """Report the declared ``output`` variables in place of the measurements."""
-        if not getattr(context, "output_variables", None) or not result.taskMetadata.shots:
+        if not has_outputs or not result.taskMetadata.shots:
             return result
         if context.is_branched:
             outputs = compute_outputs_branched(context)
@@ -881,6 +883,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         shots: int,
         batch_size: int,
         created_at: str,
+        has_outputs: bool,
     ) -> GateModelTaskResult:
         """Execute a branched (multi-path) simulation and aggregate results.
 
@@ -895,6 +898,8 @@ class BaseLocalSimulator(OpenQASMSimulator):
             shots: Total number of shots.
             batch_size: Batch size for simulation.
             created_at: The ISO-8601/RFC3339 timestamp of when the task was created.
+            has_outputs: Whether the program declares ``output`` variables. If so,
+                every measurement slot is sampled so the outputs can read any register.
 
         Returns:
             GateModelTaskResult: Aggregated result across all paths.
@@ -912,11 +917,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
 
         # One result bit per measurement slot, in slot order
-        slots = (
-            circuit.measurement_slots
-            if getattr(context, "output_variables", None)
-            else circuit.reported_measurement_slots()
-        )
+        slots = circuit.measurement_slots if has_outputs else circuit.reported_measurement_slots()
         measured_qubits = [qubit for _, _, qubit in slots]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
