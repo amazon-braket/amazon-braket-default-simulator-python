@@ -4007,6 +4007,9 @@ class TestAbstractContextControlFlow:
     def test_supports_midcircuit_measurement_returns_false(self):
         assert SimpleProgramContext().supports_midcircuit_measurement is False
 
+    def test_output_variables_returns_empty(self):
+        assert SimpleProgramContext().output_variables == {}
+
     def test_active_paths_returns_empty(self):
         assert SimpleProgramContext().active_paths == []
 

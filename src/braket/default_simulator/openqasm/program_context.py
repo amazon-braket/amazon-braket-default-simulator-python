@@ -496,6 +496,7 @@ class AbstractProgramContext(ABC):
         self.num_qubits = 0
         self.in_verbatim_box = False
         self._mcm_dependent_scopes: list[set[str]] = [set()]
+        self._output_variables: dict[str, ClassicalType] = {}
 
     @property
     @abstractmethod
@@ -820,6 +821,11 @@ class AbstractProgramContext(ABC):
             var_type (ClassicalType): The evaluated declared type.
         """
         raise NotImplementedError
+
+    @property
+    def output_variables(self) -> dict[str, ClassicalType]:
+        """Declared output variables, in declaration order."""
+        return self._output_variables
 
     def add_phase(
         self,
@@ -1209,7 +1215,6 @@ class ProgramContext(AbstractProgramContext):
         self._batch_size: int = 1
         self._pending_mcm_targets: list[_PendingMeasurement] = []
         self._overwritten_measurements: set[tuple[ClassicalRegister, int]] = set()
-        self._output_variables: dict[str, ClassicalType] = {}
 
     @property
     def circuit(self):
@@ -1298,11 +1303,6 @@ class ProgramContext(AbstractProgramContext):
                 f"Output variables of type {type(base_type).__name__} are not supported."
             )
         self._output_variables[name] = var_type
-
-    @property
-    def output_variables(self) -> dict[str, ClassicalType]:
-        """Declared output variables, in declaration order."""
-        return dict(self._output_variables)
 
     def declare_variable(
         self,
