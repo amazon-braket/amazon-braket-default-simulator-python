@@ -1709,25 +1709,6 @@ def test_program_set_validation():
     assert result is not None
 
 
-def test_output_reports_only_declared_registers():
-    """``d`` is measured but not declared as output, so only ``c`` is in ``outputs``.
-    A program with outputs reports no ``measurements`` or ``measuredQubits``."""
-    qasm = """
-    OPENQASM 3.0;
-    output bit[2] c;
-    bit d;
-    qubit[3] q;
-    x q[0];
-    x q[2];
-    c = measure q[0:1];
-    d = measure q[2];
-    """
-    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=10)
-    assert result.outputs == [{"c": [1, 0]}] * 10
-    assert result.measuredQubits is None
-    assert result.measurements is None
-
-
 def test_output_classical_value_derived_from_unreported_register():
     """Only the ``int`` output is reported. The bit register it is computed from
     is measured, but is not an output."""

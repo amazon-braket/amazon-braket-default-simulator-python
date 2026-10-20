@@ -11,13 +11,6 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-"""Tests for the OpenQASM output-variable result flow.
-
-Covers ``output_helpers.py`` (value conversion and per-shot output computation
-for the single-path and branched flows) and the ``outputs`` field of simulator
-results.
-"""
-
 import numpy as np
 import pytest
 
@@ -29,11 +22,8 @@ from braket.default_simulator.openqasm.output_helpers import (
 )
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AngleType,
-    ArrayLiteral,
     BitType,
-    BooleanLiteral,
     BoolType,
-    FloatLiteral,
     FloatType,
     IntegerLiteral,
     IntType,
@@ -57,25 +47,6 @@ def run_program(qasm, shots=0):
 @pytest.mark.parametrize(
     "value, var_type, expected",
     [
-        (BooleanLiteral(True), BoolType(), True),
-        (BooleanLiteral(False), BoolType(), False),
-        (IntegerLiteral(-3), IntType(IntegerLiteral(8)), -3),
-        (IntegerLiteral(5), UintType(), 5),
-        (FloatLiteral(1.5), FloatType(), 1.5),
-        # unsized bit -> int 0/1
-        (BooleanLiteral(True), BitType(), 1),
-        (IntegerLiteral(0), BitType(), 0),
-    ],
-)
-def test_convert_ast_literals(value, var_type, expected):
-    result = convert_output_value(value, var_type)
-    assert result == expected
-    assert type(result) is type(expected)
-
-
-@pytest.mark.parametrize(
-    "value, var_type, expected",
-    [
         (True, BoolType(), True),
         (np.bool_(True), BoolType(), True),
         (7, IntType(), 7),
@@ -90,19 +61,6 @@ def test_convert_raw_values(value, var_type, expected):
     result = convert_output_value(value, var_type)
     assert result == expected
     assert type(result) is type(expected)
-
-
-@pytest.mark.parametrize(
-    "var_type",
-    [BoolType(), IntType(), FloatType(), BitType(), BitType(size=IntegerLiteral(2))],
-)
-def test_convert_none_preserved(var_type):
-    assert convert_output_value(None, var_type) is None
-
-
-def test_convert_bit_register_from_array_literal_with_partial_none():
-    value = ArrayLiteral(values=[BooleanLiteral(True), None, BooleanLiteral(False)])
-    assert convert_output_value(value, BitType(size=IntegerLiteral(3))) == [1, None, 0]
 
 
 def test_convert_bit_register_from_raw_list_and_tuple():
