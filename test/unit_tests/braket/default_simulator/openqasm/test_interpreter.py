@@ -291,6 +291,15 @@ def test_constant_immutability():
         Interpreter().run(qasm)
 
 
+def test_constant_measurement():
+    qasm = """
+    qubit q;
+    const bit r = measure q;
+    """
+    with pytest.raises(TypeError, match="Cannot initialize const r with a measurement"):
+        Interpreter().run(qasm)
+
+
 @pytest.mark.parametrize("index", ("", "[:]"))
 def test_uninitialized_identifier(index):
     qasm = f"""
@@ -2297,6 +2306,24 @@ def _slots(circuit):
                 ]
             ),
             [Slot(register="b", element=0, qubit=1)],
+        ),
+        (
+            "\n".join(
+                [
+                    "qubit[2] q;",
+                    "bit b = measure q[1];",
+                ]
+            ),
+            [Slot(register="b", element=0, qubit=1)],
+        ),
+        (
+            "\n".join(
+                [
+                    "qubit[2] q;",
+                    "bit[2] b = measure q;",
+                ]
+            ),
+            [Slot(register="b", element=0, qubit=0), Slot(register="b", element=1, qubit=1)],
         ),
     ],
 )
