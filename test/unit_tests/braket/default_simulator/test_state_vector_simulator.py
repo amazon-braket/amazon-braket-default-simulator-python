@@ -1707,3 +1707,38 @@ def test_program_set_validation():
 
     result = simulator.run(multi_program_set, shots=10)
     assert result is not None
+
+
+def test_output_classical_value_derived_from_unreported_register():
+    """Only the ``int`` output is reported. The bit register it is computed from
+    is measured, but is not an output."""
+    qasm = """
+    OPENQASM 3.0;
+    output int n;
+    bit[2] b;
+    qubit[2] q;
+    x q;
+    b = measure q;
+    n = uint(b) + 1;
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=10)
+    assert result.outputs == [{"n": 4}] * 10
+
+
+def test_output_mid_circuit_measurement_register_not_reported():
+    """The mid-circuit measurement ``m`` drives control flow but is not an output.
+    Only ``r`` is reported."""
+    qasm = """
+    OPENQASM 3.0;
+    output bit r;
+    bit m;
+    qubit[2] q;
+    h q[0];
+    m = measure q[0];
+    if (m) { x q[1]; }
+    r = measure q[1];
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
+    assert all(output.keys() == {"r"} for output in result.outputs)
+    assert {output["r"] for output in result.outputs} == {0, 1}
+    assert result.measurements is None
