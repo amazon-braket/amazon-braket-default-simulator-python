@@ -222,7 +222,11 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
-        if (
+        if isinstance(node.init_expression, QuantumMeasurement):
+            # `bit b = measure q;` runs as `bit b; b = measure q;`
+            self.visit(ClassicalDeclaration(node.type, node.identifier, None))
+            self.visit(QuantumMeasurementStatement(node.init_expression, node.identifier))
+        elif (
             self.context.supports_midcircuit_measurement
             and node.init_expression is not None
             and self.context.is_mcm_dependent(node.init_expression)
@@ -308,6 +312,8 @@ class Interpreter:
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
         self._uses_advanced_language_features = True
+        if isinstance(node.init_expression, QuantumMeasurement):
+            raise TypeError(f"Cannot initialize const {node.identifier.name} with a measurement")
         node_type = self.visit(node.type)
         init_expression = self.visit(node.init_expression)
         init_value = cast_to(node.type, init_expression)
