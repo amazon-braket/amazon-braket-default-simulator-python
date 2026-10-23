@@ -11,6 +11,8 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from collections import Counter
+
 import numpy as np
 import pytest
 
@@ -230,7 +232,7 @@ def test_simulator_branched_outputs_replace_measurements():
     assert len(result.outputs) == 20
     assert {output["m"] for output in result.outputs} == {0, 1}
     for output in result.outputs:
-        assert output["f"] == 2.5
+        assert output["f"] == pytest.approx(2.5)
         # count is set on the branch selected by the measured value of m
         assert output["count"] == (1 if output["m"] else 2)
 
@@ -382,5 +384,157 @@ def test_simulator_without_outputs_reports_measurements_without_destination():
     ids=["single_path", "branched"],
 )
 def test_simulator_multiple_registers_without_outputs_raises(source):
-    with pytest.raises(ValueError, match="2 classical registers: `c`, `d`.*`output`"):
+    with pytest.raises(ValueError, match=r"2 classical registers: `c`, `d`.*`output`"):
         _run(source, shots=10)
+
+
+def test_indexed_measure_into_bit_register():
+    shots = 8
+    qasm = """
+    OPENQASM 3.0;
+    output bit[2] out;
+    qubit[2] q;
+    bit[2] c = "00";
+    x q[1];
+    c[0] = measure q[0];
+    c[1] = measure q[1];
+    out = c;
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+    assert result.outputs == [{"out": [0, 1]}] * shots
+    _assert_outputs_only(result)
+
+
+def test_indexed_measure_into_output_register():
+    shots = 8
+    qasm = """
+    OPENQASM 3.0;
+    output bit[2] out;
+    qubit[2] q;
+    x q[1];
+    out[0] = measure q[0];
+    out[1] = measure q[1];
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+    assert result.outputs == [{"out": [0, 1]}] * shots
+    _assert_outputs_only(result)
+
+
+def test_whole_register_measure_in_declaration():
+    shots = 8
+    qasm = """
+    OPENQASM 3.0;
+    output bit[2] out;
+    qubit[2] q;
+    x q[0];
+    bit[2] c = measure q;
+    out = c;
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+    assert result.outputs == [{"out": [1, 0]}] * shots
+    _assert_outputs_only(result)
+
+
+def test_whole_register_measure_into_output_register():
+    shots = 40
+    qasm = """
+    OPENQASM 3.0;
+    output bit[2] out;
+    qubit[2] q;
+    h q[0];
+    cnot q[0], q[1];
+    out = measure q;
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+    assert len(result.outputs) == shots
+    observed = Counter(tuple(output["out"]) for output in result.outputs)
+    assert set(observed) <= {(0, 0), (1, 1)}
+    _assert_outputs_only(result)
+
+
+def test_measurement_read_in_loop_scope():
+    shots = 8
+    qasm = """
+    OPENQASM 3.0;
+    output bit[2] out;
+    out = "00";
+    qubit[1] q;
+    bit c = 0;
+    for int i in [0:1] {
+        x q[0];
+        bit m;
+        m = measure q[0];
+        c = m;
+        out[i] = c;
+        reset q[0];
+    }
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+    assert result.outputs == [{"out": [1, 1]}] * shots
+
+
+def test_int_array_output():
+    shots = 4
+    qasm = """
+    OPENQASM 3.0;
+    output array[int[8], 2] out;
+    qubit[1] q;
+    array[int[8], 2] a = {3, 4};
+    x q[0];
+    bit b = measure q[0];
+    out = a;
+    out[0] = b;
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+    assert result.outputs == [{"out": [1, 4]}] * shots
+    _assert_outputs_only(result)
+
+
+def test_multidimensional_array_output_unsupported():
+    qasm = """
+    OPENQASM 3.0;
+    output array[int[8], 2, 2] out;
+    """
+    with pytest.raises(NotImplementedError, match="Only one-dimensional arrays"):
+        StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=2)
+
+
+@pytest.mark.parametrize(
+    "measure",
+    ["a[0] = measure q[0];", "a = measure q;", "array[int[8], 2] b = measure q;"],
+)
+def test_measure_into_int_array_unsupported(measure):
+    qasm = f"""
+    OPENQASM 3.0;
+    qubit[2] q;
+    array[int[8], 2] a = {{0, 0}};
+    {measure}
+    """
+    with pytest.raises(TypeError, match="is not a bit or bit register"):
+        StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=2)
+
+
+def test_bit_register_size_mismatch():
+    qasm = """
+    OPENQASM 3.0;
+    output bit[3] out;
+    qubit[2] q;
+    out = measure q;
+    """
+    with pytest.raises(
+        ValueError, match=r"\(2\) does not match size of classical register 'out' \(3\)"
+    ):
+        StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=2)
+
+
+def test_int_array_size_mismatch():
+    qasm = """
+    OPENQASM 3.0;
+    output array[int[8], 3] out;
+    qubit[2] q;
+    out = measure q;
+    """
+    with pytest.raises(
+        ValueError, match=r"\(2\) does not match size of classical register 'out' \(3\)"
+    ):
+        StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=2)
