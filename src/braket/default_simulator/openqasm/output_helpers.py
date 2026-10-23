@@ -141,31 +141,32 @@ def _measured_values(
     measured: list[tuple[int, int]],
     rows: np.ndarray,
 ) -> list[OutputValue]:
-    """Per-shot values of a bit register, with each measured element read from ``rows``.
+    """Per-shot values of a bit register, with each measurement read from ``rows``.
 
     Args:
         value (OutputValue): The converted program value of the register. Its
             unmeasured elements are reported as is.
         var_type (ClassicalType): The declared type. An unsized ``bit`` is a
             register of size 1 reported as a scalar.
-        measured (list[tuple[int, int]]): ``(element, column)`` for each measured
-            element, in element order.
+        measured (list[tuple[int, int]]): ``(register_index, column)`` for each
+            measured element, in register index order. ``register_index`` is the
+            index of the register element the measurement was recorded into.
         rows (np.ndarray): The measurement rows, one row per shot.
 
     Returns:
         list[OutputValue]: One value per shot.
     """
-    elements, cols = zip(*measured)
-    bits = rows[:, list(cols)].tolist()
+    register_indices, columns = zip(*measured)
+    bits_per_shot = rows[:, list(columns)].tolist()
     if var_type.size is None:
-        return [shot_bits[0] for shot_bits in bits]
-    if len(elements) == len(value):
-        return bits
+        return [shot_bits[0] for shot_bits in bits_per_shot]
+    if len(register_indices) == len(value):
+        return bits_per_shot
     values = []
-    for shot_bits in bits:
+    for shot_bits in bits_per_shot:
         full = list(value)
-        for element, bit in zip(elements, shot_bits):
-            full[element] = bit
+        for register_index, bit in zip(register_indices, shot_bits, strict=True):
+            full[register_index] = bit
         values.append(full)
     return values
 

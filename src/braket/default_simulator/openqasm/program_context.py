@@ -823,7 +823,12 @@ class AbstractProgramContext(ABC):
 
     @property
     def output_variables(self) -> dict[str, ClassicalType]:
-        """Declared output variables, in declaration order."""
+        """The variables declared with ``output``.
+
+        Returns:
+            dict[str, ClassicalType]: The declared type of each output variable,
+            keyed by name, in declaration order.
+        """
         return self._output_variables
 
     def add_phase(
@@ -1252,9 +1257,14 @@ class ProgramContext(AbstractProgramContext):
 
     @property
     def overwritten_measurements(self) -> set[tuple[ClassicalRegister, int]]:
-        """Measured ``(register, element)`` pairs classically written after the
-        measurement. The program value stands for them, not the measured bit.
-        Only populated for measurements that were never applied mid-circuit."""
+        """The measured register elements that were classically written after the
+        measurement. For these elements the program value is reported, not the
+        measured bit.
+
+        Returns:
+            set[tuple[ClassicalRegister, int]]: ``(register, element)`` for each
+            overwritten element.
+        """
         self._flush_pending_mcm_targets()
         return set(self._overwritten_measurements)
 
