@@ -25,12 +25,31 @@ from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 
 class ClassicalRegister:
-    """A named classical bit register that measurements are recorded into."""
+    """A named classical bit register that measurements are recorded into.
+
+    Args:
+        name (str | None): The program-level name of the register, or ``None``
+            for the anonymous register that collects measurements without a
+            classical destination.
+        size (int): Number of elements.
+        order (int): Position of the register in declaration order. ``-1`` for
+            a register that is not part of the circuit, such as a feedback bit.
+
+    Attributes:
+        sources (list[int | None]): The qubit measured into each element, or
+            ``None`` if the element holds no measurement.
+        overwritten (set[int]): Elements whose end-of-circuit measurement was
+            classically written afterwards, so the written value is reported
+            instead of the sampled bit. Only set when pending measurements are
+            flushed. Branched paths keep the written value in their variables
+            instead.
+    """
 
     def __init__(self, name: str | None, size: int, order: int):
         self.name = name
         self.order = order
         self.sources: list[int | None] = [None] * size
+        self.overwritten: set[int] = set()
 
     @property
     def size(self) -> int:
@@ -45,7 +64,9 @@ class ClassicalRegister:
         """Record ``qubit`` as the measurement source of ``element``.
 
         Simulator samples qubits at the end of the circuit, so registers must
-        know mapping to retrieve the measurement results.
+        know mapping to retrieve the measurement results. A new measurement
+        replaces any earlier classical write, so ``element`` is no longer
+        overwritten.
         """
         if not 0 <= element < self.size:
             raise IndexError(
@@ -53,6 +74,7 @@ class ClassicalRegister:
                 f"register of length {self.size} `{self.name}`."
             )
         self.sources[element] = qubit
+        self.overwritten.discard(element)
 
     def grow(self, count: int) -> None:
         """Append ``count`` unbound elements to the register.

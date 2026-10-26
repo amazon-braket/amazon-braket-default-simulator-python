@@ -506,3 +506,22 @@ def test_output_declaration_unsupported_type():
     context = ProgramContext()
     with pytest.raises(NotImplementedError, match="type AngleType are not supported"):
         context.add_output_declaration("theta", AngleType())
+
+
+def test_flush_marks_only_measured_elements_overwritten():
+    """``c[1] = 1`` is recorded on the pending measurement of ``c[0]``, but only
+    measured elements can be overwritten, so ``c[1]`` is not marked."""
+    qasm = """
+    bit[2] c;
+    bit[2] d;
+    qubit[3] q;
+    c = measure q[0:1];
+    c[0] = 0;
+    d[0] = measure q[2];
+    d[1] = 1;
+    """
+    context = _build(qasm, shots=10)
+    assert not context.is_branched
+    registers = {register.name: register for register in context.circuit.classical_registers}
+    assert registers["c"].overwritten == {0}
+    assert registers["d"].overwritten == set()

@@ -64,54 +64,6 @@ def convert_output_value(
     return _convert_scalar(value, var_type, name)
 
 
-def compute_outputs_single_path(
-    context: ProgramContext, measurements: list[list[str]]
-) -> list[dict[str, OutputValue]]:
-    """Compute per-shot output dictionaries for the single-path flow.
-
-    Measured register elements are read from the shot's measurement row (columns
-    in ``circuit.reported_measurement_slots()`` order) unless classically overwritten later.
-
-    Args:
-        context (ProgramContext): The program context after interpretation.
-        measurements (list[list[str]]): The formatted measurement rows
-            (``"0"``/``"1"`` per column), one row per shot.
-
-    Returns:
-        list[dict[str, OutputValue]]: One output dictionary per measurement row.
-    """
-    overwritten = context.overwritten_measurements
-    columns = {
-        (register, element): column
-        for column, (register, element, _) in enumerate(
-            context.circuit.reported_measurement_slots()
-        )
-        if (register, element) not in overwritten
-    }
-    rows = np.asarray(measurements, dtype=np.int8)
-    per_output = []
-    for name, var_type in context.output_variables.items():
-        # Converted once: the program value, which also covers unmeasured elements
-        value = convert_output_value(context.get_value(name), var_type, name)
-        register = context.register_table.get_register(name)
-        measured = (
-            []
-            if register is None
-            else [
-                (element, columns[(register, element)])
-                for element in range(register.size)
-                if (register, element) in columns
-            ]
-        )
-        per_output.append(
-            _measured_values(value, var_type, measured, rows)
-            if measured
-            else repeat(value, len(measurements))
-        )
-    names = list(context.output_variables)
-    return [dict(zip(names, shot)) for shot in zip(*per_output)]
-
-
 def compute_outputs_branched(context: ProgramContext) -> list[dict[str, OutputValue]]:
     """Compute per-shot output dictionaries for the branched (multi-path) flow.
 
@@ -135,29 +87,84 @@ def compute_outputs_branched(context: ProgramContext) -> list[dict[str, OutputVa
     return outputs
 
 
-def _measured_values(
-    value: OutputValue,
-    var_type: ClassicalType,
-    measured: list[tuple[int, int]],
-    rows: np.ndarray,
-) -> list[OutputValue]:
-    """Per-shot values of a bit register, with each measurement read from ``rows``.
+def compute_outputs_single_path(
+    context: ProgramContext, measurements: list[list[str]]
+) -> list[dict[str, OutputValue]]:
+    """Compute per-shot output dictionaries for the single-path flow.
+
+    Measured register elements are read from the shot's measurement row (columns
+    in ``circuit.reported_measurement_slots()`` order) unless classically overwritten later.
 
     Args:
-        value (OutputValue): The converted program value of the register. Its
-            unmeasured elements are reported as is.
-        var_type (ClassicalType): The declared type. An unsized ``bit`` is a
-            register of size 1 reported as a scalar.
-        measured (list[tuple[int, int]]): ``(register_index, column)`` for each
-            measured element, in register index order. ``register_index`` is the
-            index of the register element the measurement was recorded into.
-        rows (np.ndarray): The measurement rows, one row per shot.
+        context (ProgramContext): The program context after interpretation.
+        measurements (list[list[str]]): The formatted measurement rows
+            (``"0"``/``"1"`` per column), one row per shot.
 
     Returns:
-        list[OutputValue]: One value per shot.
+        list[dict[str, OutputValue]]: One output dictionary per measurement row.
     """
-    register_indices, columns = zip(*measured)
-    bits_per_shot = rows[:, list(columns)].tolist()
+    columns = {
+        (register, element): column
+        for column, (register, element, _) in enumerate(
+            context.circuit.reported_measurement_slots()
+        )
+        if element not in register.overwritten
+    }
+    sampled_bits = np.asarray(measurements, dtype=np.int8)
+    per_output = []
+    for name, var_type in context.output_variables.items():
+        value = convert_output_value(context.get_value(name), var_type, name)
+        register = context.register_table.get_register(name)
+        register_indices = (
+            []
+            if register is None
+            else [element for element in range(register.size) if (register, element) in columns]
+        )
+        bitstring_indices = [columns[(register, element)] for element in register_indices]
+        per_output.append(
+            _register_values_per_shot(
+                value, var_type, register_indices, bitstring_indices, sampled_bits
+            )
+            if register_indices
+            else repeat(value, len(measurements))
+        )
+    names = list(context.output_variables)
+    return [dict(zip(names, shot)) for shot in zip(*per_output)]
+
+
+def _register_values_per_shot(
+    value: OutputValue,
+    var_type: ClassicalType,
+    register_indices: list[int],
+    bitstring_indices: list[int],
+    sampled_bits: np.ndarray,
+) -> list[OutputValue]:
+    """Build the value of one output bit register for every shot.
+
+    Each shot starts from a copy of ``value``, the register's value after the
+    program is interpreted. That value holds the program's classical writes, but
+    not the measured bits, which are only known after sampling.
+
+    Args:
+        value (OutputValue): The register's converted value after interpretation:
+            a list of length ``register_size`` for ``bit[n]``, or a scalar for an
+            unsized ``bit``. Elements that are not measured are reported with this
+            value.
+        var_type (ClassicalType): The declared type. An unsized ``bit`` is a
+            register of size 1 reported as a scalar.
+        register_indices (list[int]): The elements of the register that hold a
+            sampled bit, in increasing order.
+        bitstring_indices (list[int]): For each entry of
+            ``register_indices``, the index of its bit in each shot's measurement
+            bitstring, i.e. its column in ``sampled_bits``.
+        sampled_bits (np.ndarray): The measurement bitstrings, shape
+            ``(shots, bitstring_length)``, with one row per shot.
+
+    Returns:
+        list[OutputValue]: ``shots`` values, each shaped like ``value``.
+    """
+    # Shape (shots, len(register_indices))
+    bits_per_shot = sampled_bits[:, bitstring_indices].tolist()
     if var_type.size is None:
         return [shot_bits[0] for shot_bits in bits_per_shot]
     if len(register_indices) == len(value):

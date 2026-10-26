@@ -110,6 +110,16 @@ def test_remeasure_replaces_source():
     assert circuit.measured_qubits == [1]
 
 
+def test_remeasure_clears_overwritten():
+    """A new measurement into an overwritten element replaces the classical write."""
+    c = ClassicalRegister("c", 2, order=0)
+    c.bind(0, 0)
+    c.bind(1, 1)
+    c.overwritten = {0, 1}
+    c.bind(0, 2)
+    assert c.overwritten == {1}
+
+
 def test_qubit_may_source_several_elements():
     circuit = Circuit()
     b = circuit.declare_register("b", 2)

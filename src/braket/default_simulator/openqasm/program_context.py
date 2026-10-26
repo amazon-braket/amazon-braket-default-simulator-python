@@ -1218,7 +1218,6 @@ class ProgramContext(AbstractProgramContext):
         self._shots: int = 0
         self._batch_size: int = 1
         self._pending_mcm_targets: list[_PendingMeasurement] = []
-        self._overwritten_measurements: set[tuple[ClassicalRegister, int]] = set()
 
     @property
     def circuit(self):
@@ -1239,34 +1238,18 @@ class ProgramContext(AbstractProgramContext):
     def _flush_pending_mcm_targets(self) -> None:
         """Register pending measurements as end-of-circuit measurements.
 
-        Called when interpretation is complete. Measurements that were deferred
-        (because they had a classical destination but nothing forced them to be
-        applied) never affected control flow, so they are plain measurements of
-        the final state. Once execution has branched nothing is ever pending (see
-        ``_apply_pending_mcm_targets``).
+        Called when interpretation is complete. Deferred measurements never
+        affected control flow, so they are measurements of the final state.
+        A register bit assigned after its measurement, such as ``c[0]`` in
+        ``c = measure q; c[0] = 0;``, is added to the register's ``overwritten``
+        set. A later measurement into that bit removes it, so the last
+        measurement of a bit decides. Nothing is pending once execution has
+        branched.
         """
         pending, self._pending_mcm_targets = self._pending_mcm_targets, []
         for target, register, register_indices, overwritten in pending:
-            # A later measurement into the same element rebinds it, so the last
-            # entry decides whether the element's measurement was overwritten.
-            for slot in self._circuit.add_measure(target, register, register_indices):
-                if slot[1] in overwritten:
-                    self._overwritten_measurements.add(slot)
-                else:
-                    self._overwritten_measurements.discard(slot)
-
-    @property
-    def overwritten_measurements(self) -> set[tuple[ClassicalRegister, int]]:
-        """The measured register elements that were classically written after the
-        measurement. For these elements the program value is reported, not the
-        measured bit.
-
-        Returns:
-            set[tuple[ClassicalRegister, int]]: ``(register, element)`` for each
-            overwritten element.
-        """
-        self._flush_pending_mcm_targets()
-        return set(self._overwritten_measurements)
+            self._circuit.add_measure(target, register, register_indices)
+            register.overwritten |= overwritten & set(register_indices)
 
     def _apply_pending_mcm_targets(self) -> None:
         """Apply every pending measurement now, in program order.

@@ -837,10 +837,11 @@ class BaseLocalSimulator(OpenQASMSimulator):
         """Report the declared ``output`` variables in place of the measurements."""
         if not has_outputs or not result.taskMetadata.shots:
             return result
-        if context.is_branched:
-            outputs = compute_outputs_branched(context)
-        else:
-            outputs = compute_outputs_single_path(context, result.measurements)
+        outputs = (
+            compute_outputs_branched(context)
+            if context.is_branched
+            else compute_outputs_single_path(context, result.measurements)
+        )
         return result.copy(
             update={"outputs": outputs, "measurements": None, "measuredQubits": None}
         )
