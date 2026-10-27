@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.41.2 (2026-10-26)
+
+### Bug Fixes and Other Changes
+
+ * support measurement in classical declaration initializer
+
 ## v1.41.1 (2026-10-19)
 
 ### Bug Fixes and Other Changes
