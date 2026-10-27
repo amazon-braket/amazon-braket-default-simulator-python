@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from scipy.linalg import fractional_matrix_power
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
@@ -1709,6 +1710,43 @@ def test_program_set_validation():
     assert result is not None
 
 
+_TWO_QUBIT_BASE_MATRICES = {
+    "cnot": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex),
+    "swap": np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=complex),
+    "cz": np.diag([1, 1, 1, -1]).astype(complex),
+    "iswap": np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]], dtype=complex),
+}
+
+
+def _openqasm_matrix(matrix):
+    return (
+        "["
+        + ", ".join("[" + ", ".join(f"{z.real}{z.imag:+}im" for z in row) + "]" for row in matrix)
+        + "]"
+    )
+
+
+@pytest.mark.parametrize("power", [0, 2, 3, -1, -2, 0.5, -0.5, 1.5])
+@pytest.mark.parametrize("gate", list(_TWO_QUBIT_BASE_MATRICES))
+def test_pow_two_qubit_gate_matches_unitary(gate, power):
+    preparation = "qubit[2] q;\nry(0.7) q[0];\nry(0.3) q[1];\n"
+    powered = f"OPENQASM 3.0;\n{preparation}pow({power}) @ {gate} q[0], q[1];\n"
+    matrix = fractional_matrix_power(_TWO_QUBIT_BASE_MATRICES[gate], power)
+    unitary = (
+        f"OPENQASM 3.0;\n{preparation}"
+        f"#pragma braket unitary({_openqasm_matrix(matrix)}) q[0], q[1]\n"
+    )
+    result_type = "#pragma braket result state_vector\n"
+    results = [
+        np.asarray(
+            StateVectorSimulator()
+            .run(OpenQASMProgram(source=source + result_type), shots=0)
+            .resultTypes[0]
+            .value
+        )
+        for source in (powered, unitary)
+    ]
+    assert np.allclose(*results)
 def test_output_classical_value_derived_from_unreported_register():
     """Only the ``int`` output is reported. The bit register it is computed from
     is measured, but is not an output."""

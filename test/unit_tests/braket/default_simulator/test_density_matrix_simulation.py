@@ -18,6 +18,7 @@ import pytest
 
 from braket.default_simulator import gate_operations, noise_operations, observables
 from braket.default_simulator.density_matrix_simulation import DensityMatrixSimulation
+from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 sx = np.array([[0, 1], [1, 0]], dtype=complex)
 si = np.array([[1, 0], [0, 1]], dtype=complex)
@@ -520,3 +521,52 @@ def test_toffoli_gate():
         prob_7 = counter[7] / total_shots
         assert abs(prob_2 - 0.5) < 0.1
         assert abs(prob_7 - 0.5) < 0.1
+
+
+_POWERS = [0, 1, 2, 3, -1, -2, 0.5, -0.5, 1.5]
+
+_POWERED_GATES = [
+    (gate_operations.Hadamard, 1, ()),
+    (gate_operations.PauliX, 1, ()),
+    (gate_operations.PauliZ, 1, ()),
+    (gate_operations.S, 1, ()),
+    (gate_operations.T, 1, ()),
+    (gate_operations.RotX, 1, (0.37,)),
+    (gate_operations.RotZ, 1, (0.37,)),
+    (gate_operations.PhaseShift, 1, (0.37,)),
+    (gate_operations.CX, 2, ()),
+    (gate_operations.CY, 2, ()),
+    (gate_operations.CZ, 2, ()),
+    (gate_operations.Swap, 2, ()),
+    (gate_operations.ISwap, 2, ()),
+    (gate_operations.ECR, 2, ()),
+    (gate_operations.CPhaseShift, 2, (0.37,)),
+    (gate_operations.PSwap, 2, (0.37,)),
+    (gate_operations.XX, 2, (0.37,)),
+    (gate_operations.ZZ, 2, (0.37,)),
+]
+
+
+def _preparation_operations(qubit_count):
+    return [gate_operations.RotY([q], 0.3 + 0.4 * q) for q in range(qubit_count)] + [
+        gate_operations.RotZ([q], 0.2 + 0.3 * q) for q in range(qubit_count)
+    ]
+
+
+def _assert_matches_state_vector(operations, qubit_count):
+    simulation = DensityMatrixSimulation(qubit_count, 0)
+    simulation.evolve(operations)
+    reference = StateVectorSimulation(qubit_count, 0, 1)
+    reference.evolve(operations)
+    state_vector = reference.state_vector
+    assert np.allclose(simulation.density_matrix, np.outer(state_vector, state_vector.conj()))
+
+
+@pytest.mark.parametrize("qubit_count, targets", [(3, (2, 0)), (5, (4, 1))])
+@pytest.mark.parametrize("power", _POWERS)
+@pytest.mark.parametrize("gate_class, num_targets, args", _POWERED_GATES)
+def test_powered_gate(gate_class, num_targets, args, power, qubit_count, targets):
+    operations = _preparation_operations(qubit_count) + [
+        gate_class(targets[:num_targets], *args, power=power)
+    ]
+    _assert_matches_state_vector(operations, qubit_count)
