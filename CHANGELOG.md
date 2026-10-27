@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.42.0 (2026-10-27)
+
+### Features
+
+ * Report OpenQASM output variables in simulation results
+
+### Bug Fixes and Other Changes
+
+ * support register measurement and loop-scoped registers
+
 ## v1.41.2 (2026-10-26)
 
 ### Bug Fixes and Other Changes
