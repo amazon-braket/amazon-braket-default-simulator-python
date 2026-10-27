@@ -14,6 +14,7 @@
 from typing import NamedTuple
 
 import pytest
+from sympy import Symbol
 
 from braket.default_simulator import gate_operations
 from braket.default_simulator.openqasm.circuit import Circuit
@@ -21,6 +22,9 @@ from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AngleType,
     ArrayLiteral,
+    ArrayReferenceType,
+    BinaryExpression,
+    BinaryOperator,
     BitType,
     BooleanLiteral,
     BoolType,
@@ -29,6 +33,9 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     Identifier,
     IntegerLiteral,
     IntType,
+    SymbolLiteral,
+    UnaryExpression,
+    UnaryOperator,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
 from braket.default_simulator.state_vector_simulator import StateVectorSimulator
@@ -289,6 +296,219 @@ def test_resolve_destination_indexed_forms(destination, expected):
     assert _slots(circuit) == expected
 
 
+@pytest.mark.parametrize(
+    "destination, qubits, expected",
+    [
+        ("c[-1]", "q[0]", [Slot(register="c", element=2, qubit=0)]),
+        ("c[-3]", "q[0]", [Slot(register="c", element=0, qubit=0)]),
+        ("c[n - 3]", "q[0]", [Slot(register="c", element=2, qubit=0)]),
+        (
+            "c[{-1, 0}]",
+            "q[0:1]",
+            [Slot(register="c", element=0, qubit=1), Slot(register="c", element=2, qubit=0)],
+        ),
+    ],
+)
+def test_resolve_destination_negative_and_computed_indices(destination, qubits, expected):
+    circuit = _build(f"bit[3] c; qubit[2] q; int n = 2; {destination} = measure {qubits};").circuit
+    assert _slots(circuit) == expected
+
+
+@pytest.mark.parametrize("destination", ["c[3]", "c[-4]"])
+def test_resolve_destination_out_of_range_raises(destination):
+    with pytest.raises(IndexError, match=r"is out of range for 'c', which has size 3"):
+        _build(f"bit[3] c; qubit q; {destination} = measure q;")
+
+
+def test_resolve_destination_into_scalar_bit_raises():
+    with pytest.raises(IndexError, match="'b' is a scalar bit and cannot be indexed"):
+        _build("bit b; qubit q; b[0] = measure q;")
+
+
+def _negative(value):
+    return UnaryExpression(UnaryOperator["-"], IntegerLiteral(value))
+
+
+def _minus(lhs, rhs):
+    return BinaryExpression(BinaryOperator["-"], lhs, rhs)
+
+
+def _resolve(context, name, index):
+    """Resolve ``index`` the way the simulator does, evaluating it in ``context`` first."""
+    return context.resolve_index(name, context._evaluate_expression(index), index)
+
+
+def _index_context():
+    """A context with indexable and non-indexable variables, a qubit register and inputs."""
+    context = _build(
+        "bit[3] c; bit b; int n = 2; array[int[8], 4] a; int[8] x; uint[4] u; qubit[2] q; "
+        "float g = 0.5; bool flag; int unsized; complex[float[64]] z; "
+        "input int m; input float f;"
+    )
+    context.declare_variable("p", FloatLiteral, FloatLiteral(1.0))
+    return context
+
+
+@pytest.mark.parametrize(
+    "name, index, expected",
+    [
+        ("c", _negative(1), 2),
+        ("c", _negative(3), 0),
+        ("c", IntegerLiteral(0), 0),
+        ("c", IntegerLiteral(2), 2),
+        ("c", Identifier("n"), 2),
+        ("c", UnaryExpression(UnaryOperator["-"], Identifier("n")), 1),
+        ("c", _minus(Identifier("n"), IntegerLiteral(3)), 2),
+        ("a", _negative(1), 3),
+        ("a", IntegerLiteral(1), 1),
+        ("q", _negative(1), 1),
+        ("q", IntegerLiteral(0), 0),
+        ("x", _negative(1), 7),
+        ("u", _negative(4), 0),
+    ],
+)
+def test_resolve_index(name, index, expected):
+    assert _resolve(_index_context(), name, index) == expected
+
+
+@pytest.mark.parametrize(
+    "name, index, size",
+    [
+        ("c", IntegerLiteral(3), 3),
+        ("c", _negative(4), 3),
+        ("a", IntegerLiteral(4), 4),
+        ("q", _negative(3), 2),
+        ("x", IntegerLiteral(8), 8),
+    ],
+)
+def test_resolve_index_out_of_range_raises(name, index, size):
+    with pytest.raises(IndexError, match=f"is out of range for '{name}', which has size {size}"):
+        _resolve(_index_context(), name, index)
+
+
+@pytest.mark.parametrize("index", [IntegerLiteral(0), _negative(1), Identifier("m")])
+def test_resolve_index_into_scalar_bit_raises(index):
+    """A scalar ``bit`` has size 0, so every index is out of range."""
+    with pytest.raises(IndexError, match="'b' is a scalar bit and cannot be indexed"):
+        _resolve(_index_context(), "b", index)
+
+
+@pytest.mark.parametrize("index", [IntegerLiteral(0), _negative(1)])
+@pytest.mark.parametrize(
+    "declaration, name",
+    [
+        ("array[float[32], 0] myArray;", "myArray"),
+        ("array[int[8], 2, 0] a;", "a"),
+        ("bit[0] c;", "c"),
+        ("qubit[0] q;", "q"),
+    ],
+)
+def test_resolve_index_into_size_zero_raises(declaration, name, index):
+    """A target with a zero dimension has size zero, so no index is valid."""
+    with pytest.raises(IndexError, match=f"'{name}' has size zero and cannot be indexed"):
+        _resolve(_build(declaration), name, index)
+
+
+@pytest.mark.parametrize("index, expected", [(_negative(1), 2), (_negative(3), 0)])
+def test_resolve_index_into_array(index, expected):
+    assert _resolve(_build("array[int[8], 3] a;"), "a", index) == expected
+
+
+def test_resolve_index_into_array_reference():
+    """A subroutine array parameter has an array reference type."""
+    context = ProgramContext()
+    array_type = ArrayReferenceType(base_type=int_8, dimensions=[IntegerLiteral(2)])
+    context.declare_variable("r", array_type, ArrayLiteral([IntegerLiteral(0)] * 2))
+    assert _resolve(context, "r", _negative(1)) == 1
+
+
+@pytest.mark.parametrize(
+    "name, type_name",
+    [
+        ("g", "FloatType"),
+        ("flag", "BoolType"),
+        ("unsized", "IntType"),
+        ("z", "ComplexType"),
+        ("p", "FloatLiteral"),
+    ],
+)
+def test_resolve_index_into_non_indexable_raises(name, type_name):
+    with pytest.raises(TypeError, match=f"'{name}' of type {type_name} is not indexable"):
+        _resolve(_index_context(), name, IntegerLiteral(0))
+
+
+@pytest.mark.parametrize(
+    "index, type_name",
+    [(FloatLiteral(1.0), "FloatLiteral"), (BooleanLiteral(True), "BooleanLiteral")],
+)
+def test_resolve_index_non_integer_raises(index, type_name):
+    with pytest.raises(
+        TypeError, match=f"Index into 'c' must evaluate to an integer, got {type_name}"
+    ):
+        _resolve(_index_context(), "c", index)
+
+
+@pytest.mark.parametrize(
+    "index",
+    [
+        Identifier("m"),
+        _minus(Identifier("m"), IntegerLiteral(1)),
+        BinaryExpression(BinaryOperator["+"], Identifier("m"), Identifier("n")),
+    ],
+)
+def test_resolve_index_returns_symbolic_integer_index_unevaluated(index):
+    """An index that evaluates to a symbol, such as an unbound ``input int``, is handed back."""
+    assert _resolve(_index_context(), "c", index) is index
+
+
+@pytest.mark.parametrize(
+    "index, identifier, type_name",
+    [
+        (Identifier("f"), "f", "FloatType"),
+        (_minus(Identifier("m"), Identifier("f")), "f", "FloatType"),
+        (BinaryExpression(BinaryOperator["+"], Identifier("m"), Identifier("g")), "g", "FloatType"),
+    ],
+)
+def test_resolve_index_symbolic_non_integer_raises(index, identifier, type_name):
+    """A symbolic index must only reference ``int`` or ``uint`` variables."""
+    with pytest.raises(
+        TypeError,
+        match=f"Index into 'c' must be an integer, but '{identifier}' has type {type_name}",
+    ):
+        _resolve(_index_context(), "c", index)
+
+
+def test_resolve_index_evaluates_declared_size():
+    """A subroutine parameter keeps its unevaluated size, which is evaluated for wrapping."""
+    context = ProgramContext()
+    context.declare_variable("k", int_8, IntegerLiteral(2), True)
+    context.declare_variable(
+        "p", BitType(Identifier("k")), ArrayLiteral([BooleanLiteral(False)] * 2)
+    )
+    assert _resolve(context, "p", _negative(1)) == 1
+
+
+def test_resolve_index_returns_symbolic_value_without_index():
+    value = SymbolLiteral(Symbol("m"))
+    assert _index_context().resolve_index("c", value) is value
+
+
+def test_resolve_index_rejects_non_constant_declared_size():
+    context = ProgramContext()
+    size = BinaryExpression(BinaryOperator["+"], Identifier("k"), IntegerLiteral(1))
+    context.declare_variable("p", BitType(size), ArrayLiteral([BooleanLiteral(False)] * 2))
+    with pytest.raises(
+        TypeError, match="The size of 'p' must be an integer literal or a constant, got Binary"
+    ):
+        context.resolve_index("p", IntegerLiteral(0))
+
+
+def test_unbound_input_keeps_declared_type():
+    context = _build("input int m; input float f;")
+    assert isinstance(context.get_type("m"), IntType)
+    assert isinstance(context.get_type("f"), FloatType)
+
+
 def _path_bits(context, name):
     return [
         [bit.value for bit in path.get_variable(name).value.values] for path in context.active_paths
@@ -343,6 +563,12 @@ def test_overwrite_indexed_lvalue_forms(lvalue, expected):
     qasm = f"bit[3] c; qubit[3] q; x q; c = measure q; {lvalue}; int x = c[0];"
     context = _build(qasm, shots=10)
     assert _path_bits(context, "c") == [expected]
+
+
+def test_overwrite_out_of_range_lvalue_raises():
+    qasm = "bit[3] c; qubit[3] q; x q; c = measure q; c[-4] = 0;"
+    with pytest.raises(IndexError, match="Index -4 is out of range for 'c', which has size 3"):
+        _build(qasm, shots=10)
 
 
 def test_overwrite_keeps_measurement_projection():

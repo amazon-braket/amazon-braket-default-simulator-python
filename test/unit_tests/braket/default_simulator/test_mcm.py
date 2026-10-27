@@ -2815,6 +2815,9 @@ class TestUnifiedMCMClassicalVariables:
             ("", "b[0]"),
             ("const int k = 0;", "b[k]"),
             ("int k = 0;", "b[k]"),
+            ("", "b[-2]"),
+            ("int k = -2;", "b[k]"),
+            ("int k = 2;", "b[k - 2]"),
         ],
     )
     def test_branched_measurement_into_indexed_destination(
@@ -3385,6 +3388,79 @@ class TestMCMNonContiguousClassicalIndices:
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=2000)
         counter = Counter(["".join(m) for m in result.measurements])
         assert set(counter) == {"000", "011"}
+
+
+class TestMCMNegativeBitIndex:
+    """Bit register indices that are negative or computed, in MCM conditions and destinations."""
+
+    @pytest.mark.parametrize(
+        "destination, condition",
+        [
+            ("c[1]", "c[-1]"),
+            ("c[-1]", "c[1]"),
+            ("c[-1]", "c[-1]"),
+            ("c[1]", "c[-1] == 1"),
+        ],
+    )
+    def test_negative_index(self, simulator, destination, condition):
+        """``c[-1]`` is the last bit of ``c``, both as a condition and as a destination."""
+        qasm = f"""
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] c;
+        x q[0];
+        {destination} = measure q[0];
+        if ({condition}) {{
+          x q[1];
+        }}
+        c[0] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        assert result.measuredQubits == [1, 0]
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"11": 10})
+
+    @pytest.mark.parametrize(
+        "branch",
+        [
+            "for int i in [1:1] { if (c[i]) { x q[1]; } }",
+            "for int i in [1:1] { if (c[-i]) { x q[1]; } }",
+            "int n = 1; if (c[n]) { x q[1]; }",
+            "int n = -1; if (c[n]) { x q[1]; }",
+            "int n = 2; if (c[n - 1]) { x q[1]; }",
+            "int n = 2; if (c[n - 3] == 1) { x q[1]; }",
+        ],
+    )
+    def test_computed_index_in_condition(self, simulator, branch):
+        """A condition index may be a loop variable, an ``int`` or an arithmetic expression."""
+        qasm = f"""
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] c;
+        x q[0];
+        c[1] = measure q[0];
+        {branch}
+        c[0] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"11": 10})
+
+    def test_index_computed_from_measured_value(self, simulator):
+        """Each path evaluates the index from its own measured value."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[3] c;
+        h q[1];
+        c[1] = measure q[1];
+        x q[2];
+        c[2] = measure q[2];
+        int k = c[1];
+        if (c[k - 2]) { x q[0]; }
+        c[0] = measure q[0];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
+        # k == 1 reads c[-1] == c[2] == 1 and flips q[0]; k == 0 reads c[-2] == c[1] == 0.
+        assert {"".join(m) for m in result.measurements} == {"001", "111"}
 
 
 class TestMCMBranchedInstructionRouting:

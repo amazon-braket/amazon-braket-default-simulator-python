@@ -67,6 +67,7 @@ from .circuit import Circuit, ClassicalRegister
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ArrayLiteral,
+    ArrayReferenceType,
     ArrayType,
     BinaryExpression,
     BinaryOperator,
@@ -75,6 +76,7 @@ from .parser.openqasm_ast import (
     BoolType,
     ClassicalType,
     DiscreteSet,
+    Expression,
     FloatLiteral,
     FloatType,
     GateModifierName,
@@ -692,6 +694,91 @@ class AbstractProgramContext(ABC):
         var_type = self.get_type(name)
         indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
         self.variable_table.update_value(name, value, var_type, indices)
+
+    def resolve_index(
+        self, name: str, value: LiteralType, index: Expression | None = None
+    ) -> int | Expression:
+        """Resolve a single index into ``name``, a sized classical variable or a qubit register.
+
+        The caller evaluates the index in its own context, so a loop variable, a classical
+        ``int`` or an arithmetic expression is accepted. Negative indices count back from the
+        end of the target, as in OpenQASM 3. The size comes from the target's declared type:
+        the width of a ``bit``, ``int`` or ``uint``, the first dimension of an array, or the
+        length of a qubit register.
+
+        Args:
+            name (str): The name of the indexed variable or qubit register.
+            value (LiteralType): The evaluated index.
+            index (Expression | None): The unevaluated index expression. Needed when ``value``
+                is a ``SymbolLiteral``, to check the types of the identifiers it references.
+
+        Returns:
+            int | Expression: The element index in ``range(size)`` when ``value`` is an
+            integer, or the unevaluated ``index`` (``value`` if it is not given) when
+            ``value`` is a symbol, for example an unbound ``input int``, so the caller can
+            handle it symbolically.
+
+        Raises:
+            TypeError: If ``name`` is not indexable, or the index is not an integer: ``value``
+                is not an integer, or it is symbolic and ``index`` references a variable that
+                is not declared as an ``int`` or ``uint``.
+            IndexError: If the index is an integer outside the target, or the target is a
+                scalar ``bit`` or has size zero, so that no index is valid.
+        """
+        size = self._index_target_size(name)
+        if not size:
+            raise IndexError(f"'{name}' has size zero and cannot be indexed.")
+        if isinstance(value, SymbolLiteral):
+            for identifier in self._referenced_identifiers(index):
+                identifier_type = self.get_type(identifier)
+                if not isinstance(identifier_type, (IntType, UintType)):
+                    raise TypeError(
+                        f"Index into '{name}' must be an integer, but '{identifier}' has type "
+                        f"{_type_name(identifier_type)}."
+                    )
+            return value if index is None else index
+        if not isinstance(value, IntegerLiteral):
+            raise TypeError(
+                f"Index into '{name}' must evaluate to an integer, got {type(value).__name__}."
+            )
+        if not -size <= value.value < size:
+            raise IndexError(
+                f"Index {value.value} is out of range for '{name}', which has size {size}."
+            )
+        return value.value % size
+
+    def _index_target_size(self, name: str) -> int:
+        """The number of elements the first index of ``name`` selects from."""
+        if name in self.qubit_mapping:
+            return self.qubit_mapping.get_qubit_size(Identifier(name))
+        match target_type := self.get_type(name):
+            case BitType(size=None):
+                # A scalar has size 0, so no index is in range.
+                raise IndexError(f"'{name}' is a scalar bit and cannot be indexed.")
+            case BitType(size=size) | IntType(size=size) | UintType(size=size) if size:
+                return self._declared_size(name, size)
+            case ArrayType(dimensions=dimensions) | ArrayReferenceType(dimensions=list(dimensions)):
+                sizes = [self._declared_size(name, dimension) for dimension in dimensions]
+                # Per the OpenQASM 3 spec, an array with any zero dimension has size zero.
+                return 0 if 0 in sizes else sizes[0]
+            case _:
+                raise TypeError(
+                    f"'{name}' of type {_type_name(target_type)} is not indexable: "
+                    "it has no declared size."
+                )
+
+    def _declared_size(self, name: str, size: Expression) -> int:
+        """The value of a size in the declared type of ``name``: a literal or a constant."""
+        match size:
+            case IntegerLiteral(value=value):
+                return value
+            case Identifier():
+                return self.get_value_by_identifier(size).value
+            case _:
+                raise TypeError(
+                    f"The size of '{name}' must be an integer literal or a constant, "
+                    f"got {type(size).__name__}."
+                )
 
     def add_qubits(self, name: str, num_qubits: int | None = 1) -> None:
         """
@@ -1391,14 +1478,17 @@ class ProgramContext(AbstractProgramContext):
             if entry_register is register:
                 overwritten |= written
 
-    @staticmethod
-    def _indexed_elements(variable: IndexedIdentifier, size: int) -> list[int]:
+    def _indexed_elements(self, variable: IndexedIdentifier, size: int) -> list[int]:
         """The register elements selected by an indexed bit register lvalue."""
         match flatten_indices(variable.indices)[0]:
             case RangeDefinition() as range_definition:
                 return list(range(size)[convert_range_def_to_slice(range_definition)])
             case index:
-                return [range(size)[index.value]]
+                return [
+                    self.resolve_index(
+                        get_identifier_name(variable), self._evaluate_expression(index), index
+                    )
+                ]
 
     def get_value(self, name: str) -> LiteralType:
         """Get variable value, reading from the first active path when branched."""
@@ -1688,19 +1778,29 @@ class ProgramContext(AbstractProgramContext):
             tuple[ClassicalRegister, list[int]]: The register the name resolves to in
             the current scope and the destination index within it for each measured
             qubit, aligned with ``target``.
+
+        Raises:
+            TypeError: If the destination is not a bit variable or an index is not a
+                concrete integer.
+            IndexError: If an index is out of range for the register (see ``resolve_index``).
+            ValueError: If a whole register is measured from a different number of qubits.
         """
         name = get_identifier_name(classical_destination)
         register = self.register_table.get_register(name)
         if register is None:
             raise TypeError(f"Measurement destination '{name}' is not a bit or bit register.")
-        if classical_targets is not None:
-            return register, list(classical_targets)
-        if register.size != len(target):
-            raise ValueError(
-                f"Number of qubits ({len(target)}) does not match size of classical "
-                f"register '{name}' ({register.size})"
+        if classical_targets is None:
+            if register.size != len(target):
+                raise ValueError(
+                    f"Number of qubits ({len(target)}) does not match size of classical "
+                    f"register '{name}' ({register.size})"
+                )
+            return register, list(range(len(target)))
+        if not all(isinstance(index, int) for index in classical_targets):
+            raise TypeError(
+                f"Measurement destination '{name}' must be indexed by a concrete integer."
             )
-        return register, list(range(len(target)))
+        return register, [self.resolve_index(name, IntegerLiteral(i)) for i in classical_targets]
 
     def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
         """Extend the base implementation with branched-subset detection.
@@ -2198,6 +2298,11 @@ _BINARY_EQUALS = getattr(BinaryOperator, "==")
 # (target qubits, destination register, destination register index per qubit,
 #  register indices classically written after the measurement, so never written back)
 _PendingMeasurement = tuple[tuple[int, ...], ClassicalRegister, list[int], set[int]]
+
+
+def _type_name(symbol_type: ClassicalType | type) -> str:
+    """The name of a symbol type, which is a ``ClassicalType`` or, for some symbols, a class."""
+    return getattr(symbol_type, "__name__", type(symbol_type).__name__)
 
 
 def _bit_register_size(bit_type: BitType, value: Any) -> int:
