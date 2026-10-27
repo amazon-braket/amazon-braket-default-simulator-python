@@ -1693,10 +1693,14 @@ class ProgramContext(AbstractProgramContext):
         register = self.register_table.get_register(name)
         if register is None:
             raise TypeError(f"Measurement destination '{name}' is not a bit or bit register.")
-        register_indices = (
-            list(classical_targets) if classical_targets is not None else list(range(len(target)))
-        )
-        return register, register_indices
+        if classical_targets is not None:
+            return register, list(classical_targets)
+        if register.size != len(target):
+            raise ValueError(
+                f"Number of qubits ({len(target)}) does not match size of classical "
+                f"register '{name}' ({register.size})"
+            )
+        return register, list(range(len(target)))
 
     def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
         """Extend the base implementation with branched-subset detection.

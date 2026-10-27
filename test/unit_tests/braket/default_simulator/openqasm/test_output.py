@@ -527,14 +527,12 @@ def test_bit_register_size_mismatch():
         StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=2)
 
 
-def test_int_array_size_mismatch():
-    qasm = """
+@pytest.mark.parametrize("measure", ["c = measure q;", "c[0] = measure q[0];"])
+def test_measure_into_undeclared_register(measure):
+    qasm = f"""
     OPENQASM 3.0;
-    output array[int[8], 3] out;
     qubit[2] q;
-    out = measure q;
+    {measure}
     """
-    with pytest.raises(
-        ValueError, match=r"\(2\) does not match size of classical register 'out' \(3\)"
-    ):
+    with pytest.raises(TypeError, match="Measurement destination 'c' is not a bit or bit register"):
         StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=2)
