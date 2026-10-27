@@ -67,6 +67,7 @@ from .circuit import Circuit, ClassicalRegister
 from .parser.braket_pragmas import parse_braket_pragma
 from .parser.openqasm_ast import (
     ArrayLiteral,
+    ArrayType,
     BinaryExpression,
     BinaryOperator,
     BitType,
@@ -1287,11 +1288,18 @@ class ProgramContext(AbstractProgramContext):
         Raises:
             NotImplementedError: If the declared type has no mapping to a schema
                 output value (supported types: ``bool``, ``int``, ``uint``,
-                ``float`` and ``bit``).
+                ``float``, ``bit``, and one-dimensional arrays of those).
         """
-        if not isinstance(var_type, _SUPPORTED_OUTPUT_TYPES):
+        element_type = var_type
+        if isinstance(var_type, ArrayType):
+            element_type = var_type.base_type
+            if len(var_type.dimensions) > 1:
+                raise NotImplementedError(
+                    "Only one-dimensional arrays are supported as output variables."
+                )
+        if not isinstance(element_type, _SUPPORTED_OUTPUT_TYPES):
             raise NotImplementedError(
-                f"Output variables of type {type(var_type).__name__} are not supported."
+                f"Output variables of type {type(element_type).__name__} are not supported."
             )
         self._output_variables[name] = var_type
 
@@ -1440,8 +1448,12 @@ class ProgramContext(AbstractProgramContext):
         return super().is_initialized(name)
 
     def _bound_in_inner_scope(self, name: str) -> bool:
-        """Whether ``name`` is bound in a non-global variable-table scope."""
-        return any(name in scope for scope in self.variable_table._scopes[1:])
+        """Whether ``name`` is bound to a value in a non-global variable-table scope."""
+        return any(
+            not is_none_like(scope[name])
+            for scope in self.variable_table._scopes[1:]
+            if name in scope
+        )
 
     def _flush_pending_mcm_for_variable(self, name: str) -> None:
         """If ``name`` resolves to a pending MCM's destination register, flush it.
@@ -1681,10 +1693,14 @@ class ProgramContext(AbstractProgramContext):
         register = self.register_table.get_register(name)
         if register is None:
             raise TypeError(f"Measurement destination '{name}' is not a bit or bit register.")
-        register_indices = (
-            list(classical_targets) if classical_targets is not None else list(range(len(target)))
-        )
-        return register, register_indices
+        if classical_targets is not None:
+            return register, list(classical_targets)
+        if register.size != len(target):
+            raise ValueError(
+                f"Number of qubits ({len(target)}) does not match size of classical "
+                f"register '{name}' ({register.size})"
+            )
+        return register, list(range(len(target)))
 
     def track_mcm_dependency(self, lvalue_name: str, rvalue) -> None:
         """Extend the base implementation with branched-subset detection.
@@ -2202,10 +2218,12 @@ def _with_bit(value: Any, element: int, bit: int) -> Any:
     """Return ``value`` with register element ``element`` set to ``bit``.
 
     A sized bit register is an ``ArrayLiteral`` and is updated in place; a scalar
-    ``bit`` (a register of size 1) is replaced by the new literal.
+    ``bit`` (a register of size 1) is replaced by the new literal. Register elements
+    are stored as ``BooleanLiteral`` so the register can still be cast to its
+    declared ``bit[n]`` type (e.g. when copied with ``out = c``).
     """
     if isinstance(value, ArrayLiteral):
-        value.values[element] = IntegerLiteral(value=bit)
+        value.values[element] = BooleanLiteral(value=bool(bit))
         return value
     return IntegerLiteral(value=bit)
 

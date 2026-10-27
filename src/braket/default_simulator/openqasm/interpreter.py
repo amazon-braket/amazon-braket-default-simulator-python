@@ -267,22 +267,27 @@ class Interpreter:
         if node.init_expression is not None:
             init_value = cast_to(node.type, self.visit(node.init_expression))
         else:
-            match node_type:
-                case ArrayType():
-                    init_value = create_empty_array(node_type.dimensions)
-                case BitType() if node_type.size:
-                    init_value = create_empty_array([node_type.size])
-                case IntType() | UintType():
-                    init_value = IntegerLiteral(value=0)
-                case FloatType():
-                    init_value = FloatLiteral(value=0.0)
-                case BoolType():
-                    init_value = BooleanLiteral(value=False)
-                case _:
-                    init_value = None
+            init_value = self._empty_init_value(node_type)
         self.context.declare_variable(node.identifier.name, node_type, init_value)
         if node.init_expression is not None:
             self.context.track_mcm_dependency(node.identifier.name, node.init_expression)
+
+    @staticmethod
+    def _empty_init_value(node_type):
+        """The default value for a declaration with no initializer."""
+        match node_type:
+            case ArrayType():
+                return create_empty_array(node_type.dimensions)
+            case BitType() if node_type.size:
+                return create_empty_array([node_type.size])
+            case IntType() | UintType():
+                return IntegerLiteral(value=0)
+            case FloatType():
+                return FloatLiteral(value=0.0)
+            case BoolType():
+                return BooleanLiteral(value=False)
+            case _:
+                return None
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
