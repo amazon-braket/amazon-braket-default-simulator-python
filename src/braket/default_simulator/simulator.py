@@ -24,6 +24,10 @@ import numpy as np
 from braket.default_simulator.observables import Hermitian, TensorProduct
 from braket.default_simulator.openqasm.circuit import Circuit
 from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.output_helpers import (
+    compute_outputs_branched,
+    compute_outputs_single_path,
+)
 from braket.default_simulator.openqasm.program_context import (
     AbstractProgramContext,
     ProgramContext,
@@ -761,16 +765,21 @@ class BaseLocalSimulator(OpenQASMSimulator):
         else:
             context = self.parse_program(openqasm_ir)
 
+        # A program with outputs reports them, so its measurements may span registers
+        has_outputs = bool(context.output_variables)
+        if not has_outputs:
+            context.circuit.validate_single_measured_register()
+
         if context.is_branched:
             # Multi-path execution for programs with mid-circuit measurements
-            return self._run_branched(context, openqasm_ir, shots, batch_size, created_at)
+            result = self._run_branched(context, openqasm_ir, shots, batch_size, created_at)
+            return self._with_outputs(context, result, has_outputs)
 
         # Single-path execution
         circuit = context.circuit
-        circuit.validate_single_measured_register()
         qubit_map = BaseLocalSimulator._map_circuit_to_contiguous_qubits(circuit)
         qubit_count = circuit.num_qubits
-        measured_qubits = circuit.measured_qubits
+        measured_qubits = [qubit for _, _, qubit in circuit.reported_measurement_slots()]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None
         )
@@ -811,13 +820,30 @@ class BaseLocalSimulator(OpenQASMSimulator):
         elif circuit.basis_rotation_instructions:
             simulation.evolve(circuit.basis_rotation_instructions)
 
-        return self._create_results_obj(
+        result = self._create_results_obj(
             results,
             openqasm_ir,
             simulation,
             created_at,
             measured_qubits,
             mapped_measured_qubits,
+        )
+        return self._with_outputs(context, result, has_outputs)
+
+    @staticmethod
+    def _with_outputs(
+        context: AbstractProgramContext, result: GateModelTaskResult, has_outputs: bool
+    ) -> GateModelTaskResult:
+        """Report the declared ``output`` variables in place of the measurements."""
+        if not has_outputs or not result.taskMetadata.shots:
+            return result
+        outputs = (
+            compute_outputs_branched(context)
+            if context.is_branched
+            else compute_outputs_single_path(context, result.measurements)
+        )
+        return result.copy(
+            update={"outputs": outputs, "measurements": None, "measuredQubits": None}
         )
 
     def _parse_program_with_shots(
@@ -873,7 +899,6 @@ class BaseLocalSimulator(OpenQASMSimulator):
             GateModelTaskResult: Aggregated result across all paths.
         """
         circuit = context.circuit
-        circuit.validate_single_measured_register()
         path_qubit_set = set()
         for path in context.active_paths:
             for ins in path.instructions:
@@ -886,7 +911,7 @@ class BaseLocalSimulator(OpenQASMSimulator):
         BaseLocalSimulator._map_circuit_qubits(circuit, qubit_map)
 
         # One result bit per measurement slot, in slot order
-        slots = circuit.measurement_slots
+        slots = circuit.reported_measurement_slots()
         measured_qubits = [qubit for _, _, qubit in slots]
         mapped_measured_qubits = (
             [qubit_map[q] for q in measured_qubits] if measured_qubits else None

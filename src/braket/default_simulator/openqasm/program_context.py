@@ -71,27 +71,33 @@ from .parser.openqasm_ast import (
     BinaryOperator,
     BitType,
     BooleanLiteral,
+    BoolType,
     ClassicalType,
     DiscreteSet,
     FloatLiteral,
+    FloatType,
     GateModifierName,
     Identifier,
     IndexedIdentifier,
     IndexElement,
     IndexExpression,
     IntegerLiteral,
+    IntType,
     QASMNode,
     QuantumGateDefinition,
     QuantumGateModifier,
     RangeDefinition,
     SubroutineDefinition,
     SymbolLiteral,
+    UintType,
     UnaryExpression,
 )
 from .simulation_path import FramedVariable, SimulationPath
 
 if TYPE_CHECKING:  # pragma: no cover
     from braket.default_simulator.simulator import BaseLocalSimulator
+
+_SUPPORTED_OUTPUT_TYPES = (BoolType, IntType, UintType, FloatType, BitType)
 
 
 class Table:
@@ -489,6 +495,7 @@ class AbstractProgramContext(ABC):
         self.num_qubits = 0
         self.in_verbatim_box = False
         self._mcm_dependent_scopes: list[set[str]] = [set()]
+        self._output_variables: dict[str, ClassicalType] = {}
 
     @property
     @abstractmethod
@@ -813,6 +820,16 @@ class AbstractProgramContext(ABC):
             var_type (ClassicalType): The evaluated declared type.
         """
         raise NotImplementedError
+
+    @property
+    def output_variables(self) -> dict[str, ClassicalType]:
+        """The variables declared with ``output``.
+
+        Returns:
+            dict[str, ClassicalType]: The declared type of each output variable,
+            keyed by name, in declaration order.
+        """
+        return self._output_variables
 
     def add_phase(
         self,
@@ -1221,15 +1238,18 @@ class ProgramContext(AbstractProgramContext):
     def _flush_pending_mcm_targets(self) -> None:
         """Register pending measurements as end-of-circuit measurements.
 
-        Called when interpretation is complete. Measurements that were deferred
-        (because they had a classical destination but nothing forced them to be
-        applied) never affected control flow, so they are plain measurements of
-        the final state. Once execution has branched nothing is ever pending (see
-        ``_apply_pending_mcm_targets``).
+        Called when interpretation is complete. Deferred measurements never
+        affected control flow, so they are measurements of the final state.
+        A register bit assigned after its measurement, such as ``c[0]`` in
+        ``c = measure q; c[0] = 0;``, is added to the register's ``overwritten``
+        set. A later measurement into that bit removes it, so the last
+        measurement of a bit decides. Nothing is pending once execution has
+        branched.
         """
         pending, self._pending_mcm_targets = self._pending_mcm_targets, []
-        for target, register, register_indices, _ in pending:
+        for target, register, register_indices, overwritten in pending:
             self._circuit.add_measure(target, register, register_indices)
+            register.overwritten |= overwritten & set(register_indices)
 
     def _apply_pending_mcm_targets(self) -> None:
         """Apply every pending measurement now, in program order.
@@ -1256,6 +1276,24 @@ class ProgramContext(AbstractProgramContext):
     def active_paths(self) -> list[SimulationPath]:
         """The currently active simulation paths."""
         return [self._paths[i] for i in self._active_path_indices]
+
+    def add_output_declaration(self, name: str, var_type: ClassicalType) -> None:
+        """Record an OpenQASM ``output`` declaration for the simulation result flow.
+
+        Args:
+            name (str): The declared output variable name.
+            var_type (ClassicalType): The evaluated declared type.
+
+        Raises:
+            NotImplementedError: If the declared type has no mapping to a schema
+                output value (supported types: ``bool``, ``int``, ``uint``,
+                ``float`` and ``bit``).
+        """
+        if not isinstance(var_type, _SUPPORTED_OUTPUT_TYPES):
+            raise NotImplementedError(
+                f"Output variables of type {type(var_type).__name__} are not supported."
+            )
+        self._output_variables[name] = var_type
 
     def declare_variable(
         self,
@@ -1309,7 +1347,7 @@ class ProgramContext(AbstractProgramContext):
         updates (e.g., ``arr[0] = 5``) are handled by reading the current
         value from the path, applying the index update, and writing back.
         A classical write does not depend on a pending measurement, so it
-        does not apply it, guarded by ``_mark_overwritten``. 
+        does not apply it, guarded by ``_mark_overwritten``.
         """
         if not self._is_branched:
             self._mark_overwritten(variable)

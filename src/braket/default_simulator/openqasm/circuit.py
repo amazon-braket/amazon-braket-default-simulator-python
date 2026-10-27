@@ -25,12 +25,31 @@ from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 
 class ClassicalRegister:
-    """A named classical bit register that measurements are recorded into."""
+    """A named classical bit register that measurements are recorded into.
+
+    Args:
+        name (str | None): The program-level name of the register, or ``None``
+            for the anonymous register that collects measurements without a
+            classical destination.
+        size (int): Number of elements.
+        order (int): Position of the register in declaration order. ``-1`` for
+            a register that is not part of the circuit, such as a feedback bit.
+
+    Attributes:
+        sources (list[int | None]): The qubit measured into each element, or
+            ``None`` if the element holds no measurement.
+        overwritten (set[int]): Elements whose end-of-circuit measurement was
+            classically written afterwards, so the written value is reported
+            instead of the sampled bit. Only set when pending measurements are
+            flushed. Branched paths keep the written value in their variables
+            instead.
+    """
 
     def __init__(self, name: str | None, size: int, order: int):
         self.name = name
         self.order = order
         self.sources: list[int | None] = [None] * size
+        self.overwritten: set[int] = set()
 
     @property
     def size(self) -> int:
@@ -45,7 +64,9 @@ class ClassicalRegister:
         """Record ``qubit`` as the measurement source of ``element``.
 
         Simulator samples qubits at the end of the circuit, so registers must
-        know mapping to retrieve the measurement results.
+        know mapping to retrieve the measurement results. A new measurement
+        replaces any earlier classical write, so ``element`` is no longer
+        overwritten.
         """
         if not 0 <= element < self.size:
             raise IndexError(
@@ -53,6 +74,7 @@ class ClassicalRegister:
                 f"register of length {self.size} `{self.name}`."
             )
         self.sources[element] = qubit
+        self.overwritten.discard(element)
 
     def grow(self, count: int) -> None:
         """Append ``count`` unbound elements to the register.
@@ -188,26 +210,41 @@ class Circuit:
         """The registers holding at least one measurement, in declaration order."""
         return [register for register in self.classical_registers if register.measured]
 
-    def validate_single_measured_register(self) -> None:
-        """Reject programs whose measurements span more than one register.
+    def reported_measurement_slots(self) -> list[tuple[ClassicalRegister, int, int]]:
+        """The measurement slots sampled for the result.
 
-        This validation will be removed once `output` is supported.
+        Measurements without a destination are left out when any named register is
+        measured. When no named register is measured, they are the slots returned.
+        For a program with outputs, the sampled rows are used to compute the outputs
+        rather than being reported as ``measurements``.
+
+        Returns:
+            list[tuple[ClassicalRegister, int, int]]: ``(register, element, qubit)``
+            for each sampled slot, in ``measurement_slots`` order. Empty if nothing
+            was measured.
+        """
+        slots = self.measurement_slots
+        named = [slot for slot in slots if slot[0] is not self._anonymous_register]
+        return named or slots
+
+    def validate_single_measured_register(self) -> None:
+        """Reject programs without outputs whose measurements span more than one
+        named register. Measurements without a destination do not count.
 
         Raises:
-            ValueError: If measurements were recorded into more than one register.
+            ValueError: If measurements were recorded into more than one named register.
         """
-        measured = self.measured_registers
+        measured = [
+            register
+            for register in self.measured_registers
+            if register is not self._anonymous_register
+        ]
         if len(measured) > 1:
-            names = ", ".join(
-                f"`{register.name}`"
-                if register.name is not None
-                else "measurements without a destination"
-                for register in measured
-            )
+            names = ", ".join(f"`{register.name}`" for register in measured)
             raise ValueError(
-                "Measurement results can only be reported for a single classical register, "
-                f"but measurements were recorded into {len(measured)}: {names}. "
-                "Declare one bit register and measure into it."
+                f"Measurements were recorded into {len(measured)} classical registers: "
+                f"{names}. Measure into a single register, or declare the values to "
+                "return with `output`, e.g. `output bit[2] c;`."
             )
 
     def add_result(self, result: Results) -> None:
