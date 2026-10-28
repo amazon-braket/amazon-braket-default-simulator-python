@@ -2445,16 +2445,31 @@ def test_measure_into_non_bit_raises():
         Interpreter().build_circuit(qasm)
 
 
-@pytest.mark.parametrize("destination", ["c[1]", "c[-1]"])
-def test_measure_into_undeclared_indexed_destination_raises(destination):
-    """The context, not index resolution, reports an undeclared destination."""
+def test_measure_into_undeclared_indexed_destination_raises():
+    """The context reports an undeclared destination with a non-negative index."""
     qasm = "\n".join(
         [
             "qubit q;",
-            f"{destination} = measure q;",
+            "c[1] = measure q;",
         ]
     )
     with pytest.raises(TypeError, match="Measurement destination 'c' is not a bit"):
+        Interpreter().build_circuit(qasm)
+
+
+@pytest.mark.parametrize("index", ["-1", "-2"])
+def test_measure_into_undeclared_destination_with_negative_index_raises(index):
+    """A negative index needs the destination's declared size, so an undeclared one is named."""
+    qasm = "\n".join(
+        [
+            "qubit q;",
+            f"c[{index}] = measure q;",
+        ]
+    )
+    with pytest.raises(
+        NameError,
+        match=f"Measurement destination 'c' is not declared, so its index {index} cannot be",
+    ):
         Interpreter().build_circuit(qasm)
 
 

@@ -646,21 +646,24 @@ class Interpreter:
         else:
             self.context.add_measure(qubits, targets)
 
-    def _resolve_measurement_index(self, name: str, index: Expression) -> int | Expression:
+    def _resolve_measurement_index(self, name: str, index: Expression) -> int | SymbolLiteral:
         """Resolve an index into the measurement destination ``name`` with the context.
 
         A non-negative integer is passed on unchanged, so each context keeps its own range
-        check for it; other indices are resolved with ``resolve_index``.
+        check for it, including for an undeclared destination; other indices are resolved
+        with ``resolve_index``, which needs the destination's declared size.
         """
-        value = self.visit(deepcopy(index))
+        value = self.visit(index)
         if isinstance(value, IntegerLiteral) and value.value >= 0:
             return value.value
         try:
             self.context.get_type(name)
         except KeyError:
-            # The context's add_measure reports (or accepts) an undeclared destination.
-            return value.value
-        return self.context.resolve_index(name, value, index)
+            raise NameError(
+                f"Measurement destination '{name}' is not declared, so its index "
+                f"{value.value} cannot be resolved."
+            ) from None
+        return self.context.resolve_index(name, value)
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:

@@ -21,7 +21,7 @@ from functools import singledispatchmethod
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from sympy import Expr
+from sympy import Expr, Number
 
 from braket.default_simulator.gate_operations import (
     BRAKET_GATES,
@@ -695,9 +695,7 @@ class AbstractProgramContext(ABC):
         indices = variable.indices if isinstance(variable, IndexedIdentifier) else None
         self.variable_table.update_value(name, value, var_type, indices)
 
-    def resolve_index(
-        self, name: str, value: LiteralType, index: Expression | None = None
-    ) -> int | Expression:
+    def resolve_index(self, name: str, value: LiteralType) -> int | SymbolLiteral:
         """Resolve a single index into ``name``, a sized classical variable or a qubit register.
 
         The caller evaluates the index in its own context, so a loop variable, a classical
@@ -709,19 +707,16 @@ class AbstractProgramContext(ABC):
         Args:
             name (str): The name of the indexed variable or qubit register.
             value (LiteralType): The evaluated index.
-            index (Expression | None): The unevaluated index expression. Needed when ``value``
-                is a ``SymbolLiteral``, to check the types of the identifiers it references.
 
         Returns:
-            int | Expression: The element index in ``range(size)`` when ``value`` is an
-            integer, or the unevaluated ``index`` (``value`` if it is not given) when
-            ``value`` is a symbol, for example an unbound ``input int``, so the caller can
-            handle it symbolically.
+            int | SymbolLiteral: The element index in ``range(size)`` when ``value`` is an
+            integer, or ``value`` itself when it is symbolic, for example an expression over an
+            unbound ``input int``, so the caller can handle it symbolically.
 
         Raises:
             TypeError: If ``name`` is not indexable, or the index is not an integer: ``value``
-                is not an integer, or it is symbolic and ``index`` references a variable that
-                is not declared as an ``int`` or ``uint``.
+                is not an integer, or it is symbolic and references a variable that is not
+                declared as an ``int`` or ``uint`` or has a non-integer coefficient.
             IndexError: If the index is an integer outside the target, or the target is a
                 scalar ``bit`` or has size zero, so that no index is valid.
         """
@@ -729,14 +724,14 @@ class AbstractProgramContext(ABC):
         if not size:
             raise IndexError(f"'{name}' has size zero and cannot be indexed.")
         if isinstance(value, SymbolLiteral):
-            for identifier in self._referenced_identifiers(index):
-                identifier_type = self.get_type(identifier)
-                if not isinstance(identifier_type, (IntType, UintType)):
-                    raise TypeError(
-                        f"Index into '{name}' must be an integer, but '{identifier}' has type "
-                        f"{_type_name(identifier_type)}."
-                    )
-            return value if index is None else index
+            expression = value.value
+            if not expression.is_number:
+                self._check_symbolic_index(name, expression)
+                return value
+            # A symbolic expression can simplify to a number, such as ``n - n``.
+            if not expression.is_Integer:
+                raise TypeError(f"Index into '{name}' must be an integer, got {expression}.")
+            value = IntegerLiteral(int(expression))
         if not isinstance(value, IntegerLiteral):
             raise TypeError(
                 f"Index into '{name}' must evaluate to an integer, got {type(value).__name__}."
@@ -746,6 +741,18 @@ class AbstractProgramContext(ABC):
                 f"Index {value.value} is out of range for '{name}', which has size {size}."
             )
         return value.value % size
+
+    def _check_symbolic_index(self, name: str, expression: Expr) -> None:
+        """Check that a symbolic index into ``name`` is an integer by its types and constants."""
+        for symbol in sorted(expression.free_symbols, key=str):
+            symbol_type = self.get_type(str(symbol))
+            if not isinstance(symbol_type, (IntType, UintType)):
+                raise TypeError(
+                    f"Index into '{name}' must be an integer, but '{symbol}' has type "
+                    f"{_type_name(symbol_type)}."
+                )
+        if any(not number.is_Integer for number in expression.atoms(Number)):
+            raise TypeError(f"Index into '{name}' must be an integer, got {expression}.")
 
     def _index_target_size(self, name: str) -> int:
         """The number of elements the first index of ``name`` selects from."""
@@ -1486,7 +1493,7 @@ class ProgramContext(AbstractProgramContext):
             case index:
                 return [
                     self.resolve_index(
-                        get_identifier_name(variable), self._evaluate_expression(index), index
+                        get_identifier_name(variable), self._evaluate_expression(index)
                     )
                 ]
 

@@ -335,7 +335,7 @@ def _minus(lhs, rhs):
 
 def _resolve(context, name, index):
     """Resolve ``index`` the way the simulator does, evaluating it in ``context`` first."""
-    return context.resolve_index(name, context._evaluate_expression(index), index)
+    return context.resolve_index(name, context._evaluate_expression(index))
 
 
 def _index_context():
@@ -456,9 +456,46 @@ def test_resolve_index_non_integer_raises(index, type_name):
         BinaryExpression(BinaryOperator["+"], Identifier("m"), Identifier("n")),
     ],
 )
-def test_resolve_index_returns_symbolic_integer_index_unevaluated(index):
+def test_resolve_index_returns_symbolic_integer_index(index):
     """An index that evaluates to a symbol, such as an unbound ``input int``, is handed back."""
-    assert _resolve(_index_context(), "c", index) is index
+    context = _index_context()
+    value = context._evaluate_expression(index)
+    assert isinstance(value, SymbolLiteral)
+    assert context.resolve_index("c", value) is value
+
+
+@pytest.mark.parametrize(
+    "index, expected",
+    [
+        (_minus(Identifier("m"), Identifier("m")), 0),
+        (_minus(_minus(Identifier("m"), Identifier("m")), IntegerLiteral(1)), 2),
+    ],
+)
+def test_resolve_index_symbolic_index_that_simplifies_to_an_integer(index, expected):
+    """A symbolic index that simplifies to a number is wrapped and bounds-checked."""
+    assert _resolve(_index_context(), "c", index) == expected
+
+
+@pytest.mark.parametrize(
+    "index, shown",
+    [
+        (BinaryExpression(BinaryOperator["+"], Identifier("m"), FloatLiteral(0.5)), "m \\+ 0.5"),
+        (BinaryExpression(BinaryOperator["/"], Identifier("m"), IntegerLiteral(2)), "m/2"),
+        # ``g`` is a bound ``float``, so it evaluates to its value and is caught as a constant.
+        (BinaryExpression(BinaryOperator["+"], Identifier("m"), Identifier("g")), "m \\+ 0.5"),
+        (
+            _minus(
+                BinaryExpression(BinaryOperator["+"], Identifier("m"), FloatLiteral(0.5)),
+                Identifier("m"),
+            ),
+            "0.5",
+        ),
+    ],
+)
+def test_resolve_index_symbolic_non_integer_constant_raises(index, shown):
+    """A symbolic index with a non-integer constant does not evaluate to an integer."""
+    with pytest.raises(TypeError, match=f"Index into 'c' must be an integer, got {shown}"):
+        _resolve(_index_context(), "c", index)
 
 
 @pytest.mark.parametrize(
@@ -466,7 +503,6 @@ def test_resolve_index_returns_symbolic_integer_index_unevaluated(index):
     [
         (Identifier("f"), "f", "FloatType"),
         (_minus(Identifier("m"), Identifier("f")), "f", "FloatType"),
-        (BinaryExpression(BinaryOperator["+"], Identifier("m"), Identifier("g")), "g", "FloatType"),
     ],
 )
 def test_resolve_index_symbolic_non_integer_raises(index, identifier, type_name):
@@ -486,11 +522,6 @@ def test_resolve_index_evaluates_declared_size():
         "p", BitType(Identifier("k")), ArrayLiteral([BooleanLiteral(False)] * 2)
     )
     assert _resolve(context, "p", _negative(1)) == 1
-
-
-def test_resolve_index_returns_symbolic_value_without_index():
-    value = SymbolLiteral(Symbol("m"))
-    assert _index_context().resolve_index("c", value) is value
 
 
 def test_resolve_index_rejects_non_constant_declared_size():
