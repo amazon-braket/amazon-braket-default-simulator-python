@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.42.1 (2026-10-28)
+
+### Bug Fixes and Other Changes
+
+ * apply pow modifier to cnot and swap gates
+
 ## v1.42.0 (2026-10-27)
 
 ### Features
