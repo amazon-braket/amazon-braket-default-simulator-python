@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 from braket.default_simulator import gate_operations, observables
+from braket.default_simulator.linalg_utils import controlled_matrix
 from braket.default_simulator.state_vector_simulation import StateVectorSimulation
 
 evolve_testdata = [
@@ -544,3 +545,85 @@ def test_ghz_tree_retrieve_samples(batch_size):
     assert 0.4 < counter[0] / (counter[0] + counter[960]) < 0.6
     assert 0.4 < counter[960] / (counter[0] + counter[960]) < 0.6
     assert counter[0] + counter[960] == 10000
+
+
+_POWERS = [0, 1, 2, 3, -1, -2, 0.5, -0.5, 1.5]
+
+_POWERED_GATES = [
+    (gate_operations.Hadamard, 1, ()),
+    (gate_operations.PauliX, 1, ()),
+    (gate_operations.PauliZ, 1, ()),
+    (gate_operations.S, 1, ()),
+    (gate_operations.T, 1, ()),
+    (gate_operations.RotX, 1, (0.37,)),
+    (gate_operations.RotZ, 1, (0.37,)),
+    (gate_operations.PhaseShift, 1, (0.37,)),
+    (gate_operations.CX, 2, ()),
+    (gate_operations.CY, 2, ()),
+    (gate_operations.CZ, 2, ()),
+    (gate_operations.Swap, 2, ()),
+    (gate_operations.ISwap, 2, ()),
+    (gate_operations.ECR, 2, ()),
+    (gate_operations.CPhaseShift, 2, (0.37,)),
+    (gate_operations.PSwap, 2, (0.37,)),
+    (gate_operations.XX, 2, (0.37,)),
+    (gate_operations.ZZ, 2, (0.37,)),
+]
+
+
+def _preparation_operations(qubit_count):
+    return [gate_operations.RotY([q], 0.3 + 0.4 * q) for q in range(qubit_count)] + [
+        gate_operations.RotZ([q], 0.2 + 0.3 * q) for q in range(qubit_count)
+    ]
+
+
+def _apply_reference(state_vector, operation, qubit_count):
+    matrix = controlled_matrix(operation.matrix, operation.control_state)
+    targets = operation.targets
+    num_targets = len(targets)
+    product = np.tensordot(
+        matrix.reshape([2] * 2 * num_targets),
+        state_vector.reshape([2] * qubit_count),
+        axes=(range(num_targets, 2 * num_targets), targets),
+    )
+    return np.moveaxis(product, range(num_targets), targets).reshape(-1)
+
+
+def _reference_state_vector(operations, qubit_count):
+    state_vector = np.zeros(2**qubit_count, dtype=complex)
+    state_vector[0] = 1
+    for operation in operations:
+        state_vector = _apply_reference(state_vector, operation, qubit_count)
+    return state_vector
+
+
+@pytest.mark.parametrize("qubit_count, targets", [(3, (2, 0)), (11, (9, 3))])
+@pytest.mark.parametrize("power", _POWERS)
+@pytest.mark.parametrize("gate_class, num_targets, args", _POWERED_GATES)
+def test_powered_gate(gate_class, num_targets, args, power, qubit_count, targets):
+    operations = _preparation_operations(qubit_count) + [
+        gate_class(targets[:num_targets], *args, power=power)
+    ]
+    simulation = StateVectorSimulation(qubit_count, 0, 1)
+    simulation.evolve(operations)
+    assert np.allclose(simulation.state_vector, _reference_state_vector(operations, qubit_count))
+
+
+@pytest.mark.parametrize(
+    "qubit_count, targets, control_state",
+    [
+        (4, (1, 3, 0), (1,)),
+        (4, (1, 3, 0), (0,)),
+        (4, (1, 3, 0, 2), (1, 1)),
+        (4, (3, 1, 2, 0), (0, 0)),
+    ],
+)
+@pytest.mark.parametrize("power", [0, 2, 0.5, -1])
+@pytest.mark.parametrize("gate_class", [gate_operations.CX, gate_operations.Swap])
+def test_controlled_powered_gate(gate_class, power, qubit_count, targets, control_state):
+    operations = _preparation_operations(qubit_count) + [
+        gate_class(targets, ctrl_modifiers=control_state, power=power)
+    ]
+    simulation = StateVectorSimulation(qubit_count, 0, 1)
+    simulation.evolve(operations)
+    assert np.allclose(simulation.state_vector, _reference_state_vector(operations, qubit_count))

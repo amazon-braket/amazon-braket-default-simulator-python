@@ -77,6 +77,7 @@ from .parser.openqasm_ast import (
     ConstantDeclaration,
     ContinueStatement,
     DiscreteSet,
+    Expression,
     FloatLiteral,
     FloatType,
     ForInLoop,
@@ -222,37 +223,72 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
-        if (
+        if isinstance(node.init_expression, QuantumMeasurement):
+            # `bit b = measure q;` runs as `bit b; b = measure q;`
+            self.visit(ClassicalDeclaration(node.type, node.identifier, None))
+            self.visit(QuantumMeasurementStatement(node.init_expression, node.identifier))
+        elif (
             self.context.supports_midcircuit_measurement
             and node.init_expression is not None
             and self.context.is_mcm_dependent(node.init_expression)
         ):
-            for _ in self.context.iter_classical_scopes(node.init_expression):
-                self._execute_classical_declaration(deepcopy(node))
+            self._execute_mcm_dependent_declaration(node)
         else:
             self._execute_classical_declaration(node)
+
+    def _execute_mcm_dependent_declaration(self, node: ClassicalDeclaration) -> None:
+        """Declare a variable whose initializer depends on a mid-circuit measurement.
+
+        The symbol (and, for ``bit``, its classical register) is shared by all paths,
+        so it is declared once. Only the initializer is evaluated per path, and each
+        path is assigned its own value. The initializer is evaluated before the
+        declaration so that it still sees any outer variable of the same name.
+        """
+        name = node.identifier.name
+        node_type = self.visit(node.type)
+        values = [
+            cast_to(node.type, self.visit(deepcopy(node.init_expression)))
+            for _ in self.context.iter_classical_scopes(node.init_expression)
+        ]
+        self.context.declare_variable(name, node_type, values[0])
+        # declare_variable gave every path values[0]; revisit the paths in the
+        # same order and give each one the value computed for it.
+        if len(values) > 1:
+            target = Identifier(name)
+            for value, _ in zip(
+                values, self.context.iter_classical_scopes(node.init_expression), strict=True
+            ):
+                self.context.update_value(target, value)
+        # The initializer was checked to be MCM-dependent before the declaration.
+        # Re-checking it now would resolve a shadowed name to the new variable.
+        self.context.mark_mcm_dependent(name)
 
     def _execute_classical_declaration(self, node: ClassicalDeclaration) -> None:
         node_type = self.visit(node.type)
         if node.init_expression is not None:
             init_value = cast_to(node.type, self.visit(node.init_expression))
         else:
-            match node_type:
-                case ArrayType():
-                    init_value = create_empty_array(node_type.dimensions)
-                case BitType() if node_type.size:
-                    init_value = create_empty_array([node_type.size])
-                case IntType() | UintType():
-                    init_value = IntegerLiteral(value=0)
-                case FloatType():
-                    init_value = FloatLiteral(value=0.0)
-                case BoolType():
-                    init_value = BooleanLiteral(value=False)
-                case _:
-                    init_value = None
+            init_value = self._empty_init_value(node_type)
         self.context.declare_variable(node.identifier.name, node_type, init_value)
         if node.init_expression is not None:
             self.context.track_mcm_dependency(node.identifier.name, node.init_expression)
+
+    @staticmethod
+    def _empty_init_value(node_type):
+        """The default value for a declaration with no initializer."""
+        match node_type:
+            case ArrayType():
+                return create_empty_array(node_type.dimensions)
+            case BitType() if node_type.size:
+                return create_empty_array([node_type.size])
+            case IntType() | UintType():
+                return IntegerLiteral(value=0)
+            case FloatType():
+                return FloatLiteral(value=0.0)
+            case BoolType():
+                return BooleanLiteral(value=False)
+            case _:
+                return None
 
     @visit.register
     def _(self, node: IODeclaration) -> None:
@@ -265,13 +301,14 @@ class Interpreter:
             self.context.add_output_declaration(name, self.context.get_type(name))
         else:  # IOKeyword.input:
             self._input_names.add(name)
-            init_value, node_type = (
-                (wrap_value_into_literal(self.context.inputs[name]), node.type)
-                if name in self.context.inputs
-                else (wrap_value_into_literal(Symbol(name)), SymbolLiteral)
-            )
-            declaration = ClassicalDeclaration(node_type, node.identifier, init_value)
-            self.visit(declaration)
+            if name in self.context.inputs:
+                init_value = wrap_value_into_literal(self.context.inputs[name])
+                self.visit(ClassicalDeclaration(node.type, node.identifier, init_value))
+            else:
+                # An unbound input keeps its declared type, unevaluated, with a symbol as its
+                # value; the type's size may itself depend on an unbound input.
+                symbol = wrap_value_into_literal(Symbol(name))
+                self.context.declare_variable(name, node.type, symbol)
 
     def _check_io_name_available(self, name: str) -> None:
         if name in self._input_names:
@@ -282,6 +319,8 @@ class Interpreter:
     @visit.register
     def _(self, node: ConstantDeclaration) -> None:
         self._uses_advanced_language_features = True
+        if isinstance(node.init_expression, QuantumMeasurement):
+            raise TypeError(f"Cannot initialize const {node.identifier.name} with a measurement")
         node_type = self.visit(node.type)
         init_expression = self.visit(node.init_expression)
         init_value = cast_to(node.type, init_expression)
@@ -583,16 +622,16 @@ class Interpreter:
                 raise ValueError(
                     "Multi-Dimensional indexing not supported for classical registers."
                 )
+            name = get_identifier_name(node.target)
             match elem := indices[0]:
                 case DiscreteSet(values):
                     self._uses_advanced_language_features = True
-                    targets.extend([self.visit(val).value for val in values])
+                    targets.extend(self._resolve_measurement_index(name, val) for val in values)
                 case RangeDefinition():
                     self._uses_advanced_language_features = True
                     targets.extend(convert_range_def_to_range(self.visit(elem)))
                 case _:
-                    resolved = self.visit(elem) if isinstance(elem, Identifier) else elem
-                    targets.append(resolved.value)
+                    targets.append(self._resolve_measurement_index(name, elem))
 
         if not len(targets):
             targets = None
@@ -606,6 +645,25 @@ class Interpreter:
             self.context.mark_mcm_dependent(get_identifier_name(node.target))
         else:
             self.context.add_measure(qubits, targets)
+
+    def _resolve_measurement_index(self, name: str, index: Expression) -> int | SymbolLiteral:
+        """Resolve an index into the measurement destination ``name`` with the context.
+
+        A non-negative integer is passed on unchanged, so each context keeps its own range
+        check for it, including for an undeclared destination; other indices are resolved
+        with ``resolve_index``, which needs the destination's declared size.
+        """
+        value = self.visit(index)
+        if isinstance(value, IntegerLiteral) and value.value >= 0:
+            return value.value
+        try:
+            self.context.get_type(name)
+        except KeyError:
+            raise NameError(
+                f"Measurement destination '{name}' is not declared, so its index "
+                f"{value.value} cannot be resolved."
+            ) from None
+        return self.context.resolve_index(name, value)
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:

@@ -1,5 +1,45 @@
 # Changelog
 
+## v1.42.1 (2026-10-28)
+
+### Bug Fixes and Other Changes
+
+ * apply pow modifier to cnot and swap gates
+
+## v1.42.0 (2026-10-27)
+
+### Features
+
+ * Report OpenQASM output variables in simulation results
+
+### Bug Fixes and Other Changes
+
+ * support register measurement and loop-scoped registers
+
+## v1.41.2 (2026-10-26)
+
+### Bug Fixes and Other Changes
+
+ * support measurement in classical declaration initializer
+
+## v1.41.1 (2026-10-19)
+
+### Bug Fixes and Other Changes
+
+ * Record measurements into named classical registers
+
+## v1.41.0 (2026-10-12)
+
+### Features
+
+ * Add classical register model and register table
+
+## v1.40.2 (2026-09-17)
+
+### Bug Fixes and Other Changes
+
+ * resolve measurement destination index before branching
+
 ## v1.40.1.post0 (2026-09-02)
 
 ### Documentation Changes

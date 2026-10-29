@@ -11,19 +11,35 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+from typing import NamedTuple
+
 import pytest
+from sympy import Symbol
 
 from braket.default_simulator import gate_operations
 from braket.default_simulator.openqasm.circuit import Circuit
+from braket.default_simulator.openqasm.interpreter import Interpreter
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
+    AngleType,
+    ArrayLiteral,
+    ArrayReferenceType,
+    BinaryExpression,
+    BinaryOperator,
+    BitType,
     BooleanLiteral,
     BoolType,
     FloatLiteral,
     FloatType,
+    Identifier,
     IntegerLiteral,
     IntType,
+    SymbolLiteral,
+    UnaryExpression,
+    UnaryOperator,
 )
 from braket.default_simulator.openqasm.program_context import ProgramContext, ScopedTable
+from braket.default_simulator.state_vector_simulator import StateVectorSimulator
+from braket.ir.openqasm import Program as OpenQASMProgram
 
 boolean = BoolType()
 int_8 = IntType(IntegerLiteral(8))
@@ -173,3 +189,596 @@ def test_add_barrier_is_noop():
 
     # Circuit should remain unchanged
     assert len(context.circuit.instructions) == initial_instruction_count
+
+
+class Slot(NamedTuple):
+    """One measurement slot: which register element reports which qubit."""
+
+    register: str | None
+    element: int
+    qubit: int
+
+
+def _slots(circuit):
+    return [
+        Slot(register.name, element, qubit)
+        for register, element, qubit in circuit.measurement_slots
+    ]
+
+
+def _build(qasm, shots=0):
+    """Interpret ``qasm`` with a simulator-backed context and return the context."""
+    context = StateVectorSimulator().create_program_context()
+    context._shots = shots
+    return Interpreter(context).run(source=qasm)
+
+
+def test_bit_declarations_create_registers():
+    context = ProgramContext()
+    context.declare_variable("b", BitType(size=None), None)
+    context.declare_variable("c", BitType(IntegerLiteral(3)), ArrayLiteral([None] * 3))
+    context.declare_variable("x", int_8, IntegerLiteral(0))
+    b, c = context.circuit.classical_registers
+    assert (b.name, b.size) == ("b", 1)
+    assert (c.name, c.size) == ("c", 3)
+    assert context.register_table.get_register("b") is b
+    assert context.register_table.get_register("c") is c
+    assert context.register_table.get_register("x") is None
+    assert context.register_table.get_register("undeclared") is None
+
+
+def test_unevaluated_size_falls_back_to_value_width():
+    """Subroutine parameters keep their unevaluated type. The size comes from the value."""
+    context = ProgramContext()
+    context.declare_variable(
+        "p", BitType(Identifier("n")), ArrayLiteral([BooleanLiteral(False)] * 4)
+    )
+    context.declare_variable("s", BitType(Identifier("n")), BooleanLiteral(True))
+    p, s = context.circuit.classical_registers
+    assert p.size == 4
+    assert s.size == 1
+
+
+def test_repr_includes_register_table():
+    context = ProgramContext()
+    context.declare_variable("b", BitType(size=None), None)
+    assert "Registers" in repr(context.register_table)
+
+
+def _path_bit(path, name):
+    value = path.get_variable(name).value
+    return int(getattr(value, "value", value))
+
+
+def test_mcm_dependent_declaration_has_one_register_and_a_value_per_path():
+    """``bit c = b;`` after branching is one declaration with a value on each path."""
+    context = _build(
+        "qubit[2] q; bit b; h q[0]; b = measure q[0]; if (b) { x q[1]; } bit c = b;",
+        shots=100,
+    )
+    assert len(context.active_paths) == 2
+    assert [r.name for r in context.circuit.classical_registers] == ["b", "c"]
+    c = context.circuit.classical_registers[1]
+    assert context.register_table.get_register("c") is c
+
+    for path in context.active_paths:
+        assert _path_bit(path, "c") == _path_bit(path, "b")
+    assert {_path_bit(path, "c") for path in context.active_paths} == {0, 1}
+
+
+def test_mcm_dependent_declaration_without_branching():
+    """With ``shots == 0`` nothing branches, so the declaration keeps its one value."""
+    context = _build(
+        "qubit q; bit b; x q; b = measure q; int n = int(b) + 5;",
+        shots=0,
+    )
+    assert not context.is_branched
+    assert context.get_value("n") == IntegerLiteral(5)
+
+
+@pytest.mark.parametrize(
+    "destination, expected",
+    [
+        ("c[1]", [Slot(register="c", element=1, qubit=0)]),
+        (
+            "c[{2, 0}]",
+            [Slot(register="c", element=0, qubit=1), Slot(register="c", element=2, qubit=0)],
+        ),
+        (
+            "c[0:1]",
+            [Slot(register="c", element=0, qubit=0), Slot(register="c", element=1, qubit=1)],
+        ),
+    ],
+)
+def test_resolve_destination_indexed_forms(destination, expected):
+    qubits = "q[0]" if destination == "c[1]" else "q[0:1]"
+    circuit = _build(f"bit[3] c; qubit[2] q; {destination} = measure {qubits};").circuit
+    assert _slots(circuit) == expected
+
+
+@pytest.mark.parametrize(
+    "destination, qubits, expected",
+    [
+        ("c[-1]", "q[0]", [Slot(register="c", element=2, qubit=0)]),
+        ("c[-3]", "q[0]", [Slot(register="c", element=0, qubit=0)]),
+        ("c[n - 3]", "q[0]", [Slot(register="c", element=2, qubit=0)]),
+        (
+            "c[{-1, 0}]",
+            "q[0:1]",
+            [Slot(register="c", element=0, qubit=1), Slot(register="c", element=2, qubit=0)],
+        ),
+    ],
+)
+def test_resolve_destination_negative_and_computed_indices(destination, qubits, expected):
+    circuit = _build(f"bit[3] c; qubit[2] q; int n = 2; {destination} = measure {qubits};").circuit
+    assert _slots(circuit) == expected
+
+
+@pytest.mark.parametrize("destination", ["c[3]", "c[-4]"])
+def test_resolve_destination_out_of_range_raises(destination):
+    with pytest.raises(IndexError, match=r"is out of range for 'c', which has size 3"):
+        _build(f"bit[3] c; qubit q; {destination} = measure q;")
+
+
+def test_resolve_destination_into_scalar_bit_raises():
+    with pytest.raises(IndexError, match="'b' is a scalar bit and cannot be indexed"):
+        _build("bit b; qubit q; b[0] = measure q;")
+
+
+def _negative(value):
+    return UnaryExpression(UnaryOperator["-"], IntegerLiteral(value))
+
+
+def _minus(lhs, rhs):
+    return BinaryExpression(BinaryOperator["-"], lhs, rhs)
+
+
+def _resolve(context, name, index):
+    """Resolve ``index`` the way the simulator does, evaluating it in ``context`` first."""
+    return context.resolve_index(name, context._evaluate_expression(index))
+
+
+def _index_context():
+    """A context with indexable and non-indexable variables, a qubit register and inputs."""
+    context = _build(
+        "bit[3] c; bit b; int n = 2; array[int[8], 4] a; int[8] x; uint[4] u; qubit[2] q; "
+        "float g = 0.5; bool flag; int unsized; complex[float[64]] z; "
+        "input int m; input float f;"
+    )
+    context.declare_variable("p", FloatLiteral, FloatLiteral(1.0))
+    return context
+
+
+@pytest.mark.parametrize(
+    "name, index, expected",
+    [
+        ("c", _negative(1), 2),
+        ("c", _negative(3), 0),
+        ("c", IntegerLiteral(0), 0),
+        ("c", IntegerLiteral(2), 2),
+        ("c", Identifier("n"), 2),
+        ("c", UnaryExpression(UnaryOperator["-"], Identifier("n")), 1),
+        ("c", _minus(Identifier("n"), IntegerLiteral(3)), 2),
+        ("a", _negative(1), 3),
+        ("a", IntegerLiteral(1), 1),
+        ("q", _negative(1), 1),
+        ("q", IntegerLiteral(0), 0),
+        ("x", _negative(1), 7),
+        ("u", _negative(4), 0),
+    ],
+)
+def test_resolve_index(name, index, expected):
+    assert _resolve(_index_context(), name, index) == expected
+
+
+@pytest.mark.parametrize(
+    "name, index, size",
+    [
+        ("c", IntegerLiteral(3), 3),
+        ("c", _negative(4), 3),
+        ("a", IntegerLiteral(4), 4),
+        ("q", _negative(3), 2),
+        ("x", IntegerLiteral(8), 8),
+    ],
+)
+def test_resolve_index_out_of_range_raises(name, index, size):
+    with pytest.raises(IndexError, match=f"is out of range for '{name}', which has size {size}"):
+        _resolve(_index_context(), name, index)
+
+
+@pytest.mark.parametrize("index", [IntegerLiteral(0), _negative(1), Identifier("m")])
+def test_resolve_index_into_scalar_bit_raises(index):
+    """A scalar ``bit`` has size 0, so every index is out of range."""
+    with pytest.raises(IndexError, match="'b' is a scalar bit and cannot be indexed"):
+        _resolve(_index_context(), "b", index)
+
+
+@pytest.mark.parametrize("index", [IntegerLiteral(0), _negative(1)])
+@pytest.mark.parametrize(
+    "declaration, name",
+    [
+        ("array[float[32], 0] myArray;", "myArray"),
+        ("array[int[8], 2, 0] a;", "a"),
+        ("bit[0] c;", "c"),
+        ("qubit[0] q;", "q"),
+    ],
+)
+def test_resolve_index_into_size_zero_raises(declaration, name, index):
+    """A target with a zero dimension has size zero, so no index is valid."""
+    with pytest.raises(IndexError, match=f"'{name}' has size zero and cannot be indexed"):
+        _resolve(_build(declaration), name, index)
+
+
+@pytest.mark.parametrize("index, expected", [(_negative(1), 2), (_negative(3), 0)])
+def test_resolve_index_into_array(index, expected):
+    assert _resolve(_build("array[int[8], 3] a;"), "a", index) == expected
+
+
+def test_resolve_index_into_array_reference():
+    """A subroutine array parameter has an array reference type."""
+    context = ProgramContext()
+    array_type = ArrayReferenceType(base_type=int_8, dimensions=[IntegerLiteral(2)])
+    context.declare_variable("r", array_type, ArrayLiteral([IntegerLiteral(0)] * 2))
+    assert _resolve(context, "r", _negative(1)) == 1
+
+
+@pytest.mark.parametrize(
+    "name, type_name",
+    [
+        ("g", "FloatType"),
+        ("flag", "BoolType"),
+        ("unsized", "IntType"),
+        ("z", "ComplexType"),
+        ("p", "FloatLiteral"),
+    ],
+)
+def test_resolve_index_into_non_indexable_raises(name, type_name):
+    with pytest.raises(TypeError, match=f"'{name}' of type {type_name} is not indexable"):
+        _resolve(_index_context(), name, IntegerLiteral(0))
+
+
+@pytest.mark.parametrize(
+    "index, type_name",
+    [(FloatLiteral(1.0), "FloatLiteral"), (BooleanLiteral(True), "BooleanLiteral")],
+)
+def test_resolve_index_non_integer_raises(index, type_name):
+    with pytest.raises(
+        TypeError, match=f"Index into 'c' must evaluate to an integer, got {type_name}"
+    ):
+        _resolve(_index_context(), "c", index)
+
+
+@pytest.mark.parametrize(
+    "index",
+    [
+        Identifier("m"),
+        _minus(Identifier("m"), IntegerLiteral(1)),
+        BinaryExpression(BinaryOperator["+"], Identifier("m"), Identifier("n")),
+    ],
+)
+def test_resolve_index_returns_symbolic_integer_index(index):
+    """An index that evaluates to a symbol, such as an unbound ``input int``, is handed back."""
+    context = _index_context()
+    value = context._evaluate_expression(index)
+    assert isinstance(value, SymbolLiteral)
+    assert context.resolve_index("c", value) is value
+
+
+@pytest.mark.parametrize(
+    "index, expected",
+    [
+        (_minus(Identifier("m"), Identifier("m")), 0),
+        (_minus(_minus(Identifier("m"), Identifier("m")), IntegerLiteral(1)), 2),
+    ],
+)
+def test_resolve_index_symbolic_index_that_simplifies_to_an_integer(index, expected):
+    """A symbolic index that simplifies to a number is wrapped and bounds-checked."""
+    assert _resolve(_index_context(), "c", index) == expected
+
+
+@pytest.mark.parametrize(
+    "index, shown",
+    [
+        (BinaryExpression(BinaryOperator["+"], Identifier("m"), FloatLiteral(0.5)), "m \\+ 0.5"),
+        (BinaryExpression(BinaryOperator["/"], Identifier("m"), IntegerLiteral(2)), "m/2"),
+        # ``g`` is a bound ``float``, so it evaluates to its value and is caught as a constant.
+        (BinaryExpression(BinaryOperator["+"], Identifier("m"), Identifier("g")), "m \\+ 0.5"),
+        (
+            _minus(
+                BinaryExpression(BinaryOperator["+"], Identifier("m"), FloatLiteral(0.5)),
+                Identifier("m"),
+            ),
+            "0.5",
+        ),
+    ],
+)
+def test_resolve_index_symbolic_non_integer_constant_raises(index, shown):
+    """A symbolic index with a non-integer constant does not evaluate to an integer."""
+    with pytest.raises(TypeError, match=f"Index into 'c' must be an integer, got {shown}"):
+        _resolve(_index_context(), "c", index)
+
+
+@pytest.mark.parametrize(
+    "index, identifier, type_name",
+    [
+        (Identifier("f"), "f", "FloatType"),
+        (_minus(Identifier("m"), Identifier("f")), "f", "FloatType"),
+    ],
+)
+def test_resolve_index_symbolic_non_integer_raises(index, identifier, type_name):
+    """A symbolic index must only reference ``int`` or ``uint`` variables."""
+    with pytest.raises(
+        TypeError,
+        match=f"Index into 'c' must be an integer, but '{identifier}' has type {type_name}",
+    ):
+        _resolve(_index_context(), "c", index)
+
+
+def test_resolve_index_evaluates_declared_size():
+    """A subroutine parameter keeps its unevaluated size, which is evaluated for wrapping."""
+    context = ProgramContext()
+    context.declare_variable("k", int_8, IntegerLiteral(2), True)
+    context.declare_variable(
+        "p", BitType(Identifier("k")), ArrayLiteral([BooleanLiteral(False)] * 2)
+    )
+    assert _resolve(context, "p", _negative(1)) == 1
+
+
+def test_resolve_index_rejects_non_constant_declared_size():
+    context = ProgramContext()
+    size = BinaryExpression(BinaryOperator["+"], Identifier("k"), IntegerLiteral(1))
+    context.declare_variable("p", BitType(size), ArrayLiteral([BooleanLiteral(False)] * 2))
+    with pytest.raises(
+        TypeError, match="The size of 'p' must be an integer literal or a constant, got Binary"
+    ):
+        context.resolve_index("p", IntegerLiteral(0))
+
+
+def test_unbound_input_keeps_declared_type():
+    context = _build("input int m; input float f;")
+    assert isinstance(context.get_type("m"), IntType)
+    assert isinstance(context.get_type("f"), FloatType)
+
+
+def _path_bits(context, name):
+    return [
+        [bit.value for bit in path.get_variable(name).value.values] for path in context.active_paths
+    ]
+
+
+def test_overwrite_does_not_apply_the_pending_measurement():
+    """Writing ``b[0]`` after ``b = measure q`` neither branches nor reports the
+    written value; it only changes the program variable."""
+    qasm = "bit[2] b; qubit[2] q; h q; b = measure q; b[0] = 0;"
+    context = _build(qasm, shots=10)
+    assert not context.is_branched
+    assert context.get_value("b").values[0].value == 0
+    assert _slots(context.circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=1, qubit=1),
+    ]
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=200)
+    assert result.measuredQubits == [0, 1]
+    assert {"".join(m) for m in result.measurements} == {"00", "01", "10", "11"}
+
+
+def test_overwrite_survives_measurement_applied_later():
+    """When the deferred measurement is applied afterwards (here by ``if (b[0])``),
+    the outcome is not written back, so the program reads the written 0."""
+    qasm = """
+    bit[2] b;
+    qubit[2] q;
+    x q[0];
+    b[0] = measure q[0];
+    b[0] = 0;
+    if (b[0]) { x q[1]; }
+    b[1] = measure q[1];
+    """
+    context = _build(qasm, shots=10)
+    assert context.is_branched
+    assert _path_bits(context, "b") == [[0, 0]]
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=20)
+    assert result.measuredQubits == [0, 1]
+    # measurements reports the measured 1 for b[0], not the written 0
+    assert {"".join(m) for m in result.measurements} == {"10"}
+
+
+@pytest.mark.parametrize(
+    "lvalue, expected",
+    [
+        ('c[0:1] = "00"', [0, 0, 1]),
+        ("c[-1] = 0", [1, 1, 0]),
+    ],
+)
+def test_overwrite_indexed_lvalue_forms(lvalue, expected):
+    qasm = f"bit[3] c; qubit[3] q; x q; c = measure q; {lvalue}; int x = c[0];"
+    context = _build(qasm, shots=10)
+    assert _path_bits(context, "c") == [expected]
+
+
+def test_overwrite_out_of_range_lvalue_raises():
+    qasm = "bit[3] c; qubit[3] q; x q; c = measure q; c[-4] = 0;"
+    with pytest.raises(IndexError, match="Index -4 is out of range for 'c', which has size 3"):
+        _build(qasm, shots=10)
+
+
+def test_overwrite_keeps_measurement_projection():
+    """The overwritten measurement still collapses the qubit before the second ``h``,
+    so ``b[1]`` is random instead of always 0."""
+    qasm = """
+    bit[2] b;
+    qubit q;
+    h q;
+    b[0] = measure q;
+    b[0] = 0;
+    h q;
+    b[1] = measure q;
+    """
+    context = _build(qasm, shots=100)
+    assert context.is_branched
+    values = _path_bits(context, "b")
+    assert {b0 for b0, _ in values} == {0}
+    assert {b1 for _, b1 in values} == {0, 1}
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=200)
+    assert result.measuredQubits == [0, 0]
+    assert {"".join(m) for m in result.measurements} == {"00", "01", "10", "11"}
+
+
+def test_overwrite_without_shots():
+    """With ``shots == 0`` a forced flush sets unwritten bits to 0 and leaves the
+    written bit alone."""
+    qasm = "bit[2] b; qubit[2] q; h q; b = measure q; b[0] = 1; int x = b[1];"
+    context = _build(qasm, shots=0)
+    assert not context.is_branched
+    assert [bit.value for bit in context.get_value("b").values] == [1, 0]
+    assert _slots(context.circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=1, qubit=1),
+    ]
+
+
+def test_overwrite_of_unmeasured_bit_is_a_plain_assignment():
+    circuit = _build("bit b; qubit q; b = 1; measure q;", shots=10).circuit
+    assert _slots(circuit) == [Slot(register=None, element=0, qubit=0)]
+
+
+def test_branched_overwrite_leaves_circuit_alone():
+    """After branching, the per-path outcomes are authoritative. The shared circuit
+    keeps the measurement source and the slot reports the measured value."""
+    qasm = """
+    bit b;
+    qubit q;
+    h q;
+    b = measure q;
+    if (b) { b = 0; }
+    """
+    context = _build(qasm, shots=100)
+    assert context.is_branched
+    (b,) = context.circuit.classical_registers
+    assert b.sources == [0]
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=200)
+    assert result.measuredQubits == [0]
+    assert {"".join(m) for m in result.measurements} == {"0", "1"}
+
+
+def test_non_bit_local_hides_outer_bit():
+    """A local ``int b`` shadows the outer ``bit[2] b``. Writing it is a plain int
+    write, so it does not apply the outer measurement or branch. After the loop
+    ``b`` is the outer register again."""
+    qasm = """
+    bit[2] b;
+    qubit[2] q;
+    x q[0];
+    b[0] = measure q[0];
+    for int i in [0:0] {
+        int b = 1;
+        b = 2;
+    }
+    b[1] = measure q[1];
+    """
+    context = _build(qasm, shots=10)
+    assert not context.is_branched
+    assert _slots(context.circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=1, qubit=1),
+    ]
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=20)
+    assert result.measuredQubits == [0, 1]
+    assert {"".join(m) for m in result.measurements} == {"10"}
+
+
+# A deferred measurement may be forced while its destination is shadowed, here by a
+# subroutine's local ``bit b`` when the subroutine applies a gate to the qubit.
+_SHADOWED_DEFERRED_QASM = """
+def flip(qubit r) { bit b; x r; }
+qubit q;
+bit b;
+h q;
+b = measure q;
+flip(q);
+"""
+
+
+def test_shadowed_deferred_measurement_without_shots():
+    circuit = _build(_SHADOWED_DEFERRED_QASM, shots=0).circuit
+    assert _slots(circuit) == [Slot(register="b", element=0, qubit=0)]
+
+
+def test_shadowed_deferred_measurement_with_shots():
+    context = _build(_SHADOWED_DEFERRED_QASM, shots=50)
+    assert context.is_branched
+    outer, inner = context.circuit.classical_registers
+    assert inner.sources == [None]
+    assert all((outer, 0) in path.mcm_outcomes for path in context.active_paths)
+
+
+# Every pending measurement is applied when one of them is forced, so none is lost.
+
+
+def test_later_pending_measurement_survives_partial_read():
+    """Reading ``b[0]`` branches, and ``b[1]``'s deferred measurement is applied with
+    it rather than left pending (previously it silently vanished from the results)."""
+    qasm = """
+    bit[2] b;
+    qubit[2] q;
+    h q[0];
+    x q[1];
+    b[0] = measure q[0];
+    b[1] = measure q[1];
+    int x = b[0];
+    """
+    context = _build(qasm, shots=20)
+    assert context.is_branched
+    assert context._pending_mcm_targets == []
+    assert _slots(context.circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=1, qubit=1),
+    ]
+    (b,) = context.circuit.classical_registers
+    assert all(path.mcm_outcomes[(b, 1)] == 1 for path in context.active_paths)
+    result = StateVectorSimulator().run_openqasm(OpenQASMProgram(source=qasm), shots=20)
+    assert result.measuredQubits == [0, 1]
+    assert {"".join(m) for m in result.measurements} <= {"01", "11"}
+
+
+def test_control_flow_without_shots_reads_measurement_as_zero():
+    """With ``shots == 0`` a deferred measurement used in control flow is recorded
+    and its bit reads as 0, instead of the condition reading an unset variable."""
+    qasm = """
+    bit b;
+    qubit[2] q;
+    x q[0];
+    b = measure q[0];
+    if (b == 1) { x q[1]; }
+    """
+    context = _build(qasm, shots=0)
+    assert not context.is_branched
+    assert _slots(context.circuit) == [Slot(register="b", element=0, qubit=0)]
+    assert context.get_value("b") == IntegerLiteral(0)
+    # b reads as 0, so the conditional X on q[1] is not applied
+    assert [ins.targets for ins in context.circuit.instructions] == [(0,)]
+
+
+def test_output_declaration_unsupported_type():
+    context = ProgramContext()
+    with pytest.raises(NotImplementedError, match="type AngleType are not supported"):
+        context.add_output_declaration("theta", AngleType())
+
+
+def test_flush_marks_only_measured_elements_overwritten():
+    """``c[1] = 1`` is recorded on the pending measurement of ``c[0]``, but only
+    measured elements can be overwritten, so ``c[1]`` is not marked."""
+    qasm = """
+    bit[2] c;
+    bit[2] d;
+    qubit[3] q;
+    c = measure q[0:1];
+    c[0] = 0;
+    d[0] = measure q[2];
+    d[1] = 1;
+    """
+    context = _build(qasm, shots=10)
+    assert not context.is_branched
+    registers = {register.name: register for register in context.circuit.classical_registers}
+    assert registers["c"].overwritten == {0}
+    assert registers["d"].overwritten == set()

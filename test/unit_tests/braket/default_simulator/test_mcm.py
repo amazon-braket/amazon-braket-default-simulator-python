@@ -353,9 +353,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
 
         assert len(result.measurements) == 1000
 
-    @pytest.mark.xfail(
-        reason="Interpreter gap: branched condition BinaryExpression not fully resolved"
-    )
     def test_5_2_for_loop_operations_with_branching(self):
         """5.2 For loop operations - using execute_with_branching to test variables"""
         qasm_source = """
@@ -2600,6 +2597,26 @@ class TestUnifiedMCMBasic:
         """MCM with conditional: if measured 1, flip second qubit."""
         qasm = """
         OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            x q[1];
+        }
+        b[1] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        assert len(result.measurements) == 1000
+        counter = Counter(["".join(m) for m in result.measurements])
+        # If q[0]=0: no flip -> |00>; if q[0]=1: flip q[1] -> |11>
+        assert set(counter.keys()) == {"00", "11"}
+        assert 0.4 < counter["00"] / 1000 < 0.6
+
+    def test_scalar_bit_mcm_reports_only_the_measured_qubit(self, simulator):
+        """A scalar ``bit`` destination is a one-element register and one measurement slot."""
+        qasm = """
+        OPENQASM 3.0;
         bit b;
         qubit[2] q;
         h q[0];
@@ -2609,11 +2626,10 @@ class TestUnifiedMCMBasic:
         }
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
-        assert len(result.measurements) == 1000
+        assert result.measuredQubits == [0]
         counter = Counter(["".join(m) for m in result.measurements])
-        # If q[0]=0: no flip -> |00>; if q[0]=1: flip q[1] -> |11>
-        assert set(counter.keys()) == {"00", "11"}
-        assert 0.4 < counter["00"] / 1000 < 0.6
+        assert set(counter.keys()) == {"0", "1"}
+        assert 0.4 < counter["0"] / 1000 < 0.6
 
     def test_multiple_measurements_and_branching(self, simulator):
         """Multiple MCMs with conditional logic."""
@@ -2645,15 +2661,17 @@ class TestUnifiedMCMBasic:
         """Complex conditional with if/else blocks."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[3] b;
         qubit[3] q;
         h q[0];
-        b = measure q[0];
-        if (b == 0) {
+        b[0] = measure q[0];
+        if (b[0] == 0) {
             x q[1];
         } else {
             x q[2];
         }
+        b[1] = measure q[1];
+        b[2] = measure q[2];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
@@ -2671,15 +2689,16 @@ class TestUnifiedMCMControlFlow:
         """For loop after MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         for int i in [0:1] {
-            if (b == 1) {
+            if (b[0] == 1) {
                 x q[1];
             }
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
@@ -2695,17 +2714,18 @@ class TestUnifiedMCMControlFlow:
         """While loop conditioned on measurement result."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int n = 2;
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         while (n > 0) {
-            if (b == 1) {
+            if (b[0] == 1) {
                 x q[1];
             }
             n = n - 1;
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
@@ -2764,14 +2784,14 @@ class TestUnifiedMCMClassicalVariables:
         """Classical variables should be updated independently per path."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int x = 0;
 
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
 
-        if (b == 1) {
+        if (b[0] == 1) {
             x = 1;
         }
 
@@ -2779,6 +2799,7 @@ class TestUnifiedMCMClassicalVariables:
         if (x == 1) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
@@ -2787,6 +2808,80 @@ class TestUnifiedMCMClassicalVariables:
         # If b==1: x becomes 1, flip q[1] -> |11>
         assert set(counter.keys()) == {"00", "11"}
         assert 0.4 < counter["00"] / 1000 < 0.6
+
+    @pytest.mark.parametrize(
+        "declaration, destination",
+        [
+            ("", "b[0]"),
+            ("const int k = 0;", "b[k]"),
+            ("int k = 0;", "b[k]"),
+            ("", "b[-2]"),
+            ("int k = -2;", "b[k]"),
+            ("int k = 2;", "b[k - 2]"),
+        ],
+    )
+    def test_branched_measurement_into_indexed_destination(
+        self, simulator, declaration, destination
+    ):
+        """A measurement destination index may be any expression the interpreter resolves,
+        not only a literal. Branching must use the resolved index."""
+        qasm = f"""
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+        {declaration}
+
+        x q[0];
+        {destination} = measure q[0];
+
+        if (b[0] == 1) {{
+            x q[1];
+        }}
+        b[1] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        # q[0] is deterministically |1>, so the branch always fires and flips q[1].
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"11": 10})
+
+    def test_branched_measurement_into_loop_variable_index(self, simulator):
+        """The loop variable is out of scope once branching replays a deferred measurement,
+        so the destination index has to have been resolved before the loop exits."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] b;
+
+        x q[0];
+        for int i in [0:0] {
+            b[i] = measure q[i];
+        }
+
+        if (b[0] == 1) {
+            x q[1];
+        }
+        b[1] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"11": 10})
+
+    def test_branched_measurement_into_range_destination(self, simulator):
+        """A range destination writes one bit per measured qubit."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[3] b;
+
+        x q[0];
+        b[0:1] = measure q[0:1];
+
+        if (b[0] == 1) {
+            x q[2];
+        }
+        b[2] = measure q[2];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        # q[0]=1 and q[1]=0 are written through the range; the branch then flips q[2].
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"101": 10})
 
 
 class TestUnifiedMCMEdgeCases:
@@ -2807,12 +2902,13 @@ class TestUnifiedMCMEdgeCases:
         """Measurement of |0> should always give 0 (no branching needed)."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         assert len(result.measurements) == 100
@@ -2824,16 +2920,17 @@ class TestUnifiedMCMEdgeCases:
         """Break statement in loop after MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         for int i in [0:4] {
-            if (b == 1) {
+            if (b[0] == 1) {
                 x q[1];
             }
             break;
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
@@ -2847,15 +2944,14 @@ class TestUnifiedMCMEdgeCases:
         """Continue statement in loop after MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
         bit[2] c;
         qubit[2] q;
         int count = 0;
         h q[0];
-        b = measure q[0];
+        c[0] = measure q[0];
         for int i in [0:2] {
             continue;
-            if (b == 1) {
+            if (c[0] == 1) {
                 x q[1];
             }
         }
@@ -2898,17 +2994,16 @@ class TestUnifiedMCMEdgeCases:
         qasm_source = """
         OPENQASM 3.0;
         qubit[2] q;
-        bit c;
         bit[2] result;
         int[32] x = 0;
         int[32] y = 0;
 
         h q[0];
-        c = measure q[0];
+        result[0] = measure q[0];
 
         // Assign x differently per path (each if narrows to one path — correct)
-        if (c == 0) { x = 0; }
-        if (c == 1) { x = 1; }
+        if (result[0] == 0) { x = 0; }
+        if (result[0] == 1) { x = 1; }
 
         // get_value("x") reads only path 0's x=0 for both paths.
         y = x;
@@ -2930,8 +3025,8 @@ class TestUnifiedMCMEdgeCases:
         assert len(result.measurements) == 1000
 
         # result[0] is the re-measurement of q[0] after MCM collapse:
-        #   path 0 (c=0): q[0] collapsed to |0⟩ → result[0] = 0
-        #   path 1 (c=1): q[0] collapsed to |1⟩ → result[0] = 1
+        #   path 0 (mid-circuit result[0]=0): q[0] collapsed to |0⟩ → result[0] = 0
+        #   path 1 (mid-circuit result[0]=1): q[0] collapsed to |1⟩ → result[0] = 1
         # result[1] is q[1]:
         #   path 0: y=0 → X applied → result[1] = 1  → outcome "01"
         #   path 1: y=1 → X NOT applied → result[1] = 0  → outcome "10"
@@ -3037,15 +3132,14 @@ class TestMCMResetOperations:
         """X → measure → if 1: reset → measure → always 0."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit q;
         x q;
-        b = measure q;
-        if (b == 1) {
+        b[0] = measure q;
+        if (b[0] == 1) {
             reset q;
         }
-        result = measure q;
+        b[1] = measure q;
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3060,15 +3154,14 @@ class TestMCMResetOperations:
         """
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit q;
         h q;
-        b = measure q;
-        if (b == 1) {
+        b[0] = measure q;
+        if (b[0] == 1) {
             reset q;
         }
-        result = measure q;
+        b[1] = measure q;
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3079,18 +3172,17 @@ class TestMCMResetOperations:
         """Reset in both if and else branches."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         h q[0];
         x q[1];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             reset q[1];
         } else {
             reset q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3101,16 +3193,15 @@ class TestMCMResetOperations:
         """X then reset in a loop — qubit should always end at |0⟩."""
         qasm = """
         OPENQASM 3.0;
-        bit m;
-        bit b;
+        bit[2] m;
         qubit[2] q;
         h q[0];
-        m = measure q[0];
+        m[0] = measure q[0];
         for int i in [0:2] {
             x q[1];
             reset q[1];
         }
-        b = measure q[1];
+        m[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3127,21 +3218,20 @@ class TestMCMDeeplyNestedControlFlow:
         """
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         for int i in [0:1] {
-            if (b == 1) {
+            if (b[0] == 1) {
                 for int j in [0:1] {
-                    if (b == 1) {
+                    if (b[0] == 1) {
                         x q[1];
                     }
                 }
             }
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3153,19 +3243,18 @@ class TestMCMDeeplyNestedControlFlow:
         """
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         for int i in [0:2] {
-            if (b == 1) {
+            if (b[0] == 1) {
                 for int j in [0:0] {
                     x q[1];
                 }
             }
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3179,19 +3268,18 @@ class TestMCMVariableMod:
         """Accumulate int in loop [0:2]=3 iters → count=3 → if count==3: x q[1]."""
         qasm = """
         OPENQASM 3.0;
-        bit m;
-        bit b;
+        bit[2] m;
         qubit[2] q;
         int count = 0;
         h q[0];
-        m = measure q[0];
+        m[0] = measure q[0];
         for int i in [0:2] {
             count = count + 1;
         }
         if (count == 3) {
             x q[1];
         }
-        b = measure q[1];
+        m[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3203,11 +3291,10 @@ class TestMCMVariableMod:
         qasm = """
         OPENQASM 3.0;
         bit flag = 0;
-        bit result;
+        bit[2] c;
         qubit[2] q;
-        bit m;
         h q[0];
-        m = measure q[0];
+        c[0] = measure q[0];
         for int i in [0:2] {
             if (flag == 0) {
                 flag = 1;
@@ -3218,7 +3305,7 @@ class TestMCMVariableMod:
         if (flag == 1) {
             x q[1];
         }
-        result = measure q[1];
+        c[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3229,12 +3316,11 @@ class TestMCMVariableMod:
         """q[0]=|0⟩ → b=0 → else: val=10 → if val==10: x q[1]."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         int val = 0;
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             val = 5;
         } else {
             val = 10;
@@ -3242,7 +3328,7 @@ class TestMCMVariableMod:
         if (val == 10) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3256,35 +3342,17 @@ class TestMCMAsymmetricMeasurement:
         """X q[0] → b=1 → measure q[1] only in if block."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         x q[0];
-        b = measure q[0];
-        if (b == 1) {
-            result = measure q[1];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            b[1] = measure q[1];
         }
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
         assert counter == {"10": 1000}
-
-    def test_measure_only_in_if_branch_z(self, simulator):
-        """X q[0] → b=1 → measure q[1] only in if block."""
-        qasm = """
-        OPENQASM 3.0;
-        bit b;
-        bit result;
-        qubit[2] q;
-        z q[0];
-        b = measure q[0];
-        if (b == 1) {
-            result = measure q[1];
-        }
-        """
-        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
-        counter = Counter(["".join(m) for m in result.measurements])
-        assert counter == {"00": 1000}
 
 
 class TestMCMNonContiguousClassicalIndices:
@@ -3322,6 +3390,79 @@ class TestMCMNonContiguousClassicalIndices:
         assert set(counter) == {"000", "011"}
 
 
+class TestMCMNegativeBitIndex:
+    """Bit register indices that are negative or computed, in MCM conditions and destinations."""
+
+    @pytest.mark.parametrize(
+        "destination, condition",
+        [
+            ("c[1]", "c[-1]"),
+            ("c[-1]", "c[1]"),
+            ("c[-1]", "c[-1]"),
+            ("c[1]", "c[-1] == 1"),
+        ],
+    )
+    def test_negative_index(self, simulator, destination, condition):
+        """``c[-1]`` is the last bit of ``c``, both as a condition and as a destination."""
+        qasm = f"""
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] c;
+        x q[0];
+        {destination} = measure q[0];
+        if ({condition}) {{
+          x q[1];
+        }}
+        c[0] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        assert result.measuredQubits == [1, 0]
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"11": 10})
+
+    @pytest.mark.parametrize(
+        "branch",
+        [
+            "for int i in [1:1] { if (c[i]) { x q[1]; } }",
+            "for int i in [1:1] { if (c[-i]) { x q[1]; } }",
+            "int n = 1; if (c[n]) { x q[1]; }",
+            "int n = -1; if (c[n]) { x q[1]; }",
+            "int n = 2; if (c[n - 1]) { x q[1]; }",
+            "int n = 2; if (c[n - 3] == 1) { x q[1]; }",
+        ],
+    )
+    def test_computed_index_in_condition(self, simulator, branch):
+        """A condition index may be a loop variable, an ``int`` or an arithmetic expression."""
+        qasm = f"""
+        OPENQASM 3.0;
+        qubit[2] q;
+        bit[2] c;
+        x q[0];
+        c[1] = measure q[0];
+        {branch}
+        c[0] = measure q[1];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=10)
+        assert Counter(["".join(m) for m in result.measurements]) == Counter({"11": 10})
+
+    def test_index_computed_from_measured_value(self, simulator):
+        """Each path evaluates the index from its own measured value."""
+        qasm = """
+        OPENQASM 3.0;
+        qubit[3] q;
+        bit[3] c;
+        h q[1];
+        c[1] = measure q[1];
+        x q[2];
+        c[2] = measure q[2];
+        int k = c[1];
+        if (c[k - 2]) { x q[0]; }
+        c[0] = measure q[0];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
+        # k == 1 reads c[-1] == c[2] == 1 and flips q[0]; k == 0 reads c[-2] == c[1] == 0.
+        assert {"".join(m) for m in result.measurements} == {"001", "111"}
+
+
 class TestMCMBranchedInstructionRouting:
     """Cover branched-mode instruction routing (add_*_instruction, add_measure, etc.)."""
 
@@ -3329,18 +3470,17 @@ class TestMCMBranchedInstructionRouting:
         """Gate applied after MCM should be routed to all active paths."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         // Gate after MCM — routed per-path
         x q[1];
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
-        # q[1] always gets X regardless of path → result always 1
+        # q[1] always gets X regardless of path → b[1] always 1
         for outcome in counter:
             assert outcome[-1] == "1"
 
@@ -3348,15 +3488,15 @@ class TestMCMBranchedInstructionRouting:
         """Measure without classical destination in branched mode → end-of-circuit measure."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             x q[1];
         }
         // End-of-circuit measure (no classical destination) in branched mode
-        measure q;
+        b = measure q;
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
@@ -3365,15 +3505,14 @@ class TestMCMBranchedInstructionRouting:
         """Reset after MCM should be routed to all active paths."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         x q[0];
         x q[1];
-        b = measure q[0];
+        b[0] = measure q[0];
         // Reset in branched mode
         reset q[1];
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3389,18 +3528,19 @@ class TestMCMClassicalVariableBranching:
         """Variable declared after MCM should be per-path."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         // Declare variable after branching
         int y = 0;
-        if (b == 1) {
+        if (b[0] == 1) {
             y = 42;
         }
         if (y == 42) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3434,15 +3574,16 @@ class TestMCMClassicalVariableBranching:
         """Variable declared before MCM should be readable from shared table."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int x = 7;
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         // x was declared before branching — should be readable from shared table
-        if (x + b == 7 || x + b == 8) {
+        if (x + b[0] == 7 || x + b[0] == 8) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3458,13 +3599,13 @@ class TestMCMWhileLoopContinue:
         """Continue inside a while loop after MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int count = 0;
         int x_count = 0;
         x q[0];
-        b = measure q[0];
-        while (count < b + 4) {
+        b[0] = measure q[0];
+        while (count < b[0] + 4) {
             count = count + 1;
             if (count % 2 == 0) {
                 continue;
@@ -3475,6 +3616,7 @@ class TestMCMWhileLoopContinue:
         if (x_count == 3) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3489,18 +3631,19 @@ class TestMCMForLoopDiscreteSet:
         """For loop with discrete set {values} after MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int sum = 0;
         x q[0];
-        b = measure q[0];
-        for int i in {1 + b, 3, 5} {
+        b[0] = measure q[0];
+        for int i in {1 + b[0], 3, 5} {
             sum = sum + i;
         }
         // sum should be 10 (since b=1)
         if (sum == 10) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3514,12 +3657,11 @@ class TestMCMBranchedElseBlock:
         """MCM if/else where paths diverge into both branches."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
         bit[3] result;
         qubit[3] q;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        result[0] = measure q[0];
+        if (result[0] == 1) {
             x q[1];
         } else {
             x q[2];
@@ -3539,15 +3681,14 @@ class TestMCMBranchedElseBlock:
         """MCM if with no else — false paths survive unchanged."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3583,12 +3724,11 @@ class TestMCMBranchedContinueInForLoop:
         """continue in for loop after MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         int x_count = 0;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         for int i in [1:4] {
             if (i % 2 == 0) {
                 continue;
@@ -3599,7 +3739,7 @@ class TestMCMBranchedContinueInForLoop:
         if (x_count == 2) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3614,22 +3754,21 @@ class TestMCMBranchedControlFlowCoverage:
         """Branched if/else where some paths take the else block."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             x q[1];
         } else {
             z q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
-        # b=0 → Z on q[1] (no effect on |0⟩) → result=0 → "00"
-        # b=1 → X on q[1] → result=1 → "11"
+        # b[0]=0 → Z on q[1] (no effect on |0⟩) → b[1]=0 → "00"
+        # b[0]=1 → X on q[1] → b[1]=1 → "11"
         assert "00" in counter
         assert "11" in counter
 
@@ -3637,15 +3776,14 @@ class TestMCMBranchedControlFlowCoverage:
         """Branched if with no else — false paths survive unchanged."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3656,12 +3794,11 @@ class TestMCMBranchedControlFlowCoverage:
         """Continue in branched for loop — covers ContinueSignal path."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         int x_count = 0;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         for int i in [1:4] {
             if (i % 2 == 0) {
                 continue;
@@ -3671,7 +3808,7 @@ class TestMCMBranchedControlFlowCoverage:
         if (x_count == 2) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3682,13 +3819,12 @@ class TestMCMBranchedControlFlowCoverage:
         """Continue in branched while loop — covers ContinueSignal path."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         int count = 0;
         int x_count = 0;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         while (count < 4) {
             count = count + 1;
             if (count % 2 == 0) {
@@ -3699,7 +3835,7 @@ class TestMCMBranchedControlFlowCoverage:
         if (x_count == 2) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -3714,16 +3850,15 @@ class TestMCMBranchedCustomUnitary:
         """Custom unitary pragma after MCM branching should route to all active paths."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             x q[1];
         }
         #pragma braket unitary([[0, 1], [1, 0]]) q[1]
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -4084,19 +4219,18 @@ class TestMCMBranchedVariableDeclaration:
         """Variable declared inside if-block after MCM uses branched storage."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         int y = 0;
-        if (b == 1) {
+        if (b[0] == 1) {
             y = 42;
         }
         if (y == 42) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -4130,16 +4264,15 @@ class TestMCMBranchedVariableDeclaration:
         """Variable declared before MCM is readable from shared table after branching."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         int x = 7;
         h q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         if (x == 7) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -4150,13 +4283,12 @@ class TestMCMBranchedVariableDeclaration:
         """Continue inside a while loop after MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         int count = 0;
         int x_count = 0;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         while (count < 4) {
             count = count + 1;
             if (count % 2 == 0) {
@@ -4167,7 +4299,7 @@ class TestMCMBranchedVariableDeclaration:
         if (x_count == 2) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -4181,8 +4313,7 @@ class TestMCMSubroutineAfterBranching:
         """Subroutine with classical arg called after MCM triggers branched declare_variable."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
 
         def conditional_flip(int[32] flag, qubit target) {
@@ -4192,13 +4323,13 @@ class TestMCMSubroutineAfterBranching:
         }
 
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             conditional_flip(1, q[1]);
         } else {
             conditional_flip(0, q[1]);
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -4214,12 +4345,11 @@ class TestMCMWhileLoopBreak:
         """Break inside a while loop after MCM."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         int n = 0;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         while (true) {
             n = n + 1;
             if (n == 3) {
@@ -4229,7 +4359,7 @@ class TestMCMWhileLoopBreak:
         if (n == 3) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -4269,8 +4399,7 @@ class TestMCMSubroutineArrayRef:
         """Subroutine with array reference arg called after MCM hits branched get_value."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
-        bit result;
+        bit[2] b;
         qubit[2] q;
         array[int[32], 2] arr = {0, 0};
 
@@ -4279,14 +4408,14 @@ class TestMCMSubroutineArrayRef:
         }
 
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             set_first(arr);
         }
         if (arr[0] == 42) {
             x q[1];
         }
-        result = measure q[1];
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counter = Counter(["".join(m) for m in result.measurements])
@@ -4308,24 +4437,26 @@ class TestMCMVariableReadWithoutControlFlow:
         direct_qasm = """
         OPENQASM 3.0;
         qubit[2] q;
-        bit b;
+        bit[2] b;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         indirect_qasm = """
         OPENQASM 3.0;
         qubit[2] q;
-        bit b;
+        bit[2] b;
         bit y;
         h q[0];
-        b = measure q[0];
-        y = b;
+        b[0] = measure q[0];
+        y = b[0];
         if (y == 1) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         direct = Counter(
             "".join(m)
@@ -4351,13 +4482,14 @@ class TestMCMVariableReadWithoutControlFlow:
         qasm = """
         OPENQASM 3.0;
         qubit[2] q;
-        bit b;
+        bit[2] b;
         h q[0];
-        b = measure q[0];
-        int y = b + 0;
+        b[0] = measure q[0];
+        int y = b[0] + 0;
         if (y == 1) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         counts = Counter(
             "".join(m)
@@ -4401,20 +4533,18 @@ class TestMCMFlushPendingEdgeCases:
     """Cover edge cases in _flush_pending_mcm_for_variable."""
 
     def test_earlier_pending_measurement_flushed(self, simulator):
-        """When reading b1, an earlier pending measurement on b0 must be flushed first."""
+        """Reading b[1] applies the earlier pending measurement into b[0] as well."""
         qasm = """
         OPENQASM 3.0;
         qubit[3] q;
-        bit b0;
-        bit b1;
-        bit result;
-        b0 = measure q[0];
-        b1 = measure q[1];
-        result = b1;
+        bit[3] b;
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        b[2] = b[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counter = Counter(["".join(m) for m in result.measurements])
-        # q[0] and q[1] are both |0>, so b0=0, b1=0, result=0
+        # q[0] and q[1] are both |0>, so b[0]=0, b[1]=0, b[2]=0
         for outcome in counter:
             assert all(c == "0" for c in outcome)
 
@@ -4459,33 +4589,31 @@ class TestMCMFlushPendingEdgeCases:
             Interpreter(ctx).run(qasm)
 
     def test_flush_when_already_branched(self, simulator):
-        """Reading a pending MCM variable when already branched from an earlier MCM."""
+        """A measurement taken after branching is applied directly and readable."""
         qasm = """
         OPENQASM 3.0;
         qubit[3] q;
-        bit b0;
-        bit b1;
-        bit result;
+        bit[3] b;
         h q[0];
-        b0 = measure q[0];
-        // This if triggers branching on b0
-        if (b0 == 1) {
+        b[0] = measure q[0];
+        // This if triggers branching on b[0]
+        if (b[0] == 1) {
             x q[2];
         }
-        // b1 is still pending; reading it should flush without re-initializing paths
-        b1 = measure q[1];
-        result = b1;
+        // Already branched: this measurement is applied per path immediately
+        b[1] = measure q[1];
+        b[2] = b[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
         counter = Counter(["".join(m) for m in result.measurements])
         # h q[0] puts q[0] in superposition; q[1] is always |0>
-        # When b0=0: no x applied, so all bits are 0 -> "000"
-        # When b0=1: x q[2] applied, b1=measure q[1]=0, result=b1
-        # Verify we get both b0=0 and b0=1 branches
+        # When b[0]=0: no x applied, so all bits are 0 -> "000"
+        # When b[0]=1: x q[2] applied, b[1]=measure q[1]=0, b[2]=b[1]
+        # Verify we get both b[0]=0 and b[0]=1 branches
         assert len(counter) >= 1
         for outcome in counter:
-            # b1 (middle column) is always '0' since q[1] is never modified
+            # b[1] (the middle bit of each shot) is always '0' since q[1] is never modified
             assert outcome[1] == "0"
 
 
@@ -4540,7 +4668,7 @@ class TestMCMGateAfterPendingMeasurement:
         assert len(result.measurements) == 1000
         counter = Counter(["".join(m) for m in result.measurements])
         # b should be roughly 50/50 since q[0] was in superposition
-        # Output is 2 columns (full qubit state from branched simulation)
+        # Only b is measured, so each shot reports one bit
         assert len(counter) >= 2
 
     def test_reset_on_measured_qubit_flushes_pending(self, simulator):
@@ -4548,20 +4676,21 @@ class TestMCMGateAfterPendingMeasurement:
         qasm = """
         OPENQASM 3.0;
         qubit[2] q;
-        bit b;
+        bit[2] b;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         reset q[0];
-        if (b == 1) {
+        if (b[0] == 1) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counter = Counter(["".join(m) for m in result.measurements])
         # q[0] was |1> before measurement, so b=1 deterministically.
         # After reset, q[0] is |0>. if (b==1) flips q[1].
-        # Output: q[0]=0 (reset), q[1]=1 (flipped) -> "01"
-        assert set(counter.keys()) == {"01"}
+        # Output: b[0] holds the pre-reset outcome 1, b[1]=1 (flipped) -> "11"
+        assert set(counter.keys()) == {"11"}
 
     def test_gate_on_different_qubit_does_not_flush(self, simulator):
         """A gate on a qubit WITHOUT a pending measurement should not flush."""
@@ -4588,40 +4717,35 @@ class TestMCMFlushForQubitsEdgeCases:
     """Cover edge cases in _flush_pending_mcm_for_qubits."""
 
     def test_gate_on_pending_qubit_when_already_branched(self, simulator):
-        """When already branched via variable read, a gate on a qubit with a
-        still-pending MCM must branch that measurement before adding the gate."""
+        """Reading b[0] applies every pending measurement, so the later gate on q[1]
+        comes after the measurement into b[1] in every path."""
         qasm = """
         OPENQASM 3.0;
         qubit[3] q;
-        bit b0;
-        bit b1;
-        bit result;
+        bit[3] b;
         h q[0];
-        b0 = measure q[0];
-        b1 = measure q[1];
-        // Reading b0 triggers branching; b1 stays pending
-        result = b0;
-        // Gate on q[1] should flush the still-pending b1
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        // Reading b[0] triggers branching and applies b[1]'s pending measurement too
+        b[2] = b[0];
+        // Nothing is pending any more; the gate is routed to every path
         h q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         assert len(result.measurements) == 1000
 
     def test_flush_remaining_after_overlap_with_shots(self, simulator):
-        """When shots > 0 and a gate overlaps a later pending MCM,
-        earlier pending MCMs must also be flushed for correct state.
-        Pending MCMs after the overlap are also flushed."""
+        """With shots > 0, a gate on a qubit with a pending measurement applies all
+        pending measurements in program order, those before and after it alike."""
         qasm = """
         OPENQASM 3.0;
         qubit[4] q;
-        bit b0;
-        bit b1;
-        bit b2;
+        bit[3] b;
         h q[0];
-        b0 = measure q[0];
-        b1 = measure q[1];
-        b2 = measure q[2];
-        // Gate on q[1] overlaps b1; b0 (earlier) and b2 (later) must also be flushed
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+        // Gate on q[1] overlaps b[1]; b[0] (earlier) and b[2] (later) are applied with it
         x q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
@@ -4635,12 +4759,13 @@ class TestEvaluateExpressionFromOpenQASM:
         """Cast expression evaluated inside an MCM-dependent branch."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
-        b = measure q[0];
-        if (bool(b + 1)) {
+        b[0] = measure q[0];
+        if (bool(b[0] + 1)) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counts = Counter(["".join(m) for m in result.measurements])
@@ -4650,13 +4775,14 @@ class TestEvaluateExpressionFromOpenQASM:
         """Unary expression evaluated inside an MCM-dependent branch."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
-        if (!(b == 1)) {
+        b[0] = measure q[0];
+        if (!(b[0] == 1)) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counts = Counter(["".join(m) for m in result.measurements])
@@ -4681,12 +4807,12 @@ class TestEvaluateExpressionFromOpenQASM:
         """DiscreteSet evaluation in a for-loop after MCM triggers branching."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int[32] sum = 0;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             sum = 10;
         }
         for int i in {1, 2, 3} {
@@ -4695,6 +4821,7 @@ class TestEvaluateExpressionFromOpenQASM:
         if (sum > 0) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
         counts = Counter(["".join(m) for m in result.measurements])
@@ -4705,12 +4832,12 @@ class TestEvaluateExpressionFromOpenQASM:
         """Break in a for-loop triggers GeneratorExit cleanup in the handler."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int[32] count = 0;
         h q[0];
-        b = measure q[0];
-        for int i in [0:b + 10] {
+        b[0] = measure q[0];
+        for int i in [0:b[0] + 10] {
             count = count + 1;
             if (count == 3) {
                 break;
@@ -4719,6 +4846,7 @@ class TestEvaluateExpressionFromOpenQASM:
         if (count == 3) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
         counts = Counter(["".join(m) for m in result.measurements])
@@ -4729,12 +4857,12 @@ class TestEvaluateExpressionFromOpenQASM:
         """Continue in a branched for-loop skips the rest of the iteration."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int[32] count = 0;
         h q[0];
-        b = measure q[0];
-        for int i in [0:b + 3] {
+        b[0] = measure q[0];
+        for int i in [0:b[0] + 3] {
             if (i % 2 == 0) {
                 continue;
             }
@@ -4744,6 +4872,7 @@ class TestEvaluateExpressionFromOpenQASM:
         if (count > 0) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
         counts = Counter(["".join(m) for m in result.measurements])
@@ -4758,13 +4887,14 @@ class TestEvaluateExpressionFromOpenQASM:
         """
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         h q[0];
-        b = measure q[0];
-        for int i in [1:b] {
+        b[0] = measure q[0];
+        for int i in [1:b[0]] {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
         counts = Counter(["".join(m) for m in result.measurements])
@@ -4776,12 +4906,12 @@ class TestEvaluateExpressionFromOpenQASM:
         """Break in a while-loop triggers GeneratorExit cleanup in the handler."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int[32] count = 0;
         h q[0];
-        b = measure q[0];
-        while (count < b + 10) {
+        b[0] = measure q[0];
+        while (count < b[0] + 10) {
             count = count + 1;
             if (count == 3) {
                 break;
@@ -4790,6 +4920,7 @@ class TestEvaluateExpressionFromOpenQASM:
         if (count == 3) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
         counts = Counter(["".join(m) for m in result.measurements])
@@ -4800,17 +4931,18 @@ class TestEvaluateExpressionFromOpenQASM:
         """For-loop in branched mode iterates correctly across all paths."""
         qasm = """
         OPENQASM 3.0;
-        bit b;
+        bit[2] b;
         qubit[2] q;
         int[32] sum = 0;
         x q[0];
-        b = measure q[0];
+        b[0] = measure q[0];
         for int i in [0:3] {
             sum = sum + 1;
         }
-        if (b == 1) {
+        if (b[0] == 1) {
             x q[1];
         }
+        b[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counts = Counter(["".join(m) for m in result.measurements])
@@ -4833,12 +4965,13 @@ class TestClassicalControlGates:
         explicit_qasm = """
         OPENQASM 3.0;
         qubit[2] q;
-        bit b;
+        bit[2] b;
         h q[0];
-        b = measure q[0];
-        if (b == 1) {
+        b[0] = measure q[0];
+        if (b[0] == 1) {
             prx(3.141592653589793, 0.0) q[1];
         }
+        b[1] = measure q[1];
         """
         experimental = Counter(
             "".join(m)
@@ -5240,17 +5373,17 @@ class TestBranchedResultShotIndexing:
     """The per-path overlay must map each path's outcomes to that path's shot slice."""
 
     def test_asymmetric_path_shot_counts_preserve_alignment(self, simulator):
-        # Verifies that measurements explicitly assigned to a classical register and
-        # also end-of-circuit measurements are returned in the expected order.
+        # Verifies that a mid-circuit measurement and a terminal measurement into the
+        # same register are returned in element order.
         # Circuit returns anti-correlated c[0] and c[1] with asymmetric probabilities.
         qasm = """
         OPENQASM 3.0;
         qubit[2] q;
-        bit[1] c;
+        bit[2] c;
         ry(2.0943951023931953) q[0];  // 2π/3 → P(|1>) = 0.75
         c[0] = measure q[0];
         if (c[0] == 0) x q[1];
-        measure q[1];
+        c[1] = measure q[1];
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=4000)
         counter = Counter(["".join(m) for m in result.measurements])

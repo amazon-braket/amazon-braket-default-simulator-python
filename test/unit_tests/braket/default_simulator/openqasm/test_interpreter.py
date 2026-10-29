@@ -13,6 +13,7 @@
 
 import re
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 import pytest
@@ -20,11 +21,17 @@ import sympy
 from sympy import Symbol
 
 from braket.default_simulator import StateVectorSimulation
-from braket.default_simulator.openqasm.parser import openqasm_parser
-from braket.default_simulator.openqasm.interpreter import VerbatimBoxDelimiter
-from braket.default_simulator.gate_operations import CX, GPhase, Hadamard, PauliX, Reset
+from braket.default_simulator.gate_operations import (
+    CX,
+    GPhase,
+    Hadamard,
+    PauliX,
+    Reset,
+    RotX,
+    U,
+    Unitary,
+)
 from braket.default_simulator.gate_operations import PauliY as Y
-from braket.default_simulator.gate_operations import RotX, U, Unitary
 from braket.default_simulator.noise_operations import (
     AmplitudeDamping,
     BitFlip,
@@ -38,13 +45,14 @@ from braket.default_simulator.noise_operations import (
     TwoQubitDepolarizing,
 )
 from braket.default_simulator.observables import Hermitian, PauliY
+from braket.default_simulator.openqasm import interpreter as interp_module
 from braket.default_simulator.openqasm._helpers.casting import (
     convert_bool_array_to_string,
     convert_string_to_bool_array,
 )
 from braket.default_simulator.openqasm.circuit import Circuit
-from braket.default_simulator.openqasm import interpreter as interp_module
-from braket.default_simulator.openqasm.interpreter import Interpreter
+from braket.default_simulator.openqasm.interpreter import Interpreter, VerbatimBoxDelimiter
+from braket.default_simulator.openqasm.parser import openqasm_parser
 from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AliasStatement,
     AngleType,
@@ -280,6 +288,15 @@ def test_constant_immutability():
     """
     cannot_update = "Cannot update const value const_one"
     with pytest.raises(TypeError, match=cannot_update):
+        Interpreter().run(qasm)
+
+
+def test_constant_measurement():
+    qasm = """
+    qubit q;
+    const bit r = measure q;
+    """
+    with pytest.raises(TypeError, match="Cannot initialize const r with a measurement"):
         Interpreter().run(qasm)
 
 
@@ -2142,6 +2159,21 @@ def test_basis_rotation_hermitian():
     ]
 
 
+class Slot(NamedTuple):
+    """One measurement slot: which register element reports which qubit."""
+
+    register: str | None
+    element: int
+    qubit: int
+
+
+def _slots(circuit):
+    return [
+        Slot(register.name, element, qubit)
+        for register, element, qubit in circuit.measurement_slots
+    ]
+
+
 @pytest.mark.parametrize(
     "qasm, expected",
     [
@@ -2155,7 +2187,7 @@ def test_basis_rotation_hermitian():
                     "b[0] = measure q[0];",
                 ]
             ),
-            ([0], [0]),
+            [Slot(register="b", element=0, qubit=0)],
         ),
         (
             "\n".join(
@@ -2165,7 +2197,11 @@ def test_basis_rotation_hermitian():
                     "b = measure q;",
                 ]
             ),
-            ([0, 1, 2], [0, 1, 2]),
+            [
+                Slot(register="b", element=0, qubit=0),
+                Slot(register="b", element=1, qubit=1),
+                Slot(register="b", element=2, qubit=2),
+            ],
         ),
         (
             "\n".join(
@@ -2177,7 +2213,7 @@ def test_basis_rotation_hermitian():
                     "b[0:1] = measure q[0:1];",
                 ]
             ),
-            ([0, 1], [0, 1]),
+            [Slot(register="b", element=0, qubit=0), Slot(register="b", element=1, qubit=1)],
         ),
         (
             "\n".join(
@@ -2192,12 +2228,16 @@ def test_basis_rotation_hermitian():
                     "b[1] = measure q[2];",
                 ]
             ),
-            ([0, 1, 2], [0, 2, 1]),
+            [
+                Slot(register="b", element=0, qubit=0),
+                Slot(register="b", element=1, qubit=2),
+                Slot(register="b", element=2, qubit=1),
+            ],
         ),
         (
             "\n".join(
                 [
-                    "bit[1] b;",
+                    "bit[3] b;",
                     "qubit[3] q;",
                     "h q[0];",
                     "h q[1];",
@@ -2205,7 +2245,7 @@ def test_basis_rotation_hermitian():
                     "b[{2, 1}] = measure q[{0, 2}];",
                 ]
             ),
-            ([0, 2], [2, 1]),
+            [Slot(register="b", element=1, qubit=2), Slot(register="b", element=2, qubit=0)],
         ),
         (
             "\n".join(
@@ -2216,7 +2256,7 @@ def test_basis_rotation_hermitian():
                     "b[0] = measure $0;",
                 ]
             ),
-            ([0], [0]),
+            [Slot(register="b", element=0, qubit=0)],
         ),
         (
             "\n".join(
@@ -2227,7 +2267,11 @@ def test_basis_rotation_hermitian():
                     "}",
                 ]
             ),
-            ([0, 1, 2], [0, 1, 2]),
+            [
+                Slot(register=None, element=0, qubit=0),
+                Slot(register=None, element=1, qubit=1),
+                Slot(register=None, element=2, qubit=2),
+            ],
         ),
         (
             "\n".join(
@@ -2241,7 +2285,7 @@ def test_basis_rotation_hermitian():
                     "measure q[0];",
                 ]
             ),
-            ([1, 0], [0, 1]),
+            [Slot(register=None, element=0, qubit=1), Slot(register=None, element=1, qubit=0)],
         ),
         (
             "\n".join(
@@ -2251,14 +2295,42 @@ def test_basis_rotation_hermitian():
                     "b[0] = measure q[1:5];",
                 ]
             ),
-            ([1], [0]),
+            [Slot(register="b", element=0, qubit=1)],
+        ),
+        (
+            "\n".join(
+                [
+                    "bit b;",
+                    "qubit[2] q;",
+                    "b = measure q[1];",
+                ]
+            ),
+            [Slot(register="b", element=0, qubit=1)],
+        ),
+        (
+            "\n".join(
+                [
+                    "qubit[2] q;",
+                    "bit b = measure q[1];",
+                ]
+            ),
+            [Slot(register="b", element=0, qubit=1)],
+        ),
+        (
+            "\n".join(
+                [
+                    "qubit[2] q;",
+                    "bit[2] b = measure q;",
+                ]
+            ),
+            [Slot(register="b", element=0, qubit=0), Slot(register="b", element=1, qubit=1)],
         ),
     ],
 )
 def test_measurement(qasm, expected):
     circuit = Interpreter().build_circuit(qasm)
-    assert circuit.measured_qubits == expected[0]
-    assert circuit.target_classical_indices == expected[1]
+    assert _slots(circuit) == expected
+    assert circuit.measured_qubits == [qubit for _, _, qubit in expected]
 
 
 def test_measure_qubit_twice_allowed():
@@ -2275,8 +2347,185 @@ def test_measure_qubit_twice_allowed():
         ]
     )
     circuit = Interpreter().build_circuit(qasm)
-    assert circuit.measured_qubits == [1, 0, 0]
-    assert circuit.target_classical_indices == [2, 0, 1]
+    assert _slots(circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=1, qubit=0),
+        Slot(register="b", element=2, qubit=1),
+    ]
+    assert circuit.measured_qubits == [0, 0, 1]
+
+
+def test_measure_into_distinct_registers_does_not_alias():
+    """``c[1]`` and ``d[1]`` are distinct register elements, so without ``output``
+    declarations the result cannot be reported as a single bit string.
+    """
+    qasm = "\n".join(
+        [
+            "bit[2] c;",
+            "bit[2] d;",
+            "qubit[2] q;",
+            "c[1] = measure q[0];",
+            "d[1] = measure q[1];",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert _slots(circuit) == [
+        Slot(register="c", element=1, qubit=0),
+        Slot(register="d", element=1, qubit=1),
+    ]
+    # rejected by the simulator unless the program declares ``output`` variables
+    with pytest.raises(ValueError, match="2 classical registers: `c`, `d`"):
+        circuit.validate_single_measured_register()
+
+
+def test_unused_register_does_not_count():
+    qasm = "\n".join(
+        [
+            "bit[2] unused;",
+            "bit[2] c;",
+            "qubit[2] q;",
+            "c = measure q;",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert circuit.measured_registers[0].name == "c"
+    assert circuit.measured_qubits == [0, 1]
+
+
+def test_remeasure_into_scalar_bit_keeps_last_only():
+    """Measuring twice into the same bit replaces its source. The earlier measurement
+    is applied to the state but is not a measurement slot."""
+    qasm = "\n".join(
+        [
+            "bit b;",
+            "qubit[2] q;",
+            "b = measure q[0];",
+            "b = measure q[1];",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert _slots(circuit) == [Slot(register="b", element=0, qubit=1)]
+    assert circuit.qubit_set == {0, 1}
+
+
+def test_explicit_index_is_register_relative():
+    qasm = "\n".join(
+        [
+            "bit[4] c;",
+            "qubit q;",
+            "c[3] = measure q;",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert _slots(circuit) == [Slot(register="c", element=3, qubit=0)]
+    assert circuit.measured_qubits == [0]
+
+
+def test_measure_out_of_range_element_raises():
+    qasm = "\n".join(
+        [
+            "bit[1] b;",
+            "qubit[2] q;",
+            "b[{2, 1}] = measure q[{0, 1}];",
+        ]
+    )
+    with pytest.raises(IndexError, match="Index 2 is out of range for 'b', which has size 1"):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_into_non_bit_raises():
+    qasm = "\n".join(
+        [
+            "int x;",
+            "qubit q;",
+            "x = measure q;",
+        ]
+    )
+    with pytest.raises(TypeError, match="Measurement destination 'x' is not a bit"):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_into_undeclared_indexed_destination_raises():
+    """The context reports an undeclared destination with a non-negative index."""
+    qasm = "\n".join(
+        [
+            "qubit q;",
+            "c[1] = measure q;",
+        ]
+    )
+    with pytest.raises(TypeError, match="Measurement destination 'c' is not a bit"):
+        Interpreter().build_circuit(qasm)
+
+
+@pytest.mark.parametrize("index", ["-1", "-2"])
+def test_measure_into_undeclared_destination_with_negative_index_raises(index):
+    """A negative index needs the destination's declared size, so an undeclared one is named."""
+    qasm = "\n".join(
+        [
+            "qubit q;",
+            f"c[{index}] = measure q;",
+        ]
+    )
+    with pytest.raises(
+        NameError,
+        match=f"Measurement destination 'c' is not declared, so its index {index} cannot be",
+    ):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_into_non_integer_symbolic_index_raises():
+    """A symbolic destination index is checked for integer type."""
+    qasm = "\n".join(
+        [
+            "input float f;",
+            "bit[2] c;",
+            "qubit q;",
+            "c[f] = measure q;",
+        ]
+    )
+    with pytest.raises(TypeError, match="Index into 'c' must be an integer, but 'f' has type"):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_into_symbolic_index_raises():
+    """The simulator cannot measure into an index that is an unbound input."""
+    qasm = "\n".join(
+        [
+            "input int n;",
+            "bit[2] c;",
+            "qubit q;",
+            "c[n] = measure q;",
+        ]
+    )
+    with pytest.raises(
+        TypeError, match="Measurement destination 'c' must be indexed by a concrete"
+    ):
+        Interpreter().build_circuit(qasm)
+
+
+def test_shadowed_bit_gets_its_own_register():
+    """A shadowing declaration is a distinct register, never an alias of the outer one."""
+    qasm = "\n".join(
+        [
+            "bit b;",
+            "qubit[2] q;",
+            "b = measure q[0];",
+            "if (true) {",
+            "    bit b;",
+            "    b = measure q[1];",
+            "}",
+        ]
+    )
+    circuit = Interpreter().build_circuit(qasm)
+    assert _slots(circuit) == [
+        Slot(register="b", element=0, qubit=0),
+        Slot(register="b", element=0, qubit=1),
+    ]
+    outer, inner = circuit.classical_registers
+    assert outer is not inner
+    # rejected by the simulator unless the program declares ``output`` variables
+    with pytest.raises(ValueError, match="`b`, `b`"):
+        circuit.validate_single_measured_register()
 
 
 def test_measure_qubit_twice_with_bare_measure():
