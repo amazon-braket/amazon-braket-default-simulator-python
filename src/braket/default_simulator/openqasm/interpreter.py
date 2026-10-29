@@ -77,6 +77,7 @@ from .parser.openqasm_ast import (
     ConstantDeclaration,
     ContinueStatement,
     DiscreteSet,
+    Expression,
     FloatLiteral,
     FloatType,
     ForInLoop,
@@ -300,13 +301,14 @@ class Interpreter:
             self.context.add_output_declaration(name, self.context.get_type(name))
         else:  # IOKeyword.input:
             self._input_names.add(name)
-            init_value, node_type = (
-                (wrap_value_into_literal(self.context.inputs[name]), node.type)
-                if name in self.context.inputs
-                else (wrap_value_into_literal(Symbol(name)), SymbolLiteral)
-            )
-            declaration = ClassicalDeclaration(node_type, node.identifier, init_value)
-            self.visit(declaration)
+            if name in self.context.inputs:
+                init_value = wrap_value_into_literal(self.context.inputs[name])
+                self.visit(ClassicalDeclaration(node.type, node.identifier, init_value))
+            else:
+                # An unbound input keeps its declared type, unevaluated, with a symbol as its
+                # value; the type's size may itself depend on an unbound input.
+                symbol = wrap_value_into_literal(Symbol(name))
+                self.context.declare_variable(name, node.type, symbol)
 
     def _check_io_name_available(self, name: str) -> None:
         if name in self._input_names:
@@ -620,16 +622,16 @@ class Interpreter:
                 raise ValueError(
                     "Multi-Dimensional indexing not supported for classical registers."
                 )
+            name = get_identifier_name(node.target)
             match elem := indices[0]:
                 case DiscreteSet(values):
                     self._uses_advanced_language_features = True
-                    targets.extend([self.visit(val).value for val in values])
+                    targets.extend(self._resolve_measurement_index(name, val) for val in values)
                 case RangeDefinition():
                     self._uses_advanced_language_features = True
                     targets.extend(convert_range_def_to_range(self.visit(elem)))
                 case _:
-                    resolved = self.visit(elem) if isinstance(elem, Identifier) else elem
-                    targets.append(resolved.value)
+                    targets.append(self._resolve_measurement_index(name, elem))
 
         if not len(targets):
             targets = None
@@ -643,6 +645,25 @@ class Interpreter:
             self.context.mark_mcm_dependent(get_identifier_name(node.target))
         else:
             self.context.add_measure(qubits, targets)
+
+    def _resolve_measurement_index(self, name: str, index: Expression) -> int | SymbolLiteral:
+        """Resolve an index into the measurement destination ``name`` with the context.
+
+        A non-negative integer is passed on unchanged, so each context keeps its own range
+        check for it, including for an undeclared destination; other indices are resolved
+        with ``resolve_index``, which needs the destination's declared size.
+        """
+        value = self.visit(index)
+        if isinstance(value, IntegerLiteral) and value.value >= 0:
+            return value.value
+        try:
+            self.context.get_type(name)
+        except KeyError:
+            raise NameError(
+                f"Measurement destination '{name}' is not declared, so its index "
+                f"{value.value} cannot be resolved."
+            ) from None
+        return self.context.resolve_index(name, value)
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:

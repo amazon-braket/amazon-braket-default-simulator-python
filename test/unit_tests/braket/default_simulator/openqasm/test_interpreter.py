@@ -2429,7 +2429,7 @@ def test_measure_out_of_range_element_raises():
             "b[{2, 1}] = measure q[{0, 1}];",
         ]
     )
-    with pytest.raises(IndexError, match="index 2 out of range for register of length 1 `b`"):
+    with pytest.raises(IndexError, match="Index 2 is out of range for 'b', which has size 1"):
         Interpreter().build_circuit(qasm)
 
 
@@ -2442,6 +2442,64 @@ def test_measure_into_non_bit_raises():
         ]
     )
     with pytest.raises(TypeError, match="Measurement destination 'x' is not a bit"):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_into_undeclared_indexed_destination_raises():
+    """The context reports an undeclared destination with a non-negative index."""
+    qasm = "\n".join(
+        [
+            "qubit q;",
+            "c[1] = measure q;",
+        ]
+    )
+    with pytest.raises(TypeError, match="Measurement destination 'c' is not a bit"):
+        Interpreter().build_circuit(qasm)
+
+
+@pytest.mark.parametrize("index", ["-1", "-2"])
+def test_measure_into_undeclared_destination_with_negative_index_raises(index):
+    """A negative index needs the destination's declared size, so an undeclared one is named."""
+    qasm = "\n".join(
+        [
+            "qubit q;",
+            f"c[{index}] = measure q;",
+        ]
+    )
+    with pytest.raises(
+        NameError,
+        match=f"Measurement destination 'c' is not declared, so its index {index} cannot be",
+    ):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_into_non_integer_symbolic_index_raises():
+    """A symbolic destination index is checked for integer type."""
+    qasm = "\n".join(
+        [
+            "input float f;",
+            "bit[2] c;",
+            "qubit q;",
+            "c[f] = measure q;",
+        ]
+    )
+    with pytest.raises(TypeError, match="Index into 'c' must be an integer, but 'f' has type"):
+        Interpreter().build_circuit(qasm)
+
+
+def test_measure_into_symbolic_index_raises():
+    """The simulator cannot measure into an index that is an unbound input."""
+    qasm = "\n".join(
+        [
+            "input int n;",
+            "bit[2] c;",
+            "qubit q;",
+            "c[n] = measure q;",
+        ]
+    )
+    with pytest.raises(
+        TypeError, match="Measurement destination 'c' must be indexed by a concrete"
+    ):
         Interpreter().build_circuit(qasm)
 
 
