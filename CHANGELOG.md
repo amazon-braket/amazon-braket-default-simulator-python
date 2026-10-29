@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.43.0 (2026-10-29)
+
+### Features
+
+ * Shared index resolution in `AbstractProgramContext`
+
 ## v1.42.1 (2026-10-28)
 
 ### Bug Fixes and Other Changes
