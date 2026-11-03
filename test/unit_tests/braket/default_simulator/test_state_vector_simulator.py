@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from scipy.linalg import fractional_matrix_power
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
@@ -1201,6 +1202,23 @@ def test_simulator_valid_observables_qasm(result_types, expected, caplog):
     assert not caplog.text
 
 
+@pytest.mark.parametrize("shots", [0, 10])
+def test_simulator_rejects_sum_observable_qasm(shots):
+    prog = OpenQASMProgram(
+        source="""
+        qubit[2] q;
+        h q[0];
+        rx(0.5) q[1];
+        cnot q[0], q[1];
+        ry(0.5) q[0];
+        #pragma braket result expectation x(q[0]) @ x(q[1]) + z(q[0]) @ z(q[1])
+        """
+    )
+
+    with pytest.raises(TypeError, match="Sum observables are not supported"):
+        StateVectorSimulator().run(prog, shots=shots)
+
+
 def test_observable_hash_tensor_product():
     matrix = np.eye(4)
     obs = observables.TensorProduct(
@@ -1709,14 +1727,18 @@ def test_program_set_validation():
     assert result is not None
 
 
-_CONTROLLED_BASE_MATRICES = {
-    "x": np.array([[0, 1], [1, 0]], dtype=complex),
-    "h": np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2),
-    "s": np.diag([1, 1j]).astype(complex),
+_TWO_QUBIT_BASE_MATRICES = {
     "cnot": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex),
     "swap": np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=complex),
     "cz": np.diag([1, 1, 1, -1]).astype(complex),
     "iswap": np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]], dtype=complex),
+}
+
+_CONTROLLED_BASE_MATRICES = {
+    "x": np.array([[0, 1], [1, 0]], dtype=complex),
+    "h": np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2),
+    "s": np.diag([1, 1j]).astype(complex),
+    **_TWO_QUBIT_BASE_MATRICES,
 }
 
 
@@ -1734,6 +1756,33 @@ def _openqasm_matrix(matrix):
         + ", ".join("[" + ", ".join(f"{z.real}{z.imag:+}im" for z in row) + "]" for row in matrix)
         + "]"
     )
+
+
+def _assert_same_state_vector(*sources):
+    result_type = "#pragma braket result state_vector\n"
+    results = [
+        np.asarray(
+            StateVectorSimulator()
+            .run(OpenQASMProgram(source=source + result_type), shots=0)
+            .resultTypes[0]
+            .value
+        )
+        for source in sources
+    ]
+    assert np.allclose(*results)
+
+
+@pytest.mark.parametrize("power", [0, 2, 3, -1, -2, 0.5, -0.5, 1.5])
+@pytest.mark.parametrize("gate", list(_TWO_QUBIT_BASE_MATRICES))
+def test_pow_two_qubit_gate_matches_unitary(gate, power):
+    preparation = "qubit[2] q;\nry(0.7) q[0];\nry(0.3) q[1];\n"
+    powered = f"OPENQASM 3.0;\n{preparation}pow({power}) @ {gate} q[0], q[1];\n"
+    matrix = fractional_matrix_power(_TWO_QUBIT_BASE_MATRICES[gate], power)
+    unitary = (
+        f"OPENQASM 3.0;\n{preparation}"
+        f"#pragma braket unitary({_openqasm_matrix(matrix)}) q[0], q[1]\n"
+    )
+    _assert_same_state_vector(powered, unitary)
 
 
 @pytest.mark.parametrize("qubit_count", [4, 7])
@@ -1763,14 +1812,39 @@ def test_control_modifiers_match_unitary(gate, controls, control_state, targets,
     unitary = (
         f"OPENQASM 3.0;\n{preparation}#pragma braket unitary({_openqasm_matrix(matrix)}) {qubits}\n"
     )
-    result_type = "#pragma braket result state_vector\n"
-    results = [
-        np.asarray(
-            StateVectorSimulator()
-            .run(OpenQASMProgram(source=source + result_type), shots=0)
-            .resultTypes[0]
-            .value
-        )
-        for source in (controlled, unitary)
-    ]
-    assert np.allclose(*results)
+    _assert_same_state_vector(controlled, unitary)
+
+
+def test_output_classical_value_derived_from_unreported_register():
+    """Only the ``int`` output is reported. The bit register it is computed from
+    is measured, but is not an output."""
+    qasm = """
+    OPENQASM 3.0;
+    output int n;
+    bit[2] b;
+    qubit[2] q;
+    x q;
+    b = measure q;
+    n = uint(b) + 1;
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=10)
+    assert result.outputs == [{"n": 4}] * 10
+
+
+def test_output_mid_circuit_measurement_register_not_reported():
+    """The mid-circuit measurement ``m`` drives control flow but is not an output.
+    Only ``r`` is reported."""
+    qasm = """
+    OPENQASM 3.0;
+    output bit r;
+    bit m;
+    qubit[2] q;
+    h q[0];
+    m = measure q[0];
+    if (m) { x q[1]; }
+    r = measure q[1];
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
+    assert all(output.keys() == {"r"} for output in result.outputs)
+    assert {output["r"] for output in result.outputs} == {0, 1}
+    assert result.measurements is None

@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -25,22 +25,48 @@ from braket.ir.jaqcd.shared_models import Observable, OptionalMultiTarget
 
 
 class ClassicalRegister:
-    """A named classical bit register that measurements are recorded into."""
+    """A named classical bit register that measurements are recorded into.
+
+    Args:
+        name (str | None): The program-level name of the register, or ``None``
+            for the anonymous register that collects measurements without a
+            classical destination.
+        size (int): Number of elements.
+        order (int): Position of the register in declaration order. ``-1`` for
+            a register that is not part of the circuit, such as a feedback bit.
+
+    Attributes:
+        sources (list[int | None]): The qubit measured into each element, or
+            ``None`` if the element holds no measurement.
+        overwritten (set[int]): Elements whose end-of-circuit measurement was
+            classically written afterwards, so the written value is reported
+            instead of the sampled bit. Only set when pending measurements are
+            flushed. Branched paths keep the written value in their variables
+            instead.
+    """
 
     def __init__(self, name: str | None, size: int, order: int):
         self.name = name
         self.order = order
         self.sources: list[int | None] = [None] * size
+        self.overwritten: set[int] = set()
 
     @property
     def size(self) -> int:
         return len(self.sources)
 
+    @property
+    def measured(self) -> bool:
+        """Whether any element holds a measurement."""
+        return any(source is not None for source in self.sources)
+
     def bind(self, element: int, qubit: int) -> None:
         """Record ``qubit`` as the measurement source of ``element``.
 
         Simulator samples qubits at the end of the circuit, so registers must
-        know mapping to retrieve the measurement results.
+        know mapping to retrieve the measurement results. A new measurement
+        replaces any earlier classical write, so ``element`` is no longer
+        overwritten.
         """
         if not 0 <= element < self.size:
             raise IndexError(
@@ -48,10 +74,7 @@ class ClassicalRegister:
                 f"register of length {self.size} `{self.name}`."
             )
         self.sources[element] = qubit
-
-    def clear(self, element: int) -> None:
-        """Remove the measurement source of ``element``."""
-        self.sources[element] = None
+        self.overwritten.discard(element)
 
     def grow(self, count: int) -> None:
         """Append ``count`` unbound elements to the register.
@@ -167,10 +190,6 @@ class Circuit:
             bound.append((register, register_index))
         return bound
 
-    def clear_measurement(self, register: ClassicalRegister, element: int) -> None:
-        """Remove the measurement source of a register element."""
-        register.clear(element)
-
     @property
     def measurement_slots(self) -> list[tuple[ClassicalRegister, int, int]]:
         """``(register, element, qubit)`` for every measured register element."""
@@ -186,50 +205,47 @@ class Circuit:
         """The measured qubit of each measurement slot, in ``measurement_slots`` order."""
         return [qubit for _, _, qubit in self.measurement_slots]
 
-    def add_measure_by_index(
-        self,
-        target: tuple[int, ...],
-        classical_targets: Iterable[int] | None = None,
-        allow_remeasure: bool = False,
-    ) -> None:
-        """Record a measurement by flat classical index into the anonymous register.
-
-        Temporary entry point for callers that still address measurements by a
-        program-wide classical index. It is removed once measurements are routed
-        through declared registers via ``add_measure``.
-
-        Args:
-            target (tuple[int, ...]): The qubits measured, in order.
-            classical_targets (Iterable[int] | None): The classical index of each
-                qubit. ``None`` appends one new index per qubit after the indices
-                already in use.
-            allow_remeasure (bool): Whether a qubit that is already measured into a
-                register element may be measured again (replacing the source of the
-                requested index).
-        """
-        register = self.anonymous_register()
-        classical_targets = list(classical_targets) if classical_targets else None
-        for index, qubit in enumerate(target):
-            if not allow_remeasure and qubit in self.measured_qubits:
-                raise ValueError(f"Qubit {qubit} is already measured or captured.")
-            element = (
-                classical_targets[index]
-                if classical_targets
-                else max(index, sum(source is not None for source in register.sources))
-            )
-            if element >= register.size:
-                register.grow(element + 1 - register.size)
-            register.bind(element, qubit)
-            self.qubit_set.add(qubit)
-
     @property
-    def target_classical_indices(self) -> list[int]:
-        """The classical index of each measurement slot, in ``measurement_slots`` order.
+    def measured_registers(self) -> list[ClassicalRegister]:
+        """The registers holding at least one measurement, in declaration order."""
+        return [register for register in self.classical_registers if register.measured]
 
-        Temporary companion of ``add_measure_by_index``: with a single anonymous
-        register the element index is the classical index. Removed with it.
+    def reported_measurement_slots(self) -> list[tuple[ClassicalRegister, int, int]]:
+        """The measurement slots sampled for the result.
+
+        Measurements without a destination are left out when any named register is
+        measured. When no named register is measured, they are the slots returned.
+        For a program with outputs, the sampled rows are used to compute the outputs
+        rather than being reported as ``measurements``.
+
+        Returns:
+            list[tuple[ClassicalRegister, int, int]]: ``(register, element, qubit)``
+            for each sampled slot, in ``measurement_slots`` order. Empty if nothing
+            was measured.
         """
-        return [element for _, element, _ in self.measurement_slots]
+        slots = self.measurement_slots
+        named = [slot for slot in slots if slot[0] is not self._anonymous_register]
+        return named or slots
+
+    def validate_single_measured_register(self) -> None:
+        """Reject programs without outputs whose measurements span more than one
+        named register. Measurements without a destination do not count.
+
+        Raises:
+            ValueError: If measurements were recorded into more than one named register.
+        """
+        measured = [
+            register
+            for register in self.measured_registers
+            if register is not self._anonymous_register
+        ]
+        if len(measured) > 1:
+            names = ", ".join(f"`{register.name}`" for register in measured)
+            raise ValueError(
+                f"Measurements were recorded into {len(measured)} classical registers: "
+                f"{names}. Measure into a single register, or declare the values to "
+                "return with `output`, e.g. `output bit[2] c;`."
+            )
 
     def add_result(self, result: Results) -> None:
         """

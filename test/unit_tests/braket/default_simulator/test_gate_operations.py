@@ -88,6 +88,29 @@ def test_gate_operation(ir_instruction, targets, operation_type):
     check_unitary(operation_instance.matrix)
 
 
+@pytest.mark.parametrize(
+    "operation_type, gate_type", [(gate_operations.CX, "cx"), (gate_operations.Swap, "swap")]
+)
+@pytest.mark.parametrize(
+    "power, uses_gate_type",
+    [
+        (1, True),
+        (3, True),
+        (-1, True),
+        (1.0, True),
+        (0, False),
+        (2, False),
+        (-2, False),
+        (0.5, False),
+    ],
+)
+def test_matrix_free_gate_type_respects_power(operation_type, gate_type, power, uses_gate_type):
+    operation = operation_type([0, 1], power=power)
+    assert operation.gate_type == (gate_type if uses_gate_type else None)
+    if uses_gate_type:
+        np.testing.assert_allclose(operation.matrix, operation._base_matrix)
+
+
 # ---------------------------------------------------------------------------
 # Measure class tests
 # ---------------------------------------------------------------------------

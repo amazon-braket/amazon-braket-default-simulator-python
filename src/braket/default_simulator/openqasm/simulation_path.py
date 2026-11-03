@@ -14,9 +14,12 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from braket.default_simulator.operation import GateOperation
+
+if TYPE_CHECKING:  # pragma: no cover
+    from braket.default_simulator.openqasm.circuit import ClassicalRegister
 
 
 class FramedVariable:
@@ -74,7 +77,7 @@ class SimulationPath:
         variables: dict[str, FramedVariable] | None = None,
         measurements: dict[int, list[int]] | None = None,
         frame_number: int = 0,
-        mcm_outcomes: dict[int, int] | None = None,
+        mcm_outcomes: dict[tuple[ClassicalRegister, int], int] | None = None,
     ):
         self._instructions = instructions if instructions is not None else []
         self._shots = shots
@@ -102,6 +105,10 @@ class SimulationPath:
     @property
     def measurements(self) -> dict[int, list[int]]:
         return self._measurements
+
+    @property
+    def mcm_outcomes(self) -> dict[tuple[ClassicalRegister, int], int]:
+        return self._mcm_outcomes
 
     @property
     def frame_number(self) -> int:

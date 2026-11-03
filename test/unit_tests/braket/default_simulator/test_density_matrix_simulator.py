@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from scipy.linalg import fractional_matrix_power
 from braket.device_schema.simulators import (
     GateModelSimulatorDeviceCapabilities,
     GateModelSimulatorDeviceParameters,
@@ -1090,14 +1091,18 @@ def test_remove_verbatim_box_with_nested_braces():
     assert "x $0;" in result
 
 
-_CONTROLLED_BASE_MATRICES = {
-    "x": np.array([[0, 1], [1, 0]], dtype=complex),
-    "h": np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2),
-    "s": np.diag([1, 1j]).astype(complex),
+_TWO_QUBIT_BASE_MATRICES = {
     "cnot": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex),
     "swap": np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=complex),
     "cz": np.diag([1, 1, 1, -1]).astype(complex),
     "iswap": np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]], dtype=complex),
+}
+
+_CONTROLLED_BASE_MATRICES = {
+    "x": np.array([[0, 1], [1, 0]], dtype=complex),
+    "h": np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2),
+    "s": np.diag([1, 1j]).astype(complex),
+    **_TWO_QUBIT_BASE_MATRICES,
 }
 
 
@@ -1115,6 +1120,33 @@ def _openqasm_matrix(matrix):
         + ", ".join("[" + ", ".join(f"{z.real}{z.imag:+}im" for z in row) + "]" for row in matrix)
         + "]"
     )
+
+
+def _assert_same_density_matrix(*sources):
+    result_type = "#pragma braket result density_matrix\n"
+    results = [
+        np.asarray(
+            DensityMatrixSimulator()
+            .run(OpenQASMProgram(source=source + result_type), shots=0)
+            .resultTypes[0]
+            .value
+        )
+        for source in sources
+    ]
+    assert np.allclose(*results)
+
+
+@pytest.mark.parametrize("power", [0, 2, 3, -1, -2, 0.5, -0.5, 1.5])
+@pytest.mark.parametrize("gate", list(_TWO_QUBIT_BASE_MATRICES))
+def test_pow_two_qubit_gate_matches_unitary(gate, power):
+    preparation = "qubit[2] q;\nry(0.7) q[0];\nry(0.3) q[1];\n"
+    powered = f"OPENQASM 3.0;\n{preparation}pow({power}) @ {gate} q[0], q[1];\n"
+    matrix = fractional_matrix_power(_TWO_QUBIT_BASE_MATRICES[gate], power)
+    unitary = (
+        f"OPENQASM 3.0;\n{preparation}"
+        f"#pragma braket unitary({_openqasm_matrix(matrix)}) q[0], q[1]\n"
+    )
+    _assert_same_density_matrix(powered, unitary)
 
 
 @pytest.mark.parametrize("qubit_count", [4, 7])
@@ -1144,14 +1176,4 @@ def test_control_modifiers_match_unitary(gate, controls, control_state, targets,
     unitary = (
         f"OPENQASM 3.0;\n{preparation}#pragma braket unitary({_openqasm_matrix(matrix)}) {qubits}\n"
     )
-    result_type = "#pragma braket result density_matrix\n"
-    results = [
-        np.asarray(
-            DensityMatrixSimulator()
-            .run(OpenQASMProgram(source=source + result_type), shots=0)
-            .resultTypes[0]
-            .value
-        )
-        for source in (controlled, unitary)
-    ]
-    assert np.allclose(*results)
+    _assert_same_density_matrix(controlled, unitary)
