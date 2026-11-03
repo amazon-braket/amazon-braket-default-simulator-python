@@ -1098,6 +1098,21 @@ _TWO_QUBIT_BASE_MATRICES = {
     "iswap": np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]], dtype=complex),
 }
 
+_CONTROLLED_BASE_MATRICES = {
+    "x": np.array([[0, 1], [1, 0]], dtype=complex),
+    "h": np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2),
+    "s": np.diag([1, 1j]).astype(complex),
+    **_TWO_QUBIT_BASE_MATRICES,
+}
+
+
+def _controlled_unitary(matrix, control_state):
+    size = len(matrix)
+    unitary = np.eye(size << len(control_state), dtype=complex)
+    offset = int("".join(str(value) for value in control_state), 2) * size
+    unitary[offset : offset + size, offset : offset + size] = matrix
+    return unitary
+
 
 def _openqasm_matrix(matrix):
     return (
@@ -1105,6 +1120,20 @@ def _openqasm_matrix(matrix):
         + ", ".join("[" + ", ".join(f"{z.real}{z.imag:+}im" for z in row) + "]" for row in matrix)
         + "]"
     )
+
+
+def _assert_same_density_matrix(*sources):
+    result_type = "#pragma braket result density_matrix\n"
+    results = [
+        np.asarray(
+            DensityMatrixSimulator()
+            .run(OpenQASMProgram(source=source + result_type), shots=0)
+            .resultTypes[0]
+            .value
+        )
+        for source in sources
+    ]
+    assert np.allclose(*results)
 
 
 @pytest.mark.parametrize("power", [0, 2, 3, -1, -2, 0.5, -0.5, 1.5])
@@ -1117,14 +1146,34 @@ def test_pow_two_qubit_gate_matches_unitary(gate, power):
         f"OPENQASM 3.0;\n{preparation}"
         f"#pragma braket unitary({_openqasm_matrix(matrix)}) q[0], q[1]\n"
     )
-    result_type = "#pragma braket result density_matrix\n"
-    results = [
-        np.asarray(
-            DensityMatrixSimulator()
-            .run(OpenQASMProgram(source=source + result_type), shots=0)
-            .resultTypes[0]
-            .value
-        )
-        for source in (powered, unitary)
-    ]
-    assert np.allclose(*results)
+    _assert_same_density_matrix(powered, unitary)
+
+
+@pytest.mark.parametrize("qubit_count", [4, 7])
+@pytest.mark.parametrize(
+    "gate, controls, control_state, targets",
+    [
+        ("x", (2,), (1,), (0,)),
+        ("h", (3,), (0,), (1,)),
+        ("s", (1,), (1,), (0,)),
+        ("x", (0, 1), (1, 0), (2,)),
+        ("h", (3, 1), (0, 1), (0,)),
+        ("cnot", (1,), (1,), (0, 2)),
+        ("swap", (3,), (1,), (0, 1)),
+        ("cz", (2,), (0,), (3, 0)),
+        ("iswap", (0, 2), (0, 1), (3, 1)),
+    ],
+)
+def test_control_modifiers_match_unitary(gate, controls, control_state, targets, qubit_count):
+    preparation = f"qubit[{qubit_count}] q;\n" + "".join(
+        f"ry({0.3 + 0.4 * qubit}) q[{qubit}];\nrz({0.2 + 0.3 * qubit}) q[{qubit}];\n"
+        for qubit in range(qubit_count)
+    )
+    modifiers = "".join("ctrl @ " if value else "negctrl @ " for value in control_state)
+    qubits = ", ".join(f"q[{qubit}]" for qubit in (*controls, *targets))
+    controlled = f"OPENQASM 3.0;\n{preparation}{modifiers}{gate} {qubits};\n"
+    matrix = _controlled_unitary(_CONTROLLED_BASE_MATRICES[gate], control_state)
+    unitary = (
+        f"OPENQASM 3.0;\n{preparation}#pragma braket unitary({_openqasm_matrix(matrix)}) {qubits}\n"
+    )
+    _assert_same_density_matrix(controlled, unitary)

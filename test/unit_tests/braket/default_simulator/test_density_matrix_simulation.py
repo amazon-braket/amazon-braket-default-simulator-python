@@ -13,6 +13,7 @@
 
 from collections import Counter
 
+import numba as nb
 import numpy as np
 import pytest
 
@@ -546,6 +547,27 @@ _POWERED_GATES = [
     (gate_operations.ZZ, 2, (0.37,)),
 ]
 
+_CONTROLLED_OPERATIONS = [
+    (gate_operations.Hadamard, 1, ()),
+    (gate_operations.PauliX, 1, ()),
+    (gate_operations.S, 1, ()),
+    (gate_operations.RotY, 1, (0.37,)),
+    (gate_operations.CX, 2, ()),
+    (gate_operations.Swap, 2, ()),
+    (gate_operations.CZ, 2, ()),
+    (gate_operations.ISwap, 2, ()),
+    (gate_operations.CPhaseShift, 2, (0.37,)),
+    (gate_operations.XX, 2, (0.37,)),
+    (gate_operations.CCNot, 3, ()),
+]
+
+_CONTROL_LAYOUTS = [
+    ((2,), (1,)),
+    ((0,), (0,)),
+    ((3, 1), (1, 0)),
+    ((1, 3), (0, 1)),
+]
+
 
 def _preparation_operations(qubit_count):
     return [gate_operations.RotY([q], 0.3 + 0.4 * q) for q in range(qubit_count)] + [
@@ -568,5 +590,22 @@ def _assert_matches_state_vector(operations, qubit_count):
 def test_powered_gate(gate_class, num_targets, args, power, qubit_count, targets):
     operations = _preparation_operations(qubit_count) + [
         gate_class(targets[:num_targets], *args, power=power)
+    ]
+    _assert_matches_state_vector(operations, qubit_count)
+
+
+@pytest.mark.parametrize("qubit_threshold", [5, 32])
+@pytest.mark.parametrize("controls, control_state", _CONTROL_LAYOUTS)
+@pytest.mark.parametrize("gate_class, num_targets, args", _CONTROLLED_OPERATIONS)
+def test_controlled_gate(
+    gate_class, num_targets, args, controls, control_state, qubit_threshold, monkeypatch
+):
+    monkeypatch.setattr(
+        "braket.default_simulator.linalg_utils._QUBIT_THRESHOLD", nb.int32(qubit_threshold)
+    )
+    qubit_count = 5
+    targets = tuple(q for q in (4, 0, 2, 1, 3) if q not in controls)[:num_targets]
+    operations = _preparation_operations(qubit_count) + [
+        gate_class([*controls, *targets], *args, ctrl_modifiers=control_state)
     ]
     _assert_matches_state_vector(operations, qubit_count)

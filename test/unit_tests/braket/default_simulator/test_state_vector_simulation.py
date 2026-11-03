@@ -570,6 +570,27 @@ _POWERED_GATES = [
     (gate_operations.ZZ, 2, (0.37,)),
 ]
 
+_CONTROLLED_OPERATIONS = [
+    (gate_operations.Hadamard, 1, ()),
+    (gate_operations.PauliX, 1, ()),
+    (gate_operations.S, 1, ()),
+    (gate_operations.RotY, 1, (0.37,)),
+    (gate_operations.CX, 2, ()),
+    (gate_operations.Swap, 2, ()),
+    (gate_operations.CZ, 2, ()),
+    (gate_operations.ISwap, 2, ()),
+    (gate_operations.CPhaseShift, 2, (0.37,)),
+    (gate_operations.XX, 2, (0.37,)),
+    (gate_operations.CCNot, 3, ()),
+]
+
+_CONTROL_LAYOUTS = [
+    ((2,), (1,)),
+    ((0,), (0,)),
+    ((3, 1), (1, 0)),
+    ((1, 3), (0, 1)),
+]
+
 
 def _preparation_operations(qubit_count):
     return [gate_operations.RotY([q], 0.3 + 0.4 * q) for q in range(qubit_count)] + [
@@ -627,3 +648,47 @@ def test_controlled_powered_gate(gate_class, power, qubit_count, targets, contro
     simulation = StateVectorSimulation(qubit_count, 0, 1)
     simulation.evolve(operations)
     assert np.allclose(simulation.state_vector, _reference_state_vector(operations, qubit_count))
+
+
+def _apply_controlled_reference(state, operation):
+    num_controls = len(operation.control_state)
+    controls = operation.targets[:num_controls]
+    targets = operation.targets[num_controls:]
+    expected = state.copy()
+    index = [slice(None)] * state.ndim
+    for control, value in zip(controls, operation.control_state):
+        index[control] = value
+    index = tuple(index)
+    remaining = [qubit for qubit in range(state.ndim) if qubit not in controls]
+    sub_targets = [remaining.index(target) for target in targets]
+    num_targets = len(targets)
+    product = np.tensordot(
+        operation.matrix.reshape([2] * 2 * num_targets),
+        state[index],
+        axes=(range(num_targets, 2 * num_targets), sub_targets),
+    )
+    expected[index] = np.moveaxis(product, range(num_targets), sub_targets)
+    return expected
+
+
+@pytest.mark.parametrize("qubit_count, spacing", [(5, 1), (11, 2)])
+@pytest.mark.parametrize("controls, control_state", _CONTROL_LAYOUTS)
+@pytest.mark.parametrize("gate_class, num_targets, args", _CONTROLLED_OPERATIONS)
+def test_controlled_gate(
+    gate_class, num_targets, args, controls, control_state, qubit_count, spacing
+):
+    controls = tuple(spacing * control for control in controls)
+    targets = tuple(spacing * q for q in (4, 0, 2, 1, 3) if spacing * q not in controls)[
+        :num_targets
+    ]
+    operation = gate_class([*controls, *targets], *args, ctrl_modifiers=control_state)
+    operations = _preparation_operations(qubit_count) + [operation]
+
+    simulation = StateVectorSimulation(qubit_count, 0, 1)
+    simulation.evolve(operations)
+
+    reference = StateVectorSimulation(qubit_count, 0, 1)
+    reference.evolve(operations[:-1])
+    state = np.reshape(reference.state_vector, [2] * qubit_count)
+    expected = _apply_controlled_reference(state, operation).reshape(-1)
+    assert np.allclose(simulation.state_vector, expected)
