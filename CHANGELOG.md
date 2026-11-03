@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.43.1 (2026-11-03)
+
+### Bug Fixes and Other Changes
+
+ * Raise error on `Sum` observables
+
 ## v1.43.0 (2026-10-29)
 
 ### Features
