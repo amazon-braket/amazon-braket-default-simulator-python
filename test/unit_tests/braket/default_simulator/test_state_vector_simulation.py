@@ -419,6 +419,15 @@ def test_simulation_simple_circuits(
         assert np.allclose(probability_amplitudes, simulation.probabilities)
 
 
+@pytest.mark.parametrize("batch_size", [1, 2])
+def test_simulation_evolve_with_iterator(batch_size):
+    """``evolve`` applies every operation of an iterator, as it does for a list."""
+    instructions = [gate_operations.PauliX([0]), gate_operations.CX([0, 1])]
+    simulation = StateVectorSimulation(2, 0, batch_size)
+    simulation.evolve(iter(instructions))
+    assert np.allclose([0, 0, 0, 1], simulation.state_vector)
+
+
 @pytest.mark.parametrize("batch_size", [1, 5, 10])
 @pytest.mark.parametrize("obs, equivalent_gates, qubit_count", apply_observables_testdata)
 def test_apply_observables(obs, equivalent_gates, qubit_count, batch_size):

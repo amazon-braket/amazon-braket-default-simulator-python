@@ -5452,6 +5452,61 @@ class TestDensityMatrixSimulatorBranchedNoise:
         assert 1400 < counts["00"] + counts["10"] < 1800, counts
 
 
+class TestStateVectorSimulatorBranchedNoise:
+    """Noise pragmas are rejected on the branched path as they are everywhere else."""
+
+    NO_NOISE = "Noise instructions are not supported by the state vector simulator"
+    CHANNELS = ["bit_flip(0.4)", "kraus([[0, 1], [1, 0]])"]
+
+    @pytest.mark.parametrize("channel", CHANNELS)
+    def test_channel_after_branch_is_rejected(self, channel):
+        qasm = f"""
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {{
+            x q[0];
+        }}
+        #pragma braket noise {channel} q[1]
+        b[1] = measure q[1];
+        """
+        with pytest.raises(TypeError, match=self.NO_NOISE):
+            StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
+
+    @pytest.mark.parametrize("channel", CHANNELS)
+    def test_channel_before_branch_is_rejected(self, channel):
+        qasm = f"""
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        #pragma braket noise {channel} q[1]
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {{
+            x q[0];
+        }}
+        b[1] = measure q[1];
+        """
+        with pytest.raises(TypeError, match=self.NO_NOISE):
+            StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
+
+    @pytest.mark.parametrize("channel", CHANNELS)
+    def test_channel_on_qubit_with_pending_measurement_is_rejected(self, channel):
+        qasm = f"""
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[1] q;
+        x q[0];
+        b[0] = measure q[0];
+        #pragma braket noise {channel} q[0]
+        b[1] = measure q[0];
+        """
+        with pytest.raises(TypeError, match=self.NO_NOISE):
+            StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
+
+
 class TestBranchedInnerScopeShadowing:
     """Inner-scope bindings (e.g. qubit aliases from `declare_qubit_alias`)
     must shadow outer-scope per-path classical variables of the same name."""
