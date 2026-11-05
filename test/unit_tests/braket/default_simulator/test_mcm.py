@@ -5329,6 +5329,129 @@ class TestDensityMatrixSimulatorBranching:
         self._assert_distributions_match(qasm, expected_keys={"00", "11"})
 
 
+class TestDensityMatrixSimulatorBranchedNoise:
+    """Noise pragmas after a branch must reach every active path, in program order.
+
+    Except where noted, the channels are deterministic, so a channel that is dropped,
+    misplaced or applied to only some of the paths changes the set of outcomes.
+    """
+
+    SHOTS = 100
+    # Each channel takes |1> to |0>. Together they cover add_noise_instruction and
+    # add_kraus_instruction.
+    CHANNELS = ["bit_flip(1.0)", "amplitude_damping(1.0)", "kraus([[0, 1], [1, 0]])"]
+
+    def _counts(self, qasm, shots=SHOTS):
+        result = DensityMatrixSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
+        return Counter("".join(m) for m in result.measurements)
+
+    @pytest.mark.parametrize("channel", CHANNELS)
+    def test_channel_after_branch_applies_on_every_path(self, channel):
+        """The ``x`` sits between the branch and the channel, so amplitude damping also
+        checks the order: applied before the ``x``, it would leave q[1] in |1>."""
+        qasm = f"""
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {{
+            x q[0];
+        }}
+        x q[1];
+        #pragma braket noise {channel} q[1]
+        b[1] = measure q[1];
+        """
+        assert set(self._counts(qasm)) == {"00", "10"}
+
+    @pytest.mark.parametrize("channel", CHANNELS)
+    def test_channel_on_qubit_with_pending_measurement(self, channel):
+        """The channel flushes the pending measurement, which starts the branch, and must
+        land after it: only the second measurement sees the flip."""
+        qasm = f"""
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[1] q;
+        x q[0];
+        b[0] = measure q[0];
+        #pragma braket noise {channel} q[0]
+        b[1] = measure q[0];
+        """
+        assert set(self._counts(qasm)) == {"10"}
+
+    def test_channel_on_another_qubit_leaves_measurement_pending(self):
+        """A channel leaves pending measurements alone when none of them is on its targets,
+        so here it neither starts a branch nor gets lost."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        x q[1];
+        h q[0];
+        b[0] = measure q[0];
+        #pragma braket noise bit_flip(1.0) q[1]
+        b[1] = measure q[1];
+        """
+        program = OpenQASMProgram(source=qasm)
+        context = DensityMatrixSimulator()._parse_program_with_shots(program, self.SHOTS)
+        assert not context.is_branched
+        assert set(self._counts(qasm)) == {"00", "10"}
+
+    def test_two_qubit_channel_after_branch_keeps_targets(self):
+        """A Kraus X tensor I on q[4], q[2] of a sparse register: the path's remapping
+        must keep both the qubit indices and the order of the targets."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[3] b;
+        qubit[5] q;
+        h q[1];
+        b[0] = measure q[1];
+        if (b[0] == 1) {
+            x q[1];
+        }
+        #pragma braket noise kraus([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]]) q[4], q[2]
+        b[1] = measure q[2];
+        b[2] = measure q[4];
+        """
+        assert set(self._counts(qasm)) == {"001", "101"}
+
+    def test_channels_before_and_after_branch_both_apply(self):
+        """Two bit flips on q[1] cancel, one on each side of the branch."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        #pragma braket noise bit_flip(1.0) q[1]
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            x q[0];
+        }
+        #pragma braket noise bit_flip(1.0) q[1]
+        b[1] = measure q[1];
+        """
+        assert set(self._counts(qasm)) == {"00", "10"}
+
+    def test_partial_channel_after_branch_sets_the_distribution(self):
+        """Statistical: b[1] is 0 in 1,600 of 4,000 shots on average, with a standard
+        deviation of about 31."""
+        qasm = """
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        x q[1];
+        h q[0];
+        b[0] = measure q[0];
+        if (b[0] == 1) {
+            x q[0];
+        }
+        #pragma braket noise bit_flip(0.4) q[1]
+        b[1] = measure q[1];
+        """
+        counts = self._counts(qasm, shots=4000)
+        assert 1400 < counts["00"] + counts["10"] < 1800, counts
+
+
 class TestBranchedInnerScopeShadowing:
     """Inner-scope bindings (e.g. qubit aliases from `declare_qubit_alias`)
     must shadow outer-scope per-path classical variables of the same name."""
