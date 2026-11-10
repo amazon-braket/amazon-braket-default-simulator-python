@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from contextlib import contextmanager
 from copy import copy
 from dataclasses import fields
 from functools import singledispatchmethod
@@ -1231,7 +1232,7 @@ class AbstractProgramContext(ABC):
         """
         raise NotImplementedError
 
-    def evaluate_while_condition(self, condition):
+    def evaluate_while_condition(self, condition, evaluate=None):
         """Evaluate a while-loop condition for mid-circuit measurement.
 
         Called by the Interpreter when ``supports_midcircuit_measurement``
@@ -1242,6 +1243,8 @@ class AbstractProgramContext(ABC):
 
         Args:
             condition: The AST condition expression.
+            evaluate: Optional expression evaluator, called once per active
+                path per condition check. Defaults to the context evaluator.
 
         Yields:
             bool: ``True`` to continue looping.
@@ -1275,6 +1278,22 @@ class AbstractProgramContext(ABC):
         Default behavior: no-op (continue to next iteration naturally).
         Override to raise NotImplementedError if continue is not supported.
         """
+
+    @contextmanager
+    def loop_scope(self):
+        """Track control transfers belonging to the innermost loop."""
+        yield
+
+    def finish_loop_iteration(self):
+        """Restore paths that continued before the end of the loop body."""
+
+    @property
+    def has_active_loop_paths(self) -> bool:
+        """Whether execution may continue after path-local loop control.
+
+        Non-simulating contexts do not track paths and always continue.
+        """
+        return True
 
     def handle_loop_break(self):
         """Called by the interpreter when a break statement is encountered in a loop body.
@@ -1313,6 +1332,57 @@ class ProgramContext(AbstractProgramContext):
         self._shots: int = 0
         self._batch_size: int = 1
         self._pending_mcm_targets: list[_PendingMeasurement] = []
+        # Each active loop owns its broken and continued paths. These paths
+        # must not execute the remaining body, but still contribute shots.
+        self._loop_paths: list[tuple[list[int], list[int]]] = []
+
+    @contextmanager
+    def loop_scope(self):
+        """Suspend break/continue paths until their nearest loop resumes them."""
+        broken_paths, continued_paths = [], []
+        self._loop_paths.append((broken_paths, continued_paths))
+        try:
+            yield
+        finally:
+            self._active_path_indices.extend(broken_paths)
+            self._active_path_indices.extend(continued_paths)
+            self._loop_paths.pop()
+
+    def finish_loop_iteration(self):
+        """Continue paths rejoin at the next iteration, not after the branch."""
+        if self._loop_paths:
+            continued_paths = self._loop_paths[-1][1]
+            self._active_path_indices.extend(continued_paths)
+            continued_paths.clear()
+
+    @property
+    def has_active_loop_paths(self) -> bool:
+        """Whether any paths remain in the current loop body."""
+        return bool(self._active_path_indices)
+
+    def handle_loop_break(self):
+        """Suspend the current branched paths until the innermost loop exits.
+
+        Returns:
+            bool: Whether the signal was handled for individual paths.
+        """
+        if not self._is_branched or not self._loop_paths:
+            return False
+        self._loop_paths[-1][0].extend(self._active_path_indices)
+        self._active_path_indices = []
+        return True
+
+    def handle_loop_continue(self):
+        """Suspend the current branched paths until the next iteration.
+
+        Returns:
+            bool: Whether the signal was handled for individual paths.
+        """
+        if not self._is_branched or not self._loop_paths:
+            return False
+        self._loop_paths[-1][1].extend(self._active_path_indices)
+        self._active_path_indices = []
+        return True
 
     @property
     def circuit(self):
@@ -1545,11 +1615,19 @@ class ProgramContext(AbstractProgramContext):
         return super().is_initialized(name)
 
     def _bound_in_inner_scope(self, name: str) -> bool:
-        """Whether ``name`` is bound to a value in a non-global variable-table scope."""
-        return any(
-            not is_none_like(scope[name])
-            for scope in self.variable_table._scopes[1:]
-            if name in scope
+        """Whether an inner gate/qubit alias shadows a per-path value.
+
+        Ordinary classical bindings copied when branching starts remain
+        authoritative in the path, including bindings in a loop's scope.
+        Their shared-table entries contain the pre-branch value.
+        """
+        return (
+            any(
+                not is_none_like(scope[name])
+                for scope in self.variable_table._scopes[1:]
+                if name in scope
+            )
+            and self.get_type(name) is Identifier
         )
 
     def _flush_pending_mcm_for_variable(self, name: str) -> None:
@@ -1939,32 +2017,36 @@ class ProgramContext(AbstractProgramContext):
                 false_paths.append(path_idx)
 
         surviving_paths = []
-
-        if true_paths:
-            for path_idx in true_paths:
+        branches = [(idx, True) for idx in true_paths] + [(idx, False) for idx in false_paths]
+        branch_index = -1
+        try:
+            for branch_index, (path_idx, branch) in enumerate(branches):
                 self._focus_on_path(path_idx)
                 self._enter_frame_for_active_paths()
-                yield True
-                surviving_paths.extend(self._active_path_indices)
-                self._exit_frame_for_active_paths()
-
-        if false_paths:
-            for path_idx in false_paths:
-                self._focus_on_path(path_idx)
-                self._enter_frame_for_active_paths()
-                yield False
-                surviving_paths.extend(self._active_path_indices)
-                self._exit_frame_for_active_paths()
-
-        self._active_path_indices = surviving_paths
+                broken, continued = self._loop_paths[-1] if self._loop_paths else ([], [])
+                broken_start, continued_start = len(broken), len(continued)
+                try:
+                    yield branch
+                finally:
+                    # A control transfer removes paths from the active set.
+                    # They still need to leave every enclosing branch frame.
+                    self._exit_frame_for_paths(
+                        self._active_path_indices
+                        + broken[broken_start:]
+                        + continued[continued_start:]
+                    )
+                    surviving_paths.extend(self._active_path_indices)
+        finally:
+            self._active_path_indices = surviving_paths + [
+                idx for idx, _ in branches[branch_index + 1 :]
+            ]
 
     def evaluate_for_range(self, set_declaration, loop_var: str, loop_type):
         """Set up each for-loop iteration, yielding once per iteration.
 
         Evaluates the range/set per-path (different paths may see different
-        values because MCM results can differ). Yields once per iteration
-        step, with the active-path set narrowed to exactly those paths
-        that still have a value for the current step.
+        values because MCM results can differ). Each initial path and any
+        descendants created in its body use the same remaining range values.
 
         Only called by the Interpreter when the range/set is MCM-dependent,
         which implies either an active branched state or a pending MCM that
@@ -2001,64 +2083,32 @@ class ProgramContext(AbstractProgramContext):
         self._active_path_indices = saved_active
         self._enter_frame_for_active_paths()
 
-        looping_paths = list(saved_active)
-        broken_paths = []
         finished_paths = []
-        step = 0
+        initial_index = -1
+        broken, continued = self._loop_paths[-1] if self._loop_paths else ([], [])
+        try:
+            # A path's range is evaluated once. Its descendants inherit the
+            # remaining iterations, without looking up newly-created path IDs
+            # in the original range map.
+            for initial_index, initial_path in enumerate(saved_active):
+                self._focus_on_path(initial_path)
+                for value in per_path_values[initial_path]:
+                    if not self._active_path_indices:
+                        break
+                    for path_idx in self._active_path_indices:
+                        path = self._paths[path_idx]
+                        path.set_variable(
+                            loop_var,
+                            FramedVariable(loop_var, loop_type, value, False, path.frame_number),
+                        )
+                    yield
+                finished_paths.extend(self._active_path_indices)
+                self._active_path_indices = []
+        finally:
+            self._active_path_indices += finished_paths + saved_active[initial_index + 1 :]
+            self._exit_frame_for_paths(self._active_path_indices + broken + continued)
 
-        # Step through iterations in lockstep. At each step, only paths that
-        # still have a value at that index participate; paths whose value
-        # list is exhausted move to `finished_paths`. Loop exits when no
-        # paths have a value for the current step.
-        while True:
-            # Partition currently-looping paths into those that still have
-            # an iteration value at `step` and those that have just finished.
-            step_paths = []
-            newly_finished = []
-            for idx in looping_paths:
-                if step < len(per_path_values[idx]):
-                    step_paths.append(idx)
-                else:
-                    newly_finished.append(idx)
-            finished_paths.extend(newly_finished)
-            if not step_paths:
-                break
-
-            # Narrow execution to only paths still iterating, and set each
-            # path's loop variable to its own value for this step.
-            self._active_path_indices = step_paths
-            for path_idx in step_paths:
-                path = self._paths[path_idx]
-                path.set_variable(
-                    loop_var,
-                    FramedVariable(
-                        loop_var,
-                        loop_type,
-                        per_path_values[path_idx][step],
-                        False,
-                        path.frame_number,
-                    ),
-                )
-
-            # Hand control back to the interpreter to execute the loop body.
-            # On break (GeneratorExit), restore all paths and exit the frame.
-            try:
-                yield
-            except GeneratorExit:
-                self._active_path_indices = looping_paths + broken_paths + finished_paths
-                self._exit_frame_for_active_paths()
-                return
-
-            # The body may have further narrowed the active set (e.g., via
-            # inner branching); continue iterating only with surviving paths.
-            looping_paths = list(self._active_path_indices)
-            step += 1
-
-        # All paths have completed the loop. Restore them and exit the frame.
-        self._active_path_indices = broken_paths + finished_paths
-        self._exit_frame_for_active_paths()
-
-    def evaluate_while_condition(self, condition):
+    def evaluate_while_condition(self, condition, evaluate=None):
         """Evaluate a while-loop condition, yielding ``True`` per iteration.
 
         Evaluates the condition per-path each iteration. Yields ``True``
@@ -2072,43 +2122,40 @@ class ProgramContext(AbstractProgramContext):
 
         Args:
             condition: The AST condition expression.
+            evaluate: Optional expression evaluator, called once per active
+                path per condition check. Defaults to the context evaluator.
 
         Yields:
             bool: ``True`` to continue looping.
         """
         self._apply_pending_mcm_targets()
+        evaluate = evaluate or self._evaluate_expression
 
-        saved_active = list(self._active_path_indices)
         self._enter_frame_for_active_paths()
 
-        continue_paths = list(saved_active)
         exited_paths = []
-
-        while True:
-            still_true = []
-            for path_idx in continue_paths:
-                self._focus_on_path(path_idx)
-                if cast_to(BooleanLiteral, self._evaluate_expression(condition)).value:
-                    still_true.append(path_idx)
-                else:
-                    exited_paths.append(path_idx)
-
-            if not still_true:
-                continue_paths = []
-                break
-
-            self._active_path_indices = still_true
-            try:
+        broken, continued = self._loop_paths[-1] if self._loop_paths else ([], [])
+        broken_start, continued_start = len(broken), len(continued)
+        try:
+            while self._active_path_indices:
+                still_true = []
+                for path_idx in list(self._active_path_indices):
+                    self._focus_on_path(path_idx)
+                    if cast_to(BooleanLiteral, evaluate(condition)).value:
+                        still_true.extend(self._active_path_indices)
+                    else:
+                        exited_paths.extend(self._active_path_indices)
+                self._active_path_indices = still_true
+                if not still_true:
+                    break
                 yield True
-            except GeneratorExit:
-                self._active_path_indices = still_true + exited_paths
-                self._exit_frame_for_active_paths()
-                return
-
-            continue_paths = list(self._active_path_indices)
-
-        self._active_path_indices = continue_paths + exited_paths
-        self._exit_frame_for_active_paths()
+        finally:
+            self._active_path_indices += exited_paths
+            # A static loop may already have suspended paths before its
+            # condition became MCM-dependent. Those never entered this frame.
+            self._exit_frame_for_paths(
+                self._active_path_indices + broken[broken_start:] + continued[continued_start:]
+            )
 
     def _enter_frame_for_active_paths(self) -> None:
         """Enter a new variable scope frame for all active paths."""
@@ -2124,13 +2171,9 @@ class ProgramContext(AbstractProgramContext):
         """
         self._active_path_indices = [path_idx]
 
-    def _exit_frame_for_active_paths(self) -> None:
-        """Exit the current variable scope frame for all active paths.
-
-        Removes variables declared in the current frame and restores
-        the frame number to the previous value.
-        """
-        for path_idx in self._active_path_indices:
+    def _exit_frame_for_paths(self, path_indices: list[int]) -> None:
+        """Unwind frames on both active and suspended control-transfer paths."""
+        for path_idx in path_indices:
             path = self._paths[path_idx]
             # exit_frame expects the previous frame number
             path.exit_frame(path.frame_number - 1)
