@@ -14,7 +14,7 @@ def serializedATN():
     return [
         4,
         1,
-        101,
+        102,
         768,
         2,
         0,
@@ -1732,52 +1732,52 @@ def serializedATN():
         22,
         2,
         0,
-        25,
-        25,
-        27,
-        27,
+        26,
+        26,
+        28,
+        28,
         2,
         0,
-        60,
-        60,
-        78,
-        78,
+        61,
+        61,
+        79,
+        79,
         2,
         0,
-        64,
-        64,
-        75,
+        65,
+        65,
         76,
+        77,
         2,
         0,
-        49,
-        49,
-        82,
-        91,
+        50,
+        50,
+        83,
+        92,
         2,
         0,
-        65,
-        65,
-        67,
+        66,
+        66,
         68,
+        69,
         2,
         0,
-        62,
-        62,
-        64,
-        64,
+        63,
+        63,
+        65,
+        65,
         1,
         0,
-        41,
         42,
+        43,
         1,
         0,
         23,
-        24,
+        25,
         1,
         0,
-        87,
         88,
+        89,
         850,
         0,
         121,
@@ -2226,13 +2226,13 @@ def serializedATN():
         132,
         133,
         5,
-        98,
+        99,
         0,
         0,
         133,
         134,
         5,
-        57,
+        58,
         0,
         0,
         134,
@@ -2646,7 +2646,7 @@ def serializedATN():
         174,
         176,
         5,
-        101,
+        102,
         0,
         0,
         175,
@@ -2670,7 +2670,7 @@ def serializedATN():
         177,
         181,
         5,
-        52,
+        53,
         0,
         0,
         178,
@@ -2718,7 +2718,7 @@ def serializedATN():
         184,
         185,
         5,
-        53,
+        54,
         0,
         0,
         185,
@@ -2736,7 +2736,7 @@ def serializedATN():
         187,
         188,
         5,
-        101,
+        102,
         0,
         0,
         188,
@@ -2784,13 +2784,13 @@ def serializedATN():
         194,
         195,
         5,
-        92,
+        93,
         0,
         0,
         195,
         196,
         5,
-        57,
+        58,
         0,
         0,
         196,
@@ -2808,13 +2808,13 @@ def serializedATN():
         198,
         199,
         5,
-        92,
+        93,
         0,
         0,
         199,
         200,
         5,
-        57,
+        58,
         0,
         0,
         200,
@@ -2832,7 +2832,7 @@ def serializedATN():
         202,
         203,
         5,
-        57,
+        58,
         0,
         0,
         203,
@@ -2850,7 +2850,7 @@ def serializedATN():
         205,
         206,
         5,
-        57,
+        58,
         0,
         0,
         206,
@@ -2868,7 +2868,7 @@ def serializedATN():
         208,
         209,
         5,
-        57,
+        58,
         0,
         0,
         209,
@@ -2892,7 +2892,7 @@ def serializedATN():
         212,
         213,
         5,
-        87,
+        88,
         0,
         0,
         213,
@@ -2910,7 +2910,7 @@ def serializedATN():
         215,
         216,
         5,
-        50,
+        51,
         0,
         0,
         216,
@@ -2922,7 +2922,7 @@ def serializedATN():
         217,
         218,
         5,
-        51,
+        52,
         0,
         0,
         218,
@@ -2934,7 +2934,7 @@ def serializedATN():
         219,
         221,
         5,
-        87,
+        88,
         0,
         0,
         220,
@@ -2982,7 +2982,7 @@ def serializedATN():
         225,
         226,
         5,
-        54,
+        55,
         0,
         0,
         226,
@@ -2994,7 +2994,7 @@ def serializedATN():
         227,
         228,
         5,
-        55,
+        56,
         0,
         0,
         228,
@@ -3078,7 +3078,7 @@ def serializedATN():
         238,
         239,
         5,
-        57,
+        58,
         0,
         0,
         239,
@@ -3096,7 +3096,7 @@ def serializedATN():
         241,
         242,
         5,
-        54,
+        55,
         0,
         0,
         242,
@@ -3108,7 +3108,7 @@ def serializedATN():
         243,
         244,
         5,
-        55,
+        56,
         0,
         0,
         244,
@@ -3126,7 +3126,7 @@ def serializedATN():
         246,
         248,
         5,
-        48,
+        49,
         0,
         0,
         247,
@@ -3156,7 +3156,7 @@ def serializedATN():
         250,
         251,
         5,
-        57,
+        58,
         0,
         0,
         251,
@@ -3210,7 +3210,7 @@ def serializedATN():
         258,
         259,
         5,
-        45,
+        46,
         0,
         0,
         259,
@@ -3246,7 +3246,7 @@ def serializedATN():
         263,
         264,
         5,
-        57,
+        58,
         0,
         0,
         264,
@@ -3300,13 +3300,13 @@ def serializedATN():
         271,
         277,
         5,
-        87,
+        88,
         0,
         0,
         272,
         274,
         5,
-        54,
+        55,
         0,
         0,
         273,
@@ -3336,7 +3336,7 @@ def serializedATN():
         276,
         278,
         5,
-        55,
+        56,
         0,
         0,
         277,
@@ -3390,7 +3390,7 @@ def serializedATN():
         283,
         284,
         5,
-        57,
+        58,
         0,
         0,
         284,
@@ -3444,13 +3444,13 @@ def serializedATN():
         291,
         297,
         5,
-        38,
+        39,
         0,
         0,
         292,
         294,
         5,
-        54,
+        55,
         0,
         0,
         293,
@@ -3480,7 +3480,7 @@ def serializedATN():
         296,
         298,
         5,
-        55,
+        56,
         0,
         0,
         297,
@@ -3552,7 +3552,7 @@ def serializedATN():
         305,
         307,
         5,
-        57,
+        58,
         0,
         0,
         306,
@@ -3582,7 +3582,7 @@ def serializedATN():
         309,
         310,
         5,
-        61,
+        62,
         0,
         0,
         310,
@@ -3612,7 +3612,7 @@ def serializedATN():
         313,
         314,
         5,
-        57,
+        58,
         0,
         0,
         314,
@@ -3624,7 +3624,7 @@ def serializedATN():
         315,
         316,
         5,
-        46,
+        47,
         0,
         0,
         316,
@@ -3636,7 +3636,7 @@ def serializedATN():
         317,
         318,
         5,
-        57,
+        58,
         0,
         0,
         318,
@@ -3654,13 +3654,13 @@ def serializedATN():
         320,
         321,
         5,
-        87,
+        88,
         0,
         0,
         321,
         322,
         5,
-        60,
+        61,
         0,
         0,
         322,
@@ -3672,7 +3672,7 @@ def serializedATN():
         323,
         324,
         5,
-        57,
+        58,
         0,
         0,
         324,
@@ -3714,13 +3714,13 @@ def serializedATN():
         329,
         332,
         5,
-        87,
+        88,
         0,
         0,
         330,
         331,
         5,
-        60,
+        61,
         0,
         0,
         331,
@@ -3750,7 +3750,7 @@ def serializedATN():
         334,
         335,
         5,
-        57,
+        58,
         0,
         0,
         335,
@@ -3774,13 +3774,13 @@ def serializedATN():
         338,
         339,
         5,
-        87,
+        88,
         0,
         0,
         339,
         340,
         5,
-        60,
+        61,
         0,
         0,
         340,
@@ -3792,7 +3792,7 @@ def serializedATN():
         341,
         342,
         5,
-        57,
+        58,
         0,
         0,
         342,
@@ -3840,13 +3840,13 @@ def serializedATN():
         348,
         349,
         5,
-        87,
+        88,
         0,
         0,
         349,
         350,
         5,
-        57,
+        58,
         0,
         0,
         350,
@@ -3864,7 +3864,7 @@ def serializedATN():
         352,
         354,
         5,
-        87,
+        88,
         0,
         0,
         353,
@@ -3894,7 +3894,7 @@ def serializedATN():
         356,
         357,
         5,
-        57,
+        58,
         0,
         0,
         357,
@@ -3912,13 +3912,13 @@ def serializedATN():
         359,
         360,
         5,
-        87,
+        88,
         0,
         0,
         360,
         361,
         5,
-        57,
+        58,
         0,
         0,
         361,
@@ -3936,13 +3936,13 @@ def serializedATN():
         363,
         364,
         5,
-        87,
+        88,
         0,
         0,
         364,
         366,
         5,
-        54,
+        55,
         0,
         0,
         365,
@@ -3972,7 +3972,7 @@ def serializedATN():
         368,
         370,
         5,
-        55,
+        56,
         0,
         0,
         369,
@@ -4020,13 +4020,13 @@ def serializedATN():
         375,
         376,
         5,
-        87,
+        88,
         0,
         0,
         376,
         378,
         5,
-        54,
+        55,
         0,
         0,
         377,
@@ -4056,7 +4056,7 @@ def serializedATN():
         380,
         382,
         5,
-        55,
+        56,
         0,
         0,
         381,
@@ -4086,7 +4086,7 @@ def serializedATN():
         384,
         385,
         5,
-        57,
+        58,
         0,
         0,
         385,
@@ -4104,13 +4104,13 @@ def serializedATN():
         387,
         393,
         5,
-        87,
+        88,
         0,
         0,
         388,
         390,
         5,
-        54,
+        55,
         0,
         0,
         389,
@@ -4140,7 +4140,7 @@ def serializedATN():
         392,
         394,
         5,
-        55,
+        56,
         0,
         0,
         393,
@@ -4224,7 +4224,7 @@ def serializedATN():
         404,
         405,
         5,
-        57,
+        58,
         0,
         0,
         405,
@@ -4242,7 +4242,7 @@ def serializedATN():
         407,
         408,
         5,
-        57,
+        58,
         0,
         0,
         408,
@@ -4260,13 +4260,13 @@ def serializedATN():
         410,
         416,
         5,
-        87,
+        88,
         0,
         0,
         411,
         413,
         5,
-        54,
+        55,
         0,
         0,
         412,
@@ -4296,7 +4296,7 @@ def serializedATN():
         415,
         417,
         5,
-        55,
+        56,
         0,
         0,
         416,
@@ -4350,7 +4350,7 @@ def serializedATN():
         422,
         426,
         5,
-        52,
+        53,
         0,
         0,
         423,
@@ -4398,7 +4398,7 @@ def serializedATN():
         429,
         430,
         5,
-        53,
+        54,
         0,
         0,
         430,
@@ -4416,7 +4416,7 @@ def serializedATN():
         432,
         433,
         5,
-        54,
+        55,
         0,
         0,
         433,
@@ -4428,7 +4428,7 @@ def serializedATN():
         434,
         435,
         5,
-        55,
+        56,
         0,
         0,
         435,
@@ -4482,7 +4482,7 @@ def serializedATN():
         442,
         443,
         5,
-        54,
+        55,
         0,
         0,
         443,
@@ -4494,7 +4494,7 @@ def serializedATN():
         444,
         445,
         5,
-        55,
+        56,
         0,
         0,
         445,
@@ -4506,13 +4506,13 @@ def serializedATN():
         446,
         447,
         5,
-        44,
+        45,
         0,
         0,
         447,
         448,
         5,
-        54,
+        55,
         0,
         0,
         448,
@@ -4524,7 +4524,7 @@ def serializedATN():
         449,
         450,
         5,
-        55,
+        56,
         0,
         0,
         450,
@@ -4536,13 +4536,13 @@ def serializedATN():
         451,
         452,
         5,
-        87,
+        88,
         0,
         0,
         452,
         454,
         5,
-        54,
+        55,
         0,
         0,
         453,
@@ -4572,7 +4572,7 @@ def serializedATN():
         456,
         459,
         5,
-        55,
+        56,
         0,
         0,
         457,
@@ -4632,7 +4632,7 @@ def serializedATN():
         461,
         462,
         5,
-        66,
+        67,
         0,
         0,
         462,
@@ -4686,7 +4686,7 @@ def serializedATN():
         470,
         471,
         5,
-        80,
+        81,
         0,
         0,
         471,
@@ -4704,7 +4704,7 @@ def serializedATN():
         473,
         474,
         5,
-        79,
+        80,
         0,
         0,
         474,
@@ -4722,7 +4722,7 @@ def serializedATN():
         476,
         477,
         5,
-        77,
+        78,
         0,
         0,
         477,
@@ -4740,7 +4740,7 @@ def serializedATN():
         479,
         480,
         5,
-        71,
+        72,
         0,
         0,
         480,
@@ -4758,7 +4758,7 @@ def serializedATN():
         482,
         483,
         5,
-        73,
+        74,
         0,
         0,
         483,
@@ -4776,7 +4776,7 @@ def serializedATN():
         485,
         486,
         5,
-        69,
+        70,
         0,
         0,
         486,
@@ -4794,7 +4794,7 @@ def serializedATN():
         488,
         489,
         5,
-        72,
+        73,
         0,
         0,
         489,
@@ -4812,7 +4812,7 @@ def serializedATN():
         491,
         492,
         5,
-        70,
+        71,
         0,
         0,
         492,
@@ -4944,7 +4944,7 @@ def serializedATN():
         501,
         502,
         5,
-        63,
+        64,
         0,
         0,
         502,
@@ -5034,7 +5034,7 @@ def serializedATN():
         513,
         514,
         5,
-        47,
+        48,
         0,
         0,
         514,
@@ -5076,7 +5076,7 @@ def serializedATN():
         519,
         521,
         5,
-        56,
+        57,
         0,
         0,
         520,
@@ -5106,7 +5106,7 @@ def serializedATN():
         523,
         524,
         5,
-        56,
+        57,
         0,
         0,
         524,
@@ -5136,7 +5136,7 @@ def serializedATN():
         527,
         528,
         5,
-        52,
+        53,
         0,
         0,
         528,
@@ -5148,7 +5148,7 @@ def serializedATN():
         529,
         530,
         5,
-        59,
+        60,
         0,
         0,
         530,
@@ -5196,7 +5196,7 @@ def serializedATN():
         536,
         538,
         5,
-        59,
+        60,
         0,
         0,
         537,
@@ -5220,7 +5220,7 @@ def serializedATN():
         539,
         540,
         5,
-        53,
+        54,
         0,
         0,
         540,
@@ -5232,7 +5232,7 @@ def serializedATN():
         541,
         544,
         5,
-        52,
+        53,
         0,
         0,
         542,
@@ -5268,7 +5268,7 @@ def serializedATN():
         546,
         549,
         5,
-        59,
+        60,
         0,
         0,
         547,
@@ -5340,7 +5340,7 @@ def serializedATN():
         556,
         558,
         5,
-        59,
+        60,
         0,
         0,
         557,
@@ -5364,7 +5364,7 @@ def serializedATN():
         559,
         560,
         5,
-        53,
+        54,
         0,
         0,
         560,
@@ -5376,7 +5376,7 @@ def serializedATN():
         561,
         580,
         5,
-        50,
+        51,
         0,
         0,
         562,
@@ -5418,7 +5418,7 @@ def serializedATN():
         567,
         570,
         5,
-        59,
+        60,
         0,
         0,
         568,
@@ -5490,7 +5490,7 @@ def serializedATN():
         577,
         579,
         5,
-        59,
+        60,
         0,
         0,
         578,
@@ -5532,7 +5532,7 @@ def serializedATN():
         582,
         583,
         5,
-        51,
+        52,
         0,
         0,
         583,
@@ -5544,7 +5544,7 @@ def serializedATN():
         584,
         588,
         5,
-        87,
+        88,
         0,
         0,
         585,
@@ -5592,7 +5592,7 @@ def serializedATN():
         591,
         592,
         5,
-        61,
+        62,
         0,
         0,
         592,
@@ -5610,19 +5610,19 @@ def serializedATN():
         594,
         608,
         5,
-        39,
+        40,
         0,
         0,
         595,
         596,
         5,
-        40,
+        41,
         0,
         0,
         596,
         597,
         5,
-        54,
+        55,
         0,
         0,
         597,
@@ -5634,7 +5634,7 @@ def serializedATN():
         598,
         599,
         5,
-        55,
+        56,
         0,
         0,
         599,
@@ -5652,7 +5652,7 @@ def serializedATN():
         601,
         602,
         5,
-        54,
+        55,
         0,
         0,
         602,
@@ -5664,7 +5664,7 @@ def serializedATN():
         603,
         604,
         5,
-        55,
+        56,
         0,
         0,
         604,
@@ -5718,7 +5718,7 @@ def serializedATN():
         609,
         610,
         5,
-        74,
+        75,
         0,
         0,
         610,
@@ -5730,7 +5730,7 @@ def serializedATN():
         611,
         613,
         5,
-        29,
+        30,
         0,
         0,
         612,
@@ -5760,7 +5760,7 @@ def serializedATN():
         615,
         617,
         5,
-        30,
+        31,
         0,
         0,
         616,
@@ -5790,7 +5790,7 @@ def serializedATN():
         619,
         621,
         5,
-        31,
+        32,
         0,
         0,
         620,
@@ -5820,7 +5820,7 @@ def serializedATN():
         623,
         625,
         5,
-        32,
+        33,
         0,
         0,
         624,
@@ -5850,7 +5850,7 @@ def serializedATN():
         627,
         629,
         5,
-        33,
+        34,
         0,
         0,
         628,
@@ -5880,31 +5880,31 @@ def serializedATN():
         631,
         642,
         5,
-        28,
+        29,
         0,
         0,
         632,
         642,
         5,
-        36,
+        37,
         0,
         0,
         633,
         642,
         5,
-        37,
+        38,
         0,
         0,
         634,
         639,
         5,
-        34,
+        35,
         0,
         0,
         635,
         636,
         5,
-        50,
+        51,
         0,
         0,
         636,
@@ -5916,7 +5916,7 @@ def serializedATN():
         637,
         638,
         5,
-        51,
+        52,
         0,
         0,
         638,
@@ -6006,7 +6006,7 @@ def serializedATN():
         643,
         645,
         5,
-        26,
+        27,
         0,
         0,
         644,
@@ -6036,13 +6036,13 @@ def serializedATN():
         647,
         648,
         5,
-        35,
+        36,
         0,
         0,
         648,
         649,
         5,
-        50,
+        51,
         0,
         0,
         649,
@@ -6054,7 +6054,7 @@ def serializedATN():
         650,
         651,
         5,
-        59,
+        60,
         0,
         0,
         651,
@@ -6066,7 +6066,7 @@ def serializedATN():
         652,
         653,
         5,
-        51,
+        52,
         0,
         0,
         653,
@@ -6084,13 +6084,13 @@ def serializedATN():
         655,
         656,
         5,
-        35,
+        36,
         0,
         0,
         656,
         657,
         5,
-        50,
+        51,
         0,
         0,
         657,
@@ -6102,7 +6102,7 @@ def serializedATN():
         658,
         663,
         5,
-        59,
+        60,
         0,
         0,
         659,
@@ -6114,13 +6114,13 @@ def serializedATN():
         660,
         661,
         5,
-        43,
+        44,
         0,
         0,
         661,
         662,
         5,
-        60,
+        61,
         0,
         0,
         662,
@@ -6150,7 +6150,7 @@ def serializedATN():
         665,
         666,
         5,
-        51,
+        52,
         0,
         0,
         666,
@@ -6162,7 +6162,7 @@ def serializedATN():
         667,
         668,
         5,
-        50,
+        51,
         0,
         0,
         668,
@@ -6174,7 +6174,7 @@ def serializedATN():
         669,
         670,
         5,
-        51,
+        52,
         0,
         0,
         670,
@@ -6192,7 +6192,7 @@ def serializedATN():
         672,
         674,
         5,
-        88,
+        89,
         0,
         0,
         673,
@@ -6228,7 +6228,7 @@ def serializedATN():
         677,
         679,
         5,
-        27,
+        28,
         0,
         0,
         678,
@@ -6300,7 +6300,7 @@ def serializedATN():
         686,
         687,
         5,
-        87,
+        88,
         0,
         0,
         687,
@@ -6318,7 +6318,7 @@ def serializedATN():
         689,
         690,
         5,
-        87,
+        88,
         0,
         0,
         690,
@@ -6336,7 +6336,7 @@ def serializedATN():
         692,
         694,
         5,
-        87,
+        88,
         0,
         0,
         693,
@@ -6372,7 +6372,7 @@ def serializedATN():
         697,
         698,
         5,
-        87,
+        88,
         0,
         0,
         698,
@@ -6420,7 +6420,7 @@ def serializedATN():
         702,
         703,
         5,
-        59,
+        60,
         0,
         0,
         703,
@@ -6468,7 +6468,7 @@ def serializedATN():
         709,
         711,
         5,
-        59,
+        60,
         0,
         0,
         710,
@@ -6498,7 +6498,7 @@ def serializedATN():
         713,
         714,
         5,
-        59,
+        60,
         0,
         0,
         714,
@@ -6546,7 +6546,7 @@ def serializedATN():
         720,
         722,
         5,
-        59,
+        60,
         0,
         0,
         721,
@@ -6576,7 +6576,7 @@ def serializedATN():
         724,
         725,
         5,
-        59,
+        60,
         0,
         0,
         725,
@@ -6624,7 +6624,7 @@ def serializedATN():
         731,
         733,
         5,
-        59,
+        60,
         0,
         0,
         732,
@@ -6648,19 +6648,19 @@ def serializedATN():
         734,
         739,
         5,
-        87,
+        88,
         0,
         0,
         735,
         736,
         5,
-        59,
+        60,
         0,
         0,
         736,
         738,
         5,
-        87,
+        88,
         0,
         0,
         737,
@@ -6702,7 +6702,7 @@ def serializedATN():
         742,
         744,
         5,
-        59,
+        60,
         0,
         0,
         743,
@@ -6732,7 +6732,7 @@ def serializedATN():
         746,
         747,
         5,
-        59,
+        60,
         0,
         0,
         747,
@@ -6780,7 +6780,7 @@ def serializedATN():
         753,
         755,
         5,
-        59,
+        60,
         0,
         0,
         754,
@@ -6810,7 +6810,7 @@ def serializedATN():
         757,
         758,
         5,
-        59,
+        60,
         0,
         0,
         758,
@@ -6858,7 +6858,7 @@ def serializedATN():
         764,
         766,
         5,
-        59,
+        60,
         0,
         0,
         765,
@@ -7007,6 +7007,7 @@ class qasm3Parser(Parser):
         "'input'",
         "'output'",
         "'const'",
+        "'readonly'",
         "'mutable'",
         "'qreg'",
         "'qubit'",
@@ -7092,6 +7093,7 @@ class qasm3Parser(Parser):
         "INPUT",
         "OUTPUT",
         "CONST",
+        "READONLY",
         "MUTABLE",
         "QREG",
         "QUBIT",
@@ -7320,84 +7322,85 @@ class qasm3Parser(Parser):
     INPUT = 21
     OUTPUT = 22
     CONST = 23
-    MUTABLE = 24
-    QREG = 25
-    QUBIT = 26
-    CREG = 27
-    BOOL = 28
-    BIT = 29
-    INT = 30
-    UINT = 31
-    FLOAT = 32
-    ANGLE = 33
-    COMPLEX = 34
-    ARRAY = 35
-    DURATION = 36
-    STRETCH = 37
-    GPHASE = 38
-    INV = 39
-    POW = 40
-    CTRL = 41
-    NEGCTRL = 42
-    DIM = 43
-    DURATIONOF = 44
-    DELAY = 45
-    RESET = 46
-    MEASURE = 47
-    BARRIER = 48
-    BooleanLiteral = 49
-    LBRACKET = 50
-    RBRACKET = 51
-    LBRACE = 52
-    RBRACE = 53
-    LPAREN = 54
-    RPAREN = 55
-    COLON = 56
-    SEMICOLON = 57
-    DOT = 58
-    COMMA = 59
-    EQUALS = 60
-    ARROW = 61
-    PLUS = 62
-    DOUBLE_PLUS = 63
-    MINUS = 64
-    ASTERISK = 65
-    DOUBLE_ASTERISK = 66
-    SLASH = 67
-    PERCENT = 68
-    PIPE = 69
-    DOUBLE_PIPE = 70
-    AMPERSAND = 71
-    DOUBLE_AMPERSAND = 72
-    CARET = 73
-    AT = 74
-    TILDE = 75
-    EXCLAMATION_POINT = 76
-    EqualityOperator = 77
-    CompoundAssignmentOperator = 78
-    ComparisonOperator = 79
-    BitshiftOperator = 80
-    IMAG = 81
-    ImaginaryLiteral = 82
-    BinaryIntegerLiteral = 83
-    OctalIntegerLiteral = 84
-    DecimalIntegerLiteral = 85
-    HexIntegerLiteral = 86
-    Identifier = 87
-    HardwareQubit = 88
-    FloatLiteral = 89
-    TimingLiteral = 90
-    BitstringLiteral = 91
-    StringLiteral = 92
-    Whitespace = 93
-    Newline = 94
-    LineComment = 95
-    BlockComment = 96
-    VERSION_IDENTIFER_WHITESPACE = 97
-    VersionSpecifier = 98
-    EAT_INITIAL_SPACE = 99
-    EAT_LINE_END = 100
-    RemainingLineContent = 101
+    READONLY = 24
+    MUTABLE = 25
+    QREG = 26
+    QUBIT = 27
+    CREG = 28
+    BOOL = 29
+    BIT = 30
+    INT = 31
+    UINT = 32
+    FLOAT = 33
+    ANGLE = 34
+    COMPLEX = 35
+    ARRAY = 36
+    DURATION = 37
+    STRETCH = 38
+    GPHASE = 39
+    INV = 40
+    POW = 41
+    CTRL = 42
+    NEGCTRL = 43
+    DIM = 44
+    DURATIONOF = 45
+    DELAY = 46
+    RESET = 47
+    MEASURE = 48
+    BARRIER = 49
+    BooleanLiteral = 50
+    LBRACKET = 51
+    RBRACKET = 52
+    LBRACE = 53
+    RBRACE = 54
+    LPAREN = 55
+    RPAREN = 56
+    COLON = 57
+    SEMICOLON = 58
+    DOT = 59
+    COMMA = 60
+    EQUALS = 61
+    ARROW = 62
+    PLUS = 63
+    DOUBLE_PLUS = 64
+    MINUS = 65
+    ASTERISK = 66
+    DOUBLE_ASTERISK = 67
+    SLASH = 68
+    PERCENT = 69
+    PIPE = 70
+    DOUBLE_PIPE = 71
+    AMPERSAND = 72
+    DOUBLE_AMPERSAND = 73
+    CARET = 74
+    AT = 75
+    TILDE = 76
+    EXCLAMATION_POINT = 77
+    EqualityOperator = 78
+    CompoundAssignmentOperator = 79
+    ComparisonOperator = 80
+    BitshiftOperator = 81
+    IMAG = 82
+    ImaginaryLiteral = 83
+    BinaryIntegerLiteral = 84
+    OctalIntegerLiteral = 85
+    DecimalIntegerLiteral = 86
+    HexIntegerLiteral = 87
+    Identifier = 88
+    HardwareQubit = 89
+    FloatLiteral = 90
+    TimingLiteral = 91
+    BitstringLiteral = 92
+    StringLiteral = 93
+    Whitespace = 94
+    Newline = 95
+    LineComment = 96
+    BlockComment = 97
+    VERSION_IDENTIFER_WHITESPACE = 98
+    VersionSpecifier = 99
+    EAT_INITIAL_SPACE = 100
+    EAT_LINE_END = 101
+    RemainingLineContent = 102
 
     def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
         super().__init__(input, output)
@@ -7444,6 +7447,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def program(self):
+
         localctx = qasm3Parser.ProgramContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_program)
         self._la = 0  # Token type
@@ -7459,8 +7463,8 @@ class qasm3Parser(Parser):
             self.state = 126
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3F) == 0 and ((1 << _la) & 19131502306254844) != 0) or (
-                ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 268179457) != 0
+            while (((_la) & ~0x3F) == 0 and ((1 << _la) & 38263004596002812) != 0) or (
+                ((_la - 65) & ~0x3F) == 0 and ((1 << (_la - 65)) & 268179457) != 0
             ):
                 self.state = 123
                 self.statement()
@@ -7512,6 +7516,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def version(self):
+
         localctx = qasm3Parser.VersionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_version)
         try:
@@ -7645,6 +7650,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def statement(self):
+
         localctx = qasm3Parser.StatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 4, self.RULE_statement)
         self._la = 0  # Token type
@@ -7677,7 +7683,6 @@ class qasm3Parser(Parser):
                 21,
                 22,
                 23,
-                25,
                 26,
                 27,
                 28,
@@ -7695,17 +7700,17 @@ class qasm3Parser(Parser):
                 40,
                 41,
                 42,
-                44,
+                43,
                 45,
                 46,
                 47,
                 48,
                 49,
-                54,
-                64,
-                75,
+                50,
+                55,
+                65,
                 76,
-                82,
+                77,
                 83,
                 84,
                 85,
@@ -7715,6 +7720,7 @@ class qasm3Parser(Parser):
                 89,
                 90,
                 91,
+                92,
             ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 139
@@ -7908,6 +7914,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def annotation(self):
+
         localctx = qasm3Parser.AnnotationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_annotation)
         self._la = 0  # Token type
@@ -7918,7 +7925,7 @@ class qasm3Parser(Parser):
             self.state = 175
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 101:
+            if _la == 102:
                 self.state = 174
                 self.match(qasm3Parser.RemainingLineContent)
 
@@ -7967,6 +7974,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def scope(self):
+
         localctx = qasm3Parser.ScopeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 8, self.RULE_scope)
         self._la = 0  # Token type
@@ -7977,8 +7985,8 @@ class qasm3Parser(Parser):
             self.state = 181
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3F) == 0 and ((1 << _la) & 19131502306254844) != 0) or (
-                ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 268179457) != 0
+            while (((_la) & ~0x3F) == 0 and ((1 << _la) & 38263004596002812) != 0) or (
+                ((_la - 65) & ~0x3F) == 0 and ((1 << (_la - 65)) & 268179457) != 0
             ):
                 self.state = 178
                 self.statement()
@@ -8027,6 +8035,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def pragma(self):
+
         localctx = qasm3Parser.PragmaContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_pragma)
         try:
@@ -8074,6 +8083,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def statementOrScope(self):
+
         localctx = qasm3Parser.StatementOrScopeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 12, self.RULE_statementOrScope)
         try:
@@ -8101,7 +8111,6 @@ class qasm3Parser(Parser):
                 21,
                 22,
                 23,
-                25,
                 26,
                 27,
                 28,
@@ -8119,17 +8128,17 @@ class qasm3Parser(Parser):
                 40,
                 41,
                 42,
-                44,
+                43,
                 45,
                 46,
                 47,
                 48,
                 49,
-                54,
-                64,
-                75,
+                50,
+                55,
+                65,
                 76,
-                82,
+                77,
                 83,
                 84,
                 85,
@@ -8139,12 +8148,13 @@ class qasm3Parser(Parser):
                 89,
                 90,
                 91,
+                92,
             ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 189
                 self.statement()
                 pass
-            elif token in [52]:
+            elif token in [53]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 190
                 self.scope()
@@ -8194,6 +8204,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def calibrationGrammarStatement(self):
+
         localctx = qasm3Parser.CalibrationGrammarStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_calibrationGrammarStatement)
         try:
@@ -8246,6 +8257,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def includeStatement(self):
+
         localctx = qasm3Parser.IncludeStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_includeStatement)
         try:
@@ -8295,6 +8307,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def breakStatement(self):
+
         localctx = qasm3Parser.BreakStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 18, self.RULE_breakStatement)
         try:
@@ -8342,6 +8355,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def continueStatement(self):
+
         localctx = qasm3Parser.ContinueStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 20, self.RULE_continueStatement)
         try:
@@ -8389,6 +8403,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def endStatement(self):
+
         localctx = qasm3Parser.EndStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 22, self.RULE_endStatement)
         try:
@@ -8461,6 +8476,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def forStatement(self):
+
         localctx = qasm3Parser.ForStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_forStatement)
         try:
@@ -8476,11 +8492,11 @@ class qasm3Parser(Parser):
             self.state = 220
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [52]:
+            if token in [53]:
                 self.state = 214
                 self.setExpression()
                 pass
-            elif token in [50]:
+            elif token in [51]:
                 self.state = 215
                 self.match(qasm3Parser.LBRACKET)
                 self.state = 216
@@ -8488,7 +8504,7 @@ class qasm3Parser(Parser):
                 self.state = 217
                 self.match(qasm3Parser.RBRACKET)
                 pass
-            elif token in [87]:
+            elif token in [88]:
                 self.state = 219
                 self.match(qasm3Parser.Identifier)
                 pass
@@ -8553,6 +8569,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def ifStatement(self):
+
         localctx = qasm3Parser.IfStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 26, self.RULE_ifStatement)
         try:
@@ -8621,6 +8638,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def returnStatement(self):
+
         localctx = qasm3Parser.ReturnStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 28, self.RULE_returnStatement)
         try:
@@ -8631,7 +8649,6 @@ class qasm3Parser(Parser):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [
-                28,
                 29,
                 30,
                 31,
@@ -8641,13 +8658,13 @@ class qasm3Parser(Parser):
                 35,
                 36,
                 37,
-                44,
-                49,
-                54,
-                64,
-                75,
+                38,
+                45,
+                50,
+                55,
+                65,
                 76,
-                82,
+                77,
                 83,
                 84,
                 85,
@@ -8657,15 +8674,16 @@ class qasm3Parser(Parser):
                 89,
                 90,
                 91,
+                92,
             ]:
                 self.state = 234
                 self.expression(0)
                 pass
-            elif token in [47]:
+            elif token in [48]:
                 self.state = 235
                 self.measureExpression()
                 pass
-            elif token in [57]:
+            elif token in [58]:
                 pass
             else:
                 pass
@@ -8720,6 +8738,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def whileStatement(self):
+
         localctx = qasm3Parser.WhileStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 30, self.RULE_whileStatement)
         try:
@@ -8776,6 +8795,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def barrierStatement(self):
+
         localctx = qasm3Parser.BarrierStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 32, self.RULE_barrierStatement)
         self._la = 0  # Token type
@@ -8786,7 +8806,7 @@ class qasm3Parser(Parser):
             self.state = 248
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 87 or _la == 88:
+            if _la == 88 or _la == 89:
                 self.state = 247
                 self.gateOperandList()
 
@@ -8834,6 +8854,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def boxStatement(self):
+
         localctx = qasm3Parser.BoxStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 34, self.RULE_boxStatement)
         self._la = 0  # Token type
@@ -8844,7 +8865,7 @@ class qasm3Parser(Parser):
             self.state = 254
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 50:
+            if _la == 51:
                 self.state = 253
                 self.designator()
 
@@ -8895,6 +8916,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def delayStatement(self):
+
         localctx = qasm3Parser.DelayStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 36, self.RULE_delayStatement)
         self._la = 0  # Token type
@@ -8907,7 +8929,7 @@ class qasm3Parser(Parser):
             self.state = 261
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 87 or _la == 88:
+            if _la == 88 or _la == 89:
                 self.state = 260
                 self.gateOperandList()
 
@@ -8976,6 +8998,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def gateCallStatement(self):
+
         localctx = qasm3Parser.GateCallStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 38, self.RULE_gateCallStatement)
         self._la = 0  # Token type
@@ -8988,7 +9011,7 @@ class qasm3Parser(Parser):
                 self.state = 268
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while ((_la) & ~0x3F) == 0 and ((1 << _la) & 8246337208320) != 0:
+                while ((_la) & ~0x3F) == 0 and ((1 << _la) & 16492674416640) != 0:
                     self.state = 265
                     self.gateModifier()
                     self.state = 270
@@ -9000,13 +9023,13 @@ class qasm3Parser(Parser):
                 self.state = 277
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 54:
+                if _la == 55:
                     self.state = 272
                     self.match(qasm3Parser.LPAREN)
                     self.state = 274
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if ((_la - 28) & ~0x3F) == 0 and ((1 << (_la - 28)) & -17592117255666689) != 0:
+                    if ((_la - 29) & ~0x3F) == 0 and ((1 << (_la - 29)) & -17592117255666689) != 0:
                         self.state = 273
                         self.expressionList()
 
@@ -9016,7 +9039,7 @@ class qasm3Parser(Parser):
                 self.state = 280
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 279
                     self.designator()
 
@@ -9031,7 +9054,7 @@ class qasm3Parser(Parser):
                 self.state = 288
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while ((_la) & ~0x3F) == 0 and ((1 << _la) & 8246337208320) != 0:
+                while ((_la) & ~0x3F) == 0 and ((1 << _la) & 16492674416640) != 0:
                     self.state = 285
                     self.gateModifier()
                     self.state = 290
@@ -9043,13 +9066,13 @@ class qasm3Parser(Parser):
                 self.state = 297
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 54:
+                if _la == 55:
                     self.state = 292
                     self.match(qasm3Parser.LPAREN)
                     self.state = 294
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if ((_la - 28) & ~0x3F) == 0 and ((1 << (_la - 28)) & -17592117255666689) != 0:
+                    if ((_la - 29) & ~0x3F) == 0 and ((1 << (_la - 29)) & -17592117255666689) != 0:
                         self.state = 293
                         self.expressionList()
 
@@ -9059,14 +9082,14 @@ class qasm3Parser(Parser):
                 self.state = 300
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 299
                     self.designator()
 
                 self.state = 303
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 87 or _la == 88:
+                if _la == 88 or _la == 89:
                     self.state = 302
                     self.gateOperandList()
 
@@ -9119,6 +9142,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def measureArrowAssignmentStatement(self):
+
         localctx = qasm3Parser.MeasureArrowAssignmentStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 40, self.RULE_measureArrowAssignmentStatement)
         self._la = 0  # Token type
@@ -9129,7 +9153,7 @@ class qasm3Parser(Parser):
             self.state = 311
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 61:
+            if _la == 62:
                 self.state = 309
                 self.match(qasm3Parser.ARROW)
                 self.state = 310
@@ -9179,6 +9203,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def resetStatement(self):
+
         localctx = qasm3Parser.ResetStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 42, self.RULE_resetStatement)
         try:
@@ -9237,6 +9262,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def aliasDeclarationStatement(self):
+
         localctx = qasm3Parser.AliasDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 44, self.RULE_aliasDeclarationStatement)
         try:
@@ -9302,6 +9328,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def classicalDeclarationStatement(self):
+
         localctx = qasm3Parser.ClassicalDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_classicalDeclarationStatement)
         self._la = 0  # Token type
@@ -9310,11 +9337,11 @@ class qasm3Parser(Parser):
             self.state = 327
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [28, 29, 30, 31, 32, 33, 34, 36, 37]:
+            if token in [29, 30, 31, 32, 33, 34, 35, 37, 38]:
                 self.state = 325
                 self.scalarType()
                 pass
-            elif token in [35]:
+            elif token in [36]:
                 self.state = 326
                 self.arrayType()
                 pass
@@ -9326,7 +9353,7 @@ class qasm3Parser(Parser):
             self.state = 332
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 60:
+            if _la == 61:
                 self.state = 330
                 self.match(qasm3Parser.EQUALS)
                 self.state = 331
@@ -9385,6 +9412,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def constDeclarationStatement(self):
+
         localctx = qasm3Parser.ConstDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 48, self.RULE_constDeclarationStatement)
         try:
@@ -9452,6 +9480,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def ioDeclarationStatement(self):
+
         localctx = qasm3Parser.IoDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_ioDeclarationStatement)
         self._la = 0  # Token type
@@ -9467,11 +9496,11 @@ class qasm3Parser(Parser):
             self.state = 346
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [28, 29, 30, 31, 32, 33, 34, 36, 37]:
+            if token in [29, 30, 31, 32, 33, 34, 35, 37, 38]:
                 self.state = 344
                 self.scalarType()
                 pass
-            elif token in [35]:
+            elif token in [36]:
                 self.state = 345
                 self.arrayType()
                 pass
@@ -9530,6 +9559,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def oldStyleDeclarationStatement(self):
+
         localctx = qasm3Parser.OldStyleDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 52, self.RULE_oldStyleDeclarationStatement)
         self._la = 0  # Token type
@@ -9537,7 +9567,7 @@ class qasm3Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 351
             _la = self._input.LA(1)
-            if not (_la == 25 or _la == 27):
+            if not (_la == 26 or _la == 28):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -9547,7 +9577,7 @@ class qasm3Parser(Parser):
             self.state = 354
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 50:
+            if _la == 51:
                 self.state = 353
                 self.designator()
 
@@ -9595,6 +9625,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def quantumDeclarationStatement(self):
+
         localctx = qasm3Parser.QuantumDeclarationStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 54, self.RULE_quantumDeclarationStatement)
         try:
@@ -9659,6 +9690,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def defStatement(self):
+
         localctx = qasm3Parser.DefStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_defStatement)
         self._la = 0  # Token type
@@ -9673,7 +9705,7 @@ class qasm3Parser(Parser):
             self.state = 366
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la) & ~0x3F) == 0 and ((1 << _la) & 240509779968) != 0:
+            if ((_la) & ~0x3F) == 0 and ((1 << _la) & 481027948544) != 0:
                 self.state = 365
                 self.argumentDefinitionList()
 
@@ -9682,7 +9714,7 @@ class qasm3Parser(Parser):
             self.state = 370
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 61:
+            if _la == 62:
                 self.state = 369
                 self.returnSignature()
 
@@ -9742,6 +9774,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def externStatement(self):
+
         localctx = qasm3Parser.ExternStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 58, self.RULE_externStatement)
         self._la = 0  # Token type
@@ -9756,7 +9789,7 @@ class qasm3Parser(Parser):
             self.state = 378
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la) & ~0x3F) == 0 and ((1 << _la) & 240409116672) != 0:
+            if ((_la) & ~0x3F) == 0 and ((1 << _la) & 480826621952) != 0:
                 self.state = 377
                 self.externArgumentList()
 
@@ -9765,7 +9798,7 @@ class qasm3Parser(Parser):
             self.state = 382
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 61:
+            if _la == 62:
                 self.state = 381
                 self.returnSignature()
 
@@ -9827,6 +9860,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def gateStatement(self):
+
         localctx = qasm3Parser.GateStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 60, self.RULE_gateStatement)
         self._la = 0  # Token type
@@ -9839,13 +9873,13 @@ class qasm3Parser(Parser):
             self.state = 393
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 54:
+            if _la == 55:
                 self.state = 388
                 self.match(qasm3Parser.LPAREN)
                 self.state = 390
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 87:
+                if _la == 88:
                     self.state = 389
                     localctx.params = self.identifierList()
 
@@ -9908,6 +9942,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def assignmentStatement(self):
+
         localctx = qasm3Parser.AssignmentStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 62, self.RULE_assignmentStatement)
         self._la = 0  # Token type
@@ -9918,7 +9953,7 @@ class qasm3Parser(Parser):
             self.state = 399
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
-            if not (_la == 60 or _la == 78):
+            if not (_la == 61 or _la == 79):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -9927,7 +9962,6 @@ class qasm3Parser(Parser):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [
-                28,
                 29,
                 30,
                 31,
@@ -9937,13 +9971,13 @@ class qasm3Parser(Parser):
                 35,
                 36,
                 37,
-                44,
-                49,
-                54,
-                64,
-                75,
+                38,
+                45,
+                50,
+                55,
+                65,
                 76,
-                82,
+                77,
                 83,
                 84,
                 85,
@@ -9953,11 +9987,12 @@ class qasm3Parser(Parser):
                 89,
                 90,
                 91,
+                92,
             ]:
                 self.state = 400
                 self.expression(0)
                 pass
-            elif token in [47]:
+            elif token in [48]:
                 self.state = 401
                 self.measureExpression()
                 pass
@@ -10005,6 +10040,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def expressionStatement(self):
+
         localctx = qasm3Parser.ExpressionStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 64, self.RULE_expressionStatement)
         try:
@@ -10073,6 +10109,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def defcalStatement(self):
+
         localctx = qasm3Parser.DefcalStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 66, self.RULE_defcalStatement)
         self._la = 0  # Token type
@@ -10085,13 +10122,13 @@ class qasm3Parser(Parser):
             self.state = 416
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 54:
+            if _la == 55:
                 self.state = 411
                 self.match(qasm3Parser.LPAREN)
                 self.state = 413
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((_la) & ~0x3F) == 0 and ((1 << _la) & 240509779968) != 0:
+                if ((_la) & ~0x3F) == 0 and ((1 << _la) & 481027948544) != 0:
                     self.state = 412
                     self.argumentDefinitionList()
 
@@ -10103,7 +10140,7 @@ class qasm3Parser(Parser):
             self.state = 420
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 61:
+            if _la == 62:
                 self.state = 419
                 self.returnSignature()
 
@@ -10773,7 +10810,7 @@ class qasm3Parser(Parser):
                 self.state = 436
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 6145) != 0):
+                if not (((_la - 65) & ~0x3F) == 0 and ((1 << (_la - 65)) & 6145) != 0):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -10789,11 +10826,11 @@ class qasm3Parser(Parser):
                 self.state = 440
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [28, 29, 30, 31, 32, 33, 34, 36, 37]:
+                if token in [29, 30, 31, 32, 33, 34, 35, 37, 38]:
                     self.state = 438
                     self.scalarType()
                     pass
-                elif token in [35]:
+                elif token in [36]:
                     self.state = 439
                     self.arrayType()
                     pass
@@ -10833,7 +10870,7 @@ class qasm3Parser(Parser):
                 self.state = 454
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((_la - 28) & ~0x3F) == 0 and ((1 << (_la - 28)) & -17592117255666689) != 0:
+                if ((_la - 29) & ~0x3F) == 0 and ((1 << (_la - 29)) & -17592117255666689) != 0:
                     self.state = 453
                     self.expressionList()
 
@@ -10847,7 +10884,7 @@ class qasm3Parser(Parser):
                 _prevctx = localctx
                 self.state = 457
                 _la = self._input.LA(1)
-                if not (((_la - 49) & ~0x3F) == 0 and ((1 << (_la - 49)) & 8787503087617) != 0):
+                if not (((_la - 50) & ~0x3F) == 0 and ((1 << (_la - 50)) & 8787503087617) != 0):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -10895,7 +10932,7 @@ class qasm3Parser(Parser):
                         self.state = 464
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (((_la - 65) & ~0x3F) == 0 and ((1 << (_la - 65)) & 13) != 0):
+                        if not (((_la - 66) & ~0x3F) == 0 and ((1 << (_la - 66)) & 13) != 0):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -10917,7 +10954,7 @@ class qasm3Parser(Parser):
                         self.state = 467
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (_la == 62 or _la == 64):
+                        if not (_la == 63 or _la == 65):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -11117,6 +11154,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def aliasExpression(self):
+
         localctx = qasm3Parser.AliasExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 70, self.RULE_aliasExpression)
         self._la = 0  # Token type
@@ -11127,7 +11165,7 @@ class qasm3Parser(Parser):
             self.state = 505
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 63:
+            while _la == 64:
                 self.state = 501
                 self.match(qasm3Parser.DOUBLE_PLUS)
                 self.state = 502
@@ -11178,19 +11216,19 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def declarationExpression(self):
+
         localctx = qasm3Parser.DeclarationExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 72, self.RULE_declarationExpression)
         try:
             self.state = 511
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [52]:
+            if token in [53]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 508
                 self.arrayLiteral()
                 pass
             elif token in [
-                28,
                 29,
                 30,
                 31,
@@ -11200,13 +11238,13 @@ class qasm3Parser(Parser):
                 35,
                 36,
                 37,
-                44,
-                49,
-                54,
-                64,
-                75,
+                38,
+                45,
+                50,
+                55,
+                65,
                 76,
-                82,
+                77,
                 83,
                 84,
                 85,
@@ -11216,12 +11254,13 @@ class qasm3Parser(Parser):
                 89,
                 90,
                 91,
+                92,
             ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 509
                 self.expression(0)
                 pass
-            elif token in [47]:
+            elif token in [48]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 510
                 self.measureExpression()
@@ -11268,6 +11307,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def measureExpression(self):
+
         localctx = qasm3Parser.MeasureExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 74, self.RULE_measureExpression)
         try:
@@ -11321,6 +11361,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def rangeExpression(self):
+
         localctx = qasm3Parser.RangeExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 76, self.RULE_rangeExpression)
         self._la = 0  # Token type
@@ -11329,7 +11370,7 @@ class qasm3Parser(Parser):
             self.state = 517
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la - 28) & ~0x3F) == 0 and ((1 << (_la - 28)) & -17592117255666689) != 0:
+            if ((_la - 29) & ~0x3F) == 0 and ((1 << (_la - 29)) & -17592117255666689) != 0:
                 self.state = 516
                 self.expression(0)
 
@@ -11338,14 +11379,14 @@ class qasm3Parser(Parser):
             self.state = 521
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la - 28) & ~0x3F) == 0 and ((1 << (_la - 28)) & -17592117255666689) != 0:
+            if ((_la - 29) & ~0x3F) == 0 and ((1 << (_la - 29)) & -17592117255666689) != 0:
                 self.state = 520
                 self.expression(0)
 
             self.state = 525
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 56:
+            if _la == 57:
                 self.state = 523
                 self.match(qasm3Parser.COLON)
                 self.state = 524
@@ -11402,6 +11443,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def setExpression(self):
+
         localctx = qasm3Parser.SetExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 78, self.RULE_setExpression)
         self._la = 0  # Token type
@@ -11427,7 +11469,7 @@ class qasm3Parser(Parser):
             self.state = 537
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 59:
+            if _la == 60:
                 self.state = 536
                 self.match(qasm3Parser.COMMA)
 
@@ -11490,6 +11532,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def arrayLiteral(self):
+
         localctx = qasm3Parser.ArrayLiteralContext(self, self._ctx, self.state)
         self.enterRule(localctx, 80, self.RULE_arrayLiteral)
         self._la = 0  # Token type
@@ -11501,7 +11544,6 @@ class qasm3Parser(Parser):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [
-                28,
                 29,
                 30,
                 31,
@@ -11511,13 +11553,13 @@ class qasm3Parser(Parser):
                 35,
                 36,
                 37,
-                44,
-                49,
-                54,
-                64,
-                75,
+                38,
+                45,
+                50,
+                55,
+                65,
                 76,
-                82,
+                77,
                 83,
                 84,
                 85,
@@ -11527,11 +11569,12 @@ class qasm3Parser(Parser):
                 89,
                 90,
                 91,
+                92,
             ]:
                 self.state = 542
                 self.expression(0)
                 pass
-            elif token in [52]:
+            elif token in [53]:
                 self.state = 543
                 self.arrayLiteral()
                 pass
@@ -11549,7 +11592,6 @@ class qasm3Parser(Parser):
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
                     if token in [
-                        28,
                         29,
                         30,
                         31,
@@ -11559,13 +11601,13 @@ class qasm3Parser(Parser):
                         35,
                         36,
                         37,
-                        44,
-                        49,
-                        54,
-                        64,
-                        75,
+                        38,
+                        45,
+                        50,
+                        55,
+                        65,
                         76,
-                        82,
+                        77,
                         83,
                         84,
                         85,
@@ -11575,11 +11617,12 @@ class qasm3Parser(Parser):
                         89,
                         90,
                         91,
+                        92,
                     ]:
                         self.state = 547
                         self.expression(0)
                         pass
-                    elif token in [52]:
+                    elif token in [53]:
                         self.state = 548
                         self.arrayLiteral()
                         pass
@@ -11593,7 +11636,7 @@ class qasm3Parser(Parser):
             self.state = 557
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 59:
+            if _la == 60:
                 self.state = 556
                 self.match(qasm3Parser.COMMA)
 
@@ -11659,6 +11702,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def indexOperator(self):
+
         localctx = qasm3Parser.IndexOperatorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 82, self.RULE_indexOperator)
         self._la = 0  # Token type
@@ -11669,12 +11713,11 @@ class qasm3Parser(Parser):
             self.state = 580
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [52]:
+            if token in [53]:
                 self.state = 562
                 self.setExpression()
                 pass
             elif token in [
-                28,
                 29,
                 30,
                 31,
@@ -11684,14 +11727,14 @@ class qasm3Parser(Parser):
                 35,
                 36,
                 37,
-                44,
-                49,
-                54,
-                56,
-                64,
-                75,
+                38,
+                45,
+                50,
+                55,
+                57,
+                65,
                 76,
-                82,
+                77,
                 83,
                 84,
                 85,
@@ -11701,6 +11744,7 @@ class qasm3Parser(Parser):
                 89,
                 90,
                 91,
+                92,
             ]:
                 self.state = 565
                 self._errHandler.sync(self)
@@ -11742,7 +11786,7 @@ class qasm3Parser(Parser):
                 self.state = 578
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 59:
+                if _la == 60:
                     self.state = 577
                     self.match(qasm3Parser.COMMA)
 
@@ -11794,6 +11838,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def indexedIdentifier(self):
+
         localctx = qasm3Parser.IndexedIdentifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 84, self.RULE_indexedIdentifier)
         self._la = 0  # Token type
@@ -11804,7 +11849,7 @@ class qasm3Parser(Parser):
             self.state = 588
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 50:
+            while _la == 51:
                 self.state = 585
                 self.indexOperator()
                 self.state = 590
@@ -11850,6 +11895,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def returnSignature(self):
+
         localctx = qasm3Parser.ReturnSignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 86, self.RULE_returnSignature)
         try:
@@ -11915,6 +11961,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def gateModifier(self):
+
         localctx = qasm3Parser.GateModifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 88, self.RULE_gateModifier)
         self._la = 0  # Token type
@@ -11923,11 +11970,11 @@ class qasm3Parser(Parser):
             self.state = 607
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [39]:
+            if token in [40]:
                 self.state = 594
                 self.match(qasm3Parser.INV)
                 pass
-            elif token in [40]:
+            elif token in [41]:
                 self.state = 595
                 self.match(qasm3Parser.POW)
                 self.state = 596
@@ -11937,10 +11984,10 @@ class qasm3Parser(Parser):
                 self.state = 598
                 self.match(qasm3Parser.RPAREN)
                 pass
-            elif token in [41, 42]:
+            elif token in [42, 43]:
                 self.state = 600
                 _la = self._input.LA(1)
-                if not (_la == 41 or _la == 42):
+                if not (_la == 42 or _la == 43):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -11948,7 +11995,7 @@ class qasm3Parser(Parser):
                 self.state = 605
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 54:
+                if _la == 55:
                     self.state = 601
                     self.match(qasm3Parser.LPAREN)
                     self.state = 602
@@ -12034,6 +12081,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def scalarType(self):
+
         localctx = qasm3Parser.ScalarTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 90, self.RULE_scalarType)
         self._la = 0  # Token type
@@ -12041,89 +12089,89 @@ class qasm3Parser(Parser):
             self.state = 641
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [29]:
+            if token in [30]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 611
                 self.match(qasm3Parser.BIT)
                 self.state = 613
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 612
                     self.designator()
 
                 pass
-            elif token in [30]:
+            elif token in [31]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 615
                 self.match(qasm3Parser.INT)
                 self.state = 617
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 616
                     self.designator()
 
                 pass
-            elif token in [31]:
+            elif token in [32]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 619
                 self.match(qasm3Parser.UINT)
                 self.state = 621
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 620
                     self.designator()
 
                 pass
-            elif token in [32]:
+            elif token in [33]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 623
                 self.match(qasm3Parser.FLOAT)
                 self.state = 625
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 624
                     self.designator()
 
                 pass
-            elif token in [33]:
+            elif token in [34]:
                 self.enterOuterAlt(localctx, 5)
                 self.state = 627
                 self.match(qasm3Parser.ANGLE)
                 self.state = 629
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 628
                     self.designator()
 
                 pass
-            elif token in [28]:
+            elif token in [29]:
                 self.enterOuterAlt(localctx, 6)
                 self.state = 631
                 self.match(qasm3Parser.BOOL)
                 pass
-            elif token in [36]:
+            elif token in [37]:
                 self.enterOuterAlt(localctx, 7)
                 self.state = 632
                 self.match(qasm3Parser.DURATION)
                 pass
-            elif token in [37]:
+            elif token in [38]:
                 self.enterOuterAlt(localctx, 8)
                 self.state = 633
                 self.match(qasm3Parser.STRETCH)
                 pass
-            elif token in [34]:
+            elif token in [35]:
                 self.enterOuterAlt(localctx, 9)
                 self.state = 634
                 self.match(qasm3Parser.COMPLEX)
                 self.state = 639
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 635
                     self.match(qasm3Parser.LBRACKET)
                     self.state = 636
@@ -12174,6 +12222,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def qubitType(self):
+
         localctx = qasm3Parser.QubitTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 92, self.RULE_qubitType)
         self._la = 0  # Token type
@@ -12184,7 +12233,7 @@ class qasm3Parser(Parser):
             self.state = 645
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 50:
+            if _la == 51:
                 self.state = 644
                 self.designator()
 
@@ -12239,6 +12288,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def arrayType(self):
+
         localctx = qasm3Parser.ArrayTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 94, self.RULE_arrayType)
         try:
@@ -12288,6 +12338,9 @@ class qasm3Parser(Parser):
         def CONST(self):
             return self.getToken(qasm3Parser.CONST, 0)
 
+        def READONLY(self):
+            return self.getToken(qasm3Parser.READONLY, 0)
+
         def MUTABLE(self):
             return self.getToken(qasm3Parser.MUTABLE, 0)
 
@@ -12321,6 +12374,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def arrayReferenceType(self):
+
         localctx = qasm3Parser.ArrayReferenceTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 96, self.RULE_arrayReferenceType)
         self._la = 0  # Token type
@@ -12328,7 +12382,7 @@ class qasm3Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 654
             _la = self._input.LA(1)
-            if not (_la == 23 or _la == 24):
+            if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 58720256) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -12345,7 +12399,6 @@ class qasm3Parser(Parser):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [
-                28,
                 29,
                 30,
                 31,
@@ -12355,13 +12408,13 @@ class qasm3Parser(Parser):
                 35,
                 36,
                 37,
-                44,
-                49,
-                54,
-                64,
-                75,
+                38,
+                45,
+                50,
+                55,
+                65,
                 76,
-                82,
+                77,
                 83,
                 84,
                 85,
@@ -12371,11 +12424,12 @@ class qasm3Parser(Parser):
                 89,
                 90,
                 91,
+                92,
             ]:
                 self.state = 659
                 self.expressionList()
                 pass
-            elif token in [43]:
+            elif token in [44]:
                 self.state = 660
                 self.match(qasm3Parser.DIM)
                 self.state = 661
@@ -12430,6 +12484,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def designator(self):
+
         localctx = qasm3Parser.DesignatorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 98, self.RULE_designator)
         try:
@@ -12479,18 +12534,19 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def gateOperand(self):
+
         localctx = qasm3Parser.GateOperandContext(self, self._ctx, self.state)
         self.enterRule(localctx, 100, self.RULE_gateOperand)
         try:
             self.state = 673
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [87]:
+            if token in [88]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 671
                 self.indexedIdentifier()
                 pass
-            elif token in [88]:
+            elif token in [89]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 672
                 self.match(qasm3Parser.HardwareQubit)
@@ -12543,6 +12599,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def externArgument(self):
+
         localctx = qasm3Parser.ExternArgumentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 102, self.RULE_externArgument)
         self._la = 0  # Token type
@@ -12550,24 +12607,24 @@ class qasm3Parser(Parser):
             self.state = 681
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [28, 29, 30, 31, 32, 33, 34, 36, 37]:
+            if token in [29, 30, 31, 32, 33, 34, 35, 37, 38]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 675
                 self.scalarType()
                 pass
-            elif token in [23, 24]:
+            elif token in [23, 24, 25]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 676
                 self.arrayReferenceType()
                 pass
-            elif token in [27]:
+            elif token in [28]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 677
                 self.match(qasm3Parser.CREG)
                 self.state = 679
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 678
                     self.designator()
 
@@ -12614,6 +12671,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def defcalArgument(self):
+
         localctx = qasm3Parser.DefcalArgumentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 104, self.RULE_defcalArgument)
         self._la = 0  # Token type
@@ -12621,7 +12679,7 @@ class qasm3Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 683
             _la = self._input.LA(1)
-            if not (_la == 87 or _la == 88):
+            if not (_la == 88 or _la == 89):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -12680,6 +12738,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def argumentDefinition(self):
+
         localctx = qasm3Parser.ArgumentDefinitionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 106, self.RULE_argumentDefinition)
         self._la = 0  # Token type
@@ -12687,25 +12746,25 @@ class qasm3Parser(Parser):
             self.state = 699
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [28, 29, 30, 31, 32, 33, 34, 36, 37]:
+            if token in [29, 30, 31, 32, 33, 34, 35, 37, 38]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 685
                 self.scalarType()
                 self.state = 686
                 self.match(qasm3Parser.Identifier)
                 pass
-            elif token in [26]:
+            elif token in [27]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 688
                 self.qubitType()
                 self.state = 689
                 self.match(qasm3Parser.Identifier)
                 pass
-            elif token in [25, 27]:
+            elif token in [26, 28]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 691
                 _la = self._input.LA(1)
-                if not (_la == 25 or _la == 27):
+                if not (_la == 26 or _la == 28):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -12715,12 +12774,12 @@ class qasm3Parser(Parser):
                 self.state = 694
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 50:
+                if _la == 51:
                     self.state = 693
                     self.designator()
 
                 pass
-            elif token in [23, 24]:
+            elif token in [23, 24, 25]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 696
                 self.arrayReferenceType()
@@ -12775,6 +12834,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def argumentDefinitionList(self):
+
         localctx = qasm3Parser.ArgumentDefinitionListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 108, self.RULE_argumentDefinitionList)
         self._la = 0  # Token type
@@ -12798,7 +12858,7 @@ class qasm3Parser(Parser):
             self.state = 710
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 59:
+            if _la == 60:
                 self.state = 709
                 self.match(qasm3Parser.COMMA)
 
@@ -12847,6 +12907,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def expressionList(self):
+
         localctx = qasm3Parser.ExpressionListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 110, self.RULE_expressionList)
         self._la = 0  # Token type
@@ -12870,7 +12931,7 @@ class qasm3Parser(Parser):
             self.state = 721
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 59:
+            if _la == 60:
                 self.state = 720
                 self.match(qasm3Parser.COMMA)
 
@@ -12919,6 +12980,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def defcalArgumentList(self):
+
         localctx = qasm3Parser.DefcalArgumentListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 112, self.RULE_defcalArgumentList)
         self._la = 0  # Token type
@@ -12942,7 +13004,7 @@ class qasm3Parser(Parser):
             self.state = 732
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 59:
+            if _la == 60:
                 self.state = 731
                 self.match(qasm3Parser.COMMA)
 
@@ -12991,6 +13053,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def identifierList(self):
+
         localctx = qasm3Parser.IdentifierListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 114, self.RULE_identifierList)
         self._la = 0  # Token type
@@ -13014,7 +13077,7 @@ class qasm3Parser(Parser):
             self.state = 743
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 59:
+            if _la == 60:
                 self.state = 742
                 self.match(qasm3Parser.COMMA)
 
@@ -13063,6 +13126,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def gateOperandList(self):
+
         localctx = qasm3Parser.GateOperandListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 116, self.RULE_gateOperandList)
         self._la = 0  # Token type
@@ -13086,7 +13150,7 @@ class qasm3Parser(Parser):
             self.state = 754
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 59:
+            if _la == 60:
                 self.state = 753
                 self.match(qasm3Parser.COMMA)
 
@@ -13135,6 +13199,7 @@ class qasm3Parser(Parser):
                 return visitor.visitChildren(self)
 
     def externArgumentList(self):
+
         localctx = qasm3Parser.ExternArgumentListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 118, self.RULE_externArgumentList)
         self._la = 0  # Token type
@@ -13158,7 +13223,7 @@ class qasm3Parser(Parser):
             self.state = 765
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 59:
+            if _la == 60:
                 self.state = 764
                 self.match(qasm3Parser.COMMA)
 
