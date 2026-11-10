@@ -432,6 +432,78 @@ def test_bad_array_size_declaration(qasm):
         Interpreter().run(qasm)
 
 
+@pytest.mark.parametrize("index, expected", [(0, False), (1, True)])
+def test_bool_array_indexed_read(index, expected):
+    context = Interpreter().run(
+        f"array[bool, 2] flags = {{false, true}}; bool result = flags[{index}];"
+    )
+
+    assert context.get_type("result") == BoolType()
+    assert context.get_value("result") == BooleanLiteral(expected)
+
+
+@pytest.mark.parametrize(
+    "selection, expected",
+    [
+        ("[:]", [False, True, True]),
+        ("[0:1]", [False, True]),
+        ("[{2, 0}]", [True, False]),
+    ],
+)
+def test_bool_array_slice_read(selection, expected):
+    context = Interpreter().run(
+        "array[bool, 3] flags = {false, true, true}; "
+        f"array[bool, {len(expected)}] selected = flags{selection};"
+    )
+
+    assert context.get_type("selected") == ArrayType(BoolType(), [IntegerLiteral(len(expected))])
+    assert context.get_value("selected") == ArrayLiteral(
+        [BooleanLiteral(value) for value in expected]
+    )
+
+
+def test_bool_array_multidimensional_read():
+    context = Interpreter().run("""
+        array[bool, 2, 2] flags = {{false, true}, {true, false}};
+        bool first = flags[0, 1];
+        bool second = flags[1][1];
+        array[bool, 2] column = flags[:, 0];
+    """)
+
+    assert context.get_value("first") == BooleanLiteral(True)
+    assert context.get_value("second") == BooleanLiteral(False)
+    assert context.get_value("column") == ArrayLiteral(
+        [BooleanLiteral(False), BooleanLiteral(True)]
+    )
+
+
+@pytest.mark.parametrize(
+    "element_type, value, expected",
+    [
+        ("int[8]", "-7", IntegerLiteral(-7)),
+        ("uint[8]", "7", IntegerLiteral(7)),
+        ("float[32]", "1.25", FloatLiteral(1.25)),
+    ],
+)
+def test_numeric_array_reads_preserve_element_values(element_type, value, expected):
+    context = Interpreter().run(
+        f"array[{element_type}, 1] values = {{{value}}}; {element_type} result = values[0];"
+    )
+
+    assert context.get_value("result") == expected
+
+
+def test_integer_array_reads_preserve_bit_width():
+    context = Interpreter().run("""
+        array[uint[4], 2] values = {1, 8};
+        bit most_significant = values[1, 0];
+        bit least_significant = values[0, 3];
+    """)
+
+    assert context.get_value("most_significant") == BooleanLiteral(True)
+    assert context.get_value("least_significant") == BooleanLiteral(True)
+
+
 def test_indexed_expression():
     qasm = """
     array[uint[8], 2, 2] multi_dim = {{1, 2}, {3, 4}};
@@ -1908,6 +1980,20 @@ def test_subroutine_array_reference_mutation():
     assert context.get_value("array_3") == ArrayLiteral(
         [IntegerLiteral(x) for x in (1, 2, 3, 4, 0, 6, 0, 8, 0, 10)]
     )
+
+
+def test_bool_array_subroutine_argument():
+    context = Interpreter().run("""
+        def toggle(mutable array[bool, #dim = 1] values) {
+            values[0] = !values[0];
+        }
+        array[bool, 2] flags = {false, true};
+        toggle(flags);
+        bool result = flags[0];
+    """)
+
+    assert context.get_value("flags") == ArrayLiteral([BooleanLiteral(True), BooleanLiteral(True)])
+    assert context.get_value("result") == BooleanLiteral(True)
 
 
 def test_subroutine_array_reference_const_mutation():
