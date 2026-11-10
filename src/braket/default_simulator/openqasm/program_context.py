@@ -609,6 +609,18 @@ class AbstractProgramContext(ABC):
         self.gate_table.pop_scope()
         self._mcm_dependent_scopes.pop()
 
+    def declare_temporary(self, name: str, value: LiteralType) -> None:
+        """Store an expression temporary without declaring a measurement register."""
+        self.declare_variable(name, type(value), value)
+
+    def discard_temporary(self, name: str) -> None:
+        """Remove a consumed expression temporary from its declaration scope."""
+        for table in (self.symbol_table, self.variable_table):
+            for scope in table._scopes:
+                scope.pop(name, None)
+        for scope in self._mcm_dependent_scopes:
+            scope.discard(name)
+
     @property
     def in_global_scope(self):
         return self.symbol_table.in_global_scope
@@ -1314,6 +1326,22 @@ class ProgramContext(AbstractProgramContext):
         self._batch_size: int = 1
         self._pending_mcm_targets: list[_PendingMeasurement] = []
 
+    def push_scope(self) -> None:
+        super().push_scope()
+        self._enter_frame_for_active_paths()
+
+    def pop_scope(self) -> None:
+        self._exit_frame_for_active_paths()
+        super().pop_scope()
+
+    def declare_temporary(self, name: str, value: LiteralType) -> None:
+        self._store_variable(name, type(value), value, False)
+
+    def discard_temporary(self, name: str) -> None:
+        super().discard_temporary(name)
+        for path in self._paths:
+            path.variables.pop(name, None)
+
     @property
     def circuit(self):
         self._flush_pending_mcm_targets()
@@ -1435,6 +1463,7 @@ class ProgramContext(AbstractProgramContext):
 
         # Symbol table is shared across paths (type info only)
         self.symbol_table.add_symbol(name, symbol_type, const)
+        self.variable_table.add_variable(name, None)
         # Store value per-path as a FramedVariable
         for path_idx in self._active_path_indices:
             path = self._paths[path_idx]
@@ -1545,11 +1574,13 @@ class ProgramContext(AbstractProgramContext):
         return super().is_initialized(name)
 
     def _bound_in_inner_scope(self, name: str) -> bool:
-        """Whether ``name`` is bound to a value in a non-global variable-table scope."""
-        return any(
-            not is_none_like(scope[name])
-            for scope in self.variable_table._scopes[1:]
-            if name in scope
+        """Whether a scoped qubit alias shadows the per-path classical binding."""
+        return (
+            any(
+                name in scope and not is_none_like(scope[name])
+                for scope in self.variable_table._scopes[1:]
+            )
+            and self.get_type(name) is Identifier
         )
 
     def _flush_pending_mcm_for_variable(self, name: str) -> None:
@@ -1902,10 +1933,12 @@ class ProgramContext(AbstractProgramContext):
             return
 
         saved_active = list(self._active_path_indices)
+        surviving_paths = []
         for path_idx in saved_active:
             self._focus_on_path(path_idx)
             yield
-        self._active_path_indices = saved_active
+            surviving_paths.extend(self._active_path_indices)
+        self._active_path_indices = surviving_paths
 
     def evaluate_condition(self, condition):
         """Evaluate a branching condition, yielding per-path branch decisions.
@@ -2184,17 +2217,19 @@ class ProgramContext(AbstractProgramContext):
         initial_path._instructions = [copy(ins) for ins in self._circuit.instructions]
         initial_path.shots = self._shots
 
-        for name, value in self.variable_table.items():
-            var_type = self.get_type(name)
-            is_const = self.get_const(name)
-            fv = FramedVariable(
-                name=name,
-                var_type=var_type,
-                value=value,
-                is_const=bool(is_const),
-                frame_number=initial_path.frame_number,
-            )
-            initial_path.set_variable(name, fv)
+        for frame_number, (variables, symbols) in enumerate(
+            zip(self.variable_table._scopes, self.symbol_table._scopes, strict=True)
+        ):
+            for name, value in variables.items():
+                symbol = symbols[name]
+                fv = FramedVariable(
+                    name=name,
+                    var_type=symbol.type,
+                    value=value,
+                    is_const=bool(symbol.const),
+                    frame_number=frame_number,
+                )
+                initial_path.set_variable(name, fv)
 
     def _branch_measurement(
         self,
