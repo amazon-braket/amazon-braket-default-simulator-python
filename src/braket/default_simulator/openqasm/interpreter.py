@@ -12,7 +12,7 @@
 # language governing permissions and limitations under the License.
 
 from collections.abc import Iterable
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from copy import copy, deepcopy
 from dataclasses import fields
 from enum import StrEnum
@@ -211,7 +211,14 @@ class Interpreter:
     @visit.register
     def _(self, node_list: list) -> list[QASMNode]:
         """Generic visit function for a list of AST nodes"""
-        return [n for n in [self.visit(node) for node in node_list] if n is not None]
+        visited = []
+        for node in node_list:
+            if not self.context.has_active_loop_paths:
+                break
+            result = self.visit(node)
+            if result is not None:
+                visited.append(result)
+        return visited
 
     @visit.register
     def _(self, node: Program) -> None:
@@ -714,6 +721,16 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
+        if node.op != getattr(AssignmentOperator, "="):
+            # Compound assignment reads the old target as well as the RHS.
+            # After a path-local continue, those old values can differ.
+            node = ClassicalAssignment(
+                node.lvalue,
+                getattr(AssignmentOperator, "="),
+                BinaryExpression(
+                    get_operator_of_assignment_operator(node.op), node.lvalue, node.rvalue
+                ),
+            )
         with self._expression_scope():
             node = copy(node)
             node.rvalue = self._prepare_expression(node.rvalue)
@@ -729,6 +746,7 @@ class Interpreter:
             self._execute_classical_assignment(node)
 
     def _execute_classical_assignment(self, node: ClassicalAssignment) -> None:
+        """Execute an assignment after compound operators have been expanded."""
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
@@ -739,15 +757,7 @@ class Interpreter:
         ):
             self.context.track_mcm_dependency(lvalue_name, node.rvalue)
             return
-        rvalue = self.visit(
-            node.rvalue
-            if node.op == getattr(AssignmentOperator, "=")
-            else self.visit(
-                BinaryExpression(
-                    get_operator_of_assignment_operator(node.op), node.lvalue, node.rvalue
-                )
-            )
-        )
+        rvalue = self.visit(node.rvalue)
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
@@ -784,10 +794,17 @@ class Interpreter:
                 except NameError:
                     raise TypeError("Branching condition not supported.")
             for branch in self.context.evaluate_condition(condition):
-                if branch:
-                    self.visit(node.if_block)
-                elif node.else_block:
-                    self.visit(node.else_block)
+                try:
+                    if branch:
+                        self.visit(node.if_block)
+                    elif node.else_block:
+                        self.visit(node.else_block)
+                except _BreakSignal:
+                    if not self.context.handle_loop_break():
+                        raise
+                except _ContinueSignal:
+                    if not self.context.handle_loop_continue():
+                        raise
         else:
             condition = cast_to(BooleanLiteral, self.visit(node.condition))
             if condition.value:
@@ -797,29 +814,25 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ForInLoop) -> None:
+        self._uses_advanced_language_features = True
         with self._expression_scope():
             node = copy(node)
             node.set_declaration = self._prepare_expression(node.set_declaration)
-            self._visit_for_loop(node)
+            with self.context.loop_scope():
+                self._visit_for_loop(node)
 
     def _visit_for_loop(self, node: ForInLoop) -> None:
-        self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
             node.set_declaration
         ):
-            gen = self.context.evaluate_for_range(
-                node.set_declaration, node.identifier.name, node.type
-            )
-            for _ in gen:
-                try:
-                    self.visit(deepcopy(node.block))
-                except _BreakSignal:
-                    self.context.handle_loop_break()
-                    gen.close()
-                    break
-                except _ContinueSignal:
-                    self.context.handle_loop_continue()
-                    continue
+            with closing(
+                self.context.evaluate_for_range(
+                    node.set_declaration, node.identifier.name, node.type
+                )
+            ) as iterations:
+                for _ in iterations:
+                    if not self._visit_loop_body(node.block):
+                        break
         else:
             index = self.visit(node.set_declaration)
             index_values = (
@@ -830,26 +843,27 @@ class Interpreter:
 
             loop_var_name = node.identifier.name
             for i in index_values:
+                if not self.context.has_active_loop_paths:
+                    break
                 with self.context.enter_scope():
                     self.context.declare_variable(loop_var_name, node.type, i)
-                    try:
-                        self.visit(deepcopy(node.block))
-                    except _BreakSignal:
-                        self.context.handle_loop_break()
+                    if not self._visit_loop_body(node.block):
                         break
-                    except _ContinueSignal:
-                        self.context.handle_loop_continue()
-                        continue
 
     @visit.register
     def _(self, node: WhileLoop) -> None:
+        self._uses_advanced_language_features = True
+        with self.context.loop_scope():
+            self._prepare_while_loop(node)
+
+    def _prepare_while_loop(self, node: WhileLoop) -> None:
         if not self._has_function_call(node.while_condition):
             self._visit_while_loop(node)
             return
         with self._expression_scope():
             original_condition = node.while_condition
             iterations = 0
-            while True:
+            while self.context.has_active_loop_paths:
                 prepared = self._prepare_expression(original_condition)
                 condition = self._expression_result(self._expression_values(prepared))
                 if self.context.is_mcm_dependent(condition):
@@ -862,13 +876,10 @@ class Interpreter:
                         f"While loop exceeded {_MAX_LOOP_ITERATIONS} iterations "
                         f"during static unrolling. The loop condition may never become false."
                     )
-                try:
-                    self.visit(deepcopy(node.block))
-                except _BreakSignal:
-                    self.context.handle_loop_break()
+                if not self._visit_loop_body(node.block):
                     return
-                except _ContinueSignal:
-                    self.context.handle_loop_continue()
+            else:
+                return
 
             def refresh_condition():
                 with self._expression_scope():
@@ -878,42 +889,58 @@ class Interpreter:
             self._visit_while_loop(WhileLoop(condition, node.block), refresh_condition)
 
     def _visit_while_loop(self, node: WhileLoop, refresh_condition=None) -> None:
-        self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
-            node.while_condition
-        ):
-            gen = self.context.evaluate_while_condition(node.while_condition)
-            for _ in gen:
-                try:
-                    self.visit(deepcopy(node.block))
-                    if refresh_condition is not None:
-                        refresh_condition()
-                except _BreakSignal:
-                    self.context.handle_loop_break()
-                    gen.close()
-                    break
-                except _ContinueSignal:
-                    self.context.handle_loop_continue()
-                    if refresh_condition is not None:
-                        refresh_condition()
-                    continue
-        else:
-            iterations = 0
-            while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
-                iterations += 1
-                if _MAX_LOOP_ITERATIONS > 0 and iterations > _MAX_LOOP_ITERATIONS:
-                    raise RuntimeError(
-                        f"While loop exceeded {_MAX_LOOP_ITERATIONS} iterations "
-                        f"during static unrolling. The loop condition may never become false."
+        iterations = 0
+        while self.context.has_active_loop_paths:
+            # The body can make an initially classical condition path-dependent.
+            # Switch before testing it again, so no path decides for its siblings.
+            if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+                node.while_condition
+            ):
+                condition = node.while_condition
+                if self._condition_needs_visit(condition):
+                    # Preserve full expression support after promotion. The
+                    # context focuses each path before calling this evaluator.
+                    path_iterations = self.context.evaluate_while_condition(
+                        condition, lambda expression: self.visit(deepcopy(expression))
                     )
-                try:
-                    self.visit(deepcopy(node.block))
-                except _BreakSignal:
-                    self.context.handle_loop_break()
-                    break
-                except _ContinueSignal:
-                    self.context.handle_loop_continue()
-                    continue
+                else:
+                    path_iterations = self.context.evaluate_while_condition(condition)
+                with closing(path_iterations):
+                    for _ in path_iterations:
+                        if not self._visit_loop_body(node.block):
+                            break
+                        if refresh_condition is not None and self.context.has_active_loop_paths:
+                            refresh_condition()
+                return
+            if not cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
+                return
+            iterations += 1
+            if _MAX_LOOP_ITERATIONS > 0 and iterations > _MAX_LOOP_ITERATIONS:
+                raise RuntimeError(
+                    f"While loop exceeded {_MAX_LOOP_ITERATIONS} iterations "
+                    f"during static unrolling. The loop condition may never become false."
+                )
+            if not self._visit_loop_body(node.block):
+                return
+            if refresh_condition is not None and self.context.has_active_loop_paths:
+                refresh_condition()
+
+    def _visit_loop_body(self, statements) -> bool:
+        """Execute one iteration and resume paths suspended by continue.
+
+        Returns False only for a non-branched break. Branched breaks remove
+        just their paths; the loop continues for any other active paths.
+        """
+        try:
+            self.visit(deepcopy(statements))
+        except _BreakSignal:
+            if not self.context.handle_loop_break():
+                return False
+        except _ContinueSignal:
+            self.context.handle_loop_continue()
+        finally:
+            self.context.finish_loop_iteration()
+        return True
 
     @visit.register
     def _(self, node: BreakStatement) -> None:
@@ -1226,6 +1253,8 @@ class Interpreter:
         Recursively walks the AST. Returns True if any node is not in the
         set of types that a context's lightweight _evaluate_expression can handle.
         """
+        if isinstance(condition, (list, tuple)):
+            return any(Interpreter._condition_needs_visit(item) for item in condition)
         if not isinstance(condition, QASMNode):
             return False
         if not isinstance(condition, _EVALUABLE):
