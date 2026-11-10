@@ -35,6 +35,7 @@ class FramedVariable:
         self._value = value
         self._is_const = is_const
         self._frame_number = frame_number
+        self.previous: FramedVariable | None = None
 
     @property
     def name(self) -> str:
@@ -149,9 +150,13 @@ class SimulationPath:
         Removes all variables declared in frames newer than `previous_frame`
         and restores the frame number.
         """
-        self._variables = {
-            name: var for name, var in self._variables.items() if var.frame_number <= previous_frame
-        }
+        restored = {}
+        for name, var in self._variables.items():
+            while var is not None and var.frame_number > previous_frame:
+                var = var.previous
+            if var is not None:
+                restored[name] = var
+        self._variables = restored
         self._frame_number = previous_frame
 
     def add_instruction(self, instruction: GateOperation) -> None:
@@ -160,6 +165,11 @@ class SimulationPath:
 
     def set_variable(self, name: str, var: FramedVariable) -> None:
         """Set a classical variable in this path's variable state."""
+        previous = self._variables.get(name)
+        if previous is not None and previous.frame_number < var.frame_number:
+            var.previous = previous
+        elif previous is not None and previous.frame_number == var.frame_number:
+            var.previous = previous.previous
         self._variables[name] = var
 
     def get_variable(self, name: str) -> FramedVariable | None:
