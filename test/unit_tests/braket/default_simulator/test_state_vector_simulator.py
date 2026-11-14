@@ -179,6 +179,7 @@ def test_properties():
                         "pswap",
                         "phaseshift",
                         "prx",
+                        "reset",
                         "rx",
                         "ry",
                         "rz",
@@ -1365,6 +1366,23 @@ def test_measure_targets():
     assert 400 < np.sum(measurements, axis=0)[0] < 600
     assert len(measurements[0]) == 1
     assert result.measuredQubits == [0]
+
+
+def test_reset_is_advertised():
+    ops = StateVectorSimulator().properties.action["braket.ir.openqasm.program"].supportedOperations
+    assert "reset" in ops
+
+
+def test_reset_after_x():
+    qasm = """
+    bit[1] c;
+    qubit[1] q;
+    x q[0];
+    reset q[0];
+    c[0] = measure q[0];
+    """
+    result = StateVectorSimulator().run(OpenQASMProgram(source=qasm), shots=100)
+    assert Counter("".join(m) for m in result.measurements) == {"0": 100}
 
 
 def test_measure_no_gates():
