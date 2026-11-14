@@ -60,14 +60,21 @@ def cast_to(into: ClassicalType | type[LiteralType], variable: LiteralType) -> L
 
 
 @cast_to.register
-def _(into: BitType, variable: BooleanLiteral | ArrayLiteral | BitstringLiteral) -> ArrayLiteral:
+def _(
+    into: BitType, variable: BooleanLiteral | IntegerLiteral | ArrayLiteral | BitstringLiteral
+) -> ArrayLiteral:
     """
     Bit types can be sized or not, represented as Boolean literals or Array literals.
-    Sized bit types can be instantiated with a Bitstring literal or Array literal.
+    Sized bit types can be instantiated with a Bitstring, Array, Integer or Boolean literal.
     """
     if not into.size:
         return cast_to(BooleanLiteral, variable)
     size = into.size.value
+    if isinstance(variable, (BooleanLiteral, IntegerLiteral)):
+        value = int(variable.value)
+        if not -(2 ** (size - 1)) <= value < 2**size:
+            raise ValueError(f"Value {value} does not fit in a bit register of size {size}.")
+        variable = BitstringLiteral(value % 2**size, size)
     if isinstance(variable, BitstringLiteral):
         variable = convert_string_to_bool_array(variable)
     if (

@@ -224,9 +224,6 @@ class TestStateVectorSimulatorOperatorsOpenQASM:
         # We should see multiple distinct outcomes
         assert len(counter) >= 2
 
-    @pytest.mark.xfail(
-        reason="Interpreter gap: IntegerLiteral casting - 'values' attribute missing"
-    )
     def test_4_3_type_casting_operations_with_branching(self):
         """4.3 Type casting operations - using execute_with_branching to test variables"""
         qasm_source = """
