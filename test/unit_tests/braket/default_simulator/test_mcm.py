@@ -5339,7 +5339,7 @@ class TestDensityMatrixSimulatorBranchedNoise:
     SHOTS = 100
     # Each channel takes |1> to |0>. Together they cover add_noise_instruction and
     # add_kraus_instruction.
-    CHANNELS = ["bit_flip(1.0)", "amplitude_damping(1.0)", "kraus([[0, 1], [1, 0]])"]
+    CHANNELS = ("bit_flip(1.0)", "amplitude_damping(1.0)", "kraus([[0, 1], [1, 0]])")
 
     def _counts(self, qasm, shots=SHOTS):
         result = DensityMatrixSimulator().run(OpenQASMProgram(source=qasm), shots=shots)
@@ -5363,6 +5363,24 @@ class TestDensityMatrixSimulatorBranchedNoise:
         b[1] = measure q[1];
         """
         assert set(self._counts(qasm)) == {"00", "10"}
+
+    @pytest.mark.parametrize("channel", CHANNELS)
+    def test_channel_after_feedforward_applies_on_every_path(self, channel):
+        """``measure_ff`` / ``cc_prx`` branch like an ``if``. The ``cc_prx`` returns q[0]
+        to |0> on every path, so only the channel decides q[1]."""
+        qasm = f"""
+        OPENQASM 3.0;
+        bit[2] b;
+        qubit[2] q;
+        h q[0];
+        measure_ff(0) q[0];
+        cc_prx(3.141592653589793, 0.0, 0) q[0];
+        x q[1];
+        #pragma braket noise {channel} q[1]
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        """
+        assert set(self._counts(qasm)) == {"00"}
 
     @pytest.mark.parametrize("channel", CHANNELS)
     def test_channel_on_qubit_with_pending_measurement(self, channel):
@@ -5456,7 +5474,7 @@ class TestStateVectorSimulatorBranchedNoise:
     """Noise pragmas are rejected on the branched path as they are everywhere else."""
 
     NO_NOISE = "Noise instructions are not supported by the state vector simulator"
-    CHANNELS = ["bit_flip(0.4)", "kraus([[0, 1], [1, 0]])"]
+    CHANNELS = ("bit_flip(0.4)", "kraus([[0, 1], [1, 0]])")
 
     @pytest.mark.parametrize("channel", CHANNELS)
     def test_channel_after_branch_is_rejected(self, channel):
