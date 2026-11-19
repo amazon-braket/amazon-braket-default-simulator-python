@@ -116,9 +116,9 @@ from .parser.openqasm_ast import (
 from .parser.openqasm_parser import parse
 from .program_context import (
     AbstractProgramContext,
+    BreakSignal,
+    ContinueSignal,
     ProgramContext,
-    _BreakSignal,
-    _ContinueSignal,
 )
 
 _EVALUABLE = (
@@ -743,11 +743,11 @@ class Interpreter:
             for _ in gen:
                 try:
                     self.visit(deepcopy(node.block))
-                except _BreakSignal:
+                except BreakSignal:
                     self.context.handle_loop_break()
                     gen.close()
                     break
-                except _ContinueSignal:
+                except ContinueSignal:
                     self.context.handle_loop_continue()
                     continue
         else:
@@ -764,10 +764,10 @@ class Interpreter:
                     self.context.declare_variable(loop_var_name, node.type, i)
                     try:
                         self.visit(deepcopy(node.block))
-                    except _BreakSignal:
+                    except BreakSignal:
                         self.context.handle_loop_break()
                         break
-                    except _ContinueSignal:
+                    except ContinueSignal:
                         self.context.handle_loop_continue()
                         continue
 
@@ -781,11 +781,11 @@ class Interpreter:
             for _ in gen:
                 try:
                     self.visit(deepcopy(node.block))
-                except _BreakSignal:
+                except BreakSignal:
                     self.context.handle_loop_break()
                     gen.close()
                     break
-                except _ContinueSignal:
+                except ContinueSignal:
                     self.context.handle_loop_continue()
                     continue
         else:
@@ -799,20 +799,20 @@ class Interpreter:
                     )
                 try:
                     self.visit(deepcopy(node.block))
-                except _BreakSignal:
+                except BreakSignal:
                     self.context.handle_loop_break()
                     break
-                except _ContinueSignal:
+                except ContinueSignal:
                     self.context.handle_loop_continue()
                     continue
 
     @visit.register
     def _(self, node: BreakStatement) -> None:
-        raise _BreakSignal()
+        raise BreakSignal()
 
     @visit.register
     def _(self, node: ContinueStatement) -> None:
-        raise _ContinueSignal()
+        raise ContinueSignal()
 
     @visit.register
     def _(self, node: AliasStatement) -> None:
