@@ -33,6 +33,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     Identifier,
     IntegerLiteral,
     IntType,
+    RangeDefinition,
     SymbolLiteral,
     UnaryExpression,
     UnaryOperator,
@@ -782,3 +783,53 @@ def test_flush_marks_only_measured_elements_overwritten():
     registers = {register.name: register for register in context.circuit.classical_registers}
     assert registers["c"].overwritten == {0}
     assert registers["d"].overwritten == set()
+
+
+@pytest.mark.parametrize("kind", ["branch", "for", "while"])
+def test_control_flow_generator_close_preserves_descendants_and_unwinds_frames(kind):
+    context = _build(
+        "qubit[2] q; bit b; bit c; h q[0]; b = measure q[0]; if (b) {}",
+        shots=200,
+    )
+    assert len(context.active_paths) == 2
+    if kind == "branch":
+        generator = context.evaluate_condition(Identifier("b"))
+    elif kind == "for":
+        generator = context.evaluate_for_range(
+            RangeDefinition(IntegerLiteral(0), IntegerLiteral(1), None), "i", int_8
+        )
+    else:
+        generator = context.evaluate_while_condition(BooleanLiteral(True))
+
+    next(generator)
+    Interpreter(context=context).run("OPENQASM 3; h q[1]; c = measure q[1];")
+    generator.close()
+
+    assert len(context.active_paths) == (4 if kind == "while" else 3)
+    assert sum(path.shots for path in context.active_paths) == 200
+    assert all(path.frame_number == 0 for path in context.active_paths)
+    assert all(path.get_variable("i") is None for path in context.active_paths)
+
+
+def test_while_condition_evaluator_runs_once_per_active_path_per_check():
+    context = _build(
+        "qubit q; bit b; h q; b = measure q; if (b) {}",
+        shots=200,
+    )
+    assert len(context.active_paths) == 2
+    checks = []
+
+    def evaluate(condition):
+        assert condition == BooleanLiteral(True)
+        assert len(context.active_paths) == 1
+        checks.append(context.get_value("b").value)
+        return BooleanLiteral(len(checks) <= 2)
+
+    generator = context.evaluate_while_condition(BooleanLiteral(True), evaluate)
+    assert list(generator) == [True]
+
+    assert checks[:2] == checks[2:]
+    assert set(checks) == {0, 1}
+    assert len(context.active_paths) == 2
+    assert sum(path.shots for path in context.active_paths) == 200
+    assert all(path.frame_number == 0 for path in context.active_paths)

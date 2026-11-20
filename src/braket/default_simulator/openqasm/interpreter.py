@@ -12,7 +12,8 @@
 # language governing permissions and limitations under the License.
 
 from collections.abc import Iterable
-from copy import deepcopy
+from contextlib import closing, contextmanager
+from copy import copy, deepcopy
 from dataclasses import fields
 from enum import StrEnum
 from functools import singledispatchmethod
@@ -78,6 +79,7 @@ from .parser.openqasm_ast import (
     ContinueStatement,
     DiscreteSet,
     Expression,
+    ExpressionStatement,
     FloatLiteral,
     FloatType,
     ForInLoop,
@@ -164,6 +166,8 @@ class Interpreter:
         self._warn_advanced_features = warn_advanced_features
         self._input_names: set[str] = set()
         self._output_names: set[str] = set()
+        self._expression_temporaries: list[str] = []
+        self._next_expression_temporary = 0
 
     def build_circuit(
         self, source: str, inputs: dict[str, io_type] | None = None, is_file: bool = False
@@ -207,7 +211,14 @@ class Interpreter:
     @visit.register
     def _(self, node_list: list) -> list[QASMNode]:
         """Generic visit function for a list of AST nodes"""
-        return [n for n in [self.visit(node) for node in node_list] if n is not None]
+        visited = []
+        for node in node_list:
+            if not self.context.has_active_loop_paths:
+                break
+            result = self.visit(node)
+            if result is not None:
+                visited.append(result)
+        return visited
 
     @visit.register
     def _(self, node: Program) -> None:
@@ -222,7 +233,23 @@ class Interpreter:
         self.visit(node.statements)
 
     @visit.register
+    def _(self, node: ExpressionStatement) -> None:
+        with self._expression_scope():
+            expression = self._prepare_expression(node.expression)
+            if expression is not None:
+                self._expression_values(expression)
+
+    @visit.register
     def _(self, node: ClassicalDeclaration) -> None:
+        with self._expression_scope():
+            node = copy(node)
+            if node.init_expression is not None and not isinstance(
+                node.init_expression, QuantumMeasurement
+            ):
+                node.init_expression = self._prepare_expression(node.init_expression)
+            self._declare_classical(node)
+
+    def _declare_classical(self, node: ClassicalDeclaration) -> None:
         if isinstance(node.init_expression, QuantumMeasurement):
             # `bit b = measure q;` runs as `bit b; b = measure q;`
             self.visit(ClassicalDeclaration(node.type, node.identifier, None))
@@ -491,6 +518,24 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumGate) -> None:
+        with self._expression_scope():
+            node = copy(node)
+            node.arguments = self._prepare_values(
+                node.arguments, later=[node.modifiers, node.qubits]
+            )
+            node.modifiers = self._prepare_modifiers(node.modifiers, later=node.qubits)
+            node.qubits = [
+                self._prepare_reference(qubit, later=node.qubits[index + 1 :])
+                for index, qubit in enumerate(node.qubits)
+            ]
+            operands = [node.arguments, node.qubits, node.modifiers]
+            if self.context.is_mcm_dependent(operands):
+                for _ in self.context.iter_classical_scopes(operands):
+                    self._visit_quantum_gate(deepcopy(node))
+            else:
+                self._visit_quantum_gate(node)
+
+    def _visit_quantum_gate(self, node: QuantumGate) -> None:
         gate_name = node.name.name
         arguments = self.visit(node.arguments)
         modifiers = self.visit(node.modifiers)
@@ -576,6 +621,15 @@ class Interpreter:
 
     @visit.register
     def _(self, node: QuantumPhase) -> None:
+        with self._expression_scope():
+            node = copy(node)
+            node.argument = self._prepare_values([node.argument], later=node.modifiers)[0]
+            node.modifiers = self._prepare_modifiers(node.modifiers)
+            operands = [node.argument, node.modifiers]
+            for _ in self.context.iter_classical_scopes(operands):
+                self._visit_quantum_phase(deepcopy(node))
+
+    def _visit_quantum_phase(self, node: QuantumPhase) -> None:
         node.argument = self.visit(node.argument)
         node.modifiers = self.visit(node.modifiers)
         if is_inverted(node):
@@ -667,6 +721,22 @@ class Interpreter:
 
     @visit.register
     def _(self, node: ClassicalAssignment) -> None:
+        if node.op != getattr(AssignmentOperator, "="):
+            # Compound assignment reads the old target as well as the RHS.
+            # After a path-local continue, those old values can differ.
+            node = ClassicalAssignment(
+                node.lvalue,
+                getattr(AssignmentOperator, "="),
+                BinaryExpression(
+                    get_operator_of_assignment_operator(node.op), node.lvalue, node.rvalue
+                ),
+            )
+        with self._expression_scope():
+            node = copy(node)
+            node.rvalue = self._prepare_expression(node.rvalue)
+            self._assign_classical(node)
+
+    def _assign_classical(self, node: ClassicalAssignment) -> None:
         if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
             node.rvalue
         ):
@@ -676,6 +746,7 @@ class Interpreter:
             self._execute_classical_assignment(node)
 
     def _execute_classical_assignment(self, node: ClassicalAssignment) -> None:
+        """Execute an assignment after compound operators have been expanded."""
         lvalue_name = get_identifier_name(node.lvalue)
         if self.context.get_const(lvalue_name):
             raise TypeError(f"Cannot update const value {lvalue_name}")
@@ -686,15 +757,7 @@ class Interpreter:
         ):
             self.context.track_mcm_dependency(lvalue_name, node.rvalue)
             return
-        rvalue = self.visit(
-            node.rvalue
-            if node.op == getattr(AssignmentOperator, "=")
-            else self.visit(
-                BinaryExpression(
-                    get_operator_of_assignment_operator(node.op), node.lvalue, node.rvalue
-                )
-            )
-        )
+        rvalue = self.visit(node.rvalue)
         lvalue = node.lvalue
         if isinstance(lvalue, IndexedIdentifier):
             lvalue.indices = self.visit(lvalue.indices)
@@ -709,6 +772,17 @@ class Interpreter:
 
     @visit.register
     def _(self, node: BranchingStatement) -> None:
+        with self._expression_scope():
+            node = copy(node)
+            try:
+                node.condition = self._prepare_expression(node.condition)
+            except NameError:
+                if self.context.is_mcm_dependent(node.condition):
+                    raise TypeError("Branching condition not supported.") from None
+                raise
+            self._visit_branch(node)
+
+    def _visit_branch(self, node: BranchingStatement) -> None:
         self._uses_advanced_language_features = True
         if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
             node.condition
@@ -720,10 +794,17 @@ class Interpreter:
                 except NameError:
                     raise TypeError("Branching condition not supported.")
             for branch in self.context.evaluate_condition(condition):
-                if branch:
-                    self.visit(node.if_block)
-                elif node.else_block:
-                    self.visit(node.else_block)
+                try:
+                    if branch:
+                        self.visit(node.if_block)
+                    elif node.else_block:
+                        self.visit(node.else_block)
+                except _BreakSignal:
+                    if not self.context.handle_loop_break():
+                        raise
+                except _ContinueSignal:
+                    if not self.context.handle_loop_continue():
+                        raise
         else:
             condition = cast_to(BooleanLiteral, self.visit(node.condition))
             if condition.value:
@@ -734,22 +815,24 @@ class Interpreter:
     @visit.register
     def _(self, node: ForInLoop) -> None:
         self._uses_advanced_language_features = True
+        with self._expression_scope():
+            node = copy(node)
+            node.set_declaration = self._prepare_expression(node.set_declaration)
+            with self.context.loop_scope():
+                self._visit_for_loop(node)
+
+    def _visit_for_loop(self, node: ForInLoop) -> None:
         if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
             node.set_declaration
         ):
-            gen = self.context.evaluate_for_range(
-                node.set_declaration, node.identifier.name, node.type
-            )
-            for _ in gen:
-                try:
-                    self.visit(deepcopy(node.block))
-                except _BreakSignal:
-                    self.context.handle_loop_break()
-                    gen.close()
-                    break
-                except _ContinueSignal:
-                    self.context.handle_loop_continue()
-                    continue
+            with closing(
+                self.context.evaluate_for_range(
+                    node.set_declaration, node.identifier.name, node.type
+                )
+            ) as iterations:
+                for _ in iterations:
+                    if not self._visit_loop_body(node.block):
+                        break
         else:
             index = self.visit(node.set_declaration)
             index_values = (
@@ -760,51 +843,104 @@ class Interpreter:
 
             loop_var_name = node.identifier.name
             for i in index_values:
+                if not self.context.has_active_loop_paths:
+                    break
                 with self.context.enter_scope():
                     self.context.declare_variable(loop_var_name, node.type, i)
-                    try:
-                        self.visit(deepcopy(node.block))
-                    except _BreakSignal:
-                        self.context.handle_loop_break()
+                    if not self._visit_loop_body(node.block):
                         break
-                    except _ContinueSignal:
-                        self.context.handle_loop_continue()
-                        continue
 
     @visit.register
     def _(self, node: WhileLoop) -> None:
         self._uses_advanced_language_features = True
-        if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
-            node.while_condition
-        ):
-            gen = self.context.evaluate_while_condition(node.while_condition)
-            for _ in gen:
-                try:
-                    self.visit(deepcopy(node.block))
-                except _BreakSignal:
-                    self.context.handle_loop_break()
-                    gen.close()
-                    break
-                except _ContinueSignal:
-                    self.context.handle_loop_continue()
-                    continue
-        else:
+        with self.context.loop_scope():
+            self._prepare_while_loop(node)
+
+    def _prepare_while_loop(self, node: WhileLoop) -> None:
+        if not self._has_function_call(node.while_condition):
+            self._visit_while_loop(node)
+            return
+        with self._expression_scope():
+            original_condition = node.while_condition
             iterations = 0
-            while cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
+            while self.context.has_active_loop_paths:
+                prepared = self._prepare_expression(original_condition)
+                condition = self._expression_result(self._expression_values(prepared))
+                if self.context.is_mcm_dependent(condition):
+                    break
+                if not cast_to(BooleanLiteral, self.visit(condition)).value:
+                    return
                 iterations += 1
                 if _MAX_LOOP_ITERATIONS > 0 and iterations > _MAX_LOOP_ITERATIONS:
                     raise RuntimeError(
                         f"While loop exceeded {_MAX_LOOP_ITERATIONS} iterations "
                         f"during static unrolling. The loop condition may never become false."
                     )
-                try:
-                    self.visit(deepcopy(node.block))
-                except _BreakSignal:
-                    self.context.handle_loop_break()
-                    break
-                except _ContinueSignal:
-                    self.context.handle_loop_continue()
-                    continue
+                if not self._visit_loop_body(node.block):
+                    return
+            else:
+                return
+
+            def refresh_condition():
+                with self._expression_scope():
+                    prepared = self._prepare_expression(original_condition)
+                    self._set_temporary_values(condition.name, self._expression_values(prepared))
+
+            self._visit_while_loop(WhileLoop(condition, node.block), refresh_condition)
+
+    def _visit_while_loop(self, node: WhileLoop, refresh_condition=None) -> None:
+        iterations = 0
+        while self.context.has_active_loop_paths:
+            # The body can make an initially classical condition path-dependent.
+            # Switch before testing it again, so no path decides for its siblings.
+            if self.context.supports_midcircuit_measurement and self.context.is_mcm_dependent(
+                node.while_condition
+            ):
+                condition = node.while_condition
+                if self._condition_needs_visit(condition):
+                    # Preserve full expression support after promotion. The
+                    # context focuses each path before calling this evaluator.
+                    path_iterations = self.context.evaluate_while_condition(
+                        condition, lambda expression: self.visit(deepcopy(expression))
+                    )
+                else:
+                    path_iterations = self.context.evaluate_while_condition(condition)
+                with closing(path_iterations):
+                    for _ in path_iterations:
+                        if not self._visit_loop_body(node.block):
+                            break
+                        if refresh_condition is not None and self.context.has_active_loop_paths:
+                            refresh_condition()
+                return
+            if not cast_to(BooleanLiteral, self.visit(node.while_condition)).value:
+                return
+            iterations += 1
+            if _MAX_LOOP_ITERATIONS > 0 and iterations > _MAX_LOOP_ITERATIONS:
+                raise RuntimeError(
+                    f"While loop exceeded {_MAX_LOOP_ITERATIONS} iterations "
+                    f"during static unrolling. The loop condition may never become false."
+                )
+            if not self._visit_loop_body(node.block):
+                return
+            if refresh_condition is not None and self.context.has_active_loop_paths:
+                refresh_condition()
+
+    def _visit_loop_body(self, statements) -> bool:
+        """Execute one iteration and resume paths suspended by continue.
+
+        Returns False only for a non-branched break. Branched breaks remove
+        just their paths; the loop continues for any other active paths.
+        """
+        try:
+            self.visit(deepcopy(statements))
+        except _BreakSignal:
+            if not self.context.handle_loop_break():
+                return False
+        except _ContinueSignal:
+            self.context.handle_loop_continue()
+        finally:
+            self.context.finish_loop_iteration()
+        return True
 
     @visit.register
     def _(self, node: BreakStatement) -> None:
@@ -873,10 +1009,18 @@ class Interpreter:
     def _(self, node: FunctionCall) -> QASMNode | None:
         self._uses_advanced_language_features = True
         function_name = node.name.name
-        arguments = self.visit(node.arguments)
         if function_name in builtin_functions:
-            return builtin_functions[function_name](*arguments)
+            return builtin_functions[function_name](*self.visit(node.arguments))
         function_def = self.context.get_subroutine_definition(function_name)
+        values = []
+        for _ in self.context.iter_classical_scopes(node.arguments):
+            arguments = self.visit(deepcopy(node.arguments))
+            values.extend(self._call_subroutine(function_def, node.arguments, arguments))
+        return self._expression_result(values) if values else None
+
+    def _call_subroutine(self, function_def, argument_nodes, arguments):
+        returned_values = []
+        array_values = []
         with self.context.enter_scope():
             for arg_passed, arg_defined in zip(arguments, function_def.arguments):
                 if isinstance(arg_defined, ClassicalArgument):
@@ -891,14 +1035,16 @@ class Interpreter:
                     qubit_name = get_identifier_name(arg_defined.name)
                     self.context.declare_qubit_alias(qubit_name, arg_passed)
 
-            return_value = None
             for statement in deepcopy(function_def.body):
-                visited = self.visit(statement)
                 if isinstance(statement, ReturnStatement):
-                    return_value = visited
+                    if statement.expression is not None:
+                        with self._expression_scope():
+                            expression = self._prepare_expression(statement.expression)
+                            returned_values = self._expression_values(expression)
                     break
+                self.visit(statement)
 
-            for arg_passed, arg_defined in zip(node.arguments, function_def.arguments):
+            for arg_passed, arg_defined in zip(argument_nodes, function_def.arguments):
                 if isinstance(arg_defined, ClassicalArgument) and isinstance(
                     arg_defined.type, ArrayReferenceType
                 ):
@@ -907,13 +1053,166 @@ class Interpreter:
                         identifier.indices = self.visit(identifier.indices)
                     else:
                         identifier = arg_passed
-                    reference_value = self.context.get_value(arg_defined.name.name)
-                    self.context.update_value(identifier, reference_value)
-                    self.context.track_mcm_dependency(
-                        get_identifier_name(identifier), reference_value
-                    )
+                    array_values.append((identifier, self._expression_values(arg_defined.name)))
 
-            return return_value
+        # Restore caller bindings before copying reference arguments back. The
+        # caller and parameter may legally have identical names.
+        for identifier, values in array_values:
+            by_path = dict(values)
+            for _ in self.context.iter_classical_scopes(identifier):
+                path = self.context.active_paths[0] if self.context.active_paths else None
+                self.context.update_value(identifier, by_path[path])
+                self.context.track_mcm_dependency(get_identifier_name(identifier), identifier)
+        return returned_values
+
+    @contextmanager
+    def _expression_scope(self):
+        start = len(self._expression_temporaries)
+        try:
+            yield
+        finally:
+            for name in self._expression_temporaries[start:]:
+                self.context.discard_temporary(name)
+            del self._expression_temporaries[start:]
+
+    def _expression_values(self, expression):
+        values = []
+        for _ in self.context.iter_classical_scopes(expression):
+            value = self.visit(deepcopy(expression))
+            paths = self.context.active_paths
+            values.extend((path, deepcopy(value)) for path in paths)
+            if not paths:
+                values.append((None, value))
+        return values
+
+    def _expression_result(self, values):
+        first = values[0][1]
+        if all(value == first for _, value in values):
+            return first
+        # These names cannot occur in source. Ordinary per-path bindings keep
+        # results alive only until the enclosing expression has consumed them.
+        name = f"@call_result_{self._next_expression_temporary}"
+        self._next_expression_temporary += 1
+        self._expression_temporaries.append(name)
+        self.context.declare_temporary(name, first)
+        self._set_temporary_values(name, values)
+        return Identifier(name)
+
+    def _set_temporary_values(self, name, values):
+        for path, value in values:
+            variable = path.get_variable(name) if path is not None else None
+            if variable is not None:
+                variable.value = value
+            else:
+                self.context.update_value(Identifier(name), value)
+        self.context.mark_mcm_dependent(name)
+
+    def _prepare_values(self, expressions, later=()):
+        """Preserve each value before a following operand can change its inputs."""
+        prepared = []
+        for index, expression in enumerate(expressions):
+            value = self._prepare_expression(expression)
+            following = expressions[index + 1 :] + list(later)
+            if self._has_function_call(following):
+                value = self._expression_result(self._expression_values(value))
+            prepared.append(value)
+        return prepared
+
+    def _prepare_modifiers(self, modifiers, later=()):
+        arguments = self._prepare_values([modifier.argument for modifier in modifiers], later)
+        prepared = []
+        for modifier, argument in zip(modifiers, arguments, strict=True):
+            modifier = copy(modifier)
+            modifier.argument = argument
+            prepared.append(modifier)
+        return prepared
+
+    def _prepare_reference(self, expression, later=()):
+        """Freeze reference indices, not the referenced array or qubit value."""
+        expression = copy(expression)
+        if isinstance(expression, IndexExpression):
+            if isinstance(expression.index, list):
+                expression.index = self._prepare_values(expression.index, later)
+            else:
+                expression.index = self._prepare_values([expression.index], later)[0]
+            expression.collection = self._prepare_reference(expression.collection, later)
+        elif isinstance(expression, IndexedIdentifier):
+            prepared = []
+            for index, indices in enumerate(expression.indices):
+                following = expression.indices[index + 1 :] + list(later)
+                if isinstance(indices, list):
+                    indices = self._prepare_values(indices, following)
+                else:
+                    indices = self._prepare_values([indices], following)[0]
+                prepared.append(indices)
+            expression.indices = prepared
+        return expression
+
+    def _prepare_expression(self, expression):
+        """Execute calls once, retaining per-path results in temporary bindings."""
+        if not self._has_function_call(expression):
+            return expression
+        if isinstance(expression, list):
+            return [self._prepare_expression(item) for item in expression]
+        if not isinstance(expression, QASMNode):
+            return expression
+        expression = deepcopy(expression)
+        if isinstance(expression, FunctionCall):
+            prepared = []
+            definition = None
+            if expression.name.name not in builtin_functions:
+                definition = self.context.get_subroutine_definition(expression.name.name)
+            for index, argument in enumerate(expression.arguments):
+                parameter = definition.arguments[index] if definition else None
+                by_reference = parameter is not None and (
+                    not isinstance(parameter, ClassicalArgument)
+                    or isinstance(parameter.type, ArrayReferenceType)
+                )
+                later = expression.arguments[index + 1 :]
+                value = (
+                    self._prepare_reference(argument, later)
+                    if by_reference
+                    else self._prepare_values([argument], later)[0]
+                )
+                prepared.append(value)
+            expression.arguments = prepared
+            if expression.name.name in builtin_functions:
+                return self._expression_result(self._expression_values(expression))
+            return self.visit(expression)
+        if isinstance(expression, BinaryExpression):
+            expression.lhs, expression.rhs = self._prepare_values([expression.lhs, expression.rhs])
+            return expression
+        if isinstance(expression, RangeDefinition):
+            expression.start, expression.end, expression.step = self._prepare_values(
+                [expression.start, expression.end, expression.step]
+            )
+            return expression
+        if isinstance(expression, (ArrayLiteral, DiscreteSet)):
+            expression.values = self._prepare_values(expression.values)
+            return expression
+        if isinstance(expression, (IndexExpression, IndexedIdentifier)):
+            return self._prepare_reference(expression)
+        for field in fields(expression):
+            if field.name == "span":
+                continue
+            value = getattr(expression, field.name)
+            if isinstance(value, QASMNode):
+                setattr(expression, field.name, self._prepare_expression(value))
+            elif isinstance(value, list):
+                setattr(expression, field.name, [self._prepare_expression(item) for item in value])
+        return expression
+
+    @staticmethod
+    def _has_function_call(expression):
+        if isinstance(expression, FunctionCall):
+            return True
+        if isinstance(expression, list):
+            return any(Interpreter._has_function_call(item) for item in expression)
+        return isinstance(expression, QASMNode) and any(
+            Interpreter._has_function_call(getattr(expression, field.name))
+            for field in fields(expression)
+            if field.name != "span"
+        )
 
     @visit.register
     def _(self, node: ReturnStatement) -> QASMNode | None:
@@ -954,6 +1253,8 @@ class Interpreter:
         Recursively walks the AST. Returns True if any node is not in the
         set of types that a context's lightweight _evaluate_expression can handle.
         """
+        if isinstance(condition, (list, tuple)):
+            return any(Interpreter._condition_needs_visit(item) for item in condition)
         if not isinstance(condition, QASMNode):
             return False
         if not isinstance(condition, _EVALUABLE):

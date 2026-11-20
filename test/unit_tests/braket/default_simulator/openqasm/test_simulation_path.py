@@ -168,3 +168,27 @@ class TestSimulationPath:
 
         path.exit_frame(frame0)
         assert set(path.variables.keys()) == {"a"}
+
+    def test_shadowed_variables_are_restored_after_branching(self):
+        path = SimulationPath()
+        path.set_variable("x", FramedVariable("x", int, 99, False, 0))
+        path.enter_frame()
+        path.set_variable("x", FramedVariable("x", int, 7, False, 1))
+        child = path.branch()
+        child.get_variable("x").value = 9
+
+        path.exit_frame(0)
+        child.exit_frame(0)
+        assert path.get_variable("x").value == 99
+        assert child.get_variable("x").value == 99
+        child.get_variable("x").value = 100
+        assert path.get_variable("x").value == 99
+
+    def test_replacing_same_frame_variable_retains_outer_binding(self):
+        path = SimulationPath()
+        path.set_variable("x", FramedVariable("x", int, 99, False, 0))
+        path.enter_frame()
+        path.set_variable("x", FramedVariable("x", int, 7, False, 1))
+        path.set_variable("x", FramedVariable("x", int, 9, False, 1))
+        path.exit_frame(0)
+        assert path.get_variable("x").value == 99
