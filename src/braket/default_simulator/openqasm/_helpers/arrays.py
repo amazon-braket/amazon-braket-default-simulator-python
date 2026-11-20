@@ -64,8 +64,9 @@ def convert_discrete_set_to_list(discrete_set: DiscreteSet) -> list:
 
 
 def get_type_width(var_type: ClassicalType):
+    """Return the optional bit width used for indexed access."""
     if isinstance(var_type, ArrayType):
-        return var_type.base_type.size
+        return getattr(var_type.base_type, "size", None)
     elif isinstance(var_type, (IntType, UintType, FloatLiteral, BitType)):
         return var_type.size
 
