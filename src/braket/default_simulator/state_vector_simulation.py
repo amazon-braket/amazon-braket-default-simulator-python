@@ -65,8 +65,6 @@ class StateVectorSimulation(Simulation):
         self._rng_generator = np.random.default_rng()
 
     def evolve(self, operations: list[GateOperation]) -> None:
-        # Copy first, so that the check below cannot use up an iterator.
-        operations = list(operations)
         if any(isinstance(operation, KrausOperation) for operation in operations):
             raise TypeError(
                 "Noise instructions are not supported by the state vector simulator "
