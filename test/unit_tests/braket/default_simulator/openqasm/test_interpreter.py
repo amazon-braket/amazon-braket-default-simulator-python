@@ -256,6 +256,41 @@ def test_angle_declaration():
     assert context.get_value("neg") == SymbolLiteral(1.5 * sympy.pi)
 
 
+def test_int_to_bit_cast():
+    qasm = """
+    int[4] v = 5;
+    int[4] neg = -3;
+    uint[4] u = 12;
+
+    bit[4] from_int = bit[4](v);
+    bit[4] from_literal = bit[4](5);
+    bit[4] from_negative = bit[4](neg);
+    bit[4] from_uint = bit[4](u);
+    bit[4] from_bool = bit[4](true);
+
+    int[4] int_round_trip = int[4](from_negative);
+    uint[4] uint_round_trip = uint[4](from_int);
+    """
+    context = Interpreter().run(qasm)
+
+    def bits(bitstring):
+        return Interpreter().run(f'bit[4] b = "{bitstring}";').get_value("b")
+
+    assert context.get_value("from_int") == bits("0101")
+    assert context.get_value("from_literal") == bits("0101")
+    assert context.get_value("from_negative") == bits("1101")
+    assert context.get_value("from_uint") == bits("1100")
+    assert context.get_value("from_bool") == bits("0001")
+    assert context.get_value("int_round_trip") == IntegerLiteral(-3)
+    assert context.get_value("uint_round_trip") == IntegerLiteral(5)
+
+
+@pytest.mark.parametrize("value", ("16", "-9"))
+def test_int_to_bit_cast_out_of_range(value):
+    with pytest.raises(ValueError, match="does not fit in a bit register of size 4"):
+        Interpreter().run(f"bit[4] b = bit[4]({value});")
+
+
 def test_fixed_bit_angle_declaration():
     qasm = """
     angle[16] pos = 10;
