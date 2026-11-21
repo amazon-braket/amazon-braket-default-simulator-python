@@ -146,7 +146,7 @@ class DensityMatrixSimulation(Simulation):
         """
         if not operations:
             return state
-        dispatcher = QuantumGateDispatcher(state.size)
+        dispatcher = QuantumGateDispatcher(2 * qubit_count)
         original_shape = state.shape
         result = state.view()
         result.shape = [2] * 2 * qubit_count
