@@ -1697,12 +1697,22 @@ class ProgramContext(AbstractProgramContext):
             "generalized_amplitude_damping": GeneralizedAmplitudeDamping,
             "phase_damping": PhaseDamping,
         }
+        self._flush_pending_mcm_for_qubits(target)
         instruction = one_prob_noise_map[noise_instruction](target, *probabilities)
-        self._circuit.add_instruction(instruction)
+        if self._is_branched:
+            for path in self.active_paths:
+                path.add_instruction(instruction)
+        else:
+            self._circuit.add_instruction(instruction)
 
     def add_kraus_instruction(self, matrices: list[np.ndarray], target: list[int]):
+        self._flush_pending_mcm_for_qubits(target)
         instruction = Kraus(target, matrices)
-        self._circuit.add_instruction(instruction)
+        if self._is_branched:
+            for path in self.active_paths:
+                path.add_instruction(instruction)
+        else:
+            self._circuit.add_instruction(instruction)
 
     def add_barrier(self, target: list[int] | None = None) -> None:
         # Barriers are no-ops in simulation, but we still route them per-path

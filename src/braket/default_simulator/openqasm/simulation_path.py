@@ -16,7 +16,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
-from braket.default_simulator.operation import GateOperation
+from braket.default_simulator.operation import GateOperation, KrausOperation
 
 if TYPE_CHECKING:  # pragma: no cover
     from braket.default_simulator.openqasm.circuit import ClassicalRegister
@@ -72,7 +72,7 @@ class SimulationPath:
 
     def __init__(
         self,
-        instructions: list[GateOperation] | None = None,
+        instructions: list[GateOperation | KrausOperation] | None = None,
         shots: int = 0,
         variables: dict[str, FramedVariable] | None = None,
         measurements: dict[int, list[int]] | None = None,
@@ -87,7 +87,7 @@ class SimulationPath:
         self._mcm_outcomes = mcm_outcomes if mcm_outcomes is not None else {}
 
     @property
-    def instructions(self) -> list[GateOperation]:
+    def instructions(self) -> list[GateOperation | KrausOperation]:
         return self._instructions
 
     @property
@@ -154,8 +154,8 @@ class SimulationPath:
         }
         self._frame_number = previous_frame
 
-    def add_instruction(self, instruction: GateOperation) -> None:
-        """Append a gate operation to this path's instruction sequence."""
+    def add_instruction(self, instruction: GateOperation | KrausOperation) -> None:
+        """Append a gate or noise operation to this path's instruction sequence."""
         self._instructions.append(instruction)
 
     def set_variable(self, name: str, var: FramedVariable) -> None:

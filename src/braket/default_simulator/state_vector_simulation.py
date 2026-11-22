@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from braket.default_simulator.operation import GateOperation, Observable
+from braket.default_simulator.operation import GateOperation, KrausOperation, Observable
 from braket.default_simulator.simulation import Simulation
 from braket.default_simulator.simulation_strategies import (
     batch_operation_strategy,
@@ -65,6 +65,12 @@ class StateVectorSimulation(Simulation):
         self._rng_generator = np.random.default_rng()
 
     def evolve(self, operations: list[GateOperation]) -> None:
+        if any(isinstance(operation, KrausOperation) for operation in operations):
+            raise TypeError(
+                "Noise instructions are not supported by the state vector simulator "
+                "(by default). You need to use the density matrix simulator: "
+                'LocalSimulator("braket_dm").'
+            )
         self._state_vector = StateVectorSimulation._apply_operations(
             self._state_vector, self._qubit_count, operations, self._batch_size
         )
