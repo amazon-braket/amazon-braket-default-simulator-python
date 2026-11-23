@@ -23,6 +23,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     AngleType,
     ArrayLiteral,
     ArrayReferenceType,
+    ArrayType,
     BinaryExpression,
     BinaryOperator,
     BitType,
@@ -31,6 +32,7 @@ from braket.default_simulator.openqasm.parser.openqasm_ast import (
     FloatLiteral,
     FloatType,
     Identifier,
+    IndexedIdentifier,
     IntegerLiteral,
     IntType,
     SymbolLiteral,
@@ -46,6 +48,25 @@ int_8 = IntType(IntegerLiteral(8))
 int_16 = IntType(IntegerLiteral(16))
 float_8 = FloatType(IntegerLiteral(8))
 float_16 = FloatType(IntegerLiteral(16))
+
+
+@pytest.mark.parametrize("array_type", [ArrayType, ArrayReferenceType])
+@pytest.mark.parametrize(
+    "identifier, expected",
+    [
+        (Identifier("flags"), ArrayLiteral([BooleanLiteral(False), BooleanLiteral(True)])),
+        (IndexedIdentifier(Identifier("flags"), [[IntegerLiteral(1)]]), BooleanLiteral(True)),
+    ],
+)
+def test_get_value_by_identifier_bool_array(array_type, identifier, expected):
+    context = ProgramContext()
+    context.declare_variable(
+        "flags",
+        array_type(BoolType(), [IntegerLiteral(2)]),
+        ArrayLiteral([BooleanLiteral(False), BooleanLiteral(True)]),
+    )
+
+    assert context.get_value_by_identifier(identifier) == expected
 
 
 def test_variable_declaration():
