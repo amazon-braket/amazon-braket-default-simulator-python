@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.43.2 (2026-11-23)
+
+### Bug Fixes and Other Changes
+
+ * apply noise pragmas after mid-circuit measurement branching
+
 ## v1.43.1.post0 (2026-11-19)
 
 ### Documentation Changes
