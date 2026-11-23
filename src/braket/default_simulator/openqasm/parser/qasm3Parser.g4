@@ -203,7 +203,7 @@ scalarType:
 ;
 qubitType: QUBIT designator?;
 arrayType: ARRAY LBRACKET scalarType COMMA expressionList RBRACKET;
-arrayReferenceType: (CONST | MUTABLE) ARRAY LBRACKET scalarType COMMA (expressionList | DIM EQUALS expression) RBRACKET;
+arrayReferenceType: (CONST | READONLY | MUTABLE) ARRAY LBRACKET scalarType COMMA (expressionList | DIM EQUALS expression) RBRACKET;
 
 designator: LBRACKET expression RBRACKET;
 

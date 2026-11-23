@@ -14,7 +14,7 @@ def serializedATN():
     return [
         4,
         1,
-        130,
+        131,
         1038,
         2,
         0,
@@ -2336,16 +2336,16 @@ def serializedATN():
         8,
         2,
         0,
-        114,
-        114,
-        118,
-        118,
+        115,
+        115,
+        119,
+        119,
         2,
         0,
-        92,
-        92,
-        94,
-        94,
+        93,
+        93,
+        95,
+        95,
         1,
         0,
         10,
@@ -2356,12 +2356,12 @@ def serializedATN():
         17,
         3,
         0,
-        111,
-        111,
-        114,
-        114,
-        118,
-        118,
+        112,
+        112,
+        115,
+        115,
+        119,
+        119,
         1,
         0,
         21,
@@ -2372,46 +2372,46 @@ def serializedATN():
         52,
         2,
         0,
-        55,
-        55,
-        57,
-        57,
+        56,
+        56,
+        58,
+        58,
         2,
         0,
-        90,
-        90,
-        107,
-        107,
+        91,
+        91,
+        108,
+        108,
         2,
         0,
-        94,
-        94,
-        104,
+        95,
+        95,
         105,
+        106,
         2,
         0,
-        79,
-        79,
-        111,
-        120,
+        80,
+        80,
+        112,
+        121,
         2,
         0,
-        95,
-        95,
-        97,
+        96,
+        96,
         98,
+        99,
         1,
         0,
-        71,
         72,
+        73,
         1,
         0,
         53,
-        54,
+        55,
         1,
         0,
-        116,
         117,
+        118,
         1131,
         0,
         180,
@@ -3010,7 +3010,7 @@ def serializedATN():
         184,
         185,
         5,
-        84,
+        85,
         0,
         0,
         185,
@@ -3022,7 +3022,7 @@ def serializedATN():
         186,
         187,
         5,
-        85,
+        86,
         0,
         0,
         187,
@@ -3058,7 +3058,7 @@ def serializedATN():
         192,
         193,
         5,
-        80,
+        81,
         0,
         0,
         193,
@@ -3070,7 +3070,7 @@ def serializedATN():
         194,
         195,
         5,
-        89,
+        90,
         0,
         0,
         195,
@@ -3118,7 +3118,7 @@ def serializedATN():
         201,
         202,
         5,
-        81,
+        82,
         0,
         0,
         202,
@@ -3130,7 +3130,7 @@ def serializedATN():
         203,
         204,
         5,
-        80,
+        81,
         0,
         0,
         204,
@@ -3142,7 +3142,7 @@ def serializedATN():
         205,
         206,
         5,
-        89,
+        90,
         0,
         0,
         206,
@@ -3190,7 +3190,7 @@ def serializedATN():
         212,
         213,
         5,
-        81,
+        82,
         0,
         0,
         213,
@@ -3352,7 +3352,7 @@ def serializedATN():
         235,
         236,
         5,
-        89,
+        90,
         0,
         0,
         236,
@@ -3454,19 +3454,19 @@ def serializedATN():
         250,
         255,
         5,
-        120,
+        121,
         0,
         0,
         251,
         252,
         5,
-        89,
+        90,
         0,
         0,
         252,
         254,
         5,
-        120,
+        121,
         0,
         0,
         253,
@@ -3526,7 +3526,7 @@ def serializedATN():
         261,
         263,
         5,
-        94,
+        95,
         0,
         0,
         262,
@@ -3556,7 +3556,7 @@ def serializedATN():
         265,
         267,
         5,
-        95,
+        96,
         0,
         0,
         266,
@@ -3628,7 +3628,7 @@ def serializedATN():
         274,
         276,
         5,
-        94,
+        95,
         0,
         0,
         275,
@@ -3658,7 +3658,7 @@ def serializedATN():
         278,
         280,
         5,
-        95,
+        96,
         0,
         0,
         279,
@@ -3730,7 +3730,7 @@ def serializedATN():
         287,
         289,
         5,
-        94,
+        95,
         0,
         0,
         288,
@@ -3760,7 +3760,7 @@ def serializedATN():
         291,
         293,
         5,
-        95,
+        96,
         0,
         0,
         292,
@@ -3916,7 +3916,7 @@ def serializedATN():
         310,
         311,
         5,
-        84,
+        85,
         0,
         0,
         311,
@@ -3928,7 +3928,7 @@ def serializedATN():
         312,
         313,
         5,
-        85,
+        86,
         0,
         0,
         313,
@@ -4060,7 +4060,7 @@ def serializedATN():
         330,
         331,
         5,
-        84,
+        85,
         0,
         0,
         331,
@@ -4072,7 +4072,7 @@ def serializedATN():
         332,
         333,
         5,
-        85,
+        86,
         0,
         0,
         333,
@@ -4114,7 +4114,7 @@ def serializedATN():
         339,
         341,
         5,
-        94,
+        95,
         0,
         0,
         340,
@@ -4144,7 +4144,7 @@ def serializedATN():
         343,
         345,
         5,
-        94,
+        95,
         0,
         0,
         344,
@@ -4180,7 +4180,7 @@ def serializedATN():
         348,
         350,
         5,
-        94,
+        95,
         0,
         0,
         349,
@@ -4204,7 +4204,7 @@ def serializedATN():
         351,
         353,
         5,
-        111,
+        112,
         0,
         0,
         352,
@@ -4258,7 +4258,7 @@ def serializedATN():
         359,
         360,
         5,
-        84,
+        85,
         0,
         0,
         360,
@@ -4270,7 +4270,7 @@ def serializedATN():
         361,
         362,
         5,
-        85,
+        86,
         0,
         0,
         362,
@@ -4294,7 +4294,7 @@ def serializedATN():
         365,
         366,
         5,
-        84,
+        85,
         0,
         0,
         366,
@@ -4306,7 +4306,7 @@ def serializedATN():
         367,
         368,
         5,
-        85,
+        86,
         0,
         0,
         368,
@@ -4348,7 +4348,7 @@ def serializedATN():
         373,
         374,
         5,
-        89,
+        90,
         0,
         0,
         374,
@@ -4396,19 +4396,19 @@ def serializedATN():
         380,
         385,
         5,
-        118,
+        119,
         0,
         0,
         381,
         382,
         5,
-        89,
+        90,
         0,
         0,
         382,
         384,
         5,
-        118,
+        119,
         0,
         0,
         383,
@@ -4546,13 +4546,13 @@ def serializedATN():
         402,
         403,
         5,
-        127,
+        128,
         0,
         0,
         403,
         404,
         5,
-        87,
+        88,
         0,
         0,
         404,
@@ -4966,7 +4966,7 @@ def serializedATN():
         444,
         446,
         5,
-        130,
+        131,
         0,
         0,
         445,
@@ -4990,7 +4990,7 @@ def serializedATN():
         447,
         451,
         5,
-        82,
+        83,
         0,
         0,
         448,
@@ -5038,7 +5038,7 @@ def serializedATN():
         454,
         455,
         5,
-        83,
+        84,
         0,
         0,
         455,
@@ -5056,7 +5056,7 @@ def serializedATN():
         457,
         458,
         5,
-        130,
+        131,
         0,
         0,
         458,
@@ -5104,13 +5104,13 @@ def serializedATN():
         464,
         465,
         5,
-        121,
+        122,
         0,
         0,
         465,
         466,
         5,
-        87,
+        88,
         0,
         0,
         466,
@@ -5128,13 +5128,13 @@ def serializedATN():
         468,
         469,
         5,
-        121,
+        122,
         0,
         0,
         469,
         470,
         5,
-        87,
+        88,
         0,
         0,
         470,
@@ -5152,7 +5152,7 @@ def serializedATN():
         472,
         473,
         5,
-        87,
+        88,
         0,
         0,
         473,
@@ -5170,7 +5170,7 @@ def serializedATN():
         475,
         476,
         5,
-        87,
+        88,
         0,
         0,
         476,
@@ -5188,7 +5188,7 @@ def serializedATN():
         478,
         479,
         5,
-        87,
+        88,
         0,
         0,
         479,
@@ -5212,7 +5212,7 @@ def serializedATN():
         482,
         483,
         5,
-        116,
+        117,
         0,
         0,
         483,
@@ -5230,7 +5230,7 @@ def serializedATN():
         485,
         486,
         5,
-        80,
+        81,
         0,
         0,
         486,
@@ -5242,7 +5242,7 @@ def serializedATN():
         487,
         488,
         5,
-        81,
+        82,
         0,
         0,
         488,
@@ -5254,7 +5254,7 @@ def serializedATN():
         489,
         491,
         5,
-        116,
+        117,
         0,
         0,
         490,
@@ -5302,7 +5302,7 @@ def serializedATN():
         495,
         496,
         5,
-        84,
+        85,
         0,
         0,
         496,
@@ -5314,7 +5314,7 @@ def serializedATN():
         497,
         498,
         5,
-        85,
+        86,
         0,
         0,
         498,
@@ -5398,7 +5398,7 @@ def serializedATN():
         508,
         509,
         5,
-        87,
+        88,
         0,
         0,
         509,
@@ -5416,7 +5416,7 @@ def serializedATN():
         511,
         512,
         5,
-        84,
+        85,
         0,
         0,
         512,
@@ -5428,7 +5428,7 @@ def serializedATN():
         513,
         514,
         5,
-        85,
+        86,
         0,
         0,
         514,
@@ -5446,7 +5446,7 @@ def serializedATN():
         516,
         518,
         5,
-        78,
+        79,
         0,
         0,
         517,
@@ -5476,7 +5476,7 @@ def serializedATN():
         520,
         521,
         5,
-        87,
+        88,
         0,
         0,
         521,
@@ -5530,7 +5530,7 @@ def serializedATN():
         528,
         529,
         5,
-        75,
+        76,
         0,
         0,
         529,
@@ -5566,7 +5566,7 @@ def serializedATN():
         533,
         534,
         5,
-        87,
+        88,
         0,
         0,
         534,
@@ -5620,13 +5620,13 @@ def serializedATN():
         541,
         547,
         5,
-        116,
+        117,
         0,
         0,
         542,
         544,
         5,
-        84,
+        85,
         0,
         0,
         543,
@@ -5656,7 +5656,7 @@ def serializedATN():
         546,
         548,
         5,
-        85,
+        86,
         0,
         0,
         547,
@@ -5710,7 +5710,7 @@ def serializedATN():
         553,
         554,
         5,
-        87,
+        88,
         0,
         0,
         554,
@@ -5764,13 +5764,13 @@ def serializedATN():
         561,
         567,
         5,
-        68,
+        69,
         0,
         0,
         562,
         564,
         5,
-        84,
+        85,
         0,
         0,
         563,
@@ -5800,7 +5800,7 @@ def serializedATN():
         566,
         568,
         5,
-        85,
+        86,
         0,
         0,
         567,
@@ -5872,7 +5872,7 @@ def serializedATN():
         575,
         577,
         5,
-        87,
+        88,
         0,
         0,
         576,
@@ -5902,7 +5902,7 @@ def serializedATN():
         579,
         580,
         5,
-        91,
+        92,
         0,
         0,
         580,
@@ -5932,7 +5932,7 @@ def serializedATN():
         583,
         584,
         5,
-        87,
+        88,
         0,
         0,
         584,
@@ -5944,7 +5944,7 @@ def serializedATN():
         585,
         586,
         5,
-        76,
+        77,
         0,
         0,
         586,
@@ -5956,7 +5956,7 @@ def serializedATN():
         587,
         588,
         5,
-        87,
+        88,
         0,
         0,
         588,
@@ -5974,13 +5974,13 @@ def serializedATN():
         590,
         591,
         5,
-        116,
+        117,
         0,
         0,
         591,
         592,
         5,
-        90,
+        91,
         0,
         0,
         592,
@@ -5992,7 +5992,7 @@ def serializedATN():
         593,
         594,
         5,
-        87,
+        88,
         0,
         0,
         594,
@@ -6034,13 +6034,13 @@ def serializedATN():
         599,
         602,
         5,
-        116,
+        117,
         0,
         0,
         600,
         601,
         5,
-        90,
+        91,
         0,
         0,
         601,
@@ -6070,7 +6070,7 @@ def serializedATN():
         604,
         605,
         5,
-        87,
+        88,
         0,
         0,
         605,
@@ -6094,13 +6094,13 @@ def serializedATN():
         608,
         609,
         5,
-        116,
+        117,
         0,
         0,
         609,
         610,
         5,
-        90,
+        91,
         0,
         0,
         610,
@@ -6112,7 +6112,7 @@ def serializedATN():
         611,
         612,
         5,
-        87,
+        88,
         0,
         0,
         612,
@@ -6160,13 +6160,13 @@ def serializedATN():
         618,
         619,
         5,
-        116,
+        117,
         0,
         0,
         619,
         620,
         5,
-        87,
+        88,
         0,
         0,
         620,
@@ -6184,7 +6184,7 @@ def serializedATN():
         622,
         624,
         5,
-        116,
+        117,
         0,
         0,
         623,
@@ -6214,7 +6214,7 @@ def serializedATN():
         626,
         627,
         5,
-        87,
+        88,
         0,
         0,
         627,
@@ -6232,13 +6232,13 @@ def serializedATN():
         629,
         630,
         5,
-        116,
+        117,
         0,
         0,
         630,
         631,
         5,
-        87,
+        88,
         0,
         0,
         631,
@@ -6256,13 +6256,13 @@ def serializedATN():
         633,
         634,
         5,
-        116,
+        117,
         0,
         0,
         634,
         636,
         5,
-        84,
+        85,
         0,
         0,
         635,
@@ -6292,7 +6292,7 @@ def serializedATN():
         638,
         640,
         5,
-        85,
+        86,
         0,
         0,
         639,
@@ -6340,13 +6340,13 @@ def serializedATN():
         645,
         646,
         5,
-        116,
+        117,
         0,
         0,
         646,
         648,
         5,
-        84,
+        85,
         0,
         0,
         647,
@@ -6376,7 +6376,7 @@ def serializedATN():
         650,
         652,
         5,
-        85,
+        86,
         0,
         0,
         651,
@@ -6406,7 +6406,7 @@ def serializedATN():
         654,
         655,
         5,
-        87,
+        88,
         0,
         0,
         655,
@@ -6424,13 +6424,13 @@ def serializedATN():
         657,
         663,
         5,
-        116,
+        117,
         0,
         0,
         658,
         660,
         5,
-        84,
+        85,
         0,
         0,
         659,
@@ -6460,7 +6460,7 @@ def serializedATN():
         662,
         664,
         5,
-        85,
+        86,
         0,
         0,
         663,
@@ -6544,7 +6544,7 @@ def serializedATN():
         674,
         675,
         5,
-        87,
+        88,
         0,
         0,
         675,
@@ -6562,7 +6562,7 @@ def serializedATN():
         677,
         678,
         5,
-        87,
+        88,
         0,
         0,
         678,
@@ -6580,13 +6580,13 @@ def serializedATN():
         680,
         686,
         5,
-        116,
+        117,
         0,
         0,
         681,
         683,
         5,
-        84,
+        85,
         0,
         0,
         682,
@@ -6616,7 +6616,7 @@ def serializedATN():
         685,
         687,
         5,
-        85,
+        86,
         0,
         0,
         686,
@@ -6670,7 +6670,7 @@ def serializedATN():
         692,
         696,
         5,
-        82,
+        83,
         0,
         0,
         693,
@@ -6718,7 +6718,7 @@ def serializedATN():
         699,
         700,
         5,
-        83,
+        84,
         0,
         0,
         700,
@@ -6736,7 +6736,7 @@ def serializedATN():
         702,
         703,
         5,
-        84,
+        85,
         0,
         0,
         703,
@@ -6748,7 +6748,7 @@ def serializedATN():
         704,
         705,
         5,
-        85,
+        86,
         0,
         0,
         705,
@@ -6802,7 +6802,7 @@ def serializedATN():
         712,
         713,
         5,
-        84,
+        85,
         0,
         0,
         713,
@@ -6814,7 +6814,7 @@ def serializedATN():
         714,
         715,
         5,
-        85,
+        86,
         0,
         0,
         715,
@@ -6826,13 +6826,13 @@ def serializedATN():
         716,
         717,
         5,
-        74,
+        75,
         0,
         0,
         717,
         718,
         5,
-        84,
+        85,
         0,
         0,
         718,
@@ -6844,7 +6844,7 @@ def serializedATN():
         719,
         720,
         5,
-        85,
+        86,
         0,
         0,
         720,
@@ -6856,13 +6856,13 @@ def serializedATN():
         721,
         722,
         5,
-        116,
+        117,
         0,
         0,
         722,
         724,
         5,
-        84,
+        85,
         0,
         0,
         723,
@@ -6892,7 +6892,7 @@ def serializedATN():
         726,
         729,
         5,
-        85,
+        86,
         0,
         0,
         727,
@@ -6952,7 +6952,7 @@ def serializedATN():
         731,
         732,
         5,
-        96,
+        97,
         0,
         0,
         732,
@@ -7006,7 +7006,7 @@ def serializedATN():
         740,
         741,
         5,
-        109,
+        110,
         0,
         0,
         741,
@@ -7024,7 +7024,7 @@ def serializedATN():
         743,
         744,
         5,
-        108,
+        109,
         0,
         0,
         744,
@@ -7042,7 +7042,7 @@ def serializedATN():
         746,
         747,
         5,
-        106,
+        107,
         0,
         0,
         747,
@@ -7060,7 +7060,7 @@ def serializedATN():
         749,
         750,
         5,
-        101,
+        102,
         0,
         0,
         750,
@@ -7078,7 +7078,7 @@ def serializedATN():
         752,
         753,
         5,
-        103,
+        104,
         0,
         0,
         753,
@@ -7096,7 +7096,7 @@ def serializedATN():
         755,
         756,
         5,
-        99,
+        100,
         0,
         0,
         756,
@@ -7114,7 +7114,7 @@ def serializedATN():
         758,
         759,
         5,
-        102,
+        103,
         0,
         0,
         759,
@@ -7132,7 +7132,7 @@ def serializedATN():
         761,
         762,
         5,
-        100,
+        101,
         0,
         0,
         762,
@@ -7264,7 +7264,7 @@ def serializedATN():
         771,
         772,
         5,
-        93,
+        94,
         0,
         0,
         772,
@@ -7354,7 +7354,7 @@ def serializedATN():
         783,
         784,
         5,
-        77,
+        78,
         0,
         0,
         784,
@@ -7396,7 +7396,7 @@ def serializedATN():
         789,
         791,
         5,
-        86,
+        87,
         0,
         0,
         790,
@@ -7426,7 +7426,7 @@ def serializedATN():
         793,
         794,
         5,
-        86,
+        87,
         0,
         0,
         794,
@@ -7456,7 +7456,7 @@ def serializedATN():
         797,
         798,
         5,
-        82,
+        83,
         0,
         0,
         798,
@@ -7468,7 +7468,7 @@ def serializedATN():
         799,
         800,
         5,
-        89,
+        90,
         0,
         0,
         800,
@@ -7516,7 +7516,7 @@ def serializedATN():
         806,
         808,
         5,
-        89,
+        90,
         0,
         0,
         807,
@@ -7540,7 +7540,7 @@ def serializedATN():
         809,
         810,
         5,
-        83,
+        84,
         0,
         0,
         810,
@@ -7552,7 +7552,7 @@ def serializedATN():
         811,
         814,
         5,
-        82,
+        83,
         0,
         0,
         812,
@@ -7588,7 +7588,7 @@ def serializedATN():
         816,
         819,
         5,
-        89,
+        90,
         0,
         0,
         817,
@@ -7660,7 +7660,7 @@ def serializedATN():
         826,
         828,
         5,
-        89,
+        90,
         0,
         0,
         827,
@@ -7684,7 +7684,7 @@ def serializedATN():
         829,
         830,
         5,
-        83,
+        84,
         0,
         0,
         830,
@@ -7696,7 +7696,7 @@ def serializedATN():
         831,
         850,
         5,
-        80,
+        81,
         0,
         0,
         832,
@@ -7738,7 +7738,7 @@ def serializedATN():
         837,
         840,
         5,
-        89,
+        90,
         0,
         0,
         838,
@@ -7810,7 +7810,7 @@ def serializedATN():
         847,
         849,
         5,
-        89,
+        90,
         0,
         0,
         848,
@@ -7852,7 +7852,7 @@ def serializedATN():
         852,
         853,
         5,
-        81,
+        82,
         0,
         0,
         853,
@@ -7864,7 +7864,7 @@ def serializedATN():
         854,
         858,
         5,
-        116,
+        117,
         0,
         0,
         855,
@@ -7912,7 +7912,7 @@ def serializedATN():
         861,
         862,
         5,
-        91,
+        92,
         0,
         0,
         862,
@@ -7930,19 +7930,19 @@ def serializedATN():
         864,
         878,
         5,
-        69,
+        70,
         0,
         0,
         865,
         866,
         5,
-        70,
+        71,
         0,
         0,
         866,
         867,
         5,
-        84,
+        85,
         0,
         0,
         867,
@@ -7954,7 +7954,7 @@ def serializedATN():
         868,
         869,
         5,
-        85,
+        86,
         0,
         0,
         869,
@@ -7972,7 +7972,7 @@ def serializedATN():
         871,
         872,
         5,
-        84,
+        85,
         0,
         0,
         872,
@@ -7984,7 +7984,7 @@ def serializedATN():
         873,
         874,
         5,
-        85,
+        86,
         0,
         0,
         874,
@@ -8050,7 +8050,7 @@ def serializedATN():
         881,
         883,
         5,
-        59,
+        60,
         0,
         0,
         882,
@@ -8080,7 +8080,7 @@ def serializedATN():
         885,
         887,
         5,
-        60,
+        61,
         0,
         0,
         886,
@@ -8110,7 +8110,7 @@ def serializedATN():
         889,
         891,
         5,
-        61,
+        62,
         0,
         0,
         890,
@@ -8140,7 +8140,7 @@ def serializedATN():
         893,
         895,
         5,
-        62,
+        63,
         0,
         0,
         894,
@@ -8170,7 +8170,7 @@ def serializedATN():
         897,
         899,
         5,
-        63,
+        64,
         0,
         0,
         898,
@@ -8200,31 +8200,31 @@ def serializedATN():
         901,
         912,
         5,
-        58,
+        59,
         0,
         0,
         902,
         912,
         5,
-        66,
+        67,
         0,
         0,
         903,
         912,
         5,
-        67,
+        68,
         0,
         0,
         904,
         909,
         5,
-        64,
+        65,
         0,
         0,
         905,
         906,
         5,
-        80,
+        81,
         0,
         0,
         906,
@@ -8236,7 +8236,7 @@ def serializedATN():
         907,
         908,
         5,
-        81,
+        82,
         0,
         0,
         908,
@@ -8326,7 +8326,7 @@ def serializedATN():
         913,
         915,
         5,
-        56,
+        57,
         0,
         0,
         914,
@@ -8356,13 +8356,13 @@ def serializedATN():
         917,
         918,
         5,
-        65,
+        66,
         0,
         0,
         918,
         919,
         5,
-        80,
+        81,
         0,
         0,
         919,
@@ -8374,7 +8374,7 @@ def serializedATN():
         920,
         921,
         5,
-        89,
+        90,
         0,
         0,
         921,
@@ -8386,7 +8386,7 @@ def serializedATN():
         922,
         923,
         5,
-        81,
+        82,
         0,
         0,
         923,
@@ -8404,13 +8404,13 @@ def serializedATN():
         925,
         926,
         5,
-        65,
+        66,
         0,
         0,
         926,
         927,
         5,
-        80,
+        81,
         0,
         0,
         927,
@@ -8422,7 +8422,7 @@ def serializedATN():
         928,
         933,
         5,
-        89,
+        90,
         0,
         0,
         929,
@@ -8434,13 +8434,13 @@ def serializedATN():
         930,
         931,
         5,
-        73,
+        74,
         0,
         0,
         931,
         932,
         5,
-        90,
+        91,
         0,
         0,
         932,
@@ -8470,7 +8470,7 @@ def serializedATN():
         935,
         936,
         5,
-        81,
+        82,
         0,
         0,
         936,
@@ -8482,7 +8482,7 @@ def serializedATN():
         937,
         938,
         5,
-        80,
+        81,
         0,
         0,
         938,
@@ -8494,7 +8494,7 @@ def serializedATN():
         939,
         940,
         5,
-        81,
+        82,
         0,
         0,
         940,
@@ -8512,7 +8512,7 @@ def serializedATN():
         942,
         944,
         5,
-        117,
+        118,
         0,
         0,
         943,
@@ -8548,7 +8548,7 @@ def serializedATN():
         947,
         949,
         5,
-        57,
+        58,
         0,
         0,
         948,
@@ -8620,7 +8620,7 @@ def serializedATN():
         956,
         957,
         5,
-        116,
+        117,
         0,
         0,
         957,
@@ -8638,7 +8638,7 @@ def serializedATN():
         959,
         960,
         5,
-        116,
+        117,
         0,
         0,
         960,
@@ -8656,7 +8656,7 @@ def serializedATN():
         962,
         964,
         5,
-        116,
+        117,
         0,
         0,
         963,
@@ -8692,7 +8692,7 @@ def serializedATN():
         967,
         968,
         5,
-        116,
+        117,
         0,
         0,
         968,
@@ -8740,7 +8740,7 @@ def serializedATN():
         972,
         973,
         5,
-        89,
+        90,
         0,
         0,
         973,
@@ -8788,7 +8788,7 @@ def serializedATN():
         979,
         981,
         5,
-        89,
+        90,
         0,
         0,
         980,
@@ -8818,7 +8818,7 @@ def serializedATN():
         983,
         984,
         5,
-        89,
+        90,
         0,
         0,
         984,
@@ -8866,7 +8866,7 @@ def serializedATN():
         990,
         992,
         5,
-        89,
+        90,
         0,
         0,
         991,
@@ -8896,7 +8896,7 @@ def serializedATN():
         994,
         995,
         5,
-        89,
+        90,
         0,
         0,
         995,
@@ -8944,7 +8944,7 @@ def serializedATN():
         1001,
         1003,
         5,
-        89,
+        90,
         0,
         0,
         1002,
@@ -8968,19 +8968,19 @@ def serializedATN():
         1004,
         1009,
         5,
-        116,
+        117,
         0,
         0,
         1005,
         1006,
         5,
-        89,
+        90,
         0,
         0,
         1006,
         1008,
         5,
-        116,
+        117,
         0,
         0,
         1007,
@@ -9022,7 +9022,7 @@ def serializedATN():
         1012,
         1014,
         5,
-        89,
+        90,
         0,
         0,
         1013,
@@ -9052,7 +9052,7 @@ def serializedATN():
         1016,
         1017,
         5,
-        89,
+        90,
         0,
         0,
         1017,
@@ -9100,7 +9100,7 @@ def serializedATN():
         1023,
         1025,
         5,
-        89,
+        90,
         0,
         0,
         1024,
@@ -9130,7 +9130,7 @@ def serializedATN():
         1027,
         1028,
         5,
-        89,
+        90,
         0,
         0,
         1028,
@@ -9178,7 +9178,7 @@ def serializedATN():
         1034,
         1036,
         5,
-        89,
+        90,
         0,
         0,
         1035,
@@ -9386,6 +9386,7 @@ class BraketPragmasParser(Parser):
         "'input'",
         "'output'",
         "'const'",
+        "'readonly'",
         "'mutable'",
         "'qreg'",
         "'qubit'",
@@ -9500,6 +9501,7 @@ class BraketPragmasParser(Parser):
         "INPUT",
         "OUTPUT",
         "CONST",
+        "READONLY",
         "MUTABLE",
         "QREG",
         "QUBIT",
@@ -9813,83 +9815,84 @@ class BraketPragmasParser(Parser):
     INPUT = 51
     OUTPUT = 52
     CONST = 53
-    MUTABLE = 54
-    QREG = 55
-    QUBIT = 56
-    CREG = 57
-    BOOL = 58
-    BIT = 59
-    INT = 60
-    UINT = 61
-    FLOAT = 62
-    ANGLE = 63
-    COMPLEX = 64
-    ARRAY = 65
-    DURATION = 66
-    STRETCH = 67
-    GPHASE = 68
-    INV = 69
-    POW = 70
-    CTRL = 71
-    NEGCTRL = 72
-    DIM = 73
-    DURATIONOF = 74
-    DELAY = 75
-    RESET = 76
-    MEASURE = 77
-    BARRIER = 78
-    BooleanLiteral = 79
-    LBRACKET = 80
-    RBRACKET = 81
-    LBRACE = 82
-    RBRACE = 83
-    LPAREN = 84
-    RPAREN = 85
-    COLON = 86
-    SEMICOLON = 87
-    DOT = 88
-    COMMA = 89
-    EQUALS = 90
-    ARROW = 91
-    PLUS = 92
-    DOUBLE_PLUS = 93
-    MINUS = 94
-    ASTERISK = 95
-    DOUBLE_ASTERISK = 96
-    SLASH = 97
-    PERCENT = 98
-    PIPE = 99
-    DOUBLE_PIPE = 100
-    AMPERSAND = 101
-    DOUBLE_AMPERSAND = 102
-    CARET = 103
-    TILDE = 104
-    EXCLAMATION_POINT = 105
-    EqualityOperator = 106
-    CompoundAssignmentOperator = 107
-    ComparisonOperator = 108
-    BitshiftOperator = 109
-    IMAG = 110
-    ImaginaryLiteral = 111
-    BinaryIntegerLiteral = 112
-    OctalIntegerLiteral = 113
-    DecimalIntegerLiteral = 114
-    HexIntegerLiteral = 115
-    Identifier = 116
-    HardwareQubit = 117
-    FloatLiteral = 118
-    TimingLiteral = 119
-    BitstringLiteral = 120
-    StringLiteral = 121
-    Whitespace = 122
-    Newline = 123
-    LineComment = 124
-    BlockComment = 125
-    VERSION_IDENTIFER_WHITESPACE = 126
-    VersionSpecifier = 127
-    EAT_INITIAL_SPACE = 128
-    EAT_LINE_END = 129
-    RemainingLineContent = 130
+    READONLY = 54
+    MUTABLE = 55
+    QREG = 56
+    QUBIT = 57
+    CREG = 58
+    BOOL = 59
+    BIT = 60
+    INT = 61
+    UINT = 62
+    FLOAT = 63
+    ANGLE = 64
+    COMPLEX = 65
+    ARRAY = 66
+    DURATION = 67
+    STRETCH = 68
+    GPHASE = 69
+    INV = 70
+    POW = 71
+    CTRL = 72
+    NEGCTRL = 73
+    DIM = 74
+    DURATIONOF = 75
+    DELAY = 76
+    RESET = 77
+    MEASURE = 78
+    BARRIER = 79
+    BooleanLiteral = 80
+    LBRACKET = 81
+    RBRACKET = 82
+    LBRACE = 83
+    RBRACE = 84
+    LPAREN = 85
+    RPAREN = 86
+    COLON = 87
+    SEMICOLON = 88
+    DOT = 89
+    COMMA = 90
+    EQUALS = 91
+    ARROW = 92
+    PLUS = 93
+    DOUBLE_PLUS = 94
+    MINUS = 95
+    ASTERISK = 96
+    DOUBLE_ASTERISK = 97
+    SLASH = 98
+    PERCENT = 99
+    PIPE = 100
+    DOUBLE_PIPE = 101
+    AMPERSAND = 102
+    DOUBLE_AMPERSAND = 103
+    CARET = 104
+    TILDE = 105
+    EXCLAMATION_POINT = 106
+    EqualityOperator = 107
+    CompoundAssignmentOperator = 108
+    ComparisonOperator = 109
+    BitshiftOperator = 110
+    IMAG = 111
+    ImaginaryLiteral = 112
+    BinaryIntegerLiteral = 113
+    OctalIntegerLiteral = 114
+    DecimalIntegerLiteral = 115
+    HexIntegerLiteral = 116
+    Identifier = 117
+    HardwareQubit = 118
+    FloatLiteral = 119
+    TimingLiteral = 120
+    BitstringLiteral = 121
+    StringLiteral = 122
+    Whitespace = 123
+    Newline = 124
+    LineComment = 125
+    BlockComment = 126
+    VERSION_IDENTIFER_WHITESPACE = 127
+    VersionSpecifier = 128
+    EAT_INITIAL_SPACE = 129
+    EAT_LINE_END = 130
+    RemainingLineContent = 131
 
     def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
         super().__init__(input, output)
@@ -10147,7 +10150,7 @@ class BraketPragmasParser(Parser):
             self.state = 198
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 89:
+            while _la == 90:
                 self.state = 194
                 self.match(BraketPragmasParser.COMMA)
                 self.state = 195
@@ -10222,7 +10225,7 @@ class BraketPragmasParser(Parser):
             self.state = 209
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 89:
+            while _la == 90:
                 self.state = 205
                 self.match(BraketPragmasParser.COMMA)
                 self.state = 206
@@ -10503,7 +10506,7 @@ class BraketPragmasParser(Parser):
             self.state = 230
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 19 or _la == 116 or _la == 117:
+            if _la == 19 or _la == 117 or _la == 118:
                 self.state = 229
                 self.multiTarget()
 
@@ -10648,7 +10651,7 @@ class BraketPragmasParser(Parser):
             self.state = 243
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [116, 117]:
+            if token in [117, 118]:
                 localctx = BraketPragmasParser.MultiTargetIdentifiersContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 234
@@ -10656,7 +10659,7 @@ class BraketPragmasParser(Parser):
                 self.state = 239
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la == 89:
+                while _la == 90:
                     self.state = 235
                     self.match(BraketPragmasParser.COMMA)
                     self.state = 236
@@ -10822,7 +10825,7 @@ class BraketPragmasParser(Parser):
             self.state = 255
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 89:
+            while _la == 90:
                 self.state = 251
                 self.match(BraketPragmasParser.COMMA)
                 self.state = 252
@@ -10975,17 +10978,17 @@ class BraketPragmasParser(Parser):
                 self.state = 266
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((_la - 94) & ~0x3F) == 0 and ((1 << (_la - 94)) & 17825793) != 0:
+                if ((_la - 95) & ~0x3F) == 0 and ((1 << (_la - 95)) & 17825793) != 0:
                     self.state = 262
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la == 94:
+                    if _la == 95:
                         self.state = 261
                         self.match(BraketPragmasParser.MINUS)
 
                     self.state = 264
                     _la = self._input.LA(1)
-                    if not (_la == 114 or _la == 118):
+                    if not (_la == 115 or _la == 119):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
@@ -11013,7 +11016,7 @@ class BraketPragmasParser(Parser):
 
                 self.state = 273
                 _la = self._input.LA(1)
-                if not (_la == 92 or _la == 94):
+                if not (_la == 93 or _la == 95):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -11021,17 +11024,17 @@ class BraketPragmasParser(Parser):
                 self.state = 279
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((_la - 94) & ~0x3F) == 0 and ((1 << (_la - 94)) & 17825793) != 0:
+                if ((_la - 95) & ~0x3F) == 0 and ((1 << (_la - 95)) & 17825793) != 0:
                     self.state = 275
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la == 94:
+                    if _la == 95:
                         self.state = 274
                         self.match(BraketPragmasParser.MINUS)
 
                     self.state = 277
                     _la = self._input.LA(1)
-                    if not (_la == 114 or _la == 118):
+                    if not (_la == 115 or _la == 119):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
@@ -11060,10 +11063,10 @@ class BraketPragmasParser(Parser):
                 self.state = 301
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la == 92 or _la == 94:
+                while _la == 93 or _la == 95:
                     self.state = 286
                     _la = self._input.LA(1)
-                    if not (_la == 92 or _la == 94):
+                    if not (_la == 93 or _la == 95):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
@@ -11071,17 +11074,17 @@ class BraketPragmasParser(Parser):
                     self.state = 292
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if ((_la - 94) & ~0x3F) == 0 and ((1 << (_la - 94)) & 17825793) != 0:
+                    if ((_la - 95) & ~0x3F) == 0 and ((1 << (_la - 95)) & 17825793) != 0:
                         self.state = 288
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la == 94:
+                        if _la == 95:
                             self.state = 287
                             self.match(BraketPragmasParser.MINUS)
 
                         self.state = 290
                         _la = self._input.LA(1)
-                        if not (_la == 114 or _la == 118):
+                        if not (_la == 115 or _la == 119):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -11626,14 +11629,14 @@ class BraketPragmasParser(Parser):
                 self.state = 340
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 94:
+                if _la == 95:
                     self.state = 339
                     localctx.neg = self.match(BraketPragmasParser.MINUS)
 
                 self.state = 342
                 localctx.value = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((_la - 111) & ~0x3F) == 0 and ((1 << (_la - 111)) & 137) != 0):
+                if not (((_la - 112) & ~0x3F) == 0 and ((1 << (_la - 112)) & 137) != 0):
                     localctx.value = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -11646,14 +11649,14 @@ class BraketPragmasParser(Parser):
                 self.state = 344
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 94:
+                if _la == 95:
                     self.state = 343
                     localctx.neg = self.match(BraketPragmasParser.MINUS)
 
                 self.state = 346
                 localctx.real = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (_la == 114 or _la == 118):
+                if not (_la == 115 or _la == 119):
                     localctx.real = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -11661,7 +11664,7 @@ class BraketPragmasParser(Parser):
                 self.state = 347
                 localctx.sign = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (_la == 92 or _la == 94):
+                if not (_la == 93 or _la == 95):
                     localctx.sign = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -11669,7 +11672,7 @@ class BraketPragmasParser(Parser):
                 self.state = 349
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 94:
+                if _la == 95:
                     self.state = 348
                     localctx.imagNeg = self.match(BraketPragmasParser.MINUS)
 
@@ -11920,7 +11923,7 @@ class BraketPragmasParser(Parser):
             self.state = 377
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 89:
+            while _la == 90:
                 self.state = 373
                 self.match(BraketPragmasParser.COMMA)
                 self.state = 374
@@ -11985,7 +11988,7 @@ class BraketPragmasParser(Parser):
             self.state = 385
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 89:
+            while _la == 90:
                 self.state = 381
                 self.match(BraketPragmasParser.COMMA)
                 self.state = 382
@@ -12128,8 +12131,8 @@ class BraketPragmasParser(Parser):
             self.state = 396
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3F) == 0 and ((1 << _la) & -18304673874182144) != 0) or (
-                ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 143977750197239295) != 0
+            while (((_la) & ~0x3F) == 0 and ((1 << _la) & -54333470893146112) != 0) or (
+                ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 287955500394478591) != 0
             ):
                 self.state = 393
                 self.statement()
@@ -12358,7 +12361,6 @@ class BraketPragmasParser(Parser):
                 51,
                 52,
                 53,
-                55,
                 56,
                 57,
                 58,
@@ -12376,17 +12378,17 @@ class BraketPragmasParser(Parser):
                 70,
                 71,
                 72,
-                74,
+                73,
                 75,
                 76,
                 77,
                 78,
                 79,
-                84,
-                94,
-                104,
+                80,
+                85,
+                95,
                 105,
-                111,
+                106,
                 112,
                 113,
                 114,
@@ -12396,6 +12398,7 @@ class BraketPragmasParser(Parser):
                 118,
                 119,
                 120,
+                121,
             ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 409
@@ -12600,7 +12603,7 @@ class BraketPragmasParser(Parser):
             self.state = 445
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 130:
+            if _la == 131:
                 self.state = 444
                 self.match(BraketPragmasParser.RemainingLineContent)
 
@@ -12660,8 +12663,8 @@ class BraketPragmasParser(Parser):
             self.state = 451
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3F) == 0 and ((1 << _la) & -18304673874182144) != 0) or (
-                ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 143977750197239295) != 0
+            while (((_la) & ~0x3F) == 0 and ((1 << _la) & -54333470893146112) != 0) or (
+                ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 287955500394478591) != 0
             ):
                 self.state = 448
                 self.statement()
@@ -12786,7 +12789,6 @@ class BraketPragmasParser(Parser):
                 51,
                 52,
                 53,
-                55,
                 56,
                 57,
                 58,
@@ -12804,17 +12806,17 @@ class BraketPragmasParser(Parser):
                 70,
                 71,
                 72,
-                74,
+                73,
                 75,
                 76,
                 77,
                 78,
                 79,
-                84,
-                94,
-                104,
+                80,
+                85,
+                95,
                 105,
-                111,
+                106,
                 112,
                 113,
                 114,
@@ -12824,12 +12826,13 @@ class BraketPragmasParser(Parser):
                 118,
                 119,
                 120,
+                121,
             ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 459
                 self.statement()
                 pass
-            elif token in [82]:
+            elif token in [83]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 460
                 self.scope()
@@ -13169,11 +13172,11 @@ class BraketPragmasParser(Parser):
             self.state = 490
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [82]:
+            if token in [83]:
                 self.state = 484
                 self.setExpression()
                 pass
-            elif token in [80]:
+            elif token in [81]:
                 self.state = 485
                 self.match(BraketPragmasParser.LBRACKET)
                 self.state = 486
@@ -13181,7 +13184,7 @@ class BraketPragmasParser(Parser):
                 self.state = 487
                 self.match(BraketPragmasParser.RBRACKET)
                 pass
-            elif token in [116]:
+            elif token in [117]:
                 self.state = 489
                 self.match(BraketPragmasParser.Identifier)
                 pass
@@ -13326,7 +13329,6 @@ class BraketPragmasParser(Parser):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [
-                58,
                 59,
                 60,
                 61,
@@ -13336,13 +13338,13 @@ class BraketPragmasParser(Parser):
                 65,
                 66,
                 67,
-                74,
-                79,
-                84,
-                94,
-                104,
+                68,
+                75,
+                80,
+                85,
+                95,
                 105,
-                111,
+                106,
                 112,
                 113,
                 114,
@@ -13352,15 +13354,16 @@ class BraketPragmasParser(Parser):
                 118,
                 119,
                 120,
+                121,
             ]:
                 self.state = 504
                 self.expression(0)
                 pass
-            elif token in [77]:
+            elif token in [78]:
                 self.state = 505
                 self.measureExpression()
                 pass
-            elif token in [87]:
+            elif token in [88]:
                 pass
             else:
                 pass
@@ -13483,7 +13486,7 @@ class BraketPragmasParser(Parser):
             self.state = 518
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 116 or _la == 117:
+            if _la == 117 or _la == 118:
                 self.state = 517
                 self.gateOperandList()
 
@@ -13542,7 +13545,7 @@ class BraketPragmasParser(Parser):
             self.state = 524
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 80:
+            if _la == 81:
                 self.state = 523
                 self.designator()
 
@@ -13606,7 +13609,7 @@ class BraketPragmasParser(Parser):
             self.state = 531
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 116 or _la == 117:
+            if _la == 117 or _la == 118:
                 self.state = 530
                 self.gateOperandList()
 
@@ -13688,7 +13691,7 @@ class BraketPragmasParser(Parser):
                 self.state = 538
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while ((_la - 69) & ~0x3F) == 0 and ((1 << (_la - 69)) & 15) != 0:
+                while ((_la - 70) & ~0x3F) == 0 and ((1 << (_la - 70)) & 15) != 0:
                     self.state = 535
                     self.gateModifier()
                     self.state = 540
@@ -13700,13 +13703,13 @@ class BraketPragmasParser(Parser):
                 self.state = 547
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 84:
+                if _la == 85:
                     self.state = 542
                     self.match(BraketPragmasParser.LPAREN)
                     self.state = 544
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if ((_la - 58) & ~0x3F) == 0 and ((1 << (_la - 58)) & 9214576012621317119) != 0:
+                    if ((_la - 59) & ~0x3F) == 0 and ((1 << (_la - 59)) & 9214576012621317119) != 0:
                         self.state = 543
                         self.expressionList()
 
@@ -13716,7 +13719,7 @@ class BraketPragmasParser(Parser):
                 self.state = 550
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 549
                     self.designator()
 
@@ -13731,7 +13734,7 @@ class BraketPragmasParser(Parser):
                 self.state = 558
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while ((_la - 69) & ~0x3F) == 0 and ((1 << (_la - 69)) & 15) != 0:
+                while ((_la - 70) & ~0x3F) == 0 and ((1 << (_la - 70)) & 15) != 0:
                     self.state = 555
                     self.gateModifier()
                     self.state = 560
@@ -13743,13 +13746,13 @@ class BraketPragmasParser(Parser):
                 self.state = 567
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 84:
+                if _la == 85:
                     self.state = 562
                     self.match(BraketPragmasParser.LPAREN)
                     self.state = 564
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if ((_la - 58) & ~0x3F) == 0 and ((1 << (_la - 58)) & 9214576012621317119) != 0:
+                    if ((_la - 59) & ~0x3F) == 0 and ((1 << (_la - 59)) & 9214576012621317119) != 0:
                         self.state = 563
                         self.expressionList()
 
@@ -13759,14 +13762,14 @@ class BraketPragmasParser(Parser):
                 self.state = 570
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 569
                     self.designator()
 
                 self.state = 573
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 116 or _la == 117:
+                if _la == 117 or _la == 118:
                     self.state = 572
                     self.gateOperandList()
 
@@ -13832,7 +13835,7 @@ class BraketPragmasParser(Parser):
             self.state = 581
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 91:
+            if _la == 92:
                 self.state = 579
                 self.match(BraketPragmasParser.ARROW)
                 self.state = 580
@@ -14018,11 +14021,11 @@ class BraketPragmasParser(Parser):
             self.state = 597
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [58, 59, 60, 61, 62, 63, 64, 66, 67]:
+            if token in [59, 60, 61, 62, 63, 64, 65, 67, 68]:
                 self.state = 595
                 self.scalarType()
                 pass
-            elif token in [65]:
+            elif token in [66]:
                 self.state = 596
                 self.arrayType()
                 pass
@@ -14034,7 +14037,7 @@ class BraketPragmasParser(Parser):
             self.state = 602
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 90:
+            if _la == 91:
                 self.state = 600
                 self.match(BraketPragmasParser.EQUALS)
                 self.state = 601
@@ -14177,11 +14180,11 @@ class BraketPragmasParser(Parser):
             self.state = 616
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [58, 59, 60, 61, 62, 63, 64, 66, 67]:
+            if token in [59, 60, 61, 62, 63, 64, 65, 67, 68]:
                 self.state = 614
                 self.scalarType()
                 pass
-            elif token in [65]:
+            elif token in [66]:
                 self.state = 615
                 self.arrayType()
                 pass
@@ -14250,7 +14253,7 @@ class BraketPragmasParser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 621
             _la = self._input.LA(1)
-            if not (_la == 55 or _la == 57):
+            if not (_la == 56 or _la == 58):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -14260,7 +14263,7 @@ class BraketPragmasParser(Parser):
             self.state = 624
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 80:
+            if _la == 81:
                 self.state = 623
                 self.designator()
 
@@ -14390,7 +14393,7 @@ class BraketPragmasParser(Parser):
             self.state = 636
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la - 53) & ~0x3F) == 0 and ((1 << (_la - 53)) & 28671) != 0:
+            if ((_la - 53) & ~0x3F) == 0 and ((1 << (_la - 53)) & 57343) != 0:
                 self.state = 635
                 self.argumentDefinitionList()
 
@@ -14399,7 +14402,7 @@ class BraketPragmasParser(Parser):
             self.state = 640
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 91:
+            if _la == 92:
                 self.state = 639
                 self.returnSignature()
 
@@ -14474,7 +14477,7 @@ class BraketPragmasParser(Parser):
             self.state = 648
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la - 53) & ~0x3F) == 0 and ((1 << (_la - 53)) & 28659) != 0:
+            if ((_la - 53) & ~0x3F) == 0 and ((1 << (_la - 53)) & 57319) != 0:
                 self.state = 647
                 self.externArgumentList()
 
@@ -14483,7 +14486,7 @@ class BraketPragmasParser(Parser):
             self.state = 652
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 91:
+            if _la == 92:
                 self.state = 651
                 self.returnSignature()
 
@@ -14558,13 +14561,13 @@ class BraketPragmasParser(Parser):
             self.state = 663
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 84:
+            if _la == 85:
                 self.state = 658
                 self.match(BraketPragmasParser.LPAREN)
                 self.state = 660
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 116:
+                if _la == 117:
                     self.state = 659
                     localctx.params = self.identifierList()
 
@@ -14638,7 +14641,7 @@ class BraketPragmasParser(Parser):
             self.state = 669
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
-            if not (_la == 90 or _la == 107):
+            if not (_la == 91 or _la == 108):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -14647,7 +14650,6 @@ class BraketPragmasParser(Parser):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [
-                58,
                 59,
                 60,
                 61,
@@ -14657,13 +14659,13 @@ class BraketPragmasParser(Parser):
                 65,
                 66,
                 67,
-                74,
-                79,
-                84,
-                94,
-                104,
+                68,
+                75,
+                80,
+                85,
+                95,
                 105,
-                111,
+                106,
                 112,
                 113,
                 114,
@@ -14673,11 +14675,12 @@ class BraketPragmasParser(Parser):
                 118,
                 119,
                 120,
+                121,
             ]:
                 self.state = 670
                 self.expression(0)
                 pass
-            elif token in [77]:
+            elif token in [78]:
                 self.state = 671
                 self.measureExpression()
                 pass
@@ -14807,13 +14810,13 @@ class BraketPragmasParser(Parser):
             self.state = 686
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 84:
+            if _la == 85:
                 self.state = 681
                 self.match(BraketPragmasParser.LPAREN)
                 self.state = 683
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((_la - 53) & ~0x3F) == 0 and ((1 << (_la - 53)) & 28671) != 0:
+                if ((_la - 53) & ~0x3F) == 0 and ((1 << (_la - 53)) & 57343) != 0:
                     self.state = 682
                     self.argumentDefinitionList()
 
@@ -14825,7 +14828,7 @@ class BraketPragmasParser(Parser):
             self.state = 690
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 91:
+            if _la == 92:
                 self.state = 689
                 self.returnSignature()
 
@@ -15495,7 +15498,7 @@ class BraketPragmasParser(Parser):
                 self.state = 706
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((_la - 94) & ~0x3F) == 0 and ((1 << (_la - 94)) & 3073) != 0):
+                if not (((_la - 95) & ~0x3F) == 0 and ((1 << (_la - 95)) & 3073) != 0):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -15511,11 +15514,11 @@ class BraketPragmasParser(Parser):
                 self.state = 710
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [58, 59, 60, 61, 62, 63, 64, 66, 67]:
+                if token in [59, 60, 61, 62, 63, 64, 65, 67, 68]:
                     self.state = 708
                     self.scalarType()
                     pass
-                elif token in [65]:
+                elif token in [66]:
                     self.state = 709
                     self.arrayType()
                     pass
@@ -15555,7 +15558,7 @@ class BraketPragmasParser(Parser):
                 self.state = 724
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((_la - 58) & ~0x3F) == 0 and ((1 << (_la - 58)) & 9214576012621317119) != 0:
+                if ((_la - 59) & ~0x3F) == 0 and ((1 << (_la - 59)) & 9214576012621317119) != 0:
                     self.state = 723
                     self.expressionList()
 
@@ -15569,7 +15572,7 @@ class BraketPragmasParser(Parser):
                 _prevctx = localctx
                 self.state = 727
                 _la = self._input.LA(1)
-                if not (((_la - 79) & ~0x3F) == 0 and ((1 << (_la - 79)) & 4393751543809) != 0):
+                if not (((_la - 80) & ~0x3F) == 0 and ((1 << (_la - 80)) & 4393751543809) != 0):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -15619,7 +15622,7 @@ class BraketPragmasParser(Parser):
                         self.state = 734
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (((_la - 95) & ~0x3F) == 0 and ((1 << (_la - 95)) & 13) != 0):
+                        if not (((_la - 96) & ~0x3F) == 0 and ((1 << (_la - 96)) & 13) != 0):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -15642,7 +15645,7 @@ class BraketPragmasParser(Parser):
                         self.state = 737
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not (_la == 92 or _la == 94):
+                        if not (_la == 93 or _la == 95):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -15862,7 +15865,7 @@ class BraketPragmasParser(Parser):
             self.state = 775
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 93:
+            while _la == 94:
                 self.state = 771
                 self.match(BraketPragmasParser.DOUBLE_PLUS)
                 self.state = 772
@@ -15920,13 +15923,12 @@ class BraketPragmasParser(Parser):
             self.state = 781
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [82]:
+            if token in [83]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 778
                 self.arrayLiteral()
                 pass
             elif token in [
-                58,
                 59,
                 60,
                 61,
@@ -15936,13 +15938,13 @@ class BraketPragmasParser(Parser):
                 65,
                 66,
                 67,
-                74,
-                79,
-                84,
-                94,
-                104,
+                68,
+                75,
+                80,
+                85,
+                95,
                 105,
-                111,
+                106,
                 112,
                 113,
                 114,
@@ -15952,12 +15954,13 @@ class BraketPragmasParser(Parser):
                 118,
                 119,
                 120,
+                121,
             ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 779
                 self.expression(0)
                 pass
-            elif token in [77]:
+            elif token in [78]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 780
                 self.measureExpression()
@@ -16067,7 +16070,7 @@ class BraketPragmasParser(Parser):
             self.state = 787
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la - 58) & ~0x3F) == 0 and ((1 << (_la - 58)) & 9214576012621317119) != 0:
+            if ((_la - 59) & ~0x3F) == 0 and ((1 << (_la - 59)) & 9214576012621317119) != 0:
                 self.state = 786
                 self.expression(0)
 
@@ -16076,14 +16079,14 @@ class BraketPragmasParser(Parser):
             self.state = 791
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((_la - 58) & ~0x3F) == 0 and ((1 << (_la - 58)) & 9214576012621317119) != 0:
+            if ((_la - 59) & ~0x3F) == 0 and ((1 << (_la - 59)) & 9214576012621317119) != 0:
                 self.state = 790
                 self.expression(0)
 
             self.state = 795
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 86:
+            if _la == 87:
                 self.state = 793
                 self.match(BraketPragmasParser.COLON)
                 self.state = 794
@@ -16166,7 +16169,7 @@ class BraketPragmasParser(Parser):
             self.state = 807
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 89:
+            if _la == 90:
                 self.state = 806
                 self.match(BraketPragmasParser.COMMA)
 
@@ -16241,7 +16244,6 @@ class BraketPragmasParser(Parser):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [
-                58,
                 59,
                 60,
                 61,
@@ -16251,13 +16253,13 @@ class BraketPragmasParser(Parser):
                 65,
                 66,
                 67,
-                74,
-                79,
-                84,
-                94,
-                104,
+                68,
+                75,
+                80,
+                85,
+                95,
                 105,
-                111,
+                106,
                 112,
                 113,
                 114,
@@ -16267,11 +16269,12 @@ class BraketPragmasParser(Parser):
                 118,
                 119,
                 120,
+                121,
             ]:
                 self.state = 812
                 self.expression(0)
                 pass
-            elif token in [82]:
+            elif token in [83]:
                 self.state = 813
                 self.arrayLiteral()
                 pass
@@ -16289,7 +16292,6 @@ class BraketPragmasParser(Parser):
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
                     if token in [
-                        58,
                         59,
                         60,
                         61,
@@ -16299,13 +16301,13 @@ class BraketPragmasParser(Parser):
                         65,
                         66,
                         67,
-                        74,
-                        79,
-                        84,
-                        94,
-                        104,
+                        68,
+                        75,
+                        80,
+                        85,
+                        95,
                         105,
-                        111,
+                        106,
                         112,
                         113,
                         114,
@@ -16315,11 +16317,12 @@ class BraketPragmasParser(Parser):
                         118,
                         119,
                         120,
+                        121,
                     ]:
                         self.state = 817
                         self.expression(0)
                         pass
-                    elif token in [82]:
+                    elif token in [83]:
                         self.state = 818
                         self.arrayLiteral()
                         pass
@@ -16333,7 +16336,7 @@ class BraketPragmasParser(Parser):
             self.state = 827
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 89:
+            if _la == 90:
                 self.state = 826
                 self.match(BraketPragmasParser.COMMA)
 
@@ -16410,12 +16413,11 @@ class BraketPragmasParser(Parser):
             self.state = 850
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [82]:
+            if token in [83]:
                 self.state = 832
                 self.setExpression()
                 pass
             elif token in [
-                58,
                 59,
                 60,
                 61,
@@ -16425,14 +16427,14 @@ class BraketPragmasParser(Parser):
                 65,
                 66,
                 67,
-                74,
-                79,
-                84,
-                86,
-                94,
-                104,
+                68,
+                75,
+                80,
+                85,
+                87,
+                95,
                 105,
-                111,
+                106,
                 112,
                 113,
                 114,
@@ -16442,6 +16444,7 @@ class BraketPragmasParser(Parser):
                 118,
                 119,
                 120,
+                121,
             ]:
                 self.state = 835
                 self._errHandler.sync(self)
@@ -16483,7 +16486,7 @@ class BraketPragmasParser(Parser):
                 self.state = 848
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 89:
+                if _la == 90:
                     self.state = 847
                     self.match(BraketPragmasParser.COMMA)
 
@@ -16546,7 +16549,7 @@ class BraketPragmasParser(Parser):
             self.state = 858
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == 80:
+            while _la == 81:
                 self.state = 855
                 self.indexOperator()
                 self.state = 860
@@ -16667,11 +16670,11 @@ class BraketPragmasParser(Parser):
             self.state = 877
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [69]:
+            if token in [70]:
                 self.state = 864
                 self.match(BraketPragmasParser.INV)
                 pass
-            elif token in [70]:
+            elif token in [71]:
                 self.state = 865
                 self.match(BraketPragmasParser.POW)
                 self.state = 866
@@ -16681,10 +16684,10 @@ class BraketPragmasParser(Parser):
                 self.state = 868
                 self.match(BraketPragmasParser.RPAREN)
                 pass
-            elif token in [71, 72]:
+            elif token in [72, 73]:
                 self.state = 870
                 _la = self._input.LA(1)
-                if not (_la == 71 or _la == 72):
+                if not (_la == 72 or _la == 73):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -16692,7 +16695,7 @@ class BraketPragmasParser(Parser):
                 self.state = 875
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 84:
+                if _la == 85:
                     self.state = 871
                     self.match(BraketPragmasParser.LPAREN)
                     self.state = 872
@@ -16786,89 +16789,89 @@ class BraketPragmasParser(Parser):
             self.state = 911
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [59]:
+            if token in [60]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 881
                 self.match(BraketPragmasParser.BIT)
                 self.state = 883
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 882
                     self.designator()
 
                 pass
-            elif token in [60]:
+            elif token in [61]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 885
                 self.match(BraketPragmasParser.INT)
                 self.state = 887
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 886
                     self.designator()
 
                 pass
-            elif token in [61]:
+            elif token in [62]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 889
                 self.match(BraketPragmasParser.UINT)
                 self.state = 891
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 890
                     self.designator()
 
                 pass
-            elif token in [62]:
+            elif token in [63]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 893
                 self.match(BraketPragmasParser.FLOAT)
                 self.state = 895
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 894
                     self.designator()
 
                 pass
-            elif token in [63]:
+            elif token in [64]:
                 self.enterOuterAlt(localctx, 5)
                 self.state = 897
                 self.match(BraketPragmasParser.ANGLE)
                 self.state = 899
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 898
                     self.designator()
 
                 pass
-            elif token in [58]:
+            elif token in [59]:
                 self.enterOuterAlt(localctx, 6)
                 self.state = 901
                 self.match(BraketPragmasParser.BOOL)
                 pass
-            elif token in [66]:
+            elif token in [67]:
                 self.enterOuterAlt(localctx, 7)
                 self.state = 902
                 self.match(BraketPragmasParser.DURATION)
                 pass
-            elif token in [67]:
+            elif token in [68]:
                 self.enterOuterAlt(localctx, 8)
                 self.state = 903
                 self.match(BraketPragmasParser.STRETCH)
                 pass
-            elif token in [64]:
+            elif token in [65]:
                 self.enterOuterAlt(localctx, 9)
                 self.state = 904
                 self.match(BraketPragmasParser.COMPLEX)
                 self.state = 909
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 905
                     self.match(BraketPragmasParser.LBRACKET)
                     self.state = 906
@@ -16930,7 +16933,7 @@ class BraketPragmasParser(Parser):
             self.state = 915
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 80:
+            if _la == 81:
                 self.state = 914
                 self.designator()
 
@@ -17035,6 +17038,9 @@ class BraketPragmasParser(Parser):
         def CONST(self):
             return self.getToken(BraketPragmasParser.CONST, 0)
 
+        def READONLY(self):
+            return self.getToken(BraketPragmasParser.READONLY, 0)
+
         def MUTABLE(self):
             return self.getToken(BraketPragmasParser.MUTABLE, 0)
 
@@ -17076,7 +17082,7 @@ class BraketPragmasParser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 924
             _la = self._input.LA(1)
-            if not (_la == 53 or _la == 54):
+            if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 63050394783186944) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -17093,7 +17099,6 @@ class BraketPragmasParser(Parser):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [
-                58,
                 59,
                 60,
                 61,
@@ -17103,13 +17108,13 @@ class BraketPragmasParser(Parser):
                 65,
                 66,
                 67,
-                74,
-                79,
-                84,
-                94,
-                104,
+                68,
+                75,
+                80,
+                85,
+                95,
                 105,
-                111,
+                106,
                 112,
                 113,
                 114,
@@ -17119,11 +17124,12 @@ class BraketPragmasParser(Parser):
                 118,
                 119,
                 120,
+                121,
             ]:
                 self.state = 929
                 self.expressionList()
                 pass
-            elif token in [73]:
+            elif token in [74]:
                 self.state = 930
                 self.match(BraketPragmasParser.DIM)
                 self.state = 931
@@ -17235,12 +17241,12 @@ class BraketPragmasParser(Parser):
             self.state = 943
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [116]:
+            if token in [117]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 941
                 self.indexedIdentifier()
                 pass
-            elif token in [117]:
+            elif token in [118]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 942
                 self.match(BraketPragmasParser.HardwareQubit)
@@ -17301,24 +17307,24 @@ class BraketPragmasParser(Parser):
             self.state = 951
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [58, 59, 60, 61, 62, 63, 64, 66, 67]:
+            if token in [59, 60, 61, 62, 63, 64, 65, 67, 68]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 945
                 self.scalarType()
                 pass
-            elif token in [53, 54]:
+            elif token in [53, 54, 55]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 946
                 self.arrayReferenceType()
                 pass
-            elif token in [57]:
+            elif token in [58]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 947
                 self.match(BraketPragmasParser.CREG)
                 self.state = 949
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 948
                     self.designator()
 
@@ -17373,7 +17379,7 @@ class BraketPragmasParser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 953
             _la = self._input.LA(1)
-            if not (_la == 116 or _la == 117):
+            if not (_la == 117 or _la == 118):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -17440,25 +17446,25 @@ class BraketPragmasParser(Parser):
             self.state = 969
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [58, 59, 60, 61, 62, 63, 64, 66, 67]:
+            if token in [59, 60, 61, 62, 63, 64, 65, 67, 68]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 955
                 self.scalarType()
                 self.state = 956
                 self.match(BraketPragmasParser.Identifier)
                 pass
-            elif token in [56]:
+            elif token in [57]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 958
                 self.qubitType()
                 self.state = 959
                 self.match(BraketPragmasParser.Identifier)
                 pass
-            elif token in [55, 57]:
+            elif token in [56, 58]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 961
                 _la = self._input.LA(1)
-                if not (_la == 55 or _la == 57):
+                if not (_la == 56 or _la == 58):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -17468,12 +17474,12 @@ class BraketPragmasParser(Parser):
                 self.state = 964
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 80:
+                if _la == 81:
                     self.state = 963
                     self.designator()
 
                 pass
-            elif token in [53, 54]:
+            elif token in [53, 54, 55]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 966
                 self.arrayReferenceType()
@@ -17552,7 +17558,7 @@ class BraketPragmasParser(Parser):
             self.state = 980
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 89:
+            if _la == 90:
                 self.state = 979
                 self.match(BraketPragmasParser.COMMA)
 
@@ -17625,7 +17631,7 @@ class BraketPragmasParser(Parser):
             self.state = 991
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 89:
+            if _la == 90:
                 self.state = 990
                 self.match(BraketPragmasParser.COMMA)
 
@@ -17698,7 +17704,7 @@ class BraketPragmasParser(Parser):
             self.state = 1002
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 89:
+            if _la == 90:
                 self.state = 1001
                 self.match(BraketPragmasParser.COMMA)
 
@@ -17771,7 +17777,7 @@ class BraketPragmasParser(Parser):
             self.state = 1013
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 89:
+            if _la == 90:
                 self.state = 1012
                 self.match(BraketPragmasParser.COMMA)
 
@@ -17844,7 +17850,7 @@ class BraketPragmasParser(Parser):
             self.state = 1024
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 89:
+            if _la == 90:
                 self.state = 1023
                 self.match(BraketPragmasParser.COMMA)
 
@@ -17917,7 +17923,7 @@ class BraketPragmasParser(Parser):
             self.state = 1035
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la == 89:
+            if _la == 90:
                 self.state = 1034
                 self.match(BraketPragmasParser.COMMA)
 
