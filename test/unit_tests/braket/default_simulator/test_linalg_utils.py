@@ -21,6 +21,7 @@ from braket.default_simulator.linalg_utils import (
     _apply_single_qubit_gate,
     _apply_two_qubit_gate_small,
     _apply_two_qubit_gate_large,
+    controlled_matrix,
     multiply_matrix,
     QuantumGateDispatcher,
 )
@@ -891,3 +892,103 @@ def test_apply_diagonal_gate_large_via_single_qubit_gate():
         assert np.isclose(original_norm, result_norm, atol=1e-7), (
             f"Norm not preserved for target {target_qubit}"
         )
+
+
+def _random_unitary(num_qubits, rng):
+    size = 2**num_qubits
+    q, r = np.linalg.qr(rng.normal(size=(size, size)) + 1j * rng.normal(size=(size, size)))
+    return q * (np.diag(r) / np.abs(np.diag(r)))
+
+
+def _reference_controlled_gate(state, matrix, targets, controls, control_state):
+    expected = state.copy()
+    index = [slice(None)] * state.ndim
+    for control, value in zip(controls, control_state):
+        index[control] = value
+    index = tuple(index)
+    remaining = [qubit for qubit in range(state.ndim) if qubit not in controls]
+    sub_targets = [remaining.index(target) for target in targets]
+    num_targets = len(targets)
+    product = np.tensordot(
+        matrix.reshape([2] * 2 * num_targets),
+        state[index],
+        axes=(range(num_targets, 2 * num_targets), sub_targets),
+    )
+    expected[index] = np.moveaxis(product, range(num_targets), sub_targets)
+    return expected
+
+
+_RNG = np.random.default_rng(413)
+
+_CONTROLLED_GATES = [
+    (np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2), None),
+    (_random_unitary(1, _RNG), None),
+    (np.diag([1, 1j]).astype(complex), "s"),
+    (_random_unitary(2, _RNG), None),
+    (np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=complex), "cx"),
+    (np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=complex), "swap"),
+    (np.diag([1, 1, 1, np.exp(0.3j)]).astype(complex), "cphaseshift"),
+]
+
+_CONTROL_LAYOUTS = [
+    ((0,), (2,), (1,)),
+    ((2,), (0,), (0,)),
+    ((3,), (1, 0), (1, 0)),
+    ((1,), (3, 0, 2), (0, 1, 1)),
+    ((0, 3), (2,), (1,)),
+    ((3, 1), (0,), (0,)),
+    ((2, 0), (3, 1), (0, 1)),
+    ((1, 2), (0,), (1,)),
+]
+
+
+@pytest.mark.parametrize("qubit_count, spacing", [(4, 1), (11, 3)])
+@pytest.mark.parametrize("targets, controls, control_state", _CONTROL_LAYOUTS)
+@pytest.mark.parametrize("matrix, gate_type", _CONTROLLED_GATES)
+@pytest.mark.parametrize("return_swap_info", [True, False])
+def test_multiply_matrix_controlled(
+    matrix, gate_type, targets, controls, control_state, qubit_count, spacing, return_swap_info
+):
+    if len(targets) != int(np.log2(len(matrix))):
+        pytest.skip("matrix does not act on this number of targets")
+    targets = tuple(spacing * qubit for qubit in targets)
+    controls = tuple(spacing * qubit for qubit in controls)
+    state = _RNG.normal(size=[2] * qubit_count) + 1j * _RNG.normal(size=[2] * qubit_count)
+    expected = _reference_controlled_gate(state, matrix, targets, controls, control_state)
+
+    result = multiply_matrix(
+        state,
+        matrix,
+        targets,
+        controls,
+        control_state,
+        np.zeros_like(state),
+        QuantumGateDispatcher(qubit_count),
+        return_swap_info,
+        gate_type,
+    )
+    if return_swap_info:
+        result, swapped = result
+        result = result if swapped else state
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    "control_state, expected_diagonal",
+    [
+        ((1,), [1, 1, "u", "u"]),
+        ((0,), ["u", "u", 1, 1]),
+        ((1, 0), [1, 1, 1, 1, "u", "u", 1, 1]),
+        ((0, 1), [1, 1, "u", "u", 1, 1, 1, 1]),
+        ((0, 0), ["u", "u", 1, 1, 1, 1, 1, 1]),
+    ],
+)
+def test_controlled_matrix_control_order(control_state, expected_diagonal):
+    u = np.array([[0, 1], [1, 0]], dtype=complex)
+    matrix = controlled_matrix(u, control_state)
+    size = len(expected_diagonal)
+    expected = np.eye(size, dtype=complex)
+    for i in range(0, size, 2):
+        if expected_diagonal[i] == "u":
+            expected[i : i + 2, i : i + 2] = u
+    np.testing.assert_array_equal(matrix, expected)
