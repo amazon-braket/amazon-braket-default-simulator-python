@@ -4850,6 +4850,9 @@ class TestEvaluateExpressionFromOpenQASM:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
         counts = Counter(["".join(m) for m in result.measurements])
+        assert len(result.measurements) == 200
+        assert sum(counts.values()) == 200
+        assert set(counts) == {"01", "11"}
         for outcome in counts:
             assert outcome[1] == "1"
 
@@ -4876,6 +4879,9 @@ class TestEvaluateExpressionFromOpenQASM:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
         counts = Counter(["".join(m) for m in result.measurements])
+        assert len(result.measurements) == 200
+        assert sum(counts.values()) == 200
+        assert set(counts) == {"01", "11"}
         for outcome in counts:
             assert outcome[1] == "1"
 
@@ -4924,6 +4930,9 @@ class TestEvaluateExpressionFromOpenQASM:
         """
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=200)
         counts = Counter(["".join(m) for m in result.measurements])
+        assert len(result.measurements) == 200
+        assert sum(counts.values()) == 200
+        assert set(counts) == {"01", "11"}
         for outcome in counts:
             assert outcome[1] == "1"
 
@@ -4947,6 +4956,328 @@ class TestEvaluateExpressionFromOpenQASM:
         result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=100)
         counts = Counter(["".join(m) for m in result.measurements])
         assert counts == {"11": 100}
+
+
+class TestMCMPathLocalLoopControl:
+    """Loop control preserves both the exiting and continuing measurement paths."""
+
+    @pytest.mark.parametrize(
+        "declarations, condition, expected",
+        [
+            ("", "sqrt(i) < 2", 4),
+            ("array[int, 2] values = {0, 0};", "i < sizeof(values)", 2),
+            ("def below(int value) -> bool { return value < 4; }", "below(i)", 4),
+            (
+                "array[int, 4] values = {0, 1, 2, 3};"
+                "def position(int value) -> int { return value; }",
+                "values[position(i)] < 3",
+                3,
+            ),
+        ],
+    )
+    def test_promoted_while_retains_full_condition_evaluation(
+        self, simulator, declarations, condition, expected
+    ):
+        qasm = (
+            "OPENQASM 3;"
+            + declarations
+            + """
+            qubit q;
+            bit b;
+            output int i;
+            i = 0;
+            h q;
+            b = measure q;
+            while ("""
+            + condition
+            + """) {
+                i += 1;
+                if (b) { i += 0; }
+            }
+            """
+        )
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm), shots=128)
+
+        assert result.outputs == [{"i": expected}] * 128
+
+    @pytest.mark.parametrize(
+        "body, expected",
+        [
+            ("i += 1; if (b) { i += 1; continue; }", {(0, 3), (1, 4)}),
+            ("i += 1; if (b) { i += 1; }", {(0, 3), (1, 4)}),
+            ("i += 1; if (b == 0) { break; } i += 1; continue;", {(0, 1), (1, 4)}),
+            ("if (b) { i += 1; continue; } i += 2;", {(0, 4), (1, 3)}),
+        ],
+    )
+    def test_static_while_condition_can_become_path_dependent(self, simulator, body, expected):
+        qasm = (
+            """OPENQASM 3;
+            qubit q;
+            output bit b;
+            output int i;
+            i = 0;
+            h q;
+            b = measure q;
+            while (i < 3) {
+            """
+            + body
+            + "}"
+        )
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm), shots=128)
+
+        assert len(result.outputs) == 128
+        assert {(row["b"], row["i"]) for row in result.outputs} == expected
+
+    def test_static_for_range_is_not_reevaluated_after_path_divergence(self, simulator):
+        qasm = """OPENQASM 3;
+        qubit q;
+        bit b;
+        output int count;
+        count = 0;
+        int limit = 2;
+        h q;
+        b = measure q;
+        for int i in [0:limit] {
+            count += 1;
+            if (b) { limit = 0; }
+        }
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm), shots=128)
+
+        assert result.outputs == [{"count": 3}] * 128
+
+    @pytest.mark.parametrize("simulator_type", [StateVectorSimulator, DensityMatrixSimulator])
+    @pytest.mark.parametrize(
+        "loop",
+        [
+            "while (r == 0) { U(pi, 0, pi) q; r = measure q; }",
+            """while (true) {
+                if (r == 0) { U(pi, 0, pi) q; r = measure q; }
+                else { break; }
+            }""",
+        ],
+    )
+    def test_bounded_loop_with_measurement_preserves_every_output(self, simulator_type, loop):
+        qasm = (
+            """OPENQASM 3;
+        qubit q;
+        output bit r;
+        U(pi/2, 0, pi) q;
+        r = measure q;
+        """
+            + loop
+        )
+        result = simulator_type().run_openqasm(OpenQASMProgram(source=qasm), shots=128)
+
+        # Both initial outcomes reach r=1, in at most two loop iterations.
+        assert result.taskMetadata.shots == 128
+        assert result.outputs == [{"r": 1}] * 128
+
+    @pytest.mark.parametrize(
+        "loop_header",
+        [
+            "for int i in [0:2]",
+            "for int i in [0:b[0] + 2]",
+            "while (count < 3)",
+            "while (count < b[0] + 3)",
+        ],
+    )
+    def test_measurement_conditioned_break_preserves_other_paths(self, simulator, loop_header):
+        qasm = (
+            """
+        OPENQASM 3.0;
+        bit[3] b;
+        qubit[3] q;
+        int count = 0;
+        h q[0];
+        b[0] = measure q[0];
+        """
+            + loop_header
+            + """ {
+            if (b[0] == 1) {
+                break;
+            }
+            count += 1;
+        }
+        if (count == 0) { x q[1]; }
+        if (count == 3) { x q[2]; }
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+        """
+        )
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter("".join(m) for m in result.measurements)
+
+        assert len(result.measurements) == 1000
+        assert sum(counts.values()) == 1000
+        # b=1 exits immediately; b=0 still completes all three iterations.
+        assert set(counts) == {"001", "110"}
+
+    @pytest.mark.parametrize("loop_header", ["for int i in [0:2]", "while (iteration < 3)"])
+    def test_measurement_conditioned_continue_skips_only_its_path(self, simulator, loop_header):
+        qasm = (
+            """
+        OPENQASM 3.0;
+        bit[3] b;
+        qubit[3] q;
+        int count = 0;
+        int iteration = 0;
+        h q[0];
+        b[0] = measure q[0];
+        """
+            + loop_header
+            + """ {
+            iteration += 1;
+            if (b[0] == 1 && iteration == 2) {
+                continue;
+            }
+            count += 1;
+        }
+        if (count == 2) { x q[1]; }
+        if (count == 3) { x q[2]; }
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+        """
+        )
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter("".join(m) for m in result.measurements)
+
+        assert len(result.measurements) == 1000
+        assert sum(counts.values()) == 1000
+        assert set(counts) == {"001", "110"}
+
+    @pytest.mark.parametrize(
+        "control, expected",
+        [
+            ("break", {"1100", "1010", "0001"}),
+            ("continue", {"1100", "1010", "0010", "0001"}),
+        ],
+    )
+    def test_static_while_body_can_branch_before_loop_control(self, simulator, control, expected):
+        qasm = (
+            """
+        OPENQASM 3.0;
+        bit[4] b;
+        qubit[4] q;
+        int iteration = 0;
+        int count = 0;
+        while (iteration < 2) {
+            iteration += 1;
+            h q[0];
+            b[0] = measure q[0];
+            if (b[0] == 1) {
+        """
+            + control
+            + """;
+            }
+            count += 1;
+        }
+        if (count == 0) { x q[1]; }
+        if (count == 1) { x q[2]; }
+        if (count == 2) { x q[3]; }
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+        b[3] = measure q[3];
+        """
+        )
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter("".join(m) for m in result.measurements)
+
+        assert len(result.measurements) == 1000
+        assert sum(counts.values()) == 1000
+        assert set(counts) == expected
+
+    def test_inner_while_break_does_not_exit_outer_for(self, simulator):
+        qasm = """
+        OPENQASM 3.0;
+        bit[4] b;
+        qubit[4] q;
+        int outer_count = 0;
+        int inner_count = 0;
+        h q[0];
+        b[0] = measure q[0];
+        for int i in [0:1] {
+            int j = 0;
+            while (j < 2) {
+                j += 1;
+                if (b[0] == 1) { break; }
+                inner_count += 1;
+            }
+            outer_count += 1;
+        }
+        if (outer_count == 2) { x q[1]; }
+        if (inner_count == 4) { x q[2]; }
+        if (inner_count == 0) { x q[3]; }
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+        b[3] = measure q[3];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter("".join(m) for m in result.measurements)
+
+        assert len(result.measurements) == 1000
+        assert sum(counts.values()) == 1000
+        assert set(counts) == {"0110", "1101"}
+
+    def test_inner_for_continue_does_not_skip_outer_while_body(self, simulator):
+        qasm = """
+        OPENQASM 3.0;
+        bit[4] b;
+        qubit[4] q;
+        int iteration = 0;
+        int outer_count = 0;
+        int inner_count = 0;
+        h q[0];
+        b[0] = measure q[0];
+        while (iteration < 2) {
+            iteration += 1;
+            for int j in [0:1] {
+                if (b[0] == 1 && j == 0) { continue; }
+                inner_count += 1;
+            }
+            outer_count += 1;
+        }
+        if (outer_count == 2) { x q[1]; }
+        if (inner_count == 4) { x q[2]; }
+        if (inner_count == 2) { x q[3]; }
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+        b[3] = measure q[3];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter("".join(m) for m in result.measurements)
+
+        assert len(result.measurements) == 1000
+        assert sum(counts.values()) == 1000
+        assert set(counts) == {"0110", "1101"}
+
+    def test_path_specific_for_range_preserves_descendants_created_in_body(self, simulator):
+        qasm = """
+        OPENQASM 3.0;
+        bit[4] b;
+        qubit[4] q;
+        int count = 0;
+        h q[0];
+        b[0] = measure q[0];
+        for int i in [0:b[0]] {
+            if (i == 0) {
+                h q[1];
+                b[1] = measure q[1];
+            }
+            count += 1;
+        }
+        if (count == 1) { x q[2]; }
+        if (count == 2) { x q[3]; }
+        b[2] = measure q[2];
+        b[3] = measure q[3];
+        """
+        result = simulator.run_openqasm(OpenQASMProgram(source=qasm, inputs={}), shots=1000)
+        counts = Counter("".join(m) for m in result.measurements)
+
+        assert len(result.measurements) == 1000
+        assert sum(counts.values()) == 1000
+        # Each range's new measurement children must retain its iteration count.
+        assert set(counts) == {"0010", "0110", "1001", "1101"}
 
 
 class TestClassicalControlGates:
