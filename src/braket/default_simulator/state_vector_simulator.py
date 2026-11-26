@@ -155,6 +155,7 @@ class StateVectorSimulator(BaseLocalSimulator):
                             "pswap",
                             "phaseshift",
                             "prx",
+                            "reset",
                             "rx",
                             "ry",
                             "rz",
